@@ -5,12 +5,20 @@ import { Database } from '@/types/database'
 type Project = Database['public']['Tables']['projects']['Row']
 type Tile = Database['public']['Tables']['tiles']['Row']
 
+interface GeneratingTile {
+  x: number
+  y: number
+  startTime: number
+}
+
 interface WorldState {
   currentProject: Project | null
   tiles: Record<string, Tile> // Key: "x,y"
   viewport: { x: number; y: number; scale: number }
   selectedTile: { x: number; y: number } | null
+  selectedTiles: Array<{ x: number; y: number }> // Multiple selection
   isGenerating: boolean
+  generatingTiles: Record<string, GeneratingTile> // Key: "x,y"
 
   // Actions
   loadProject: (projectId: string) => Promise<void>
@@ -19,7 +27,11 @@ interface WorldState {
   addTile: (x: number, y: number, prompt: string, imageData: string) => Promise<void>
   setViewport: (viewport: { x: number; y: number; scale: number }) => void
   setSelectedTile: (tile: { x: number; y: number } | null) => void
+  toggleTileSelection: (tile: { x: number; y: number }) => void
+  clearSelection: () => void
   setGenerating: (isGenerating: boolean) => void
+  addGeneratingTile: (x: number, y: number) => void
+  removeGeneratingTile: (x: number, y: number) => void
   getTile: (x: number, y: number) => Tile | undefined
 }
 
@@ -28,7 +40,9 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   tiles: {},
   viewport: { x: 0, y: 0, scale: 1 },
   selectedTile: null,
+  selectedTiles: [],
   isGenerating: false,
+  generatingTiles: {},
 
   loadProject: async (projectId: string) => {
     const { data: project, error: projectError } = await supabase
@@ -140,7 +154,30 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   },
 
   setViewport: viewport => set({ viewport }),
-  setSelectedTile: selectedTile => set({ selectedTile }),
+  setSelectedTile: selectedTile => set({ selectedTile, selectedTiles: selectedTile ? [selectedTile] : [] }),
+  toggleTileSelection: tile => {
+    const { selectedTiles } = get()
+    const exists = selectedTiles.some(t => t.x === tile.x && t.y === tile.y)
+    if (exists) {
+      set({ selectedTiles: selectedTiles.filter(t => !(t.x === tile.x && t.y === tile.y)) })
+    } else {
+      set({ selectedTiles: [...selectedTiles, tile] })
+    }
+  },
+  clearSelection: () => set({ selectedTiles: [], selectedTile: null }),
   setGenerating: isGenerating => set({ isGenerating }),
+  addGeneratingTile: (x, y) =>
+    set(state => ({
+      generatingTiles: {
+        ...state.generatingTiles,
+        [`${x},${y}`]: { x, y, startTime: Date.now() },
+      },
+    })),
+  removeGeneratingTile: (x, y) =>
+    set(state => {
+      const newGenerating = { ...state.generatingTiles }
+      delete newGenerating[`${x},${y}`]
+      return { generatingTiles: newGenerating }
+    }),
   getTile: (x, y) => get().tiles[`${x},${y}`],
 }))

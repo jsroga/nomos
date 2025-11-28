@@ -86,7 +86,7 @@ export async function analyzeStyle(imageUrl: string): Promise<StyleInfo> {
       resolve({
         dominantColors: sortedColors,
         brightness,
-        description,
+        description: "",
       })
     }
 

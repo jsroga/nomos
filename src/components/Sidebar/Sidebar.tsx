@@ -30,27 +30,62 @@ export const Sidebar: React.FC = () => {
 
   const isGenerating = useWorldStore(state => state.isGenerating)
   const setGenerating = useWorldStore(state => state.setGenerating)
-  const selectedTile = useWorldStore(state => state.selectedTile)
+  const selectedTiles = useWorldStore(state => state.selectedTiles)
   const addTile = useWorldStore(state => state.addTile)
   const currentProject = useWorldStore(state => state.currentProject)
   const tiles = useWorldStore(state => state.tiles)
+  const addGeneratingTile = useWorldStore(state => state.addGeneratingTile)
+  const removeGeneratingTile = useWorldStore(state => state.removeGeneratingTile)
+  const generatingTiles = useWorldStore(state => state.generatingTiles)
 
-  const handleGenerate = async () => {
-    if (!selectedTile || !currentProject) return
+  // Helper to convert local image to base64 data URL
+  const loadImageAsDataUrl = async (tile: any): Promise<any> => {
+    if (!tile || !currentProject) return tile
+    
+    const imageUrl = `/projects/${currentProject.id}/${tile.image_filename}`
+    
+    try {
+      // Fetch the local image and convert to base64
+      const response = await fetch(imageUrl)
+      const blob = await response.blob()
+      
+      return new Promise((resolve) => {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          resolve({
+            ...tile,
+            imageUrl: reader.result as string // This is now a data URL
+          })
+        }
+        reader.readAsDataURL(blob)
+      })
+    } catch (e) {
+      console.error('Failed to load neighbor image:', e)
+      return tile
+    }
+  }
 
-    setGenerating(true)
-    setError(null)
+  const generateSingleTile = async (x: number, y: number) => {
+    if (!currentProject) return
+
+    addGeneratingTile(x, y)
 
     try {
       const config = aiService.getConfig(aiService.getActiveModelId())
 
-      // Get neighbors for context
-      const { x, y } = selectedTile
+      // Load neighbor images as data URLs
+      const [upTile, downTile, leftTile, rightTile] = await Promise.all([
+        loadImageAsDataUrl(tiles[`${x},${y - 1}`]),
+        loadImageAsDataUrl(tiles[`${x},${y + 1}`]),
+        loadImageAsDataUrl(tiles[`${x - 1},${y}`]),
+        loadImageAsDataUrl(tiles[`${x + 1},${y}`]),
+      ])
+
       const neighbors = {
-        up: tiles[`${x},${y - 1}`],
-        down: tiles[`${x},${y + 1}`],
-        left: tiles[`${x - 1},${y}`],
-        right: tiles[`${x + 1},${y}`],
+        up: upTile,
+        down: downTile,
+        left: leftTile,
+        right: rightTile,
       }
 
       // Construct TileContext
@@ -67,15 +102,32 @@ export const Sidebar: React.FC = () => {
       const generatedImageBase64 = await aiService.generate(fullPrompt, context)
 
       await addTile(x, y, fullPrompt, generatedImageBase64)
-      toast.success('Tile generated successfully!')
+      toast.success(`Tile (${x},${y}) generated successfully!`)
     } catch (err: any) {
       console.error(err)
       const errorMessage = err.message || 'Generation failed'
       setError(errorMessage)
-      toast.error(errorMessage)
+      toast.error(`Tile (${x},${y}): ${errorMessage}`)
     } finally {
-      setGenerating(false)
+      removeGeneratingTile(x, y)
     }
+  }
+
+  const handleGenerate = async () => {
+    if (selectedTiles.length === 0 || !currentProject) return
+
+    const tile = selectedTiles[0] // Only one tile selected at a time
+    
+    // Check if this tile is already generating
+    if (generatingTiles[`${tile.x},${tile.y}`]) return
+
+    setGenerating(true)
+    setError(null)
+
+    // Generate the single selected tile
+    await generateSingleTile(tile.x, tile.y)
+
+    setGenerating(false)
   }
 
   return (
@@ -127,17 +179,20 @@ export const Sidebar: React.FC = () => {
               </p>
             </div>
 
-            {selectedTile ? (
+            {selectedTiles.length > 0 ? (
               <div className="bg-accent/10 p-3 rounded-md border border-accent/20">
                 <div className="text-xs font-mono text-muted-foreground mb-2">
-                  Selected: {selectedTile.x}, {selectedTile.y}
+                  Selected: {selectedTiles[0].x}, {selectedTiles[0].y}
+                  {generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] && (
+                    <span className="ml-2 text-yellow-500">(generating)</span>
+                  )}
                 </div>
                 <button
                   onClick={handleGenerate}
-                  disabled={isGenerating}
+                  disabled={!!generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`]}
                   className="w-full bg-primary text-primary-foreground py-2 rounded-md font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  {isGenerating ? (
+                  {generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] ? (
                     <>
                       <Loader2 className="animate-spin" size={16} />
                       Generating...
@@ -146,6 +201,9 @@ export const Sidebar: React.FC = () => {
                     'Generate Tile'
                   )}
                 </button>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Select another tile to queue more generations
+                </p>
               </div>
             ) : (
               <div className="text-sm text-muted-foreground text-center p-4 border border-dashed border-border rounded-md">
