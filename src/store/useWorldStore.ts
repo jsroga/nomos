@@ -1,60 +1,146 @@
 import { create } from 'zustand'
+import { supabase } from '@/lib/supabase'
+import { Database } from '@/types/database'
 
-export interface Tile {
-    x: number;
-    y: number;
-    imageUrl?: string;
-    prompt?: string;
-    isGenerating?: boolean;
-}
-
-interface Viewport {
-    x: number;
-    y: number;
-    zoom: number;
-}
+type Project = Database['public']['Tables']['projects']['Row']
+type Tile = Database['public']['Tables']['tiles']['Row']
 
 interface WorldState {
-    tiles: Record<string, Tile>;
-    viewport: Viewport;
-    selectedTile: { x: number; y: number } | null;
-    isGenerating: boolean;
+  currentProject: Project | null
+  tiles: Record<string, Tile> // Key: "x,y"
+  viewport: { x: number; y: number; scale: number }
+  selectedTile: { x: number; y: number } | null
+  isGenerating: boolean
 
-    // Actions
-    addTile: (tile: Tile) => void;
-    updateTile: (x: number, y: number, data: Partial<Tile>) => void;
-    setViewport: (viewport: Partial<Viewport>) => void;
-    setSelectedTile: (x: number, y: number) => void;
-    setGenerating: (isGenerating: boolean) => void;
-    getTile: (x: number, y: number) => Tile | undefined;
+  // Actions
+  loadProject: (projectId: string) => Promise<void>
+  createProject: (name: string, prompt: string) => Promise<string | null>
+  switchProject: (projectId: string) => Promise<void>
+  addTile: (x: number, y: number, prompt: string, imageData: string) => Promise<void>
+  setViewport: (viewport: { x: number; y: number; scale: number }) => void
+  setSelectedTile: (tile: { x: number; y: number } | null) => void
+  setGenerating: (isGenerating: boolean) => void
+  getTile: (x: number, y: number) => Tile | undefined
 }
 
 export const useWorldStore = create<WorldState>((set, get) => ({
-    tiles: {},
-    viewport: { x: 0, y: 0, zoom: 1 },
-    selectedTile: null,
-    isGenerating: false,
+  currentProject: null,
+  tiles: {},
+  viewport: { x: 0, y: 0, scale: 1 },
+  selectedTile: null,
+  isGenerating: false,
 
-    addTile: (tile) => set((state) => ({
-        tiles: { ...state.tiles, [`${tile.x},${tile.y}`]: tile }
-    })),
+  loadProject: async (projectId: string) => {
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', projectId)
+      .single()
 
-    updateTile: (x, y, data) => set((state) => {
-        const key = `${x},${y}`;
-        const existing = state.tiles[key];
-        if (!existing) return state;
-        return {
-            tiles: { ...state.tiles, [key]: { ...existing, ...data } }
-        };
-    }),
+    if (projectError || !project) {
+      console.error('Error loading project:', projectError)
+      return
+    }
 
-    setViewport: (viewport) => set((state) => ({
-        viewport: { ...state.viewport, ...viewport }
-    })),
+    const { data: tiles, error: tilesError } = await supabase
+      .from('tiles')
+      .select('*')
+      .eq('project_id', projectId)
 
-    setSelectedTile: (x, y) => set({ selectedTile: { x, y } }),
+    if (tilesError) {
+      console.error('Error loading tiles:', tilesError)
+      return
+    }
 
-    setGenerating: (isGenerating) => set({ isGenerating }),
+    const tileMap: Record<string, Tile> = {}
+    tiles?.forEach(tile => {
+      tileMap[`${tile.x},${tile.y}`] = tile
+    })
 
-    getTile: (x, y) => get().tiles[`${x},${y}`],
-}));
+    set({ currentProject: project, tiles: tileMap })
+  },
+
+  createProject: async (name: string, prompt: string) => {
+    const { data, error } = await supabase
+      .from('projects')
+      .insert({ name, project_prompt: prompt })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error creating project:', error)
+      return null
+    }
+
+    if (data) {
+      await get().switchProject(data.id)
+      return data.id
+    }
+    return null
+  },
+
+  switchProject: async (projectId: string) => {
+    // Clear current state first
+    set({ currentProject: null, tiles: {}, selectedTile: null })
+    await get().loadProject(projectId)
+  },
+
+  addTile: async (x: number, y: number, prompt: string, imageData: string) => {
+    const { currentProject } = get()
+    if (!currentProject) return
+
+    const filename = `${x}_${y}_${Date.now()}.png`
+
+    // 1. Save Image Locally via API
+    try {
+      const response = await fetch('/api/save-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: currentProject.id,
+          filename,
+          imageData,
+        }),
+      })
+
+      if (!response.ok) throw new Error('Failed to save image locally')
+    } catch (e) {
+      console.error('Local save failed', e)
+      return
+    }
+
+    // 2. Save Metadata to Supabase (upsert to allow regeneration)
+    const { data: tile, error } = await supabase
+      .from('tiles')
+      .upsert(
+        {
+          project_id: currentProject.id,
+          x,
+          y,
+          tile_prompt: prompt,
+          image_filename: filename,
+        },
+        {
+          onConflict: 'project_id,x,y', // Update if this combination exists
+        }
+      )
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error saving tile to DB:', error)
+      return
+    }
+
+    if (tile) {
+      set(state => ({
+        tiles: { ...state.tiles, [`${x},${y}`]: tile },
+      }))
+    }
+  },
+
+  setViewport: viewport => set({ viewport }),
+  setSelectedTile: selectedTile => set({ selectedTile }),
+  setGenerating: isGenerating => set({ isGenerating }),
+  getTile: (x, y) => get().tiles[`${x},${y}`],
+}))
