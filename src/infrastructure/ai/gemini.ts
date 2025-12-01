@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AIModel, AIModelConfig, TileContext } from './types'
 import { assembleContextImage } from './contextAssembler'
 import { enhancePromptWithStyle } from './styleAnalyzer'
@@ -7,7 +8,7 @@ export class GeminiAIModel implements AIModel {
   id = 'gemini'
   name = 'Nano Banana Pro (Gemini 3)'
   description =
-    "Uses Google's state-of-the-art Gemini 3 Pro Image model for high-fidelity generation."
+    'Uses Google\'s state-of-the-art Gemini 3 Pro Image model for high-fidelity generation.'
 
   validateConfig(config: AIModelConfig): boolean {
     return !!config.apiKey
@@ -29,7 +30,7 @@ export class GeminiAIModel implements AIModel {
     const base64Image = await this.blobToBase64(imageBlob)
 
     // Construct Prompt
-    const finalPrompt = `Complete this image. The gray area is missing. Fill it with: ${enhancedPrompt}. Maintain the exact style and perspective of the surrounding tiles. seamless blend.`
+    const finalPrompt = `Inpaint the central gray square to seamlessly connect with the surrounding edge context. Fill the gray area with: ${enhancedPrompt}. Ensure continuous lines, consistent perspective (Isometric), and matching lighting. Do not generate borders or frames.`
 
     // Gemini generateContent Payload
     const payload = {

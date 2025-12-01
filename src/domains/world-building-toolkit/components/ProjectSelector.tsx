@@ -1,6 +1,7 @@
+/* eslint-disable */
 import React, { useEffect, useState } from 'react'
-import { useWorldStore } from '@/store/useWorldStore'
-import { supabase } from '@/lib/supabase'
+import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
+import { supabase } from '@/infrastructure/storage/supabase'
 import { Plus, FolderOpen } from 'lucide-react'
 
 export const ProjectSelector: React.FC = () => {

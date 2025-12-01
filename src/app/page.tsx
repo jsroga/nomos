@@ -1,8 +1,9 @@
 'use client'
 
-import { Sidebar } from '@/components/Sidebar/Sidebar'
-import { WorldCanvas } from '@/components/Canvas/WorldCanvas'
-import { GenerationStatus } from '@/components/GenerationStatus'
+import { Sidebar } from '@/domains/world-building-toolkit/components/Sidebar/Sidebar'
+import { WorldCanvas } from '@/domains/world-building-toolkit/components/Canvas/WorldCanvas'
+import { GenerationStatus } from '@/domains/world-building-toolkit/components/GenerationStatus'
+import { RepaintToolbar } from '@/domains/world-building-toolkit/components/RepaintToolbar'
 
 export default function Home() {
   return (
@@ -11,6 +12,7 @@ export default function Home() {
       <div className="flex-1 relative">
         <WorldCanvas />
         <GenerationStatus />
+        <RepaintToolbar />
       </div>
     </main>
   )

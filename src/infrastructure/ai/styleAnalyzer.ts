@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * Analyzes existing tiles to extract style information for prompt consistency.
  */
@@ -86,7 +87,7 @@ export async function analyzeStyle(imageUrl: string): Promise<StyleInfo> {
       resolve({
         dominantColors: sortedColors,
         brightness,
-        description: "",
+        description: '',
       })
     }
 

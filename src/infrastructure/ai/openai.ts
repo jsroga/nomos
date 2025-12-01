@@ -62,9 +62,10 @@ export class OpenAIModel implements AIModel {
 
         // Crop the result
         return await this.cropImage(dataUrl, cropRect)
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Edit request failed:', error)
-        throw new Error(`OpenAI Edit failed: ${error.message || 'Unknown error'}`)
+        const message = error instanceof Error ? error.message : 'Unknown error'
+        throw new Error(`OpenAI Edit failed: ${message}`)
       }
     } else {
       // Standard Generation Mode

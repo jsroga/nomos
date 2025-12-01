@@ -1,13 +1,17 @@
-import { Tile } from '@/store/useWorldStore'
+import { Tile } from '@/domains/world-building-toolkit/store/useWorldStore'
 
 export interface TileContext {
   targetX: number
   targetY: number
   neighbors: {
-    up?: Tile
-    down?: Tile
-    left?: Tile
-    right?: Tile
+    up?: Tile & { imageUrl?: string }
+    down?: Tile & { imageUrl?: string }
+    left?: Tile & { imageUrl?: string }
+    right?: Tile & { imageUrl?: string }
+    topLeft?: Tile & { imageUrl?: string }
+    topRight?: Tile & { imageUrl?: string }
+    bottomLeft?: Tile & { imageUrl?: string }
+    bottomRight?: Tile & { imageUrl?: string }
   }
   // We might need the full tiles map for more complex context later
   allTiles: Record<string, Tile>
@@ -21,7 +25,7 @@ export interface AIModelConfig {
     steps?: number
     cfgScale?: number
     sampler?: string
-    [key: string]: any
+    [key: string]: unknown
   }
 }
 

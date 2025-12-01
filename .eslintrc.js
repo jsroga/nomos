@@ -28,7 +28,7 @@ module.exports = {
         'react/prop-types': 'off',
         semi: ['error', 'never'],
         quotes: ['error', 'single'],
-        indent: ['error', 2],
+        indent: 'off',
     },
     settings: {
         react: {

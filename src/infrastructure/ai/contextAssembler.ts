@@ -63,10 +63,60 @@ export async function assembleContextImage(
     })
   }
 
-  const { up, down, left, right } = context.neighbors
+  const { up, down, left, right, topLeft, topRight, bottomLeft, bottomRight } = context.neighbors
 
   // Draw neighbors (Maximize context to 256px overlap)
 
+  // CORNER NEIGHBORS (Draw first so direct neighbors overlay them if needed)
+  // TOP-LEFT
+  if (topLeft?.imageUrl) {
+    try {
+      const img = await loadImage(topLeft.imageUrl)
+      ctx.drawImage(
+        img,
+        TILE_SIZE - CONTEXT_SIZE, TILE_SIZE - CONTEXT_SIZE, CONTEXT_SIZE, CONTEXT_SIZE, // src (bottom-right corner)
+        0, 0, CONTEXT_SIZE, CONTEXT_SIZE // dest (top-left corner)
+      )
+    } catch (e) { console.error('Failed to load topLeft neighbor', e) }
+  }
+
+  // TOP-RIGHT
+  if (topRight?.imageUrl) {
+    try {
+      const img = await loadImage(topRight.imageUrl)
+      ctx.drawImage(
+        img,
+        0, TILE_SIZE - CONTEXT_SIZE, CONTEXT_SIZE, CONTEXT_SIZE, // src (bottom-left corner)
+        TARGET_X + TILE_SIZE, 0, CONTEXT_SIZE, CONTEXT_SIZE // dest (top-right corner)
+      )
+    } catch (e) { console.error('Failed to load topRight neighbor', e) }
+  }
+
+  // BOTTOM-LEFT
+  if (bottomLeft?.imageUrl) {
+    try {
+      const img = await loadImage(bottomLeft.imageUrl)
+      ctx.drawImage(
+        img,
+        TILE_SIZE - CONTEXT_SIZE, 0, CONTEXT_SIZE, CONTEXT_SIZE, // src (top-right corner)
+        0, TARGET_Y + TILE_SIZE, CONTEXT_SIZE, CONTEXT_SIZE // dest (bottom-left corner)
+      )
+    } catch (e) { console.error('Failed to load bottomLeft neighbor', e) }
+  }
+
+  // BOTTOM-RIGHT
+  if (bottomRight?.imageUrl) {
+    try {
+      const img = await loadImage(bottomRight.imageUrl)
+      ctx.drawImage(
+        img,
+        0, 0, CONTEXT_SIZE, CONTEXT_SIZE, // src (top-left corner)
+        TARGET_X + TILE_SIZE, TARGET_Y + TILE_SIZE, CONTEXT_SIZE, CONTEXT_SIZE // dest (bottom-right corner)
+      )
+    } catch (e) { console.error('Failed to load bottomRight neighbor', e) }
+  }
+
+  // DIRECT NEIGHBORS
   // UP neighbor: Draw bottom half
   if (up?.imageUrl) {
     try {
@@ -154,6 +204,10 @@ export async function assembleContextImage(
       console.error('Failed to load right neighbor', e)
     }
   }
+
+  // Ensure the target area is explicitly gray (visual mask) to match the prompt
+  ctx.fillStyle = '#808080'
+  ctx.fillRect(TARGET_X, TARGET_Y, TILE_SIZE, TILE_SIZE)
 
   // Create mask
   const maskCanvas = document.createElement('canvas')

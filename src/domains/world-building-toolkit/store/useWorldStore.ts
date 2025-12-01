@@ -1,9 +1,9 @@
 import { create } from 'zustand'
-import { supabase } from '@/lib/supabase'
-import { Database } from '@/types/database'
+import { supabase } from '@/infrastructure/storage/supabase'
+import { Database } from '@/infrastructure/storage/database.types'
 
-type Project = Database['public']['Tables']['projects']['Row']
-type Tile = Database['public']['Tables']['tiles']['Row']
+export type Project = Database['public']['Tables']['projects']['Row']
+export type Tile = Database['public']['Tables']['tiles']['Row']
 
 interface GeneratingTile {
   x: number
@@ -19,6 +19,30 @@ interface WorldState {
   selectedTiles: Array<{ x: number; y: number }> // Multiple selection
   isGenerating: boolean
   generatingTiles: Record<string, GeneratingTile> // Key: "x,y"
+  upscalingTiles: Record<string, GeneratingTile> // Key: "x,y"
+  repaintingTiles: Record<string, GeneratingTile> // Key: "x,y"
+
+  // Repaint State
+  isRepaintMode: boolean
+  brushSize: number
+  repaintStrokes: Array<{ x: number; y: number; radius?: number }> // Points in world coordinates with optional radius
+  repaintResult: { imageUrl: string; bounds: { x: number; y: number; width: number; height: number } } | null
+  repaintPrompt: string
+  debugInfo: { image: string; mask: string } | null
+  generationDebugInfo: { 
+    neighbors: { 
+      up?: string; 
+      down?: string; 
+      left?: string; 
+      right?: string;
+      topLeft?: string;
+      topRight?: string;
+      bottomLeft?: string;
+      bottomRight?: string;
+    }; 
+    prompt: string; 
+    assembledContext?: string 
+  } | null
 
   // Actions
   loadProject: (projectId: string) => Promise<void>
@@ -32,7 +56,35 @@ interface WorldState {
   setGenerating: (isGenerating: boolean) => void
   addGeneratingTile: (x: number, y: number) => void
   removeGeneratingTile: (x: number, y: number) => void
+  addUpscalingTile: (x: number, y: number) => void
+  removeUpscalingTile: (x: number, y: number) => void
+  addRepaintingTile: (x: number, y: number) => void
+  removeRepaintingTile: (x: number, y: number) => void
+
   getTile: (x: number, y: number) => Tile | undefined
+
+  // Repaint Actions
+  setRepaintMode: (isRepaintMode: boolean) => void
+  setBrushSize: (size: number) => void
+  addRepaintStroke: (point: { x: number; y: number; radius?: number }) => void
+  clearRepaintStrokes: () => void
+  setRepaintResult: (result: { imageUrl: string; bounds: { x: number; y: number; width: number; height: number } } | null) => void
+  setRepaintPrompt: (prompt: string) => void
+  setDebugInfo: (info: { image: string; mask: string } | null) => void
+  setGenerationDebugInfo: (info: { 
+    neighbors: { 
+      up?: string; 
+      down?: string; 
+      left?: string; 
+      right?: string;
+      topLeft?: string;
+      topRight?: string;
+      bottomLeft?: string;
+      bottomRight?: string;
+    }; 
+    prompt: string; 
+    assembledContext?: string 
+  } | null) => void
 }
 
 export const useWorldStore = create<WorldState>((set, get) => ({
@@ -42,7 +94,17 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   selectedTile: null,
   selectedTiles: [],
   isGenerating: false,
+
   generatingTiles: {},
+  upscalingTiles: {},
+  repaintingTiles: {},
+  isRepaintMode: false,
+  brushSize: 50,
+  repaintStrokes: [],
+  repaintResult: null,
+  repaintPrompt: '',
+  debugInfo: null,
+  generationDebugInfo: null,
 
   loadProject: async (projectId: string) => {
     const { data: project, error: projectError } = await supabase
@@ -179,5 +241,40 @@ export const useWorldStore = create<WorldState>((set, get) => ({
       delete newGenerating[`${x},${y}`]
       return { generatingTiles: newGenerating }
     }),
+  addUpscalingTile: (x, y) =>
+    set(state => ({
+      upscalingTiles: {
+        ...state.upscalingTiles,
+        [`${x},${y}`]: { x, y, startTime: Date.now() },
+      },
+    })),
+  removeUpscalingTile: (x, y) =>
+    set(state => {
+      const newUpscaling = { ...state.upscalingTiles }
+      delete newUpscaling[`${x},${y}`]
+      return { upscalingTiles: newUpscaling }
+    }),
+  addRepaintingTile: (x, y) =>
+    set(state => ({
+      repaintingTiles: {
+        ...state.repaintingTiles,
+        [`${x},${y}`]: { x, y, startTime: Date.now() },
+      },
+    })),
+  removeRepaintingTile: (x, y) =>
+    set(state => {
+      const newRepainting = { ...state.repaintingTiles }
+      delete newRepainting[`${x},${y}`]
+      return { repaintingTiles: newRepainting }
+    }),
   getTile: (x, y) => get().tiles[`${x},${y}`],
+
+  setRepaintMode: isRepaintMode => set({ isRepaintMode }),
+  setBrushSize: brushSize => set({ brushSize }),
+  addRepaintStroke: point => set(state => ({ repaintStrokes: [...state.repaintStrokes, point] })),
+  clearRepaintStrokes: () => set({ repaintStrokes: [] }),
+  setRepaintResult: repaintResult => set({ repaintResult }),
+  setRepaintPrompt: repaintPrompt => set({ repaintPrompt }),
+  setDebugInfo: debugInfo => set({ debugInfo }),
+  setGenerationDebugInfo: generationDebugInfo => set({ generationDebugInfo }),
 }))

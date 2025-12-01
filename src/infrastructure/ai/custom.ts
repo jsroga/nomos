@@ -70,9 +70,10 @@ export class CustomAIModel implements AIModel {
         : `data:image/png;base64,${base64Image}`
 
       return await this.cropImage(dataUrl, cropRect)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Custom API generation failed', error)
-      throw new Error(`Custom API failed: ${error.message}`)
+      const message = error instanceof Error ? error.message : String(error)
+      throw new Error(`Custom API failed: ${message}`)
     }
   }
 

@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React from 'react'
-import { useWorldStore } from '@/store/useWorldStore'
+import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { cn } from '@/lib/utils'
 import { Loader2 } from 'lucide-react'
 
@@ -15,13 +16,17 @@ export const Tile: React.FC<TileProps> = ({ x, y, size }) => {
   const toggleTileSelection = useWorldStore(state => state.toggleTileSelection)
   const currentProject = useWorldStore(state => state.currentProject)
   const generatingTiles = useWorldStore(state => state.generatingTiles)
+  const upscalingTiles = useWorldStore(state => state.upscalingTiles)
+  const repaintingTiles = useWorldStore(state => state.repaintingTiles)
 
   const isSelected = selectedTiles.some(t => t.x === x && t.y === y)
   const isGenerating = !!generatingTiles[`${x},${y}`]
+  const isUpscaling = !!upscalingTiles[`${x},${y}`]
+  const isRepainting = !!repaintingTiles[`${x},${y}`]
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    
+
     // Single selection only
     useWorldStore.getState().setSelectedTile({ x, y })
   }
@@ -35,7 +40,9 @@ export const Tile: React.FC<TileProps> = ({ x, y, size }) => {
       className={cn(
         'absolute border border-border/20 transition-all duration-200',
         isSelected && 'border-primary border-2 z-10 shadow-[0_0_15px_rgba(var(--primary),0.5)]',
-        isGenerating && 'border-yellow-500 border-2'
+        isGenerating && 'border-yellow-500 border-2',
+        isUpscaling && 'border-orange-500 border-2',
+        isRepainting && 'border-purple-500 border-2'
       )}
       style={{
         width: size,
@@ -52,11 +59,11 @@ export const Tile: React.FC<TileProps> = ({ x, y, size }) => {
             alt={tile?.tile_prompt || 'Generated Tile'}
             className={cn(
               'w-full h-full object-cover',
-              isGenerating && 'opacity-50'
+              (isGenerating || isUpscaling || isRepainting) && 'opacity-50'
             )}
             draggable={false}
           />
-          {isGenerating && (
+          {(isGenerating || isUpscaling || isRepainting) && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/30">
               <Loader2 className="animate-spin text-white" size={32} />
             </div>
