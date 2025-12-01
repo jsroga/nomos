@@ -13,6 +13,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   const [config, setConfig] = useState<any>({})
   const [nanoConfig, setNanoConfig] = useState<any>({})
   const [upscale4kConfig, setUpscale4kConfig] = useState<any>({})
+  const [replicateConfig, setReplicateConfig] = useState<any>({})
+  const [activeUpscaler, setActiveUpscaler] = useState<string>('stability')
   const models = aiService.getAvailableModels()
 
   useEffect(() => {
@@ -26,6 +28,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
       const saved4k = localStorage.getItem('ai-config-stability')
       if (saved4k) setUpscale4kConfig(JSON.parse(saved4k))
+
+      const savedReplicate = localStorage.getItem('ai-config-replicate')
+      if (savedReplicate) setReplicateConfig(JSON.parse(savedReplicate))
+
+      const savedUpscaler = localStorage.getItem('ai-active-upscaler')
+      if (savedUpscaler) setActiveUpscaler(savedUpscaler)
     }
   }, [isOpen])
 
@@ -34,9 +42,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     aiService.updateConfig(activeId, config)
 
     // Save configs
+    // Save configs
     localStorage.setItem('ai-config-nano-banana', JSON.stringify(nanoConfig))
     // We save the 4k config as 'ai-config-stability' because that's what StabilityAIModel looks for in upscale4k
     localStorage.setItem('ai-config-stability', JSON.stringify(upscale4kConfig))
+    localStorage.setItem('ai-config-replicate', JSON.stringify(replicateConfig))
+    localStorage.setItem('ai-active-upscaler', activeUpscaler)
 
     onClose()
   }
@@ -244,22 +255,28 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
               </div>
             </div>
 
-            {/* Stability AI (4k Upscale) */}
+          </div>
+
+          {/* Upscaler Provider Selection */}
+          <div className="space-y-2 pt-2 border-t border-border/50">
+            <h4 className="text-sm font-medium">Step 2: High-Res Upscaler</h4>
+            <select
+              value={activeUpscaler}
+              onChange={e => setActiveUpscaler(e.target.value)}
+              className="w-full p-2 rounded-md border border-input bg-background text-sm"
+            >
+              <option value="stability">Stability AI (4k)</option>
+              <option value="replicate">Replicate (Creative/Painterly)</option>
+            </select>
+          </div>
+
+          {/* Stability AI Settings */}
+          {activeUpscaler === 'stability' && (
             <div className="space-y-2 pt-2 border-t border-border/50">
-              <h4 className="text-sm font-medium">Stability AI (Step 2 - 4k Upscale)</h4>
+              <h4 className="text-sm font-medium">Stability AI Settings</h4>
               <p className="text-xs text-muted-foreground">
-                Uses Stability AI's upscaling model (e.g. esrgan-v1-x2plus) for the final 4k step.
+                Uses Stability AI's upscaling model (e.g. esrgan-v1-x2plus).
               </p>
-              {/* We can reuse the main Stability config or ask for key again if they want separate keys. 
-                    Let's assume they might want to configure it here explicitly or just rely on the main one.
-                    But wait, the main one is in `config` state which changes based on active provider.
-                    If they use OpenAI for generation, they still need Stability for upscale.
-                    So we should have a dedicated Stability config section here or reuse the one we had before.
-                    Let's bring back a dedicated Stability config for upscaling if it's not the active provider?
-                    Actually, `stabilityConfig` state was removed in previous step. 
-                    Let's just use `upscale4kConfig` but rename/repurpose it or just use it as "Stability Upscale Config".
-                    Let's keep `upscale4kConfig` state variable but label it as Stability AI.
-                */}
               <div>
                 <label className="block text-xs font-medium mb-1">Stability API Key</label>
                 <input
@@ -282,24 +299,55 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 </select>
               </div>
             </div>
-          </div>
+          )}
 
-          <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="flex-1 py-2 px-4 rounded-md border border-border hover:bg-accent"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              className="flex-1 py-2 px-4 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              Save
-            </button>
-          </div>
+          {/* Replicate Settings */}
+          {activeUpscaler === 'replicate' && (
+            <div className="space-y-2 pt-2 border-t border-border/50">
+              <h4 className="text-sm font-medium">Replicate Settings</h4>
+              <p className="text-xs text-muted-foreground">
+                Uses Replicate models for creative upscaling. Default: <code>recraft-ai/recraft-creative-upscale</code>
+              </p>
+              <div>
+                <label className="block text-xs font-medium mb-1">Replicate API Key</label>
+                <input
+                  type="password"
+                  value={replicateConfig.apiKey || ''}
+                  onChange={e => setReplicateConfig({ ...replicateConfig, apiKey: e.target.value })}
+                  placeholder="r8_..."
+                  className="w-full p-2 rounded-md border border-input bg-background text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1">Model ID</label>
+                <input
+                  type="text"
+                  value={replicateConfig.model || 'recraft-ai/recraft-creative-upscale'}
+                  onChange={e => setReplicateConfig({ ...replicateConfig, model: e.target.value })}
+                  placeholder="recraft-ai/recraft-creative-upscale"
+                  className="w-full p-2 rounded-md border border-input bg-background text-sm"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2 px-4 rounded-md border border-border hover:bg-accent"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            className="flex-1 py-2 px-4 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            Save
+          </button>
         </div>
       </div>
     </div>
+
   )
 }

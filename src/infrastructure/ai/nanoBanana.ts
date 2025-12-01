@@ -36,7 +36,7 @@ export class NanoBananaProModel {
 
         // Sending both image and mask. 
         // We assume the model understands the second image is a mask or we describe it.
-        const finalPrompt = `Edit the first image using the second image as a mask. The white area in the mask indicates where to edit. ${prompt}`
+
 
         const payload = {
             contents: [{
@@ -44,7 +44,7 @@ export class NanoBananaProModel {
                     { text: prompt }, // User prompt first
                     { inline_data: { mime_type: 'image/png', data: base64Image } },
                     { inline_data: { mime_type: 'image/png', data: maskBase64 } },
-                    { text: "Edit the first image using the second image as a mask. The white area in the mask indicates where to edit. Seamlessly blend the changes." } // Instruction last
+                    { text: 'Edit the first image using the second image as a mask. The white area in the mask indicates where to edit. Seamlessly blend the changes.' } // Instruction last
                 ]
             }]
         }

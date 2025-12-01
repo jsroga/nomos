@@ -175,7 +175,7 @@ export class RepaintService {
         strokes: Point[],
         tiles: Record<string, Tile>,
         brushSize: number,
-        prompt: string
+        prompt?: string
     ): Promise<RepaintResult> {
         // 0. Get Config
         let nanoConfig = { apiKey: '', model: '' }

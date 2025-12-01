@@ -4,6 +4,7 @@ import { Tile, useWorldStore } from '@/domains/world-building-toolkit/store/useW
 import { supabase } from '@/infrastructure/storage/supabase'
 import { NanoBananaProModel } from '@/infrastructure/ai/nanoBanana'
 import { stabilityAI } from '@/infrastructure/ai/stability'
+import { ReplicateAIModel } from '@/infrastructure/ai/replicate'
 
 export class UpscaleService {
     async upscale(tile: Tile, creativity: number): Promise<void> {
@@ -44,6 +45,13 @@ export class UpscaleService {
             console.log('Step 1: Upscaling to 1024px with Nano Banana Pro...')
             const upscaled1024Base64 = await nanoBanana.upscale(base64, tile.tile_prompt, creativity)
 
+            // Check for Replicate config
+            let replicateConfig = { apiKey: '', model: '' }
+            if (typeof window !== 'undefined') {
+                const savedReplicate = localStorage.getItem('ai-config-replicate')
+                if (savedReplicate) replicateConfig = JSON.parse(savedReplicate)
+            }
+
             // Check if Stability API key is available
             let stabilityConfig = { apiKey: '' }
             if (typeof window !== 'undefined') {
@@ -51,10 +59,42 @@ export class UpscaleService {
                 if (savedStability) stabilityConfig = JSON.parse(savedStability)
             }
 
+            // Determine which provider to use for Step 2
+            // We can add a setting for "Upscaler Provider", or just check which key is present.
+            // Let's assume we want to support explicit selection if we had a global setting, 
+            // but for now let's prioritize Replicate if configured, else Stability.
+            // Or better, let's read the "active upscaler" from settings if we had one.
+            // Since we are adding a selector in SettingsDialog, we should store that preference.
+            // Let's assume we store it in 'ai-config-upscaler-provider' or similar.
+
+            let activeUpscaler = 'stability'
+            if (typeof window !== 'undefined') {
+                activeUpscaler = localStorage.getItem('ai-active-upscaler') || 'stability'
+            }
+
             let finalImageData = upscaled1024Base64
             let finalFilenameSuffix = '_upscaled_gemini.png'
 
-            if (stabilityConfig.apiKey) {
+            if (activeUpscaler === 'replicate' && replicateConfig.apiKey) {
+                // 5. Step 2: Upscale with Replicate
+                console.log('Step 2: Upscaling with Replicate...')
+                try {
+                    const replicate = new ReplicateAIModel(replicateConfig.apiKey, replicateConfig.model)
+                    // Replicate models might handle large inputs better, but let's see.
+                    // If we pass 1024x1024, it should be fine for most creative upscalers.
+
+                    const upscaledReplicateBase64 = await replicate.upscale(upscaled1024Base64, tile.tile_prompt, creativity)
+
+                    if (upscaledReplicateBase64) {
+                        finalImageData = upscaledReplicateBase64
+                        finalFilenameSuffix = '_upscaled_replicate.png'
+                    }
+                } catch (replicateError) {
+                    console.error('Replicate upscale failed:', replicateError)
+                    console.warn('Falling back to Gemini result')
+                }
+
+            } else if (stabilityConfig.apiKey) {
                 // 5. Step 2: Upscale to 4k using Stability AI
                 console.log('Step 2: Upscaling to 4k with Stability AI...')
 
@@ -85,7 +125,7 @@ export class UpscaleService {
                     // finalFilenameSuffix remains as '_upscaled_gemini.png'
                 }
             } else {
-                console.log('Skipping Step 2 (Stability AI) - No API Key found. Saving Gemini result.')
+                console.log('Skipping Step 2 (Stability/Replicate) - No API Key found or provider not selected. Saving Gemini result.')
             }
 
             // 6. Save New Image
