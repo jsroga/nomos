@@ -24,7 +24,14 @@ export const Tile: React.FC<TileProps> = ({ x, y, size }) => {
   const isUpscaling = !!upscalingTiles[`${x},${y}`]
   const isRepainting = !!repaintingTiles[`${x},${y}`]
 
+  const isSelectMode = useWorldStore(state => state.isSelectMode)
+
   const handleClick = (e: React.MouseEvent) => {
+    if (isSelectMode) {
+      // Allow propagation to WorldCanvas for point addition
+      return
+    }
+
     e.stopPropagation()
 
     // Single selection only

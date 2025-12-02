@@ -28,8 +28,19 @@ ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tiles ENABLE ROW LEVEL SECURITY;
 
 -- Create policies to allow all operations (you can restrict this later based on auth)
-CREATE POLICY "Allow all operations on projects" ON public.projects
-  FOR ALL USING (true) WITH CHECK (true);
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'projects' AND policyname = 'Allow all operations on projects'
+  ) THEN
+    CREATE POLICY "Allow all operations on projects" ON public.projects
+      FOR ALL USING (true) WITH CHECK (true);
+  END IF;
 
-CREATE POLICY "Allow all operations on tiles" ON public.tiles
-  FOR ALL USING (true) WITH CHECK (true);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'tiles' AND policyname = 'Allow all operations on tiles'
+  ) THEN
+    CREATE POLICY "Allow all operations on tiles" ON public.tiles
+      FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;

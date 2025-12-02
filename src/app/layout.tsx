@@ -1,5 +1,6 @@
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
+import { GlobalSidebar } from '@/components/GlobalSidebar'
 
 export const metadata = {
   title: 'World Building Kit',
@@ -9,8 +10,11 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>
-        {children}
+      <body className="flex h-screen w-screen overflow-hidden">
+        <GlobalSidebar />
+        <div className="flex-1 h-full overflow-hidden">
+            {children}
+        </div>
         <Toaster
           position="bottom-right"
           toastOptions={{

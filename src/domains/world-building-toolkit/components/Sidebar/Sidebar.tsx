@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { AssetsPanel } from '@/domains/world-building-toolkit/components/AssetsPanel'
 import { Settings, Loader2, Plus, Move, Paintbrush, X, Check, Eye, EyeOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -51,6 +52,8 @@ export const Sidebar: React.FC = () => {
   const generatingTiles = useWorldStore(state => state.generatingTiles)
   const isRepaintMode = useWorldStore(state => state.isRepaintMode)
   const setRepaintMode = useWorldStore(state => state.setRepaintMode)
+  const isSelectMode = useWorldStore(state => state.isSelectMode)
+  const setSelectMode = useWorldStore(state => state.setSelectMode)
   const brushSize = useWorldStore(state => state.brushSize)
   const setBrushSize = useWorldStore(state => state.setBrushSize)
   const repaintStrokes = useWorldStore(state => state.repaintStrokes)
@@ -64,6 +67,7 @@ export const Sidebar: React.FC = () => {
   const generationDebugInfo = useWorldStore(state => state.generationDebugInfo)
   const setGenerationDebugInfo = useWorldStore(state => state.setGenerationDebugInfo)
   const upscalingTiles = useWorldStore(state => state.upscalingTiles)
+  const selectDebugInfo = useWorldStore(state => state.selectDebugInfo)
 
   // Helper to convert local image to base64 data URL
   const blobToDataUrl = (blob: Blob): Promise<string> => {
@@ -233,14 +237,79 @@ export const Sidebar: React.FC = () => {
 
       <ProjectSelector />
 
-      <div className="p-4 border-b border-border">
+      <div className="p-4 border-b border-border space-y-2">
         <Button
           variant={isRepaintMode ? "default" : "secondary"}
           className="w-full"
-          onClick={() => setRepaintMode(!isRepaintMode)}
+          onClick={() => {
+            if (!isRepaintMode) setSelectMode(false)
+            setRepaintMode(!isRepaintMode)
+          }}
         >
           {isRepaintMode ? 'Exit Repaint Mode' : 'Enter Repaint Mode'}
         </Button>
+        <button
+          onClick={() => {
+            const newSelectMode = !isSelectMode
+            setSelectMode(newSelectMode)
+            // Disable repaint mode when enabling select mode
+            if (newSelectMode && isRepaintMode) {
+              setRepaintMode(false)
+            }
+          }}
+          className={`w-full py-1.5 rounded-md text-xs font-medium transition-colors ${isSelectMode
+            ? 'bg-primary text-primary-foreground'
+            : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+            }`}
+        >
+          {isSelectMode ? 'Exit Select Mode' : 'Enter Select Mode'}
+        </button>
+
+        {/* Select Mode Debug View */}
+        {isSelectMode && selectDebugInfo && (
+          <div className="bg-muted p-4 rounded-lg border border-border space-y-3 mt-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium">Select Mode Debug</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-[10px]"
+                onClick={() => useWorldStore.getState().setSelectDebugInfo(null)}
+              >
+                Clear
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              {selectDebugInfo.contextImage && (
+                <div>
+                  <p className="text-[10px] text-muted-foreground mb-1">Context Image</p>
+                  <img
+                    src={selectDebugInfo.contextImage}
+                    alt="Context"
+                    className="w-full border border-border rounded"
+                  />
+                </div>
+              )}
+
+              {selectDebugInfo.box && (
+                <div>
+                  <p className="text-[10px] text-muted-foreground mb-1">Selection Box</p>
+                  <div className="text-[10px] bg-background p-2 rounded border border-border font-mono">
+                    {JSON.stringify(selectDebugInfo.box, null, 2)}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <p className="text-[10px] text-muted-foreground mb-1">API Response</p>
+                <div className="text-[10px] bg-background p-2 rounded border border-border font-mono max-h-32 overflow-y-auto">
+                  {JSON.stringify(selectDebugInfo.apiResponse, null, 2)}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="p-4 flex-1 overflow-y-auto">
@@ -397,16 +466,16 @@ export const Sidebar: React.FC = () => {
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-medium">Generation</h3>
                 <div className="flex items-center gap-2">
-                    {generationDebugInfo && (
-                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setShowDebug(!showDebug)} title="Toggle Debug View">
-                            {showDebug ? <EyeOff size={14} /> : <Eye size={14} />}
-                        </Button>
-                    )}
-                    {generationDebugInfo && (
-                        <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => setGenerationDebugInfo(null)}>
-                            Clear
-                        </Button>
-                    )}
+                  {generationDebugInfo && (
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setShowDebug(!showDebug)} title="Toggle Debug View">
+                      {showDebug ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </Button>
+                  )}
+                  {generationDebugInfo && (
+                    <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => setGenerationDebugInfo(null)}>
+                      Clear
+                    </Button>
+                  )}
                 </div>
               </div>
 
@@ -457,11 +526,11 @@ export const Sidebar: React.FC = () => {
               {generationDebugInfo && showDebug && (
                 <div className="mt-2 border border-slate-300 bg-slate-200 p-1 rounded">
                   <h4 className="text-xs font-semibold mb-1">Debug Context</h4>
-                  
+
                   {generationDebugInfo.assembledContext && (
                     <div className="mb-2">
-                        <p className="text-[10px] text-muted-foreground mb-1">Inline Data (Assembled)</p>
-                        <img src={generationDebugInfo.assembledContext} className="w-full h-auto border border-border" alt="Assembled Context" />
+                      <p className="text-[10px] text-muted-foreground mb-1">Inline Data (Assembled)</p>
+                      <img src={generationDebugInfo.assembledContext} className="w-full h-auto border border-border" alt="Assembled Context" />
                     </div>
                   )}
 
@@ -476,10 +545,10 @@ export const Sidebar: React.FC = () => {
                     {generationDebugInfo.neighbors.topLeft && <img src={generationDebugInfo.neighbors.topLeft} className="col-start-1 row-start-1 w-full h-full object-cover border border-border" />}
                     {generationDebugInfo.neighbors.up && <img src={generationDebugInfo.neighbors.up} className="col-start-2 row-start-1 w-full h-full object-cover border border-border" />}
                     {generationDebugInfo.neighbors.topRight && <img src={generationDebugInfo.neighbors.topRight} className="col-start-3 row-start-1 w-full h-full object-cover border border-border" />}
-                    
+
                     {generationDebugInfo.neighbors.left && <img src={generationDebugInfo.neighbors.left} className="col-start-1 row-start-2 w-full h-full object-cover border border-border" />}
                     {generationDebugInfo.neighbors.right && <img src={generationDebugInfo.neighbors.right} className="col-start-3 row-start-2 w-full h-full object-cover border border-border" />}
-                    
+
                     {generationDebugInfo.neighbors.bottomLeft && <img src={generationDebugInfo.neighbors.bottomLeft} className="col-start-1 row-start-3 w-full h-full object-cover border border-border" />}
                     {generationDebugInfo.neighbors.down && <img src={generationDebugInfo.neighbors.down} className="col-start-2 row-start-3 w-full h-full object-cover border border-border" />}
                     {generationDebugInfo.neighbors.bottomRight && <img src={generationDebugInfo.neighbors.bottomRight} className="col-start-3 row-start-3 w-full h-full object-cover border border-border" />}
@@ -524,6 +593,11 @@ export const Sidebar: React.FC = () => {
               >
                 Upscale Tile (4x)
               </button>
+            </div>
+
+            {/* Assets Group - Always visible when we have assets or in select mode */}
+            <div className="bg-muted p-4 rounded-lg border border-border space-y-3">
+              <AssetsPanel />
             </div>
 
             {error && (

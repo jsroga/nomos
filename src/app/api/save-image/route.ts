@@ -11,13 +11,13 @@ export async function POST(request: Request) {
     }
 
     const projectDir = path.join(process.cwd(), 'public', 'projects', projectId)
-
-    // Ensure directory exists
-    if (!fs.existsSync(projectDir)) {
-      fs.mkdirSync(projectDir, { recursive: true })
-    }
-
     const filePath = path.join(projectDir, filename)
+    const fileDir = path.dirname(filePath)
+
+    // Ensure full directory path exists (including subdirectories like 'assets/')
+    if (!fs.existsSync(fileDir)) {
+      fs.mkdirSync(fileDir, { recursive: true })
+    }
 
     // Remove data:image/png;base64, prefix if present
     const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '')

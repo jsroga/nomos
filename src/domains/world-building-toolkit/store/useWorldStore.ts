@@ -1,5 +1,19 @@
 import { create } from 'zustand'
 import { supabase } from '@/infrastructure/storage/supabase'
+import type { SelectResult } from '@/domains/world-building-toolkit/services/SelectModeService'
+
+export type SelectBox = { x1: number; y1: number; x2: number; y2: number }
+export interface Asset {
+  id: string
+  project_id: string
+  image_filename: string
+  model_filename?: string
+  created_at: string
+  metadata: {
+    bounds?: { x: number; y: number; width: number; height: number }
+    box?: SelectBox
+  }
+}
 import { Database } from '@/infrastructure/storage/database.types'
 
 export type Project = Database['public']['Tables']['projects']['Row']
@@ -29,20 +43,38 @@ interface WorldState {
   repaintResult: { imageUrl: string; bounds: { x: number; y: number; width: number; height: number } } | null
   repaintPrompt: string
   debugInfo: { image: string; mask: string } | null
-  generationDebugInfo: { 
-    neighbors: { 
-      up?: string; 
-      down?: string; 
-      left?: string; 
+  generationDebugInfo: {
+    neighbors: {
+      up?: string;
+      down?: string;
+      left?: string;
       right?: string;
       topLeft?: string;
       topRight?: string;
       bottomLeft?: string;
       bottomRight?: string;
-    }; 
-    prompt: string; 
-    assembledContext?: string 
+    };
+    prompt: string;
+    assembledContext?: string
   } | null
+
+  // Select Mode State
+  isSelectMode: boolean
+  selectBox: SelectBox | null
+  isDrawingBox: boolean
+  selectTextPrompt: string
+  selectedMask: SelectResult | null
+  isSegmenting: boolean
+  selectDebugInfo: {
+    contextImage?: string
+    box?: SelectBox
+    apiResponse?: any
+  } | null
+
+  // Assets State
+  assets: Asset[]
+  previewAssetId: string | null
+  showAllAssetMasks: boolean
 
   // Actions
   loadProject: (projectId: string) => Promise<void>
@@ -71,20 +103,39 @@ interface WorldState {
   setRepaintResult: (result: { imageUrl: string; bounds: { x: number; y: number; width: number; height: number } } | null) => void
   setRepaintPrompt: (prompt: string) => void
   setDebugInfo: (info: { image: string; mask: string } | null) => void
-  setGenerationDebugInfo: (info: { 
-    neighbors: { 
-      up?: string; 
-      down?: string; 
-      left?: string; 
+  setGenerationDebugInfo: (info: {
+    neighbors: {
+      up?: string;
+      down?: string;
+      left?: string;
       right?: string;
       topLeft?: string;
       topRight?: string;
       bottomLeft?: string;
       bottomRight?: string;
-    }; 
-    prompt: string; 
-    assembledContext?: string 
+    };
+    prompt: string;
+    assembledContext?: string
   } | null) => void
+
+  // Select Mode Actions
+  setSelectMode: (isSelectMode: boolean) => void
+  setSelectBox: (box: SelectBox | null) => void
+  setDrawingBox: (isDrawing: boolean) => void
+  setSelectTextPrompt: (prompt: string) => void
+  clearSelectBox: () => void
+  setSelectedMask: (mask: SelectResult | null) => void
+  setSegmenting: (isSegmenting: boolean) => void
+  setSelectDebugInfo: (info: { contextImage?: string; box?: SelectBox; apiResponse?: any } | null) => void
+
+  // Assets Actions
+  setAssets: (assets: Asset[]) => void
+  addAsset: (asset: Asset) => void
+  updateAsset: (id: string, updates: Partial<Asset>) => void
+  removeAsset: (id: string) => void
+  setPreviewAssetId: (id: string | null) => void
+  setShowAllAssetMasks: (show: boolean) => void
+  fetchAssets: () => Promise<void>
 }
 
 export const useWorldStore = create<WorldState>((set, get) => ({
@@ -277,4 +328,55 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   setRepaintPrompt: repaintPrompt => set({ repaintPrompt }),
   setDebugInfo: debugInfo => set({ debugInfo }),
   setGenerationDebugInfo: generationDebugInfo => set({ generationDebugInfo }),
+
+  // Select Mode Initial State
+  isSelectMode: false,
+  selectBox: null,
+  isDrawingBox: false,
+  selectTextPrompt: '',
+  selectedMask: null,
+  isSegmenting: false,
+  selectDebugInfo: null,
+
+  // Assets Initial State
+  assets: [],
+  previewAssetId: null,
+  showAllAssetMasks: false,
+
+  // Select Mode Actions
+  setSelectMode: isSelectMode => set({ isSelectMode }),
+  setSelectBox: selectBox => set({ selectBox }),
+  setDrawingBox: isDrawingBox => set({ isDrawingBox }),
+  setSelectTextPrompt: selectTextPrompt => set({ selectTextPrompt }),
+  clearSelectBox: () => set({ selectBox: null, selectedMask: null, selectDebugInfo: null }),
+  setSelectedMask: selectedMask => set({ selectedMask }),
+  setSegmenting: isSegmenting => set({ isSegmenting }),
+  setSelectDebugInfo: selectDebugInfo => set({ selectDebugInfo }),
+
+  // Assets Actions
+  setAssets: assets => set({ assets }),
+  addAsset: asset => set(state => ({ assets: [asset, ...state.assets] })),
+  updateAsset: (id, updates) => set(state => ({
+    assets: state.assets.map(a => a.id === id ? { ...a, ...updates } : a)
+  })),
+  removeAsset: id => set(state => ({ 
+    assets: state.assets.filter(a => a.id !== id),
+    previewAssetId: state.previewAssetId === id ? null : state.previewAssetId
+  })),
+  setPreviewAssetId: previewAssetId => set({ previewAssetId }),
+  setShowAllAssetMasks: showAllAssetMasks => set({ showAllAssetMasks }),
+  fetchAssets: async () => {
+    const { currentProject } = get()
+    if (!currentProject) return
+    
+    const { data, error } = await supabase
+      .from('assets')
+      .select('*')
+      .eq('project_id', currentProject.id)
+      .order('created_at', { ascending: false })
+    
+    if (!error && data) {
+      set({ assets: data })
+    }
+  },
 }))
