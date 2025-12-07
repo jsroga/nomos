@@ -1,9 +1,9 @@
 'use client'
 
 import React, { useState } from 'react'
-import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore' // Ensure import is there
+import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
 import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { DomainSidebar } from '@/components/ui/domain-sidebar'
 import {
     ChevronDown,
     ChevronRight,
@@ -106,12 +106,7 @@ export const LayerPanel: React.FC = () => {
     const water = surfaces.filter(s => s.type === 'water')
 
     return (
-        <div className="h-full flex flex-col bg-card">
-            <div className="px-3 py-2 border-b border-border flex items-center gap-2">
-                <Layers size={16} />
-                <h3 className="text-sm font-semibold">Scene Graph</h3>
-            </div>
-            <ScrollArea className="flex-1">
+        <DomainSidebar title="Scene Graph" defaultWidth={224} minWidth={180} maxWidth={400} resizeHandle="right">
                 {/* Terrain Group */}
                 <LayerSection
                     title="Terrain"
@@ -211,7 +206,6 @@ export const LayerPanel: React.FC = () => {
                         />
                     ))}
                 </LayerSection>
-            </ScrollArea>
-        </div>
+        </DomainSidebar>
     )
 }

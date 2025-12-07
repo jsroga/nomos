@@ -26,6 +26,9 @@ export enum LocalStorageKeys {
   ANTHROPIC_API_KEY = 'anthropicApiKey',
   GEMINI_API_KEY = 'geminiApiKey',
   
+  // UI Settings
+  SIDEBAR_WIDTH = 'sidebar-width',
+  
   // Temporary / Legacy
   STABILITY_API_KEY_LEGACY = 'STABILITY_API_KEY'
 }

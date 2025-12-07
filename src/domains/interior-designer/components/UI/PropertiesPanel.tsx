@@ -7,6 +7,9 @@ import { Slider } from '@/components/ui/slider'
 import { Move, RotateCw, Maximize, Layers, Check, X, Sparkles, Loader2, Wand2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DomainSidebar } from '@/components/ui/domain-sidebar'
+import { SettingsBox } from '@/components/ui/settings-box'
+import { AssetLibrary } from './AssetLibrary'
 
 export const PropertiesPanel: React.FC = () => {
   const selectedId = useInteriorStore(state => state.selectedId)
@@ -50,20 +53,14 @@ export const PropertiesPanel: React.FC = () => {
   const selectedSurface = surfaces.find(s => s.id === selectedId)
   if (selectedSurface) {
     return (
-      <div className="p-4">
-        <h2 className="font-semibold mb-4">Properties</h2>
+      <DomainSidebar title="Properties" defaultWidth={320} minWidth={240} maxWidth={600} resizeHandle="right">
         <div className="text-xs font-mono bg-muted p-2 rounded mb-4">
           ID: {selectedSurface.id.slice(0, 8)}...
         </div>
 
         {/* COMBINED WALL CONTROLS (Top Priority) */}
         {selectedSurface.isVertical && (
-          <div className="mb-6 p-3 bg-secondary/20 rounded border border-border">
-            <h3 className="text-xs font-bold uppercase mb-3 flex items-center gap-2">
-              <Layers size={12} />
-              Wall Settings
-            </h3>
-
+          <SettingsBox title="Wall Settings">
             <div className="space-y-4">
               {/* Roundness */}
               <div>
@@ -85,19 +82,20 @@ export const PropertiesPanel: React.FC = () => {
               </div>
 
               {/* Generate Floor */}
-              <button
+              <Button
                 onClick={() => createFloorFromSurface(selectedSurface.id)}
-                className="w-full bg-primary text-primary-foreground py-2 rounded text-xs font-medium hover:bg-primary/90 flex items-center justify-center gap-2 shadow-sm"
+                className="w-full"
               >
-                <Layers size={14} />
+                <Layers size={14} className="mr-2" />
                 Generate Floor
-              </button>
+              </Button>
             </div>
-          </div>
+          </SettingsBox>
         )}
 
         <SurfaceProperties />
-      </div>
+        <AssetLibrary />
+      </DomainSidebar>
     )
   }
 
@@ -117,70 +115,73 @@ export const PropertiesPanel: React.FC = () => {
     const allAreWalls = selectedWalls.length === multiSelectedIds.length
 
     return (
-      <div className="p-4 space-y-6">
-        <div>
-          <h2 className="font-semibold mb-1">Multi-Selection</h2>
-          <div className="text-sm text-muted-foreground">{multiSelectedIds.length} items selected</div>
-        </div>
+      <DomainSidebar title="Properties" defaultWidth={320} minWidth={240} maxWidth={600} resizeHandle="right">
+        <div className="space-y-4">
+          <div>
+            <h3 className="font-semibold mb-1">Multi-Selection</h3>
+            <div className="text-sm text-muted-foreground">{multiSelectedIds.length} items selected</div>
+          </div>
 
-        {allAreWalls && (
-          <>
-            {/* Batch Height */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs font-medium">
-                <label>Batch Height</label>
-                <span className="text-muted-foreground">{batchHeight}m</span>
-              </div>
-              <Slider
-                value={[batchHeight]}
-                min={0.5} max={10} step={0.5}
-                onValueChange={(vals) => {
-                  const h = vals[0]
-                  setBatchHeight(h)
-                  multiSelectedIds.forEach(id => updateWall(id, { height: h }))
-                }}
-              />
-            </div>
-
-            {/* Combine Actions */}
-            <div className="pt-4 border-t border-border space-y-4">
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs font-medium">
-                  <label>Combine Roundness</label>
-                  <span className="text-muted-foreground">{combineRoundness}</span>
+          {allAreWalls && (
+            <>
+              {/* Batch Height */}
+              <SettingsBox title="Batch Height">
+                <div className="flex justify-between text-xs mb-1.5 font-medium">
+                  <label>Height</label>
+                  <span className="text-muted-foreground">{batchHeight}m</span>
                 </div>
                 <Slider
-                  value={[combineRoundness]}
-                  min={0} max={1} step={0.05}
-                  onValueChange={(vals) => setCombineRoundness(vals[0])}
+                  value={[batchHeight]}
+                  min={0.5} max={10} step={0.5}
+                  onValueChange={(vals) => {
+                    const h = vals[0]
+                    setBatchHeight(h)
+                    multiSelectedIds.forEach(id => updateWall(id, { height: h }))
+                  }}
                 />
-                <div className="flex justify-between text-[10px] text-muted-foreground">
-                  <span>Sharp</span>
-                  <span>Round</span>
+              </SettingsBox>
+
+              {/* Combine Actions */}
+              <SettingsBox title="Combine Walls">
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-medium">
+                    <label>Combine Roundness</label>
+                    <span className="text-muted-foreground">{combineRoundness}</span>
+                  </div>
+                  <Slider
+                    value={[combineRoundness]}
+                    min={0} max={1} step={0.05}
+                    onValueChange={(vals) => setCombineRoundness(vals[0])}
+                  />
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
+                    <span>Sharp</span>
+                    <span>Round</span>
+                  </div>
                 </div>
-              </div>
 
-              <button
-                onClick={() => combineWalls({ roundness: combineRoundness })}
-                className="w-full bg-primary text-primary-foreground py-2 rounded text-sm hover:bg-primary/90 flex items-center justify-center gap-2"
-              >
-                <Layers size={16} />
-                Combine Walls
-              </button>
+                <Button
+                  onClick={() => combineWalls({ roundness: combineRoundness })}
+                  className="w-full mt-3"
+                >
+                  <Layers size={16} className="mr-2" />
+                  Combine Walls
+                </Button>
 
-              <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
-                Merges selected walls into a single curved surface with the specified roundness.
-              </div>
+                <div className="text-xs text-muted-foreground bg-muted p-2 rounded mt-3">
+                  Merges selected walls into a single curved surface with the specified roundness.
+                </div>
+              </SettingsBox>
+            </>
+          )}
+
+          {!allAreWalls && (
+            <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+              Multiple types selected. Actions limited.
             </div>
-          </>
-        )}
-
-        {!allAreWalls && (
-          <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
-            Multiple types selected. Actions limited.
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+        <AssetLibrary />
+      </DomainSidebar>
     )
   }
 
@@ -194,9 +195,7 @@ export const PropertiesPanel: React.FC = () => {
   }
 
   return (
-    <div className="p-4">
-      <h2 className="font-semibold mb-4">Properties</h2>
-
+    <DomainSidebar title="Properties" defaultWidth={320} minWidth={240} maxWidth={600}>
       {!selectedId && (
         <div className="text-sm text-muted-foreground">
           {mode === 'SELECT' ? 'Select an object to edit properties' : `Mode: ${mode}`}
@@ -210,11 +209,9 @@ export const PropertiesPanel: React.FC = () => {
           </div>
 
           {/* Color/Texture Input */}
-          <div>
-            <label className="text-xs font-medium mb-1 block">Color / Texture</label>
-            <input
+          <SettingsBox title="Color / Texture">
+            <Input
               type="text"
-              className="w-full bg-background border border-input rounded p-1 text-sm"
               value={isObject(selectedItem) ? selectedItem.modelUrl : selectedItem.texture || ''}
               placeholder="#ffffff or url"
               onChange={e => {
@@ -224,26 +221,23 @@ export const PropertiesPanel: React.FC = () => {
                 else if (isObject(selectedItem)) updateObject(selectedId!, { modelUrl: val })
               }}
             />
-          </div>
+          </SettingsBox>
 
           {/* Height Input (Walls only) */}
           {isWall(selectedItem) && (
-            <div>
-              <label className="text-xs font-medium mb-1 block">Height</label>
-              <input
+            <SettingsBox title="Height">
+              <Input
                 type="number"
-                className="w-full bg-background border border-input rounded p-1 text-sm"
                 value={selectedItem.height}
                 onChange={e => updateWall(selectedId!, { height: Number(e.target.value) })}
               />
-            </div>
+            </SettingsBox>
           )}
 
 
           {/* Object Transform Controls */}
           {isObject(selectedItem) && (
-            <div className="space-y-4 pt-2 border-t border-border">
-              <h3 className="text-xs font-semibold mb-2">Transform Settings</h3>
+            <SettingsBox title="Transform Settings">
 
               {/* Mode Switcher */}
               <div className="flex bg-muted p-1 rounded-lg mb-3">
@@ -321,7 +315,7 @@ export const PropertiesPanel: React.FC = () => {
                   </div>
                 )}
               </div>
-            </div>
+            </SettingsBox>
           )}
 
           {/* RETEXTURE UI (Placement Update: Above Delete) */}
@@ -333,15 +327,17 @@ export const PropertiesPanel: React.FC = () => {
             />
           )}
 
-          <button
+          <Button
             onClick={handleDelete}
-            className="w-full bg-destructive text-destructive-foreground py-2 rounded text-sm hover:bg-destructive/90"
+            variant="destructive"
+            className="w-full"
           >
             Delete
-          </button>
+          </Button>
         </div>
       )}
-    </div>
+      <AssetLibrary />
+    </DomainSidebar>
   )
 }
 

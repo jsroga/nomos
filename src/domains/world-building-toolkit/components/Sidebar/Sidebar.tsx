@@ -11,7 +11,9 @@ import { LocalStorageKeys } from '@/constants/localStorage'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Textarea } from '@/components/ui/textarea'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Input } from '@/components/ui/input'
+import { DomainSidebar } from '@/components/ui/domain-sidebar'
+import { SettingsBox } from '@/components/ui/settings-box'
 import { AssetsPanel } from '@/domains/world-building-toolkit/components/AssetsPanel'
 import { MjVariantPicker } from '@/domains/world-building-toolkit/components/MjVariantPicker'
 import { Loader2, Plus, Move, Paintbrush, X, Check, Eye, EyeOff, MousePointer2, Upload, BookOpen, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
@@ -368,161 +370,161 @@ export const Sidebar: React.FC = () => {
   }
 
   return (
-    <div className="w-80 h-full bg-card border-r border-border flex flex-col">
-      <div className="p-4 border-b border-border">
-        <h1 className="font-bold text-xl">World Gen</h1>
-      </div>
-
-      {/* Master Prompt - Always Visible */}
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-medium">Master Prompt (Style)</label>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 text-[10px] gap-1"
-            onClick={fetchWorldSummary}
-            disabled={isFetchingSummary || !currentProject}
-            title="Fetch style from Storyteller Series Bible"
-          >
-            {isFetchingSummary ? <Loader2 size={10} className="animate-spin" /> : <BookOpen size={10} />}
-            Fetch World Info
-          </Button>
+    <DomainSidebar title="World Gen">
+      {!currentProject ? (
+        <div className="text-center text-muted-foreground mt-10 flex flex-col items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-muted/30 flex items-center justify-center">
+            <Plus size={24} className="opacity-50" />
+          </div>
+          <p>Please select or create a project to start.</p>
         </div>
-        <textarea
-          className="w-full h-24 bg-background border border-input rounded-md p-3 text-sm resize-none focus:ring-2 focus:ring-primary focus:outline-none"
-          value={masterPrompt}
-          onChange={e => handleMasterPromptChange(e.target.value)}
-          placeholder="Define the overall art style and aesthetic..."
-        />
-        <p className="text-xs text-muted-foreground mt-1">
-          This style will be applied to all generated tiles
-        </p>
-      </div>
-
-      <div className="p-4 border-b border-border space-y-2">
-        <Button
-          variant={isRepaintMode ? 'default' : 'secondary'}
-          className="w-full"
-          onClick={() => {
-            if (!isRepaintMode) setSelectMode(false)
-            setRepaintMode(!isRepaintMode)
-          }}
-        >
-          {isRepaintMode ? 'Exit Repaint Mode' : 'Enter Repaint Mode'}
-        </Button>
-        <Button
-          variant={isSelectMode ? 'default' : 'secondary'}
-          className="w-full"
-          onClick={() => {
-            const newSelectMode = !isSelectMode
-            setSelectMode(newSelectMode)
-            // Disable repaint mode when enabling select mode
-            if (newSelectMode && isRepaintMode) {
-              setRepaintMode(false)
-            }
-          }}
-        >
-          {isSelectMode ? 'Exit Select Mode' : 'Enter Select Mode'}
-        </Button>
-
-        {/* Select Mode Debug View */}
-        {isSelectMode && selectDebugInfo && (
-          <div className="bg-muted p-4 rounded-lg border border-border space-y-3 mt-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium">Select Mode Debug</h3>
+      ) : (
+        <div className="space-y-4">
+          {/* Master Prompt */}
+          <SettingsBox
+            title="Master Prompt (Style)"
+            headerActions={
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 text-[10px]"
-                onClick={() => useWorldStore.getState().setSelectDebugInfo(null)}
+                className="h-6 text-[10px] gap-1"
+                onClick={fetchWorldSummary}
+                disabled={isFetchingSummary || !currentProject}
+                title="Fetch style from Storyteller Series Bible"
               >
-                Clear
+                {isFetchingSummary ? <Loader2 size={10} className="animate-spin" /> : <BookOpen size={10} />}
+                Fetch World Info
               </Button>
-            </div>
+            }
+          >
+            <Textarea
+              value={masterPrompt}
+              onChange={e => handleMasterPromptChange(e.target.value)}
+              placeholder="Define the overall art style and aesthetic..."
+              className="h-24 text-sm resize-none"
+            />
+            <p className="text-xs text-muted-foreground">
+              This style will be applied to all generated tiles
+            </p>
+          </SettingsBox>
 
-            <div className="space-y-2">
-              {selectDebugInfo.contextImage && (
-                <div>
-                  <p className="text-[10px] text-muted-foreground mb-1">Context Image</p>
-                  <img
-                    src={selectDebugInfo.contextImage}
-                    alt="Context"
-                    className="w-full border border-border rounded"
-                  />
-                </div>
-              )}
+          {/* Mode Controls */}
+          <SettingsBox title="Modes">
+            <Button
+              variant={isRepaintMode ? 'default' : 'secondary'}
+              className="w-full"
+              onClick={() => {
+                if (!isRepaintMode) setSelectMode(false)
+                setRepaintMode(!isRepaintMode)
+              }}
+            >
+              {isRepaintMode ? 'Exit Repaint Mode' : 'Enter Repaint Mode'}
+            </Button>
+            <Button
+              variant={isSelectMode ? 'default' : 'secondary'}
+              className="w-full"
+              onClick={() => {
+                const newSelectMode = !isSelectMode
+                setSelectMode(newSelectMode)
+                // Disable repaint mode when enabling select mode
+                if (newSelectMode && isRepaintMode) {
+                  setRepaintMode(false)
+                }
+              }}
+            >
+              {isSelectMode ? 'Exit Select Mode' : 'Enter Select Mode'}
+            </Button>
 
-              {selectDebugInfo.box && (
-                <div>
-                  <p className="text-[10px] text-muted-foreground mb-1">Selection Box</p>
-                  <div className="text-[10px] bg-background p-2 rounded border border-border font-mono">
-                    {JSON.stringify(selectDebugInfo.box, null, 2)}
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <p className="text-[10px] text-muted-foreground mb-1">API Response</p>
-                <div className="text-[10px] bg-background p-2 rounded border border-border font-mono max-h-32 overflow-y-auto">
-                  {JSON.stringify(selectDebugInfo.apiResponse, null, 2)}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="p-4 flex-1 overflow-y-auto">
-        {!currentProject ? (
-          <div className="text-center text-muted-foreground mt-10 flex flex-col items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-muted/30 flex items-center justify-center">
-              <Plus size={24} className="opacity-50" />
-            </div>
-            <p>Please select or create a project to start.</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {/* Repaint Mode UI */}
-            {isRepaintMode && (
-              <div className="p-4 border-t border-border bg-muted/20 mb-4 rounded-md">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-sm">Repaint Mode</h3>
+            {/* Select Mode Debug View */}
+            {isSelectMode && selectDebugInfo && (
+              <div className="mt-3 pt-3 border-t border-border space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-medium">Select Mode Debug</h4>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => {
-                      setRepaintMode(false)
-                      clearRepaintStrokes()
-                      setRepaintResult(null)
-                      setDebugInfo(null)
-                    }}
+                    className="h-6 text-[10px]"
+                    onClick={() => useWorldStore.getState().setSelectDebugInfo(null)}
                   >
-                    <X className="w-4 h-4" />
+                    Clear
                   </Button>
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-xs font-medium mb-1 block">Brush Size</label>
-                    <Slider
-                      value={[brushSize]}
-                      min={10}
-                      max={200}
-                      step={10}
-                      onValueChange={([val]) => setBrushSize(val)}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  {selectDebugInfo.contextImage && (
+                    <div>
+                      <p className="text-[10px] text-muted-foreground mb-1">Context Image</p>
+                      <img
+                        src={selectDebugInfo.contextImage}
+                        alt="Context"
+                        className="w-full border border-border rounded"
+                      />
+                    </div>
+                  )}
+
+                  {selectDebugInfo.box && (
+                    <div>
+                      <p className="text-[10px] text-muted-foreground mb-1">Selection Box</p>
+                      <div className="text-[10px] bg-background p-2 rounded border border-border font-mono">
+                        {JSON.stringify(selectDebugInfo.box, null, 2)}
+                      </div>
+                    </div>
+                  )}
 
                   <div>
-                    <label className="text-xs font-medium mb-1 block">Repaint Prompt</label>
-                    <Textarea
-                      value={repaintPrompt}
-                      onChange={e => setRepaintPrompt(e.target.value)}
-                      placeholder="Describe what to paint..."
-                      className="h-20 text-xs"
-                    />
+                    <p className="text-[10px] text-muted-foreground mb-1">API Response</p>
+                    <div className="text-[10px] bg-background p-2 rounded border border-border font-mono max-h-32 overflow-y-auto">
+                      {JSON.stringify(selectDebugInfo.apiResponse, null, 2)}
+                    </div>
                   </div>
+                </div>
+              </div>
+            )}
+          </SettingsBox>
+          {/* Repaint Mode UI */}
+          {isRepaintMode && (
+            <SettingsBox
+              title="Repaint Mode"
+              headerActions={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setRepaintMode(false)
+                    clearRepaintStrokes()
+                    setRepaintResult(null)
+                    setDebugInfo(null)
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              }
+            >
+
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between text-xs mb-1.5 font-medium">
+                    <label>Brush Size</label>
+                    <span className="text-muted-foreground">{brushSize}</span>
+                  </div>
+                  <Slider
+                    value={[brushSize]}
+                    min={10}
+                    max={200}
+                    step={10}
+                    onValueChange={([val]) => setBrushSize(val)}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium mb-1 block">Repaint Prompt</label>
+                  <Textarea
+                    value={repaintPrompt}
+                    onChange={e => setRepaintPrompt(e.target.value)}
+                    placeholder="Describe what to paint..."
+                    className="h-20 text-xs"
+                  />
+                </div>
 
                   <div className="flex gap-2">
                     <Button
@@ -572,168 +574,165 @@ export const Sidebar: React.FC = () => {
                     </Button>
                   </div>
 
-                  {/* Debug View */}
-                  {debugInfo && (
-                    <div className="mt-4 border-t border-border pt-4">
-                      <h4 className="text-xs font-semibold mb-2">Debug View</h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <p className="text-[10px] text-muted-foreground mb-1">Context</p>
-                          <img
-                            src={debugInfo.image}
-                            alt="Context"
-                            className="w-full border border-border rounded"
-                          />
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-muted-foreground mb-1">
-                            Mask (White=Edit)
-                          </p>
-                          <img
-                            src={debugInfo.mask}
-                            alt="Mask"
-                            className="w-full border border-border rounded"
-                          />
-                        </div>
-                      </div>
+              {/* Debug View */}
+              {debugInfo && (
+                <div className="mt-4 pt-4 border-t border-border">
+                  <h4 className="text-xs font-semibold mb-2">Debug View</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground mb-1">Context</p>
+                      <img
+                        src={debugInfo.image}
+                        alt="Context"
+                        className="w-full border border-border rounded"
+                      />
                     </div>
-                  )}
-
-                  {repaintResult && (
-                    <div className="mt-4 space-y-2">
-                      <p className="text-xs text-muted-foreground">
-                        Preview generated. Click Apply to save.
+                    <div>
+                      <p className="text-[10px] text-muted-foreground mb-1">
+                        Mask (White=Edit)
                       </p>
-                      <div className="flex gap-2">
-                        <Button
-                          className="flex-1"
-                          onClick={async () => {
-                            try {
-                              await repaintService.applyRepaint(repaintResult)
-                              toast.success('Repaint applied successfully')
-                              setRepaintResult(null)
-                              clearRepaintStrokes()
-                              setDebugInfo(null)
-                            } catch (e) {
-                              console.error(e)
-                              alert('Failed to apply repaint')
-                            }
-                          }}
-                        >
-                          <Check className="w-4 h-4 mr-2" />
-                          Apply
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          className="flex-1"
-                          onClick={() => setRepaintResult(null)}
-                        >
-                          Discard
-                        </Button>
-                      </div>
+                      <img
+                        src={debugInfo.mask}
+                        alt="Mask"
+                        className="w-full border border-border rounded"
+                      />
                     </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Generation Group */}
-            <div className="bg-muted p-4 rounded-lg border border-border space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium">Generation</h3>
-                <div className="flex items-center gap-2">
-                  {generationDebugInfo && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={() => setShowDebug(!showDebug)}
-                      title="Toggle Debug View"
-                    >
-                      {showDebug ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </Button>
-                  )}
-                  {generationDebugInfo && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 text-[10px]"
-                      onClick={() => setGenerationDebugInfo(null)}
-                    >
-                      Clear
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              <input
-                type="text"
-                className="w-full bg-background border border-input rounded-md p-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
-                value={tilePrompt}
-                onChange={e => setTilePrompt(e.target.value)}
-                placeholder="e.g., church, forest, river..."
-              />
-              <div className="text-xs text-muted-foreground">
-                {selectedTile?.x}, {selectedTile?.y}
-              </div>
-
-              {selectedTiles.length > 0 ? (
-                <div className="bg-accent/10 p-3 rounded-md border border-accent/20">
-                  <div className="text-xs font-mono text-muted-foreground mb-2">
-                    Selected: {selectedTiles[0].x}, {selectedTiles[0].y}
-                    {generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] && (
-                      <span className="ml-2 text-yellow-500">(generating)</span>
-                    )}
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleGenerate}
-                      disabled={!!generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] || isUploading}
-                      className="flex-1 bg-primary text-primary-foreground py-2 rounded-md font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                      {generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] ? (
-                        <>
-                          <Loader2 className="animate-spin" size={16} />
-                          Generating...
-                        </>
-                      ) : (
-                        'Generate'
-                      )}
-                    </button>
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={!!generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] || isUploading}
-                      className="bg-secondary text-secondary-foreground py-2 px-3 rounded-md font-medium hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                      title="Upload image for this tile"
-                    >
-                      {isUploading ? (
-                        <Loader2 className="animate-spin" size={16} />
-                      ) : (
-                        <Upload size={16} />
-                      )}
-                    </button>
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleUploadTile}
-                    className="hidden"
-                  />
-                  <p className="text-xs text-muted-foreground mt-2 text-center">
-                    Generate with AI or upload your own image
-                  </p>
-                </div>
-              ) : (
-                <div className="text-sm text-muted-foreground text-center p-4 border border-dashed border-border rounded-md">
-                  Select a tile on the canvas to generate or upload
                 </div>
               )}
 
-              {/* Generation Debug View */}
-              {generationDebugInfo && showDebug && (
-                <div className="mt-2 border border-slate-300 bg-slate-200 p-1 rounded">
-                  <h4 className="text-xs font-semibold mb-1">Debug Context</h4>
+              {repaintResult && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    Preview generated. Click Apply to save.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      className="flex-1"
+                      onClick={async () => {
+                        try {
+                          await repaintService.applyRepaint(repaintResult)
+                          toast.success('Repaint applied successfully')
+                          setRepaintResult(null)
+                          clearRepaintStrokes()
+                          setDebugInfo(null)
+                        } catch (e) {
+                          console.error(e)
+                          alert('Failed to apply repaint')
+                        }
+                      }}
+                    >
+                      <Check className="w-4 h-4 mr-2" />
+                      Apply
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      className="flex-1"
+                      onClick={() => setRepaintResult(null)}
+                    >
+                      Discard
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </SettingsBox>
+          )}
+
+          {/* Generation Group */}
+          <SettingsBox
+            title="Generation"
+            headerActions={
+              generationDebugInfo && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => setShowDebug(!showDebug)}
+                    title="Toggle Debug View"
+                  >
+                    {showDebug ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-[10px]"
+                    onClick={() => setGenerationDebugInfo(null)}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              )
+            }
+          >
+            <Input
+              type="text"
+              value={tilePrompt}
+              onChange={e => setTilePrompt(e.target.value)}
+              placeholder="e.g., church, forest, river..."
+              className="text-sm"
+            />
+            <div className="text-xs text-muted-foreground">
+              {selectedTile?.x}, {selectedTile?.y}
+            </div>
+
+            {selectedTiles.length > 0 ? (
+              <div className="bg-accent/10 p-3 rounded-md border border-accent/20">
+                <div className="text-xs font-mono text-muted-foreground mb-2">
+                  Selected: {selectedTiles[0].x}, {selectedTiles[0].y}
+                  {generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] && (
+                    <span className="ml-2 text-yellow-500">(generating)</span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleGenerate}
+                    disabled={!!generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] || isUploading}
+                    className="flex-1"
+                  >
+                    {generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] ? (
+                      <>
+                        <Loader2 className="animate-spin mr-2" size={16} />
+                        Generating...
+                      </>
+                    ) : (
+                      'Generate'
+                    )}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={!!generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] || isUploading}
+                    title="Upload image for this tile"
+                  >
+                    {isUploading ? (
+                      <Loader2 className="animate-spin" size={16} />
+                    ) : (
+                      <Upload size={16} />
+                    )}
+                  </Button>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleUploadTile}
+                  className="hidden"
+                />
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Generate with AI or upload your own image
+                </p>
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground text-center p-4 border border-dashed border-border rounded-md">
+                Select a tile on the canvas to generate or upload
+              </div>
+            )}
+
+            {/* Generation Debug View */}
+            {generationDebugInfo && showDebug && (
+              <div className="mt-2 pt-2 border-t border-border">
+                <h4 className="text-xs font-semibold mb-1">Debug Context</h4>
 
                   {generationDebugInfo.assembledContext && (
                     <div className="mb-2">
@@ -809,129 +808,124 @@ export const Sidebar: React.FC = () => {
                       />
                     )}
                   </div>
-                  <div className="text-[10px] text-muted-foreground bg-muted p-1 rounded">
-                    Prompt: {generationDebugInfo.prompt}
-                  </div>
+                <div className="text-[10px] text-muted-foreground bg-muted p-1 rounded">
+                  Prompt: {generationDebugInfo.prompt}
                 </div>
-              )}
-            </div>
-
-            {/* Upscale Group */}
-            <div className="bg-muted p-4 rounded-lg border border-border space-y-3">
-              <h3 className="text-sm font-medium">Upscale</h3>
-              <div>
-                <label className="block text-xs font-medium mb-1">
-                  Upscale Creativity: {upscaleCreativity}
-                </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={upscaleCreativity}
-                  onChange={e => setUpscaleCreativity(Number(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-              <button
-                onClick={async () => {
-                  if (selectedTile) {
-                    const fullTile = tiles[`${selectedTile.x},${selectedTile.y}`]
-                    if (fullTile) {
-                      toast.promise(upscaleService.upscale(fullTile, upscaleCreativity), {
-                        loading: 'Upscaling...',
-                        success: 'Tile queued for upscaling!',
-                        error: 'Upscale failed',
-                      })
-                    }
-                  }
-                }}
-                className="w-full py-1.5 bg-secondary text-secondary-foreground rounded-md text-xs font-medium hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={
-                  !selectedTile ||
-                  (selectedTile && !!upscalingTiles[`${selectedTile.x},${selectedTile.y}`])
-                }
-              >
-                Upscale Tile (4x)
-              </button>
-            </div>
-
-            {/* Enhance Fidelity Group */}
-            <div className="bg-muted p-4 rounded-lg border border-border space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium flex items-center gap-2">
-                  <Sparkles size={14} className="text-violet-500" />
-                  Enhance Fidelity
-                </h3>
-                <button
-                  onClick={() => setShowFidelityPrompt(!showFidelityPrompt)}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {showFidelityPrompt ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                </button>
-              </div>
-              
-              {showFidelityPrompt && (
-                <div className="space-y-2">
-                  <label className="block text-xs font-medium">Style Prompt</label>
-                  <Textarea
-                    value={fidelityPrompt}
-                    onChange={e => handleFidelityPromptChange(e.target.value)}
-                    placeholder="Describe the artistic style to apply..."
-                    className="h-20 text-xs"
-                  />
-                  <p className="text-[10px] text-muted-foreground">
-                    This prompt guides how Gemini enhances the tile's artistic fidelity.
-                  </p>
-                </div>
-              )}
-
-              <button
-                onClick={async () => {
-                  if (selectedTile) {
-                    const fullTile = tiles[`${selectedTile.x},${selectedTile.y}`]
-                    if (fullTile) {
-                      toast.promise(fidelityService.enhance(fullTile, fidelityPrompt), {
-                        loading: 'Enhancing fidelity...',
-                        success: 'Tile queued for fidelity enhancement!',
-                        error: (err) => `Enhancement failed: ${err.message}`,
-                      })
-                    }
-                  }
-                }}
-                className="w-full py-1.5 bg-violet-600 text-white rounded-md text-xs font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                disabled={
-                  !selectedTile ||
-                  (selectedTile && !!enhancingTiles[`${selectedTile.x},${selectedTile.y}`])
-                }
-              >
-                {selectedTile && enhancingTiles[`${selectedTile.x},${selectedTile.y}`] ? (
-                  <>
-                    <Loader2 className="animate-spin" size={14} />
-                    Enhancing...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={14} />
-                    Enhance Fidelity
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* Assets Group - Always visible when we have assets or in select mode */}
-            <div className="bg-muted p-4 rounded-lg border border-border space-y-3">
-              <AssetsPanel />
-            </div>
-
-            {error && (
-              <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md border border-destructive/20">
-                {error}
               </div>
             )}
-          </div>
-        )}
-      </div>
+          </SettingsBox>
+
+          {/* Upscale Group */}
+          <SettingsBox title="Upscale">
+            <div>
+              <div className="flex justify-between text-xs mb-1.5 font-medium">
+                <label>Upscale Creativity</label>
+                <span className="text-muted-foreground">{upscaleCreativity}</span>
+              </div>
+              <Slider
+                value={[upscaleCreativity]}
+                min={0}
+                max={1}
+                step={0.1}
+                onValueChange={([val]) => setUpscaleCreativity(val)}
+              />
+            </div>
+            <Button
+              onClick={async () => {
+                if (selectedTile) {
+                  const fullTile = tiles[`${selectedTile.x},${selectedTile.y}`]
+                  if (fullTile) {
+                    toast.promise(upscaleService.upscale(fullTile, upscaleCreativity), {
+                      loading: 'Upscaling...',
+                      success: 'Tile queued for upscaling!',
+                      error: 'Upscale failed',
+                    })
+                  }
+                }
+              }}
+              variant="secondary"
+              className="w-full"
+              disabled={
+                !selectedTile ||
+                (selectedTile && !!upscalingTiles[`${selectedTile.x},${selectedTile.y}`])
+              }
+            >
+              Upscale Tile (4x)
+            </Button>
+          </SettingsBox>
+
+          {/* Enhance Fidelity Group */}
+          <SettingsBox
+            title="Enhance Fidelity"
+            headerActions={
+              <button
+                onClick={() => setShowFidelityPrompt(!showFidelityPrompt)}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showFidelityPrompt ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </button>
+            }
+          >
+            {showFidelityPrompt && (
+              <div className="space-y-2">
+                <label className="block text-xs font-medium">Style Prompt</label>
+                <Textarea
+                  value={fidelityPrompt}
+                  onChange={e => handleFidelityPromptChange(e.target.value)}
+                  placeholder="Describe the artistic style to apply..."
+                  className="h-20 text-xs"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  This prompt guides how Gemini enhances the tile's artistic fidelity.
+                </p>
+              </div>
+            )}
+
+            <Button
+              onClick={async () => {
+                if (selectedTile) {
+                  const fullTile = tiles[`${selectedTile.x},${selectedTile.y}`]
+                  if (fullTile) {
+                    toast.promise(fidelityService.enhance(fullTile, fidelityPrompt), {
+                      loading: 'Enhancing fidelity...',
+                      success: 'Tile queued for fidelity enhancement!',
+                      error: (err) => `Enhancement failed: ${err.message}`,
+                    })
+                  }
+                }
+              }}
+              className="w-full bg-violet-600 hover:bg-violet-700 text-white"
+              disabled={
+                !selectedTile ||
+                (selectedTile && !!enhancingTiles[`${selectedTile.x},${selectedTile.y}`])
+              }
+            >
+              {selectedTile && enhancingTiles[`${selectedTile.x},${selectedTile.y}`] ? (
+                <>
+                  <Loader2 className="animate-spin mr-2" size={14} />
+                  Enhancing...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={14} className="mr-2" />
+                  Enhance Fidelity
+                </>
+              )}
+            </Button>
+          </SettingsBox>
+
+          {/* Assets Group */}
+          <SettingsBox title="Assets">
+            <AssetsPanel />
+          </SettingsBox>
+
+          {error && (
+            <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md border border-destructive/20">
+              {error}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* MJ Variant Picker Modal */}
       {mjGridData && (
@@ -946,6 +940,6 @@ export const Sidebar: React.FC = () => {
           onSelected={() => setMjGridData(null)}
         />
       )}
-    </div>
+    </DomainSidebar>
   )
 }

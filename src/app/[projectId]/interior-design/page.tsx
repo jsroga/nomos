@@ -140,14 +140,11 @@ export default function InteriorDesignerPage() {
                 </div>
 
                 {/* Layer Panel (Right) */}
-                <div className="w-56 border-l border-border bg-card z-10">
-                    <LayerPanel />
-                </div>
+                <LayerPanel />
 
                 {/* Properties Panel (Right) */}
-                <div className="w-80 border-l border-border bg-card z-10 overflow-y-auto flex flex-col">
+                <div className="z-10">
                     <PropertiesPanel />
-                    <AssetLibrary />
                 </div>
             </div>
         </div>

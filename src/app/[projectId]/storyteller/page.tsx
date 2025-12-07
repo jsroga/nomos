@@ -35,6 +35,7 @@ import { AgentAction, AgentQuestion, ActionHistoryEntry } from '@/domains/storyt
 import { QuestionSession, createQuestionSession } from '@/domains/storyteller/questions/types'
 import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
 import { LocalStorageKeys } from '@/constants/localStorage'
+import { DomainSidebar } from '@/components/ui/domain-sidebar'
 
 const MAX_ROUNDS = 15 // Hard stop after this many rounds
 
@@ -1040,13 +1041,9 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar: Navigation & Context */}
-        <div className="w-80 border-r border-border bg-card flex flex-col">
-          <div className="p-4 border-b border-border">
-            <h1 className="font-bold text-xl">Storyteller</h1>
-          </div>
-
+        <DomainSidebar title="Storyteller" defaultWidth={320} minWidth={240} maxWidth={600}>
           {currentProject && (
-            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            <div className="space-y-6">
               {/* 1. Project Master Prompt */}
               <div>
                 <MasterPromptEditor
@@ -1099,7 +1096,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
               </div>
             </div>
           )}
-        </div>
+        </DomainSidebar>
 
         {/* Center: Workspace */}
         {/* Center: Workspace */}
