@@ -7,6 +7,7 @@ import { Slider } from '@/components/ui/slider'
 import { Move, RotateCw, Maximize, Layers, Check, X, Sparkles, Loader2, Wand2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { SidebarSection, SidebarField } from '@/components/ResizableSidebar'
 
 export const PropertiesPanel: React.FC = () => {
   const selectedId = useInteriorStore(state => state.selectedId)
@@ -58,42 +59,33 @@ export const PropertiesPanel: React.FC = () => {
 
         {/* COMBINED WALL CONTROLS (Top Priority) */}
         {selectedSurface.isVertical && (
-          <div className="mb-6 p-3 bg-secondary/20 rounded border border-border">
-            <h3 className="text-xs font-bold uppercase mb-3 flex items-center gap-2">
-              <Layers size={12} />
-              Wall Settings
-            </h3>
-
-            <div className="space-y-4">
-              {/* Roundness */}
-              <div>
-                <div className="flex justify-between text-xs mb-1.5 font-medium">
-                  <label>Corner Roundness</label>
-                  <span className="text-muted-foreground">{selectedSurface.roundness ?? 0.5}</span>
-                </div>
-                <Slider
-                  value={[selectedSurface.roundness ?? 0.5]}
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  onValueChange={(vals) => updateSurface(selectedSurface.id, { roundness: vals[0] })}
-                />
-                <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-                  <span>Sharp</span>
-                  <span>Round</span>
-                </div>
+          <SidebarSection
+            title="Wall Settings"
+            icon={<Layers size={12} />}
+            className="mb-6"
+          >
+            <SidebarField label="Corner Roundness" value={selectedSurface.roundness ?? 0.5}>
+              <Slider
+                value={[selectedSurface.roundness ?? 0.5]}
+                min={0}
+                max={1}
+                step={0.05}
+                onValueChange={(vals) => updateSurface(selectedSurface.id, { roundness: vals[0] })}
+              />
+              <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                <span>Sharp</span>
+                <span>Round</span>
               </div>
+            </SidebarField>
 
-              {/* Generate Floor */}
-              <button
-                onClick={() => createFloorFromSurface(selectedSurface.id)}
-                className="w-full bg-primary text-primary-foreground py-2 rounded text-xs font-medium hover:bg-primary/90 flex items-center justify-center gap-2 shadow-sm"
-              >
-                <Layers size={14} />
-                Generate Floor
-              </button>
-            </div>
-          </div>
+            <Button
+              onClick={() => createFloorFromSurface(selectedSurface.id)}
+              className="w-full"
+            >
+              <Layers size={14} className="mr-2" />
+              Generate Floor
+            </Button>
+          </SidebarSection>
         )}
 
         <SurfaceProperties />
@@ -117,7 +109,7 @@ export const PropertiesPanel: React.FC = () => {
     const allAreWalls = selectedWalls.length === multiSelectedIds.length
 
     return (
-      <div className="p-4 space-y-6">
+      <div className="p-4 space-y-4">
         <div>
           <h2 className="font-semibold mb-1">Multi-Selection</h2>
           <div className="text-sm text-muted-foreground">{multiSelectedIds.length} items selected</div>
@@ -125,53 +117,45 @@ export const PropertiesPanel: React.FC = () => {
 
         {allAreWalls && (
           <>
-            {/* Batch Height */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs font-medium">
-                <label>Batch Height</label>
-                <span className="text-muted-foreground">{batchHeight}m</span>
-              </div>
-              <Slider
-                value={[batchHeight]}
-                min={0.5} max={10} step={0.5}
-                onValueChange={(vals) => {
-                  const h = vals[0]
-                  setBatchHeight(h)
-                  multiSelectedIds.forEach(id => updateWall(id, { height: h }))
-                }}
-              />
-            </div>
+            <SidebarSection title="Batch Edit">
+              <SidebarField label="Batch Height" value={`${batchHeight}m`}>
+                <Slider
+                  value={[batchHeight]}
+                  min={0.5} max={10} step={0.5}
+                  onValueChange={(vals) => {
+                    const h = vals[0]
+                    setBatchHeight(h)
+                    multiSelectedIds.forEach(id => updateWall(id, { height: h }))
+                  }}
+                />
+              </SidebarField>
+            </SidebarSection>
 
-            {/* Combine Actions */}
-            <div className="pt-4 border-t border-border space-y-4">
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs font-medium">
-                  <label>Combine Roundness</label>
-                  <span className="text-muted-foreground">{combineRoundness}</span>
-                </div>
+            <SidebarSection title="Combine Walls">
+              <SidebarField label="Combine Roundness" value={combineRoundness}>
                 <Slider
                   value={[combineRoundness]}
                   min={0} max={1} step={0.05}
                   onValueChange={(vals) => setCombineRoundness(vals[0])}
                 />
-                <div className="flex justify-between text-[10px] text-muted-foreground">
+                <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
                   <span>Sharp</span>
                   <span>Round</span>
                 </div>
-              </div>
+              </SidebarField>
 
-              <button
+              <Button
                 onClick={() => combineWalls({ roundness: combineRoundness })}
-                className="w-full bg-primary text-primary-foreground py-2 rounded text-sm hover:bg-primary/90 flex items-center justify-center gap-2"
+                className="w-full"
               >
-                <Layers size={16} />
+                <Layers size={16} className="mr-2" />
                 Combine Walls
-              </button>
+              </Button>
 
-              <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+              <p className="text-xs text-muted-foreground">
                 Merges selected walls into a single curved surface with the specified roundness.
-              </div>
-            </div>
+              </p>
+            </SidebarSection>
           </>
         )}
 
@@ -242,9 +226,7 @@ export const PropertiesPanel: React.FC = () => {
 
           {/* Object Transform Controls */}
           {isObject(selectedItem) && (
-            <div className="space-y-4 pt-2 border-t border-border">
-              <h3 className="text-xs font-semibold mb-2">Transform Settings</h3>
-
+            <SidebarSection title="Transform Settings" variant="plain" className="pt-2 border-t border-border">
               {/* Mode Switcher */}
               <div className="flex bg-muted p-1 rounded-lg mb-3">
                 <button
@@ -306,11 +288,7 @@ export const PropertiesPanel: React.FC = () => {
                 </div>
 
                 {snapEnabled && (
-                  <div className="space-y-2 bg-muted/50 p-2 rounded">
-                    <div className="flex justify-between text-[10px] text-muted-foreground">
-                      <span>Grid Size</span>
-                      <span>{snapSize}m</span>
-                    </div>
+                  <SidebarField label="Grid Size" value={`${snapSize}m`}>
                     <Slider
                       value={[snapSize]}
                       min={0.1}
@@ -318,10 +296,10 @@ export const PropertiesPanel: React.FC = () => {
                       step={0.1}
                       onValueChange={vals => setSnapSize(vals[0])}
                     />
-                  </div>
+                  </SidebarField>
                 )}
               </div>
-            </div>
+            </SidebarSection>
           )}
 
           {/* RETEXTURE UI (Placement Update: Above Delete) */}

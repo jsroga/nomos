@@ -1,4 +1,7 @@
 export enum LocalStorageKeys {
+  // UI Layout
+  SIDEBAR_WIDTH = 'sidebar-width',
+  
   // AI Configuration
   AI_CONFIG_OPENAI = 'ai-config-openai',
   AI_CONFIG_GEMINI = 'ai-config-gemini',

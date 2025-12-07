@@ -35,6 +35,7 @@ import { AgentAction, AgentQuestion, ActionHistoryEntry } from '@/domains/storyt
 import { QuestionSession, createQuestionSession } from '@/domains/storyteller/questions/types'
 import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
 import { LocalStorageKeys } from '@/constants/localStorage'
+import { ResizableSidebar, SidebarSection } from '@/components/ResizableSidebar'
 
 const MAX_ROUNDS = 15 // Hard stop after this many rounds
 
@@ -1040,24 +1041,27 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar: Navigation & Context */}
-        <div className="w-80 border-r border-border bg-card flex flex-col">
-          <div className="p-4 border-b border-border">
-            <h1 className="font-bold text-xl">Storyteller</h1>
-          </div>
-
+        <ResizableSidebar
+          title="Storyteller"
+          storageKey="storyteller"
+          defaultWidth={320}
+          minWidth={280}
+          maxWidth={450}
+        >
           {currentProject && (
-            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            <div className="space-y-6">
               {/* 1. Project Master Prompt */}
-              <div>
+              <SidebarSection variant="plain">
                 <MasterPromptEditor
                   scope="Project"
                   initialPrompt={currentProject.project_prompt || ''}
                   onSave={prompt => console.log('Save project prompt:', prompt)}
                 />
-              </div>
+              </SidebarSection>
 
               {/* 2. Episode Manager - disabled while agents working */}
-              <div
+              <SidebarSection
+                variant="plain"
                 className={`border-t border-border pt-4 ${isSending ? 'opacity-50 pointer-events-none' : ''}`}
               >
                 <EpisodeManager
@@ -1071,21 +1075,21 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                     Can't change episode while agents are working
                   </div>
                 )}
-              </div>
+              </SidebarSection>
 
               {/* 3. Episode Prompt (if episode selected) */}
               {currentEpisodeId && (
-                <div className="border-t border-border pt-4">
+                <SidebarSection variant="plain" className="border-t border-border pt-4">
                   <MasterPromptEditor
                     scope="Episode"
                     initialPrompt=""
                     onSave={prompt => console.log('Save episode prompt:', prompt)}
                   />
-                </div>
+                </SidebarSection>
               )}
 
               {/* 4. Cast/Characters (last) */}
-              <div className="border-t border-border pt-4">
+              <SidebarSection variant="plain" className="border-t border-border pt-4">
                 <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
                   Cast
                 </h2>
@@ -1096,10 +1100,10 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                   onDelete={handleDeleteCharacter}
                   projectId={currentProject.id}
                 />
-              </div>
+              </SidebarSection>
             </div>
           )}
-        </div>
+        </ResizableSidebar>
 
         {/* Center: Workspace */}
         {/* Center: Workspace */}
