@@ -1,5 +1,6 @@
 import { Hyper3DClient } from '@/infrastructure/ai/hyper3d'
 import { MeshyClient } from '@/infrastructure/ai/meshy'
+import { LocalStorageKeys } from '@/constants/localStorage'
 
 export type ThreeDProvider = 'hyper3d' | 'meshy'
 
@@ -10,9 +11,9 @@ export class ThreeDService {
     prompt?: string
   ): Promise<string> {
     let apiKey = ''
-    
+
     if (typeof window !== 'undefined') {
-      const configKey = `ai-config-${provider}`
+      const configKey = provider === 'hyper3d' ? LocalStorageKeys.AI_CONFIG_HYPER3D : LocalStorageKeys.AI_CONFIG_MESHY
       const savedConfig = localStorage.getItem(configKey)
       if (savedConfig) {
         const config = JSON.parse(savedConfig)
@@ -26,7 +27,7 @@ export class ThreeDService {
 
     // Since API calls are made client-side in this architecture (or rather, keys are stored client side),
     // we instantiate the client here.
-    
+
     if (provider === 'hyper3d') {
       const client = new Hyper3DClient(apiKey)
       return client.generateModel(imageUrl, prompt)
@@ -40,4 +41,3 @@ export class ThreeDService {
 }
 
 export const threeDService = new ThreeDService()
-

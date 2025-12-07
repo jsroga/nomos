@@ -11,13 +11,13 @@ export class Hyper3DClient {
     const response = await fetch(`${this.baseUrl}/image-to-3d`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         image_url: imageUrl,
-        prompt: prompt || 'High quality 3D model'
-      })
+        prompt: prompt || 'High quality 3D model',
+      }),
     })
 
     if (!response.ok) {
@@ -26,7 +26,7 @@ export class Hyper3DClient {
     }
 
     const { task_id } = await response.json()
-    
+
     // Step 2: Poll for completion
     return this.pollTask(task_id)
   }
@@ -37,11 +37,11 @@ export class Hyper3DClient {
 
     while (attempts < maxRetries) {
       await new Promise(resolve => setTimeout(resolve, 2000))
-      
+
       const response = await fetch(`${this.baseUrl}/tasks/${taskId}`, {
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`
-        }
+          Authorization: `Bearer ${this.apiKey}`,
+        },
       })
 
       if (!response.ok) continue
@@ -60,4 +60,3 @@ export class Hyper3DClient {
     throw new Error('Hyper3D Task Timed Out')
   }
 }
-

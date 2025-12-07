@@ -1,0 +1,6 @@
+{
+    "graphs": {
+        "storyteller": "./src/domains/storyteller/graph/writers-room.ts:writersRoomGraph"
+    },
+    "env": ".env.local"
+}

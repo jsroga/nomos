@@ -105,7 +105,7 @@ export const RepaintToolbar: React.FC = () => {
             onClick={() => setRepaintMode(false)}
             className="px-3 py-1.5 bg-secondary text-secondary-foreground rounded-md text-sm font-medium hover:bg-secondary/90"
           >
-                        Cancel
+            Cancel
           </button>
 
           <button
@@ -114,7 +114,7 @@ export const RepaintToolbar: React.FC = () => {
             className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isGenerating ? <Loader2 size={16} className="animate-spin" /> : null}
-                        Generate
+            Generate
           </button>
         </>
       )}

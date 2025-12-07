@@ -1,6 +1,9 @@
 import { create } from 'zustand'
-import { supabase } from '@/infrastructure/storage/supabase'
+import { getSupabaseClient } from '@/infrastructure/storage/supabaseClient'
 import type { SelectResult } from '@/domains/world-building-toolkit/services/SelectModeService'
+import { Database } from '@/infrastructure/storage/database.types'
+import { JobStatus, JobType } from '@/types/enums'
+import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
 
 export type SelectBox = { x1: number; y1: number; x2: number; y2: number }
 export interface Asset {
@@ -14,47 +17,60 @@ export interface Asset {
     box?: SelectBox
   }
 }
-import { Database } from '@/infrastructure/storage/database.types'
 
 export type Project = Database['public']['Tables']['projects']['Row']
 export type Tile = Database['public']['Tables']['tiles']['Row']
 
-interface GeneratingTile {
-  x: number
-  y: number
+interface Job {
+  id: string
+  type: JobType
+  status: JobStatus
   startTime: number
+  metadata?: any
 }
 
 interface WorldState {
+  // Auth
+  user: any | null // Session user
+
   currentProject: Project | null
+  projects: Project[]
   tiles: Record<string, Tile> // Key: "x,y"
   viewport: { x: number; y: number; scale: number }
   selectedTile: { x: number; y: number } | null
-  selectedTiles: Array<{ x: number; y: number }> // Multiple selection
-  isGenerating: boolean
-  generatingTiles: Record<string, GeneratingTile> // Key: "x,y"
-  upscalingTiles: Record<string, GeneratingTile> // Key: "x,y"
-  repaintingTiles: Record<string, GeneratingTile> // Key: "x,y"
+  selectedTiles: Array<{ x: number; y: number }>
+
+  // Jobs (Replacing old boolean flags)
+  jobs: Record<string, Job> // Key: Job ID or Tile ID for convenience
+
+  // Tile operation flags (for UI feedback)
+  generatingTiles: Record<string, boolean>
+  upscalingTiles: Record<string, boolean>
+  repaintingTiles: Record<string, boolean>
+  enhancingTiles: Record<string, boolean>
 
   // Repaint State
   isRepaintMode: boolean
   brushSize: number
-  repaintStrokes: Array<{ x: number; y: number; radius?: number }> // Points in world coordinates with optional radius
-  repaintResult: { imageUrl: string; bounds: { x: number; y: number; width: number; height: number } } | null
+  repaintStrokes: Array<{ x: number; y: number; radius?: number }>
+  repaintResult: {
+    imageUrl: string
+    bounds: { x: number; y: number; width: number; height: number }
+  } | null
   repaintPrompt: string
   debugInfo: { image: string; mask: string } | null
   generationDebugInfo: {
     neighbors: {
-      up?: string;
-      down?: string;
-      left?: string;
-      right?: string;
-      topLeft?: string;
-      topRight?: string;
-      bottomLeft?: string;
-      bottomRight?: string;
-    };
-    prompt: string;
+      up?: string
+      down?: string
+      left?: string
+      right?: string
+      topLeft?: string
+      topRight?: string
+      bottomLeft?: string
+      bottomRight?: string
+    }
+    prompt: string
     assembledContext?: string
   } | null
 
@@ -77,7 +93,9 @@ interface WorldState {
   showAllAssetMasks: boolean
 
   // Actions
+  setUser: (user: any) => void
   loadProject: (projectId: string) => Promise<void>
+  fetchAllProjects: () => Promise<void>
   createProject: (name: string, prompt: string) => Promise<string | null>
   switchProject: (projectId: string) => Promise<void>
   addTile: (x: number, y: number, prompt: string, imageData: string) => Promise<void>
@@ -85,13 +103,21 @@ interface WorldState {
   setSelectedTile: (tile: { x: number; y: number } | null) => void
   toggleTileSelection: (tile: { x: number; y: number }) => void
   clearSelection: () => void
-  setGenerating: (isGenerating: boolean) => void
+
+  // Job Actions
+  addJob: (id: string, type: JobType, metadata?: any) => void
+  updateJobStatus: (id: string, status: JobStatus) => void
+  removeJob: (id: string) => void
+
+  // Tile operation flags
   addGeneratingTile: (x: number, y: number) => void
   removeGeneratingTile: (x: number, y: number) => void
   addUpscalingTile: (x: number, y: number) => void
   removeUpscalingTile: (x: number, y: number) => void
   addRepaintingTile: (x: number, y: number) => void
   removeRepaintingTile: (x: number, y: number) => void
+  addEnhancingTile: (x: number, y: number) => void
+  removeEnhancingTile: (x: number, y: number) => void
 
   getTile: (x: number, y: number) => Tile | undefined
 
@@ -100,23 +126,15 @@ interface WorldState {
   setBrushSize: (size: number) => void
   addRepaintStroke: (point: { x: number; y: number; radius?: number }) => void
   clearRepaintStrokes: () => void
-  setRepaintResult: (result: { imageUrl: string; bounds: { x: number; y: number; width: number; height: number } } | null) => void
+  setRepaintResult: (
+    result: {
+      imageUrl: string
+      bounds: { x: number; y: number; width: number; height: number }
+    } | null
+  ) => void
   setRepaintPrompt: (prompt: string) => void
   setDebugInfo: (info: { image: string; mask: string } | null) => void
-  setGenerationDebugInfo: (info: {
-    neighbors: {
-      up?: string;
-      down?: string;
-      left?: string;
-      right?: string;
-      topLeft?: string;
-      topRight?: string;
-      bottomLeft?: string;
-      bottomRight?: string;
-    };
-    prompt: string;
-    assembledContext?: string
-  } | null) => void
+  setGenerationDebugInfo: (info: any) => void
 
   // Select Mode Actions
   setSelectMode: (isSelectMode: boolean) => void
@@ -126,7 +144,7 @@ interface WorldState {
   clearSelectBox: () => void
   setSelectedMask: (mask: SelectResult | null) => void
   setSegmenting: (isSegmenting: boolean) => void
-  setSelectDebugInfo: (info: { contextImage?: string; box?: SelectBox; apiResponse?: any } | null) => void
+  setSelectDebugInfo: (info: any) => void
 
   // Assets Actions
   setAssets: (assets: Asset[]) => void
@@ -136,19 +154,25 @@ interface WorldState {
   setPreviewAssetId: (id: string | null) => void
   setShowAllAssetMasks: (show: boolean) => void
   fetchAssets: () => Promise<void>
+  setCurrentProject: (project: Project) => void
 }
 
 export const useWorldStore = create<WorldState>((set, get) => ({
+  user: null,
   currentProject: null,
+  projects: [],
+  setCurrentProject: (project) => set({ currentProject: project }),
   tiles: {},
   viewport: { x: 0, y: 0, scale: 1 },
   selectedTile: null,
   selectedTiles: [],
-  isGenerating: false,
+
+  jobs: {},
 
   generatingTiles: {},
   upscalingTiles: {},
   repaintingTiles: {},
+  enhancingTiles: {},
   isRepaintMode: false,
   brushSize: 50,
   repaintStrokes: [],
@@ -157,7 +181,24 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   debugInfo: null,
   generationDebugInfo: null,
 
+  // Select Mode Initial State
+  isSelectMode: false,
+  selectBox: null,
+  isDrawingBox: false,
+  selectTextPrompt: '',
+  selectedMask: null,
+  isSegmenting: false,
+  selectDebugInfo: null,
+
+  // Assets Initial State
+  assets: [],
+  previewAssetId: null,
+  showAllAssetMasks: false,
+
+  setUser: user => set({ user }),
+
   loadProject: async (projectId: string) => {
+    const supabase = getSupabaseClient()
     const { data: project, error: projectError } = await supabase
       .from('projects')
       .select('*')
@@ -187,10 +228,33 @@ export const useWorldStore = create<WorldState>((set, get) => ({
     set({ currentProject: project, tiles: tileMap })
   },
 
+  fetchAllProjects: async () => {
+    const supabase = getSupabaseClient()
+    const { data: projects, error } = await supabase
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching projects:', error)
+      return
+    }
+
+    set({ projects: projects || [] })
+  },
+
   createProject: async (name: string, prompt: string) => {
+    const { user } = get()
+    if (!user) return null
+
+    const supabase = getSupabaseClient()
     const { data, error } = await supabase
       .from('projects')
-      .insert({ name, project_prompt: prompt })
+      .insert({
+        name,
+        project_prompt: prompt,
+        user_id: user.id,
+      })
       .select()
       .single()
 
@@ -207,7 +271,6 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   },
 
   switchProject: async (projectId: string) => {
-    // Clear current state first
     set({ currentProject: null, tiles: {}, selectedTile: null })
     await get().loadProject(projectId)
   },
@@ -218,7 +281,7 @@ export const useWorldStore = create<WorldState>((set, get) => ({
 
     const filename = `${x}_${y}_${Date.now()}.png`
 
-    // 1. Save Image Locally via API
+    // Save image to disk via API route
     try {
       const response = await fetch('/api/save-image', {
         method: 'POST',
@@ -230,13 +293,17 @@ export const useWorldStore = create<WorldState>((set, get) => ({
         }),
       })
 
-      if (!response.ok) throw new Error('Failed to save image locally')
-    } catch (e) {
-      console.error('Local save failed', e)
-      return
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to save image')
+      }
+    } catch (err) {
+      console.error('Failed to save image:', err)
+      throw err
     }
 
-    // 2. Save Metadata to Supabase (upsert to allow regeneration)
+    // Save tile record to database
+    const supabase = getSupabaseClient()
     const { data: tile, error } = await supabase
       .from('tiles')
       .upsert(
@@ -248,15 +315,15 @@ export const useWorldStore = create<WorldState>((set, get) => ({
           image_filename: filename,
         },
         {
-          onConflict: 'project_id,x,y', // Update if this combination exists
+          onConflict: 'project_id,x,y',
         }
       )
       .select()
       .single()
 
     if (error) {
-      console.error('Error saving tile to DB:', error)
-      return
+      console.error('Failed to save tile to database:', error)
+      throw error
     }
 
     if (tile) {
@@ -267,7 +334,8 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   },
 
   setViewport: viewport => set({ viewport }),
-  setSelectedTile: selectedTile => set({ selectedTile, selectedTiles: selectedTile ? [selectedTile] : [] }),
+  setSelectedTile: selectedTile =>
+    set({ selectedTile, selectedTiles: selectedTile ? [selectedTile] : [] }),
   toggleTileSelection: tile => {
     const { selectedTiles } = get()
     const exists = selectedTiles.some(t => t.x === tile.x && t.y === tile.y)
@@ -278,46 +346,102 @@ export const useWorldStore = create<WorldState>((set, get) => ({
     }
   },
   clearSelection: () => set({ selectedTiles: [], selectedTile: null }),
-  setGenerating: isGenerating => set({ isGenerating }),
-  addGeneratingTile: (x, y) =>
+
+  // Job Management
+  addJob: (id, type, metadata) =>
     set(state => ({
-      generatingTiles: {
-        ...state.generatingTiles,
-        [`${x},${y}`]: { x, y, startTime: Date.now() },
+      jobs: {
+        ...state.jobs,
+        [id]: { id, type, status: JobStatus.Pending, startTime: Date.now(), metadata },
       },
     })),
-  removeGeneratingTile: (x, y) =>
+  updateJobStatus: (id, status) =>
     set(state => {
-      const newGenerating = { ...state.generatingTiles }
-      delete newGenerating[`${x},${y}`]
-      return { generatingTiles: newGenerating }
+      if (!state.jobs[id]) return {}
+      return {
+        jobs: {
+          ...state.jobs,
+          [id]: { ...state.jobs[id], status },
+        },
+      }
     }),
-  addUpscalingTile: (x, y) =>
+  removeJob: id =>
+    set(state => {
+      const newJobs = { ...state.jobs }
+      delete newJobs[id]
+      return { jobs: newJobs }
+    }),
+
+  // Tile operation flag actions
+  addGeneratingTile: (x, y) => {
+    useGlobalStatusStore.getState().addOperation({
+      id: `gen-${x},${y}`,
+      type: 'world-gen',
+      label: 'Generating',
+      details: `(${x}, ${y})`,
+      status: 'in-progress',
+    })
     set(state => ({
-      upscalingTiles: {
-        ...state.upscalingTiles,
-        [`${x},${y}`]: { x, y, startTime: Date.now() },
-      },
-    })),
-  removeUpscalingTile: (x, y) =>
+      generatingTiles: { ...state.generatingTiles, [`${x},${y}`]: true },
+    }))
+  },
+  removeGeneratingTile: (x, y) => {
+    useGlobalStatusStore.getState().removeOperation(`gen-${x},${y}`)
     set(state => {
-      const newUpscaling = { ...state.upscalingTiles }
-      delete newUpscaling[`${x},${y}`]
-      return { upscalingTiles: newUpscaling }
-    }),
-  addRepaintingTile: (x, y) =>
+      const newTiles = { ...state.generatingTiles }
+      delete newTiles[`${x},${y}`]
+      return { generatingTiles: newTiles }
+    })
+  },
+  addUpscalingTile: (x, y) => {
+    // Note: Global status operation is managed by UpscaleService for better detail
     set(state => ({
-      repaintingTiles: {
-        ...state.repaintingTiles,
-        [`${x},${y}`]: { x, y, startTime: Date.now() },
-      },
-    })),
-  removeRepaintingTile: (x, y) =>
+      upscalingTiles: { ...state.upscalingTiles, [`${x},${y}`]: true },
+    }))
+  },
+  removeUpscalingTile: (x, y) => {
+    // Note: Global status operation is managed by UpscaleService
     set(state => {
-      const newRepainting = { ...state.repaintingTiles }
-      delete newRepainting[`${x},${y}`]
-      return { repaintingTiles: newRepainting }
-    }),
+      const newTiles = { ...state.upscalingTiles }
+      delete newTiles[`${x},${y}`]
+      return { upscalingTiles: newTiles }
+    })
+  },
+  addRepaintingTile: (x, y) => {
+    useGlobalStatusStore.getState().addOperation({
+      id: `rep-${x},${y}`,
+      type: 'world-gen',
+      label: 'Repainting',
+      details: `(${x}, ${y})`,
+      status: 'in-progress',
+    })
+    set(state => ({
+      repaintingTiles: { ...state.repaintingTiles, [`${x},${y}`]: true },
+    }))
+  },
+  removeRepaintingTile: (x, y) => {
+    useGlobalStatusStore.getState().removeOperation(`rep-${x},${y}`)
+    set(state => {
+      const newTiles = { ...state.repaintingTiles }
+      delete newTiles[`${x},${y}`]
+      return { repaintingTiles: newTiles }
+    })
+  },
+  addEnhancingTile: (x, y) => {
+    // Note: Global status operation is managed by FidelityService for better detail
+    set(state => ({
+      enhancingTiles: { ...state.enhancingTiles, [`${x},${y}`]: true },
+    }))
+  },
+  removeEnhancingTile: (x, y) => {
+    // Note: Global status operation is managed by FidelityService
+    set(state => {
+      const newTiles = { ...state.enhancingTiles }
+      delete newTiles[`${x},${y}`]
+      return { enhancingTiles: newTiles }
+    })
+  },
+
   getTile: (x, y) => get().tiles[`${x},${y}`],
 
   setRepaintMode: isRepaintMode => set({ isRepaintMode }),
@@ -329,21 +453,6 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   setDebugInfo: debugInfo => set({ debugInfo }),
   setGenerationDebugInfo: generationDebugInfo => set({ generationDebugInfo }),
 
-  // Select Mode Initial State
-  isSelectMode: false,
-  selectBox: null,
-  isDrawingBox: false,
-  selectTextPrompt: '',
-  selectedMask: null,
-  isSegmenting: false,
-  selectDebugInfo: null,
-
-  // Assets Initial State
-  assets: [],
-  previewAssetId: null,
-  showAllAssetMasks: false,
-
-  // Select Mode Actions
   setSelectMode: isSelectMode => set({ isSelectMode }),
   setSelectBox: selectBox => set({ selectBox }),
   setDrawingBox: isDrawingBox => set({ isDrawingBox }),
@@ -353,28 +462,30 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   setSegmenting: isSegmenting => set({ isSegmenting }),
   setSelectDebugInfo: selectDebugInfo => set({ selectDebugInfo }),
 
-  // Assets Actions
   setAssets: assets => set({ assets }),
   addAsset: asset => set(state => ({ assets: [asset, ...state.assets] })),
-  updateAsset: (id, updates) => set(state => ({
-    assets: state.assets.map(a => a.id === id ? { ...a, ...updates } : a)
-  })),
-  removeAsset: id => set(state => ({ 
-    assets: state.assets.filter(a => a.id !== id),
-    previewAssetId: state.previewAssetId === id ? null : state.previewAssetId
-  })),
+  updateAsset: (id, updates) =>
+    set(state => ({
+      assets: state.assets.map(a => (a.id === id ? { ...a, ...updates } : a)),
+    })),
+  removeAsset: id =>
+    set(state => ({
+      assets: state.assets.filter(a => a.id !== id),
+      previewAssetId: state.previewAssetId === id ? null : state.previewAssetId,
+    })),
   setPreviewAssetId: previewAssetId => set({ previewAssetId }),
   setShowAllAssetMasks: showAllAssetMasks => set({ showAllAssetMasks }),
   fetchAssets: async () => {
     const { currentProject } = get()
     if (!currentProject) return
-    
+
+    const supabase = getSupabaseClient()
     const { data, error } = await supabase
       .from('assets')
       .select('*')
       .eq('project_id', currentProject.id)
       .order('created_at', { ascending: false })
-    
+
     if (!error && data) {
       set({ assets: data })
     }

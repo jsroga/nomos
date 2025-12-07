@@ -13,6 +13,7 @@ export interface TileContext {
     bottomLeft?: Tile & { imageUrl?: string }
     bottomRight?: Tile & { imageUrl?: string }
   }
+  styleReferenceUrls?: string[]
   // We might need the full tiles map for more complex context later
   allTiles: Record<string, Tile>
 }

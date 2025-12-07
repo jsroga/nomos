@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
-import { ProjectSelector } from '@/domains/world-building-toolkit/components/ProjectSelector'
 import { AssetsPanel } from '@/domains/world-building-toolkit/components/AssetsPanel'
 import { SettingsDialog } from '@/domains/world-building-toolkit/components/SettingsDialog'
-import { Settings } from 'lucide-react'
+import { Settings, Plus } from 'lucide-react'
+import { LocalStorageKeys } from '@/constants/localStorage'
 
 export const AssetExporterSidebar: React.FC = () => {
   const defaultMasterPrompt =
@@ -13,11 +13,11 @@ export const AssetExporterSidebar: React.FC = () => {
 
   const [masterPrompt, setMasterPrompt] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('master-prompt') || defaultMasterPrompt
+      return localStorage.getItem(LocalStorageKeys.MASTER_PROMPT) || defaultMasterPrompt
     }
     return defaultMasterPrompt
   })
-  
+
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const currentProject = useWorldStore(state => state.currentProject)
 
@@ -25,7 +25,7 @@ export const AssetExporterSidebar: React.FC = () => {
   const handleMasterPromptChange = (value: string) => {
     setMasterPrompt(value)
     if (typeof window !== 'undefined') {
-      localStorage.setItem('master-prompt', value)
+      localStorage.setItem(LocalStorageKeys.MASTER_PROMPT, value)
     }
   }
 
@@ -56,17 +56,18 @@ export const AssetExporterSidebar: React.FC = () => {
         </p>
       </div>
 
-      <ProjectSelector />
-
       <div className="p-4 flex-1 overflow-y-auto">
         {!currentProject ? (
-          <div className="text-center text-muted-foreground mt-10">
-            Please select or create a project to start.
+          <div className="text-center text-muted-foreground mt-10 flex flex-col items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-muted/30 flex items-center justify-center">
+              <Plus size={24} className="opacity-50" />
+            </div>
+            <p>Please select or create a project to start.</p>
           </div>
         ) : (
           <div className="space-y-4">
-             {/* Reuse AssetsPanel but always show it */}
-             <AssetsPanel />
+            {/* Reuse AssetsPanel but always show it */}
+            <AssetsPanel />
           </div>
         )}
       </div>
@@ -75,4 +76,3 @@ export const AssetExporterSidebar: React.FC = () => {
     </div>
   )
 }
-

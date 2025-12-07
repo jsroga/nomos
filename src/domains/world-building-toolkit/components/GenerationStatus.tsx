@@ -24,40 +24,46 @@ export const GenerationStatus: React.FC = () => {
       </div>
       <div className="space-y-1 max-h-[200px] overflow-y-auto">
         {/* Generating Tiles */}
-        {Object.values(generatingTiles).map(tile => (
-          <div
-            key={`gen-${tile.x},${tile.y}`}
-            className="text-xs flex items-center gap-2 py-1"
-          >
-            <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
-            <span className="text-yellow-500">Generating</span>
-            <span className="text-muted-foreground">({tile.x}, {tile.y})</span>
-          </div>
-        ))}
+        {Object.keys(generatingTiles).map(key => {
+          const [x, y] = key.split(',').map(Number)
+          return (
+            <div key={`gen-${key}`} className="text-xs flex items-center gap-2 py-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
+              <span className="text-yellow-500">Generating</span>
+              <span className="text-muted-foreground">
+                ({x}, {y})
+              </span>
+            </div>
+          )
+        })}
 
         {/* Upscaling Tiles */}
-        {Object.values(upscalingTiles).map(tile => (
-          <div
-            key={`up-${tile.x},${tile.y}`}
-            className="text-xs flex items-center gap-2 py-1"
-          >
-            <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-            <span className="text-orange-500">Upscaling</span>
-            <span className="text-muted-foreground">({tile.x}, {tile.y})</span>
-          </div>
-        ))}
+        {Object.keys(upscalingTiles).map(key => {
+          const [x, y] = key.split(',').map(Number)
+          return (
+            <div key={`up-${key}`} className="text-xs flex items-center gap-2 py-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+              <span className="text-orange-500">Upscaling</span>
+              <span className="text-muted-foreground">
+                ({x}, {y})
+              </span>
+            </div>
+          )
+        })}
 
         {/* Repainting Tiles */}
-        {Object.values(repaintingTiles).map(tile => (
-          <div
-            key={`rep-${tile.x},${tile.y}`}
-            className="text-xs flex items-center gap-2 py-1"
-          >
-            <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
-            <span className="text-purple-500">Repainting</span>
-            <span className="text-muted-foreground">({tile.x}, {tile.y})</span>
-          </div>
-        ))}
+        {Object.keys(repaintingTiles).map(key => {
+          const [x, y] = key.split(',').map(Number)
+          return (
+            <div key={`rep-${key}`} className="text-xs flex items-center gap-2 py-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+              <span className="text-purple-500">Repainting</span>
+              <span className="text-muted-foreground">
+                ({x}, {y})
+              </span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

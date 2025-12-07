@@ -1,207 +1,518 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable indent */
 import { Tile, useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
-import { supabase } from '@/infrastructure/storage/supabase'
-import { NanoBananaProModel } from '@/infrastructure/ai/nanoBanana'
-import { stabilityAI } from '@/infrastructure/ai/stability'
-import { ReplicateAIModel } from '@/infrastructure/ai/replicate'
+import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
+import { LocalStorageKeys, DynamicLocalStorageKeys } from '@/constants/localStorage'
+
+type UpscaleProvider = 'midjourney' | 'replicate' | 'stability'
+
+interface UpscaleRunState {
+  runId: string
+  tileId: string
+  tileX: number
+  tileY: number
+  projectId: string
+  provider: UpscaleProvider
+  startedAt: string
+}
+
+// Active status values that mean the task is still running
+const ACTIVE_STATUSES = ['QUEUED', 'EXECUTING', 'WAITING', 'PENDING', 'DEQUEUED', 'DELAYED', 'PENDING_VERSION']
 
 export class UpscaleService {
-    async upscale(tile: Tile, creativity: number): Promise<void> {
-        console.log('Upscaling tile', tile.id, 'creativity', creativity)
+  private pollingIntervals: Map<string, NodeJS.Timeout> = new Map()
 
-        // Track upscaling status
-        useWorldStore.getState().addUpscalingTile(tile.x, tile.y)
+  /**
+   * Start upscaling a tile using Trigger.dev background task
+   */
+  async upscale(tile: Tile, creativity: number, styleReferenceUrls?: string[]): Promise<string | null> {
+    console.log('Starting upscale via Trigger.dev for tile', tile.id, 'creativity', creativity, { styleReferenceUrls })
 
-        try {
-            // 0. Get Configs
-            let nanoConfig = { apiKey: '', model: '' }
+    // Get configs from localStorage
+    let geminiConfig = { apiKey: '', model: 'gemini-3-pro-image-preview' }
+    let replicateConfig = { apiKey: '', model: '' }
+    let stabilityConfig: { apiKey: string; upscaleMode?: 'conservative' | 'creative' } = { apiKey: '' }
+    let cometConfig = { apiKey: '' }
+    let activeUpscaler: UpscaleProvider = 'stability'
 
-            if (typeof window !== 'undefined') {
-                const savedNano = localStorage.getItem('ai-config-nano-banana')
-                if (savedNano) nanoConfig = JSON.parse(savedNano)
-            }
+    let skipGeminiPreUpscale = false
 
-            if (!nanoConfig.apiKey) throw new Error('Nano Banana Pro API Key not found')
-
-            const nanoBanana = new NanoBananaProModel(nanoConfig.apiKey, nanoConfig.model)
-
-            // 1. Get Image URL
-            const imageUrl = `/projects/${tile.project_id}/${tile.image_filename}`
-
-            // 2. Fetch Image Blob
-            const response = await fetch(imageUrl)
-            if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`)
-            const blob = await response.blob()
-
-            // 3. Convert to Base64
-            const base64 = await new Promise<string>((resolve) => {
-                const reader = new FileReader()
-                reader.onloadend = () => resolve((reader.result as string).split(',')[1])
-                reader.readAsDataURL(blob)
-            })
-
-            // 4. Step 1: Upscale to 1024px using Nano Banana Pro
-            console.log('Step 1: Upscaling to 1024px with Nano Banana Pro...')
-            const upscaled1024Base64 = await nanoBanana.upscale(base64, tile.tile_prompt, creativity)
-
-            // Check for Replicate config
-            let replicateConfig = { apiKey: '', model: '' }
-            if (typeof window !== 'undefined') {
-                const savedReplicate = localStorage.getItem('ai-config-replicate')
-                if (savedReplicate) replicateConfig = JSON.parse(savedReplicate)
-            }
-
-            // Check if Stability API key is available
-            let stabilityConfig = { apiKey: '' }
-            if (typeof window !== 'undefined') {
-                const savedStability = localStorage.getItem('ai-config-stability')
-                if (savedStability) stabilityConfig = JSON.parse(savedStability)
-            }
-
-            // Determine which provider to use for Step 2
-            // We can add a setting for "Upscaler Provider", or just check which key is present.
-            // Let's assume we want to support explicit selection if we had a global setting, 
-            // but for now let's prioritize Replicate if configured, else Stability.
-            // Or better, let's read the "active upscaler" from settings if we had one.
-            // Since we are adding a selector in SettingsDialog, we should store that preference.
-            // Let's assume we store it in 'ai-config-upscaler-provider' or similar.
-
-            let activeUpscaler = 'stability'
-            if (typeof window !== 'undefined') {
-                activeUpscaler = localStorage.getItem('ai-active-upscaler') || 'stability'
-            }
-
-            let finalImageData = upscaled1024Base64
-            let finalFilenameSuffix = '_upscaled_gemini.png'
-
-            if (activeUpscaler === 'replicate' && replicateConfig.apiKey) {
-                // 5. Step 2: Upscale with Replicate
-                console.log('Step 2: Upscaling with Replicate...')
-                try {
-                    const replicate = new ReplicateAIModel(replicateConfig.apiKey, replicateConfig.model)
-                    // Replicate models might handle large inputs better, but let's see.
-                    // If we pass 1024x1024, it should be fine for most creative upscalers.
-
-                    const upscaledReplicateBase64 = await replicate.upscale(upscaled1024Base64, tile.tile_prompt, creativity)
-
-                    if (upscaledReplicateBase64) {
-                        finalImageData = upscaledReplicateBase64
-                        finalFilenameSuffix = '_upscaled_replicate.png'
-                    }
-                } catch (replicateError) {
-                    console.error('Replicate upscale failed:', replicateError)
-                    console.warn('Falling back to Gemini result')
-                }
-
-            } else if (stabilityConfig.apiKey) {
-                // 5. Step 2: Upscale to 4k using Stability AI
-                console.log('Step 2: Upscaling to 4k with Stability AI...')
-
-                try {
-                    // Stability's latent upscaler has a max input size of 512x768
-                    // We need to resize the Gemini output (likely 1024x1024) down to 512x512
-                    console.log('Resizing Gemini output to 512x512 for Stability compatibility...')
-
-                    const resized512Base64 = await this.resizeImage(upscaled1024Base64, 512, 512)
-
-                    // Get upscale mode from config (conservative or creative)
-                    const upscaleMode = (stabilityConfig as { apiKey: string, upscaleMode?: 'conservative' | 'creative' }).upscaleMode || 'conservative'
-
-                    // We use the stability config stored in localStorage or pass it if needed.
-                    // StabilityAIModel.upscale4k handles config retrieval internally if not passed.
-                    const upscaled4kBase64 = await stabilityAI.upscale4k(resized512Base64, undefined, upscaleMode)
-
-                    if (upscaled4kBase64) {
-                        finalImageData = upscaled4kBase64
-                        finalFilenameSuffix = '_upscaled_4k.png'
-                    } else {
-                        console.warn('Stability upscale returned no data, falling back to Gemini result')
-                    }
-                } catch (stabilityError) {
-                    console.error('Stability AI upscale failed:', stabilityError)
-                    console.warn('Falling back to Gemini result due to Stability error')
-                    // finalImageData remains as upscaled1024Base64
-                    // finalFilenameSuffix remains as '_upscaled_gemini.png'
-                }
-            } else {
-                console.log('Skipping Step 2 (Stability/Replicate) - No API Key found or provider not selected. Saving Gemini result.')
-            }
-
-            // 6. Save New Image
-            const newFilename = tile.image_filename.replace('.png', finalFilenameSuffix)
-
-            // Save locally
-            const saveResponse = await fetch('/api/save-image', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    projectId: tile.project_id,
-                    filename: newFilename,
-                    imageData: finalImageData.replace(/^data:image\/\w+;base64,/, ''),
-                }),
-            })
-
-            if (!saveResponse.ok) throw new Error('Failed to save upscaled image')
-
-            // 7. Update Tile Record
-            const { error } = await supabase
-                .from('tiles')
-                .update({ image_filename: newFilename })
-                .eq('id', tile.id)
-
-            if (error) throw error
-
-            // 8. Update Store
-            const { tiles } = useWorldStore.getState()
-            const tileKey = `${tile.x},${tile.y}`
-            if (tiles[tileKey]) {
-                useWorldStore.setState(state => ({
-                    tiles: {
-                        ...state.tiles,
-                        [tileKey]: { ...state.tiles[tileKey], image_filename: newFilename }
-                    }
-                }))
-            }
-        } catch (error) {
-            console.error('Upscale error:', error)
-            throw error
-        } finally {
-            // Remove upscaling status
-            useWorldStore.getState().removeUpscalingTile(tile.x, tile.y)
+    if (typeof window !== 'undefined') {
+      // Get Gemini config (optional for Step 1)
+      const savedGemini = localStorage.getItem(LocalStorageKeys.AI_CONFIGS)
+      if (savedGemini) {
+        const configs = JSON.parse(savedGemini)
+        if (configs.gemini?.apiKey) {
+          geminiConfig.apiKey = configs.gemini.apiKey
         }
+      }
+
+      const savedReplicate = localStorage.getItem(LocalStorageKeys.AI_CONFIG_REPLICATE)
+      if (savedReplicate) replicateConfig = JSON.parse(savedReplicate)
+
+      const savedStability = localStorage.getItem(LocalStorageKeys.AI_CONFIG_STABILITY)
+      if (savedStability) stabilityConfig = JSON.parse(savedStability)
+
+      const savedComet = localStorage.getItem(LocalStorageKeys.AI_CONFIG_COMET)
+      if (savedComet) cometConfig = JSON.parse(savedComet)
+
+      activeUpscaler = (localStorage.getItem(LocalStorageKeys.AI_ACTIVE_UPSCALER) as UpscaleProvider) || 'stability'
+
+      // Check if Gemini pre-upscale should be skipped
+      skipGeminiPreUpscale = localStorage.getItem(LocalStorageKeys.SKIP_GEMINI_PRE_UPSCALE) === 'true'
     }
 
-    private async resizeImage(base64Image: string, targetWidth: number, targetHeight: number): Promise<string> {
-        return new Promise((resolve, reject) => {
-            const img = new Image()
-            img.onload = () => {
-                const canvas = document.createElement('canvas')
-                canvas.width = targetWidth
-                canvas.height = targetHeight
-                const ctx = canvas.getContext('2d')
+    // Gemini is required for Step 1 unless skipped
+    if (!skipGeminiPreUpscale && !geminiConfig.apiKey) {
+      throw new Error('Gemini API key is required for pre-upscaling. Configure it in Settings or disable Gemini pre-upscale.')
+    }
 
-                if (!ctx) {
-                    reject(new Error('Failed to get canvas context'))
-                    return
-                }
+    // Get the provider config based on selection
+    let providerConfig: { apiKey: string; model?: string; upscaleMode?: string; parameters?: any }
 
-                // Draw image scaled to target size
-                ctx.drawImage(img, 0, 0, targetWidth, targetHeight)
+    switch (activeUpscaler) {
+      case 'midjourney':
+        if (!cometConfig.apiKey) throw new Error('Comet API key not found for Midjourney')
+        providerConfig = {
+          apiKey: cometConfig.apiKey,
+          parameters: (cometConfig as any).parameters // Pass specific MJ parameters
+        }
+        break
+      case 'replicate':
+        if (!replicateConfig.apiKey) throw new Error('Replicate API key not found')
+        providerConfig = { apiKey: replicateConfig.apiKey, model: replicateConfig.model }
+        break
+      case 'stability':
+        if (!stabilityConfig.apiKey) throw new Error('Stability API key not found')
+        providerConfig = { apiKey: stabilityConfig.apiKey, upscaleMode: stabilityConfig.upscaleMode || 'conservative' }
+        break
+      default:
+        throw new Error(`Unknown upscaler: ${activeUpscaler}`)
+    }
 
-                // Convert to base64 (without prefix)
-                const resized = canvas.toDataURL('image/png').split(',')[1]
-                resolve(resized)
-            }
-            img.onerror = reject
+    // Track upscaling status
+    useWorldStore.getState().addUpscalingTile(tile.x, tile.y)
+    const opId = `upscale-${tile.x}-${tile.y}`
+    useGlobalStatusStore.getState().addOperation({
+      id: opId,
+      type: 'world-gen',
+      label: 'Upscaling Tile',
+      details: `(${tile.x}, ${tile.y}) via ${activeUpscaler}`,
+      status: 'in-progress',
+    })
 
-            // Handle both with and without data URL prefix
-            const imageData = base64Image.startsWith('data:')
-                ? base64Image
-                : `data:image/png;base64,${base64Image}`
-            img.src = imageData
+    try {
+      // 1. Fetch the tile image and convert to base64
+      const imageUrl = `/projects/${tile.project_id}/${tile.image_filename}`
+      const response = await fetch(imageUrl)
+      if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`)
+      const blob = await response.blob()
+
+      const base64 = await new Promise<string>(resolve => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve((reader.result as string).split(',')[1])
+        reader.readAsDataURL(blob)
+      })
+
+      // 2. Trigger the upscale task
+      console.log(`Triggering upscale-tile task with provider: ${activeUpscaler}`)
+
+      const triggerResponse = await fetch('/api/trigger-upscale', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tileId: tile.id,
+          projectId: tile.project_id,
+          imageBase64: base64,
+          prompt: tile.tile_prompt,
+          creativity,
+          provider: activeUpscaler,
+          providerConfig,
+          geminiConfig: skipGeminiPreUpscale ? undefined : geminiConfig,
+          skipGeminiPreUpscale,
+          // Pass style references if provided, otherwise API will fetch from project
+          ...(styleReferenceUrls?.length ? { styleReferenceUrls } : {}),
+        }),
+      })
+
+      const triggerData = await triggerResponse.json()
+
+      if (!triggerResponse.ok || !triggerData.runId) {
+        throw new Error(triggerData.error || 'Failed to trigger upscale task')
+      }
+
+      console.log('Upscale task triggered:', triggerData.runId)
+
+      // 3. Save run state to localStorage for recovery
+      const runState: UpscaleRunState = {
+        runId: triggerData.runId,
+        tileId: tile.id,
+        tileX: tile.x,
+        tileY: tile.y,
+        projectId: tile.project_id,
+        provider: activeUpscaler,
+        startedAt: new Date().toISOString(),
+      }
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(DynamicLocalStorageKeys.upscaleRun(tile.id), JSON.stringify(runState))
+      }
+
+      // 4. Start polling for status
+      this.startPolling(runState, opId)
+
+      return triggerData.runId
+    } catch (error) {
+      console.error('Upscale error:', error)
+      // Clean up status on error
+      useWorldStore.getState().removeUpscalingTile(tile.x, tile.y)
+      useGlobalStatusStore.getState().removeOperation(opId)
+      throw error
+    }
+  }
+
+  /**
+   * Start polling for task status
+   */
+  private startPolling(runState: UpscaleRunState, opId: string) {
+    const pollInterval = setInterval(async () => {
+      try {
+        const statusResponse = await fetch(`/api/trigger-upscale/status?runId=${runState.runId}`)
+        const statusData = await statusResponse.json()
+
+        // Debug logging
+        console.log('Upscale poll response:', {
+          status: statusData.status,
+          metadata: statusData.metadata,
+          error: statusData.error
         })
+
+        if (statusResponse.status === 404) {
+          console.warn('Upscale run not found, clearing state')
+          this.clearRunState(runState, opId)
+          return
+        }
+
+        const progress = statusData.metadata?.progress || 0
+        const stage = statusData.metadata?.stage || 'unknown'
+
+        // Update global status with progress
+        useGlobalStatusStore.getState().updateOperation(opId, {
+          details: `(${runState.tileX}, ${runState.tileY}) ${stage} ${progress}%`,
+        })
+
+        // Check if completed
+        if (statusData.status === 'COMPLETED') {
+          console.log('Upscale completed:', statusData.output)
+          await this.handleCompletion(runState, statusData.output, opId)
+          return
+        }
+
+        // Check if failed
+        if (!ACTIVE_STATUSES.includes(statusData.status)) {
+          console.error('Upscale failed:', statusData.error || statusData.status)
+          this.clearRunState(runState, opId)
+          return
+        }
+      } catch (error) {
+        console.error('Status polling error:', error)
+      }
+    }, 3000) // Poll every 3 seconds
+
+    this.pollingIntervals.set(runState.runId, pollInterval)
+  }
+
+  /**
+   * Handle successful completion
+   */
+  private async handleCompletion(
+    runState: UpscaleRunState,
+    output: any,
+    opId: string
+  ) {
+    try {
+      // Check if MJ returned a grid requiring variant selection
+      if (output?.requiresVariantSelection) {
+        console.log('MJ grid received, storing for variant selection:', output)
+
+        // Store the grid data for variant selection UI
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(DynamicLocalStorageKeys.mjGrid(runState.tileId), JSON.stringify({
+            gridImageUrl: output.gridImageUrl,
+            taskId: output.taskId,
+            buttons: output.buttons,
+            tileId: output.tileId,
+            projectId: output.projectId,
+            runState,
+          }))
+        }
+
+        // Update global status to show variant selection is needed
+        useGlobalStatusStore.getState().updateOperation(opId, {
+          status: 'completed',
+          details: `(${runState.tileX}, ${runState.tileY}) - Select variant`,
+        })
+
+        // Don't clear run state - keep it for variant selection
+        // But stop polling
+        const interval = this.pollingIntervals.get(runState.runId)
+        if (interval) {
+          clearInterval(interval)
+          this.pollingIntervals.delete(runState.runId)
+        }
+
+        // Emit event for UI to show variant picker
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('mj-grid-ready', {
+            detail: {
+              tileId: runState.tileId,
+              tileX: runState.tileX,
+              tileY: runState.tileY,
+              gridImageUrl: output.gridImageUrl,
+              buttons: output.buttons,
+              taskId: output.taskId,
+            }
+          }))
+        }
+        return
+      }
+
+      // Normal completion (non-MJ or variant selected)
+      if (output?.success && output?.filename) {
+        // Update the store with the new filename
+        const { tiles } = useWorldStore.getState()
+        const tileKey = `${runState.tileX},${runState.tileY}`
+
+        if (tiles[tileKey]) {
+          useWorldStore.setState(state => ({
+            tiles: {
+              ...state.tiles,
+              [tileKey]: { ...state.tiles[tileKey], image_filename: output.filename },
+            },
+          }))
+        }
+
+        console.log('Tile updated with upscaled image:', output.filename)
+      }
+    } catch (error) {
+      console.error('Error updating tile after completion:', error)
+    } finally {
+      this.clearRunState(runState, opId)
     }
+  }
+
+  /**
+   * Clear run state and stop polling
+   */
+  private clearRunState(runState: UpscaleRunState, opId: string) {
+    // Stop polling
+    const interval = this.pollingIntervals.get(runState.runId)
+    if (interval) {
+      clearInterval(interval)
+      this.pollingIntervals.delete(runState.runId)
+    }
+
+    // Clear localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(DynamicLocalStorageKeys.upscaleRun(runState.tileId))
+    }
+
+    // Clear UI status
+    useWorldStore.getState().removeUpscalingTile(runState.tileX, runState.tileY)
+    useGlobalStatusStore.getState().removeOperation(opId)
+  }
+
+  /**
+   * Resume any pending upscale tasks from localStorage (call on app load)
+   */
+  resumePendingUpscales() {
+    if (typeof window === 'undefined') return
+
+    // Find all upscale run keys in localStorage
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key?.startsWith('upscale-run-')) {
+        try {
+          const runState: UpscaleRunState = JSON.parse(localStorage.getItem(key) || '')
+          if (runState.runId) {
+            console.log('Resuming upscale polling for:', runState.runId)
+
+            // Re-add status indicators
+            useWorldStore.getState().addUpscalingTile(runState.tileX, runState.tileY)
+            const opId = `upscale-${runState.tileX}-${runState.tileY}`
+            useGlobalStatusStore.getState().addOperation({
+              id: opId,
+              type: 'world-gen',
+              label: 'Upscaling Tile (resumed)',
+              details: `(${runState.tileX}, ${runState.tileY}) via ${runState.provider}`,
+              status: 'in-progress',
+            })
+
+            // Start polling
+            this.startPolling(runState, opId)
+          }
+        } catch (e) {
+          console.warn('Failed to parse upscale run state:', key)
+          localStorage.removeItem(key)
+        }
+      }
+    }
+  }
+
+  /**
+   * Stop an in-progress upscale
+   */
+  stopUpscale(tileId: string) {
+    if (typeof window === 'undefined') return
+
+    const key = `upscale-run-${tileId}`
+    const data = localStorage.getItem(key)
+    if (data) {
+      try {
+        const runState: UpscaleRunState = JSON.parse(data)
+        const opId = `upscale-${runState.tileX}-${runState.tileY}`
+        this.clearRunState(runState, opId)
+        console.log('Stopped upscale for tile:', tileId)
+      } catch (e) {
+        localStorage.removeItem(key)
+      }
+    }
+  }
+
+  /**
+   * Get pending MJ grid for a tile (if any)
+   */
+  getMjGrid(tileId: string): {
+    gridImageUrl: string
+    taskId: string
+    buttons: any[]
+    tileId: string
+    projectId: string
+    runState?: UpscaleRunState
+  } | null {
+    if (typeof window === 'undefined') return null
+
+    const key = DynamicLocalStorageKeys.mjGrid(tileId)
+    const data = localStorage.getItem(key)
+    if (data) {
+      try {
+        return JSON.parse(data)
+      } catch (e) {
+        localStorage.removeItem(key)
+      }
+    }
+    return null
+  }
+
+  /**
+   * Select a variant from MJ grid - crops the grid and saves
+   */
+  async selectMjVariant(tileId: string, variantIndex: 1 | 2 | 3 | 4): Promise<string | null> {
+    if (typeof window === 'undefined') return null
+
+    const gridData = this.getMjGrid(tileId)
+    if (!gridData) {
+      throw new Error('No MJ grid data found for this tile')
+    }
+
+    console.log('Cropping variant', variantIndex, 'from:', gridData.gridImageUrl)
+
+    const opId = `mj-variant-${gridData.runState?.tileX || 0}-${gridData.runState?.tileY || 0}`
+    useGlobalStatusStore.getState().addOperation({
+      id: opId,
+      type: 'world-gen',
+      label: 'Cropping MJ Variant',
+      details: `Variant ${variantIndex}`,
+      status: 'in-progress',
+    })
+
+    try {
+      const response = await fetch('/api/trigger-upscale/select-variant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tileId,
+          projectId: gridData.projectId,
+          gridImageUrl: gridData.gridImageUrl,
+          variantIndex,
+        }),
+      })
+
+      const data = await response.json()
+      if (!response.ok || !data.runId) {
+        throw new Error(data.error || 'Failed to trigger variant selection')
+      }
+
+      console.log('Variant selection triggered:', data.runId)
+
+      // Store run state
+      const runState: UpscaleRunState = {
+        runId: data.runId,
+        tileId,
+        tileX: gridData.runState?.tileX || 0,
+        tileY: gridData.runState?.tileY || 0,
+        projectId: gridData.projectId,
+        provider: 'midjourney',
+        startedAt: new Date().toISOString(),
+      }
+      localStorage.setItem(DynamicLocalStorageKeys.upscaleRun(tileId), JSON.stringify(runState))
+
+      // Clear grid data
+      localStorage.removeItem(DynamicLocalStorageKeys.mjGrid(tileId))
+
+      // Start polling
+      this.startPolling(runState, opId)
+
+      return data.runId
+    } catch (error) {
+      console.error('Variant selection error:', error)
+      useGlobalStatusStore.getState().removeOperation(opId)
+      throw error
+    }
+  }
+
+  /**
+   * Clear MJ grid data without selecting (cancel)
+   */
+  clearMjGrid(tileId: string) {
+    if (typeof window === 'undefined') return
+    localStorage.removeItem(DynamicLocalStorageKeys.mjGrid(tileId))
+    localStorage.removeItem(DynamicLocalStorageKeys.upscaleRun(tileId))
+  }
+
+  /**
+   * Legacy resize helper (kept for compatibility)
+   */
+  private async resizeImage(
+    base64Image: string,
+    targetWidth: number,
+    targetHeight: number
+  ): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = targetWidth
+        canvas.height = targetHeight
+        const ctx = canvas.getContext('2d')
+
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'))
+          return
+        }
+
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight)
+        const resized = canvas.toDataURL('image/png').split(',')[1]
+        resolve(resized)
+      }
+      img.onerror = reject
+
+      const imageData = base64Image.startsWith('data:')
+        ? base64Image
+        : `data:image/png;base64,${base64Image}`
+      img.src = imageData
+    })
+  }
 }
 
 export const upscaleService = new UpscaleService()

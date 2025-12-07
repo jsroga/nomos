@@ -1,0 +1,858 @@
+
+> lint
+> next lint
+
+
+ ⚠ The Next.js plugin was not detected in your ESLint configuration. See https://nextjs.org/docs/app/building-your-application/configuring/eslint#migrating-existing-config
+
+./src/app/api/ai/fal-segment/route.ts
+20:21  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/ai/segment/route.ts
+30:21  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/generate-3d/route.ts
+56:19  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+109:19  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+145:19  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/interior-designer/designs/route.ts
+4:14  Warning: 'and' is defined but never used.  @typescript-eslint/no-unused-vars
+77:24  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/save-model/route.ts
+32:19  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/storyteller/actions/route.ts
+23:21  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+86:77  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+112:77  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+209:67  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/storyteller/characters/route.ts
+76:41  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/storyteller/chat/answer/route.ts
+3:10  Warning: 'writersRoomGraph' is defined but never used.  @typescript-eslint/no-unused-vars
+17:13  Warning: 'projectId' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+18:13  Warning: 'threadId' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+19:13  Warning: 'previousState' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+40:15  Warning: 'userMessage' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/storyteller/chat/route.ts
+28:48  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+67:78  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/storyteller/chat/stream/route.ts
+1:24  Warning: 'AIMessage' is defined but never used.  @typescript-eslint/no-unused-vars
+3:10  Warning: 'actionExecutor' is defined but never used.  @typescript-eslint/no-unused-vars
+25:28  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+57:34  Warning: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+68:34  Warning: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+134:65  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+140:76  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+141:83  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+153:84  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+154:82  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+202:62  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/storyteller/generate-portrait/route.ts
+40:76  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/storyteller/plan/route.ts
+66:31  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+124:27  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+145:67  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/storyteller/projects/[id]/break/route.ts
+4:20  Warning: 'characters' is defined but never used.  @typescript-eslint/no-unused-vars
+4:32  Warning: 'beats' is defined but never used.  @typescript-eslint/no-unused-vars
+35:64  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+38:36  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+39:35  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/storyteller/projects/[id]/characters/route.ts
+44:29  Warning: 'req' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/app/api/storyteller/timeline/route.ts
+31:84  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+34:24  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+47:50  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/trigger-3d/route.ts
+18:19  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/trigger-3d/status/route.ts
+34:19  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/trigger-tile/route.ts
+18:19  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/trigger-upscale/route.ts
+18:19  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/upscale/midjourney/route.ts
+4:102  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+81:43  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+84:63  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/interior-designer/page.tsx
+44:27  Warning: React Hook useCallback received a function whose dependencies are unknown. Pass an inline function instead.  react-hooks/exhaustive-deps
+45:9  Error: Error: Expected the first argument to be an inline function expression
+
+Expected the first argument to be an inline function expression.
+
+/Users/jaceksroga/tilemap/src/app/interior-designer/page.tsx:45:9
+  43 |     // Auto-save debounced (2 seconds after last change)
+  44 |     const debouncedSave = useCallback(
+> 45 |         debounce(() => {
+     |         ^^^^^^^^^^^^^^^^
+> 46 |             if (currentProject?.id && hasUnsavedChanges) {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 47 |                 saveDesign(currentProject.id)
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 48 |             }
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 49 |         }, 2000),
+     | ^^^^^^^^^^^^^^^^^ Expected the first argument to be an inline function expression
+  50 |         [currentProject?.id]
+  51 |     )
+  52 |  react-hooks/use-memo
+
+./src/app/storyteller/[[...projectId]]/page.tsx
+16:10  Warning: 'Settings' is defined but never used.  @typescript-eslint/no-unused-vars
+42:50  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+49:29  Warning: 'setIsScriptLoading' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+55:12  Warning: 'isPlanApproved' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+64:53  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+88:53  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+151:48  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+177:63  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+237:13  Error: Error: Cannot access variable before it is declared
+
+`setMessages` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/Users/jaceksroga/tilemap/src/app/storyteller/[[...projectId]]/page.tsx:237:13
+  235 |             setActiveTab('board')
+  236 |
+> 237 |             setMessages(prev => [...prev, {
+      |             ^^^^^^^^^^^ `setMessages` accessed before it is declared
+  238 |                 sender: 'System',
+  239 |                 content: '✅ Story plan approved! Now breaking into individual beats...',
+  240 |                 type: 'ai',
+
+/Users/jaceksroga/tilemap/src/app/storyteller/[[...projectId]]/page.tsx:313:22
+  311 |     const canGoForward = PHASE_ORDER.indexOf(currentPhase) < PHASE_ORDER.length - 1
+  312 |
+> 313 |     const [messages, setMessages] = useState<Message[]>([
+      |                      ^^^^^^^^^^^ `setMessages` is declared here
+  314 |         { sender: 'Showrunner', content: 'Welcome to the Writers Room! Select an episode to begin, then tell me about the story you want to create.', type: 'ai' },
+  315 |     ])
+  316 |     const [input, setInput] = useState('')  react-hooks/immutability
+294:8  Warning: React Hook useCallback has a missing dependency: 'PHASE_ORDER'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+308:8  Warning: React Hook useCallback has a missing dependency: 'PHASE_ORDER'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+327:12  Warning: 'answeredQuestions' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+366:61  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+501:53  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+529:19  Error: Error: Cannot access variable before it is declared
+
+`processStream` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/Users/jaceksroga/tilemap/src/app/storyteller/[[...projectId]]/page.tsx:529:19
+  527 |             })
+  528 |             // Continue with current round count since we're resuming
+> 529 |             await processStream(res, abortControllerRef.current.signal, roundCount)
+      |                   ^^^^^^^^^^^^^ `processStream` accessed before it is declared
+  530 |         } catch (error: any) {
+  531 |             if (error.name !== 'AbortError') {
+  532 |                 console.error('Failed to continue after answer:', error)
+
+/Users/jaceksroga/tilemap/src/app/storyteller/[[...projectId]]/page.tsx:549:5
+  547 |
+  548 |     // Process SSE stream
+> 549 |     const processStream = async (res: Response, signal: AbortSignal, initialRoundCount: number = 0) => {
+      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 550 |         const reader = res.body?.getReader()
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 551 |         const decoder = new TextDecoder()
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 676 |         }
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 677 |     }
+      | ^^^^^^ `processStream` is declared here
+  678 |
+  679 |     const handleSendMessage = async (e?: React.FormEvent) => {
+  680 |         e?.preventDefault()  react-hooks/immutability
+530:25  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+539:8  Warning: React Hook useCallback has a missing dependency: 'processStream'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+665:38  Warning: 'parseErr' is defined but never used.  @typescript-eslint/no-unused-vars
+671:29  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+708:53  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+737:29  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+764:66  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+775:53  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+828:44  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+1035:81  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+1036:81  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+1037:81  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+1041:86  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+1048:98  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+1059:86  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+1063:98  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+1074:86  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+1078:98  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/GlobalSidebar.tsx
+3:28  Warning: 'useState' is defined but never used.  @typescript-eslint/no-unused-vars
+6:20  Warning: 'Settings' is defined but never used.  @typescript-eslint/no-unused-vars
+6:38  Warning: 'User' is defined but never used.  @typescript-eslint/no-unused-vars
+28:6  Warning: React Hook useEffect has missing dependencies: 'setUser' and 'supabase.auth'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/ProjectSelectorDropdown.tsx
+45:13  Error: Error: Cannot access variable before it is declared
+
+`loadProjects` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/Users/jaceksroga/tilemap/src/components/ProjectSelectorDropdown.tsx:45:13
+  43 |     useEffect(() => {
+  44 |         if (user) {
+> 45 |             loadProjects()
+     |             ^^^^^^^^^^^^ `loadProjects` accessed before it is declared
+  46 |         }
+  47 |     }, [user])
+  48 |
+
+/Users/jaceksroga/tilemap/src/components/ProjectSelectorDropdown.tsx:49:5
+  47 |     }, [user])
+  48 |
+> 49 |     const loadProjects = async () => {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 50 |         const { data, error } = await supabase
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 51 |             .from('projects')
+     …
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 58 |         if (data) setProjects(data)
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 59 |     }
+     | ^^^^^^ `loadProjects` is declared here
+  60 |
+  61 |     const handleProjectChange = (projectId: string) => {
+  62 |         router.push(`/${currentModule}/${projectId}`)  react-hooks/immutability
+47:8  Warning: React Hook useEffect has a missing dependency: 'loadProjects'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/auth/LoginButton.tsx
+5:19  Warning: 'ImageIcon' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/ui/input.tsx
+5:18  Error: An interface declaring no members is equivalent to its supertype.  @typescript-eslint/no-empty-object-type
+
+./src/domains/3d-asset-exporter/components/AssetExporterSidebar.tsx
+3:27  Warning: 'useEffect' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/domains/3d-asset-exporter/components/ThreeDViewer.tsx
+7:13  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+8:20  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+9:14  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+10:12  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+20:23  Error: React Hook "useGLTF" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+21:23  Error: Unknown property 'object' found  react/no-unknown-property
+48:21  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+122:22  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+131:28  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+131:44  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/domains/interior-designer/components/DesignManager.tsx
+29:13  Error: Error: Cannot access variable before it is declared
+
+`fetchDesigns` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/Users/jaceksroga/tilemap/src/domains/interior-designer/components/DesignManager.tsx:29:13
+  27 |     useEffect(() => {
+  28 |         if (currentProject?.id && isOpen) {
+> 29 |             fetchDesigns()
+     |             ^^^^^^^^^^^^ `fetchDesigns` accessed before it is declared
+  30 |         }
+  31 |     }, [currentProject?.id, isOpen])
+  32 |
+
+/Users/jaceksroga/tilemap/src/domains/interior-designer/components/DesignManager.tsx:33:5
+  31 |     }, [currentProject?.id, isOpen])
+  32 |
+> 33 |     const fetchDesigns = async () => {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 34 |         if (!currentProject?.id) return
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 35 |
+     …
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 42 |         }
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 43 |     }
+     | ^^^^^^ `fetchDesigns` is declared here
+  44 |
+  45 |     const handleLoad = async (designId: string) => {
+  46 |         await loadDesign(designId)  react-hooks/immutability
+31:8  Warning: React Hook useEffect has a missing dependency: 'fetchDesigns'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/domains/interior-designer/components/FloorManager.tsx
+56:25  Error: Error: This value cannot be modified
+
+Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed.
+
+/Users/jaceksroga/tilemap/src/domains/interior-designer/components/FloorManager.tsx:56:25
+  54 |
+  55 |     React.useLayoutEffect(() => {
+> 56 |         texture.wrapS = texture.wrapT = THREE.RepeatWrapping
+     |                         ^^^^^^^ `texture` cannot be modified
+  57 |         texture.repeat.set(0.5, 0.5)
+  58 |         texture.needsUpdate = true
+  59 |     }, [texture])  react-hooks/immutability
+
+./src/domains/interior-designer/components/InteriorCanvas.tsx
+6:31  Warning: 'Environment' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/domains/interior-designer/components/TransformManager.tsx
+3:28  Warning: 'useRef' is defined but never used.  @typescript-eslint/no-unused-vars
+63:21  Error: Error: This value cannot be modified
+
+Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed.
+
+/Users/jaceksroga/tilemap/src/domains/interior-designer/components/TransformManager.tsx:63:21
+  61 |                 const orbitControls = controls as unknown as { enabled: boolean }
+  62 |                 if (orbitControls) {
+> 63 |                     orbitControls.enabled = false
+     |                     ^^^^^^^^^^^^^ `controls` cannot be modified
+  64 |                 }
+  65 |             }}
+  66 |             onMouseUp={() => {  react-hooks/immutability
+69:21  Error: Error: This value cannot be modified
+
+Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed.
+
+/Users/jaceksroga/tilemap/src/domains/interior-designer/components/TransformManager.tsx:69:21
+  67 |                 const orbitControls = controls as unknown as { enabled: boolean }
+  68 |                 if (orbitControls) {
+> 69 |                     orbitControls.enabled = true
+     |                     ^^^^^^^^^^^^^ `controls` cannot be modified
+  70 |                 }
+  71 |
+  72 |                 // Update store on drag end  react-hooks/immutability
+
+./src/domains/interior-designer/components/UI/ObjectLibrary.tsx
+7:39  Warning: 'Torus' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/domains/interior-designer/components/UI/PropertiesPanel.tsx
+28:27  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+29:28  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+30:29  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/domains/interior-designer/components/WallManager.tsx
+50:25  Error: Error: This value cannot be modified
+
+Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed.
+
+/Users/jaceksroga/tilemap/src/domains/interior-designer/components/WallManager.tsx:50:25
+  48 |
+  49 |     React.useLayoutEffect(() => {
+> 50 |         texture.wrapS = texture.wrapT = THREE.RepeatWrapping
+     |                         ^^^^^^^ `texture` cannot be modified
+  51 |         // texture.repeat.set(1, 1)
+  52 |         texture.needsUpdate = true
+  53 |     }, [texture])  react-hooks/immutability
+
+./src/domains/interior-designer/components/tools/ObjectTool.tsx
+44:32  Warning: 'e' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/domains/interior-designer/components/tools/WallTool.tsx
+46:32  Warning: 'e' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/domains/storyteller/actions/executor.ts
+293:57  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+298:79  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+695:33  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/domains/storyteller/actions/types.ts
+1:20  Warning: 'CharacterState' is defined but never used.  @typescript-eslint/no-unused-vars
+1:36  Warning: 'Setup' is defined but never used.  @typescript-eslint/no-unused-vars
+17:89  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+83:19  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/domains/storyteller/agents/base-agent.ts
+2:36  Warning: 'HumanMessage' is defined but never used.  @typescript-eslint/no-unused-vars
+5:25  Warning: 'AgentAction' is defined but never used.  @typescript-eslint/no-unused-vars
+5:53  Warning: 'AGENT_RESPONSE_SCHEMA' is defined but never used.  @typescript-eslint/no-unused-vars
+163:53  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+187:18  Warning: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+212:34  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/domains/storyteller/agents/character-psychology.ts
+1:28  Warning: 'CharacterState' is defined but never used.  @typescript-eslint/no-unused-vars
+67:21  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+75:18  Warning: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+97:26  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+98:26  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/domains/storyteller/agents/consequence-tracker.ts
+4:16  Warning: 'uuidv4' is defined but never used.  @typescript-eslint/no-unused-vars
+59:21  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+68:18  Warning: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+84:26  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/domains/storyteller/agents/index.ts
+2:28  Warning: 'Setup' is defined but never used.  @typescript-eslint/no-unused-vars
+142:21  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+150:18  Warning: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+172:26  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+173:26  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/domains/storyteller/agents/plot-architect.ts
+224:11  Error: Extra semicolon.  semi
+232:10  Error: Extra semicolon.  semi
+233:46  Error: Extra semicolon.  semi
+234:52  Error: Extra semicolon.  semi
+
+./src/domains/storyteller/agents/premise-architect.ts
+188:26  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+189:26  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/domains/storyteller/agents/showrunner.ts
+1:34  Error: Strings must use singlequote.  quotes
+1:50  Error: Extra semicolon.  semi
+2:42  Error: Strings must use singlequote.  quotes
+2:68  Error: Extra semicolon.  semi
+3:33  Error: Strings must use singlequote.  quotes
+3:55  Error: Extra semicolon.  semi
+4:10  Warning: 'AgentResponse' is defined but never used.  @typescript-eslint/no-unused-vars
+4:25  Warning: 'AgentAction' is defined but never used.  @typescript-eslint/no-unused-vars
+4:59  Error: Strings must use singlequote.  quotes
+4:77  Error: Extra semicolon.  semi
+5:36  Error: Extra semicolon.  semi
+6:20  Warning: 'invokeWithStructuredOutput' is defined but never used.  @typescript-eslint/no-unused-vars
+6:54  Error: Strings must use singlequote.  quotes
+6:78  Error: Extra semicolon.  semi
+7:82  Error: Strings must use singlequote.  quotes
+7:108  Error: Extra semicolon.  semi
+9:37  Error: Extra semicolon.  semi
+52:2  Error: Extra semicolon.  semi
+55:17  Error: Strings must use singlequote.  quotes
+55:73  Error: Strings must use singlequote.  quotes
+55:112  Error: Strings must use singlequote.  quotes
+55:116  Error: Extra semicolon.  semi
+58:66  Error: Extra semicolon.  semi
+59:77  Error: Extra semicolon.  semi
+61:82  Error: Extra semicolon.  semi
+64:82  Error: Extra semicolon.  semi
+65:76  Error: Extra semicolon.  semi
+66:80  Error: Extra semicolon.  semi
+67:95  Error: Extra semicolon.  semi
+72:25  Error: Strings must use singlequote.  quotes
+72:78  Error: Extra semicolon.  semi
+75:23  Error: Strings must use singlequote.  quotes
+76:15  Error: Extra semicolon.  semi
+81:14  Error: Extra semicolon.  semi
+84:25  Error: Strings must use singlequote.  quotes
+84:74  Error: Extra semicolon.  semi
+87:30  Error: Strings must use singlequote.  quotes
+88:27  Error: Strings must use singlequote.  quotes
+92:14  Error: Extra semicolon.  semi
+95:25  Error: Strings must use singlequote.  quotes
+95:73  Error: Extra semicolon.  semi
+98:30  Error: Strings must use singlequote.  quotes
+99:27  Error: Strings must use singlequote.  quotes
+103:14  Error: Extra semicolon.  semi
+109:21  Error: Strings must use singlequote.  quotes
+109:71  Error: Extra semicolon.  semi
+116:25  Error: Strings must use singlequote.  quotes
+116:84  Error: Extra semicolon.  semi
+122:30  Error: Strings must use singlequote.  quotes
+123:27  Error: Strings must use singlequote.  quotes
+124:19  Error: Extra semicolon.  semi
+128:18  Error: Extra semicolon.  semi
+136:29  Error: Strings must use singlequote.  quotes
+136:70  Error: Extra semicolon.  semi
+139:27  Error: Strings must use singlequote.  quotes
+140:19  Error: Extra semicolon.  semi
+144:18  Error: Extra semicolon.  semi
+149:70  Error: Extra semicolon.  semi
+150:96  Error: Extra semicolon.  semi
+153:29  Error: Strings must use singlequote.  quotes
+153:87  Error: Extra semicolon.  semi
+156:27  Error: Strings must use singlequote.  quotes
+157:19  Error: Extra semicolon.  semi
+161:18  Error: Extra semicolon.  semi
+166:63  Error: Extra semicolon.  semi
+167:60  Error: Extra semicolon.  semi
+171:21  Error: Strings must use singlequote.  quotes
+171:83  Error: Extra semicolon.  semi
+175:24  Error: Strings must use singlequote.  quotes
+176:23  Error: Strings must use singlequote.  quotes
+177:27  Error: Strings must use singlequote.  quotes
+179:23  Error: Strings must use singlequote.  quotes
+179:42  Error: Strings must use singlequote.  quotes
+179:76  Error: Strings must use singlequote.  quotes
+179:119  Error: Strings must use singlequote.  quotes
+180:23  Error: Strings must use singlequote.  quotes
+180:38  Error: Strings must use singlequote.  quotes
+180:70  Error: Strings must use singlequote.  quotes
+180:121  Error: Strings must use singlequote.  quotes
+181:23  Error: Strings must use singlequote.  quotes
+181:40  Error: Strings must use singlequote.  quotes
+181:76  Error: Strings must use singlequote.  quotes
+181:117  Error: Strings must use singlequote.  quotes
+184:22  Error: Strings must use singlequote.  quotes
+185:10  Error: Extra semicolon.  semi
+190:19  Error: Strings must use singlequote.  quotes
+193:28  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+193:55  Error: Extra semicolon.  semi
+199:10  Error: Extra semicolon.  semi
+202:57  Error: Extra semicolon.  semi
+209:6  Error: Extra semicolon.  semi
+213:53  Error: Extra semicolon.  semi
+216:89  Error: Extra semicolon.  semi
+217:82  Error: Extra semicolon.  semi
+219:26  Error: Strings must use singlequote.  quotes
+219:114  Error: Extra semicolon.  semi
+222:58  Error: Extra semicolon.  semi
+223:119  Error: Extra semicolon.  semi
+224:75  Error: Extra semicolon.  semi
+228:47  Error: Extra semicolon.  semi
+231:60  Error: Extra semicolon.  semi
+232:70  Error: Extra semicolon.  semi
+242:31  Error: Strings must use singlequote.  quotes
+244:18  Error: Extra semicolon.  semi
+249:46  Error: Extra semicolon.  semi
+250:45  Error: Extra semicolon.  semi
+253:52  Error: Extra semicolon.  semi
+260:28  Error: Strings must use singlequote.  quotes
+262:16  Error: Extra semicolon.  semi
+264:41  Error: Extra semicolon.  semi
+265:52  Error: Extra semicolon.  semi
+268:43  Error: Extra semicolon.  semi
+269:13  Error: 'shouldTerminate' is never reassigned. Use 'const' instead.  prefer-const
+269:36  Error: Extra semicolon.  semi
+273:38  Error: Extra semicolon.  semi
+275:61  Error: Extra semicolon.  semi
+276:66  Error: Extra semicolon.  semi
+277:80  Error: Extra semicolon.  semi
+278:76  Error: Extra semicolon.  semi
+280:37  Error: Extra semicolon.  semi
+286:72  Error: Extra semicolon.  semi
+287:79  Error: Extra semicolon.  semi
+288:62  Error: Extra semicolon.  semi
+291:100  Error: Extra semicolon.  semi
+292:37  Error: Extra semicolon.  semi
+297:32  Error: Strings must use singlequote.  quotes
+298:31  Error: Strings must use singlequote.  quotes
+299:35  Error: Strings must use singlequote.  quotes
+301:31  Error: Strings must use singlequote.  quotes
+301:43  Error: Strings must use singlequote.  quotes
+301:86  Error: Strings must use singlequote.  quotes
+302:31  Error: Strings must use singlequote.  quotes
+302:43  Error: Strings must use singlequote.  quotes
+302:78  Error: Strings must use singlequote.  quotes
+304:30  Error: Strings must use singlequote.  quotes
+305:19  Error: Extra semicolon.  semi
+310:55  Error: Extra semicolon.  semi
+312:25  Error: Strings must use singlequote.  quotes
+312:74  Error: Extra semicolon.  semi
+313:37  Error: Extra semicolon.  semi
+317:48  Error: Extra semicolon.  semi
+320:143  Error: Extra semicolon.  semi
+322:57  Error: Extra semicolon.  semi
+329:19  Error: Strings must use singlequote.  quotes
+330:11  Error: Extra semicolon.  semi
+339:10  Error: Extra semicolon.  semi
+340:46  Error: Extra semicolon.  semi
+341:50  Error: Extra semicolon.  semi
+342:52  Error: Extra semicolon.  semi
+343:56  Error: Extra semicolon.  semi
+351:10  Error: Extra semicolon.  semi
+353:23  Error: Strings must use singlequote.  quotes
+353:50  Error: Extra semicolon.  semi
+355:82  Error: Extra semicolon.  semi
+359:19  Error: Strings must use singlequote.  quotes
+360:11  Error: Extra semicolon.  semi
+366:10  Error: Extra semicolon.  semi
+368:2  Error: Extra semicolon.  semi
+
+./src/domains/storyteller/agents/writer.ts
+68:21  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+76:18  Warning: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+106:26  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/domains/storyteller/components/ActionToast.tsx
+8:27  Warning: 'AlertCircle' is defined but never used.  @typescript-eslint/no-unused-vars
+41:9  Error: Error: Cannot access variable before it is declared
+
+`handleDismiss` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/Users/jaceksroga/tilemap/src/domains/storyteller/components/ActionToast.tsx:41:9
+  39 |       if (remaining <= 0) {
+  40 |         clearInterval(interval)
+> 41 |         handleDismiss()
+     |         ^^^^^^^^^^^^^ `handleDismiss` accessed before it is declared
+  42 |       }
+  43 |     }, 50)
+  44 |
+
+/Users/jaceksroga/tilemap/src/domains/storyteller/components/ActionToast.tsx:48:3
+  46 |   }, [autoHideDuration])
+  47 |
+> 48 |   const handleDismiss = () => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 49 |     setIsVisible(false)
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+> 50 |     setTimeout(onDismiss, 200) // Wait for animation
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+> 51 |   }
+     | ^^^^ `handleDismiss` is declared here
+  52 |
+  53 |   const handleUndo = () => {
+  54 |     if (onUndo) {  react-hooks/immutability
+46:6  Warning: React Hook useEffect has a missing dependency: 'handleDismiss'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/domains/storyteller/components/CharacterCreationDialog.tsx
+4:20  Warning: 'Upload' is defined but never used.  @typescript-eslint/no-unused-vars
+9:27  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/domains/storyteller/components/CharacterPanel.tsx
+140:57  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/domains/storyteller/components/CorkBoard.tsx
+6:12  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+11:40  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+17:9  Error: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/jaceksroga/tilemap/src/domains/storyteller/components/CorkBoard.tsx:17:9
+  15 |     useEffect(() => {
+  16 |         console.log('📋 CorkBoard: beats prop changed, syncing state. Count:', initialBeats?.length)
+> 17 |         setBeats(initialBeats || [])
+     |         ^^^^^^^^ Avoid calling setState() directly within an effect
+  18 |     }, [initialBeats])
+  19 |
+  20 |     useEffect(() => {  react-hooks/set-state-in-effect
+49:54  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/domains/storyteller/components/EpisodeManager.tsx
+2:16  Warning: 'Trash2' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/domains/storyteller/components/MasterPromptEditor.tsx
+17:9  Error: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/jaceksroga/tilemap/src/domains/storyteller/components/MasterPromptEditor.tsx:17:9
+  15 |
+  16 |     useEffect(() => {
+> 17 |         setPrompt(initialPrompt || '')
+     |         ^^^^^^^^^ Avoid calling setState() directly within an effect
+  18 |         setIsDirty(false)
+  19 |     }, [initialPrompt])
+  20 |  react-hooks/set-state-in-effect
+
+./src/domains/storyteller/components/ScriptEditor.tsx
+222:20  Error: Unknown property 'jsx' found  react/no-unknown-property
+222:24  Error: Unknown property 'global' found  react/no-unknown-property
+
+./src/domains/storyteller/components/StoryPlanBoard.tsx
+67:67  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+88:33  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+88:61  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+
+./src/domains/storyteller/components/Timeline.tsx
+58:29  Error: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/jaceksroga/tilemap/src/domains/storyteller/components/Timeline.tsx:58:29
+  56 |         if (selectedBeatId) {
+  57 |             const index = sortedBeats.findIndex(b => b.id === selectedBeatId)
+> 58 |             if (index >= 0) setCurrentIndex(index)
+     |                             ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  59 |         }
+  60 |     }, [selectedBeatId, sortedBeats])
+  61 |  react-hooks/set-state-in-effect
+72:13  Error: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/jaceksroga/tilemap/src/domains/storyteller/components/Timeline.tsx:72:13
+  70 |                 .catch(err => console.error('Failed to fetch snapshots:', err))
+  71 |         } else {
+> 72 |             setSnapshots([])
+     |             ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  73 |         }
+  74 |     }, [selectedBeatId, episodeId])
+  75 |  react-hooks/set-state-in-effect
+
+./src/domains/storyteller/config/model-config.ts
+182:11  Warning: 'config' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+209:15  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/domains/storyteller/db/schema.ts
+1:19  Warning: 'serial' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/domains/storyteller/graph/state.ts
+121:33  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/domains/storyteller/graph/writers-room.ts
+65:39  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+168:28  Warning: 'state' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+307:16  Warning: 'qualityGateNode' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/domains/storyteller/questions/state-machine.ts
+1:16  Warning: 'uuidv4' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/domains/storyteller/questions/types.ts
+91:29  Warning: 'i' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/domains/storyteller/schemas/agent-schemas.ts
+274:5  Warning: 'fallbackMessage' is assigned a value but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+295:57  Warning: 'agentName' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/domains/storyteller/services/rag-service.ts
+4:10  Warning: 'cosineDistance' is defined but never used.  @typescript-eslint/no-unused-vars
+4:32  Warning: 'gt' is defined but never used.  @typescript-eslint/no-unused-vars
+4:46  Warning: 'eq' is defined but never used.  @typescript-eslint/no-unused-vars
+17:30  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/domains/storyteller/services/tracing-service.ts
+64:48  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+65:67  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+65:101  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+129:16  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/domains/storyteller/tools/agent-tools.ts
+11:10  Warning: 'z' is defined but never used.  @typescript-eslint/no-unused-vars
+13:28  Warning: 'CharacterState' is defined but never used.  @typescript-eslint/no-unused-vars
+13:44  Warning: 'BeatCard' is defined but never used.  @typescript-eslint/no-unused-vars
+156:11  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+166:5  Warning: 'category' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+241:34  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+469:13  Error: Unexpected lexical declaration in case block.  no-case-declarations
+482:13  Error: Unexpected lexical declaration in case block.  no-case-declarations
+497:13  Error: Unexpected lexical declaration in case block.  no-case-declarations
+498:13  Error: Unexpected lexical declaration in case block.  no-case-declarations
+533:26  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/domains/world-building-toolkit/components/AssetsPanel.tsx
+11:11  Warning: 'setAssets' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+29:8  Warning: React Hook useEffect has a missing dependency: 'loadAssets'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+50:25  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/domains/world-building-toolkit/components/Canvas/WorldCanvas.tsx
+123:26  Warning: 'e' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+177:24  Warning: 'e' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+222:21  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/domains/world-building-toolkit/components/SelectModeToolbar.tsx
+75:25  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/domains/world-building-toolkit/components/Sidebar/Sidebar.tsx
+1:17  Warning: 'useRef' is defined but never used.  @typescript-eslint/no-unused-vars
+1:25  Warning: 'useEffect' is defined but never used.  @typescript-eslint/no-unused-vars
+10:10  Warning: 'ScrollArea' is defined but never used.  @typescript-eslint/no-unused-vars
+12:25  Warning: 'Move' is defined but never used.  @typescript-eslint/no-unused-vars
+12:66  Warning: 'MousePointer2' is defined but never used.  @typescript-eslint/no-unused-vars
+108:13  Warning: 'config' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/domains/world-building-toolkit/services/SelectModeService.ts
+2:10  Warning: 'ReplicateClient' is defined but never used.  @typescript-eslint/no-unused-vars
+2:64  Error: Extra semicolon.  semi
+135:30  Warning: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+373:61  Error: Extra semicolon.  semi
+374:24  Error: Extra semicolon.  semi
+
+./src/domains/world-building-toolkit/store/useWorldStore.ts
+29:14  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+34:9  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+82:19  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+91:19  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+102:50  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+124:34  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+134:30  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/hooks/useProjectFromUrl.ts
+24:13  Error: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/jaceksroga/tilemap/src/hooks/useProjectFromUrl.ts:24:13
+  22 |     useEffect(() => {
+  23 |         if (projectId && currentProject?.id !== projectId) {
+> 24 |             setIsLoading(true)
+     |             ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  25 |             setError(null)
+  26 |             
+  27 |             loadProject(projectId)  react-hooks/set-state-in-effect
+50:8  Warning: React Hook useEffect has a missing dependency: 'currentProject'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/infrastructure/ai/fal.ts
+26:16  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+34:37  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/infrastructure/ai/replicate.ts
+14:9  Warning: 'points' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+15:16  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+35:39  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+84:63  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/infrastructure/storage/StorageService.ts
+2:16  Warning: 'uuidv4' is defined but never used.  @typescript-eslint/no-unused-vars
+33:22  Warning: 'uploadData' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/trigger/generate-3d-model.ts
+17:13  Warning: 'projectId' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+45:9  Error: 'meshyResult' is never reassigned. Use 'const' instead.  prefer-const
+45:22  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+76:19  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+156:19  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/trigger/generate-tile.ts
+2:10  Warning: 'z' is defined but never used.  @typescript-eslint/no-unused-vars
+15:30  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/trigger/storyteller.ts
+9:10  Warning: 'z' is defined but never used.  @typescript-eslint/no-unused-vars
+18:33  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+19:17  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+20:16  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+21:19  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+22:23  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+23:20  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+26:15  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+310:40  Error: The `Function` type accepts any function-like value.
+Prefer explicitly defining any function parameters and return type.  @typescript-eslint/no-unsafe-function-type
+341:50  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+342:52  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+343:53  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+367:37  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+368:21  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+369:24  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+387:31  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/building-your-application/configuring/eslint#disabling-rules

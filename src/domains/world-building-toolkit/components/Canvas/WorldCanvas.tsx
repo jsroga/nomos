@@ -15,11 +15,16 @@ export const WorldCanvas: React.FC = () => {
   // Local state for box drawing preview (before committing to store)
   const [drawingBoxStart, setDrawingBoxStart] = useState<{ x: number; y: number } | null>(null)
   const [drawingBoxEnd, setDrawingBoxEnd] = useState<{ x: number; y: number } | null>(null)
-  
+
   // Prompt popover state
   const [showPromptPopover, setShowPromptPopover] = useState(false)
   const [popoverPosition, setPopoverPosition] = useState({ x: 0, y: 0 })
-  const [pendingBox, setPendingBox] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
+  const [pendingBox, setPendingBox] = useState<{
+    x1: number
+    y1: number
+    x2: number
+    y2: number
+  } | null>(null)
   const promptInputRef = React.useRef<HTMLInputElement>(null)
 
   const viewport = useWorldStore(state => state.viewport)
@@ -63,7 +68,7 @@ export const WorldCanvas: React.FC = () => {
 
     return {
       x: (mouseX - viewport.x) / viewport.scale,
-      y: (mouseY - viewport.y) / viewport.scale
+      y: (mouseY - viewport.y) / viewport.scale,
     }
   }
 
@@ -75,7 +80,7 @@ export const WorldCanvas: React.FC = () => {
         setShowPromptPopover(false)
         setPendingBox(null)
       }
-      
+
       // Start drawing bounding box
       const worldPos = screenToWorld(e.clientX, e.clientY)
       setDrawingBoxStart(worldPos)
@@ -91,7 +96,8 @@ export const WorldCanvas: React.FC = () => {
       return
     }
 
-    if (e.button === 0) { // Left click for panning
+    if (e.button === 0) {
+      // Left click for panning
       setIsDragging(true)
       setLastMousePos({ x: e.clientX, y: e.clientY })
     }
@@ -113,7 +119,7 @@ export const WorldCanvas: React.FC = () => {
       setViewport({
         ...viewport,
         x: viewport.x + dx,
-        y: viewport.y + dy
+        y: viewport.y + dy,
       })
 
       setLastMousePos({ x: e.clientX, y: e.clientY })
@@ -132,13 +138,13 @@ export const WorldCanvas: React.FC = () => {
           x1: drawingBoxStart.x,
           y1: drawingBoxStart.y,
           x2: drawingBoxEnd.x,
-          y2: drawingBoxEnd.y
+          y2: drawingBoxEnd.y,
         }
-        
+
         // Store the box but don't trigger segmentation yet
         setPendingBox(box)
         setSelectBox(box)
-        
+
         // Position the popover near the box (bottom-right corner in screen coords)
         const rect = containerRef.current?.getBoundingClientRect()
         if (rect) {
@@ -149,7 +155,7 @@ export const WorldCanvas: React.FC = () => {
           const screenY = boxMaxY * viewport.scale + viewport.y + rect.height / 2 + rect.top
           setPopoverPosition({ x: screenX, y: screenY })
         }
-        
+
         setShowPromptPopover(true)
         // Focus the input after a short delay
         setTimeout(() => promptInputRef.current?.focus(), 50)
@@ -186,7 +192,7 @@ export const WorldCanvas: React.FC = () => {
   // Handle prompt confirmation and trigger segmentation
   const handlePromptConfirm = () => {
     if (!pendingBox) return
-    
+
     setShowPromptPopover(false)
     triggerSegmentation(pendingBox)
     setPendingBox(null)
@@ -209,11 +215,16 @@ export const WorldCanvas: React.FC = () => {
     setSegmenting(true)
     useWorldStore.getState().setSelectDebugInfo({
       box,
-      apiResponse: { status: 'Calling API...', textPrompt }
+      apiResponse: { status: 'Calling API...', textPrompt },
     })
 
     try {
-      const result = await selectModeService.segmentObject(box, tiles, currentProject.id, textPrompt)
+      const result = await selectModeService.segmentObject(
+        box,
+        tiles,
+        currentProject.id,
+        textPrompt
+      )
       setSelectedMask(result)
 
       if (result.debugInfo) {
@@ -223,7 +234,7 @@ export const WorldCanvas: React.FC = () => {
       console.error('Segmentation failed:', error)
       useWorldStore.getState().setSelectDebugInfo({
         box,
-        apiResponse: { error: error.message || String(error) }
+        apiResponse: { error: error.message || String(error) },
       })
     } finally {
       setSegmenting(false)
@@ -260,7 +271,7 @@ export const WorldCanvas: React.FC = () => {
       setViewport({
         x: newViewportX,
         y: newViewportY,
-        scale: newScale
+        scale: newScale,
       })
     }
 
@@ -321,7 +332,8 @@ export const WorldCanvas: React.FC = () => {
       if (e.key === 'Enter' && repaintResult) {
         e.preventDefault()
         try {
-          const { repaintService } = await import('@/domains/world-building-toolkit/services/RepaintService')
+          const { repaintService } =
+            await import('@/domains/world-building-toolkit/services/RepaintService')
           await repaintService.applyRepaint(repaintResult)
           setRepaintResult(null)
           clearRepaintStrokes()
@@ -336,7 +348,19 @@ export const WorldCanvas: React.FC = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isRepaintMode, isSelectMode, repaintResult, selectedMask, setRepaintMode, setSelectMode, setRepaintResult, clearRepaintStrokes, setDebugInfo, clearSelectBox, setSelectedMask])
+  }, [
+    isRepaintMode,
+    isSelectMode,
+    repaintResult,
+    selectedMask,
+    setRepaintMode,
+    setSelectMode,
+    setRepaintResult,
+    clearRepaintStrokes,
+    setDebugInfo,
+    clearSelectBox,
+    setSelectedMask,
+  ])
 
   // Render Visible Tiles Logic (Optimization)
   // For now, render known tiles + immediate neighbors of known tiles
@@ -388,7 +412,7 @@ export const WorldCanvas: React.FC = () => {
       x: Math.min(drawingBoxStart.x, drawingBoxEnd.x),
       y: Math.min(drawingBoxStart.y, drawingBoxEnd.y),
       width: Math.abs(drawingBoxEnd.x - drawingBoxStart.x),
-      height: Math.abs(drawingBoxEnd.y - drawingBoxStart.y)
+      height: Math.abs(drawingBoxEnd.y - drawingBoxStart.y),
     }
   }
 
@@ -399,7 +423,7 @@ export const WorldCanvas: React.FC = () => {
       x: Math.min(selectBox.x1, selectBox.x2),
       y: Math.min(selectBox.y1, selectBox.y2),
       width: Math.abs(selectBox.x2 - selectBox.x1),
-      height: Math.abs(selectBox.y2 - selectBox.y1)
+      height: Math.abs(selectBox.y2 - selectBox.y1),
     }
   }
 
@@ -409,9 +433,9 @@ export const WorldCanvas: React.FC = () => {
   return (
     <div
       ref={containerRef}
-      className="w-full h-full bg-[#1a1a1a] overflow-hidden relative"
+      className="w-full h-full bg-background overflow-hidden relative"
       style={{
-        cursor: isRepaintMode || isSelectMode ? 'crosshair' : (isDragging ? 'grabbing' : 'grab'),
+        cursor: isRepaintMode || isSelectMode ? 'crosshair' : isDragging ? 'grabbing' : 'grab',
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -480,79 +504,104 @@ export const WorldCanvas: React.FC = () => {
         )}
 
         {/* Asset Overlays - shown when previewing or showAllAssetMasks */}
-        {currentProject && assets.map((asset, index) => {
-          const isPreview = previewAssetId === asset.id
-          const shouldShow = isPreview || showAllAssetMasks
-          
-          if (!shouldShow || !asset.metadata?.bounds) return null
-          
-          const bounds = asset.metadata.bounds
-          
-          // Cycle through bright colors for each asset
-          const colors = [
-            { border: '#3B82F6', glow: 'rgba(59, 130, 246, 0.6)', filter: 'hue-rotate(200deg) saturate(2) brightness(1.4)' },   // Blue
-            { border: '#10B981', glow: 'rgba(16, 185, 129, 0.6)', filter: 'hue-rotate(140deg) saturate(2) brightness(1.4)' },   // Green
-            { border: '#F59E0B', glow: 'rgba(245, 158, 11, 0.6)', filter: 'hue-rotate(30deg) saturate(2) brightness(1.4)' },    // Orange
-            { border: '#EC4899', glow: 'rgba(236, 72, 153, 0.6)', filter: 'hue-rotate(320deg) saturate(2) brightness(1.4)' },   // Pink
-            { border: '#8B5CF6', glow: 'rgba(139, 92, 246, 0.6)', filter: 'hue-rotate(260deg) saturate(2) brightness(1.4)' },   // Purple
-            { border: '#06B6D4', glow: 'rgba(6, 182, 212, 0.6)', filter: 'hue-rotate(180deg) saturate(2) brightness(1.4)' },    // Cyan
-          ]
-          const color = colors[index % colors.length]
-          
-          return (
-            <div
-              key={asset.id}
-              className={`absolute pointer-events-none transition-all ${
-                isPreview ? 'z-20' : 'z-5'
-              }`}
-              style={{
-                left: bounds.x,
-                top: bounds.y,
-                width: bounds.width,
-                height: bounds.height,
-              }}
-            >
-              {/* Bright colored overlay behind the image */}
-              <div 
-                className="absolute inset-0 rounded-sm"
+        {currentProject &&
+          assets.map((asset, index) => {
+            const isPreview = previewAssetId === asset.id
+            const shouldShow = isPreview || showAllAssetMasks
+
+            if (!shouldShow || !asset.metadata?.bounds) return null
+
+            const bounds = asset.metadata.bounds
+
+            // Cycle through bright colors for each asset
+            const colors = [
+              {
+                border: '#3B82F6',
+                glow: 'rgba(59, 130, 246, 0.6)',
+                filter: 'hue-rotate(200deg) saturate(2) brightness(1.4)',
+              }, // Blue
+              {
+                border: '#10B981',
+                glow: 'rgba(16, 185, 129, 0.6)',
+                filter: 'hue-rotate(140deg) saturate(2) brightness(1.4)',
+              }, // Green
+              {
+                border: '#F59E0B',
+                glow: 'rgba(245, 158, 11, 0.6)',
+                filter: 'hue-rotate(30deg) saturate(2) brightness(1.4)',
+              }, // Orange
+              {
+                border: '#EC4899',
+                glow: 'rgba(236, 72, 153, 0.6)',
+                filter: 'hue-rotate(320deg) saturate(2) brightness(1.4)',
+              }, // Pink
+              {
+                border: '#8B5CF6',
+                glow: 'rgba(139, 92, 246, 0.6)',
+                filter: 'hue-rotate(260deg) saturate(2) brightness(1.4)',
+              }, // Purple
+              {
+                border: '#06B6D4',
+                glow: 'rgba(6, 182, 212, 0.6)',
+                filter: 'hue-rotate(180deg) saturate(2) brightness(1.4)',
+              }, // Cyan
+            ]
+            const color = colors[index % colors.length]
+
+            return (
+              <div
+                key={asset.id}
+                className={`absolute pointer-events-none transition-all ${
+                  isPreview ? 'z-20' : 'z-5'
+                }`}
                 style={{
-                  backgroundColor: color.glow,
-                  mixBlendMode: 'screen',
+                  left: bounds.x,
+                  top: bounds.y,
+                  width: bounds.width,
+                  height: bounds.height,
                 }}
-              />
-              <img 
-                src={`/projects/${currentProject.id}/assets/${asset.image_filename}`}
-                alt="Asset" 
-                className="w-full h-full relative"
-                style={{
-                  filter: isPreview 
-                    ? `brightness(1.5) contrast(1.1) drop-shadow(0 0 12px ${color.border})` 
-                    : `brightness(1.3) contrast(1.05) drop-shadow(0 0 6px ${color.border})`,
-                  objectFit: 'fill',
-                }}
-              />
-              {/* Bright border */}
-              <div 
-                className="absolute inset-0 rounded-sm"
-                style={{
-                  border: `3px solid ${color.border}`,
-                  boxShadow: isPreview 
-                    ? `0 0 20px ${color.glow}, inset 0 0 10px ${color.glow}` 
-                    : `0 0 10px ${color.glow}`,
-                }}
-              />
-              {/* Label */}
-              {isPreview && (
-                <div 
-                  className="absolute -top-6 left-0 text-xs font-bold px-2 py-0.5 rounded"
-                  style={{ backgroundColor: color.border, color: 'white' }}
-                >
-                  PREVIEW
-                </div>
-              )}
-            </div>
-          )
-        })}
+              >
+                {/* Bright colored overlay behind the image */}
+                <div
+                  className="absolute inset-0 rounded-sm"
+                  style={{
+                    backgroundColor: color.glow,
+                    mixBlendMode: 'screen',
+                  }}
+                />
+                <img
+                  src={`/projects/${currentProject.id}/assets/${asset.image_filename}`}
+                  alt="Asset"
+                  className="w-full h-full relative"
+                  style={{
+                    filter: isPreview
+                      ? `brightness(1.5) contrast(1.1) drop-shadow(0 0 12px ${color.border})`
+                      : `brightness(1.3) contrast(1.05) drop-shadow(0 0 6px ${color.border})`,
+                    objectFit: 'fill',
+                  }}
+                />
+                {/* Bright border */}
+                <div
+                  className="absolute inset-0 rounded-sm"
+                  style={{
+                    border: `3px solid ${color.border}`,
+                    boxShadow: isPreview
+                      ? `0 0 20px ${color.glow}, inset 0 0 10px ${color.glow}`
+                      : `0 0 10px ${color.glow}`,
+                  }}
+                />
+                {/* Label */}
+                {isPreview && (
+                  <div
+                    className="absolute -top-6 left-0 text-xs font-bold px-2 py-0.5 rounded"
+                    style={{ backgroundColor: color.border, color: 'white' }}
+                  >
+                    PREVIEW
+                  </div>
+                )}
+              </div>
+            )
+          })}
       </div>
 
       {/* UI Overlay for Scale */}
@@ -575,21 +624,18 @@ export const WorldCanvas: React.FC = () => {
             <div className="flex items-center gap-2 mb-2">
               <Sparkles className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium">What do you want to select?</span>
-              <button
-                onClick={handlePromptCancel}
-                className="ml-auto p-1 hover:bg-muted rounded"
-              >
+              <button onClick={handlePromptCancel} className="ml-auto p-1 hover:bg-muted rounded">
                 <X className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
             </div>
-            
+
             <div className="flex gap-2">
               <input
                 ref={promptInputRef}
                 type="text"
                 value={selectTextPrompt}
-                onChange={(e) => setSelectTextPrompt(e.target.value)}
-                onKeyDown={(e) => {
+                onChange={e => setSelectTextPrompt(e.target.value)}
+                onKeyDown={e => {
                   if (e.key === 'Enter') {
                     e.preventDefault()
                     handlePromptConfirm()
@@ -597,22 +643,22 @@ export const WorldCanvas: React.FC = () => {
                     handlePromptCancel()
                   }
                 }}
-                onMouseDown={(e) => e.stopPropagation()}
+                onMouseDown={e => e.stopPropagation()}
                 placeholder="e.g., car, person, tree..."
                 className="flex-1 bg-background border border-input rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground"
               />
               <button
-                onClick={(e) => {
+                onClick={e => {
                   e.stopPropagation()
                   handlePromptConfirm()
                 }}
-                onMouseDown={(e) => e.stopPropagation()}
+                onMouseDown={e => e.stopPropagation()}
                 className="px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 flex items-center gap-1"
               >
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
-            
+
             <p className="text-[10px] text-muted-foreground mt-2">
               Press Enter to segment • Esc to cancel • Leave empty for auto-detect
             </p>

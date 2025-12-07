@@ -3,6 +3,7 @@ import { AIModel, AIModelConfig, TileContext } from './types'
 import { assembleContextImage } from './contextAssembler'
 import { enhancePromptWithStyle } from './styleAnalyzer'
 import axios from 'axios'
+import { LocalStorageKeys } from '@/constants/localStorage'
 
 export class StabilityAIModel implements AIModel {
   id = 'stability'
@@ -14,6 +15,48 @@ export class StabilityAIModel implements AIModel {
     return !!config.apiKey
   }
 
+  async textToImage(prompt: string, config: AIModelConfig): Promise<string> {
+    if (!config.apiKey) throw new Error('API Key missing')
+
+    const engineId = 'stable-diffusion-xl-1024-v1-0'
+    const apiHost = 'https://api.stability.ai'
+    const url = `${apiHost}/v1/generation/${engineId}/text-to-image`
+
+    const formData = new FormData()
+    // Append "seamless" logic or specific texture prompt engineering here or in the service
+    formData.append('text_prompts[0][text]', prompt + ', seamless texture, top down view, flat lighting, high quality, 8k')
+    formData.append('text_prompts[0][weight]', '1')
+    formData.append('cfg_scale', (config.params?.cfgScale || 7).toString())
+    formData.append('samples', '1')
+    formData.append('steps', (config.params?.steps || 30).toString())
+
+    try {
+      const response = await axios.post(url, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Accept: 'application/json',
+          Authorization: `Bearer ${config.apiKey}`,
+        },
+      })
+
+      if (response.status !== 200) {
+        throw new Error(`Non-200 response: ${response.statusText}`)
+      }
+
+      const artifacts = response.data.artifacts
+      if (!artifacts || artifacts.length === 0) {
+        throw new Error('No image generated')
+      }
+
+      const base64Image = artifacts[0].base64
+      return `data:image/png;base64,${base64Image}`
+    } catch (error: unknown) {
+      console.error('Stability API failed:', error)
+      const message = error instanceof Error ? error.message : String(error)
+      throw new Error(`Stability generation failed: ${message}`)
+    }
+  }
+
   async generate(prompt: string, context: TileContext, config: AIModelConfig): Promise<string> {
     if (!config.apiKey) throw new Error('API Key missing')
 
@@ -21,11 +64,17 @@ export class StabilityAIModel implements AIModel {
     const apiHost = 'https://api.stability.ai'
     const url = `${apiHost}/v1/generation/${engineId}/image-to-image/masking`
 
-
-
     // Enhance prompt
     const neighborList = Object.values(context.neighbors).filter(Boolean)
-    const enhancedPrompt = await enhancePromptWithStyle(prompt, neighborList)
+    let enhancedPrompt = await enhancePromptWithStyle(prompt, neighborList)
+
+    // Append style reference URLs if available (for models that might support it, or as information)
+    if (context.styleReferenceUrls && context.styleReferenceUrls.length > 0) {
+      console.log('Injecting Style References:', context.styleReferenceUrls)
+      // Midjourney uses --sref, Stability doesn't standardized on this in text prompt,
+      // but appending it ensures it "is sent in the request" as per user issue.
+      enhancedPrompt += ` --sref ${context.styleReferenceUrls.join(' ')}`
+    }
 
     // Prepare context
     // SDXL Inpainting works best with a 1024x1024 image and a mask.
@@ -106,7 +155,7 @@ export class StabilityAIModel implements AIModel {
     // Ideally UpscaleService should pass it.
     let apiKey = ''
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('ai-config-stability')
+      const saved = localStorage.getItem(LocalStorageKeys.AI_CONFIG_STABILITY)
       if (saved) {
         apiKey = JSON.parse(saved).apiKey
       }
@@ -130,7 +179,7 @@ export class StabilityAIModel implements AIModel {
 
     formData.append('init_image', blob)
     // Creativity 0.0 = exact copy (low strength), 1.0 = creative (high strength).
-    // Stability `image_strength`: 0.0 to 1.0. 
+    // Stability `image_strength`: 0.0 to 1.0.
     // 1.0 means "use init image heavily", 0.0 means "ignore init image".
     // So `image_strength` = 1 - creativity.
     // If creativity is 0.3 (low), strength should be 0.7.
@@ -139,7 +188,10 @@ export class StabilityAIModel implements AIModel {
     formData.append('init_image_mode', 'IMAGE_STRENGTH')
     formData.append('image_strength', imageStrength.toString())
 
-    formData.append('text_prompts[0][text]', prompt + ', high resolution, highly detailed, 8k, masterpiece')
+    formData.append(
+      'text_prompts[0][text]',
+      prompt + ', high resolution, highly detailed, 8k, masterpiece'
+    )
     formData.append('text_prompts[0][weight]', '1')
 
     // Negative prompt
@@ -176,8 +228,16 @@ export class StabilityAIModel implements AIModel {
     }
   }
 
-  async upscale4k(base64Image: string, apiKey?: string, mode: 'creative' | 'conservative' = 'conservative'): Promise<string> {
-    const key = apiKey || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('ai-config-stability') || '{}').apiKey : '')
+  async upscale4k(
+    base64Image: string,
+    apiKey?: string,
+    mode: 'creative' | 'conservative' = 'conservative'
+  ): Promise<string> {
+    const key =
+      apiKey ||
+      (typeof window !== 'undefined'
+        ? JSON.parse(localStorage.getItem(LocalStorageKeys.AI_CONFIG_STABILITY) || '{}').apiKey
+        : '')
     if (!key) throw new Error('Stability API Key not found for 4k upscale')
 
     const upscaleUrl = `https://api.stability.ai/v2beta/stable-image/upscale/${mode}`
@@ -205,8 +265,8 @@ export class StabilityAIModel implements AIModel {
         // Conservative mode: synchronous, returns image directly
         const response = await axios.post(upscaleUrl, formData, {
           headers: {
-            'authorization': `Bearer ${key}`,
-            'accept': 'image/*',
+            authorization: `Bearer ${key}`,
+            accept: 'image/*',
           },
           responseType: 'arraybuffer',
           validateStatus: () => true,
@@ -220,16 +280,15 @@ export class StabilityAIModel implements AIModel {
         // Convert to base64 directly
         console.log('Stability: Conservative upscale complete!')
         const base64 = btoa(
-          new Uint8Array(response.data)
-            .reduce((data, byte) => data + String.fromCharCode(byte), '')
+          new Uint8Array(response.data).reduce((data, byte) => data + String.fromCharCode(byte), '')
         )
         return base64
       } else {
         // Creative mode: asynchronous, returns generation ID
         const submitResponse = await axios.post(upscaleUrl, formData, {
           headers: {
-            'authorization': `Bearer ${key}`,
-            'accept': 'application/json',
+            authorization: `Bearer ${key}`,
+            accept: 'application/json',
           },
           validateStatus: () => true,
         })
@@ -256,8 +315,8 @@ export class StabilityAIModel implements AIModel {
 
           const resultResponse = await axios.get(resultUrl, {
             headers: {
-              'authorization': `Bearer ${key}`,
-              'accept': '*/*',
+              authorization: `Bearer ${key}`,
+              accept: '*/*',
             },
             responseType: 'arraybuffer',
             validateStatus: () => true,
@@ -266,12 +325,16 @@ export class StabilityAIModel implements AIModel {
           if (resultResponse.status === 200) {
             console.log('Stability: Creative upscale complete!')
             const base64 = btoa(
-              new Uint8Array(resultResponse.data)
-                .reduce((data, byte) => data + String.fromCharCode(byte), '')
+              new Uint8Array(resultResponse.data).reduce(
+                (data, byte) => data + String.fromCharCode(byte),
+                ''
+              )
             )
             return base64
           } else if (resultResponse.status === 202) {
-            console.log(`Stability: Still processing (attempt ${attempt + 1}/${maxAttempts}, waiting 5s...)`)
+            console.log(
+              `Stability: Still processing (attempt ${attempt + 1}/${maxAttempts}, waiting 5s...)`
+            )
             continue
           } else {
             const errorText = new TextDecoder().decode(resultResponse.data)
@@ -279,7 +342,9 @@ export class StabilityAIModel implements AIModel {
           }
         }
 
-        throw new Error('Stability upscale timeout - result not ready after 50 retries (250 seconds)')
+        throw new Error(
+          'Stability upscale timeout - result not ready after 50 retries (250 seconds)'
+        )
       }
     } catch (error: unknown) {
       console.error('Stability Upscale failed:', error)

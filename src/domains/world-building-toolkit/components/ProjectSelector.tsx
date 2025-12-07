@@ -1,7 +1,9 @@
 /* eslint-disable */
+'use client'
+
 import React, { useEffect, useState } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
-import { supabase } from '@/infrastructure/storage/supabase'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Plus, FolderOpen } from 'lucide-react'
 
 export const ProjectSelector: React.FC = () => {
@@ -13,16 +15,24 @@ export const ProjectSelector: React.FC = () => {
   const currentProject = useWorldStore(state => state.currentProject)
   const switchProject = useWorldStore(state => state.switchProject)
   const createProject = useWorldStore(state => state.createProject)
+  const user = useWorldStore(state => state.user)
 
   useEffect(() => {
-    loadProjects()
-  }, [])
+    if (user) {
+      loadProjects()
+    }
+  }, [user])
 
   const loadProjects = async () => {
-    const { data } = await supabase
+    const supabase = createClientComponentClient()
+    const { data, error } = await supabase
       .from('projects')
       .select('id, name')
       .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error loading projects:', error)
+    }
     if (data) setProjects(data)
   }
 

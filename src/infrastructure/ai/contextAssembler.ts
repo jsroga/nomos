@@ -74,10 +74,18 @@ export async function assembleContextImage(
       const img = await loadImage(topLeft.imageUrl)
       ctx.drawImage(
         img,
-        TILE_SIZE - CONTEXT_SIZE, TILE_SIZE - CONTEXT_SIZE, CONTEXT_SIZE, CONTEXT_SIZE, // src (bottom-right corner)
-        0, 0, CONTEXT_SIZE, CONTEXT_SIZE // dest (top-left corner)
+        TILE_SIZE - CONTEXT_SIZE,
+        TILE_SIZE - CONTEXT_SIZE,
+        CONTEXT_SIZE,
+        CONTEXT_SIZE, // src (bottom-right corner)
+        0,
+        0,
+        CONTEXT_SIZE,
+        CONTEXT_SIZE // dest (top-left corner)
       )
-    } catch (e) { console.error('Failed to load topLeft neighbor', e) }
+    } catch (e) {
+      console.error('Failed to load topLeft neighbor', e)
+    }
   }
 
   // TOP-RIGHT
@@ -86,10 +94,18 @@ export async function assembleContextImage(
       const img = await loadImage(topRight.imageUrl)
       ctx.drawImage(
         img,
-        0, TILE_SIZE - CONTEXT_SIZE, CONTEXT_SIZE, CONTEXT_SIZE, // src (bottom-left corner)
-        TARGET_X + TILE_SIZE, 0, CONTEXT_SIZE, CONTEXT_SIZE // dest (top-right corner)
+        0,
+        TILE_SIZE - CONTEXT_SIZE,
+        CONTEXT_SIZE,
+        CONTEXT_SIZE, // src (bottom-left corner)
+        TARGET_X + TILE_SIZE,
+        0,
+        CONTEXT_SIZE,
+        CONTEXT_SIZE // dest (top-right corner)
       )
-    } catch (e) { console.error('Failed to load topRight neighbor', e) }
+    } catch (e) {
+      console.error('Failed to load topRight neighbor', e)
+    }
   }
 
   // BOTTOM-LEFT
@@ -98,10 +114,18 @@ export async function assembleContextImage(
       const img = await loadImage(bottomLeft.imageUrl)
       ctx.drawImage(
         img,
-        TILE_SIZE - CONTEXT_SIZE, 0, CONTEXT_SIZE, CONTEXT_SIZE, // src (top-right corner)
-        0, TARGET_Y + TILE_SIZE, CONTEXT_SIZE, CONTEXT_SIZE // dest (bottom-left corner)
+        TILE_SIZE - CONTEXT_SIZE,
+        0,
+        CONTEXT_SIZE,
+        CONTEXT_SIZE, // src (top-right corner)
+        0,
+        TARGET_Y + TILE_SIZE,
+        CONTEXT_SIZE,
+        CONTEXT_SIZE // dest (bottom-left corner)
       )
-    } catch (e) { console.error('Failed to load bottomLeft neighbor', e) }
+    } catch (e) {
+      console.error('Failed to load bottomLeft neighbor', e)
+    }
   }
 
   // BOTTOM-RIGHT
@@ -110,10 +134,18 @@ export async function assembleContextImage(
       const img = await loadImage(bottomRight.imageUrl)
       ctx.drawImage(
         img,
-        0, 0, CONTEXT_SIZE, CONTEXT_SIZE, // src (top-left corner)
-        TARGET_X + TILE_SIZE, TARGET_Y + TILE_SIZE, CONTEXT_SIZE, CONTEXT_SIZE // dest (bottom-right corner)
+        0,
+        0,
+        CONTEXT_SIZE,
+        CONTEXT_SIZE, // src (top-left corner)
+        TARGET_X + TILE_SIZE,
+        TARGET_Y + TILE_SIZE,
+        CONTEXT_SIZE,
+        CONTEXT_SIZE // dest (bottom-right corner)
       )
-    } catch (e) { console.error('Failed to load bottomRight neighbor', e) }
+    } catch (e) {
+      console.error('Failed to load bottomRight neighbor', e)
+    }
   }
 
   // DIRECT NEIGHBORS
