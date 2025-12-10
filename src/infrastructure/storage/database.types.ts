@@ -8,18 +8,21 @@ export interface Database {
           id: string
           name: string
           project_prompt: string | null
+          series_bible: Json | null
           created_at: string
         }
         Insert: {
           id?: string
           name: string
           project_prompt?: string | null
+          series_bible?: Json | null
           created_at?: string
         }
         Update: {
           id?: string
           name?: string
           project_prompt?: string | null
+          series_bible?: Json | null
           created_at?: string
         }
       }
@@ -49,6 +52,32 @@ export interface Database {
           y?: number
           tile_prompt?: string | null
           image_filename?: string
+          created_at?: string
+        }
+      }
+      assets: {
+        Row: {
+          id: string
+          project_id: string
+          image_filename: string
+          model_filename: string | null
+          metadata: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          image_filename: string
+          model_filename?: string | null
+          metadata?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          image_filename?: string
+          model_filename?: string | null
+          metadata?: Json | null
           created_at?: string
         }
       }

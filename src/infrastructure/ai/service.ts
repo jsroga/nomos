@@ -4,6 +4,8 @@ import { OpenAIModel } from './openai'
 import { StabilityAIModel } from './stability'
 import { CustomAIModel } from './custom'
 import { GeminiAIModel } from './gemini'
+import { MidjourneyAIModel } from './midjourney'
+import { LocalStorageKeys } from '@/constants/localStorage'
 
 class AIService {
   private models: Record<string, AIModel> = {}
@@ -16,15 +18,16 @@ class AIService {
     this.registerModel(new StabilityAIModel())
     this.registerModel(new CustomAIModel())
     this.registerModel(new GeminiAIModel())
+    this.registerModel(new MidjourneyAIModel())
 
     // Load configs from local storage (only on client side)
     if (typeof window !== 'undefined') {
       try {
-        const saved = localStorage.getItem('ai-configs')
+        const saved = localStorage.getItem(LocalStorageKeys.AI_CONFIGS)
         if (saved) {
           this.configs = JSON.parse(saved)
         }
-        const savedActive = localStorage.getItem('ai-active-model')
+        const savedActive = localStorage.getItem(LocalStorageKeys.AI_ACTIVE_MODEL)
         if (savedActive) {
           this.activeModelId = savedActive
         }
@@ -54,7 +57,7 @@ class AIService {
     if (this.models[id]) {
       this.activeModelId = id
       if (typeof window !== 'undefined') {
-        localStorage.setItem('ai-active-model', id)
+        localStorage.setItem(LocalStorageKeys.AI_ACTIVE_MODEL, id)
       }
     }
   }
@@ -66,7 +69,7 @@ class AIService {
   updateConfig(modelId: string, config: AIModelConfig) {
     this.configs[modelId] = { ...this.configs[modelId], ...config }
     if (typeof window !== 'undefined') {
-      localStorage.setItem('ai-configs', JSON.stringify(this.configs))
+      localStorage.setItem(LocalStorageKeys.AI_CONFIGS, JSON.stringify(this.configs))
     }
   }
 

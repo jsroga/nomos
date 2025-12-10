@@ -1,0 +1,405 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { Tile, useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
+import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
+import { aiService } from '@/infrastructure/ai/service'
+import { LocalStorageKeys, DynamicLocalStorageKeys } from '@/constants/localStorage'
+import { assembleContextImage } from '@/infrastructure/ai/contextAssembler'
+import { TileContext } from '@/infrastructure/ai/types'
+import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/constants/polling'
+
+interface TileGenRunState {
+  runId: string
+  projectId: string
+  x: number
+  y: number
+  prompt: string
+  startedAt: string
+}
+
+export class TileGenerationService {
+  private pollingIntervals: Map<string, NodeJS.Timeout> = new Map()
+
+  /**
+   * Helper to load a tile image as base64 data URL
+   */
+  private async loadTileAsDataUrl(
+    tile: Tile | undefined,
+    projectId: string
+  ): Promise<(Tile & { imageUrl?: string }) | undefined> {
+    if (!tile?.image_filename) return undefined
+
+    const imageUrl = `/projects/${projectId}/${tile.image_filename}`
+
+    try {
+      const response = await fetch(imageUrl)
+      const blob = await response.blob()
+
+      return new Promise(resolve => {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          resolve({
+            ...tile,
+            imageUrl: reader.result as string,
+          })
+        }
+        reader.onerror = () => resolve(tile)
+        reader.readAsDataURL(blob)
+      })
+    } catch (e) {
+      console.error('Failed to load tile image:', e)
+      return tile
+    }
+  }
+
+  /**
+   * Convert blob to base64 string (without data URL prefix)
+   */
+  private blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string
+        // Remove the data:image/png;base64, prefix
+        const base64 = dataUrl.split(',')[1]
+        resolve(base64)
+      }
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
+  }
+
+  /**
+   * Generate a tile using Trigger.dev background task
+   */
+  async generate(
+    projectId: string,
+    x: number,
+    y: number,
+    prompt: string,
+    styleReferenceUrls?: string[]
+  ): Promise<string | null> {
+    console.log(`Starting tile generation via Trigger.dev for (${x}, ${y})`, { styleReferenceUrls })
+
+    // Get AI config from localStorage
+    const aiProvider = aiService.getActiveModelId()
+    let aiConfig = aiService.getConfig(aiProvider)
+
+    // For Midjourney, also check cometConfig as fallback
+    if (aiProvider === 'midjourney' && !aiConfig?.apiKey && typeof window !== 'undefined') {
+      const savedComet = localStorage.getItem(LocalStorageKeys.AI_CONFIG_COMET)
+      if (savedComet) {
+        const cometConfig = JSON.parse(savedComet)
+        if (cometConfig.apiKey) {
+          aiConfig = { ...aiConfig, apiKey: cometConfig.apiKey }
+        }
+      }
+    }
+
+    if (!aiConfig?.apiKey) {
+      throw new Error(`API key not found for provider: ${aiProvider}. Please configure it in Settings.`)
+    }
+
+    // Track generating status
+    useWorldStore.getState().addGeneratingTile(x, y)
+    const opId = `gen-${x}-${y}`
+    useGlobalStatusStore.getState().addOperation({
+      id: opId,
+      type: 'world-gen',
+      label: 'Generating Tile',
+      details: `(${x}, ${y})`,
+      status: 'in-progress',
+    })
+
+    try {
+      // Get tiles from store to check for neighbors
+      const tiles = useWorldStore.getState().tiles
+
+      // Debug: log which tiles exist around the target
+      console.log(`[TileGen] Target: (${x}, ${y})`)
+      console.log(`[TileGen] Checking neighbors:`, {
+        up: tiles[`${x},${y - 1}`]?.image_filename,
+        down: tiles[`${x},${y + 1}`]?.image_filename,
+        left: tiles[`${x - 1},${y}`]?.image_filename,
+        right: tiles[`${x + 1},${y}`]?.image_filename,
+      })
+
+      // Load neighbor tiles with their images
+      const [upTile, downTile, leftTile, rightTile, topLeftTile, topRightTile, bottomLeftTile, bottomRightTile] =
+        await Promise.all([
+          this.loadTileAsDataUrl(tiles[`${x},${y - 1}`], projectId),
+          this.loadTileAsDataUrl(tiles[`${x},${y + 1}`], projectId),
+          this.loadTileAsDataUrl(tiles[`${x - 1},${y}`], projectId),
+          this.loadTileAsDataUrl(tiles[`${x + 1},${y}`], projectId),
+          this.loadTileAsDataUrl(tiles[`${x - 1},${y - 1}`], projectId),
+          this.loadTileAsDataUrl(tiles[`${x + 1},${y - 1}`], projectId),
+          this.loadTileAsDataUrl(tiles[`${x - 1},${y + 1}`], projectId),
+          this.loadTileAsDataUrl(tiles[`${x + 1},${y + 1}`], projectId),
+        ])
+
+      const neighbors = {
+        up: upTile,
+        down: downTile,
+        left: leftTile,
+        right: rightTile,
+        topLeft: topLeftTile,
+        topRight: topRightTile,
+        bottomLeft: bottomLeftTile,
+        bottomRight: bottomRightTile,
+      }
+
+      // Check if we have any neighbors with images (direct neighbors are most important)
+      const hasNeighbors = !!(
+        neighbors.up?.imageUrl ||
+        neighbors.down?.imageUrl ||
+        neighbors.left?.imageUrl ||
+        neighbors.right?.imageUrl
+      )
+
+      const isFirstTile = !hasNeighbors
+      let contextImageBase64: string | undefined
+
+      // If we have neighbors, assemble context image
+      if (hasNeighbors) {
+        console.log('Assembling context image for follow-up tile generation')
+        const context: TileContext = {
+          targetX: x,
+          targetY: y,
+          neighbors,
+          allTiles: tiles,
+        }
+
+        const { imageBlob } = await assembleContextImage(context, 1024)
+        contextImageBase64 = await this.blobToBase64(imageBlob)
+        console.log('Context image assembled, size:', contextImageBase64.length)
+      } else {
+        console.log('First tile generation - no neighbors, using style references')
+      }
+
+      // Trigger the tile generation task
+      console.log(`Triggering generate-tile task with provider: ${aiProvider}, isFirstTile: ${isFirstTile}`)
+
+      const triggerResponse = await fetch('/api/trigger-tile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId,
+          x,
+          y,
+          prompt,
+          aiProvider,
+          aiConfig,
+          isFirstTile,
+          // Pass context image for follow-up tiles
+          ...(contextImageBase64 ? { contextImageBase64 } : {}),
+          // Pass style references for first tile, otherwise API will fetch from project
+          ...(styleReferenceUrls?.length ? { styleReferenceUrls } : {}),
+        }),
+      })
+
+      const triggerData = await triggerResponse.json()
+
+      if (!triggerResponse.ok || !triggerData.runId) {
+        throw new Error(triggerData.error || 'Failed to trigger tile generation task')
+      }
+
+      console.log('Tile generation task triggered:', triggerData.runId)
+
+      // Save run state to localStorage for recovery
+      const runState: TileGenRunState = {
+        runId: triggerData.runId,
+        projectId,
+        x,
+        y,
+        prompt,
+        startedAt: new Date().toISOString(),
+      }
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(DynamicLocalStorageKeys.tileGen(x, y), JSON.stringify(runState))
+      }
+
+      // Start polling for status
+      this.startPolling(runState, opId)
+
+      return triggerData.runId
+    } catch (error) {
+      console.error('Tile generation error:', error)
+      // Clean up status on error
+      useWorldStore.getState().removeGeneratingTile(x, y)
+      useGlobalStatusStore.getState().removeOperation(opId)
+      throw error
+    }
+  }
+
+  /**
+   * Start polling for task status
+   */
+  private startPolling(runState: TileGenRunState, opId: string) {
+    const pollInterval = setInterval(async () => {
+      try {
+        const statusResponse = await fetch(`/api/trigger-tile/status?runId=${runState.runId}`)
+        const statusData = await statusResponse.json()
+
+        if (statusResponse.status === 404) {
+          console.warn('Tile generation run not found, clearing state')
+          this.clearRunState(runState, opId)
+          return
+        }
+
+        const progress = statusData.metadata?.progress || 0
+        const stage = statusData.metadata?.stage || 'unknown'
+
+        // Update global status with progress
+        useGlobalStatusStore.getState().updateOperation(opId, {
+          details: `(${runState.x}, ${runState.y}) ${stage} ${progress}%`,
+        })
+
+        // Check if completed
+        if (statusData.status === 'COMPLETED') {
+          console.log('Tile generation completed:', statusData.output)
+          await this.handleCompletion(runState, statusData.output, opId)
+          return
+        }
+
+        // Check if failed
+        if (!ACTIVE_TASK_STATUSES.includes(statusData.status)) {
+          console.error('Tile generation failed:', statusData.error || statusData.status)
+          this.clearRunState(runState, opId)
+          return
+        }
+      } catch (error) {
+        console.error('Status polling error:', error)
+      }
+    }, POLLING_INTERVALS.DEFAULT) // Poll every 5 seconds
+
+    this.pollingIntervals.set(runState.runId, pollInterval)
+  }
+
+  /**
+   * Handle successful completion
+   */
+  private async handleCompletion(
+    runState: TileGenRunState,
+    output: { success: boolean; filename: string; imageUrl: string },
+    opId: string
+  ) {
+    try {
+      if (output?.success && output?.filename) {
+        // Update the store with the new tile
+        const { tiles, currentProject } = useWorldStore.getState()
+        const tileKey = `${runState.x},${runState.y}`
+
+        // Create or update the tile in the store
+        useWorldStore.setState(state => ({
+          tiles: {
+            ...state.tiles,
+            [tileKey]: {
+              id: tiles[tileKey]?.id || `tile-${runState.x}-${runState.y}`,
+              project_id: runState.projectId,
+              x: runState.x,
+              y: runState.y,
+              tile_prompt: runState.prompt,
+              image_filename: output.filename,
+              created_at: tiles[tileKey]?.created_at || new Date().toISOString(),
+            },
+          },
+        }))
+
+        console.log('Tile generated:', output.filename)
+      }
+    } catch (error) {
+      console.error('Error updating tile after completion:', error)
+    } finally {
+      this.clearRunState(runState, opId)
+    }
+  }
+
+  /**
+   * Clear run state and stop polling
+   */
+  private clearRunState(runState: TileGenRunState, opId: string) {
+    // Stop polling
+    const interval = this.pollingIntervals.get(runState.runId)
+    if (interval) {
+      clearInterval(interval)
+      this.pollingIntervals.delete(runState.runId)
+    }
+
+    // Clear localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(DynamicLocalStorageKeys.tileGen(runState.x, runState.y))
+    }
+
+    // Clear UI status
+    useWorldStore.getState().removeGeneratingTile(runState.x, runState.y)
+    useGlobalStatusStore.getState().removeOperation(opId)
+  }
+
+  /**
+   * Resume any pending tile generation tasks from localStorage (call on app load)
+   */
+  resumePendingGenerations() {
+    if (typeof window === 'undefined') return
+
+    // Find all tile-gen run keys in localStorage
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key?.startsWith('tile-gen-')) {
+        try {
+          const runState: TileGenRunState = JSON.parse(localStorage.getItem(key) || '')
+          if (runState.runId) {
+            console.log('Resuming tile generation polling for:', runState.runId)
+
+            // Re-add status indicators
+            useWorldStore.getState().addGeneratingTile(runState.x, runState.y)
+            const opId = `gen-${runState.x}-${runState.y}`
+            useGlobalStatusStore.getState().addOperation({
+              id: opId,
+              type: 'world-gen',
+              label: 'Generating Tile (resumed)',
+              details: `(${runState.x}, ${runState.y})`,
+              status: 'in-progress',
+            })
+
+            // Start polling
+            this.startPolling(runState, opId)
+          }
+        } catch (e) {
+          console.warn('Failed to parse tile generation run state:', key)
+          localStorage.removeItem(key)
+        }
+      }
+    }
+  }
+
+  /**
+   * Stop an in-progress generation
+   */
+  stopGeneration(x: number, y: number) {
+    if (typeof window === 'undefined') return
+
+    const key = `tile-gen-${x}-${y}`
+    const data = localStorage.getItem(key)
+    if (data) {
+      try {
+        const runState: TileGenRunState = JSON.parse(data)
+        const opId = `gen-${runState.x}-${runState.y}`
+        this.clearRunState(runState, opId)
+        console.log('Stopped tile generation for:', x, y)
+      } catch (e) {
+        localStorage.removeItem(key)
+      }
+    }
+  }
+
+  /**
+   * Check if a tile is currently being generated
+   */
+  isGenerating(x: number, y: number): boolean {
+    if (typeof window === 'undefined') return false
+    return !!localStorage.getItem(DynamicLocalStorageKeys.tileGen(x, y))
+  }
+}
+
+export const tileGenerationService = new TileGenerationService()
+

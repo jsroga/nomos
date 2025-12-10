@@ -65,140 +65,171 @@ export async function assembleContextImage(
 
   const { up, down, left, right, topLeft, topRight, bottomLeft, bottomRight } = context.neighbors
 
+  // Helper to calculate source crop based on actual image size
+  // Images can be different sizes (512, 1024, 2048 etc due to upscaling)
+  // We want to take the correct PROPORTION of the edge
+  const getScaledCornerCrop = (img: HTMLImageElement, corner: 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight') => {
+    const imgW = img.width
+    const imgH = img.height
+    const ratio = CONTEXT_SIZE / TILE_SIZE // 0.5
+
+    switch (corner) {
+      case 'topLeft':
+        return { x: 0, y: 0, w: imgW * ratio, h: imgH * ratio }
+      case 'topRight':
+        return { x: imgW * (1 - ratio), y: 0, w: imgW * ratio, h: imgH * ratio }
+      case 'bottomLeft':
+        return { x: 0, y: imgH * (1 - ratio), w: imgW * ratio, h: imgH * ratio }
+      case 'bottomRight':
+        return { x: imgW * (1 - ratio), y: imgH * (1 - ratio), w: imgW * ratio, h: imgH * ratio }
+    }
+  }
+
   // Draw neighbors (Maximize context to 256px overlap)
 
   // CORNER NEIGHBORS (Draw first so direct neighbors overlay them if needed)
-  // TOP-LEFT
+  // TOP-LEFT corner: we need bottom-right corner of the topLeft tile
   if (topLeft?.imageUrl) {
     try {
       const img = await loadImage(topLeft.imageUrl)
+      const src = getScaledCornerCrop(img, 'bottomRight')
       ctx.drawImage(
         img,
-        TILE_SIZE - CONTEXT_SIZE, TILE_SIZE - CONTEXT_SIZE, CONTEXT_SIZE, CONTEXT_SIZE, // src (bottom-right corner)
-        0, 0, CONTEXT_SIZE, CONTEXT_SIZE // dest (top-left corner)
+        src.x, src.y, src.w, src.h, // src (bottom-right corner of neighbor)
+        0, 0, CONTEXT_SIZE, CONTEXT_SIZE // dest (top-left corner of canvas)
       )
-    } catch (e) { console.error('Failed to load topLeft neighbor', e) }
+    } catch (e) {
+      console.error('Failed to load topLeft neighbor', e)
+    }
   }
 
-  // TOP-RIGHT
+  // TOP-RIGHT corner: we need bottom-left corner of the topRight tile
   if (topRight?.imageUrl) {
     try {
       const img = await loadImage(topRight.imageUrl)
+      const src = getScaledCornerCrop(img, 'bottomLeft')
       ctx.drawImage(
         img,
-        0, TILE_SIZE - CONTEXT_SIZE, CONTEXT_SIZE, CONTEXT_SIZE, // src (bottom-left corner)
-        TARGET_X + TILE_SIZE, 0, CONTEXT_SIZE, CONTEXT_SIZE // dest (top-right corner)
+        src.x, src.y, src.w, src.h, // src (bottom-left corner of neighbor)
+        TARGET_X + TILE_SIZE, 0, CONTEXT_SIZE, CONTEXT_SIZE // dest (top-right corner of canvas)
       )
-    } catch (e) { console.error('Failed to load topRight neighbor', e) }
+    } catch (e) {
+      console.error('Failed to load topRight neighbor', e)
+    }
   }
 
-  // BOTTOM-LEFT
+  // BOTTOM-LEFT corner: we need top-right corner of the bottomLeft tile
   if (bottomLeft?.imageUrl) {
     try {
       const img = await loadImage(bottomLeft.imageUrl)
+      const src = getScaledCornerCrop(img, 'topRight')
       ctx.drawImage(
         img,
-        TILE_SIZE - CONTEXT_SIZE, 0, CONTEXT_SIZE, CONTEXT_SIZE, // src (top-right corner)
-        0, TARGET_Y + TILE_SIZE, CONTEXT_SIZE, CONTEXT_SIZE // dest (bottom-left corner)
+        src.x, src.y, src.w, src.h, // src (top-right corner of neighbor)
+        0, TARGET_Y + TILE_SIZE, CONTEXT_SIZE, CONTEXT_SIZE // dest (bottom-left corner of canvas)
       )
-    } catch (e) { console.error('Failed to load bottomLeft neighbor', e) }
+    } catch (e) {
+      console.error('Failed to load bottomLeft neighbor', e)
+    }
   }
 
-  // BOTTOM-RIGHT
+  // BOTTOM-RIGHT corner: we need top-left corner of the bottomRight tile
   if (bottomRight?.imageUrl) {
     try {
       const img = await loadImage(bottomRight.imageUrl)
+      const src = getScaledCornerCrop(img, 'topLeft')
       ctx.drawImage(
         img,
-        0, 0, CONTEXT_SIZE, CONTEXT_SIZE, // src (top-left corner)
-        TARGET_X + TILE_SIZE, TARGET_Y + TILE_SIZE, CONTEXT_SIZE, CONTEXT_SIZE // dest (bottom-right corner)
+        src.x, src.y, src.w, src.h, // src (top-left corner of neighbor)
+        TARGET_X + TILE_SIZE, TARGET_Y + TILE_SIZE, CONTEXT_SIZE, CONTEXT_SIZE // dest (bottom-right corner of canvas)
       )
-    } catch (e) { console.error('Failed to load bottomRight neighbor', e) }
+    } catch (e) {
+      console.error('Failed to load bottomRight neighbor', e)
+    }
+  }
+
+  // Helper to calculate source crop for edge neighbors based on actual image size
+  const getScaledEdgeCrop = (img: HTMLImageElement, edge: 'top' | 'bottom' | 'left' | 'right') => {
+    const imgW = img.width
+    const imgH = img.height
+    // Context ratio: we want 256/512 = 0.5 of each edge
+    const ratio = CONTEXT_SIZE / TILE_SIZE
+
+    switch (edge) {
+      case 'top':
+        // Top strip: full width, top portion of height
+        return { x: 0, y: 0, w: imgW, h: imgH * ratio }
+      case 'bottom':
+        // Bottom strip: full width, bottom portion of height
+        return { x: 0, y: imgH * (1 - ratio), w: imgW, h: imgH * ratio }
+      case 'left':
+        // Left strip: left portion of width, full height
+        return { x: 0, y: 0, w: imgW * ratio, h: imgH }
+      case 'right':
+        // Right strip: right portion of width, full height
+        return { x: imgW * (1 - ratio), y: 0, w: imgW * ratio, h: imgH }
+    }
   }
 
   // DIRECT NEIGHBORS
-  // UP neighbor: Draw bottom half
+  // UP neighbor: Draw bottom strip
   if (up?.imageUrl) {
     try {
       const img = await loadImage(up.imageUrl)
-      // Source: bottom 256px of neighbor (0, 256, 512, 256)
+      const src = getScaledEdgeCrop(img, 'bottom')
       // Dest: top area above target (256, 0, 512, 256)
       ctx.drawImage(
         img,
-        0,
-        TILE_SIZE - CONTEXT_SIZE,
-        TILE_SIZE,
-        CONTEXT_SIZE, // src
-        TARGET_X,
-        0,
-        TILE_SIZE,
-        CONTEXT_SIZE // dest
+        src.x, src.y, src.w, src.h, // src - scaled to actual image size
+        TARGET_X, 0, TILE_SIZE, CONTEXT_SIZE // dest - always 512x256
       )
     } catch (e) {
       console.error('Failed to load up neighbor', e)
     }
   }
 
-  // DOWN neighbor: Draw top half
+  // DOWN neighbor: Draw top strip
   if (down?.imageUrl) {
     try {
       const img = await loadImage(down.imageUrl)
-      // Source: top 256px of neighbor (0, 0, 512, 256)
+      const src = getScaledEdgeCrop(img, 'top')
       // Dest: bottom area below target (256, 768, 512, 256)
       ctx.drawImage(
         img,
-        0,
-        0,
-        TILE_SIZE,
-        CONTEXT_SIZE, // src
-        TARGET_X,
-        TARGET_Y + TILE_SIZE,
-        TILE_SIZE,
-        CONTEXT_SIZE // dest
+        src.x, src.y, src.w, src.h, // src
+        TARGET_X, TARGET_Y + TILE_SIZE, TILE_SIZE, CONTEXT_SIZE // dest
       )
     } catch (e) {
       console.error('Failed to load down neighbor', e)
     }
   }
 
-  // LEFT neighbor: Draw right half
+  // LEFT neighbor: Draw right strip
   if (left?.imageUrl) {
     try {
       const img = await loadImage(left.imageUrl)
-      // Source: right 256px of neighbor (256, 0, 256, 512)
+      const src = getScaledEdgeCrop(img, 'right')
       // Dest: left area left of target (0, 256, 256, 512)
       ctx.drawImage(
         img,
-        TILE_SIZE - CONTEXT_SIZE,
-        0,
-        CONTEXT_SIZE,
-        TILE_SIZE, // src
-        0,
-        TARGET_Y,
-        CONTEXT_SIZE,
-        TILE_SIZE // dest
+        src.x, src.y, src.w, src.h, // src
+        0, TARGET_Y, CONTEXT_SIZE, TILE_SIZE // dest
       )
     } catch (e) {
       console.error('Failed to load left neighbor', e)
     }
   }
 
-  // RIGHT neighbor: Draw left half
+  // RIGHT neighbor: Draw left strip
   if (right?.imageUrl) {
     try {
       const img = await loadImage(right.imageUrl)
-      // Source: left 256px of neighbor (0, 0, 256, 512)
+      const src = getScaledEdgeCrop(img, 'left')
       // Dest: right area right of target (768, 256, 256, 512)
       ctx.drawImage(
         img,
-        0,
-        0,
-        CONTEXT_SIZE,
-        TILE_SIZE, // src
-        TARGET_X + TILE_SIZE,
-        TARGET_Y,
-        CONTEXT_SIZE,
-        TILE_SIZE // dest
+        src.x, src.y, src.w, src.h, // src
+        TARGET_X + TILE_SIZE, TARGET_Y, CONTEXT_SIZE, TILE_SIZE // dest
       )
     } catch (e) {
       console.error('Failed to load right neighbor', e)

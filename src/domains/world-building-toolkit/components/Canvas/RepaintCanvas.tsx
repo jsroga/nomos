@@ -3,11 +3,17 @@ import React, { useRef, useEffect, useCallback } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 
 // Helper: World -> Screen (for rendering)
-const worldToScreen = (worldX: number, worldY: number, width: number, height: number, currentViewport: { x: number, y: number, scale: number }) => {
+const worldToScreen = (
+  worldX: number,
+  worldY: number,
+  width: number,
+  height: number,
+  currentViewport: { x: number; y: number; scale: number }
+) => {
   const centerX = width / 2
   const centerY = height / 2
-  const screenX = centerX + currentViewport.x + (worldX * currentViewport.scale)
-  const screenY = centerY + currentViewport.y + (worldY * currentViewport.scale)
+  const screenX = centerX + currentViewport.x + worldX * currentViewport.scale
+  const screenY = centerY + currentViewport.y + worldY * currentViewport.scale
   return { x: screenX, y: screenY }
 }
 
@@ -26,17 +32,19 @@ export const RepaintCanvas: React.FC = () => {
   const viewport = useWorldStore(state => state.viewport)
 
   // Helper: Screen -> World (for events)
-  const screenToWorld = useCallback((screenX: number, screenY: number, width: number, height: number) => {
-    const centerX = width / 2
-    const centerY = height / 2
-    const worldX = (screenX - centerX - viewport.x) / viewport.scale
-    const worldY = (screenY - centerY - viewport.y) / viewport.scale
-    return { x: worldX, y: worldY }
-  }, [viewport])
+  const screenToWorld = useCallback(
+    (screenX: number, screenY: number, width: number, height: number) => {
+      const centerX = width / 2
+      const centerY = height / 2
+      const worldX = (screenX - centerX - viewport.x) / viewport.scale
+      const worldY = (screenY - centerY - viewport.y) / viewport.scale
+      return { x: worldX, y: worldY }
+    },
+    [viewport]
+  )
 
   // Helper: World -> Screen (for rendering)
   // We define this outside or inside the loop, but it needs current viewport
-
 
   // 1. Render Loop (The "Game Loop")
   const render = useCallback(() => {
@@ -127,7 +135,6 @@ export const RepaintCanvas: React.FC = () => {
       if (requestRef.current) cancelAnimationFrame(requestRef.current)
     }
   }, [render])
-
 
   // 2. Event Handlers (Directly updating refs/store)
   const isDrawingRef = useRef(false)
@@ -222,12 +229,10 @@ export const RepaintCanvas: React.FC = () => {
         onMouseLeave={handleMouseLeave}
         style={{
           cursor: repaintResult ? 'default' : 'none',
-          pointerEvents: 'all' // Critical
+          pointerEvents: 'all', // Critical
         }}
       />
       {renderResultImage()}
     </>
   )
 }
-
-

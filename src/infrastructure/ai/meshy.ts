@@ -11,13 +11,13 @@ export class MeshyClient {
     const response = await fetch(`${this.baseUrl}/image-to-3d`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         image_url: imageUrl,
-        enable_pbr: true
-      })
+        enable_pbr: true,
+      }),
     })
 
     if (!response.ok) {
@@ -40,8 +40,8 @@ export class MeshyClient {
 
       const response = await fetch(`${this.baseUrl}/image-to-3d/${taskId}`, {
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`
-        }
+          Authorization: `Bearer ${this.apiKey}`,
+        },
       })
 
       if (!response.ok) continue
@@ -59,5 +59,120 @@ export class MeshyClient {
 
     throw new Error('Meshy Task Timed Out')
   }
-}
 
+  async retextureModel(
+    modelUrlOrBase64: string,
+    prompt: string,
+    aiModel: 'latest' | 'meshy-4' | 'meshy-5' = 'latest'
+  ): Promise<string> {
+    // Determine if input is valid URL or needs to be treated as Base64 Data URI
+    // Meshy API expects "model_url" to be either a public URL or a Data URI.
+    // If our input is a raw base64 string without prefix, we might need to add it, but usually we pass Data URI.
+    // Let's assume the caller passes a valid URL or a Data URI.
+
+    // Step 1: Create Retexture Task
+    // Note: The /openapi/v1/retexture endpoint is what we want.
+    // The current baseUrl in the class is 'https://api.meshy.ai/v2' which seems to be for image-to-3d (legacy v2?).
+    // The docs say `https://api.meshy.ai/openapi/v1/retexture`.
+    // I will use the absolute URL for retexture to be safe.
+
+    const textureBaseUrl = 'https://api.meshy.ai/openapi/v1/retexture'
+
+    const payload: any = {
+      model_url: modelUrlOrBase64,
+      text_style_prompt: prompt,
+      ai_model: aiModel,
+      enable_original_uv: true,
+      enable_pbr: true
+    }
+
+    // ============================================================
+    // DEBUGGING: Log exact payload sent to Meshy.ai
+    // ============================================================
+    console.log('🔍 MESHY RETEXTURE REQUEST - START')
+    console.log('📍 URL:', textureBaseUrl)
+    console.log('📦 PAYLOAD:', JSON.stringify(payload, null, 2))
+    console.log('🔑 API Key (first 10 chars):', this.apiKey.substring(0, 10) + '...')
+    console.log('📊 Model URL length:', modelUrlOrBase64.length)
+    console.log('📊 Is Data URI:', modelUrlOrBase64.startsWith('data:'))
+    console.log('📊 Is HTTP URL:', modelUrlOrBase64.startsWith('http'))
+    console.log('🔍 MESHY RETEXTURE REQUEST - END')
+    // ============================================================
+
+    const response = await fetch(textureBaseUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      let message = response.statusText
+
+      // ============================================================
+      // DEBUGGING: Log error response from Meshy.ai
+      // ============================================================
+      console.log('❌ MESHY RETEXTURE RESPONSE - ERROR')
+      console.log('📊 Status Code:', response.status)
+      console.log('📊 Status Text:', response.statusText)
+      console.log('📄 Error Response:', errorText)
+      console.log('❌ MESHY RETEXTURE RESPONSE - ERROR END')
+      // ============================================================
+
+      try {
+        const json = JSON.parse(errorText)
+        message = json.message || message
+      } catch { }
+      throw new Error(`Meshy Retexture Start Failed: ${message}`)
+    }
+
+    const responseData = await response.json()
+
+    // ============================================================
+    // DEBUGGING: Log success response from Meshy.ai
+    // ============================================================
+    console.log('✅ MESHY RETEXTURE RESPONSE - SUCCESS')
+    console.log('📊 Status Code:', response.status)
+    console.log('📦 Response Data:', JSON.stringify(responseData, null, 2))
+    console.log('✅ MESHY RETEXTURE RESPONSE - SUCCESS END')
+    // ============================================================
+
+    const { result: taskId } = responseData
+
+    // Step 2: Poll for completion
+    return this.pollRetextureTask(taskId, textureBaseUrl)
+  }
+
+  private async pollRetextureTask(taskId: string, baseUrl: string): Promise<string> {
+    const maxRetries = 180 // 6 minutes (2s interval)
+    let attempts = 0
+
+    while (attempts < maxRetries) {
+      await new Promise(resolve => setTimeout(resolve, 2000))
+
+      const response = await fetch(`${baseUrl}/${taskId}`, {
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+      })
+
+      if (!response.ok) continue
+
+      const data = await response.json()
+
+      if (data.status === 'SUCCEEDED') {
+        return data.model_urls.glb
+      } else if (data.status === 'FAILED') {
+        const errorMsg = data.task_error?.message || 'Unknown error'
+        throw new Error(`Meshy Retexture Task Failed: ${errorMsg}`)
+      }
+
+      attempts++
+    }
+
+    throw new Error('Meshy Retexture Task Timed Out')
+  }
+}

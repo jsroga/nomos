@@ -25,4 +25,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to delete image' }, { status: 500 })
   }
 }
-

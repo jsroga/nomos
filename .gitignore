@@ -18,9 +18,13 @@ public/projects/**/*.png
 .vscode/*
 !.vscode/extensions.json
 .idea
+.trigger/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# LangGraph API
+.langgraph_api

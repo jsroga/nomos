@@ -1,11 +1,22 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
-import { ProjectSelector } from '@/domains/world-building-toolkit/components/ProjectSelector'
 import { AssetsPanel } from '@/domains/world-building-toolkit/components/AssetsPanel'
 import { SettingsDialog } from '@/domains/world-building-toolkit/components/SettingsDialog'
-import { Settings } from 'lucide-react'
+import { Plus, Palette, Package, Info } from 'lucide-react'
+import { LocalStorageKeys } from '@/constants/localStorage'
+import {
+  DomainSidebar,
+  SidebarSection,
+  SidebarEmptyState,
+} from '@/components/ui/domain-sidebar'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 export const AssetExporterSidebar: React.FC = () => {
   const defaultMasterPrompt =
@@ -13,11 +24,11 @@ export const AssetExporterSidebar: React.FC = () => {
 
   const [masterPrompt, setMasterPrompt] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('master-prompt') || defaultMasterPrompt
+      return localStorage.getItem(LocalStorageKeys.MASTER_PROMPT) || defaultMasterPrompt
     }
     return defaultMasterPrompt
   })
-  
+
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const currentProject = useWorldStore(state => state.currentProject)
 
@@ -25,54 +36,55 @@ export const AssetExporterSidebar: React.FC = () => {
   const handleMasterPromptChange = (value: string) => {
     setMasterPrompt(value)
     if (typeof window !== 'undefined') {
-      localStorage.setItem('master-prompt', value)
+      localStorage.setItem(LocalStorageKeys.MASTER_PROMPT, value)
     }
   }
 
   return (
-    <div className="w-80 h-full bg-card border-r border-border flex flex-col">
-      <div className="p-4 border-b border-border flex items-center justify-between">
-        <h1 className="font-bold text-xl">Asset Exporter</h1>
-        <button
-          onClick={() => setIsSettingsOpen(true)}
-          className="p-2 hover:bg-accent rounded-full transition-colors"
-          title="Settings"
-        >
-          <Settings size={20} />
-        </button>
-      </div>
+    <TooltipProvider>
+      <DomainSidebar header="Asset Exporter" storageKey="asset-exporter">
+        {currentProject ? (
+          <div className="space-y-6">
+            {/* Master Prompt */}
+            <SidebarSection icon={<Palette size={12} />}>
+              <div className="flex items-center gap-2 mb-2">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                  Master Prompt (Style)
+                </label>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info size={12} className="text-muted-foreground/60 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p className="max-w-[200px]">Define the overall art style that will be applied to all generated 3D assets</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <textarea
+                value={masterPrompt}
+                onChange={e => handleMasterPromptChange(e.target.value)}
+                placeholder="Define the overall art style and aesthetic..."
+                className="w-full h-24 bg-background/50 border-2 border-border/60 rounded-md p-3 text-sm resize-none hover:border-border transition-colors focus:border-primary focus:ring-1 focus:ring-primary/30 focus:outline-none placeholder:text-muted-foreground/60 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/30"
+              />
+              <p className="text-xs text-muted-foreground">
+                This style will be applied to generated assets
+              </p>
+            </SidebarSection>
 
-      {/* Master Prompt - Always Visible */}
-      <div className="p-4 border-b border-border">
-        <label className="block text-sm font-medium mb-2">Master Prompt (Style)</label>
-        <textarea
-          className="w-full h-24 bg-background border border-input rounded-md p-3 text-sm resize-none focus:ring-2 focus:ring-primary focus:outline-none"
-          value={masterPrompt}
-          onChange={e => handleMasterPromptChange(e.target.value)}
-          placeholder="Define the overall art style and aesthetic..."
-        />
-        <p className="text-xs text-muted-foreground mt-1">
-          This style will be applied to generated assets
-        </p>
-      </div>
-
-      <ProjectSelector />
-
-      <div className="p-4 flex-1 overflow-y-auto">
-        {!currentProject ? (
-          <div className="text-center text-muted-foreground mt-10">
-            Please select or create a project to start.
+            {/* Assets */}
+            <SidebarSection separator title="Assets" icon={<Package size={12} />}>
+              <AssetsPanel />
+            </SidebarSection>
           </div>
         ) : (
-          <div className="space-y-4">
-             {/* Reuse AssetsPanel but always show it */}
-             <AssetsPanel />
-          </div>
+          <SidebarEmptyState
+            icon={<Plus size={24} className="opacity-50" />}
+            message="Please select or create a project to start."
+          />
         )}
-      </div>
 
-      <SettingsDialog isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
-    </div>
+        <SettingsDialog isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      </DomainSidebar>
+    </TooltipProvider>
   )
 }
-

@@ -1,0 +1,1136 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API Documentation",
+    "version": "1.0.0",
+    "description": "This is the OpenAPI specification for your project."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api",
+      "description": "Local development server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {},
+    "responses": {
+      "400": {
+        "description": "Bad Request",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Invalid request parameters"
+                },
+                "code": {
+                  "type": "string",
+                  "example": "400"
+                }
+              }
+            }
+          }
+        }
+      },
+      "401": {
+        "description": "Unauthorized",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Authentication required"
+                },
+                "code": {
+                  "type": "string",
+                  "example": "401"
+                }
+              }
+            }
+          }
+        }
+      },
+      "403": {
+        "description": "Forbidden",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Access denied"
+                },
+                "code": {
+                  "type": "string",
+                  "example": "403"
+                }
+              }
+            }
+          }
+        }
+      },
+      "404": {
+        "description": "Not Found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Resource not found"
+                },
+                "code": {
+                  "type": "string",
+                  "example": "404"
+                }
+              }
+            }
+          }
+        }
+      },
+      "409": {
+        "description": "Conflict",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Resource already exists"
+                },
+                "code": {
+                  "type": "string",
+                  "example": "409"
+                }
+              }
+            }
+          }
+        }
+      },
+      "500": {
+        "description": "Internal Server Error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "An unexpected error occurred"
+                },
+                "code": {
+                  "type": "string",
+                  "example": "500"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/ai/fal-segment": {
+      "post": {
+        "operationId": "post-ai-fal-segment",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Ai"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/ai/segment": {
+      "post": {
+        "operationId": "post-ai-segment",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Ai"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/assets/{assetId}": {
+      "get": {
+        "operationId": "get-assets-{assetId}",
+        "summary": "GET asset by ID",
+        "description": "",
+        "tags": [
+          "Assets"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patch-assets-{assetId}",
+        "summary": "PATCH to update asset (metadata, model_filename, etc.)",
+        "description": "",
+        "tags": [
+          "Assets"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete-assets-{assetId}",
+        "summary": "DELETE asset",
+        "description": "",
+        "tags": [
+          "Assets"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/debug/langsmith": {
+      "get": {
+        "operationId": "get-debug-langsmith",
+        "summary": "Debug endpoint to check LangSmith configuration",
+        "description": "",
+        "tags": [
+          "Debug"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/delete-image": {
+      "post": {
+        "operationId": "post-delete-image",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Delete-image"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/generate-3d": {
+      "post": {
+        "operationId": "post-generate-3d",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Generate-3d"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/interior-designer/designs": {
+      "get": {
+        "operationId": "get-interior-designer-designs",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Interior-designer"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "post": {
+        "operationId": "post-interior-designer-designs",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Interior-designer"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patch-interior-designer-designs",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Interior-designer"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete-interior-designer-designs",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Interior-designer"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/interior-designer/textures": {
+      "post": {
+        "operationId": "post-interior-designer-textures",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Interior-designer"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/proxy-model": {
+      "get": {
+        "operationId": "get-proxy-model",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Proxy-model"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/save-image": {
+      "post": {
+        "operationId": "post-save-image",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Save-image"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/save-model": {
+      "post": {
+        "operationId": "post-save-model",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Save-model"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/storyteller/actions": {
+      "post": {
+        "operationId": "post-storyteller-actions",
+        "summary": "Execute agent actions and persist to database",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/storyteller/characters": {
+      "get": {
+        "operationId": "get-storyteller-characters",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "post": {
+        "operationId": "post-storyteller-characters",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patch-storyteller-characters",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete-storyteller-characters",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/storyteller/chat": {
+      "post": {
+        "operationId": "post-storyteller-chat",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/storyteller/episodes": {
+      "get": {
+        "operationId": "get-storyteller-episodes",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "post": {
+        "operationId": "post-storyteller-episodes",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/storyteller/generate-metrics": {
+      "post": {
+        "operationId": "post-storyteller-generate-metrics",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/storyteller/generate-portrait": {
+      "post": {
+        "operationId": "post-storyteller-generate-portrait",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/storyteller/plan": {
+      "get": {
+        "operationId": "get-storyteller-plan",
+        "summary": "GET: Fetch story plan for an episode or project",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "post": {
+        "operationId": "post-storyteller-plan",
+        "summary": "POST: Save/update story plan",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patch-storyteller-plan",
+        "summary": "PATCH: Update individual sequence in story plan",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/storyteller/projects": {
+      "post": {
+        "operationId": "post-storyteller-projects",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "get": {
+        "operationId": "get-storyteller-projects",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/storyteller/snapshots": {
+      "post": {
+        "operationId": "post-storyteller-snapshots",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "get": {
+        "operationId": "get-storyteller-snapshots",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/storyteller/timeline": {
+      "get": {
+        "operationId": "get-storyteller-timeline",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/storyteller/beats/{beatId}": {
+      "patch": {
+        "operationId": "patch-storyteller-beats-{beatId}",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete-storyteller-beats-{beatId}",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/storyteller/characters/{characterId}": {
+      "patch": {
+        "operationId": "patch-storyteller-characters-{characterId}",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/storyteller/chat/answer": {
+      "post": {
+        "operationId": "post-storyteller-chat-answer",
+        "summary": "POST /api/storyteller/chat/answer",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/storyteller/chat/stream": {
+      "post": {
+        "operationId": "post-storyteller-chat-stream",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/storyteller/episodes/{id}": {
+      "patch": {
+        "operationId": "patch-storyteller-episodes-{id}",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete-storyteller-episodes-{id}",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/storyteller/projects/{id}": {
+      "get": {
+        "operationId": "get-storyteller-projects-{id}",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patch-storyteller-projects-{id}",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/storyteller/episodes/{id}/beats": {
+      "get": {
+        "operationId": "get-storyteller-episodes-{id}-beats",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "post": {
+        "operationId": "post-storyteller-episodes-{id}-beats",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/storyteller/projects/{id}/break": {
+      "post": {
+        "operationId": "post-storyteller-projects-{id}-break",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/storyteller/projects/{id}/characters": {
+      "get": {
+        "operationId": "get-storyteller-projects-{id}-characters",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "post": {
+        "operationId": "post-storyteller-projects-{id}-characters",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patch-storyteller-projects-{id}-characters",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/trigger-3d": {
+      "post": {
+        "operationId": "post-trigger-3d",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Trigger-3d"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/trigger-3d/status": {
+      "get": {
+        "operationId": "get-trigger-3d-status",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Trigger-3d"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/trigger-tile": {
+      "post": {
+        "operationId": "post-trigger-tile",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Trigger-tile"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/trigger-upscale": {
+      "post": {
+        "operationId": "post-trigger-upscale",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Trigger-upscale"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/upscale/midjourney": {
+      "post": {
+        "operationId": "post-upscale-midjourney",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Upscale"
+        ],
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    }
+  }
+}
