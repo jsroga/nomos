@@ -12,7 +12,7 @@ dist
 dist-ssr
 *.local
 .next
-public/projects/**/*.png
+public/projects/
 
 # Editor directories and files
 .vscode/*
@@ -28,3 +28,4 @@ public/projects/**/*.png
 
 # LangGraph API
 .langgraph_api
+.vercel
