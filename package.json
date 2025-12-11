@@ -50,7 +50,7 @@
     "lodash": "^4.17.21",
     "lucide-react": "^0.468.0",
     "medium-editor": "^5.23.3",
-    "next": "15.1.0",
+    "next": "15.1.10",
     "next-openapi-gen": "^0.8.9",
     "nextjs-toploader": "^3.9.17",
     "openai": "^6.9.1",
