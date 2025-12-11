@@ -170,12 +170,62 @@ export class FidelityService {
    */
   private async handleCompletion(
     runState: FidelityRunState,
-    output: { success: boolean; filename: string; imageUrl: string },
+    output: { success: boolean; filename: string; enhancedUrl: string; enhancedBase64: string; originalUrl: string; pendingReview?: boolean },
     opId: string
   ) {
     try {
+      // Check if fidelity enhancement requires user review (new flow)
+      if (output?.pendingReview && output?.enhancedUrl) {
+        console.log('[FidelityService] Enhancement completed with Supabase URL:', {
+          enhancedUrl: output.enhancedUrl,
+          originalUrl: output.originalUrl,
+        })
+
+        // Images are now stored in Supabase Storage - use URL directly
+        const enhancedUrl = output.enhancedUrl
+        
+        // For original, prefer local existing tile (if any)
+        const tiles = useWorldStore.getState().tiles
+        const existingTile = tiles[`${runState.tileX},${runState.tileY}`]
+        const originalUrl = existingTile?.image_filename 
+          ? `/projects/${runState.projectId}/${existingTile.image_filename}`
+          : output.originalUrl || ''
+
+        // Store pending fidelity in store
+        useWorldStore.getState().setPendingFidelity(
+          runState.tileX,
+          runState.tileY,
+          {
+            newUrl: enhancedUrl,
+            newBase64: output.enhancedBase64, // Still keep for acceptFidelity
+            originalUrl,
+          }
+        )
+
+        // Update global status to show review is needed
+        useGlobalStatusStore.getState().updateOperation(opId, {
+          status: 'completed',
+          details: `(${runState.tileX}, ${runState.tileY}) - Review enhancement`,
+        })
+
+        // Emit event for UI to show review dialog
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('fidelity-review-ready', {
+            detail: {
+              tileX: runState.tileX,
+              tileY: runState.tileY,
+              newUrl: enhancedUrl,
+              originalUrl,
+            }
+          }))
+        }
+
+        this.clearRunState(runState, opId)
+        return
+      }
+
+      // Legacy flow - direct update (shouldn't happen anymore)
       if (output?.success && output?.filename) {
-        // Update the store with the new filename
         const { tiles } = useWorldStore.getState()
         const tileKey = `${runState.tileX},${runState.tileY}`
 

@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { CorkBoard } from '@/domains/storyteller/components/CorkBoard'
 import { CharacterPanel } from '@/domains/storyteller/components/CharacterPanel'
 import { AgentLog, Message } from '@/domains/storyteller/components/AgentLog'
+import { StreamingContent, StreamingSection } from '@/domains/storyteller/components/StreamingContent'
 import { EpisodeManager } from '@/domains/storyteller/components/EpisodeManager'
 import { MasterPromptEditor } from '@/domains/storyteller/components/MasterPromptEditor'
 import { ScriptEditor } from '@/domains/storyteller/components/ScriptEditor'
@@ -31,6 +32,7 @@ import {
   Map,
   Scroll,
   Film,
+  Send,
 } from 'lucide-react'
 import {
   DomainSidebar,
@@ -497,6 +499,17 @@ export default function StorytellerPage() {
   const [showThinking, setShowThinking] = useState(false)
   const [isAwaitingInput, setIsAwaitingInput] = useState(false)
 
+  // Streaming state for token-level updates
+  const [streamingTokens, setStreamingTokens] = useState<string>('')
+  const [streamingSections, setStreamingSections] = useState<Array<{
+    key: string
+    name: string
+    status: 'pending' | 'streaming' | 'complete'
+    preview?: string
+  }>>([])
+  const [isTokenStreaming, setIsTokenStreaming] = useState(false)
+  const [useEnhancedStreaming, setUseEnhancedStreaming] = useState(true) // New streaming mode
+
   // Story decisions that have been made (to prevent re-asking)
   const [storyDecisions, setStoryDecisions] = useState<Record<string, string>>({})
 
@@ -714,6 +727,8 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           stressLevel: c.stress || 30,
         })),
         modelConfig: getModelConfigFromStorage(),
+        // Enhanced streaming options
+        streamMode: useEnhancedStreaming ? 'events' : 'nodes',
       }
 
       // Create abort controller
@@ -745,6 +760,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
       executeAction,
       roundCount,
       currentPhase,
+      useEnhancedStreaming,
     ]
   )
 
@@ -773,6 +789,8 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           },
           characters: characters,
           modelConfig: getModelConfigFromStorage(),
+          streamMode: 'events', // Always use enhanced streaming for premise generation
+          progressiveGeneration: true,
         }
 
         abortControllerRef.current = new AbortController()
@@ -833,6 +851,9 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
 
                 if (data.type === 'start') {
                   setThinkingAgent('Writers Room')
+                  setStreamingTokens('')
+                  setStreamingSections([])
+                  setIsTokenStreaming(data.streamMode === 'events')
                   useGlobalStatusStore.getState().addOperation({
                     id: 'story-session',
                     type: 'story-agent',
@@ -840,6 +861,44 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                     details: 'Writers Room',
                     status: 'in-progress',
                   })
+                } else if (data.type === 'token') {
+                  // Token-level streaming
+                  setStreamingTokens(prev => prev + (data.token || ''))
+                } else if (data.type === 'section_start') {
+                  // Progressive section generation starting
+                  setStreamingSections(prev => {
+                    const existing = prev.find(s => s.key === data.section)
+                    if (existing) {
+                      return prev.map(s => 
+                        s.key === data.section 
+                          ? { ...s, status: 'streaming' as const }
+                          : s
+                      )
+                    }
+                    return [...prev, {
+                      key: data.section,
+                      name: data.section,
+                      status: 'streaming' as const,
+                    }]
+                  })
+                } else if (data.type === 'section_complete') {
+                  // Progressive section generation completed
+                  setStreamingSections(prev => 
+                    prev.map(s => 
+                      s.key === data.section 
+                        ? { ...s, status: 'complete' as const, preview: data.preview }
+                        : s
+                    )
+                  )
+                } else if (data.type === 'node_start') {
+                  // Node starting
+                  setThinkingAgent(data.node)
+                  useGlobalStatusStore.getState().updateOperation('story-session', {
+                    details: `${data.node} starting...`,
+                  })
+                } else if (data.type === 'node_complete') {
+                  // Node completed - clear streaming tokens for next node
+                  setStreamingTokens('')
                 } else if (data.type === 'message') {
                   setThinkingAgent(data.node)
                   // Update operation details to show current agent
@@ -920,10 +979,18 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 } else if (data.type === 'awaiting_input') {
                   setIsAwaitingInput(true)
                   setThinkingAgent(null)
+                  setIsTokenStreaming(false)
+                  setStreamingTokens('')
                 } else if (data.type === 'done' || data.type === 'terminated') {
                   setThinkingAgent(null)
+                  setIsTokenStreaming(false)
+                  setStreamingTokens('')
+                  setStreamingSections([])
                   useGlobalStatusStore.getState().removeOperation('story-session')
                 } else if (data.type === 'error') {
+                  setIsTokenStreaming(false)
+                  setStreamingTokens('')
+                  setStreamingSections([])
                   useGlobalStatusStore.getState().removeOperation('story-session')
                   setMessages(prev => [
                     ...prev,
@@ -1033,6 +1100,9 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
         stressLevel: c.stress || 30,
       })),
       modelConfig: getModelConfigFromStorage(),
+      // Enhanced streaming options
+      streamMode: useEnhancedStreaming ? 'events' : 'nodes',
+      progressiveGeneration: useEnhancedStreaming && effectivePhase === 'premise',
     }
 
     if (useStreaming) {
@@ -1235,6 +1305,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 onUpdate={handleUpdateBible}
                 onSendMessage={(msg) => handleSendMessage(undefined, msg)}
                 isReadOnly={isSending}
+                onConvertToCast={handleCreateCharacter}
               />
             </div>
           ) : currentEpisodeId ? (
@@ -1404,6 +1475,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                       onUpdate={handleUpdateBible}
                       onSendMessage={(msg) => handleSendMessage(undefined, msg)}
                       isReadOnly={isSending}
+                      onConvertToCast={handleCreateCharacter}
                     />
                   </div>
                 )}
@@ -1442,12 +1514,24 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                   >
                     {useStreaming ? '⚡ Live' : '📦 Batch'}
                   </button>
+                  <button
+                    onClick={() => setUseEnhancedStreaming(!useEnhancedStreaming)}
+                    className={`text-xs px-2 py-1 rounded ${useEnhancedStreaming ? 'bg-cyan-500/20 text-cyan-400' : 'bg-muted text-muted-foreground'}`}
+                    title={useEnhancedStreaming ? 'Token streaming ON' : 'Token streaming OFF'}
+                  >
+                    {useEnhancedStreaming ? '✨ Tokens' : '📄 Chunks'}
+                  </button>
                 </div>
               </div>
 
               {/* Status indicators */}
               <div className="flex items-center gap-2 text-xs flex-wrap">
-                {thinkingAgent && (
+                {isTokenStreaming && (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded">
+                    <span className="text-cyan-400 animate-pulse">✨ Streaming tokens...</span>
+                  </div>
+                )}
+                {thinkingAgent && !isTokenStreaming && (
                   <div className="flex items-center gap-1 px-2 py-1 bg-primary/10 border border-primary/20 rounded animate-pulse">
                     <Zap className="w-3 h-3 text-primary" />
                     <span className="text-primary">{thinkingAgent} thinking...</span>
@@ -1468,6 +1552,18 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           }
         >
           <div className="flex flex-col h-full">
+            {/* Streaming Content - Shows token-level streaming */}
+            {(isTokenStreaming || streamingSections.length > 0 || streamingTokens) && (
+              <div className="mb-4">
+                <StreamingContent
+                  agent={thinkingAgent || 'Premise Architect'}
+                  currentTokens={streamingTokens}
+                  sections={streamingSections}
+                  isStreaming={isTokenStreaming}
+                />
+              </div>
+            )}
+
             {/* Agent Log */}
             <div className="flex-1 overflow-auto">
               <AgentLog
@@ -1486,6 +1582,18 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                   <AlertCircle size={14} />
                   <span>Select an episode in the sidebar before starting.</span>
                 </div>
+              )}
+
+              {/* Generate world bible button - show only when no conversation started and no bible exists */}
+              {messages.length === 1 && !isSending && (!storyPlan || (!storyPlan.genre && !storyPlan.centralQuestion && (!storyPlan.themes || storyPlan.themes.length === 0))) && (
+                <button
+                  type="button"
+                  onClick={() => handleSendMessage(undefined, "Generate a world bible for my story. Help me define the genre, tone, themes, world rules, and key factions.")}
+                  className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  <BookOpen size={16} />
+                  Generate world bible
+                </button>
               )}
 
               {/* Round counter */}
@@ -1515,8 +1623,8 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                   className="flex-1 bg-background border border-input rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                 />
 
-                {/* Stop button */}
-                {isSending && (
+                {/* Send / Stop button */}
+                {isSending ? (
                   <button
                     type="button"
                     onClick={handleStopStream}
@@ -1524,6 +1632,14 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                   >
                     <StopCircle size={16} />
                     Stop
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={!input.trim()}
+                    className="p-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Send size={18} />
                   </button>
                 )}
               </form>

@@ -14,8 +14,26 @@ export const RepaintToolbar: React.FC = () => {
   const tiles = useWorldStore(state => state.tiles)
   const setRepaintResult = useWorldStore(state => state.setRepaintResult)
   const repaintResult = useWorldStore(state => state.repaintResult)
+  const repaintPrompt = useWorldStore(state => state.repaintPrompt)
+  const setRepaintPrompt = useWorldStore(state => state.setRepaintPrompt)
+  const currentProject = useWorldStore(state => state.currentProject)
 
   const [isGenerating, setIsGenerating] = useState(false)
+  const [styleReferenceUrls, setStyleReferenceUrls] = useState<string[]>([])
+
+  // Load style references when project changes
+  React.useEffect(() => {
+    if (currentProject?.id) {
+      fetch(`/api/storyteller/projects/${currentProject.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.styleReferenceUrls) {
+            setStyleReferenceUrls(data.styleReferenceUrls)
+          }
+        })
+        .catch(err => console.error('Failed to load project style refs:', err))
+    }
+  }, [currentProject?.id])
 
   if (!isRepaintMode) return null
 
@@ -23,7 +41,13 @@ export const RepaintToolbar: React.FC = () => {
     if (repaintStrokes.length === 0) return
     setIsGenerating(true)
     try {
-      const result = await repaintService.generateRepaint(repaintStrokes, tiles, brushSize)
+      const result = await repaintService.generateRepaint(
+        repaintStrokes,
+        tiles,
+        brushSize,
+        repaintPrompt,
+        styleReferenceUrls
+      )
       setRepaintResult(result)
       toast.success('Repaint generated! Review the result.')
     } catch (error) {
@@ -91,6 +115,19 @@ export const RepaintToolbar: React.FC = () => {
 
           <div className="h-6 w-px bg-border" />
 
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Prompt</span>
+            <input
+              type="text"
+              value={repaintPrompt}
+              onChange={e => setRepaintPrompt(e.target.value)}
+              placeholder="Describe what to paint..."
+              className="w-64 bg-background/50 border border-border/60 rounded-md px-3 py-1.5 text-sm hover:border-border transition-colors focus:border-primary focus:ring-1 focus:ring-primary/30 focus:outline-none placeholder:text-muted-foreground/60"
+            />
+          </div>
+
+          <div className="h-6 w-px bg-border" />
+
           <button
             onClick={clearRepaintStrokes}
             className="p-2 hover:bg-accent rounded-md text-muted-foreground hover:text-foreground"
@@ -121,3 +158,4 @@ export const RepaintToolbar: React.FC = () => {
     </div>
   )
 }
+

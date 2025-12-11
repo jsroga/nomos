@@ -30,7 +30,7 @@ export class UpscaleService {
     let geminiConfig = { apiKey: '', model: 'gemini-3-pro-image-preview' }
     let replicateConfig = { apiKey: '', model: '' }
     let stabilityConfig: { apiKey: string; upscaleMode?: 'conservative' | 'creative' } = { apiKey: '' }
-    let cometConfig = { apiKey: '' }
+    let legnextConfig = { apiKey: '' }
     let activeUpscaler: UpscaleProvider = 'stability'
 
     let skipGeminiPreUpscale = false
@@ -51,8 +51,8 @@ export class UpscaleService {
       const savedStability = localStorage.getItem(LocalStorageKeys.AI_CONFIG_STABILITY)
       if (savedStability) stabilityConfig = JSON.parse(savedStability)
 
-      const savedComet = localStorage.getItem(LocalStorageKeys.AI_CONFIG_COMET)
-      if (savedComet) cometConfig = JSON.parse(savedComet)
+      const savedLegNext = localStorage.getItem(LocalStorageKeys.AI_CONFIG_LEGNEXT)
+      if (savedLegNext) legnextConfig = JSON.parse(savedLegNext)
 
       activeUpscaler = (localStorage.getItem(LocalStorageKeys.AI_ACTIVE_UPSCALER) as UpscaleProvider) || 'stability'
 
@@ -70,15 +70,19 @@ export class UpscaleService {
 
     switch (activeUpscaler) {
       case 'midjourney':
-        if (!cometConfig.apiKey) throw new Error('Comet API key not found for Midjourney')
+        if (!legnextConfig.apiKey) throw new Error('LegNext API key not found for Midjourney')
         providerConfig = {
-          apiKey: cometConfig.apiKey,
-          parameters: (cometConfig as any).parameters // Pass specific MJ parameters
+          apiKey: legnextConfig.apiKey,
+          parameters: (legnextConfig as any).parameters // Pass specific MJ parameters
         }
         break
       case 'replicate':
         if (!replicateConfig.apiKey) throw new Error('Replicate API key not found')
-        providerConfig = { apiKey: replicateConfig.apiKey, model: replicateConfig.model }
+        // Default to recraft-ai/recraft-creative-upscale if model not specified
+        providerConfig = { 
+          apiKey: replicateConfig.apiKey, 
+          model: replicateConfig.model || 'recraft-ai/recraft-creative-upscale' 
+        }
         break
       case 'stability':
         if (!stabilityConfig.apiKey) throw new Error('Stability API key not found')
@@ -182,7 +186,12 @@ export class UpscaleService {
         console.log('Upscale poll response:', {
           status: statusData.status,
           metadata: statusData.metadata,
-          error: statusData.error
+          error: statusData.error,
+          outputKeys: statusData.output ? Object.keys(statusData.output) : null,
+          hasUpscaledBase64: !!statusData.output?.upscaledBase64,
+          upscaledBase64Length: statusData.output?.upscaledBase64?.length || 0,
+          hasOriginalBase64: !!statusData.output?.originalBase64,
+          originalBase64Length: statusData.output?.originalBase64?.length || 0,
         })
 
         if (statusResponse.status === 404) {
@@ -229,6 +238,54 @@ export class UpscaleService {
     opId: string
   ) {
     try {
+      // Check if upscale requires user review (new flow)
+      if (output?.pendingReview && output?.upscaledUrl) {
+        console.log('[UpscaleService] Upscale completed with Supabase URLs:', {
+          upscaledUrl: output.upscaledUrl,
+          originalUrl: output.originalUrl,
+          filename: output.filename,
+        })
+
+        // Images are now stored in Supabase Storage - use URLs directly
+        const upscaledUrl = output.upscaledUrl
+        
+        // For original, prefer the local existing tile (if any), otherwise use uploaded original
+        const tiles = useWorldStore.getState().tiles
+        const existingTile = tiles[`${runState.tileX},${runState.tileY}`]
+        const originalUrl = existingTile?.image_filename 
+          ? `/projects/${runState.projectId}/${existingTile.image_filename}`
+          : output.originalUrl
+
+        // Store pending upscale in store
+        useWorldStore.getState().setPendingUpscale(
+          runState.tileX,
+          runState.tileY,
+          upscaledUrl,
+          originalUrl
+        )
+
+        // Update global status to show review is needed
+        useGlobalStatusStore.getState().updateOperation(opId, {
+          status: 'completed',
+          details: `(${runState.tileX}, ${runState.tileY}) - Review upscale`,
+        })
+
+        // Emit event for UI to show review dialog
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('upscale-review-ready', {
+            detail: {
+              tileX: runState.tileX,
+              tileY: runState.tileY,
+              upscaledUrl,
+              originalUrl,
+            }
+          }))
+        }
+
+        this.clearRunState(runState, opId)
+        return
+      }
+
       // Check if MJ returned a grid requiring variant selection
       if (output?.requiresVariantSelection) {
         console.log('MJ grid received, storing for variant selection:', output)
@@ -275,7 +332,7 @@ export class UpscaleService {
         return
       }
 
-      // Normal completion (non-MJ or variant selected)
+      // Normal completion (non-MJ or variant selected) - LEGACY, shouldn't happen anymore
       if (output?.success && output?.filename) {
         // Update the store with the new filename
         const { tiles } = useWorldStore.getState()

@@ -1,14 +1,21 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { X, Wand2, Upload, User, Loader2 } from 'lucide-react'
 import { LocalStorageKeys } from '@/constants/localStorage'
+
+interface InitialCharacterData {
+  name?: string
+  description?: string
+  role?: string
+}
 
 interface CharacterCreationDialogProps {
   isOpen: boolean
   onClose: () => void
   onCreate: (character: any) => void
   projectId?: string // Optional: for project-scoped style references
+  initialData?: InitialCharacterData // Optional: for pre-filling from key player
 }
 
 const INITIAL_METRICS = {
@@ -28,6 +35,7 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
   onClose,
   onCreate,
   projectId,
+  initialData,
 }) => {
   const [name, setName] = useState('')
   const [gender, setGender] = useState('')
@@ -35,9 +43,31 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
   const [mbti, setMbti] = useState('')
   const [portraitUrl, setPortraitUrl] = useState('')
   const [metrics, setMetrics] = useState(INITIAL_METRICS)
+  const [initialRole, setInitialRole] = useState<string | undefined>(undefined)
 
   const [isGeneratingPortrait, setIsGeneratingPortrait] = useState(false)
   const [isGeneratingMetrics, setIsGeneratingMetrics] = useState(false)
+
+  // Pre-fill form when initialData changes (e.g., converting from key player)
+  useEffect(() => {
+    if (isOpen && initialData) {
+      if (initialData.name) setName(initialData.name)
+      if (initialData.description) setDescription(initialData.description)
+      if (initialData.role) setInitialRole(initialData.role)
+    }
+  }, [isOpen, initialData])
+
+  // Reset form when dialog closes
+  const handleClose = () => {
+    setName('')
+    setGender('')
+    setDescription('')
+    setMbti('')
+    setPortraitUrl('')
+    setMetrics(INITIAL_METRICS)
+    setInitialRole(undefined)
+    onClose()
+  }
 
   if (!isOpen) return null
 
@@ -45,12 +75,12 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
     if (!description && !name) return
     setIsGeneratingPortrait(true)
     try {
-      // Get Comet API key from localStorage
-      let cometApiKey = ''
-      const savedComet = localStorage.getItem(LocalStorageKeys.AI_CONFIG_COMET)
-      if (savedComet) {
-        const cometConfig = JSON.parse(savedComet)
-        cometApiKey = cometConfig.apiKey || ''
+      // Get LegNext API key from localStorage
+      let apiKey = ''
+      const savedLegNext = localStorage.getItem(LocalStorageKeys.AI_CONFIG_LEGNEXT)
+      if (savedLegNext) {
+        const legnextConfig = JSON.parse(savedLegNext)
+        apiKey = legnextConfig.apiKey || ''
       }
 
       const res = await fetch('/api/storyteller/generate-portrait', {
@@ -59,7 +89,7 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
         body: JSON.stringify({
           prompt: description || `A portrait of ${name}, ${gender}`,
           projectId: projectId, // Pass projectId for style references
-          apiKey: cometApiKey,
+          apiKey: apiKey,
         }),
       })
       const data = await res.json()
@@ -101,11 +131,11 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
       mbti,
       portraitUrl,
       ...metrics,
-      role: 'Supporting', // Default
+      role: initialRole || 'Supporting', // Use role from key player if available
       transformation: 0,
       characterPrompt: `You are ${name}. ${description}`,
     })
-    onClose()
+    handleClose()
   }
 
   return (
@@ -113,8 +143,10 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
       <div className="bg-card border border-border w-full max-w-2xl rounded-lg shadow-lg flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-lg font-bold">Create New Character</h2>
-          <Button variant="outline" size="sm" onClick={onClose}>
+          <h2 className="text-lg font-bold">
+            {initialData ? 'Convert to Cast' : 'Create New Character'}
+          </h2>
+          <Button variant="outline" size="sm" onClick={handleClose}>
             <X size={16} />
           </Button>
         </div>
@@ -164,18 +196,41 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
                 onChange={e => setDescription(e.target.value)}
                 placeholder="Describe appearance, personality, and background..."
               />
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    MBTI <span className="text-destructive">*</span>
-                  </label>
-                  <input
-                    className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
-                    value={mbti}
-                    onChange={e => setMbti(e.target.value)}
-                    placeholder="e.g. INTJ"
-                  />
-                </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  MBTI <span className="text-destructive">*</span>
+                </label>
+                <select
+                  className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                  value={mbti}
+                  onChange={e => setMbti(e.target.value)}
+                >
+                  <option value="">Select MBTI Type</option>
+                  <optgroup label="Analysts">
+                    <option value="INTJ">INTJ - Architect</option>
+                    <option value="INTP">INTP - Logician</option>
+                    <option value="ENTJ">ENTJ - Commander</option>
+                    <option value="ENTP">ENTP - Debater</option>
+                  </optgroup>
+                  <optgroup label="Diplomats">
+                    <option value="INFJ">INFJ - Advocate</option>
+                    <option value="INFP">INFP - Mediator</option>
+                    <option value="ENFJ">ENFJ - Protagonist</option>
+                    <option value="ENFP">ENFP - Campaigner</option>
+                  </optgroup>
+                  <optgroup label="Sentinels">
+                    <option value="ISTJ">ISTJ - Logistician</option>
+                    <option value="ISFJ">ISFJ - Defender</option>
+                    <option value="ESTJ">ESTJ - Executive</option>
+                    <option value="ESFJ">ESFJ - Consul</option>
+                  </optgroup>
+                  <optgroup label="Explorers">
+                    <option value="ISTP">ISTP - Virtuoso</option>
+                    <option value="ISFP">ISFP - Adventurer</option>
+                    <option value="ESTP">ESTP - Entrepreneur</option>
+                    <option value="ESFP">ESFP - Entertainer</option>
+                  </optgroup>
+                </select>
               </div>
             </div>
 
@@ -437,11 +492,11 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
 
         {/* Footer */}
         <div className="p-4 border-t border-border flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
           <Button variant="default" onClick={handleSubmit} disabled={!name || !gender || !description || !mbti}>
-            Create Character
+            {initialData ? 'Convert to Cast' : 'Create Character'}
           </Button>
         </div>
       </div>

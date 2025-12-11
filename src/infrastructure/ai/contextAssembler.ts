@@ -57,13 +57,44 @@ export async function assembleContextImage(
     return new Promise((resolve, reject) => {
       const img = new Image()
       img.crossOrigin = 'Anonymous'
-      img.onload = () => resolve(img)
-      img.onerror = reject
+      img.onload = () => {
+        console.log('[contextAssembler] Image loaded:', { 
+          src: src.substring(0, 50) + '...', 
+          width: img.width, 
+          height: img.height,
+          complete: img.complete
+        })
+        resolve(img)
+      }
+      img.onerror = (e) => {
+        console.error('[contextAssembler] Failed to load image:', { src: src.substring(0, 50) + '...', error: e })
+        reject(e)
+      }
       img.src = src
     })
   }
-
+  
   const { up, down, left, right, topLeft, topRight, bottomLeft, bottomRight } = context.neighbors
+
+  // Log the neighbors we received with URL details
+  const getUrlInfo = (url: string | undefined) => {
+    if (!url) return 'none'
+    if (url.startsWith('data:image/')) return `dataUrl (${url.length} chars)`
+    if (url.startsWith('/projects/')) return `local: ${url}`
+    if (url.startsWith('http')) return `remote: ${url.substring(0, 50)}...`
+    return `unknown: ${url.substring(0, 30)}...`
+  }
+  
+  console.log('[contextAssembler] Neighbors received:', {
+    up: getUrlInfo(up?.imageUrl),
+    down: getUrlInfo(down?.imageUrl),
+    left: getUrlInfo(left?.imageUrl),
+    right: getUrlInfo(right?.imageUrl),
+    topLeft: getUrlInfo(topLeft?.imageUrl),
+    topRight: getUrlInfo(topRight?.imageUrl),
+    bottomLeft: getUrlInfo(bottomLeft?.imageUrl),
+    bottomRight: getUrlInfo(bottomRight?.imageUrl),
+  })
 
   // Helper to calculate source crop based on actual image size
   // Images can be different sizes (512, 1024, 2048 etc due to upscaling)
@@ -240,6 +271,27 @@ export async function assembleContextImage(
   ctx.fillStyle = '#808080'
   ctx.fillRect(TARGET_X, TARGET_Y, TILE_SIZE, TILE_SIZE)
 
+  // DEBUG: Verify canvas content before converting to blob
+  const verifyPixel = (x: number, y: number, label: string) => {
+    const pixel = ctx.getImageData(x, y, 1, 1).data
+    return { label, x, y, rgba: Array.from(pixel) }
+  }
+  
+  console.log('[contextAssembler] Canvas verification:', {
+    size: { width: canvas.width, height: canvas.height },
+    pixels: [
+      verifyPixel(0, 0, 'top-left'),
+      verifyPixel(512, 0, 'top-center'),
+      verifyPixel(512, 512, 'center'),
+      verifyPixel(1023, 1023, 'bottom-right'),
+    ]
+  })
+  
+  // Check if canvas has any content (not all zeros)
+  const sampleData = ctx.getImageData(0, 0, 100, 100).data
+  const hasContent = sampleData.some(v => v > 0)
+  console.log('[contextAssembler] Canvas has content:', hasContent)
+
   // Create mask
   const maskCanvas = document.createElement('canvas')
   maskCanvas.width = size
@@ -254,10 +306,35 @@ export async function assembleContextImage(
   // Clear the center target area - this is where DALL-E will generate
   maskCtx.clearRect(TARGET_X, TARGET_Y, TILE_SIZE, TILE_SIZE)
 
-  const imageBlob = await new Promise<Blob>(resolve => canvas.toBlob(b => resolve(b!), 'image/png'))
-  const maskBlob = await new Promise<Blob>(resolve =>
-    maskCanvas.toBlob(b => resolve(b!), 'image/png')
-  )
+  // Convert canvas to blob with proper error handling
+  const imageBlob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(b => {
+      if (!b) {
+        console.error('[contextAssembler] Failed to create image blob - canvas.toBlob returned null')
+        reject(new Error('Failed to create image blob'))
+        return
+      }
+      console.log('[contextAssembler] Image blob created:', { size: b.size, type: b.type })
+      resolve(b)
+    }, 'image/png')
+  })
+  
+  const maskBlob = await new Promise<Blob>((resolve, reject) => {
+    maskCanvas.toBlob(b => {
+      if (!b) {
+        console.error('[contextAssembler] Failed to create mask blob - canvas.toBlob returned null')
+        reject(new Error('Failed to create mask blob'))
+        return
+      }
+      resolve(b)
+    }, 'image/png')
+  })
+
+  console.log('[contextAssembler] Final output:', {
+    imageBlobSize: imageBlob.size,
+    maskBlobSize: maskBlob.size,
+    cropRect: { x: TARGET_X, y: TARGET_Y, width: TILE_SIZE, height: TILE_SIZE },
+  })
 
   return {
     imageBlob,

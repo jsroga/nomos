@@ -1,5 +1,7 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
+import { put } from '@vercel/blob'
+import { GENERATION_PROMPTS, MASK_CONFIG, getGenerationCreativityPrompt } from '@/constants/prompts'
 
 export const generateTileTask = task({
   id: 'generate-tile',
@@ -20,10 +22,10 @@ export const generateTileTask = task({
   }) => {
     const { projectId, x, y, prompt, aiProvider, aiConfig, isFirstTile = true, styleReferenceUrls, contextImageBase64 } = payload
 
-    logger.info(`Generating tile at ${x},${y} for project ${projectId}`, { 
-      isFirstTile, 
+    logger.info(`Generating tile at ${x},${y} for project ${projectId}`, {
+      isFirstTile,
       hasContext: !!contextImageBase64,
-      hasStyleRefs: !!styleReferenceUrls?.length 
+      hasStyleRefs: !!styleReferenceUrls?.length
     })
 
     // Initialize progress metadata
@@ -53,7 +55,7 @@ export const generateTileTask = task({
         break
       }
       case 'midjourney': {
-        generatedImageBase64 = await generateWithMidjourney(prompt, aiConfig as any, isFirstTile, styleReferenceUrls)
+        generatedImageBase64 = await generateWithLegNext(prompt, aiConfig as any, isFirstTile, styleReferenceUrls, contextImageBase64)
         break
       }
       default:
@@ -62,55 +64,70 @@ export const generateTileTask = task({
 
     await metadata.set('progress', 70)
 
-    // Save image to filesystem
-    await metadata.set('stage', 'saving_image')
+    // Upload to Vercel Blob (accessible from anywhere, including trigger.dev cloud)
+    await metadata.set('stage', 'uploading')
     await metadata.set('progress', 80)
-    const filename = `${x}_${y}_${Date.now()}.png`
+    
+    const filename = `tiles/${projectId}/${x}_${y}_${Date.now()}.png`
+    const base64Data = generatedImageBase64.replace(/^data:image\/\w+;base64,/, '')
 
-    const fs = await import('fs')
-    const path = await import('path')
-
-    const projectDir = path.join(process.cwd(), 'public', 'projects', projectId)
-    if (!fs.existsSync(projectDir)) {
-      fs.mkdirSync(projectDir, { recursive: true })
+    // Upload generated image to Vercel Blob
+    const buffer = Buffer.from(base64Data, 'base64')
+    
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      throw new Error('BLOB_READ_WRITE_TOKEN not configured')
     }
 
-    const base64Data = generatedImageBase64.replace(/^data:image\/\w+;base64,/, '')
-    const buffer = Buffer.from(base64Data, 'base64')
-    fs.writeFileSync(path.join(projectDir, filename), buffer)
+    const blob = await put(filename, buffer, {
+      access: 'public',
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+      contentType: 'image/png',
+    })
 
-    logger.info('Image saved to filesystem', { filename })
-
-    // Update database
-    await metadata.set('stage', 'updating_database')
-    await metadata.set('progress', 90)
+    const newUrl = blob.url
+    logger.info('Image uploaded to Vercel Blob', { newUrl })
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
 
-    const { error } = await supabase.from('tiles').upsert(
-      {
-        project_id: projectId,
-        x,
-        y,
-        tile_prompt: prompt,
-        image_filename: filename,
-      },
-      { onConflict: 'project_id,x,y' }
-    )
+    // Check for existing tile (for regeneration comparison)
+    await metadata.set('stage', 'checking_original')
+    await metadata.set('progress', 95)
 
-    if (error) {
-      logger.error('Failed to save tile to database', { error })
-      throw error
+    const { data: existingTile } = await supabase
+      .from('tiles')
+      .select('image_filename')
+      .eq('project_id', projectId)
+      .eq('x', x)
+      .eq('y', y)
+      .single()
+
+    // For original, handle both local paths and full URLs (Vercel Blob)
+    let originalUrl: string | undefined
+    if (existingTile?.image_filename) {
+      if (existingTile.image_filename.startsWith('http')) {
+        originalUrl = existingTile.image_filename
+      } else {
+        originalUrl = `/projects/${projectId}/${existingTile.image_filename}`
+      }
     }
 
     await metadata.set('progress', 100)
     await metadata.set('stage', 'completed')
-    logger.info('Tile generated successfully', { filename })
+    logger.info('Tile generated - pending user review', { filename, hasOriginal: !!originalUrl })
 
-    return { success: true, filename, imageUrl: `/projects/${projectId}/${filename}` }
+    // Return pendingReview: true so UI shows review dialog
+    return { 
+      success: true, 
+      filename, 
+      newUrl,
+      newBase64: base64Data, // Still include for acceptGeneration to save locally
+      originalUrl,
+      isFirstTile: !originalUrl,
+      pendingReview: true
+    }
   },
 })
 
@@ -131,8 +148,8 @@ async function generateWithGemini(
   if (isFirstTile || !contextImageBase64) {
     // FIRST TILE: Text-only generation with style references
     logger.info('Generating first tile with style references')
-    
-    const styleRefHint = styleReferenceUrls?.length 
+
+    const styleRefHint = styleReferenceUrls?.length
       ? ` Use these style references for visual guidance: ${styleReferenceUrls.join(', ')}.`
       : ''
 
@@ -141,10 +158,7 @@ async function generateWithGemini(
         {
           parts: [
             {
-              text: `Generate an isometric tile image: ${prompt}. 
-                     The image should be 512x512 pixels, isometric perspective, 
-                     suitable for a tile-based game world. 
-                     Style: painterly, detailed, vibrant colors.${styleRefHint}`,
+              text: GENERATION_PROMPTS.FIRST_TILE.GEMINI(prompt) + styleRefHint,
             },
           ],
         },
@@ -159,10 +173,10 @@ async function generateWithGemini(
   } else {
     // FOLLOW-UP TILE: Use context image with inpainting prompt
     logger.info('Generating follow-up tile with context image for edge matching')
-    
+
     // The context image has the target area in gray (center 512x512 of 1024x1024)
     // with neighbor edges around it
-    const inpaintPrompt = `Inpaint the central gray square to seamlessly connect with the surrounding edge context. Fill the gray area with: ${prompt}. Ensure continuous lines, consistent perspective (Isometric), and matching lighting. Do not generate borders or frames.`
+    const inpaintPrompt = GENERATION_PROMPTS.FOLLOW_UP.GEMINI(prompt)
 
     payload = {
       contents: [
@@ -219,12 +233,12 @@ async function generateWithGemini(
   if (imagePart) {
     const inlineData = imagePart.inline_data || imagePart.inlineData
     let imageData = inlineData.data
-    
+
     // For follow-up tiles, we need to crop the center 512x512 from the 1024x1024 result
     if (!isFirstTile && contextImageBase64) {
       imageData = await cropCenterFromBase64(imageData, 256, 256, 512, 512)
     }
-    
+
     return imageData
   }
 
@@ -249,12 +263,12 @@ async function cropCenterFromBase64(
     // Try to use sharp for server-side cropping
     const sharp = await import('sharp')
     const inputBuffer = Buffer.from(base64Data, 'base64')
-    
+
     const croppedBuffer = await sharp.default(inputBuffer)
       .extract({ left: x, top: y, width, height })
       .png()
       .toBuffer()
-    
+
     return croppedBuffer.toString('base64')
   } catch (e) {
     // If sharp is not available, return the original image
@@ -276,8 +290,8 @@ async function generateWithOpenAI(
   if (isFirstTile || !contextImageBase64) {
     // FIRST TILE: Text-only generation
     logger.info('OpenAI: Generating first tile with style references')
-    
-    const styleRefHint = styleReferenceUrls?.length 
+
+    const styleRefHint = styleReferenceUrls?.length
       ? ` Style references: ${styleReferenceUrls.join(', ')}.`
       : ''
 
@@ -313,23 +327,23 @@ async function generateWithOpenAI(
   } else {
     // FOLLOW-UP TILE: Use DALL-E 2 edit API with context image and mask
     logger.info('OpenAI: Generating follow-up tile with context image')
-    
+
     // DALL-E edit requires FormData with image and mask files
     // The contextImageBase64 already has the gray center (to be edited)
     // We need to create a mask where the center is transparent
     const formData = new FormData()
-    
+
     // Convert base64 to Blob for image
     const imageBuffer = Buffer.from(contextImageBase64, 'base64')
     const imageBlob = new Blob([imageBuffer], { type: 'image/png' })
     formData.append('image', imageBlob, 'image.png')
-    
+
     // Create mask: center 512x512 transparent (to edit), rest white (keep)
     const maskBase64 = await createEditMask(1024, 256, 256, 512, 512)
     const maskBuffer = Buffer.from(maskBase64, 'base64')
     const maskBlob = new Blob([maskBuffer], { type: 'image/png' })
     formData.append('mask', maskBlob, 'mask.png')
-    
+
     formData.append('prompt', `Fill seamlessly: ${prompt}. Match surrounding style, continuous edges, isometric perspective.`)
     formData.append('n', '1')
     formData.append('size', '1024x1024')
@@ -369,7 +383,7 @@ async function createEditMask(
 ): Promise<string> {
   try {
     const sharp = await import('sharp')
-    
+
     // Create white image
     const whiteBuffer = await sharp.default({
       create: {
@@ -379,7 +393,7 @@ async function createEditMask(
         background: { r: 255, g: 255, b: 255, alpha: 1 }
       }
     }).png().toBuffer()
-    
+
     // Create transparent center overlay
     const transparentCenter = await sharp.default({
       create: {
@@ -389,7 +403,7 @@ async function createEditMask(
         background: { r: 0, g: 0, b: 0, alpha: 0 }
       }
     }).png().toBuffer()
-    
+
     // Composite: white base with transparent center
     const maskBuffer = await sharp.default(whiteBuffer)
       .composite([{
@@ -399,7 +413,7 @@ async function createEditMask(
       }])
       .png()
       .toBuffer()
-    
+
     return maskBuffer.toString('base64')
   } catch (e) {
     logger.warn('Failed to create mask with sharp', { error: e })
@@ -418,8 +432,8 @@ async function generateWithStability(
   if (isFirstTile || !contextImageBase64) {
     // FIRST TILE: Text-only generation
     logger.info('Stability: Generating first tile with style references')
-    
-    const styleRefHint = styleReferenceUrls?.length 
+
+    const styleRefHint = styleReferenceUrls?.length
       ? ` Style reference: ${styleReferenceUrls.join(', ')}`
       : ''
 
@@ -462,22 +476,22 @@ async function generateWithStability(
   } else {
     // FOLLOW-UP TILE: Use inpainting with context image
     logger.info('Stability: Generating follow-up tile with context image')
-    
+
     // Create mask for center region
     const maskBase64 = await createInpaintMask(1024, 256, 256, 512, 512)
-    
+
     const formData = new FormData()
-    
+
     // Add init image (context with gray center)
     const imageBuffer = Buffer.from(contextImageBase64, 'base64')
     const imageBlob = new Blob([imageBuffer], { type: 'image/png' })
     formData.append('init_image', imageBlob, 'image.png')
-    
+
     // Add mask (black = inpaint, white = keep)
     const maskBuffer = Buffer.from(maskBase64, 'base64')
     const maskBlob = new Blob([maskBuffer], { type: 'image/png' })
     formData.append('mask_image', maskBlob, 'mask.png')
-    
+
     formData.append('text_prompts[0][text]', `Fill seamlessly: ${prompt}. Match surrounding style and edges perfectly, isometric perspective.`)
     formData.append('text_prompts[0][weight]', '1')
     formData.append('cfg_scale', '7')
@@ -520,7 +534,7 @@ async function createInpaintMask(
 ): Promise<string> {
   try {
     const sharp = await import('sharp')
-    
+
     // Create white image (keep area)
     const whiteBuffer = await sharp.default({
       create: {
@@ -530,7 +544,7 @@ async function createInpaintMask(
         background: { r: 255, g: 255, b: 255 }
       }
     }).png().toBuffer()
-    
+
     // Create black center (inpaint area)
     const blackCenter = await sharp.default({
       create: {
@@ -540,7 +554,7 @@ async function createInpaintMask(
         background: { r: 0, g: 0, b: 0 }
       }
     }).png().toBuffer()
-    
+
     // Composite: white base with black center
     const maskBuffer = await sharp.default(whiteBuffer)
       .composite([{
@@ -550,7 +564,7 @@ async function createInpaintMask(
       }])
       .png()
       .toBuffer()
-    
+
     return maskBuffer.toString('base64')
   } catch (e) {
     logger.warn('Failed to create inpaint mask with sharp', { error: e })
@@ -558,156 +572,330 @@ async function createInpaintMask(
   }
 }
 
-// Server-side Midjourney image generation via Comet API
-// Note: Midjourney doesn't support true inpainting, so we use style references for consistency
-async function generateWithMidjourney(
-  prompt: string,
-  config: { apiKey: string },
-  isFirstTile: boolean,
-  styleReferenceUrls?: string[]
-): Promise<string> {
-  logger.info('Starting Midjourney generation via Comet API', { isFirstTile, styleReferenceUrls })
 
-  // Build --sref parameter if style references provided
-  const srefParam = styleReferenceUrls?.length 
-    ? ` --sref ${styleReferenceUrls.join(' ')}`
-    : ''
-
-  // Full prompt for isometric tile with style references
-  const fullPrompt = `Isometric tile for a game world: ${prompt}. 512x512, painterly style, detailed, vibrant colors, seamless edges --v 6.1 --ar 1:1${srefParam}`
-
-  // Step 1: Submit imagine task
-  const imagineResponse = await fetch('https://api.cometapi.com/mj/submit/imagine', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${config.apiKey}`,
-    },
-    body: JSON.stringify({
-      prompt: fullPrompt,
-      notifyHook: '',
-    }),
-  })
-
-  if (!imagineResponse.ok) {
-    const errorText = await imagineResponse.text()
-    throw new Error(`Comet API imagine error: ${imagineResponse.status} - ${errorText}`)
-  }
-
-  const imagineData = await imagineResponse.json()
-  const imagineTaskId = imagineData.result
-
-  if (!imagineTaskId) {
-    throw new Error('No task ID returned from Comet API imagine')
-  }
-
-  logger.info('Comet imagine task submitted', { taskId: imagineTaskId })
-
-  // Step 2: Poll for imagine completion
-  await metadata.set('stage', 'waiting_for_midjourney')
-  const imagineResult = await pollCometTask(imagineTaskId, config.apiKey, 300)
-
-  if (!imagineResult.imageUrl) {
-    throw new Error('No image URL in Comet imagine result')
-  }
-
-  logger.info('Comet imagine completed', { imageUrl: imagineResult.imageUrl })
-
-  // Step 3: Submit U1 upscale action to get full resolution
-  await metadata.set('stage', 'upscaling_midjourney')
-  await metadata.set('progress', 50)
-
-  const actionResponse = await fetch('https://api.cometapi.com/mj/submit/action', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${config.apiKey}`,
-    },
-    body: JSON.stringify({
-      customId: imagineResult.buttons?.find((b: any) => b.label === 'U1')?.customId || 'U1',
-      taskId: imagineTaskId,
-      notifyHook: '',
-    }),
-  })
-
-  if (!actionResponse.ok) {
-    // If action fails, just use the original grid image
-    logger.warn('Upscale action failed, using grid image')
-    return await fetchImageAsBase64(imagineResult.imageUrl)
-  }
-
-  const actionData = await actionResponse.json()
-  const actionTaskId = actionData.result
-
-  if (!actionTaskId) {
-    // Fall back to grid image
-    return await fetchImageAsBase64(imagineResult.imageUrl)
-  }
-
-  // Step 4: Poll for upscale completion
-  const upscaleResult = await pollCometTask(actionTaskId, config.apiKey, 180)
-
-  const finalUrl = upscaleResult.imageUrl || imagineResult.imageUrl
-  logger.info('Midjourney generation complete', { finalUrl })
-
-  // Step 5: Download image and convert to base64
-  return await fetchImageAsBase64(finalUrl)
+// Server-side style analysis using sharp (replaces client-side Canvas version)
+interface StyleInfo {
+  brightness: 'bright' | 'medium' | 'dark'
+  warmth: 'warm' | 'neutral' | 'cool'
+  description: string
 }
 
-// Poll Comet API task for completion
-async function pollCometTask(
-  taskId: string,
+async function analyzeStyleWithSharp(imageBase64: string): Promise<StyleInfo> {
+  try {
+    const sharp = (await import('sharp')).default
+    const buffer = Buffer.from(imageBase64, 'base64')
+
+    // Get stats from the image
+    const { dominant, channels } = await sharp(buffer).stats()
+
+    // Calculate brightness from dominant color
+    const avgBrightness = (dominant.r + dominant.g + dominant.b) / 3
+    let brightness: 'bright' | 'medium' | 'dark'
+    if (avgBrightness > 180) brightness = 'bright'
+    else if (avgBrightness > 80) brightness = 'medium'
+    else brightness = 'dark'
+
+    // Determine warmth based on red vs blue dominance
+    let warmth: 'warm' | 'neutral' | 'cool'
+    if (dominant.r > dominant.b + 30) warmth = 'warm'
+    else if (dominant.b > dominant.r + 30) warmth = 'cool'
+    else warmth = 'neutral'
+
+    const description = `${brightness} ${warmth} palette`
+
+    logger.info('Style analysis complete', { brightness, warmth, description })
+    return { brightness, warmth, description }
+  } catch (e) {
+    logger.warn('Style analysis failed, using defaults', { error: e })
+    return { brightness: 'medium', warmth: 'neutral', description: 'medium neutral palette' }
+  }
+}
+
+// Creativity prompt helper for generation
+function getCreativityPrompt(creativity: number): string {
+  const level = Math.round(creativity * 100)
+  let hint: string
+  if (creativity <= 0.2) {
+    hint = 'VERY CONSERVATIVE - propagate existing patterns from edges exactly. Do not add new elements.'
+  } else if (creativity <= 0.4) {
+    hint = 'CONSERVATIVE - closely match surrounding style and patterns. Minimal interpretation.'
+  } else if (creativity <= 0.6) {
+    hint = 'BALANCED - match edges while adding appropriate detail consistent with style.'
+  } else if (creativity <= 0.8) {
+    hint = 'CREATIVE - match edges but freely enhance with rich details and textures.'
+  } else {
+    hint = 'MAXIMUM FREEDOM - match edge connections but add maximum detail and richness.'
+  }
+  return `CREATIVITY: ${level}/100. ${hint}`
+}
+
+// Poll LegNext API task for completion
+async function pollLegNextTask(
+  jobId: string,
   apiKey: string,
-  maxAttempts: number
+  maxAttempts: number = 300,
+  progressOffset: number = 30
 ): Promise<any> {
   let attempts = 0
 
   while (attempts < maxAttempts) {
-    await new Promise(resolve => setTimeout(resolve, 3000)) // Wait 3 seconds
+    await new Promise(resolve => setTimeout(resolve, 5000))
 
-    const fetchResponse = await fetch(`https://api.cometapi.com/mj/task/${taskId}/fetch`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-    })
+    try {
+      const fetchResponse = await fetch(`https://api.legnext.ai/api/v1/job/${jobId}`, {
+        method: 'GET',
+        headers: {
+          'x-api-key': apiKey,
+        },
+      })
 
-    if (!fetchResponse.ok) {
-      attempts++
-      continue
-    }
+      if (fetchResponse.status === 404) {
+        throw new Error('LegNext task not found')
+      }
 
-    const fetchData = await fetchResponse.json()
-    const result = fetchData.result || fetchData
-    const status = result.status
+      if (!fetchResponse.ok) {
+        const errorText = await fetchResponse.text()
+        logger.warn(`LegNext polling error: ${fetchResponse.status} - ${errorText}`)
+        attempts++
+        continue
+      }
 
-    // Update progress based on result.progress if available
-    if (result.progress) {
-      const progress = Math.min(30 + Math.floor(result.progress * 0.4), 70)
-      await metadata.set('progress', progress)
-    }
+      const data = await fetchResponse.json()
+      const status = data.status
 
-    if (status === 'SUCCESS') {
-      logger.info('Comet task completed successfully')
-      return result
-    }
+      // Progress estimation
+      let progress = 0
+      if (status === 'completed') progress = 100
+      else if (status === 'processing') progress = 50 + (attempts % 40)
+      else if (status === 'pending') progress = 10
 
-    if (status === 'FAILED') {
-      throw new Error(result.failReason || 'Comet task failed')
+      const scaledProgress = progressOffset + Math.round(progress * 0.65)
+      await metadata.set('progress', scaledProgress)
+
+      logger.info(`Polling job ${jobId}: Status = ${status}`, { attempt: attempts, scaledProgress })
+
+      if (status === 'completed') {
+        logger.info('LegNext task completed successfully', {
+          imageUrl: data.output?.image_url
+        })
+        await metadata.set('progress', progressOffset + 65)
+        return data
+      } else if (status === 'failed') {
+        const errorMsg = data.output?.error_messages?.join(', ') || data.message || 'Unknown error'
+        logger.error('LegNext task failed', { error: errorMsg, fullData: data })
+        throw new Error(errorMsg)
+      }
+    } catch (e: any) {
+      logger.warn('Polling fetch error:', { error: e.message })
+      if (e.message?.includes('not found')) throw e
     }
 
     attempts++
   }
 
-  throw new Error('Comet task timed out')
+  throw new Error('LegNext task timeout - Status did not reach completed')
 }
 
-// Fetch image from URL and convert to base64
-async function fetchImageAsBase64(url: string): Promise<string> {
-  const response = await fetch(url)
+// Server-side Midjourney image generation via LegNext API
+async function generateWithLegNext(
+  prompt: string,
+  config: { apiKey: string },
+  isFirstTile: boolean,
+  styleReferenceUrls?: string[],
+  contextImageBase64?: string
+): Promise<string> {
+  logger.info('Starting Midjourney generation via LegNext API', { isFirstTile, styleReferenceUrls })
 
+  // Import storage service for public URL upload
+  const { storageService } = await import('@/infrastructure/storage/StorageService')
+  const { v4: uuidv4 } = await import('uuid')
+
+  let publicImageUrl: string | null = null
+
+  // Step 1: Upload image to get public URL (if we have context or need to generate from scratch)
+  if (!isFirstTile && contextImageBase64) {
+    // Follow-up tile: use context image
+    await metadata.set('stage', 'uploading_context_image')
+    await metadata.set('progress', 32)
+
+    const tempFilename = `generate_temp_${uuidv4()}.png`
+    publicImageUrl = await storageService.uploadPublicImage(tempFilename, contextImageBase64)
+
+    if (!publicImageUrl) {
+      throw new Error('Failed to upload context image for generation')
+    }
+
+    logger.info('Context image uploaded', { publicImageUrl })
+  } else {
+    // First tile: create a blank canvas or use imagine endpoint
+    // For now, we'll use a simple text-based generation approach
+    // by creating a minimal white canvas to upload
+    logger.info('First tile generation - creating blank canvas')
+    await metadata.set('stage', 'creating_blank_canvas')
+
+    const sharp = await import('sharp')
+    const blankCanvas = await sharp.default({
+      create: {
+        width: 1024,
+        height: 1024,
+        channels: 4,
+        background: { r: 240, g: 240, b: 240, alpha: 1 }
+      }
+    }).png().toBuffer()
+
+    const blankBase64 = blankCanvas.toString('base64')
+    const tempFilename = `generate_temp_${uuidv4()}.png`
+    publicImageUrl = await storageService.uploadPublicImage(tempFilename, blankBase64)
+
+    if (!publicImageUrl) {
+      throw new Error('Failed to upload blank canvas')
+    }
+  }
+
+  // Step 2: Build remix prompt based on tile type
+  let remixPrompt: string
+
+  if (isFirstTile) {
+    // First tile - full creative generation
+    remixPrompt = GENERATION_PROMPTS.FIRST_TILE.MIDJOURNEY(prompt)
+  } else {
+    // Follow-up tile - analyze context style and match surrounding edges
+    let styleInfo = 'medium neutral palette'
+    if (contextImageBase64) {
+      const analysis = await analyzeStyleWithSharp(contextImageBase64)
+      styleInfo = analysis.description
+    }
+
+    // Master prompt structure matching Gemini implementation
+    remixPrompt = GENERATION_PROMPTS.FOLLOW_UP.MIDJOURNEY(prompt, styleInfo)
+  }
+
+  // Add style reference if provided
+  if (styleReferenceUrls?.length) {
+    remixPrompt += ` --sref ${styleReferenceUrls.join(' ')}`
+  }
+
+  logger.info('Using remix prompt', { remixPrompt })
+
+  // Step 3: Submit upload_paint task
+  await metadata.set('stage', 'submitting_upload_paint')
+  await metadata.set('progress', 35)
+
+  // For follow-up tiles, mask only the center 512x512 area
+  // For first tiles, mask the entire canvas
+  const maskConfig = isFirstTile ? MASK_CONFIG.FULL_CANVAS : MASK_CONFIG.CENTER_512
+
+  const uploadPaintPayload = {
+    imgUrl: publicImageUrl,
+    canvas: {
+      width: 1024,
+      height: 1024,
+    },
+    imgPos: {
+      width: 1024,
+      height: 1024,
+      x: 0,
+      y: 0,
+    },
+    mask: {
+      areas: [
+        {
+          width: maskConfig.width,
+          height: maskConfig.height,
+          points: maskConfig.points,
+        }
+      ]
+    },
+    remixPrompt,
+  }
+
+  logger.info('Submitting upload_paint with payload', { uploadPaintPayload })
+
+  const uploadPaintResponse = await fetch('https://api.legnext.ai/api/v1/upload-paint', {
+    method: 'POST',
+    headers: {
+      'x-api-key': config.apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(uploadPaintPayload),
+  })
+
+  if (!uploadPaintResponse.ok) {
+    const errorText = await uploadPaintResponse.text()
+    throw new Error(`LegNext upload_paint submission failed: ${uploadPaintResponse.status} - ${errorText}`)
+  }
+
+  const uploadPaintData = await uploadPaintResponse.json()
+  const jobId = uploadPaintData.job_id
+
+  if (!jobId) {
+    throw new Error('LegNext upload_paint failed: No job_id returned')
+  }
+
+  await metadata.set('upload_paint_job_id', jobId)
+  logger.info('Upload_paint task submitted', { jobId })
+
+  // Step 4: Poll for upload_paint completion
+  await metadata.set('stage', 'waiting_upload_paint')
+  await metadata.set('progress', 40)
+
+  const uploadPaintResult = await pollLegNextTask(jobId, config.apiKey, 300, 40)
+
+  logger.info('Upload_paint completed, submitting upscale', { jobId })
+
+  // Step 5: Submit upscale for first variant (index 0)
+  await metadata.set('stage', 'submitting_upscale')
+  await metadata.set('progress', 70)
+
+  const upscalePayload = {
+    jobId: jobId,
+    imageNo: 0,
+    type: 0
+  }
+
+  logger.info('Submitting upscale with payload', { upscalePayload })
+
+  const upscaleResponse = await fetch('https://api.legnext.ai/api/v1/upscale', {
+    method: 'POST',
+    headers: {
+      'x-api-key': config.apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(upscalePayload),
+  })
+
+  if (!upscaleResponse.ok) {
+    const errorText = await upscaleResponse.text()
+    throw new Error(`LegNext upscale submission failed: ${upscaleResponse.status} - ${errorText}`)
+  }
+
+  const upscaleData = await upscaleResponse.json()
+  const upscaleJobId = upscaleData.job_id
+
+  if (!upscaleJobId) {
+    throw new Error('LegNext upscale failed: No job_id returned')
+  }
+
+  await metadata.set('upscale_task_id', upscaleJobId)
+  await metadata.set('stage', 'waiting_upscale')
+  await metadata.set('progress', 75)
+
+  // Step 6: Poll for upscale completion
+  logger.info('Waiting for upscale task', { upscaleJobId })
+  const upscaleResult = await pollLegNextTask(upscaleJobId, config.apiKey, 300, 75)
+
+  const imageUrl = upscaleResult.output?.image_url || upscaleResult.output?.image_urls?.[0]
+
+  if (!imageUrl) {
+    throw new Error('LegNext upscale result missing image_url')
+  }
+
+  logger.info('Midjourney generation via LegNext completed', { imageUrl })
+
+  // Step 7: Download image and convert to base64
+  const response = await fetch(imageUrl)
   if (!response.ok) {
-    throw new Error(`Failed to fetch image: ${response.status}`)
+    throw new Error(`Failed to fetch generated image: ${response.status}`)
   }
 
   const arrayBuffer = await response.arrayBuffer()

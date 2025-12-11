@@ -10,6 +10,13 @@ import { scriptEditTools } from '../tools/script-tools'
 import { AIMessage, BaseMessage } from '@langchain/core/messages'
 import { reduceAgentActions } from './action-reducer'
 import { AgentActionValidated } from '../schemas/agent-schemas'
+import {
+  AgentRole,
+  validateInputForAgent,
+  validateAgentOutput,
+  sanitizeAgentOutput,
+  getValidationSummary,
+} from '../guardrails'
 
 // PostgreSQL checkpointer for thread persistence
 const DATABASE_URL = process.env.DATABASE_URL
@@ -148,7 +155,7 @@ function routeFromSupervisor(state: WritersRoomState) {
 
 import { ToolMessage } from '@langchain/core/messages';
 
-const wrapAgentWithReducer = (agentFn: Function) => {
+const wrapAgentWithReducer = (agentFn: Function, agentRole: AgentRole = 'supervisor') => {
   return async (state: WritersRoomState): Promise<Partial<WritersRoomState>> => {
     // 0. Pre-Flight: Detect pending tool calls from Supervisor
     // If the last message is an AIMessage with tool_calls, we must generate a corresponding ToolMessage
@@ -170,13 +177,28 @@ const wrapAgentWithReducer = (agentFn: Function) => {
       }
     }
 
-    // 1. Run the original agent
-    // Note: We don't pass the synthetic messages to the agentFn yet, 
-    // because the agentFn uses the state as is. 
-    // However, if the agentFn uses an LLM, it might crash if it sees the dangling tool call?
-    // YES. If the agentFn calls model.invoke(state.messages), it will crash.
-    // So we MUST append the tool message to the state passed to the agent.
+    // =====================================================
+    // INPUT GUARDRAILS
+    // =====================================================
+    const inputValidation = await validateInputForAgent(state, agentRole);
+    if (inputValidation.blocked) {
+      console.warn(`[Guardrails] Input blocked for ${agentRole}: ${inputValidation.blocked.message}`);
+      const blockedMessage = new AIMessage({
+        content: `⚠️ Input validation failed: ${inputValidation.blocked.message}`,
+        name: agentRole,
+      });
+      return {
+        messages: [...syntheticToolMessages, blockedMessage],
+        awaitingUserInput: true,
+      };
+    }
 
+    // Log input warnings (but don't block)
+    if (inputValidation.warnings.length > 0) {
+      console.log(`[Guardrails] Input warnings for ${agentRole}:`, inputValidation.warnings.map(w => w.message));
+    }
+
+    // 1. Run the original agent
     const stateWithToolResponse = {
       ...state,
       messages: [...messages, ...syntheticToolMessages]
@@ -184,8 +206,36 @@ const wrapAgentWithReducer = (agentFn: Function) => {
 
     const agentResult = await agentFn(stateWithToolResponse);
 
+    // =====================================================
+    // OUTPUT GUARDRAILS
+    // =====================================================
+    const outputValidation = await validateAgentOutput(agentResult, agentRole, state);
+    
+    // Log validation summary
+    if (outputValidation.issues.length > 0) {
+      console.log(`[Guardrails] ${getValidationSummary(outputValidation)} for ${agentRole}`);
+      
+      // Log errors and warnings
+      const errors = outputValidation.issues.filter(i => i.severity === 'error');
+      const warnings = outputValidation.issues.filter(i => i.severity === 'warning');
+      
+      if (errors.length > 0) {
+        console.warn(`[Guardrails] Errors:`, errors.map(e => e.message));
+      }
+      if (warnings.length > 0) {
+        console.log(`[Guardrails] Warnings:`, warnings.map(w => w.message));
+      }
+    }
+
+    // Sanitize output if needed (removes blocked actions)
+    let finalResult = agentResult;
+    if (outputValidation.shouldBlock) {
+      console.warn(`[Guardrails] Blocking/sanitizing output from ${agentRole}`);
+      finalResult = sanitizeAgentOutput(agentResult, outputValidation);
+    }
+
     // 2. Extract actions from the result message, if any
-    const resultMessages = agentResult.messages || [];
+    const resultMessages = finalResult.messages || [];
     const lastResultMsg = resultMessages[resultMessages.length - 1];
     const actions: AgentActionValidated[] = (lastResultMsg as any)?.actions || [];
 
@@ -200,7 +250,7 @@ const wrapAgentWithReducer = (agentFn: Function) => {
     // We must ensure the synthetic ToolMessages are included in the returned messages
     // so they are persisted to the graph history.
     return {
-      ...agentResult,
+      ...finalResult,
       messages: [...syntheticToolMessages, ...resultMessages],
       ...reducedUpdates
     };
@@ -243,19 +293,19 @@ const workflow = new StateGraph<WritersRoomState>({
   },
 })
 
-// Nodes
+// Nodes - Each agent wrapped with role-specific guardrails
 workflow.addNode('supervisor', supervisorAgent)
-workflow.addNode('plotArchitect', wrapAgentWithReducer(agents.plotArchitectAgent))
-workflow.addNode('characterPsychology', wrapAgentWithReducer(agents.characterPsychologyAgent))
-workflow.addNode('consequenceTracker', wrapAgentWithReducer(agents.consequenceTrackerAgent))
-workflow.addNode('devilsAdvocate', wrapAgentWithReducer(agents.devilsAdvocateAgent))
-workflow.addNode('writer', wrapAgentWithReducer(agents.writerAgent))
-workflow.addNode('premiseArchitect', wrapAgentWithReducer(agents.premiseArchitectAgent))
-workflow.addNode('episodePremiseArchitect', wrapAgentWithReducer(agents.episodePremiseArchitectAgent))
-workflow.addNode('magicAgent', wrapAgentWithReducer(agents.magicAgent))
+workflow.addNode('plotArchitect', wrapAgentWithReducer(agents.plotArchitectAgent, 'plotArchitect'))
+workflow.addNode('characterPsychology', wrapAgentWithReducer(agents.characterPsychologyAgent, 'characterPsychology'))
+workflow.addNode('consequenceTracker', wrapAgentWithReducer(agents.consequenceTrackerAgent, 'consequenceTracker'))
+workflow.addNode('devilsAdvocate', wrapAgentWithReducer(agents.devilsAdvocateAgent, 'devilsAdvocate'))
+workflow.addNode('writer', wrapAgentWithReducer(agents.writerAgent, 'writer'))
+workflow.addNode('premiseArchitect', wrapAgentWithReducer(agents.premiseArchitectAgent, 'premiseArchitect'))
+workflow.addNode('episodePremiseArchitect', wrapAgentWithReducer(agents.episodePremiseArchitectAgent, 'episodePremiseArchitect'))
+workflow.addNode('magicAgent', wrapAgentWithReducer(agents.magicAgent, 'magicAgent'))
 
 // Script Editor node (Evaluator-Optimizer pattern)
-workflow.addNode('scriptEditor', wrapAgentWithReducer(scriptEditorAgent))
+workflow.addNode('scriptEditor', wrapAgentWithReducer(scriptEditorAgent, 'scriptEditor'))
 
 // Entry
 workflow.setEntryPoint('supervisor')

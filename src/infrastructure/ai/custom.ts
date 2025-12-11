@@ -1,6 +1,5 @@
 import { AIModel, AIModelConfig, TileContext } from './types'
 import { assembleContextImage } from './contextAssembler'
-import { enhancePromptWithStyle } from './styleAnalyzer'
 import axios from 'axios'
 
 export class CustomAIModel implements AIModel {
@@ -16,9 +15,8 @@ export class CustomAIModel implements AIModel {
   async generate(prompt: string, context: TileContext, config: AIModelConfig): Promise<string> {
     if (!config.baseUrl) throw new Error('Base URL missing')
 
-    // Enhance prompt
-    const neighborList = Object.values(context.neighbors).filter(Boolean)
-    const enhancedPrompt = await enhancePromptWithStyle(prompt, neighborList)
+    // Use prompt directly for edge matching
+    const enhancedPrompt = `Fill seamlessly to match surrounding edges: ${prompt}. Maintain isometric perspective and consistent style.`
 
     const { imageBlob, maskBlob, cropRect } = await assembleContextImage(context, 1024)
 

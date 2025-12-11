@@ -28,7 +28,10 @@ export class TileGenerationService {
   ): Promise<(Tile & { imageUrl?: string }) | undefined> {
     if (!tile?.image_filename) return undefined
 
-    const imageUrl = `/projects/${projectId}/${tile.image_filename}`
+    // Handle both local paths and full URLs (Vercel Blob)
+    const imageUrl = tile.image_filename.startsWith('http')
+      ? tile.image_filename
+      : `/projects/${projectId}/${tile.image_filename}`
 
     try {
       const response = await fetch(imageUrl)
@@ -56,14 +59,34 @@ export class TileGenerationService {
    */
   private blobToBase64(blob: Blob): Promise<string> {
     return new Promise((resolve, reject) => {
+      if (!blob || blob.size === 0) {
+        console.error('[TileGenerationService] blobToBase64 received invalid blob:', { blob, size: blob?.size })
+        reject(new Error('Invalid blob'))
+        return
+      }
+      
+      console.log('[TileGenerationService] Converting blob to base64:', { size: blob.size, type: blob.type })
+      
       const reader = new FileReader()
       reader.onloadend = () => {
         const dataUrl = reader.result as string
+        if (!dataUrl || !dataUrl.includes(',')) {
+          console.error('[TileGenerationService] Invalid data URL:', { dataUrl: dataUrl?.substring(0, 100) })
+          reject(new Error('Invalid data URL from FileReader'))
+          return
+        }
         // Remove the data:image/png;base64, prefix
         const base64 = dataUrl.split(',')[1]
+        console.log('[TileGenerationService] Base64 conversion complete:', { 
+          base64Length: base64?.length,
+          isValidLength: base64?.length > 0 && base64?.length % 4 === 0
+        })
         resolve(base64)
       }
-      reader.onerror = reject
+      reader.onerror = (e) => {
+        console.error('[TileGenerationService] FileReader error:', e)
+        reject(new Error('FileReader error'))
+      }
       reader.readAsDataURL(blob)
     })
   }
@@ -84,13 +107,13 @@ export class TileGenerationService {
     const aiProvider = aiService.getActiveModelId()
     let aiConfig = aiService.getConfig(aiProvider)
 
-    // For Midjourney, also check cometConfig as fallback
+    // For Midjourney, also check legnextConfig as fallback
     if (aiProvider === 'midjourney' && !aiConfig?.apiKey && typeof window !== 'undefined') {
-      const savedComet = localStorage.getItem(LocalStorageKeys.AI_CONFIG_COMET)
-      if (savedComet) {
-        const cometConfig = JSON.parse(savedComet)
-        if (cometConfig.apiKey) {
-          aiConfig = { ...aiConfig, apiKey: cometConfig.apiKey }
+      const savedLegNext = localStorage.getItem(LocalStorageKeys.AI_CONFIG_LEGNEXT)
+      if (savedLegNext) {
+        const legnextConfig = JSON.parse(savedLegNext)
+        if (legnextConfig.apiKey) {
+          aiConfig = { ...aiConfig, apiKey: legnextConfig.apiKey }
         }
       }
     }
@@ -280,16 +303,72 @@ export class TileGenerationService {
    */
   private async handleCompletion(
     runState: TileGenRunState,
-    output: { success: boolean; filename: string; imageUrl: string },
+    output: { success: boolean; filename: string; newUrl: string; newBase64: string; originalUrl?: string; isFirstTile: boolean; pendingReview?: boolean },
     opId: string
   ) {
     try {
+      // Check if generation requires user review (new flow)
+      if (output?.pendingReview && output?.newUrl) {
+        console.log('[TileGenerationService] Generation completed with Supabase URL:', {
+          newUrl: output.newUrl,
+          originalUrl: output.originalUrl,
+          isFirstTile: output.isFirstTile,
+        })
+
+        // Images are now stored in Vercel Blob - use URL directly
+        const newUrl = output.newUrl
+        
+        // For original, prefer local existing tile (if any)
+        const tiles = useWorldStore.getState().tiles
+        const existingTile = tiles[`${runState.x},${runState.y}`]
+        let originalUrl = output.originalUrl
+        if (existingTile?.image_filename) {
+          // Handle both local paths and full URLs
+          originalUrl = existingTile.image_filename.startsWith('http')
+            ? existingTile.image_filename
+            : `/projects/${runState.projectId}/${existingTile.image_filename}`
+        }
+
+        // Store pending generation in store
+        useWorldStore.getState().setPendingGeneration(
+          runState.x,
+          runState.y,
+          {
+            newUrl,
+            newBase64: output.newBase64, // Still keep for acceptGeneration
+            originalUrl,
+            isFirstTile: !existingTile,
+          }
+        )
+
+        // Update global status to show review is needed
+        useGlobalStatusStore.getState().updateOperation(opId, {
+          status: 'completed',
+          details: `(${runState.x}, ${runState.y}) - Review generation`,
+        })
+
+        // Emit event for UI to show review dialog
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('generation-review-ready', {
+            detail: {
+              tileX: runState.x,
+              tileY: runState.y,
+              newUrl,
+              originalUrl,
+              isFirstTile: !existingTile,
+            }
+          }))
+        }
+
+        this.clearRunState(runState, opId)
+        return
+      }
+
+      // Legacy flow - direct update (shouldn't happen anymore)
       if (output?.success && output?.filename) {
-        // Update the store with the new tile
-        const { tiles, currentProject } = useWorldStore.getState()
+        const { tiles } = useWorldStore.getState()
         const tileKey = `${runState.x},${runState.y}`
 
-        // Create or update the tile in the store
         useWorldStore.setState(state => ({
           tiles: {
             ...state.tiles,

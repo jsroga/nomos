@@ -11,8 +11,10 @@ import { LocalStorageKeys } from '@/constants/localStorage'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
 import { AssetsPanel } from '@/domains/world-building-toolkit/components/AssetsPanel'
 import { MjVariantPicker } from '@/domains/world-building-toolkit/components/MjVariantPicker'
+import { TileReviewDialog } from '@/domains/world-building-toolkit/components/TileReviewDialog'
 import {
   DomainSidebar,
   SidebarSection,
@@ -48,6 +50,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import toast from 'react-hot-toast'
+import LiquidGlass from 'liquid-glass-react'
 
 export const Sidebar: React.FC = () => {
   const defaultMasterPrompt =
@@ -123,6 +126,32 @@ export const Sidebar: React.FC = () => {
   const [showFidelityPrompt, setShowFidelityPrompt] = useState(false)
   const [fidelityCreativity, setFidelityCreativity] = useState(0.3)
 
+  // Auto-approve state (persisted in localStorage)
+  const [autoApprove, setAutoApprove] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('world-gen-auto-approve') === 'true'
+    }
+    return false
+  })
+
+  const handleAutoApproveChange = (checked: boolean) => {
+    setAutoApprove(checked)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('world-gen-auto-approve', String(checked))
+    }
+  }
+
+  // Pending review state
+  const pendingGenerations = useWorldStore(state => state.pendingGenerations)
+  const pendingFidelity = useWorldStore(state => state.pendingFidelity)
+  const [reviewDialog, setReviewDialog] = useState<{
+    type: 'generation' | 'fidelity'
+    x: number
+    y: number
+    newUrl: string
+    originalUrl?: string
+  } | null>(null)
+
   // Save fidelity prompt to localStorage
   const handleFidelityPromptChange = (value: string) => {
     setFidelityPrompt(value)
@@ -177,9 +206,28 @@ export const Sidebar: React.FC = () => {
   // Helper to convert local image to base64 data URL
   const blobToDataUrl = (blob: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
+      if (!blob || blob.size === 0) {
+        console.error('[Sidebar] blobToDataUrl received invalid blob:', { blob, size: blob?.size })
+        reject(new Error('Invalid blob'))
+        return
+      }
+      
+      console.log('[Sidebar] Converting blob to data URL:', { size: blob.size, type: blob.type })
+      
       const reader = new FileReader()
-      reader.onloadend = () => resolve(reader.result as string)
-      reader.onerror = reject
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string
+        console.log('[Sidebar] Data URL created:', { 
+          length: dataUrl?.length,
+          prefix: dataUrl?.substring(0, 50),
+          isValid: dataUrl?.startsWith('data:image/')
+        })
+        resolve(dataUrl)
+      }
+      reader.onerror = (e) => {
+        console.error('[Sidebar] FileReader error:', e)
+        reject(new Error('FileReader error'))
+      }
       reader.readAsDataURL(blob)
     })
   }
@@ -242,8 +290,17 @@ export const Sidebar: React.FC = () => {
     if (!currentProject) return
 
     try {
-      // Build full prompt from master + tile prompt
-      const fullPrompt = `${tilePrompt}, ${masterPrompt}`
+      // Check if there are any neighbors (for follow-up vs first tile)
+      const hasNeighbors = [
+        tiles[`${x},${y - 1}`], tiles[`${x},${y + 1}`],
+        tiles[`${x - 1},${y}`], tiles[`${x + 1},${y}`]
+      ].some(Boolean)
+
+      // Build prompt: only use master prompt for first tile
+      // For follow-up tiles, use tile description only (better edge matching)
+      // Fallback to master prompt if no tile description provided
+      const effectiveTilePrompt = tilePrompt.trim() || masterPrompt
+      const fullPrompt = hasNeighbors ? effectiveTilePrompt : `${tilePrompt}, ${masterPrompt}`.replace(/^, /, '')
 
       // Optional: Show debug info for context assembly (still works locally)
       // Load neighbor images as data URLs for debug display
@@ -455,248 +512,7 @@ export const Sidebar: React.FC = () => {
             />
           </SidebarSection>
 
-          {/* Mode Buttons */}
-          <SidebarSection separator title="Tools" icon={<Wand2 size={12} />}>
-            <div className="space-y-2">
-              <Button
-                variant={isRepaintMode ? 'default' : 'ghost'}
-                className={`w-full gap-2 ${!isRepaintMode ? 'bg-primary/20 text-primary border border-primary hover:bg-primary hover:text-white' : ''}`}
-                onClick={() => {
-                  if (!isRepaintMode) setSelectMode(false)
-                  setRepaintMode(!isRepaintMode)
-                }}
-              >
-                <Paintbrush size={14} />
-                {isRepaintMode ? 'Exit Repaint Mode' : 'Repaint Mode'}
-              </Button>
-              <Button
-                variant={isSelectMode ? 'default' : 'ghost'}
-                className={`w-full gap-2 ${!isSelectMode ? 'bg-primary/20 text-primary border border-primary hover:bg-primary hover:text-white' : ''}`}
-                onClick={() => {
-                  const newSelectMode = !isSelectMode
-                  setSelectMode(newSelectMode)
-                  // Disable repaint mode when enabling select mode
-                  if (newSelectMode && isRepaintMode) {
-                    setRepaintMode(false)
-                  }
-                }}
-              >
-                <MousePointer2 size={14} />
-                {isSelectMode ? 'Exit Select Mode' : 'Select Mode'}
-              </Button>
-            </div>
 
-            {/* Select Mode Debug View */}
-            {isSelectMode && selectDebugInfo && (
-              <div className="bg-background/50 p-3 rounded-lg border border-border space-y-3 mt-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-medium">Debug</h3>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-5 text-[10px] px-2"
-                    onClick={() => useWorldStore.getState().setSelectDebugInfo(null)}
-                  >
-                    Clear
-                  </Button>
-                </div>
-
-                <div className="space-y-2">
-                  {selectDebugInfo.contextImage && (
-                    <div>
-                      <p className="text-[10px] text-muted-foreground mb-1">Context Image</p>
-                      <img
-                        src={selectDebugInfo.contextImage}
-                        alt="Context"
-                        className="w-full border border-border rounded"
-                      />
-                    </div>
-                  )}
-
-                  {selectDebugInfo.box && (
-                    <div>
-                      <p className="text-[10px] text-muted-foreground mb-1">Selection Box</p>
-                      <div className="text-[10px] bg-background p-2 rounded border border-border font-mono">
-                        {JSON.stringify(selectDebugInfo.box, null, 2)}
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <p className="text-[10px] text-muted-foreground mb-1">API Response</p>
-                    <div className="text-[10px] bg-background p-2 rounded border border-border font-mono max-h-32 overflow-y-auto">
-                      {JSON.stringify(selectDebugInfo.apiResponse, null, 2)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </SidebarSection>
-
-          {/* Repaint Mode UI */}
-          {isRepaintMode && (
-            <SidebarSection separator title="Repaint Mode" icon={<Paintbrush size={12} />}>
-              <div className="flex justify-end mb-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-6 text-xs"
-                  onClick={() => {
-                    setRepaintMode(false)
-                    clearRepaintStrokes()
-                    setRepaintResult(null)
-                    setDebugInfo(null)
-                  }}
-                >
-                  <X className="w-3 h-3 mr-1" />
-                  Exit
-                </Button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs font-medium mb-2 block flex items-center gap-1">
-                    Brush Size
-                    <span className="text-muted-foreground">({brushSize}px)</span>
-                  </label>
-                  <Slider
-                    value={[brushSize]}
-                    min={10}
-                    max={200}
-                    step={10}
-                    onValueChange={([val]) => setBrushSize(val)}
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium mb-2 block">Repaint Prompt</label>
-                  <Textarea
-                    value={repaintPrompt}
-                    onChange={e => setRepaintPrompt(e.target.value)}
-                    placeholder="Describe what to paint in the selected area..."
-                    className="h-20 text-sm bg-background/50 border-2 border-border/60 hover:border-border transition-colors focus:border-primary focus:ring-1 focus:ring-primary/30"
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    variant="default"
-                    className="flex-1"
-                    disabled={repaintStrokes.length === 0 || isGenerating}
-                    onClick={async () => {
-                      if (repaintStrokes.length === 0) return
-                      setIsGenerating(true)
-                      try {
-                        const result = await repaintService.generateRepaint(
-                          repaintStrokes,
-                          tiles,
-                          brushSize,
-                          repaintPrompt,
-                          styleReferenceUrls
-                        )
-                        setRepaintResult(result)
-                      } catch (error) {
-                        console.error('Repaint failed:', error)
-                        toast.error('Repaint failed. Check console.')
-                      } finally {
-                        setIsGenerating(false)
-                      }
-                    }}
-                  >
-                    {isGenerating ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Painting...
-                      </>
-                    ) : (
-                      <>
-                        <Paintbrush className="w-4 h-4 mr-2" />
-                        Generate
-                      </>
-                    )}
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="gap-1"
-                    onClick={() => {
-                      clearRepaintStrokes()
-                      setRepaintResult(null)
-                      setDebugInfo(null)
-                    }}
-                  >
-                    <Trash2 size={14} />
-                    Clear
-                  </Button>
-                </div>
-
-                {/* Debug View */}
-                {debugInfo && (
-                  <div className="mt-4 border-t border-border pt-4">
-                    <h4 className="text-xs font-semibold mb-2 flex items-center gap-1">
-                      <Eye size={12} />
-                      Debug View
-                    </h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <p className="text-[10px] text-muted-foreground mb-1">Context</p>
-                        <img
-                          src={debugInfo.image}
-                          alt="Context"
-                          className="w-full border border-border rounded"
-                        />
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-muted-foreground mb-1">Mask (White=Edit)</p>
-                        <img
-                          src={debugInfo.mask}
-                          alt="Mask"
-                          className="w-full border border-border rounded"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {repaintResult && (
-                  <div className="mt-4 space-y-2">
-                    <p className="text-xs text-muted-foreground">
-                      Preview generated. Click Apply to save.
-                    </p>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="default"
-                        className="flex-1 gap-2"
-                        onClick={async () => {
-                          try {
-                            await repaintService.applyRepaint(repaintResult)
-                            toast.success('Repaint applied successfully')
-                            setRepaintResult(null)
-                            clearRepaintStrokes()
-                            setDebugInfo(null)
-                          } catch (e) {
-                            console.error(e)
-                            toast.error('Failed to apply repaint')
-                          }
-                        }}
-                      >
-                        <Check size={14} />
-                        Apply
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="flex-1 gap-2"
-                        onClick={() => setRepaintResult(null)}
-                      >
-                        <X size={14} />
-                        Discard
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </SidebarSection>
-          )}
 
           {/* Generation Group */}
           <SidebarSection separator title="Generation" icon={<ImagePlus size={12} />}>
@@ -975,14 +791,6 @@ export const Sidebar: React.FC = () => {
           {/* Enhance Fidelity Group */}
           <SidebarSection separator title="Enhance Fidelity" icon={<Sparkles size={12} />}>
             <div className="space-y-3">
-              <button
-                onClick={() => setShowFidelityPrompt(!showFidelityPrompt)}
-                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {showFidelityPrompt ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                {showFidelityPrompt ? 'Hide' : 'Show'} style prompt
-              </button>
-
               <div className="space-y-1">
                 <label className="text-xs font-medium flex items-center gap-1">
                   Creativity
@@ -1004,20 +812,6 @@ export const Sidebar: React.FC = () => {
                   onValueChange={([val]) => setFidelityCreativity(val)}
                 />
               </div>
-
-              {showFidelityPrompt && (
-                <div className="space-y-2">
-                  <Textarea
-                    value={fidelityPrompt}
-                    onChange={e => handleFidelityPromptChange(e.target.value)}
-                    placeholder="Describe the artistic style to apply..."
-                    className="h-20 text-sm bg-background/50 border-2 border-border/60 hover:border-border transition-colors focus:border-primary focus:ring-1 focus:ring-primary/30"
-                  />
-                  <p className="text-[10px] text-muted-foreground">
-                    This prompt guides how Gemini enhances the tile&apos;s artistic fidelity.
-                  </p>
-                </div>
-              )}
 
               <Button
                 onClick={async () => {
@@ -1084,8 +878,37 @@ export const Sidebar: React.FC = () => {
   )
 
   return (
-    <DomainSidebar header="World Gen" storageKey="world-gen">
-      {sidebarContent}
-    </DomainSidebar>
+    <>
+      <DomainSidebar
+        header={
+          <div className="flex items-center justify-between w-full">
+            <span>World Gen</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Auto</span>
+              <Switch
+                checked={autoApprove}
+                onCheckedChange={handleAutoApproveChange}
+              />
+            </div>
+          </div>
+        }
+        storageKey="world-gen"
+      >
+        {sidebarContent}
+      </DomainSidebar>
+
+      {/* Tile Review Dialog */}
+      {reviewDialog && (
+        <TileReviewDialog
+          open={true}
+          onClose={() => setReviewDialog(null)}
+          tileX={reviewDialog.x}
+          tileY={reviewDialog.y}
+          newUrl={reviewDialog.newUrl}
+          originalUrl={reviewDialog.originalUrl}
+          type={reviewDialog.type}
+        />
+      )}
+    </>
   )
 }

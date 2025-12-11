@@ -1,7 +1,6 @@
 /* eslint-disable indent */
 import { AIModel, AIModelConfig, TileContext } from './types'
 import { assembleContextImage } from './contextAssembler'
-import { enhancePromptWithStyle } from './styleAnalyzer'
 import axios from 'axios'
 import { LocalStorageKeys } from '@/constants/localStorage'
 
@@ -64,9 +63,8 @@ export class StabilityAIModel implements AIModel {
     const apiHost = 'https://api.stability.ai'
     const url = `${apiHost}/v1/generation/${engineId}/image-to-image/masking`
 
-    // Enhance prompt
-    const neighborList = Object.values(context.neighbors).filter(Boolean)
-    let enhancedPrompt = await enhancePromptWithStyle(prompt, neighborList)
+    // Use prompt directly for edge matching
+    let enhancedPrompt = `Fill seamlessly to match surrounding edges: ${prompt}. Maintain isometric perspective and consistent style.`
 
     // Append style reference URLs if available (for models that might support it, or as information)
     if (context.styleReferenceUrls && context.styleReferenceUrls.length > 0) {

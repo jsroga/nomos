@@ -115,6 +115,22 @@ export type AgentAction =
       mergeMode?: 'replace' | 'merge'
     }
   }
+  | {
+    type: 'UPDATE_EPISODE_PREMISE'
+    payload: {
+      premise: {
+        title?: string
+        logline?: string
+        protagonistHook?: string
+        fatalFlaw?: string
+        stakes?: string
+        transformation?: string
+        inevitableConsequence?: string
+        thematicFocus?: string
+        charactersInvolved?: string[]
+      }
+    }
+  }
 
 // ============================================
 // AGENT QUESTIONS - Interactive user prompts
@@ -231,6 +247,7 @@ export const AGENT_RESPONSE_SCHEMA = {
               'UPDATE_PLOT_TWISTS',
               'UPDATE_KEY_CHARACTERS',
               'UPDATE_EPISODE_ROADMAP',
+              'UPDATE_EPISODE_PREMISE',
             ],
           },
           payload: { type: 'object' },

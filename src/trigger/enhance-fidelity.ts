@@ -1,23 +1,9 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
+import { put } from '@vercel/blob'
+import { FIDELITY_PROMPTS, getCreativityPrompt } from '@/constants/prompts'
 
-// Get creativity level as a percentage string with detailed instructions
-function getCreativityPrompt(creativity: number): string {
-  const level = Math.round(creativity * 100)
-  let hint: string
-  if (creativity <= 0.2) {
-    hint = 'VERY CONSERVATIVE - preserve exact colors, textures, and details. Only increase resolution with minimal interpretation. Do not add or change any visual elements.'
-  } else if (creativity <= 0.4) {
-    hint = 'CONSERVATIVE - maintain original style and colors closely. Subtle enhancement of existing details only. Preserve all visual elements as they are.'
-  } else if (creativity <= 0.6) {
-    hint = 'BALANCED - enhance existing details and textures while keeping the original style. May add subtle refinements to existing elements. Aim for improved clarity and sharpness.'
-  } else if (creativity <= 0.8) {
-    hint = 'CREATIVE - freely enhance details, textures, and lighting to achieve an Unreal Engine 3D look with realistic rendering, sharp details, and professional game-quality visuals. Add richness to existing elements while maintaining overall structure and composition.'
-  } else {
-    hint = 'MAXIMUM FREEDOM - full creative liberty on details, textures, lighting, and fidelity. Aim for photorealistic Unreal Engine 5 quality with advanced lighting, physically-based materials, and crisp textures. Add rich details and enhancements freely. Only preserve the core structure and composition.'
-  }
-  return `CREATIVITY LEVEL: ${level}/100. ${hint}`
-}
+// NOTE: getCreativityPrompt is now imported from @/constants/prompts
 
 export const enhanceFidelityTask = task({
   id: 'enhance-fidelity',
@@ -60,9 +46,7 @@ export const enhanceFidelityTask = task({
 
     const creativityPrompt = getCreativityPrompt(creativity || 0.3)
 
-    const finalPrompt = `${stylePrompt}
-
-Apply this artistic style to the image while maintaining the exact same composition, subject matter, and structure. Enhance the visual fidelity and add artistic detail according to the style description above. ${creativityPrompt} Ensure each object has a clear, natural-looking shape definition suitable for 3D conversion, especially for characters and people.${styleRefHint}`
+    const finalPrompt = FIDELITY_PROMPTS.GEMINI(stylePrompt, creativityPrompt, styleRefHint)
 
     logger.info('Calling Gemini API for fidelity enhancement', {
       model,
@@ -133,53 +117,63 @@ Apply this artistic style to the image while maintaining the exact same composit
 
     await metadata.set('progress', 70)
 
-    // Step 2: Save enhanced image to filesystem
-    await metadata.set('stage', 'saving')
-    const fs = await import('fs')
-    const path = await import('path')
+    // Step 2: Upload enhanced image to Vercel Blob
+    await metadata.set('stage', 'uploading')
 
     const timestamp = Date.now()
-    const filename = `${tileId}_enhanced_${timestamp}.png`
-    const projectDir = path.join(process.cwd(), 'public', 'projects', projectId)
+    const filename = `fidelity/${projectId}/${tileId}_enhanced_${timestamp}.png`
 
-    if (!fs.existsSync(projectDir)) {
-      fs.mkdirSync(projectDir, { recursive: true })
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      throw new Error('BLOB_READ_WRITE_TOKEN not configured')
     }
 
     const buffer = Buffer.from(enhancedImageBase64, 'base64')
-    fs.writeFileSync(path.join(projectDir, filename), buffer)
+    const blob = await put(filename, buffer, {
+      access: 'public',
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+      contentType: 'image/png',
+    })
 
-    logger.info('Enhanced image saved', { filename })
-
-    await metadata.set('progress', 90)
-
-    // Step 3: Update database with new filename
-    await metadata.set('stage', 'updating_db')
+    const enhancedUrl = blob.url
+    logger.info('Enhanced image uploaded to Vercel Blob', { enhancedUrl })
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
 
-    const { error } = await supabase
-      .from('tiles')
-      .update({ image_filename: filename })
-      .eq('id', tileId)
+    await metadata.set('progress', 90)
 
-    if (error) {
-      logger.error('Failed to update tile in database', { error })
-      // Don't throw - image is saved, just log the error
+    // Step 3: Get original tile filename for comparison
+    await metadata.set('stage', 'pending_review')
+
+    const { data: tile } = await supabase
+      .from('tiles')
+      .select('image_filename')
+      .eq('id', tileId)
+      .single()
+
+    // Handle both local paths and full URLs for original
+    let originalUrl = ''
+    if (tile?.image_filename) {
+      originalUrl = tile.image_filename.startsWith('http')
+        ? tile.image_filename
+        : `/projects/${projectId}/${tile.image_filename}`
     }
 
     await metadata.set('progress', 100)
     await metadata.set('stage', 'completed')
 
-    logger.info('Fidelity enhancement completed successfully', { filename })
+    logger.info('Fidelity enhancement completed - pending user review', { filename })
 
+    // Return pendingReview: true so UI shows review dialog
     return {
       success: true,
       filename,
-      imageUrl: `/projects/${projectId}/${filename}`,
+      enhancedUrl,
+      enhancedBase64: enhancedImageBase64, // Still include for acceptFidelity
+      originalUrl,
+      pendingReview: true,
     }
   },
 })

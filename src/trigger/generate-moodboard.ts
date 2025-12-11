@@ -1,5 +1,5 @@
 
-import { task } from "@trigger.dev/sdk/v3";
+import { task, logger, metadata } from "@trigger.dev/sdk/v3";
 import { createClient } from "@supabase/supabase-js";
 import fs from "fs";
 import path from "path";
@@ -18,15 +18,86 @@ interface GenerateMoodboardPayload {
     };
 }
 
+// Poll LegNext API task for completion
+async function pollLegNextTask(
+    jobId: string,
+    apiKey: string,
+    maxAttempts: number = 300,
+    progressOffset: number = 30
+): Promise<any> {
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 5000));
+
+        try {
+            const fetchResponse = await fetch(`https://api.legnext.ai/api/v1/job/${jobId}`, {
+                method: 'GET',
+                headers: {
+                    'x-api-key': apiKey,
+                },
+            });
+
+            if (fetchResponse.status === 404) {
+                throw new Error('LegNext task not found');
+            }
+
+            if (!fetchResponse.ok) {
+                const errorText = await fetchResponse.text();
+                logger.warn(`LegNext polling error: ${fetchResponse.status} - ${errorText}`);
+                attempts++;
+                continue;
+            }
+
+            const data = await fetchResponse.json();
+            const status = data.status;
+
+            // Progress estimation
+            let progress = 0;
+            if (status === 'completed') progress = 100;
+            else if (status === 'processing') progress = 50 + (attempts % 40);
+            else if (status === 'pending') progress = 10;
+
+            const scaledProgress = progressOffset + Math.round(progress * 0.65);
+            await metadata.set('progress', scaledProgress);
+
+            logger.info(`Polling job ${jobId}: Status = ${status}`, { attempt: attempts, scaledProgress });
+
+            if (status === 'completed') {
+                logger.info('LegNext task completed successfully');
+                await metadata.set('progress', progressOffset + 65);
+                return data;
+            } else if (status === 'failed') {
+                const errorMsg = data.output?.error_messages?.join(', ') || data.message || 'Unknown error';
+                logger.error('LegNext task failed', { error: errorMsg });
+                throw new Error(errorMsg);
+            }
+        } catch (e: any) {
+            logger.warn('Polling fetch error:', { error: e.message });
+            if (e.message?.includes('not found')) throw e;
+        }
+
+        attempts++;
+    }
+
+    throw new Error('LegNext task timeout - Status did not reach completed');
+}
+
 export const generateMoodboard = task({
     id: "generate-moodboard",
-    maxDuration: 300, // 5 mins
+    maxDuration: 600, // 10 mins (increased for MJ polling)
     run: async (payload: GenerateMoodboardPayload) => {
         const { projectId, prompts, styleReference, providerConfig, replaceIndex } = payload;
         const { provider, apiKey, modelId, styleReferenceUrls } = providerConfig;
         const generatedFilenames: string[] = [];
 
-        console.log(`Starting moodboard generation for project ${projectId} using ${provider}`);
+        logger.info(`Starting moodboard generation for project ${projectId}`, { provider, promptCount: prompts.length, replaceIndex });
+
+        // Initialize progress metadata
+        await metadata.set('progress', 0);
+        await metadata.set('stage', 'initializing');
+        await metadata.set('project_id', projectId);
+        await metadata.set('provider', provider);
 
         // Prepare Style References
         // Combine legacy `styleReference` string with new `styleReferenceUrls` array
@@ -36,64 +107,88 @@ export const generateMoodboard = task({
         ].filter(Boolean);
 
         // 1. Generate Images
-        for (const prompt of prompts) {
+        for (let i = 0; i < prompts.length; i++) {
+            const prompt = prompts[i];
+            await metadata.set('stage', `generating_image_${i + 1}_of_${prompts.length}`);
+            await metadata.set('progress', Math.round((i / prompts.length) * 70));
+
             try {
                 let imageBase64: string | null = null;
                 // Construct prompt
                 let enhancedPrompt = `${prompt}. Concept art, high fidelity, moody, cinematic lighting.`;
 
-                // For Midjourney, we append style reference flags later.
-
                 if (provider === 'midjourney') {
-                    // MIDJOURNEY via COMET API
-                    console.log("Generating with Midjourney (Comet)...");
+                    // MIDJOURNEY via LegNext diffusion API
+                    logger.info('Generating with Midjourney (LegNext diffusion)', { promptIndex: i });
 
-                    // 1. Submit Imagine
-                    let fullPrompt = `${enhancedPrompt} --v 6.1 --ar 16:9`;
+                    // Build prompt with MJ parameters
+                    let fullPrompt = `${enhancedPrompt} --v 7 --ar 16:9`;
 
                     // Append Style References (--sref url1 url2)
                     if (allStyleRefs.length > 0) {
                         fullPrompt += ` --sref ${allStyleRefs.join(' ')}`;
                     }
 
-                    const imagineResponse = await fetch('https://api.cometapi.com/mj/submit/imagine', {
+                    logger.info('Using prompt', { fullPrompt });
+
+                    // Submit diffusion task
+                    await metadata.set('stage', 'submitting_diffusion');
+                    const diffusionResponse = await fetch('https://api.legnext.ai/api/v1/diffusion', {
                         method: 'POST',
                         headers: {
+                            'x-api-key': apiKey,
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${apiKey}`
                         },
                         body: JSON.stringify({
-                            prompt: fullPrompt,
-                            notifyHook: ''
-                        })
+                            text: fullPrompt,
+                        }),
                     });
 
-                    if (!imagineResponse.ok) {
-                        const err = await imagineResponse.text();
-                        console.error(`Comet/MJ Error: ${err}`);
+                    if (!diffusionResponse.ok) {
+                        const errorText = await diffusionResponse.text();
+                        logger.error(`LegNext diffusion failed: ${diffusionResponse.status}`, { error: errorText });
                         continue;
                     }
 
-                    const imagineData = await imagineResponse.json();
-                    const taskId = imagineData.result;
+                    const diffusionData = await diffusionResponse.json();
+                    const jobId = diffusionData.job_id;
 
-                    if (!taskId) {
-                        console.error("No Task ID from Comet");
+                    if (!jobId) {
+                        logger.error('LegNext diffusion failed: No job_id returned');
                         continue;
                     }
 
-                    // 2. Poll for Completion
-                    const finalUrl = await pollCometTask(taskId, apiKey);
-                    if (finalUrl) {
-                        const imgRes = await fetch(finalUrl);
-                        const arrayBuffer = await imgRes.arrayBuffer();
-                        imageBase64 = Buffer.from(arrayBuffer).toString('base64');
+                    await metadata.set('diffusion_job_id', jobId);
+                    logger.info('Diffusion task submitted', { jobId });
+
+                    // Poll for completion
+                    await metadata.set('stage', 'waiting_diffusion');
+                    const result = await pollLegNextTask(jobId, apiKey, 300, 30);
+
+                    // Get first variant from image_urls array
+                    const imageUrl = result.output?.image_urls?.[0] || result.output?.image_url;
+
+                    if (!imageUrl) {
+                        logger.error('LegNext diffusion result missing image_url');
+                        continue;
                     }
+
+                    logger.info('Midjourney generation completed', { imageUrl });
+
+                    // Download image
+                    await metadata.set('stage', 'downloading_image');
+                    const imgRes = await fetch(imageUrl);
+                    if (!imgRes.ok) {
+                        logger.error('Failed to fetch generated image', { status: imgRes.status });
+                        continue;
+                    }
+                    const arrayBuffer = await imgRes.arrayBuffer();
+                    imageBase64 = Buffer.from(arrayBuffer).toString('base64');
 
                 } else if (provider === 'nanobanana') {
                     // NANO BANANA uses Gemini API for image generation
                     const targetModel = modelId || 'gemini-2.0-flash-preview-image-generation';
-                    console.log(`Generating with Nano Banana (Gemini ${targetModel})...`);
+                    logger.info(`Generating with Nano Banana`, { model: targetModel, promptIndex: i });
 
                     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`, {
                         method: 'POST',
@@ -110,7 +205,7 @@ export const generateMoodboard = task({
 
                     if (!response.ok) {
                         const errText = await response.text();
-                        console.error(`Nano Banana API Error (${targetModel}): ${errText}`);
+                        logger.error(`Nano Banana API Error`, { model: targetModel, error: errText });
                         continue;
                     }
 
@@ -121,24 +216,25 @@ export const generateMoodboard = task({
                         for (const part of data.candidates[0].content.parts) {
                             if (part.inline_data?.data) {
                                 imageBase64 = part.inline_data.data;
-                                console.log(`Found image in inline_data`);
+                                logger.info('Found image in inline_data');
                                 break;
                             }
                             if (part.inlineData?.data) {
                                 imageBase64 = part.inlineData.data;
-                                console.log(`Found image in inlineData`);
+                                logger.info('Found image in inlineData');
                                 break;
                             }
                         }
                     }
 
                     if (!imageBase64) {
-                        console.warn(`Nano Banana (${targetModel}) did not return an image.`);
+                        logger.warn(`Nano Banana did not return an image`, { model: targetModel });
                     }
                 }
 
                 if (imageBase64) {
                     // 2. Save to Disk
+                    await metadata.set('stage', 'saving_image');
                     const filename = `mood_${Date.now()}_${Math.random().toString(36).substring(7)}.png`;
                     const projectDir = path.join(process.cwd(), 'public', 'projects', projectId);
 
@@ -148,37 +244,20 @@ export const generateMoodboard = task({
 
                     let buffer: Buffer = Buffer.from(imageBase64, 'base64');
 
-                    // Crop Midjourney images (usually 2x2 grid, we want top-left)
-                    if (provider === 'midjourney') {
-                        try {
-                            const image = sharp(buffer);
-                            const metadata = await image.metadata();
-                            if (metadata.width && metadata.height) {
-                                // Crop to top-left quadrant
-                                const newWidth = Math.floor(metadata.width / 2);
-                                const newHeight = Math.floor(metadata.height / 2);
-                                console.log(`Cropping Midjourney grid (${metadata.width}x${metadata.height}) to top-left (${newWidth}x${newHeight})`);
-                                buffer = await image
-                                    .extract({ left: 0, top: 0, width: newWidth, height: newHeight })
-                                    .toBuffer();
-                            }
-                        } catch (cropError) {
-                            console.error("Failed to crop Midjourney image:", cropError);
-                            // Proceed with original buffer if cropping fails
-                        }
-                    }
-
                     fs.writeFileSync(path.join(projectDir, filename), buffer);
                     generatedFilenames.push(filename);
-                    console.log(`Saved ${filename}`);
+                    logger.info('Image saved', { filename });
                 }
 
             } catch (error) {
-                console.error(`Failed to generate image for prompt: ${prompt}`, error);
+                logger.error(`Failed to generate image for prompt`, { prompt, error });
             }
         }
 
         // 3. Update Database with retry logic for concurrent updates
+        await metadata.set('stage', 'updating_database');
+        await metadata.set('progress', 90);
+
         if (generatedFilenames.length > 0) {
             const supabase = createClient(
                 process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -197,7 +276,7 @@ export const generateMoodboard = task({
                         .single();
 
                     if (!project || !project.series_bible) {
-                        console.error("Project or series_bible not found");
+                        logger.error('Project or series_bible not found');
                         break;
                     }
 
@@ -206,7 +285,7 @@ export const generateMoodboard = task({
 
                     if (typeof replaceIndex === 'number' && replaceIndex >= 0) {
                         // Replace mode - update specific index
-                        console.log(`Replacing image at index ${replaceIndex}`);
+                        logger.info(`Replacing image at index ${replaceIndex}`);
                         newImages = [...currentImages];
                         // Ensure array is large enough (fill gaps if needed)
                         while (newImages.length <= replaceIndex) newImages.push("");
@@ -231,18 +310,18 @@ export const generateMoodboard = task({
                         .eq('id', projectId);
 
                     if (error) {
-                        console.error(`Update attempt ${attempt + 1} failed:`, error);
+                        logger.error(`Update attempt ${attempt + 1} failed`, { error });
                         if (attempt < maxRetries - 1) {
                             // Wait briefly before retry
                             await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
                             continue;
                         }
                     } else {
-                        console.log(`Updated DB with moodImages (index: ${replaceIndex ?? 'append'})`);
+                        logger.info('Updated DB with moodImages', { index: replaceIndex ?? 'append', count: newImages.length });
                         break;
                     }
                 } catch (dbError) {
-                    console.error(`Database error on attempt ${attempt + 1}:`, dbError);
+                    logger.error(`Database error on attempt ${attempt + 1}`, { error: dbError });
                     if (attempt < maxRetries - 1) {
                         await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
                     }
@@ -250,34 +329,13 @@ export const generateMoodboard = task({
             }
         }
 
+        await metadata.set('progress', 100);
+        await metadata.set('stage', 'completed');
+        logger.info('Moodboard generation completed', { images: generatedFilenames });
+
         return {
             success: true,
             images: generatedFilenames
         };
     },
 });
-
-async function pollCometTask(taskId: string, apiKey: string, maxAttempts = 60): Promise<string | null> {
-    for (let i = 0; i < maxAttempts; i++) {
-        await new Promise(r => setTimeout(r, 5000)); // Poll every 5s
-        try {
-            const res = await fetch(`https://api.cometapi.com/mj/task/${taskId}/fetch`, {
-                headers: { 'Authorization': `Bearer ${apiKey}` }
-            });
-            if (!res.ok) continue;
-            const data = await res.json();
-            const result = data.result || data;
-
-            if (result.status === 'SUCCESS') {
-                return result.imageUrl;
-            }
-            if (result.status === 'FAILED') {
-                console.error('MJ Task Failed:', result.failReason);
-                return null;
-            }
-        } catch (e) {
-            console.error("Polling error", e);
-        }
-    }
-    return null;
-}

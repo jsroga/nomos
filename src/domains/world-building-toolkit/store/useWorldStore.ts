@@ -6,6 +6,28 @@ import { JobStatus, JobType } from '@/types/enums'
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
 
 export type SelectBox = { x1: number; y1: number; x2: number; y2: number }
+
+export interface PendingUpscale {
+  upscaledUrl: string
+  originalUrl: string
+  timestamp: number
+}
+
+export interface PendingGeneration {
+  newUrl: string
+  newBase64: string
+  originalUrl?: string  // undefined for first tile
+  isFirstTile: boolean
+  timestamp: number
+}
+
+export interface PendingFidelity {
+  newUrl: string
+  newBase64: string
+  originalUrl: string
+  timestamp: number
+}
+
 export interface Asset {
   id: string
   project_id: string
@@ -92,6 +114,11 @@ interface WorldState {
   previewAssetId: string | null
   showAllAssetMasks: boolean
 
+  // Pending Upscales State
+  pendingUpscales: Record<string, PendingUpscale> // Key: "x,y"
+  pendingGenerations: Record<string, PendingGeneration> // Key: "x,y"
+  pendingFidelity: Record<string, PendingFidelity> // Key: "x,y"
+
   // Actions
   setUser: (user: any) => void
   loadProject: (projectId: string) => Promise<void>
@@ -157,6 +184,24 @@ interface WorldState {
   setShowAllAssetMasks: (show: boolean) => void
   fetchAssets: () => Promise<void>
   setCurrentProject: (project: Project) => void
+
+  // Pending Upscale Actions
+  setPendingUpscale: (x: number, y: number, upscaledUrl: string, originalUrl: string) => void
+  acceptUpscale: (x: number, y: number) => Promise<void>
+  rejectUpscale: (x: number, y: number) => void
+  getPendingUpscale: (x: number, y: number) => PendingUpscale | undefined
+
+  // Pending Generation Actions
+  setPendingGeneration: (x: number, y: number, data: Omit<PendingGeneration, 'timestamp'>) => void
+  acceptGeneration: (x: number, y: number) => Promise<void>
+  rejectGeneration: (x: number, y: number) => void
+  getPendingGeneration: (x: number, y: number) => PendingGeneration | undefined
+
+  // Pending Fidelity Actions
+  setPendingFidelity: (x: number, y: number, data: Omit<PendingFidelity, 'timestamp'>) => void
+  acceptFidelity: (x: number, y: number) => Promise<void>
+  rejectFidelity: (x: number, y: number) => void
+  getPendingFidelity: (x: number, y: number) => PendingFidelity | undefined
 }
 
 export const useWorldStore = create<WorldState>((set, get) => ({
@@ -196,6 +241,11 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   assets: [],
   previewAssetId: null,
   showAllAssetMasks: false,
+
+  // Pending Upscales Initial State
+  pendingUpscales: {},
+  pendingGenerations: {},
+  pendingFidelity: {},
 
   setUser: user => set({ user }),
 
@@ -551,4 +601,221 @@ export const useWorldStore = create<WorldState>((set, get) => ({
       set({ assets: data })
     }
   },
+
+  // Pending Upscale Actions
+  setPendingUpscale: (x, y, upscaledUrl, originalUrl) =>
+    set(state => ({
+      pendingUpscales: {
+        ...state.pendingUpscales,
+        [`${x},${y}`]: { upscaledUrl, originalUrl, timestamp: Date.now() }
+      }
+    })),
+
+  acceptUpscale: async (x, y) => {
+    const { currentProject, pendingUpscales } = get()
+    if (!currentProject) return
+
+    const tileKey = `${x},${y}`
+    const pending = pendingUpscales[tileKey]
+    if (!pending) return
+
+    try {
+      // Call API to download and save upscaled image
+      const response = await fetch('/api/tiles/accept-upscale', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: currentProject.id,
+          x,
+          y,
+          upscaledUrl: pending.upscaledUrl
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to accept upscale')
+      }
+
+      const { filename } = await response.json()
+
+      // Update tile in local state
+      set(state => ({
+        tiles: {
+          ...state.tiles,
+          [tileKey]: {
+            ...state.tiles[tileKey],
+            image_filename: filename
+          }
+        },
+        pendingUpscales: (() => {
+          const newPending = { ...state.pendingUpscales }
+          delete newPending[tileKey]
+          return newPending
+        })()
+      }))
+    } catch (error) {
+      console.error('Error accepting upscale:', error)
+      throw error
+    }
+  },
+
+  rejectUpscale: (x, y) => {
+    set(state => {
+      const newPending = { ...state.pendingUpscales }
+      delete newPending[`${x},${y}`]
+      return { pendingUpscales: newPending }
+    })
+  },
+
+  getPendingUpscale: (x, y) => get().pendingUpscales[`${x},${y}`],
+
+  // Pending Generation Actions
+  setPendingGeneration: (x, y, data) =>
+    set(state => ({
+      pendingGenerations: {
+        ...state.pendingGenerations,
+        [`${x},${y}`]: { ...data, timestamp: Date.now() }
+      }
+    })),
+
+  acceptGeneration: async (x, y) => {
+    const { currentProject, pendingGenerations } = get()
+    if (!currentProject) return
+
+    const tileKey = `${x},${y}`
+    const pending = pendingGenerations[tileKey]
+    if (!pending) return
+
+    try {
+      // Save the new image
+      const filename = `${x}_${y}_${Date.now()}.png`
+      const response = await fetch('/api/save-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: currentProject.id,
+          filename,
+          imageData: pending.newBase64,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to save generated image')
+      }
+
+      // Upsert tile in database
+      const supabase = (await import('@/infrastructure/storage/supabaseClient')).getSupabaseClient()
+      const { data: tile } = await supabase
+        .from('tiles')
+        .upsert({
+          project_id: currentProject.id,
+          x,
+          y,
+          tile_prompt: '',  // Will be updated by service if needed
+          image_filename: filename,
+        }, { onConflict: 'project_id,x,y' })
+        .select()
+        .single()
+
+      // Update local state
+      set(state => ({
+        tiles: {
+          ...state.tiles,
+          [tileKey]: tile || { ...state.tiles[tileKey], image_filename: filename }
+        },
+        pendingGenerations: (() => {
+          const newPending = { ...state.pendingGenerations }
+          delete newPending[tileKey]
+          return newPending
+        })()
+      }))
+    } catch (error) {
+      console.error('Error accepting generation:', error)
+      throw error
+    }
+  },
+
+  rejectGeneration: (x, y) => {
+    set(state => {
+      const newPending = { ...state.pendingGenerations }
+      delete newPending[`${x},${y}`]
+      return { pendingGenerations: newPending }
+    })
+  },
+
+  getPendingGeneration: (x, y) => get().pendingGenerations[`${x},${y}`],
+
+  // Pending Fidelity Actions
+  setPendingFidelity: (x, y, data) =>
+    set(state => ({
+      pendingFidelity: {
+        ...state.pendingFidelity,
+        [`${x},${y}`]: { ...data, timestamp: Date.now() }
+      }
+    })),
+
+  acceptFidelity: async (x, y) => {
+    const { currentProject, pendingFidelity } = get()
+    if (!currentProject) return
+
+    const tileKey = `${x},${y}`
+    const pending = pendingFidelity[tileKey]
+    if (!pending) return
+
+    try {
+      // Save the enhanced image
+      const filename = `${x}_${y}_${Date.now()}.png`
+      const response = await fetch('/api/save-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: currentProject.id,
+          filename,
+          imageData: pending.newBase64,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to save enhanced image')
+      }
+
+      // Update tile in database
+      const supabase = (await import('@/infrastructure/storage/supabaseClient')).getSupabaseClient()
+      await supabase
+        .from('tiles')
+        .update({ image_filename: filename })
+        .eq('project_id', currentProject.id)
+        .eq('x', x)
+        .eq('y', y)
+
+      // Update local state
+      set(state => ({
+        tiles: {
+          ...state.tiles,
+          [tileKey]: {
+            ...state.tiles[tileKey],
+            image_filename: filename
+          }
+        },
+        pendingFidelity: (() => {
+          const newPending = { ...state.pendingFidelity }
+          delete newPending[tileKey]
+          return newPending
+        })()
+      }))
+    } catch (error) {
+      console.error('Error accepting fidelity:', error)
+      throw error
+    }
+  },
+
+  rejectFidelity: (x, y) => {
+    set(state => {
+      const newPending = { ...state.pendingFidelity }
+      delete newPending[`${x},${y}`]
+      return { pendingFidelity: newPending }
+    })
+  },
+
+  getPendingFidelity: (x, y) => get().pendingFidelity[`${x},${y}`],
 }))

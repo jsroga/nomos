@@ -1,6 +1,14 @@
+// Simple log function - can be replaced with a more sophisticated logger if needed
+const log = (level: 'info' | 'warn' | 'error', message: string, data?: any) => {
+  const prefix = level === 'error' ? '❌' : level === 'warn' ? '⚠️' : '✅'
+  console.log(`${prefix} [MeshyClient] ${message}`, data ? JSON.stringify(data, null, 2) : '')
+}
+
 export class MeshyClient {
   private apiKey: string
   private baseUrl = 'https://api.meshy.ai/v2'
+  // Store current task ID for external access
+  public currentTaskId: string | null = null
 
   constructor(apiKey: string) {
     this.apiKey = apiKey
@@ -26,6 +34,8 @@ export class MeshyClient {
     }
 
     const { result: taskId } = await response.json()
+    this.currentTaskId = taskId
+    log('info', `Image-to-3D task created`, { taskId })
 
     // Step 2: Poll for completion
     return this.pollTask(taskId)
@@ -86,18 +96,14 @@ export class MeshyClient {
       enable_pbr: true
     }
 
-    // ============================================================
-    // DEBUGGING: Log exact payload sent to Meshy.ai
-    // ============================================================
-    console.log('🔍 MESHY RETEXTURE REQUEST - START')
-    console.log('📍 URL:', textureBaseUrl)
-    console.log('📦 PAYLOAD:', JSON.stringify(payload, null, 2))
-    console.log('🔑 API Key (first 10 chars):', this.apiKey.substring(0, 10) + '...')
-    console.log('📊 Model URL length:', modelUrlOrBase64.length)
-    console.log('📊 Is Data URI:', modelUrlOrBase64.startsWith('data:'))
-    console.log('📊 Is HTTP URL:', modelUrlOrBase64.startsWith('http'))
-    console.log('🔍 MESHY RETEXTURE REQUEST - END')
-    // ============================================================
+    log('info', 'Retexture request', {
+      url: textureBaseUrl,
+      prompt,
+      aiModel,
+      modelUrlLength: modelUrlOrBase64.length,
+      isDataUri: modelUrlOrBase64.startsWith('data:'),
+      isHttpUrl: modelUrlOrBase64.startsWith('http')
+    })
 
     const response = await fetch(textureBaseUrl, {
       method: 'POST',
@@ -112,15 +118,11 @@ export class MeshyClient {
       const errorText = await response.text()
       let message = response.statusText
 
-      // ============================================================
-      // DEBUGGING: Log error response from Meshy.ai
-      // ============================================================
-      console.log('❌ MESHY RETEXTURE RESPONSE - ERROR')
-      console.log('📊 Status Code:', response.status)
-      console.log('📊 Status Text:', response.statusText)
-      console.log('📄 Error Response:', errorText)
-      console.log('❌ MESHY RETEXTURE RESPONSE - ERROR END')
-      // ============================================================
+      log('error', 'Retexture API error', {
+        statusCode: response.status,
+        statusText: response.statusText,
+        errorResponse: errorText
+      })
 
       try {
         const json = JSON.parse(errorText)
@@ -130,17 +132,10 @@ export class MeshyClient {
     }
 
     const responseData = await response.json()
-
-    // ============================================================
-    // DEBUGGING: Log success response from Meshy.ai
-    // ============================================================
-    console.log('✅ MESHY RETEXTURE RESPONSE - SUCCESS')
-    console.log('📊 Status Code:', response.status)
-    console.log('📦 Response Data:', JSON.stringify(responseData, null, 2))
-    console.log('✅ MESHY RETEXTURE RESPONSE - SUCCESS END')
-    // ============================================================
-
     const { result: taskId } = responseData
+    this.currentTaskId = taskId
+
+    log('info', 'Retexture task created', { taskId })
 
     // Step 2: Poll for completion
     return this.pollRetextureTask(taskId, textureBaseUrl)

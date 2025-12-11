@@ -6,6 +6,8 @@
  * plants the seeds (Factions/Characters), and watches them grow (Inciting Incident).
  * 
  * Supports section-focused updates with smart merge capabilities.
+ * 
+ * NEW: Supports token-level streaming for better UX during long generations.
  */
 
 import { AIMessage, SystemMessage } from '@langchain/core/messages'
@@ -20,6 +22,7 @@ import {
 } from '../schemas/agent-schemas'
 
 import { getSafeMessageHistory } from '../utils/message-utils'
+import { StreamCallback, WritersRoomStateWithStream } from '../guardrails/types'
 
 // Model is created inside the function to use request-scoped config (AsyncLocalStorage)
 
@@ -334,6 +337,320 @@ function buildSectionContext(section: BibleSection, bible: any, storyPlan: any):
   return parts.join('\n')
 }
 
+// ============================================
+// STREAMING HELPER FOR FULL BIBLE GENERATION
+// ============================================
+
+/**
+ * Stream the premise generation with token-by-token progress callbacks
+ */
+async function streamPremiseGeneration(
+  model: any,
+  messages: any[],
+  streamCallback: StreamCallback
+): Promise<{ parsed: PremiseArchitectResponse | null; fullContent: string }> {
+  let fullContent = ''
+  let tokenCount = 0
+  
+  try {
+    // Use model.stream() for token-by-token streaming
+    const stream = await model.stream(messages)
+    
+    for await (const chunk of stream) {
+      const token = typeof chunk.content === 'string' ? chunk.content : ''
+      if (token) {
+        fullContent += token
+        tokenCount++
+        
+        // Emit token progress every token (or could batch for performance)
+        streamCallback({
+          type: 'token',
+          agent: 'PremiseArchitect',
+          token,
+          progress: Math.min(tokenCount / 100, 0.99), // Rough progress estimate
+        })
+        
+        // Detect sections being generated and emit section progress
+        detectAndEmitSectionProgress(fullContent, streamCallback)
+      }
+    }
+    
+    // Signal streaming complete
+    streamCallback({
+      type: 'section_complete',
+      agent: 'PremiseArchitect',
+      section: 'full_bible',
+      content: fullContent.substring(0, 200) + '...', // Preview
+    })
+    
+    // Parse the accumulated content
+    const parsed = parseAgentResponse(fullContent, PremiseArchitectResponseSchema)
+    
+    return {
+      parsed: parsed || {
+        message: extractMessageFromContent(fullContent),
+        actions: [],
+        confidence: 0.5,
+      },
+      fullContent,
+    }
+  } catch (error) {
+    console.error('Streaming error in Premise Architect:', error)
+    
+    // Return what we have so far
+    return {
+      parsed: {
+        message: fullContent || 'Error during generation',
+        actions: [],
+        confidence: 0.3,
+      },
+      fullContent,
+    }
+  }
+}
+
+/**
+ * Detect which section of the bible is being generated and emit progress
+ */
+let lastDetectedSection = ''
+function detectAndEmitSectionProgress(content: string, streamCallback: StreamCallback) {
+  const sectionMarkers = [
+    { marker: '"worldDescription"', section: 'worldDescription' },
+    { marker: '"worldRules"', section: 'worldRules' },
+    { marker: '"factions"', section: 'factions' },
+    { marker: '"keyCharacters"', section: 'keyCharacters' },
+    { marker: '"plotTwists"', section: 'plotTwists' },
+    { marker: '"sequences"', section: 'episodeRoadmap' },
+    { marker: '"inspirations"', section: 'inspirations' },
+  ]
+  
+  for (const { marker, section } of sectionMarkers) {
+    if (content.includes(marker) && lastDetectedSection !== section) {
+      lastDetectedSection = section
+      streamCallback({
+        type: 'section_start',
+        agent: 'PremiseArchitect',
+        section,
+      })
+      break
+    }
+  }
+}
+
+/**
+ * Extract a user-friendly message from raw content if parsing fails
+ */
+function extractMessageFromContent(content: string): string {
+  // Try to find a "message" field
+  const messageMatch = content.match(/"message"\s*:\s*"([^"]+)"/s)
+  if (messageMatch) {
+    return messageMatch[1]
+  }
+  
+  // Otherwise, return a truncated version of the raw content
+  if (content.length > 500) {
+    return content.substring(0, 500) + '...'
+  }
+  
+  return content || 'World bible generated'
+}
+
+// Reset section detection between calls
+function resetSectionDetection() {
+  lastDetectedSection = ''
+}
+
+// ============================================
+// PROGRESSIVE BIBLE GENERATION
+// ============================================
+
+/**
+ * Section definitions for progressive generation
+ */
+const PROGRESSIVE_SECTIONS = [
+  {
+    key: 'worldDescription',
+    name: 'World Description',
+    prompt: `Generate a vivid, atmospheric description of the world. Focus on:
+- Visual style and aesthetic
+- Sensory details (sights, sounds, smells)
+- The general "feel" and atmosphere
+- Key locations or regions (briefly)
+
+Return ONLY valid JSON: { "worldDescription": "Your atmospheric description here" }`,
+  },
+  {
+    key: 'worldRules',
+    name: 'World Rules',
+    prompt: `Define the hard rules that govern this world. Focus on:
+- Physics/Magic system rules and their costs
+- Technology constraints
+- Societal laws and taboos
+- What happens when rules are broken
+
+Return ONLY valid JSON: { "worldRules": [{ "category": "Magic|Physics|Technology|Society", "rule": "The rule", "consequence": "What happens" }] }`,
+  },
+  {
+    key: 'factions',
+    name: 'Factions & Powers',
+    prompt: `Create opposing factions with incompatible goals. Each faction needs:
+- Unique ideology and goals
+- Resources/strengths
+- Weaknesses
+- Rivals
+
+Return ONLY valid JSON: { "factions": [{ "id": "f1", "name": "Name", "ideology": "Core belief", "goals": ["Goal"], "resources": "Power", "weaknesses": "Flaw", "rivals": ["Other faction"] }] }`,
+  },
+  {
+    key: 'keyCharacters',
+    name: 'Key Characters',
+    prompt: `Define key characters with deep motivations:
+- Protagonist (with flaw)
+- Antagonist (sympathetic motivation)
+- Key supporting characters
+
+Return ONLY valid JSON: { "keyCharacters": [{ "name": "Name", "role": "Protagonist|Antagonist|Supporting", "archetype": "The archetype", "motivation": "What drives them", "factionId": "faction_id_or_null" }] }`,
+  },
+  {
+    key: 'plotTwists',
+    name: 'Plot Twists',
+    prompt: `Create 3 major plot twists that will completely recontextualize the story.
+Each twist should make the audience want to rewatch from the beginning.
+
+Return ONLY valid JSON: { "plotTwists": ["Twist 1", "Twist 2", "Twist 3"] }`,
+  },
+  {
+    key: 'metadata',
+    name: 'Metadata',
+    prompt: `Define the story's core metadata:
+- Genre and tone
+- Central thematic question
+- Key themes (2-3)
+- Inspirations (books, movies, games)
+
+Return ONLY valid JSON: { "genre": "Genre", "tone": "Tone", "centralQuestion": "The big question", "themes": ["Theme1", "Theme2"], "inspirations": { "books": [], "movies": [], "games": [] } }`,
+  },
+]
+
+/**
+ * Generate bible sections progressively, streaming each section as it completes
+ */
+export async function generateBibleProgressively(
+  model: any,
+  baseContext: string,
+  userRequest: string,
+  streamCallback: StreamCallback,
+  existingBible: any = {}
+): Promise<any> {
+  const generatedSections: Record<string, any> = {}
+  
+  for (const section of PROGRESSIVE_SECTIONS) {
+    // Signal section start
+    streamCallback({
+      type: 'section_start',
+      agent: 'PremiseArchitect',
+      section: section.key,
+    })
+    
+    // Build context including previously generated sections
+    const contextParts = [
+      baseContext,
+      `\n## USER REQUEST\n${userRequest}`,
+      '\n## PREVIOUSLY GENERATED SECTIONS',
+    ]
+    
+    // Include already generated sections for context
+    for (const [key, value] of Object.entries(generatedSections)) {
+      contextParts.push(`${key}: ${JSON.stringify(value).substring(0, 500)}...`)
+    }
+    
+    // Include existing bible sections for reference
+    if (Object.keys(existingBible).length > 0) {
+      contextParts.push('\n## EXISTING BIBLE (for reference)')
+      contextParts.push(JSON.stringify(existingBible).substring(0, 1000) + '...')
+    }
+    
+    contextParts.push(`\n## CURRENT TASK: Generate ${section.name}`)
+    contextParts.push(section.prompt)
+    
+    const sectionPrompt = contextParts.join('\n')
+    
+    try {
+      // Stream this section's generation
+      let sectionContent = ''
+      const sectionStream = await model.stream([
+        new SystemMessage(sectionPrompt),
+      ])
+      
+      for await (const chunk of sectionStream) {
+        const token = typeof chunk.content === 'string' ? chunk.content : ''
+        if (token) {
+          sectionContent += token
+          streamCallback({
+            type: 'token',
+            agent: 'PremiseArchitect',
+            token,
+            section: section.key,
+          })
+        }
+      }
+      
+      // Parse the section content
+      try {
+        // Try to extract JSON from content
+        const jsonMatch = sectionContent.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0])
+          Object.assign(generatedSections, parsed)
+          
+          // Signal section complete with parsed content
+          streamCallback({
+            type: 'section_complete',
+            agent: 'PremiseArchitect',
+            section: section.key,
+            content: parsed,
+          })
+        }
+      } catch (parseError) {
+        console.warn(`Failed to parse ${section.key} section:`, parseError)
+        // Still signal completion even if parsing failed
+        streamCallback({
+          type: 'section_complete',
+          agent: 'PremiseArchitect',
+          section: section.key,
+          content: { raw: sectionContent },
+        })
+      }
+    } catch (sectionError) {
+      console.error(`Error generating ${section.key}:`, sectionError)
+      // Continue with next section
+    }
+  }
+  
+  return generatedSections
+}
+
+/**
+ * Build a complete StoryPlan from progressively generated sections
+ */
+function buildStoryPlanFromSections(sections: Record<string, any>): any {
+  return {
+    title: sections.title || 'Untitled',
+    worldDescription: sections.worldDescription || '',
+    worldRules: sections.worldRules || [],
+    factions: sections.factions || [],
+    keyCharacters: sections.keyCharacters || [],
+    plotTwists: sections.plotTwists || [],
+    genre: sections.genre || 'Unknown',
+    tone: sections.tone || 'Unknown',
+    centralQuestion: sections.centralQuestion || '',
+    themes: sections.themes || [],
+    inspirations: sections.inspirations || { books: [], movies: [], games: [] },
+    sequences: sections.sequences || [],
+    moodImages: [],
+  }
+}
+
 const PREMISE_ARCHITECT_PROMPT = `
 ## YOU ARE THE WORLD & CONFLICT ARCHITECT
 
@@ -445,10 +762,16 @@ Respond with a JSON object containing the complete story plan:
 `
 
 export const premiseArchitectAgent = async (
-  state: WritersRoomState
+  state: WritersRoomState | WritersRoomStateWithStream
 ): Promise<Partial<WritersRoomState>> => {
+  // Reset section detection for fresh tracking
+  resetSectionDetection()
+  
   // Create model inside function to use request-scoped config
   const model = getModel('premiseArchitect')
+  
+  // Check for streaming callback
+  const streamCallback: StreamCallback | undefined = (state as WritersRoomStateWithStream)._streamCallback
   
   // Build context from user input and any existing bible
   const existingBible = state.seriesBible || {}
@@ -467,6 +790,15 @@ export const premiseArchitectAgent = async (
   const isSectionUpdate = section !== 'full'
   
   console.log(`Premise Architect: ${isSectionUpdate ? `Section update [${section}]` : 'Full bible generation'}`)
+
+  // Signal streaming start if callback provided
+  if (streamCallback) {
+    streamCallback({
+      type: 'section_start',
+      agent: 'PremiseArchitect',
+      section: isSectionUpdate ? section : 'full_bible',
+    })
+  }
 
   // Build context based on update type
   let systemPrompt: string
@@ -519,41 +851,79 @@ Based on the conversation, create the World Bible and Initial Conflict.
     ...conversationMessages,
   ]
 
+  // Check if progressive generation is requested
+  const useProgressiveGeneration = (state as any)._useProgressiveGeneration === true
+  
   try {
     // Try structured output first
     let parsed: PremiseArchitectResponse | null = null
     let actions: AgentAction[] = []
 
-    try {
-      const structuredModel = model.withStructuredOutput(PremiseArchitectResponseSchema)
-      parsed = (await structuredModel.invoke(messages)) as PremiseArchitectResponse
-      actions = (parsed.actions || []) as any
-    } catch (structuredError) {
-      console.warn(
-        'Premise Architect: Structured output failed, falling back to manual parsing',
-        structuredError
-      )
-
-      // Fallback to manual parsing
-      // Use a fresh copy of messages for the fallback call, filtering out any orphan tool calls
-      // or malformed history that might have caused the structured output to fail if it was an API error.
-      const fallbackMessages = getSafeMessageHistory(state.messages, 5).filter(m => m._getType() !== 'system')
-      const response = await model.invoke([
-        new SystemMessage(combinedSystem),
-        ...fallbackMessages
-      ])
-      const content =
-        typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
-      parsed = parseAgentResponse(content, PremiseArchitectResponseSchema)
-
-      if (!parsed) {
+    // If streaming callback is provided AND we're doing full bible generation,
+    // use streaming mode for better UX
+    if (streamCallback && !isSectionUpdate) {
+      if (useProgressiveGeneration) {
+        // Use progressive section-by-section generation
+        console.log('Premise Architect: Using progressive generation mode')
+        const progressiveSections = await generateBibleProgressively(
+          model,
+          contextMessage,
+          userInstruction,
+          streamCallback,
+          existingBible
+        )
+        
+        // Build story plan from progressive sections
+        const storyPlan = buildStoryPlanFromSections(progressiveSections)
+        
         parsed = {
-          message: content,
-          actions: [],
-          confidence: 0.5,
+          message: 'World Bible generated progressively. Review each section above.',
+          actions: [{
+            type: 'UPDATE_SERIES_BIBLE',
+            payload: { storyPlan }
+          }] as any,
+          confidence: 0.8,
         }
+        actions = parsed.actions as any
+      } else {
+        // Use standard streaming for full bible generation
+        const streamResult = await streamPremiseGeneration(model, messages, streamCallback)
+        parsed = streamResult.parsed
+        actions = (parsed?.actions || []) as any
       }
-      actions = (parsed.actions || []) as any
+    } else {
+      // Use standard structured output for section updates
+      try {
+        const structuredModel = model.withStructuredOutput(PremiseArchitectResponseSchema)
+        parsed = (await structuredModel.invoke(messages)) as PremiseArchitectResponse
+        actions = (parsed.actions || []) as any
+      } catch (structuredError) {
+        console.warn(
+          'Premise Architect: Structured output failed, falling back to manual parsing',
+          structuredError
+        )
+
+        // Fallback to manual parsing
+        // Use a fresh copy of messages for the fallback call, filtering out any orphan tool calls
+        // or malformed history that might have caused the structured output to fail if it was an API error.
+        const fallbackMessages = getSafeMessageHistory(state.messages, 5).filter(m => m._getType() !== 'system')
+        const response = await model.invoke([
+          new SystemMessage(combinedSystem),
+          ...fallbackMessages
+        ])
+        const content =
+          typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+        parsed = parseAgentResponse(content, PremiseArchitectResponseSchema)
+
+        if (!parsed) {
+          parsed = {
+            message: content,
+            actions: [],
+            confidence: 0.5,
+          }
+        }
+        actions = (parsed.actions || []) as any
+      }
     }
 
     const messageContent = parsed.message

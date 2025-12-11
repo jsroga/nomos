@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
-import { Plus, FolderOpen, ArrowRight, Loader2, LogOut, Trash2 } from 'lucide-react'
+import { Plus, FolderOpen, ArrowRight, Loader2, LogOut, Trash2, Sparkles, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
@@ -122,17 +122,40 @@ export default function ProjectSelectionPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        // TODO: Implement generate functionality
+                      }}
+                      className="h-8 w-8 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10"
+                      title="Generate"
+                    >
+                      <Sparkles size={14} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        // TODO: Implement upload functionality
+                      }}
+                      className="h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-white/10"
+                      title="Upload"
+                    >
+                      <Upload size={14} />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={(e) => handleDeleteProject(e, project.id)}
-                      className="h-8 w-8 hover:bg-destructive/20 hover:text-destructive"
+                      className="h-8 w-8 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                       title="Delete Project"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={14} />
                     </Button>
-                    <ArrowRight size={16} className="text-primary -translate-x-2 group-hover:translate-x-0 transition-all" />
                   </div>
                 </div>
               ))}

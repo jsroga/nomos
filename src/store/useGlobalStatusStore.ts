@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export type OperationType = 'world-gen' | '3d-gen' | '3d-remesh' | 'story-agent' | 'portrait-gen' | 'retexture'
+export type OperationType = 'world-gen' | '3d-gen' | '3d-remesh' | 'story-agent' | 'portrait-gen' | 'retexture' | 'upload'
 
 export interface AsyncOperation {
   id: string

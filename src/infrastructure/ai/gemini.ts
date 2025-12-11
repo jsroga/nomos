@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { AIModel, AIModelConfig, TileContext } from './types'
 import { assembleContextImage } from './contextAssembler'
-import { enhancePromptWithStyle } from './styleAnalyzer'
 import axios from 'axios'
 
 export class GeminiAIModel implements AIModel {
@@ -21,16 +20,12 @@ export class GeminiAIModel implements AIModel {
     const modelId = config.params?.modelId || 'imagen-3.0-generate-001'
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${config.apiKey}`
 
-    // Enhance prompt
-    const neighborList = Object.values(context.neighbors).filter(Boolean)
-    const enhancedPrompt = await enhancePromptWithStyle(prompt, neighborList)
-
     // Prepare context
     const { imageBlob, cropRect } = await assembleContextImage(context, 1024)
     const base64Image = await this.blobToBase64(imageBlob)
 
-    // Construct Prompt
-    const finalPrompt = `Inpaint the central gray square to seamlessly connect with the surrounding edge context. Fill the gray area with: ${enhancedPrompt}. Ensure continuous lines, consistent perspective (Isometric), and matching lighting. Do not generate borders or frames.`
+    // Construct Prompt - using master template directly
+    const finalPrompt = `Inpaint the central gray square to seamlessly connect with the surrounding edge context. Fill the gray area with: ${prompt}. Ensure continuous lines, consistent perspective (Isometric), and matching lighting. Do not generate borders or frames.`
 
     // Gemini generateContent Payload
     const payload = {

@@ -1,5 +1,8 @@
 import { task, logger, metadata, AbortTaskRunError } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
+import { put } from '@vercel/blob'
+import { storageService } from '@/infrastructure/storage/StorageService'
+import { UPSCALE_PROMPTS, MASK_CONFIG, getCreativityPrompt } from '@/constants/prompts'
 
 // Provider types
 type UpscaleProvider = 'midjourney' | 'replicate' | 'stability'
@@ -10,252 +13,343 @@ interface ProviderConfig {
   upscaleMode?: 'conservative' | 'creative'
 }
 
-// Comet API polling for Midjourney
-async function pollCometTask(
-  taskId: string,
+// LegNext polling
+async function pollLegNextTask(
+  jobId: string,
   apiKey: string,
   maxAttempts: number = 300,
-  progressOffset: number = 30 // Start from 30% after Gemini completes
+  progressOffset: number = 30
 ): Promise<any> {
   let attempts = 0
 
   while (attempts < maxAttempts) {
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    await new Promise(resolve => setTimeout(resolve, 5000))
 
     try {
-      const fetchResponse = await fetch(`https://api.cometapi.com/mj/task/${taskId}/fetch`, {
+      const fetchResponse = await fetch(`https://api.legnext.ai/api/v1/job/${jobId}`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${apiKey}`,
+          'x-api-key': apiKey,
         },
       })
 
-      const fetchData = await fetchResponse.json()
-
-      // Handle both wrapped and direct response formats
-      const result = fetchData.result || fetchData
-      const status = result.status
-      const progress = result.progress
-
-      // Update metadata with progress - scale from 30-95% for MJ phase
-      let progressNum = 0
-      if (progress) {
-        if (typeof progress === 'string') {
-          progressNum = parseInt(progress.replace('%', ''), 10) || 0
-        } else {
-          progressNum = progress
-        }
-        // Scale: 30% + (progress * 0.65) -> 30-95%
-        const scaledProgress = progressOffset + Math.round(progressNum * 0.65)
-        await metadata.set('progress', scaledProgress)
+      if (fetchResponse.status === 404) {
+        throw new AbortTaskRunError('Task not found')
       }
 
-      // Log every poll for debugging
-      logger.info(`Polling task ${taskId}: Status=${status}, Progress=${progress} (${progressNum}%)`, {
-        attempt: attempts,
-        rawResult: JSON.stringify(result).substring(0, 500)
-      })
+      if (!fetchResponse.ok) {
+        const errorText = await fetchResponse.text()
+        logger.warn(`LegNext polling error: ${fetchResponse.status} - ${errorText} `)
+        attempts++
+        continue
+      }
 
-      if (status === 'SUCCESS') {
-        logger.info('Comet task completed successfully', {
-          imageUrl: result.imageUrl,
-          buttons: result.buttons?.length || 0
+      const data = await fetchResponse.json()
+      const status = data.status
+
+      // Progress estimation (LegNext doesn't seem to return numeric progress, so we simulate)
+      let progress = 0
+      if (status === 'completed') progress = 100
+      else if (status === 'processing') progress = 50 + (attempts % 40)
+      else if (status === 'pending') progress = 10
+
+      const scaledProgress = progressOffset + Math.round(progress * 0.65)
+      await metadata.set('progress', scaledProgress)
+
+      logger.info(`Polling job ${jobId}: Status = ${status}`, { attempt: attempts, scaledProgress })
+
+      if (status === 'completed') {
+        logger.info('LegNext task completed successfully', {
+          imageUrl: data.output?.image_url
         })
-        await metadata.set('progress', 95)
-        return result // Return full result including buttons for MJ variant selection
-      } else if (status === 'FAILED' || status === 'FAILURE') {
-        logger.error('Comet task failed', { failReason: result.failReason, result })
-        // Use AbortTaskRunError to prevent Trigger.dev from retrying on permanent failures
-        throw new AbortTaskRunError(result.failReason || 'Task failed')
+        await metadata.set('progress', progressOffset + 65)
+        return data
+      } else if (status === 'failed') {
+        const errorMsg = data.output?.error_messages?.join(', ') || data.message || 'Unknown error'
+        logger.error('LegNext task failed', { error: errorMsg, fullData: data })
+        throw new AbortTaskRunError(errorMsg)
       }
     } catch (e: any) {
-      // Re-throw AbortTaskRunError to stop retries immediately
-      if (e instanceof AbortTaskRunError) {
-        throw e
-      }
-      if (e.message?.includes('FAILED') || e.message?.includes('Task failed')) {
-        throw new AbortTaskRunError(e.message || 'Task failed')
-      }
+      if (e instanceof AbortTaskRunError) throw e
       logger.warn('Polling fetch error:', { error: e.message })
     }
 
     attempts++
   }
 
-  throw new AbortTaskRunError('Task timeout - Status did not reach SUCCESS')
+  throw new AbortTaskRunError('Task timeout - Status did not reach completed')
 }
 
-// Get creativity level as a percentage string with detailed instructions
-function getCreativityPrompt(creativity: number): string {
-  const level = Math.round(creativity * 100)
-  let hint: string
-  if (creativity <= 0.2) {
-    hint = 'VERY CONSERVATIVE - preserve exact colors, textures, and details. Only increase resolution with minimal interpretation. Do not add or change any visual elements.'
-  } else if (creativity <= 0.4) {
-    hint = 'CONSERVATIVE - maintain original style and colors closely. Subtle enhancement of existing details only. Preserve all visual elements as they are.'
-  } else if (creativity <= 0.6) {
-    hint = 'BALANCED - enhance existing details and textures while keeping the original style. May add subtle refinements to existing elements.'
-  } else if (creativity <= 0.8) {
-    hint = 'CREATIVE - freely enhance details, textures, and lighting. Add richness to existing elements while maintaining overall structure and composition.'
-  } else {
-    hint = 'MAXIMUM FREEDOM - full creative liberty on details, textures, lighting, and fidelity. Add rich details and enhancements freely. Only preserve the core structure and composition.'
-  }
-  return `CREATIVITY LEVEL: ${level}/100. ${hint}`
-}
+// NOTE: getCreativityPrompt is now imported from @/constants/prompts
 
-// Midjourney upscale via Comet API - returns a 2x2 grid for variant selection
-async function upscaleWithMidjourneyGrid(
+// Midjourney upscale via PiAPI - uses imagine + upscale workflow
+// Midjourney upscale via LegNext AI - uses upload_paint + upscale workflow
+async function upscaleWithLegNext(
   imageBase64: string,
   prompt: string,
   apiKey: string,
   mimeType: string = 'image/png',
   styleReferenceUrls?: string[],
   creativity: number = 0.3
-): Promise<{ id: string; imageUrl: string; buttons: any[] }> {
-  logger.info('Starting Midjourney upscale via /mj/submit/edits (grid)', { mimeType, styleReferenceUrls, creativity })
-  await metadata.set('stage', 'submitting_edits')
-  await metadata.set('progress', 32) // Just after Gemini's 30%
+): Promise<{ id: string; imageUrl: string }> {
+  logger.info('Starting Midjourney upscale via LegNext AI (upload_paint)', { mimeType, styleReferenceUrls, creativity })
+  await metadata.set('stage', 'uploading_image')
+  await metadata.set('progress', 32)
 
-  // Use the Editor endpoint for direct image upscaling
-  // Docs: https://apidoc.cometapi.com/midjourney-submit-editor
-  const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '')
+  // Step 1: Upload image to get a public URL
+  const { v4: uuidv4 } = await import('uuid')
+  const tempFilename = `upscale_temp_${uuidv4()}.png`
 
-  // Build --sref parameter if style references provided
-  const srefParam = styleReferenceUrls?.length 
-    ? ` --sref ${styleReferenceUrls.join(' ')}`
-    : ''
+  const publicImageUrl = await storageService.uploadPublicImage(tempFilename, imageBase64)
 
-  // Build creativity-based prompt
-  const creativityPrompt = getCreativityPrompt(creativity)
-  
-  // For edits/upscale, use a simple generic prompt - NOT the tile's original prompt
-  // The original prompt may contain content that triggers Midjourney content filters
-  const upscalePrompt = `enhance image quality, increase resolution, sharpen, high fidelity, ${creativityPrompt}${srefParam}`
-  logger.info('Submitting to /mj/submit/edits', {
-    promptLength: upscalePrompt.length,
-    imageBase64Length: cleanBase64.length,
-    mimeType,
-    originalPrompt: prompt?.substring(0, 100) // Log original for debugging but don't use it
-  })
-
-  // Retry logic for queue-full errors
-  const maxRetries = 5
-  let lastError: Error | null = null
-
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    if (attempt > 0) {
-      // Wait before retry: 30s, 60s, 90s, 120s
-      const waitSeconds = 30 * attempt
-      logger.info(`Queue full, waiting ${waitSeconds}s before retry (attempt ${attempt + 1}/${maxRetries})`)
-      await metadata.set('stage', `waiting_queue_${waitSeconds}s`)
-      await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000))
-    }
-
-    const response = await fetch('https://api.cometapi.com/mj/submit/edits', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        prompt: upscalePrompt,
-        image: `data:${mimeType};base64,${cleanBase64}`,
-      }),
-    })
-
-    const responseText = await response.text()
-    logger.info('Raw /mj/submit/edits response', {
-      status: response.status,
-      ok: response.ok,
-      responseText: responseText.substring(0, 500),
-      attempt: attempt + 1
-    })
-
-    // Check for queue-full error (code 23)
-    if (responseText.includes('"code":23') || responseText.includes('Queue is full')) {
-      lastError = new Error(`Comet API queue full (attempt ${attempt + 1}/${maxRetries})`)
-      continue // Retry
-    }
-
-    if (!response.ok) {
-      throw new Error(`Comet API /mj/submit/edits failed: ${response.status} - ${responseText.substring(0, 200)}`)
-    }
-
-    // Success - parse and return
-    let data
-    try {
-      data = JSON.parse(responseText)
-    } catch (e) {
-      throw new Error(`Failed to parse Comet API response: ${responseText.substring(0, 200)}`)
-    }
-
-    logger.info('Edits response parsed', { code: data.code, description: data.description, result: data.result })
-
-    if (data.code !== 1) {
-      throw new Error(data.description || 'Failed to submit edits task')
-    }
-
-    const taskId = data.result
-    await metadata.set('upscale_task_id', taskId)
-    await metadata.set('stage', 'waiting_mj_upscale')
-    await metadata.set('progress', 35)
-
-    // Poll for completion
-    logger.info('Waiting for edits task', { taskId })
-    const result = await pollCometTask(taskId, apiKey, 300, 35) // Start progress from 35%
-
-    // Log full result for debugging
-    logger.info('Full Comet result', {
-      fullResult: JSON.stringify(result),
-      keys: Object.keys(result)
-    })
-
-    // Try multiple possible field names for the image URL
-    const imageUrl = result.imageUrl || result.image_url || result.url || result.image || result.output
-
-    if (!imageUrl) {
-      logger.error('No imageUrl in result - tried imageUrl, image_url, url, image, output', {
-        result: JSON.stringify(result).substring(0, 1000)
-      })
-      throw new Error('Comet API returned no imageUrl')
-    }
-
-    logger.info('Upscale grid completed', { imageUrl, buttons: result.buttons?.length || 0 })
-
-    // Return full result for variant selection
-    return {
-      id: result.id || taskId,
-      imageUrl,
-      buttons: result.buttons || []
-    }
+  if (!publicImageUrl) {
+    throw new Error('Failed to upload image for upscaling. Midjourney requires a public URL.')
   }
 
-  // All retries exhausted - use AbortTaskRunError to prevent Trigger.dev retries
-  throw new AbortTaskRunError(`Comet API queue full after ${maxRetries} attempts. Please try again later.`)
+  logger.info('Image uploaded to public URL', { publicImageUrl })
+
+  // Step 2: Submit upload_paint task to get job_id
+  // For upscaling, we don't need remix/mask, just upload the image
+  logger.info('Submitting upload_paint task')
+  await metadata.set('stage', 'submitting_upload_paint')
+  await metadata.set('progress', 35)
+
+  // For upscaling, we need to provide canvas/mask even though we're not actually editing
+  // Use standard tile size of 1024x1024
+
+  // Build remixPrompt - Midjourney-specific prompt for structure-preserving upscale
+  // CRITICAL: We must preserve exact structure/composition, only enhance quality
+  // --stylize 0 prevents MJ from adding artistic interpretation
+  // --q 2 ensures maximum quality output
+  let remixPrompt = UPSCALE_PROMPTS.MIDJOURNEY
+
+  // Add Style Reference if provided (--sref url1 url2)
+  if (styleReferenceUrls && styleReferenceUrls.length > 0) {
+    remixPrompt += ` --sref ${styleReferenceUrls.join(' ')}`
+  }
+
+  const uploadPaintPayload = {
+    imgUrl: publicImageUrl,
+    canvas: {
+      width: 1024,
+      height: 1024,
+    },
+    imgPos: {
+      width: 1024,
+      height: 1024,
+      x: 0,
+      y: 0,
+    },
+    mask: {
+      areas: [
+        {
+          width: MASK_CONFIG.FULL_CANVAS.width,
+          height: MASK_CONFIG.FULL_CANVAS.height,
+          points: MASK_CONFIG.FULL_CANVAS.points,
+        }
+      ]
+    },
+    remixPrompt,
+  }
+
+  logger.info('Submitting upload_paint with payload:', uploadPaintPayload)
+
+  const uploadPaintResponse = await fetch('https://api.legnext.ai/api/v1/upload-paint', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(uploadPaintPayload),
+  })
+
+  if (!uploadPaintResponse.ok) {
+    const errorText = await uploadPaintResponse.text()
+    throw new Error(`LegNext upload_paint submission failed: ${uploadPaintResponse.status} - ${errorText}`)
+  }
+
+  const uploadPaintData = await uploadPaintResponse.json()
+  const jobId = uploadPaintData.job_id
+
+  if (!jobId) {
+    throw new Error('LegNext upload_paint failed: No job_id returned')
+  }
+
+  await metadata.set('upload_paint_job_id', jobId)
+  logger.info('Upload_paint task submitted', { jobId })
+
+  // Step 3: Poll for upload_paint completion
+  await metadata.set('stage', 'waiting_upload_paint')
+  await metadata.set('progress', 40)
+
+  const uploadPaintResult = await pollLegNextTask(jobId, apiKey, 300, 40)
+
+  logger.info('Upload_paint completed, submitting upscale', { jobId })
+
+  // Step 4: Submit upscale for first variant (index 0)
+  await metadata.set('stage', 'submitting_upscale')
+  await metadata.set('progress', 70)
+
+  const upscalePayload = {
+    jobId: jobId,
+    imageNo: 0,
+    type: 0
+  }
+
+  logger.info('Submitting upscale with payload:', upscalePayload)
+
+  const upscaleResponse = await fetch('https://api.legnext.ai/api/v1/upscale', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(upscalePayload),
+  })
+
+  if (!upscaleResponse.ok) {
+    const errorText = await upscaleResponse.text()
+    throw new Error(`LegNext upscale submission failed: ${upscaleResponse.status} - ${errorText}`)
+  }
+
+  const upscaleData = await upscaleResponse.json()
+  const upscaleJobId = upscaleData.job_id
+
+  if (!upscaleJobId) {
+    throw new Error('LegNext upscale failed: No job_id returned')
+  }
+
+  await metadata.set('upscale_task_id', upscaleJobId)
+  await metadata.set('stage', 'waiting_upscale')
+  await metadata.set('progress', 75)
+
+  // Step 5: Poll for upscale completion
+  logger.info('Waiting for upscale task', { upscaleJobId })
+  const upscaleResult = await pollLegNextTask(upscaleJobId, apiKey, 300, 75)
+
+  const imageUrl = upscaleResult.output?.image_url || upscaleResult.output?.image_urls?.[0]
+
+  if (!imageUrl) {
+    throw new Error('LegNext upscale result missing image_url')
+  }
+
+  return {
+    id: upscaleJobId,
+    imageUrl,
+  }
 }
 
-// Replicate upscale
+// Replicate upscale - returns URL or base64 image data
 async function upscaleWithReplicate(
   imageBase64: string,
   prompt: string,
   apiKey: string,
   model: string
-): Promise<string> {
+): Promise<{ type: 'url' | 'base64'; data: string }> {
   logger.info('Starting Replicate upscale', { model })
   await metadata.set('stage', 'replicate_processing')
 
   const Replicate = (await import('replicate')).default
   const replicate = new Replicate({ auth: apiKey })
 
-  const output = await replicate.run(model as any, {
+  // First upload the image to get a URL that Replicate can access
+  const { v4: uuidv4 } = await import('uuid')
+  const tempFilename = `replicate_input_${uuidv4()}.png`
+  const inputImageUrl = await storageService.uploadPublicImage(
+    tempFilename,
+    imageBase64.startsWith('data:') ? imageBase64 : `data:image/png;base64,${imageBase64}`
+  )
+
+  if (!inputImageUrl) {
+    throw new Error('Failed to upload input image for Replicate')
+  }
+
+  logger.info('Input image uploaded for Replicate', { inputImageUrl })
+
+  // Use the URL instead of base64 - more reliable
+  const output = await replicate.run(model as `${string}/${string}`, {
     input: {
-      image: imageBase64.startsWith('data:') ? imageBase64 : `data:image/png;base64,${imageBase64}`,
+      image: inputImageUrl,
       prompt,
     },
   })
 
+  logger.info('Replicate raw output:', { 
+    type: typeof output, 
+    isArray: Array.isArray(output),
+    constructor: output?.constructor?.name,
+    keys: typeof output === 'object' && output ? Object.keys(output) : [],
+    stringified: JSON.stringify(output).substring(0, 500)
+  })
+
   await metadata.set('progress', 100)
-  return String(output)
+
+  // Replicate returns different formats depending on the model
+  // Could be: URL string, array of URLs, FileOutput object, or ReadableStream
+  
+  // Handle string output (URL or base64)
+  if (typeof output === 'string') {
+    if (output.startsWith('http')) {
+      return { type: 'url', data: output }
+    } else if (output.startsWith('data:')) {
+      return { type: 'base64', data: output.replace(/^data:image\/\w+;base64,/, '') }
+    } else {
+      // Assume it's raw base64
+      return { type: 'base64', data: output }
+    }
+  }
+  
+  // Handle array output (common for image models)
+  if (Array.isArray(output) && output.length > 0) {
+    const firstOutput = output[0]
+    if (typeof firstOutput === 'string' && firstOutput.startsWith('http')) {
+      return { type: 'url', data: firstOutput }
+    }
+    // Some models return FileOutput objects in array
+    if (firstOutput && typeof firstOutput === 'object') {
+      const url = (firstOutput as any).url || (firstOutput as any).href
+      if (url && typeof url === 'string') {
+        return { type: 'url', data: url }
+      }
+    }
+  }
+  
+  // Handle object output (FileOutput or similar)
+  if (output && typeof output === 'object' && !Array.isArray(output)) {
+    // Check for common URL properties
+    const possibleUrl = (output as any).url || (output as any).href || (output as any).uri || (output as any).output
+    if (possibleUrl && typeof possibleUrl === 'string' && possibleUrl.startsWith('http')) {
+      return { type: 'url', data: possibleUrl }
+    }
+    
+    // Some models return { output: "url" } or { image: "url" }
+    const possibleImage = (output as any).image
+    if (possibleImage && typeof possibleImage === 'string' && possibleImage.startsWith('http')) {
+      return { type: 'url', data: possibleImage }
+    }
+    
+    // Handle ReadableStream (some newer models)
+    if (typeof (output as any).getReader === 'function') {
+      logger.info('Output is a ReadableStream, reading...')
+      const reader = (output as ReadableStream).getReader()
+      const chunks: Uint8Array[] = []
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        chunks.push(value)
+      }
+      const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0)
+      const combined = new Uint8Array(totalLength)
+      let offset = 0
+      for (const chunk of chunks) {
+        combined.set(chunk, offset)
+        offset += chunk.length
+      }
+      return { type: 'base64', data: Buffer.from(combined).toString('base64') }
+    }
+  }
+
+  throw new Error(`Unexpected Replicate output format: ${JSON.stringify(output).substring(0, 500)}`)
 }
 
 // Stability AI upscale
@@ -281,7 +375,7 @@ async function upscaleWithStability(
 
   const formData = new FormData()
   formData.append('image', blob, 'input.png')
-  formData.append('prompt', 'upscale maintaining the same style, high quality, detailed, sharp')
+  formData.append('prompt', UPSCALE_PROMPTS.STABILITY)
   formData.append('output_format', 'png')
 
   if (mode === 'conservative') {
@@ -367,6 +461,7 @@ async function upscaleWithStability(
 // Main upscale task
 export const upscaleTileTask = task({
   id: 'upscale-tile',
+  machine: 'medium-1x',  // More memory for image processing
   maxDuration: 1200, // 20 minutes
   retry: {
     maxAttempts: 1, // Don't retry - costs money
@@ -419,11 +514,11 @@ export const upscaleTileTask = task({
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiConfig.apiKey}`
 
       // Build style reference hint
-      const styleRefHint = styleReferenceUrls?.length 
+      const styleRefHint = styleReferenceUrls?.length
         ? ` Use these style references for visual guidance: ${styleReferenceUrls.join(', ')}.`
         : ''
       const creativityPrompt = getCreativityPrompt(creativity)
-      const finalPrompt = `Upscale this image to be higher resolution with updated fidelity and significantly more details. ${creativityPrompt}. Maintain the exact same style, colors, and composition. ${prompt}${styleRefHint}`
+      const finalPrompt = UPSCALE_PROMPTS.GEMINI_STEP1(prompt, creativityPrompt, styleRefHint)
 
       const response = await fetch(url, {
         method: 'POST',
@@ -496,33 +591,31 @@ export const upscaleTileTask = task({
             step1Image = resizedBuffer.toString('base64')
           }
 
-          // MJ returns a grid - we need to return it for variant selection
-          mjGridResult = await upscaleWithMidjourneyGrid(step1Image, prompt, providerConfig.apiKey, step1MimeType, styleReferenceUrls, creativity)
-          // Return early with grid data - user needs to pick a variant
-          await metadata.set('progress', 100)
-          await metadata.set('stage', 'awaiting_variant_selection')
-          return {
-            success: true,
-            requiresVariantSelection: true,
-            provider: 'midjourney',
-            gridImageUrl: mjGridResult.imageUrl,
-            taskId: mjGridResult.id,
-            buttons: mjGridResult.buttons, // U1, U2, U3, U4 buttons
-            tileId,
-            projectId,
-          }
+          // LegNext now auto-upscales variant 0, so we get the final image URL directly
+          // No need to return a grid and ask for user selection anymore
+          const legNextResult = await upscaleWithLegNext(step1Image, prompt, providerConfig.apiKey, step1MimeType, styleReferenceUrls, creativity)
+
+          finalImageUrl = legNextResult.imageUrl
+
+          logger.info('Midjourney upscale via LegNext completed', { finalImageUrl })
         }
+        break
 
       case 'replicate':
         if (!providerConfig.model) {
           throw new Error('Replicate model is required')
         }
-        finalImageBase64 = await upscaleWithReplicate(
+        const replicateResult = await upscaleWithReplicate(
           step1Image,
           prompt,
           providerConfig.apiKey,
           providerConfig.model
         )
+        if (replicateResult.type === 'url') {
+          finalImageUrl = replicateResult.data
+        } else {
+          finalImageBase64 = replicateResult.data
+        }
         break
 
       case 'stability':
@@ -537,18 +630,12 @@ export const upscaleTileTask = task({
         throw new Error(`Unknown provider: ${provider}`)
     }
 
-    // Step 3: Save image to filesystem
-    await metadata.set('stage', 'saving')
-    const fs = await import('fs')
-    const path = await import('path')
-
+    // Step 3: Upload images to Supabase Storage (accessible from anywhere)
+    await metadata.set('stage', 'uploading')
+    
     const timestamp = Date.now()
-    const filename = `${tileId}_upscaled_${provider}_${timestamp}.png`
-    const projectDir = path.join(process.cwd(), 'public', 'projects', projectId)
-
-    if (!fs.existsSync(projectDir)) {
-      fs.mkdirSync(projectDir, { recursive: true })
-    }
+    const upscaledFilename = `${tileId}_upscaled_${provider}_${timestamp}.png`
+    const originalFilename = `original_${tileId}_${timestamp}.png`
 
     let imageData: string
 
@@ -563,38 +650,53 @@ export const upscaleTileTask = task({
       throw new Error('No image data to save')
     }
 
-    const buffer = Buffer.from(imageData, 'base64')
-    fs.writeFileSync(path.join(projectDir, filename), buffer)
-
-    logger.info('Image saved', { filename })
-
-    // Step 4: Update database
-    await metadata.set('stage', 'updating_db')
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-
-    const { error } = await supabase
-      .from('tiles')
-      .update({ image_filename: filename })
-      .eq('id', tileId)
-
-    if (error) {
-      logger.error('Failed to update tile in database', { error })
-      // Don't throw - image is saved, just log the error
+    // Upload to Vercel Blob (works from trigger.dev cloud)
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      throw new Error('BLOB_READ_WRITE_TOKEN not configured')
     }
 
-    await metadata.set('progress', 100)
-    await metadata.set('stage', 'completed')
+    // Upload upscaled image
+    const upscaledBuffer = Buffer.from(imageData, 'base64')
+    const upscaledBlob = await put(`upscales/${projectId}/${upscaledFilename}`, upscaledBuffer, {
+      access: 'public',
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+      contentType: 'image/png',
+    })
 
-    logger.info('Upscale completed successfully', { filename, provider })
+    // Upload original image (for comparison in review dialog)
+    const originalData = imageBase64.replace(/^data:image\/\w+;base64,/, '')
+    const originalBuffer = Buffer.from(originalData, 'base64')
+    let originalUrl: string
+    try {
+      const originalBlob = await put(`upscales/${projectId}/${originalFilename}`, originalBuffer, {
+        access: 'public',
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+        contentType: 'image/png',
+      })
+      originalUrl = originalBlob.url
+    } catch (e) {
+      logger.warn('Failed to upload original image:', e)
+      // Use a placeholder or existing tile URL
+      originalUrl = ''
+    }
+
+    const upscaledUrl = upscaledBlob.url
+
+    logger.info('Images uploaded to Vercel Blob', { upscaledUrl, originalUrl })
+
+    // Step 4: Return URLs for review
+    await metadata.set('stage', 'pending_review')
+    await metadata.set('progress', 100)
+
+    logger.info('Upscale completed - pending user review', { upscaledFilename, provider })
 
     return {
       success: true,
-      filename,
-      imageUrl: `/projects/${projectId}/${filename}`,
+      filename: upscaledFilename,
+      upscaledUrl,
+      originalUrl,
       provider,
+      pendingReview: true
     }
   },
 })

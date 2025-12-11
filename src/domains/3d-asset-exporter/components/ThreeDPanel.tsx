@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
-import { Box, Loader2, Cuboid, Download, Image as ImageIcon, XCircle, RefreshCw, Settings, Layers, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Box, Loader2, Cuboid, Download, Image as ImageIcon, XCircle, RefreshCw, Settings, Layers, ToggleLeft, ToggleRight, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import toast from 'react-hot-toast'
@@ -96,6 +96,11 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
   const [remeshTopology, setRemeshTopology] = useState<'quad' | 'triangle'>('triangle')
   const [remeshPolycount, setRemeshPolycount] = useState(30000)
   const [remeshHeight, setRemeshHeight] = useState<string>('')
+
+  // Upload state
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadRunId, setUploadRunId] = useState<string | null>(null)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
   const isMounted = useRef(true)
   const currentProject = useWorldStore(state => state.currentProject)
@@ -517,6 +522,59 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
     return () => clearInterval(pollInterval)
   }, [remeshRunId, assetId])
 
+  // Poll upload task status
+  useEffect(() => {
+    if (!uploadRunId) return
+
+    const checkUploadStatus = async () => {
+      try {
+        const response = await fetch(`/api/trigger-3d/status?runId=${uploadRunId}`)
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            console.log('Upload run no longer exists')
+            await clearUploadState('failed')
+            toast('Upload task not found.', { icon: 'ℹ️' })
+          }
+          return
+        }
+
+        const data = await response.json()
+        const status = data.status
+
+        if (data.metadata?.progress !== undefined && isMounted.current) {
+          setUploadProgress(data.metadata.progress)
+        }
+
+        if (status === 'COMPLETED') {
+          const output = data.output
+          if (output?.blobUrl && isMounted.current) {
+            // Update asset with new Vercel Blob URL
+            setModelUrl(output.blobUrl)
+
+            if (updateAsset) {
+              updateAsset(assetId, { model_filename: output.blobUrl })
+            }
+
+            toast.success('Upload to Vercel Blob completed!')
+          }
+
+          await clearUploadState('completed')
+        } else if (!ACTIVE_STATUSES.includes(status)) {
+          const errorMessage = data.error?.message || `Upload ended with status: ${status}`
+          toast.error(`Upload Failed: ${errorMessage}`)
+          await clearUploadState('failed')
+        }
+      } catch (error) {
+        console.error('Error polling upload status:', error)
+      }
+    }
+
+    checkUploadStatus()
+    const pollInterval = setInterval(checkUploadStatus, 5000) // Poll every 5s for uploads
+    return () => clearInterval(pollInterval)
+  }, [uploadRunId, assetId, updateAsset])
+
   const handleGenerate = async () => {
     if (!currentProject || !user) return
 
@@ -710,6 +768,79 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
     toast('Remesh stopped.', { icon: 'ℹ️' })
   }
 
+  // Helper to clear upload state
+  const clearUploadState = async (status: 'completed' | 'failed' = 'failed') => {
+    if (!isMounted.current) return
+    setIsUploading(false)
+    setUploadRunId(null)
+    setUploadProgress(0)
+    useGlobalStatusStore.getState().removeOperation(`upload-${assetId}`)
+  }
+
+  // Handle upload to Vercel Blob
+  const handleUpload = async () => {
+    if (!currentProject) return
+    if (!modelUrl) {
+      toast.error('No 3D model to upload')
+      return
+    }
+
+    // Extract filename from modelUrl
+    const filename = modelUrl.split('/').pop()
+    if (!filename) {
+      toast.error('Invalid model URL')
+      return
+    }
+
+    setIsUploading(true)
+    setUploadProgress(0)
+
+    try {
+      toast.loading("Starting upload to Vercel Blob...")
+
+      const response = await fetch('/api/trigger-upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: currentProject.id,
+          assetId: assetId,
+          modelFilename: filename
+        })
+      })
+
+      if (!response.ok) {
+        const err = await response.json()
+        throw new Error(err.error || 'Failed to start upload')
+      }
+
+      const { runId } = await response.json()
+
+      toast.dismiss()
+      toast.success("Upload started! Monitoring progress...")
+
+      setUploadRunId(runId)
+
+      useGlobalStatusStore.getState().addOperation({
+        id: `upload-${assetId}`,
+        type: 'upload',
+        label: 'Uploading to Vercel',
+        details: 'In progress',
+        status: 'in-progress'
+      })
+
+    } catch (error: any) {
+      console.error(error)
+      toast.dismiss()
+      toast.error(`Failed to Start Upload: ${error.message}`)
+      setIsUploading(false)
+    }
+  }
+
+  const handleStopUpload = async () => {
+    await clearUploadState('failed')
+    toast('Upload stopped.', { icon: 'ℹ️' })
+  }
+
   return (
     <div className="flex flex-col h-full bg-card border border-border rounded-lg overflow-hidden shadow-sm">
       <div className="p-3 border-b border-border flex items-center justify-between bg-muted/30">
@@ -811,6 +942,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
               Stop Remesh
             </Button>
           )}
+
         </div>
       </div>
 
@@ -867,6 +999,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
           </div>
         </div>
       )}
+
 
       {/* Remesh settings panel */}
       {showRemeshSettings && modelUrl && !isRemeshing && (

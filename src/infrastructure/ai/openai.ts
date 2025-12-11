@@ -1,7 +1,6 @@
 import { AIModel, AIModelConfig, TileContext } from './types'
 import OpenAI from 'openai'
 import { assembleContextImage } from './contextAssembler'
-import { enhancePromptWithStyle } from './styleAnalyzer'
 
 export class OpenAIModel implements AIModel {
   id = 'openai'
@@ -41,10 +40,8 @@ export class OpenAIModel implements AIModel {
           `Sending edit request - Image: ${(imageBlob.size / 1024).toFixed(1)}KB, Mask: ${(maskBlob.size / 1024).toFixed(1)}KB`
         )
 
-        // Enhance prompt with style from neighbors
-        const neighborList = Object.values(context.neighbors).filter(Boolean)
-        const enhancedPrompt = await enhancePromptWithStyle(prompt, neighborList)
-        console.log(`Original prompt: "${prompt}"`)
+        // Use prompt directly for edge matching
+        const enhancedPrompt = `Fill seamlessly to match surrounding edges: ${prompt}. Maintain isometric perspective and consistent style.`
         console.log(`Enhanced prompt: "${enhancedPrompt}"`)
 
         const response = await openai.images.edit({

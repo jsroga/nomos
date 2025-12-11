@@ -1,23 +1,145 @@
 'use client'
 
+import { useState, useEffect, useCallback } from 'react'
 import { Sidebar } from '@/domains/world-building-toolkit/components/Sidebar/Sidebar'
 import { WorldCanvas } from '@/domains/world-building-toolkit/components/Canvas/WorldCanvas'
 import { RepaintToolbar } from '@/domains/world-building-toolkit/components/RepaintToolbar'
 import { SelectModeToolbar } from '@/domains/world-building-toolkit/components/SelectModeToolbar'
+import { WorldGenToolbar } from '@/domains/world-building-toolkit/components/WorldGenToolbar'
+import { TileReviewDialog, TileReviewType } from '@/domains/world-building-toolkit/components/TileReviewDialog'
 import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
+
+interface ReviewQueueItem {
+  id: string
+  tileX: number
+  tileY: number
+  newUrl: string
+  originalUrl?: string
+  type: TileReviewType
+}
 
 export default function WorldBuildingPage() {
   // Load project from URL
   useProjectFromUrl()
 
+  // Review queue - items are added to the END, processed from the START (FIFO)
+  const [reviewQueue, setReviewQueue] = useState<ReviewQueueItem[]>([])
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+  // Get the current item (first in queue)
+  const currentReview = reviewQueue[0] || null
+
+  // Add item to the END of the queue
+  const addToQueue = useCallback((item: Omit<ReviewQueueItem, 'id'>) => {
+    const id = `${item.type}-${item.tileX}-${item.tileY}-${Date.now()}`
+    const cacheBust = `?t=${Date.now()}`
+    
+    // Add cache-busting to URLs
+    const newUrl = item.newUrl ? `${item.newUrl}${cacheBust}` : item.newUrl
+    const originalUrl = item.originalUrl ? `${item.originalUrl}${cacheBust}` : item.originalUrl
+    
+    console.log('[ReviewQueue] Adding item:', { 
+      type: item.type, 
+      tileX: item.tileX, 
+      tileY: item.tileY,
+      newUrl,
+      originalUrl
+    })
+    
+    setReviewQueue(prev => [...prev, { ...item, id, newUrl, originalUrl }])
+    setIsDialogOpen(true)
+  }, [])
+
+  // Remove current item and show next (or close if empty)
+  const handleClose = useCallback(() => {
+    setReviewQueue(prev => {
+      const newQueue = prev.slice(1) // Remove first item
+      if (newQueue.length === 0) {
+        setIsDialogOpen(false)
+      }
+      return newQueue
+    })
+  }, [])
+
+  // Listen for upscale review events
+  useEffect(() => {
+    const handleUpscaleReview = (event: any) => {
+      const { tileX, tileY, upscaledUrl, originalUrl } = event.detail
+      addToQueue({
+        tileX,
+        tileY,
+        newUrl: upscaledUrl,
+        originalUrl,
+        type: 'upscale'
+      })
+    }
+
+    window.addEventListener('upscale-review-ready', handleUpscaleReview)
+    return () => window.removeEventListener('upscale-review-ready', handleUpscaleReview)
+  }, [addToQueue])
+
+  // Listen for generation review events
+  useEffect(() => {
+    const handleGenerationReview = (event: any) => {
+      const { tileX, tileY, newUrl, originalUrl } = event.detail
+      addToQueue({
+        tileX,
+        tileY,
+        newUrl,
+        originalUrl,
+        type: 'generation'
+      })
+    }
+
+    window.addEventListener('generation-review-ready', handleGenerationReview)
+    return () => window.removeEventListener('generation-review-ready', handleGenerationReview)
+  }, [addToQueue])
+
+  // Listen for fidelity review events
+  useEffect(() => {
+    const handleFidelityReview = (event: any) => {
+      const { tileX, tileY, newUrl, originalUrl } = event.detail
+      addToQueue({
+        tileX,
+        tileY,
+        newUrl,
+        originalUrl,
+        type: 'fidelity'
+      })
+    }
+
+    window.addEventListener('fidelity-review-ready', handleFidelityReview)
+    return () => window.removeEventListener('fidelity-review-ready', handleFidelityReview)
+  }, [addToQueue])
+
   return (
     <div className="flex h-full w-full overflow-hidden bg-background text-foreground">
       <Sidebar />
+
+      {/* Toolbar (Left) */}
+      <div className="w-16 border-r border-border bg-card z-10 relative">
+        <WorldGenToolbar />
+      </div>
+
       <div className="flex-1 relative">
         <WorldCanvas />
-
+        <RepaintToolbar />
         <SelectModeToolbar />
       </div>
+
+      {/* Unified Review Dialog with Queue */}
+      {currentReview && (
+        <TileReviewDialog
+          open={isDialogOpen}
+          onClose={handleClose}
+          tileX={currentReview.tileX}
+          tileY={currentReview.tileY}
+          newUrl={currentReview.newUrl}
+          originalUrl={currentReview.originalUrl}
+          type={currentReview.type}
+          queueLength={reviewQueue.length - 1}
+        />
+      )}
     </div>
   )
 }

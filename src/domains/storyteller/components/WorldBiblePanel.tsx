@@ -1,4 +1,4 @@
-import { Music, Book, Film, Gamepad2, Save, Edit2, X, Sparkles, Zap, ScrollText, Crown, Users, RefreshCw, Star, Plus, Trash2 } from 'lucide-react'
+import { Music, Book, Film, Gamepad2, Save, Edit2, X, Sparkles, Zap, ScrollText, Crown, Users, RefreshCw, Star, Plus, Trash2, UserPlus } from 'lucide-react'
 import { useState, useEffect, useCallback } from 'react'
 import { LocalStorageKeys } from '@/constants/localStorage'
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
@@ -8,6 +8,7 @@ import toast from 'react-hot-toast'
 import { StoryPlan } from '../schemas/agent-schemas'
 import { WorldRuleCard } from './WorldRuleCard'
 import { FactionCard } from './FactionCard'
+import { CharacterCreationDialog } from './CharacterCreationDialog'
 
 // Helper to get provider config from localStorage
 const getProviderConfig = () => {
@@ -25,13 +26,13 @@ const getProviderConfig = () => {
         geminiKey = geminiConfigStr || ''
     }
 
-    // Get Comet API key (for Midjourney)
-    const cometConfigStr = localStorage.getItem(LocalStorageKeys.AI_CONFIG_COMET)
-    let cometKey = ''
+    // Get LegNext key (for Midjourney)
+    const legnextConfigStr = localStorage.getItem(LocalStorageKeys.AI_CONFIG_LEGNEXT)
+    let legnextKey = ''
     try {
-        cometKey = cometConfigStr ? JSON.parse(cometConfigStr).apiKey : ''
+        legnextKey = legnextConfigStr ? JSON.parse(legnextConfigStr).apiKey : ''
     } catch {
-        cometKey = cometConfigStr || ''
+        legnextKey = legnextConfigStr || ''
     }
 
     if (provider === 'nanobanana') {
@@ -44,10 +45,18 @@ const getProviderConfig = () => {
         // Default to midjourney
         return {
             provider: 'midjourney' as const,
-            apiKey: cometKey,
+            apiKey: legnextKey,
             modelId: 'midjourney'
         }
     }
+}
+
+interface KeyCharacter {
+    name: string
+    role: string
+    archetype: string
+    motivation: string
+    factionId?: string | null
 }
 
 interface WorldBiblePanelProps {
@@ -56,9 +65,10 @@ interface WorldBiblePanelProps {
     isReadOnly?: boolean
     onSendMessage?: (msg: string) => void
     projectId?: string
+    onConvertToCast?: (character: any) => void
 }
 
-export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({ storyPlan, onUpdate, isReadOnly = false, onSendMessage, projectId: propProjectId }) => {
+export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({ storyPlan, onUpdate, isReadOnly = false, onSendMessage, projectId: propProjectId, onConvertToCast }) => {
     const rules = storyPlan.worldRules || []
     const factions = storyPlan.factions || []
     const characters = storyPlan.keyCharacters || []
@@ -66,6 +76,10 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({ storyPlan, onU
     const [isEditing, setIsEditing] = useState(false)
     const [localPlan, setLocalPlan] = useState<Partial<StoryPlan>>({})
     const [primaryImageIndex, setPrimaryImageIndex] = useState<number | null>(null)
+    
+    // Convert to Cast dialog state
+    const [convertDialogOpen, setConvertDialogOpen] = useState(false)
+    const [convertingCharacter, setConvertingCharacter] = useState<KeyCharacter | null>(null)
 
     // Get projectId from prop or URL
     const projectId = propProjectId || (typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '')
@@ -277,6 +291,34 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({ storyPlan, onU
         chars.splice(index, 1)
         setLocalPlan(prev => ({ ...prev, keyCharacters: chars }))
     }
+
+    // Convert to Cast handlers
+    const handleOpenConvertDialog = (char: KeyCharacter) => {
+        setConvertingCharacter(char)
+        setConvertDialogOpen(true)
+    }
+
+    const handleCloseConvertDialog = () => {
+        setConvertDialogOpen(false)
+        setConvertingCharacter(null)
+    }
+
+    const handleCreateFromConvert = (character: any) => {
+        if (onConvertToCast) {
+            onConvertToCast(character)
+        }
+        handleCloseConvertDialog()
+    }
+
+    // Build initial data for the dialog from the key player
+    const convertInitialData = convertingCharacter ? {
+        name: convertingCharacter.name,
+        description: [
+            convertingCharacter.archetype && `Archetype: ${convertingCharacter.archetype}`,
+            convertingCharacter.motivation && `Motivation: ${convertingCharacter.motivation}`,
+        ].filter(Boolean).join('. '),
+        role: convertingCharacter.role,
+    } : undefined
 
     // Backwards compatibility for old "protagonist" field
     if (storyPlan.protagonist && !characters.find(c => c.name === storyPlan.protagonist?.name)) {
@@ -1073,9 +1115,20 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({ storyPlan, onU
                                     <div key={idx} className="p-4 rounded-lg bg-muted/20 border border-border">
                                         <div className="font-bold mb-1 flex items-center justify-between">
                                             {char.name}
-                                            <span className="text-[10px] uppercase bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                                                {char.role}
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                {onConvertToCast && (
+                                                    <button
+                                                        onClick={() => handleOpenConvertDialog(char as KeyCharacter)}
+                                                        className="p-1.5 rounded bg-primary/10 hover:bg-primary/30 transition-colors border border-primary/20"
+                                                        title="Convert to Cast"
+                                                    >
+                                                        <UserPlus className="w-4 h-4 text-primary" />
+                                                    </button>
+                                                )}
+                                                <span className="text-[10px] uppercase bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                                                    {char.role}
+                                                </span>
+                                            </div>
                                         </div>
                                         <div className="text-xs text-muted-foreground italic mb-2">
                                             "{char.archetype}"
@@ -1098,6 +1151,15 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({ storyPlan, onU
                 </section>
 
             </div>
+
+            {/* Convert to Cast Dialog */}
+            <CharacterCreationDialog
+                isOpen={convertDialogOpen}
+                onClose={handleCloseConvertDialog}
+                onCreate={handleCreateFromConvert}
+                projectId={projectId}
+                initialData={convertInitialData}
+            />
         </div >
     )
 }

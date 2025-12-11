@@ -22,16 +22,28 @@ export const retextureModelTask = task({
 
         logger.info(`Starting retexture for asset ${assetId}`, { prompt })
 
-        await metadata.set('status', 'uploading_input')
+        await metadata.set('status', 'uploading_to_blob')
 
-        // Meshy supports Data URI directly for retexture, so we can pass it through.
-        // However, if it's huge, we might want to upload it, but Meshy docs say Data URI is fine.
-        // We will trust the input `modelBase64` is a proper Data URI (data:application/octet-stream;base64,...)
-        // or just base64 which we might need to prefix.
+        // Upload model to Vercel Blob to get a public URL (Meshy prefers public URLs over data URIs)
         let finalModelInput = modelBase64
-        if (!modelBase64.startsWith('data:') && !modelBase64.startsWith('http')) {
-            // Assume it's raw base64 of a GLB/GLTF
-            finalModelInput = `data:application/octet-stream;base64,${modelBase64}`
+
+        // If it's a data URI or base64, upload to Vercel Blob first
+        if (modelBase64.startsWith('data:') || !modelBase64.startsWith('http')) {
+            const tempFilename = `retexture_input_${uuidv4()}.glb`
+            const publicUrl = await storageService.uploadPublicFile(tempFilename, modelBase64, 'model/gltf-binary')
+
+            if (publicUrl) {
+                logger.info('Model uploaded to Vercel Blob', { url: publicUrl })
+                finalModelInput = publicUrl
+                await metadata.set('model_blob_url', publicUrl)
+            } else {
+                // Fallback to data URI if upload fails
+                logger.warn('Failed to upload to Vercel Blob, using data URI')
+                if (!modelBase64.startsWith('data:') && !modelBase64.startsWith('http')) {
+                    // Assume it's raw base64 of a GLB/GLTF
+                    finalModelInput = `data:application/octet-stream;base64,${modelBase64}`
+                }
+            }
         }
 
         const meshy = new MeshyClient(apiKey)
@@ -42,12 +54,17 @@ export const retextureModelTask = task({
         let retexturedGlbUrl: string
         try {
             retexturedGlbUrl = await meshy.retextureModel(finalModelInput, prompt, aiModel || 'latest')
+            // Log the taskId to metadata for tracking
+            if (meshy.currentTaskId) {
+                await metadata.set('meshy_task_id', meshy.currentTaskId)
+                logger.info('Meshy retexture taskId', { taskId: meshy.currentTaskId })
+            }
         } catch (e: any) {
-            logger.error('Meshy retexture failed', { error: e.message })
+            logger.error('Meshy retexture failed', { error: e.message, taskId: meshy.currentTaskId })
             throw e
         }
 
-        logger.info('Retexture successful', { url: retexturedGlbUrl })
+        logger.info('Retexture successful', { url: retexturedGlbUrl, taskId: meshy.currentTaskId })
         await metadata.set('status', 'saving_result')
 
         // Now we have a temporary URL from Meshy. We need to save it to our storage.

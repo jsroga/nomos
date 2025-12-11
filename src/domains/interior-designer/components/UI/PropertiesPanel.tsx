@@ -5,7 +5,8 @@ import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorS
 import { SurfaceProperties } from './SurfaceProperties'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
-import { Move, RotateCw, Maximize, Layers, Check, X, Sparkles, Loader2, Wand2 } from 'lucide-react'
+import { Move, RotateCw, Maximize, Layers, Check, X, Sparkles, Loader2, Wand2, Box } from 'lucide-react'
+import { seedFromString } from '@/lib/seedFromString'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import toast from 'react-hot-toast'
@@ -314,6 +315,14 @@ export const PropertiesPanel: React.FC = () => {
             <RetextureControls
               objectId={selectedItem.id}
               modelUrl={isObject(selectedItem) ? selectedItem.modelUrl : (selectedItem.texture || '')}
+            />
+          )}
+
+          {/* TEXT TO 3D UI - Generate new 3D object from text prompt */}
+          {isObject(selectedItem) && (
+            <TextTo3DControls
+              objectId={selectedItem.id}
+              onModelGenerated={(modelUrl) => updateObject(selectedItem.id, { modelUrl, isLoading: false })}
             />
           )}
 
@@ -763,6 +772,365 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string, modelUrl:
           {isStarting ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Wand2 className="mr-2 h-3 w-3" />}
           Generate New Texture
         </Button>
+      </div>
+    </div>
+  )
+}
+
+// Text to 3D Controls Component - Generate 3D object from text prompt using Meshy API
+function TextTo3DControls({ 
+  objectId, 
+  onModelGenerated 
+}: { 
+  objectId: string
+  onModelGenerated: (modelUrl: string) => void 
+}) {
+  const [prompt, setPrompt] = React.useState('')
+  const [isStarting, setIsStarting] = React.useState(false)
+
+  // Use GlobalStatusStore for job tracking
+  const operations = useGlobalStatusStore(state => state.operations)
+  const addOperation = useGlobalStatusStore(state => state.addOperation)
+  const updateOperation = useGlobalStatusStore(state => state.updateOperation)
+  const removeOperation = useGlobalStatusStore(state => state.removeOperation)
+
+  // Find this element's operation
+  const operationId = `text-to-3d-${objectId}`
+  const currentOperation = operations.find(op => op.id === operationId)
+
+  // Auto-cleanup: Check stale operations on mount
+  React.useEffect(() => {
+    const cleanupStaleOperation = async () => {
+      if (!currentOperation) return
+      if (currentOperation.status === 'completed' || currentOperation.status === 'failed') return
+
+      // Extract task ID
+      let taskId: string | null = null
+      try {
+        const metadata = JSON.parse(currentOperation.details || '{}')
+        taskId = metadata.taskId
+      } catch (e) {
+        console.error('[TextTo3D] Failed to parse operation metadata for cleanup', e)
+        return
+      }
+
+      if (!taskId) return
+
+      console.log(`[TextTo3D] Checking stale operation ${operationId} with taskId ${taskId}`)
+
+      try {
+        const res = await fetch(`/api/interior-designer/text-to-3d/${taskId}`)
+        if (!res.ok) {
+          console.warn(`[TextTo3D] Failed to fetch status for ${taskId}, marking as failed`)
+          updateOperation(operationId, {
+            status: 'failed',
+            details: JSON.stringify({ taskId, error: 'Task not found or API error', failureStatus: 'NOT_FOUND' })
+          })
+          return
+        }
+
+        const data = await res.json()
+        console.log(`[TextTo3D] Stale check result for ${operationId}:`, data.status)
+
+        if (data.status === 'COMPLETED' || data.status === 'SUCCESS') {
+          const output = data.output
+          if (output && output.success) {
+            updateOperation(operationId, {
+              status: 'completed',
+              details: JSON.stringify({
+                taskId,
+                modelUrl: output.modelUrl,
+                assetId: output.assetId,
+                thumbnailUrl: output.thumbnailUrl
+              })
+            })
+            console.log(`[TextTo3D] Stale operation ${operationId} was actually completed`)
+          }
+        } else if (!ACTIVE_TASK_STATUSES.includes(data.status)) {
+          console.warn(`[TextTo3D] Stale operation ${operationId} has failed status: ${data.status}`)
+          updateOperation(operationId, {
+            status: 'failed',
+            details: JSON.stringify({ taskId, error: data.error, failureStatus: data.status })
+          })
+        }
+      } catch (err) {
+        console.error('[TextTo3D] Cleanup check error', err)
+      }
+    }
+
+    cleanupStaleOperation()
+  }, []) // Run once on mount
+
+  // Polling Logic - Resume for in-progress jobs
+  React.useEffect(() => {
+    if (!currentOperation) return
+
+    // Stop polling if operation is in a terminal state
+    const isTerminalState = currentOperation.status === 'completed' || currentOperation.status === 'failed'
+    if (isTerminalState) {
+      console.log(`[TextTo3D] Polling stopped for ${operationId} - terminal state: ${currentOperation.status}`)
+      return
+    }
+
+    console.log(`[TextTo3D] Starting polling for ${operationId} - status: ${currentOperation.status}`)
+
+    let pollInterval: NodeJS.Timeout
+
+    const checkStatus = async () => {
+      try {
+        // Re-check current state before making API call
+        const latestOp = useGlobalStatusStore.getState().operations.find(op => op.id === operationId)
+        if (!latestOp || latestOp.status === 'completed' || latestOp.status === 'failed') {
+          console.log(`[TextTo3D] Skipping poll - operation is in terminal state or missing`)
+          return
+        }
+
+        // Extract task ID from operation details
+        let taskId: string | null = null
+        try {
+          const metadata = JSON.parse(currentOperation.details || '{}')
+          taskId = metadata.taskId
+        } catch (e) {
+          console.error('Failed to parse operation metadata', e)
+          return
+        }
+
+        if (!taskId) return
+
+        const res = await fetch(`/api/interior-designer/text-to-3d/${taskId}`)
+        if (!res.ok) return
+        const data = await res.json()
+
+        console.log(`[TextTo3D] Poll result for ${operationId}:`, data.status)
+
+        if (data.status === 'COMPLETED' || data.status === 'SUCCESS') {
+          const output = data.output
+          if (output && output.success) {
+            // Store result in operation metadata
+            updateOperation(operationId, {
+              status: 'completed',
+              details: JSON.stringify({
+                taskId,
+                modelUrl: output.modelUrl,
+                assetId: output.assetId,
+                thumbnailUrl: output.thumbnailUrl
+              })
+            })
+            console.log(`[TextTo3D] Marked ${operationId} as completed`)
+          }
+        } else if (!ACTIVE_TASK_STATUSES.includes(data.status)) {
+          // Task is no longer active (FAILED, CANCELED, etc.)
+          console.error('Text-to-3D task failed or was terminated:', data.status, data.error)
+          updateOperation(operationId, {
+            status: 'failed',
+            details: JSON.stringify({ taskId, error: data.error, failureStatus: data.status })
+          })
+        }
+      } catch (err) {
+        console.error('Poll error', err)
+      }
+    }
+
+    // Poll every 15 seconds (text-to-3d takes longer than retexture)
+    pollInterval = setInterval(checkStatus, 15000)
+    return () => {
+      console.log(`[TextTo3D] Clearing interval for ${operationId}`)
+      clearInterval(pollInterval)
+    }
+  }, [currentOperation, operationId, updateOperation])
+
+  const handleGenerate = async () => {
+    if (!prompt) return
+
+    // DUPLICATE PREVENTION: Check if job already exists
+    if (currentOperation && (currentOperation.status === 'pending' || currentOperation.status === 'in-progress')) {
+      toast.error('Text-to-3D job already in progress for this element')
+      return
+    }
+
+    setIsStarting(true)
+
+    // Add operation to GlobalStatusStore
+    addOperation({
+      id: operationId,
+      type: 'text-to-3d',
+      label: `Generating 3D: ${prompt.slice(0, 30)}...`,
+      details: JSON.stringify({ prompt }),
+      status: 'pending'
+    })
+
+    try {
+      // Get Meshy API Key from local storage
+      let apiKey = ''
+      try {
+        const savedMeshy = localStorage.getItem(LocalStorageKeys.AI_CONFIG_MESHY)
+        if (savedMeshy) {
+          const config = JSON.parse(savedMeshy)
+          apiKey = config.apiKey || ''
+        }
+      } catch (err) {
+        console.warn('Failed to read Meshy API key from settings', err)
+      }
+
+      // Get master prompt for seed generation
+      let masterPrompt = ''
+      const currentProjectId = window.location.pathname.split('/')[1]
+      if (currentProjectId) {
+        masterPrompt = localStorage.getItem(`${LocalStorageKeys.MASTER_PROMPT}-${currentProjectId}`) || ''
+      }
+
+      // Generate seed from master prompt + object prompt
+      const seed = seedFromString(`${masterPrompt}|${prompt}`)
+
+      const res = await fetch('/api/interior-designer/text-to-3d', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: currentProjectId || 'default',
+          prompt,
+          seed,
+          apiKey
+        })
+      })
+
+      const data = await res.json()
+      if (data.runId) {
+        // Update operation with task ID
+        updateOperation(operationId, {
+          status: 'in-progress',
+          details: JSON.stringify({ taskId: data.runId, prompt, seed })
+        })
+        toast.success('3D generation started!')
+      } else {
+        throw new Error(data.error || 'Failed to start generation')
+      }
+    } catch (e: any) {
+      toast.error('Failed to start text-to-3d: ' + e.message)
+      removeOperation(operationId)
+    } finally {
+      setIsStarting(false)
+    }
+  }
+
+  const handleApply = () => {
+    if (!currentOperation) return
+
+    try {
+      const metadata = JSON.parse(currentOperation.details || '{}')
+      if (metadata.modelUrl) {
+        onModelGenerated(metadata.modelUrl)
+        toast.success('3D model applied!')
+      }
+    } catch (e) {
+      console.error('Failed to apply model', e)
+    }
+
+    removeOperation(operationId)
+    setPrompt('')
+  }
+
+  const handleDiscard = () => {
+    removeOperation(operationId)
+    setPrompt('')
+  }
+
+  // COMPLETED STATE - Show Apply/Discard
+  if (currentOperation && currentOperation.status === 'completed') {
+    let thumbnailUrl = ''
+    try {
+      const metadata = JSON.parse(currentOperation.details || '{}')
+      thumbnailUrl = metadata.thumbnailUrl || ''
+    } catch {}
+
+    return (
+      <div className="pt-4 border-t border-border animate-in fade-in">
+        <h3 className="text-xs font-semibold mb-2 flex items-center gap-2 text-blue-500">
+          <Box size={12} />
+          3D Model Ready
+        </h3>
+        {thumbnailUrl && (
+          <div className="mb-3 rounded overflow-hidden border border-border">
+            <img src={thumbnailUrl} alt="Generated 3D preview" className="w-full h-24 object-cover" />
+          </div>
+        )}
+        <div className="bg-muted/30 p-2 rounded text-xs mb-3">
+          New 3D model generated. Apply to replace current object.
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Button onClick={handleApply} size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
+            <Check size={14} className="mr-1" /> Apply
+          </Button>
+          <Button onClick={handleDiscard} size="sm" variant="destructive" className="w-full">
+            <X size={14} className="mr-1" /> Discard
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // IN PROGRESS STATE - Show Loading
+  if (currentOperation && (currentOperation.status === 'pending' || currentOperation.status === 'in-progress')) {
+    return (
+      <div className="pt-4 border-t border-border">
+        <div className="flex flex-col items-center justify-center p-4 bg-blue-500/10 rounded gap-2">
+          <Loader2 className="animate-spin text-blue-500" size={20} />
+          <span className="text-xs text-muted-foreground">
+            {currentOperation.status === 'pending' ? 'Starting Job...' : 'Generating 3D Model...'}
+          </span>
+          <span className="text-[10px] text-muted-foreground">This may take several minutes</span>
+        </div>
+      </div>
+    )
+  }
+
+  // FAILED STATE - Show Error
+  if (currentOperation && currentOperation.status === 'failed') {
+    return (
+      <div className="pt-4 border-t border-border">
+        <div className="bg-destructive/10 border border-destructive/20 p-3 rounded text-xs">
+          <p className="font-semibold text-destructive mb-1">3D Generation Failed</p>
+          <p className="text-muted-foreground mb-2">An error occurred while generating the model.</p>
+          <Button
+            onClick={() => removeOperation(operationId)}
+            size="sm"
+            variant="outline"
+            className="w-full"
+          >
+            Clear Error
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // IDLE STATE - Show Input Form
+  return (
+    <div className="pt-4 border-t border-border space-y-3">
+      <div className="flex items-center gap-2">
+        <Box size={14} className="text-blue-500" />
+        <h3 className="text-xs font-semibold">Generate 3D Object</h3>
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-[10px] text-muted-foreground">Object Description</label>
+        <Input
+          value={prompt}
+          onChange={e => setPrompt(e.target.value)}
+          placeholder="A medieval wooden chair..."
+          className="text-xs h-8"
+        />
+        <Button
+          onClick={handleGenerate}
+          disabled={!prompt || isStarting}
+          className="w-full h-8 text-xs"
+          variant="outline"
+        >
+          {isStarting ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Box className="mr-2 h-3 w-3" />}
+          Generate 3D Model
+        </Button>
+        <p className="text-[10px] text-muted-foreground">
+          Uses Meshy AI to create a 3D model from text. Takes 2-5 minutes.
+        </p>
       </div>
     </div>
   )

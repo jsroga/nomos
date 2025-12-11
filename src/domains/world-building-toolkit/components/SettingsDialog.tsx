@@ -42,7 +42,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
   const [falConfig, setFalConfig] = useState<any>({})
   const [hyper3dConfig, setHyper3dConfig] = useState<any>({})
   const [meshyConfig, setMeshyConfig] = useState<any>({})
-  const [cometConfig, setCometConfig] = useState<any>({})
+  const [legnextConfig, setLegnextConfig] = useState<any>({})
   const [activeUpscaler, setActiveUpscaler] = useState<string>('stability')
   const [skipGeminiPreUpscale, setSkipGeminiPreUpscale] = useState(false)
 
@@ -91,8 +91,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
       const savedMeshy = localStorage.getItem(LocalStorageKeys.AI_CONFIG_MESHY)
       if (savedMeshy) setMeshyConfig(JSON.parse(savedMeshy))
 
-      const savedComet = localStorage.getItem(LocalStorageKeys.AI_CONFIG_COMET)
-      if (savedComet) setCometConfig(JSON.parse(savedComet))
+      const savedLegNext = localStorage.getItem(LocalStorageKeys.AI_CONFIG_LEGNEXT)
+      if (savedLegNext) setLegnextConfig(JSON.parse(savedLegNext))
 
       const savedUpscaler = localStorage.getItem(LocalStorageKeys.AI_ACTIVE_UPSCALER)
       if (savedUpscaler) setActiveUpscaler(savedUpscaler)
@@ -146,7 +146,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
     localStorage.setItem(LocalStorageKeys.AI_CONFIG_FAL, JSON.stringify(falConfig))
     localStorage.setItem(LocalStorageKeys.AI_CONFIG_HYPER3D, JSON.stringify(hyper3dConfig))
     localStorage.setItem(LocalStorageKeys.AI_CONFIG_MESHY, JSON.stringify(meshyConfig))
-    localStorage.setItem(LocalStorageKeys.AI_CONFIG_COMET, JSON.stringify(cometConfig))
+    localStorage.setItem(LocalStorageKeys.AI_CONFIG_LEGNEXT, JSON.stringify(legnextConfig))
     localStorage.setItem(LocalStorageKeys.AI_ACTIVE_UPSCALER, activeUpscaler)
     localStorage.setItem(LocalStorageKeys.SKIP_GEMINI_PRE_UPSCALE, skipGeminiPreUpscale.toString())
     localStorage.setItem(LocalStorageKeys.FIDELITY_PROMPT, defaultFidelityPrompt)
@@ -342,21 +342,21 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           <div className="space-y-3">
                             <div className="bg-blue-500/10 border border-blue-500/20 rounded-md p-3">
                               <p className="text-xs text-blue-600 dark:text-blue-400">
-                                Midjourney uses the Comet API for tile generation.
+                                Midjourney uses LegNext AI for tile generation.
                               </p>
                             </div>
                             <div className="flex items-center gap-2 text-xs bg-muted/30 p-2 rounded border border-border">
                               <div
                                 className={
-                                  config.apiKey || cometConfig.apiKey
+                                  config.apiKey || legnextConfig.apiKey
                                     ? 'w-2 h-2 bg-green-500 rounded-full'
                                     : 'w-2 h-2 bg-red-500 rounded-full'
                                 }
                               />
                               <span className="text-muted-foreground">
-                                {config.apiKey || cometConfig.apiKey
-                                  ? 'Comet API Key Configured'
-                                  : 'Missing Comet API Key'}
+                                {config.apiKey || legnextConfig.apiKey
+                                  ? 'LegNext API Key Configured'
+                                  : 'Missing LegNext API Key'}
                               </span>
                               <Button
                                 variant="link"
@@ -470,7 +470,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           <div className="space-y-2">
                             <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Image Generation</h5>
                             <ConnectionStatus isConnected={!!geminiConfig.apiKey} label="Gemini / Nano Banana" />
-                            <ConnectionStatus isConnected={!!cometConfig.apiKey} label="Midjourney (Comet)" />
+                            <ConnectionStatus isConnected={!!legnextConfig.apiKey} label="Midjourney (LegNext AI)" />
                           </div>
 
                           {/* Upscaling */}
@@ -526,7 +526,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           >
                             <option value="stability">Stability AI (4k)</option>
                             <option value="replicate">Replicate (Creative/Painterly)</option>
-                            <option value="midjourney">Midjourney (Comet API)</option>
+                            <option value="midjourney">Midjourney (LegNext AI)</option>
                           </select>
                         </div>
 
@@ -606,8 +606,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                               <label className="block text-sm font-medium mb-1.5">Additional Parameters</label>
                               <input
                                 type="text"
-                                value={cometConfig.parameters || ''}
-                                onChange={e => setCometConfig({ ...cometConfig, parameters: e.target.value })}
+                                value={legnextConfig.parameters || ''}
+                                onChange={e => setLegnextConfig({ ...legnextConfig, parameters: e.target.value })}
                                 placeholder="--style raw --stylize 100 --cref https://..."
                                 className="w-full p-2 rounded-md border border-input bg-background text-sm font-mono"
                               />
@@ -817,9 +817,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                         )}
                         {moodboardProvider === 'midjourney' && (
                           <div className="space-y-2 pt-2">
-                            <ConnectionStatus isConnected={!!cometConfig.apiKey} label="Midjourney (Comet)" />
+                            <ConnectionStatus isConnected={!!legnextConfig.apiKey} label="Midjourney (LegNext AI)" />
                             <p className="text-xs text-muted-foreground">
-                              Uses your configured Comet API key (see API Keys tab).
+                              Uses your configured LegNext API key (see API Keys tab).
                             </p>
                           </div>
                         )}
@@ -863,16 +863,16 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           </div>
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                              <label className="text-sm font-medium">Comet API (Midjourney)</label>
-                              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => window.open('https://cometapi.com', '_blank')}>
+                              <label className="text-sm font-medium">LegNext AI (Midjourney)</label>
+                              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => window.open('https://legnext.ai', '_blank')}>
                                 Get Key
                               </Button>
                             </div>
                             <input
                               type="password"
-                              value={cometConfig.apiKey || ''}
-                              onChange={e => setCometConfig({ ...cometConfig, apiKey: e.target.value })}
-                              placeholder="Enter Comet API Key"
+                              value={legnextConfig.apiKey || ''}
+                              onChange={e => setLegnextConfig({ ...legnextConfig, apiKey: e.target.value })}
+                              placeholder="Enter LegNext API Key"
                               className="w-full p-2 rounded-md border border-input bg-background text-sm"
                             />
                           </div>

@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { AssetsPanel } from '@/domains/world-building-toolkit/components/AssetsPanel'
 import { SettingsDialog } from '@/domains/world-building-toolkit/components/SettingsDialog'
+import { AssetUploadZone } from './AssetUploadZone'
 import { Plus, Palette, Package, Info } from 'lucide-react'
 import { LocalStorageKeys } from '@/constants/localStorage'
 import {
@@ -73,6 +74,20 @@ export const AssetExporterSidebar: React.FC = () => {
 
             {/* Assets */}
             <SidebarSection separator title="Assets" icon={<Package size={12} />}>
+              {/* Upload Zone */}
+              <div className="mb-4">
+                <AssetUploadZone
+                  projectId={currentProject.id}
+                  onUploadComplete={(assetIds) => {
+                    // Refresh assets list after upload
+                    const fetchAssets = useWorldStore.getState().fetchAssets
+                    if (fetchAssets) {
+                      fetchAssets()
+                    }
+                  }}
+                />
+              </div>
+
               <AssetsPanel />
             </SidebarSection>
           </div>

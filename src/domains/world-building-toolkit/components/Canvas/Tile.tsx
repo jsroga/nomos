@@ -11,7 +11,8 @@ interface TileProps {
 }
 
 export const Tile: React.FC<TileProps> = ({ x, y, size }) => {
-  const tile = useWorldStore(state => state.getTile(x, y))
+  // IMPORTANT: Access tiles directly, not via getTile(), so Zustand tracks the dependency
+  const tile = useWorldStore(state => state.tiles[`${x},${y}`])
   const selectedTiles = useWorldStore(state => state.selectedTiles)
   const toggleTileSelection = useWorldStore(state => state.toggleTileSelection)
   const currentProject = useWorldStore(state => state.currentProject)
@@ -51,7 +52,12 @@ export const Tile: React.FC<TileProps> = ({ x, y, size }) => {
     if (tile && currentProject && filename) {
       // Always add timestamp to prevent caching when filename changes
       const suffix = `?t=${Date.now()}`
-      setImgSrc(`/projects/${currentProject.id}/${filename}${suffix}`)
+      // Check if filename is already a full URL (e.g., from Vercel Blob)
+      if (filename.startsWith('http://') || filename.startsWith('https://')) {
+        setImgSrc(`${filename}${filename.includes('?') ? '&' : '?'}t=${Date.now()}`)
+      } else {
+        setImgSrc(`/projects/${currentProject.id}/${filename}${suffix}`)
+      }
       // Reset retry count when filename changes
       setRetryCount(0)
     } else {
