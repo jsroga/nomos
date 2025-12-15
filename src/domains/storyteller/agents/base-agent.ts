@@ -24,6 +24,7 @@ export const fastModel = new ChatOpenAI({
   maxRetries: 2,
 })
 
+
 // ============================================
 // BASE AGENT - Common functionality for all agents
 // ============================================
