@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
-import { MousePointer2, BrickWall, Square, Box, Undo2, Redo2, Sparkles, Focus, Droplets, GitCommit } from 'lucide-react'
+import { MousePointer2, BrickWall, Square, Box, Undo2, Redo2, Sparkles, Focus, Droplets, GitCommit, Mountain } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
@@ -78,6 +78,7 @@ export const Toolbar: React.FC = () => {
           break;
         case 'o': setMode('OBJECT'); break;
         case 's': setMode('SCATTER'); break;
+        case 't': setMode('TERRAIN'); break;
         case 'z': if ((e.ctrlKey || e.metaKey) && !e.shiftKey) undo(); break;
         case 'y': if ((e.ctrlKey || e.metaKey)) redo(); break;
       }
@@ -156,6 +157,15 @@ export const Toolbar: React.FC = () => {
 
         <div className="w-full h-px bg-border my-2" />
 
+        <ToolButton
+          icon={<Mountain size={20} />}
+          label="Terrain & Water (T)"
+          isActive={mode === 'TERRAIN'}
+          onClick={() => setMode('TERRAIN')}
+        />
+
+        <div className="w-full h-px bg-border my-2" />
+
         <div className="flex flex-col items-center gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -208,7 +218,9 @@ export const Toolbar: React.FC = () => {
         <div className="w-full h-px bg-border my-2" />
 
         <div className="flex flex-col items-center gap-1">
-          <span className="text-[10px] font-medium">Level</span>
+          <span className="text-[10px] font-medium">
+            {mode === 'TERRAIN' ? 'Slice' : 'Level'}
+          </span>
           <div className="flex flex-col gap-1">
             {[0, 1, 2].map(level => (
               <Tooltip key={level}>
@@ -223,7 +235,7 @@ export const Toolbar: React.FC = () => {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  <p>Floor {level}</p>
+                  <p>{mode === 'TERRAIN' ? `View Slice ${level}` : `Floor ${level}`}</p>
                 </TooltipContent>
               </Tooltip>
             ))}

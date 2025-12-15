@@ -20,6 +20,7 @@ export const PHASE_ALLOWED_AGENTS: Record<Phase, string[]> = {
     'episodePremiseArchitect',
     'magicAgent',
     'search_series_bible',
+    'planner',
   ],
   breaking: [
     'plotArchitect',
@@ -134,6 +135,7 @@ export function isAgentAllowedInPhase(agentName: string, phase: Phase | string):
     'delegate_to_episode_premise_architect': 'episodePremiseArchitect',
     'delegate_to_magic_agent': 'magicAgent',
     'delegate_to_script_editor': 'scriptEditor',
+    'delegate_to_planner': 'planner',
     'search_series_bible': 'search_series_bible',
   }
 
@@ -159,102 +161,62 @@ export function getPhaseGuidance(state: WritersRoomState): string {
 }
 
 const SUPERVISOR_SYSTEM_PROMPT = `
-## YOUR ROLE: THE SUPERVISOR
-You are the manager of a Writers Room. Your job is to **DELEGATE** work to specialized agents.
-You do NOT write the story yourself. You DO NOT create beats yourself. You route tasks.
+## YOUR ROLE: THE SUPERVISOR (PROJECT MANAGER)
+You are the manager of a Writers Room. Your job is to **PLAN** and **DELEGATE**.
+
+
+## DEEP AGENT WORKFLOW (PLANNER-EXECUTOR)
+1. **ANALYZE**: Is the request "Atomic" (single step) or "Complex" (multi-step)?
+   - **Atomic**: "Generate episode premise", "Create character X", "What do you think?". -> **EXECUTE DIRECTLY**.
+   - **Complex**: "Create a whole season arc", "Build 5 factions", "Write the whole script". -> **PLAN FIRST**.
+
+2. **EXECUTE DIRECTLY**: If Atomic, delegate to the specific specialist immediately. DO NOT call the Planner.
+
+3. **PLAN**: If Complex and no plan exists, delegate to \`delegate_to_planner\`.
+
+4. **EXECUTE PLAN**: If a plan exists, look for the next "pending" task.
+   - Delegate that specific task to the appropriate specialist.
+   - You can execute multiple tasks in PARALLEL if they are independent.
+
+5. **REVIEW**: When a worker finishes, the task is marked complete. Check the plan again.
 
 ## TEAM MEMBERS (TOOLS)
-- **Plot Architect**: Creates and edits beats. The primary builder. [BREAKING phase]
-- **Character Psychology**: Checks character logic. [BREAKING phase]
-- **Consequence Tracker**: Checks continuity. [BREAKING phase]
-- **Devil's Advocate**: Critiques and stress-tests. [BREAKING, CARDLOCK phases]
-- **Writer**: Writes actual script scenes. [CARDLOCK, WRITING phases]
-- **Script Editor**: Reviews and critiques script quality. [CARDLOCK, WRITING phases]
-- **Premise Architect**: Builds the world bible and premise. [PREMISE, BREAKING phases]
-- **Episode Premise Architect**: Creates episode-level premises. [PREMISE phase]
-- **Magic Agent**: Throws random absurd suggestions to add spice and chaos. [PREMISE, BREAKING phases]
-- **Search Bible**: Looks up details in the Series Bible. [ALL phases]
+- **Planner**: The Architect. Creates the \`ActionPlan\`. CALL THIS FIRST for any complex request.
+- **Plot Architect**: [BREAKING] Structure & Beats.
+- **Character Psychology**: [BREAKING] Character logic.
+- **Consequence Tracker**: [BREAKING] Continuity.
+- **Devil's Advocate**: [BREAKING/CARDLOCK] Critique.
+- **Writer**: [WRITING] Script writing.
+- **Script Editor**: [WRITING] Script review.
+- **Premise Architect**: [PREMISE] World building.
+- **Episode Premise Architect**: [PREMISE] Episode hooks.
+- **Magic Agent**: Chaos/Ideas.
+- **Search Bible**: Fact lookup.
 
-## PHASE-BASED WORKFLOW
-The story development follows phases: PREMISE → BREAKING → CARDLOCK → WRITING → COMPLETE
+## ROUTING LOGIC
+- **"Make a world and characters"** -> **Planner** (Needs breakdown).
+- **"Generate episode premise"** or **"Generate premise for this episode"** (any wording containing both "episode" and "premise") -> **Episode Premise Architect** (Direct delegation, regardless of phase).
+- **"Write the script"** (Premise done) -> **Planner** (Needs breakdown).
+- **"What do you think?"** -> **Answer directly**.
+- **"Change the protagonist's name"** -> **Premise Architect** (Simple task, no plan needed).
 
-**Phase Rules:**
-- PREMISE: Focus on world-building. Use Premise Architect, Episode Premise Architect.
-- BREAKING: Create story beats. Use Plot Architect, Character Psychology, Devil's Advocate.
-- CARDLOCK: Review and lock beats. Start writing scenes with Writer.
-- WRITING: Full screenplay mode. Writer and Script Editor only.
-- COMPLETE: Episode finished.
-
-**IMPORTANT:** If user requests an agent not allowed in current phase, explain the workflow and suggest the appropriate action.
-
-## ROUTING RULES (ACTION OVER CONVERSATION)
-
-### 1. BIBLE SECTION UPDATES (IMPORTANT - NEW CAPABILITY)
-The Premise Architect now supports **intelligent section-specific updates with smart merging**.
-When user wants to update a SPECIFIC part of the bible, route to \`delegate_to_premise_architect\`:
-- **"Update the world rules"** / **"Regenerate laws of the world"** / **"Add more rules"**
-- **"Update the factions"** / **"Add a new faction"** / **"Regenerate power & factions"**
-- **"Update inspirations"** / **"Add more movie references"**
-- **"Generate plot twists"** / **"Update the twists"**
-- **"Create episode roadmap"** / **"Update the season arc"**
-- **"Update key characters"** / **"Add more characters"**
-- **"Regenerate world description"** / **"Make the world more vivid"**
-
-Pass the user's EXACT request as the instruction. The Premise Architect will:
-1. Detect which section to update
-2. Use focused prompts for that section only
-3. Smart merge new content with existing content (won't delete existing entries)
-
-### 2. Rejection
-If the user says "No", "I hate it", or "Change it", DO NOT APOLOGIZE. 
-- Call \`delegate_to_plot_architect\` with the instruction: "Revise the previous beat based on feedback: [User's Feedback]".
-
-### 3. Creative Direction
-If user says "Make it darker", "Add a dragon", or "Change setting":
-- Call \`delegate_to_plot_architect\` (for story/beat changes) 
-- Call \`delegate_to_premise_architect\` (for world/bible changes)
-
-### 4. Multi-Step Requests
-If user says "Create a character AND kill them":
-- Pick the FIRST logical tool to start the chain (e.g. \`delegate_to_premise_architect\` to add the character).
-
-### 5. Phase Changes
-"Go to writing": Call \`delegate_to_writer\`.
-
-### 6. Recall
-"What is the magic system?" or "Who is Bob?": Call \`search_series_bible\` to find the answer.
-
-### 7. Opinion
-"What do you think?", "What's next?":
-- ANSWER DIRECTLY. Do NOT call a tool unless you need to look up facts.
-- EXCEPTION: If the user is stuck and asks "What next?", you CAN call \`delegate_to_plot_architect\` to propose a beat.
-
-### 8. Chaos & Spice
-If the user asks to "spice things up", "add something random", "make it weird", "throw in something absurd":
-- Call \`delegate_to_magic_agent\` - they will inject random absurd events and suggestions.
-- Use this when scenes feel too predictable or need comedic relief.
+## SEQUENTIAL EXECUTION
+Execute one task at a time. Wait for the result before starting the next one.
+DO NOT call multiple tools in the same turn.
 
 ## CRITICAL INSTRUCTION
-- If the user gives ANY instruction to create/edit content, you **MUST** call a tool.
-- Do NOT reply with "I will do that" or "Understood". Call the tool!
-- Use the context provided in the message history to formulate the tool instruction.
-- For bible updates: Pass the user's request verbatim - the Premise Architect will handle section detection.
-
-## EMPTY STATE OVERRIDE
-- If the **Series Bible is EMPTY**:
-  - **CASE A (COMMAND)**: If user says "Start", "Go", "Make it sci-fi", or gives creative direction:
-    - **IMMEDIATELY CALL** \`delegate_to_premise_architect\` with the instruction: "Generate a compelling initial premise and world rules from scratch."
-    - It is better to generate a draft than to stall.
-  - **CASE B (QUESTION)**: If user asks a QUESTION ("What do you think?", "Why?"):
-    - **ANSWER DIRECTLY**. Do not delegate. Engage in conversation to clarify their vision.
+- ALWAYS check \`state.plan\` first.
+- If \`state.plan\` has pending items, prioritize executing them.
+- If user input ignores the plan, you may cancel the plan or re-plan.
 `
+
 
 export const supervisorAgent = async (
   state: WritersRoomState
 ): Promise<Partial<WritersRoomState>> => {
   // Create model inside function to use request-scoped config
   const model = getModel('showrunner')
-  const supervisorModel = model.bindTools(supervisorTools)
+  const supervisorModel = model.bindTools(supervisorTools, { parallel_tool_calls: false })
 
   console.log(
     'Supervisor evaluating... (phase:',
@@ -263,6 +225,12 @@ export const supervisorAgent = async (
     state.phaseIterations,
     ')'
   )
+
+  // CIRCUIT BREAKER: If previous agent requested user input, respect it and stop.
+  if (state.awaitingUserInput) {
+    console.log('Supervisor: Previous step requested user input. Stopping loop.')
+    return { awaitingUserInput: true }
+  }
 
   const context = assembleContext(state, 'showrunner') // Reusing showrunner context builder
 
@@ -286,24 +254,60 @@ export const supervisorAgent = async (
   let transitionInfo = ''
 
   if (nextPhase) {
-    const transitionKey = `${state.currentPhase} -> ${nextPhase}`
+    const transitionKey = `${state.currentPhase} -> ${nextPhase} `
     const checkFn = PHASE_TRANSITION_CONDITIONS[transitionKey]
     if (checkFn) {
       const { canAdvance, reason } = checkFn(state)
       if (canAdvance) {
-        transitionInfo = `\n\n**READY TO ADVANCE:** You can move to ${nextPhase.toUpperCase()} phase. ${reason}`
+        transitionInfo = `\n\n ** READY TO ADVANCE:** You can move to ${nextPhase.toUpperCase()} phase.${reason} `
       } else {
-        transitionInfo = `\n\n**PHASE PROGRESS:** ${reason}`
+        transitionInfo = `\n\n ** PHASE PROGRESS:** ${reason} `
       }
     }
   }
+
+  // --- PLAN CONTEXT ---
+  let planContext = ''
+  if (state.plan && state.plan.length > 0) {
+    const pending = state.plan.filter(p => p.status === 'pending');
+    const inProgress = state.plan.filter(p => p.status === 'in_progress');
+    const completed = state.plan.filter(p => p.status === 'complete');
+
+    planContext = `
+## CURRENT ACTION PLAN
+Completed: ${completed.length} | Pending: ${pending.length}
+
+** NEXT PENDING TASKS(Prioritize These):**
+  ${pending.slice(0, 3).map(p => `- [${p.id}] ${p.description} -> Delegate to ${p.assignedAgent}`).join('\n')}
+
+** Note:** If you see tasks with the same logic that can be done in parallel, you can call multiple tools.
+`
+  }
+  // --------------------
+
+
+  // --- EPISODE CONTEXT ---
+  let episodeContext = ''
+  if (state.episodeId && state.episodeId.length > 5) {
+    episodeContext = `
+## 🚨 ACTIVE CONTEXT: EPISODE MODE
+The user has an ACTIVE EPISODE open (ID: ${state.episodeId}).
+- Default ALL "premise", "plot", or "beat" requests to THIS EPISODE.
+- Do NOT edit the Series Bible unless explicitly asked.
+- Use **Episode Premise Architect** for premise generation.
+`
+  }
+  // --------------------
 
   const phaseContext = `
 ## CURRENT PHASE: ${state.currentPhase.toUpperCase()}
 ${phaseGuidance}
 
-**Allowed agents in this phase:** ${allowedAgents.join(', ')}
+** Allowed agents in this phase:** ${allowedAgents.join(', ')}
 ${transitionInfo}
+
+${episodeContext}
+${planContext}
 `
 
   // Combine all system content into a single SystemMessage (required for Claude)
@@ -365,6 +369,27 @@ ${transitionInfo}
       // Check if tool call is allowed in current phase
       const toolName = response.tool_calls[0].name
       const isAllowed = isAgentAllowedInPhase(toolName, state.currentPhase)
+
+      // CIRCUIT BREAKER: Check if we are looping (delegating to same agent repeatedly)
+      const lastAction = state.lastAction
+      const lastMessage = state.messages[state.messages.length - 1] as AIMessage
+      const lastToolCall = lastMessage?.tool_calls?.[0]?.name
+
+      // If we just called this tool, and we are calling it again immediately...
+      // We need to be careful. The graph cycle is Supervisor -> Tool -> Supervisor.
+      // So "lastAction" might be the tool execution.
+      // Let's check if the previous message from Supervisor (2 steps back) was the same tool call.
+
+      const previousSupervisorMsg = state.messages[state.messages.length - 3] as AIMessage
+      const previousToolCall = previousSupervisorMsg?.tool_calls?.[0]?.name
+
+      if (previousToolCall === toolName && !awaitingUserInput) {
+        console.warn(`Supervisor: CIRCUIT BREAKER - Detected potential loop with ${toolName}`)
+        // Force a pause
+        response.content = `I notice we might be going in circles with ${toolName}. Let's pause and review.`
+        response.tool_calls = undefined
+        awaitingUserInput = true
+      }
 
       if (!isAllowed) {
         console.log(`Supervisor: Tool ${toolName} not allowed in ${state.currentPhase} phase`)

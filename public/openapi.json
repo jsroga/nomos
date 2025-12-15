@@ -154,11 +154,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -173,11 +175,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -192,11 +196,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       },
@@ -209,11 +215,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       },
@@ -226,11 +234,34 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assets/upload": {
+      "post": {
+        "operationId": "post-assets-upload",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Assets"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -245,11 +276,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -264,11 +297,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -283,11 +318,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -302,11 +339,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       },
@@ -319,11 +358,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       },
@@ -336,11 +377,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       },
@@ -353,11 +396,76 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/interior-designer/retexture": {
+      "post": {
+        "operationId": "post-interior-designer-retexture",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Interior-designer"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/interior-designer/text-to-3d": {
+      "post": {
+        "operationId": "post-interior-designer-text-to-3d",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Interior-designer"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/interior-designer/texture": {
+      "post": {
+        "operationId": "post-interior-designer-texture",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Interior-designer"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -372,11 +480,55 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/interior-designer/retexture/{runId}": {
+      "get": {
+        "operationId": "get-interior-designer-retexture-{runId}",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Interior-designer"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/interior-designer/text-to-3d/{taskId}": {
+      "get": {
+        "operationId": "get-interior-designer-text-to-3d-{taskId}",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Interior-designer"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -391,11 +543,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -403,18 +557,20 @@
     "/save-image": {
       "post": {
         "operationId": "post-save-image",
-        "summary": "",
+        "summary": "Allow up to 60 seconds for large file processing",
         "description": "",
         "tags": [
           "Save-image"
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -429,11 +585,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -441,18 +599,20 @@
     "/storyteller/actions": {
       "post": {
         "operationId": "post-storyteller-actions",
-        "summary": "Execute agent actions and persist to database",
+        "summary": "",
         "description": "",
         "tags": [
           "Storyteller"
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -467,11 +627,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       },
@@ -484,11 +646,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       },
@@ -501,11 +665,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       },
@@ -518,11 +684,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -537,11 +705,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -556,11 +726,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       },
@@ -573,11 +745,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -592,11 +766,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -604,18 +780,20 @@
     "/storyteller/generate-portrait": {
       "post": {
         "operationId": "post-storyteller-generate-portrait",
-        "summary": "",
+        "summary": "Import type for type-safety if possible, or just string",
         "description": "",
         "tags": [
           "Storyteller"
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -630,11 +808,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       },
@@ -647,11 +827,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       },
@@ -664,11 +846,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -683,11 +867,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       },
@@ -700,11 +886,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -719,11 +907,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       },
@@ -736,11 +926,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -755,11 +947,34 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storyteller/world-summary": {
+      "get": {
+        "operationId": "get-storyteller-world-summary",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -774,11 +989,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       },
@@ -791,11 +1008,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -810,11 +1029,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -829,11 +1050,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -848,11 +1071,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -867,11 +1092,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       },
@@ -884,11 +1111,76 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storyteller/generate-portrait/status": {
+      "get": {
+        "operationId": "get-storyteller-generate-portrait-status",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storyteller/moodboard/status": {
+      "get": {
+        "operationId": "get-storyteller-moodboard-status",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storyteller/moodboard/trigger": {
+      "post": {
+        "operationId": "post-storyteller-moodboard-trigger",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -903,11 +1195,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       },
@@ -920,11 +1214,34 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storyteller/beats/{beatId}/generate-image": {
+      "post": {
+        "operationId": "post-storyteller-beats-{beatId}-generate-image",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -939,11 +1256,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       },
@@ -956,83 +1275,55 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
     },
-    "/storyteller/projects/{id}/break": {
+    "/tiles/accept-upscale": {
       "post": {
-        "operationId": "post-storyteller-projects-{id}-break",
+        "operationId": "post-tiles-accept-upscale",
         "summary": "",
         "description": "",
         "tags": [
-          "Storyteller"
+          "Tiles"
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
     },
-    "/storyteller/projects/{id}/characters": {
-      "get": {
-        "operationId": "get-storyteller-projects-{id}-characters",
-        "summary": "",
-        "description": "",
-        "tags": [
-          "Storyteller"
-        ],
-        "parameters": [],
-        "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
-          }
-        }
-      },
+    "/tiles/upload": {
       "post": {
-        "operationId": "post-storyteller-projects-{id}-characters",
+        "operationId": "post-tiles-upload",
         "summary": "",
         "description": "",
         "tags": [
-          "Storyteller"
+          "Tiles"
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
-          }
-        }
-      },
-      "patch": {
-        "operationId": "patch-storyteller-projects-{id}-characters",
-        "summary": "",
-        "description": "",
-        "tags": [
-          "Storyteller"
-        ],
-        "parameters": [],
-        "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -1047,11 +1338,34 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/trigger-3d/remesh": {
+      "post": {
+        "operationId": "post-trigger-3d-remesh",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Trigger-3d"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -1066,11 +1380,55 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/trigger-fidelity": {
+      "post": {
+        "operationId": "post-trigger-fidelity",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Trigger-fidelity"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/trigger-fidelity/status": {
+      "get": {
+        "operationId": "get-trigger-fidelity-status",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Trigger-fidelity"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -1085,11 +1443,55 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/trigger-tile/status": {
+      "get": {
+        "operationId": "get-trigger-tile-status",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Trigger-tile"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/trigger-upload": {
+      "post": {
+        "operationId": "post-trigger-upload",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Trigger-upload"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -1104,11 +1506,76 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/trigger-upscale/select-variant": {
+      "post": {
+        "operationId": "post-trigger-upscale-select-variant",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Trigger-upscale"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/trigger-upscale/status": {
+      "get": {
+        "operationId": "get-trigger-upscale-status",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Trigger-upscale"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/upload-tile": {
+      "post": {
+        "operationId": "post-upload-tile",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Upload-tile"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }
@@ -1123,11 +1590,13 @@
         ],
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           }
         }
       }

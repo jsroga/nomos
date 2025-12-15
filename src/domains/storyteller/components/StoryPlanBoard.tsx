@@ -22,13 +22,16 @@ export const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
   // If no storyPlan (Episode Plan), we show the "Create Premise" view via EpisodePremisePanel (which handles empty state)
 
   // Bridge: Cast storyPlan to EpisodePremise if it fits, or pass null
-  const episodePremise = storyPlan as any; // Temporary cast until we fully align types
+  const episodePremise = (storyPlan as any)?.premise || storyPlan; // Handle both nested and flat structures
 
   return (
     <div className="h-full flex flex-col">
       <EpisodePremisePanel
         premise={episodePremise}
         globalBible={globalBible}
+        posterUrl={(storyPlan as any)?.posterUrl}
+        posterPrompt={(storyPlan as any)?.posterPrompt}
+        projectId={(storyPlan as any)?.projectId || 'unknown'}
         onUpdate={(updated) => {
           // Handle updates - likely need a prop for this or dispatch event
           console.log("Update premise:", updated)
@@ -36,7 +39,11 @@ export const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
         onGenerate={() => window.dispatchEvent(new CustomEvent('trigger-agent-action', {
           detail: { type: 'generate_episode_premise' }
         }))}
+        onGeneratePoster={() => window.dispatchEvent(new CustomEvent('generate-episode-poster', {
+          detail: { episodeId: (storyPlan as any)?.id } // Assuming storyPlan has ID if it's an episode
+        }))}
         isGenerating={isGenerating}
+        isGeneratingPoster={(storyPlan as any)?.isGeneratingPoster}
       />
     </div>
   )

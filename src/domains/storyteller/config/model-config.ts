@@ -57,6 +57,7 @@ export type AgentRole =
   | 'consequenceTracker'
   | 'devilsAdvocate'
   | 'visualMoment'
+  | 'planner'
   | 'writer'
   | 'premiseArchitect'
   | 'magicAgent'
@@ -74,6 +75,7 @@ const MODEL_CONFIGS = {
       consequenceTracker: 0.7,
       devilsAdvocate: 0.95, // Harsh critic
       visualMoment: 0.9,
+      planner: 0.95, // The Architect
       writer: 0.85,
       premiseArchitect: 0.85,
       magicAgent: 1.0, // Maximum chaos
@@ -90,6 +92,7 @@ const MODEL_CONFIGS = {
       consequenceTracker: 0.6,
       devilsAdvocate: 0.9,
       visualMoment: 0.85,
+      planner: 0.9,
       writer: 0.8,
       premiseArchitect: 0.8,
       magicAgent: 1.0, // Maximum chaos
@@ -105,6 +108,7 @@ const MODEL_CONFIGS = {
       consequenceTracker: 0.7,
       devilsAdvocate: 0.9,
       visualMoment: 0.85,
+      planner: 0.9,
       writer: 0.8,
       premiseArchitect: 0.85,
       magicAgent: 1.0, // Maximum chaos

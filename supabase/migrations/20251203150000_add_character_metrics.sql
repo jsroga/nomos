@@ -12,3 +12,6 @@ ALTER TABLE characters ADD COLUMN IF NOT EXISTS transformation_progress integer 
 
 
 
+
+
+

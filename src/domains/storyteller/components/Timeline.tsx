@@ -3,6 +3,9 @@
 import React, { useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, Play, Pause, User, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { PendingActions } from './PendingActions'
+import { QuestionSession } from '../questions/types'
+import { ActionHistoryEntry } from '../actions/types'
 
 interface Beat {
   id: string
@@ -25,6 +28,8 @@ interface TimelineProps {
   beats: Beat[]
   onBeatSelect: (beatId: string | null) => void
   selectedBeatId: string | null
+  pendingQuestions: QuestionSession[]
+  recentActions: ActionHistoryEntry[]
 }
 
 // Beat type colors
@@ -42,6 +47,8 @@ export const Timeline: React.FC<TimelineProps> = ({
   beats,
   onBeatSelect,
   selectedBeatId,
+  pendingQuestions,
+  recentActions,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -173,7 +180,7 @@ export const Timeline: React.FC<TimelineProps> = ({
       </div>
 
       {/* Timeline Track */}
-      <div className="flex-1 flex">
+      <div className="flex-1 flex overflow-hidden">
         {/* Beat Track */}
         <div className="flex-1 px-4 py-2 overflow-x-auto">
           <div className="relative h-8 bg-muted/30 rounded-full flex items-center px-2">
@@ -196,11 +203,10 @@ export const Timeline: React.FC<TimelineProps> = ({
                   onClick={() => handleBeatClick(beat.id, index)}
                   onMouseEnter={() => setHoveredBeat(beat.id)}
                   onMouseLeave={() => setHoveredBeat(null)}
-                  className={`relative w-4 h-4 rounded-full transition-all duration-200 ${
-                    index === currentIndex
+                  className={`relative w-4 h-4 rounded-full transition-all duration-200 ${index === currentIndex
                       ? 'scale-150 ring-2 ring-primary ring-offset-2 ring-offset-card'
                       : 'hover:scale-125'
-                  } ${BEAT_COLORS[beat.beatType] || BEAT_COLORS.default}`}
+                    } ${BEAT_COLORS[beat.beatType] || BEAT_COLORS.default}`}
                   title={beat.logline}
                 >
                   {hoveredBeat === beat.id && (
@@ -214,54 +220,13 @@ export const Timeline: React.FC<TimelineProps> = ({
           </div>
         </div>
 
-        {/* Character State Inspector */}
-        <div className="w-64 border-l border-border p-2 overflow-y-auto">
-          <div className="text-xs font-medium text-muted-foreground mb-2">Character States</div>
-          {snapshots.length > 0 ? (
-            <div className="space-y-2">
-              {snapshots.map(snapshot => (
-                <div key={snapshot.characterId} className="bg-muted/30 rounded p-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium flex items-center gap-1">
-                      <User size={10} />
-                      {snapshot.characterName}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">
-                      {snapshot.emotionalState}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Zap size={10} className="text-yellow-500" />
-                    <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 transition-all duration-300"
-                        style={{ width: `${snapshot.stressLevel}%` }}
-                      />
-                    </div>
-                    <span className="text-[10px] text-muted-foreground w-6 text-right">
-                      {snapshot.stressLevel}%
-                    </span>
-                  </div>
-                  <div className="mt-1">
-                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                      <span>Arc Progress</span>
-                      <span>{snapshot.transformationProgress}%</span>
-                    </div>
-                    <div className="h-1 bg-muted rounded-full overflow-hidden mt-0.5">
-                      <div
-                        className="h-full bg-primary transition-all duration-300"
-                        style={{ width: `${snapshot.transformationProgress}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-xs text-muted-foreground italic">
-              {selectedBeatId ? 'No character data for this beat' : 'Select a beat to view states'}
-            </div>
-          )}
+        {/* Recent Actions (Replaces Character States) */}
+        <div className="w-80 border-l border-border bg-card/50 overflow-y-auto">
+          <PendingActions
+            pendingQuestions={pendingQuestions}
+            recentActions={recentActions}
+            className="p-2"
+          />
         </div>
       </div>
     </div>

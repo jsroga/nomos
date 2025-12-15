@@ -23,6 +23,7 @@ interface AgentLogProps {
   onQuestionAnswer?: (questionId: string, answer: string | string[]) => void
   onQuestionSkip?: (questionId: string) => void
   showThinking?: boolean
+  children?: React.ReactNode
 }
 
 // Agent configuration with colors and icons
@@ -84,6 +85,7 @@ export const AgentLog: React.FC<AgentLogProps> = ({
   onQuestionAnswer,
   onQuestionSkip,
   showThinking = false,
+  children,
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null)
 
@@ -161,6 +163,7 @@ export const AgentLog: React.FC<AgentLogProps> = ({
           </div>
         )
       })}
+      {children}
       <div ref={bottomRef} />
     </div>
   )
@@ -183,6 +186,23 @@ const MessageContent: React.FC<{ content: string }> = ({ content }) => {
     } catch {
       // Not valid JSON, use as-is
     }
+  }
+
+  // Custom rendering for delegation messages
+  if (displayContent.includes('Delegating to')) {
+    const toolName = displayContent.replace('Delegating to', '').trim().replace('...', '')
+    const friendlyName = toolName
+      .replace('delegate_to_', '')
+      .split('_')
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ')
+
+    return (
+      <div className="flex items-center gap-2 text-muted-foreground italic">
+        <span className="text-primary">→</span>
+        <span>Delegating task to <span className="font-semibold text-primary">{friendlyName}</span>...</span>
+      </div>
+    )
   }
 
   // Simple markdown-like rendering

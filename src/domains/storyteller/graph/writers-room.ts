@@ -5,18 +5,18 @@ import * as agents from '../agents'
 import { supervisorAgent } from '../agents/supervisor'
 import { scriptEditorAgent } from '../agents/script-editor'
 import { ToolNode } from '@langchain/langgraph/prebuilt'
+import { RunnableLambda } from '@langchain/core/runnables'
 import { supervisorTools } from '../tools/agent-tools'
 import { scriptEditTools } from '../tools/script-tools'
-import { AIMessage, BaseMessage } from '@langchain/core/messages'
+import { plannerAgent } from '../agents/planner'
+import { AIMessage, BaseMessage, ToolMessage } from '@langchain/core/messages'
 import { reduceAgentActions } from './action-reducer'
 import { AgentActionValidated } from '../schemas/agent-schemas'
 import {
   AgentRole,
-  validateInputForAgent,
-  validateAgentOutput,
-  sanitizeAgentOutput,
-  getValidationSummary,
 } from '../guardrails'
+import { RunnableGuard } from '../guardrails/runnable-guard'
+import { InputSafetyValidator, OutputSafetyValidator, ConsistencyValidator } from '../guardrails/validators'
 
 // PostgreSQL checkpointer for thread persistence
 const DATABASE_URL = process.env.DATABASE_URL
@@ -139,6 +139,10 @@ function routeFromSupervisor(state: WritersRoomState) {
       'delegate_to_episode_premise_architect': 'episodePremiseArchitect',
       'delegate_to_magic_agent': 'magicAgent',
       'delegate_to_script_editor': 'scriptEditor',
+      'delegate_to_episode_premise_architect': 'episodePremiseArchitect',
+      'delegate_to_magic_agent': 'magicAgent',
+      'delegate_to_script_editor': 'scriptEditor',
+      'delegate_to_planner': 'planner',
       'search_series_bible': 'utility_tools' // Route RAG to utility node
     }
 
@@ -150,112 +154,57 @@ function routeFromSupervisor(state: WritersRoomState) {
 }
 
 // ==================================================================
-// AGENT WRAPPER (REDUX)
+// AGENT WRAPPER (REDUX) - REPLACED BY RUNNABLE GUARD
 // ==================================================================
 
-import { ToolMessage } from '@langchain/core/messages';
+// Helper to create a guarded agent
+const createGuardedAgent = (agentFn: any, role: AgentRole) => {
+  const guard = new RunnableGuard({
+    agent: RunnableLambda.from(agentFn),
+    agentRole: role,
+    inputValidators: [new InputSafetyValidator()],
+    outputValidators: [
+      new OutputSafetyValidator(role),
+      new ConsistencyValidator(role)
+    ],
+    maxRetries: 3
+  })
 
-const wrapAgentWithReducer = (agentFn: Function, agentRole: AgentRole = 'supervisor') => {
-  return async (state: WritersRoomState): Promise<Partial<WritersRoomState>> => {
-    // 0. Pre-Flight: Detect pending tool calls from Supervisor
-    // If the last message is an AIMessage with tool_calls, we must generate a corresponding ToolMessage
-    // to satisfy OpenAI's validation rules before the Agent generates new content.
-    const messages = state.messages || [];
-    const lastMessage = messages[messages.length - 1];
-    const syntheticToolMessages: ToolMessage[] = [];
+  return RunnableLambda.from(async (state: WritersRoomState, config) => {
+    const lastMsg = state.messages[state.messages.length - 1]
+    let toolMessage: ToolMessage | null = null
+    let inputState = state
 
-    if (lastMessage && 'tool_calls' in lastMessage && (lastMessage.tool_calls as any[]).length > 0) {
-      // We assume the current node corresponds to the tool being called.
-      // We construct a ToolMessage that says "Agent executed successfully".
-      const toolCalls = (lastMessage.tool_calls as any[]);
-      for (const toolCall of toolCalls) {
-        syntheticToolMessages.push(new ToolMessage({
-          tool_call_id: toolCall.id,
-          content: `Agent ${agentFn.name} executed.`,
-          name: toolCall.name
-        }));
+    // 1. Check for dangling tool call from Supervisor
+    if (lastMsg && 'tool_calls' in lastMsg && (lastMsg as any).tool_calls?.length > 0) {
+      const toolCall = (lastMsg as any).tool_calls[0]
+      toolMessage = new ToolMessage({
+        tool_call_id: toolCall.id,
+        content: `Agent ${role} delegated task: ${toolCall.name}`,
+        name: toolCall.name
+      })
+
+      // Inject ToolMessage into state so the Agent (LLM) sees a valid history
+      inputState = {
+        ...state,
+        messages: [...state.messages, toolMessage]
       }
     }
 
-    // =====================================================
-    // INPUT GUARDRAILS
-    // =====================================================
-    const inputValidation = await validateInputForAgent(state, agentRole);
-    if (inputValidation.blocked) {
-      console.warn(`[Guardrails] Input blocked for ${agentRole}: ${inputValidation.blocked.message}`);
-      const blockedMessage = new AIMessage({
-        content: `⚠️ Input validation failed: ${inputValidation.blocked.message}`,
-        name: agentRole,
-      });
+    // 2. Invoke Guard (which invokes Agent)
+    const result = await guard.invoke(inputState, config)
+
+    // 3. Ensure the tool message is returned to the graph state
+    if (toolMessage) {
       return {
-        messages: [...syntheticToolMessages, blockedMessage],
-        awaitingUserInput: true,
-      };
-    }
-
-    // Log input warnings (but don't block)
-    if (inputValidation.warnings.length > 0) {
-      console.log(`[Guardrails] Input warnings for ${agentRole}:`, inputValidation.warnings.map(w => w.message));
-    }
-
-    // 1. Run the original agent
-    const stateWithToolResponse = {
-      ...state,
-      messages: [...messages, ...syntheticToolMessages]
-    };
-
-    const agentResult = await agentFn(stateWithToolResponse);
-
-    // =====================================================
-    // OUTPUT GUARDRAILS
-    // =====================================================
-    const outputValidation = await validateAgentOutput(agentResult, agentRole, state);
-    
-    // Log validation summary
-    if (outputValidation.issues.length > 0) {
-      console.log(`[Guardrails] ${getValidationSummary(outputValidation)} for ${agentRole}`);
-      
-      // Log errors and warnings
-      const errors = outputValidation.issues.filter(i => i.severity === 'error');
-      const warnings = outputValidation.issues.filter(i => i.severity === 'warning');
-      
-      if (errors.length > 0) {
-        console.warn(`[Guardrails] Errors:`, errors.map(e => e.message));
-      }
-      if (warnings.length > 0) {
-        console.log(`[Guardrails] Warnings:`, warnings.map(w => w.message));
+        ...result,
+        messages: [toolMessage, ...(result.messages || [])]
       }
     }
 
-    // Sanitize output if needed (removes blocked actions)
-    let finalResult = agentResult;
-    if (outputValidation.shouldBlock) {
-      console.warn(`[Guardrails] Blocking/sanitizing output from ${agentRole}`);
-      finalResult = sanitizeAgentOutput(agentResult, outputValidation);
-    }
-
-    // 2. Extract actions from the result message, if any
-    const resultMessages = finalResult.messages || [];
-    const lastResultMsg = resultMessages[resultMessages.length - 1];
-    const actions: AgentActionValidated[] = (lastResultMsg as any)?.actions || [];
-
-    // 3. If we have actions, run them through the reducer
-    let reducedUpdates = {};
-    if (actions.length > 0) {
-      console.log(`Processing ${actions.length} actions from ${agentFn.name}...`);
-      reducedUpdates = reduceAgentActions(state, actions);
-    }
-
-    // 4. Merge agent result with reduced state updates
-    // We must ensure the synthetic ToolMessages are included in the returned messages
-    // so they are persisted to the graph history.
-    return {
-      ...finalResult,
-      messages: [...syntheticToolMessages, ...resultMessages],
-      ...reducedUpdates
-    };
-  };
-};
+    return result
+  })
+}
 
 // ==================================================================
 // GRAPH DEFINITION
@@ -294,18 +243,19 @@ const workflow = new StateGraph<WritersRoomState>({
 })
 
 // Nodes - Each agent wrapped with role-specific guardrails
-workflow.addNode('supervisor', supervisorAgent)
-workflow.addNode('plotArchitect', wrapAgentWithReducer(agents.plotArchitectAgent, 'plotArchitect'))
-workflow.addNode('characterPsychology', wrapAgentWithReducer(agents.characterPsychologyAgent, 'characterPsychology'))
-workflow.addNode('consequenceTracker', wrapAgentWithReducer(agents.consequenceTrackerAgent, 'consequenceTracker'))
-workflow.addNode('devilsAdvocate', wrapAgentWithReducer(agents.devilsAdvocateAgent, 'devilsAdvocate'))
-workflow.addNode('writer', wrapAgentWithReducer(agents.writerAgent, 'writer'))
-workflow.addNode('premiseArchitect', wrapAgentWithReducer(agents.premiseArchitectAgent, 'premiseArchitect'))
-workflow.addNode('episodePremiseArchitect', wrapAgentWithReducer(agents.episodePremiseArchitectAgent, 'episodePremiseArchitect'))
-workflow.addNode('magicAgent', wrapAgentWithReducer(agents.magicAgent, 'magicAgent'))
+workflow.addNode('supervisor', supervisorAgent) // Supervisor handles its own tools
+workflow.addNode('planner', createGuardedAgent(plannerAgent, 'planner'))
+workflow.addNode('plotArchitect', createGuardedAgent(agents.plotArchitectAgent, 'plotArchitect'))
+workflow.addNode('characterPsychology', createGuardedAgent(agents.characterPsychologyAgent, 'characterPsychology'))
+workflow.addNode('consequenceTracker', createGuardedAgent(agents.consequenceTrackerAgent, 'consequenceTracker'))
+workflow.addNode('devilsAdvocate', createGuardedAgent(agents.devilsAdvocateAgent, 'devilsAdvocate'))
+workflow.addNode('writer', createGuardedAgent(agents.writerAgent, 'writer'))
+workflow.addNode('premiseArchitect', createGuardedAgent(agents.premiseArchitectAgent, 'premiseArchitect'))
+workflow.addNode('episodePremiseArchitect', createGuardedAgent(agents.episodePremiseArchitectAgent, 'episodePremiseArchitect'))
+workflow.addNode('magicAgent', createGuardedAgent(agents.magicAgent, 'magicAgent'))
 
 // Script Editor node (Evaluator-Optimizer pattern)
-workflow.addNode('scriptEditor', wrapAgentWithReducer(scriptEditorAgent, 'scriptEditor'))
+workflow.addNode('scriptEditor', createGuardedAgent(scriptEditorAgent, 'scriptEditor'))
 
 // Entry
 workflow.setEntryPoint('supervisor')
@@ -327,11 +277,13 @@ workflow.addConditionalEdges('supervisor', routeFromSupervisor, {
   episodePremiseArchitect: 'episodePremiseArchitect',
   magicAgent: 'magicAgent',
   scriptEditor: 'scriptEditor',
+  planner: 'planner',
   utility_tools: 'utility_tools',
   [END]: END
 })
 
 // Workers return to Supervisor
+workflow.addEdge('planner', 'supervisor')
 workflow.addEdge('plotArchitect', 'supervisor')
 workflow.addEdge('characterPsychology', 'supervisor')
 workflow.addEdge('consequenceTracker', 'supervisor')

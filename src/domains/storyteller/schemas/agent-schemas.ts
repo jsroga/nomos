@@ -173,14 +173,24 @@ export const UpdateSeriesBibleActionSchema = z.object({
 })
 
 export const EpisodePremiseSchema = z.object({
+  // Core identification
   title: z.string().describe('The episode title (e.g. Ozymandias)'),
   logline: z.string().describe('One sentence summary of the episode'),
-  protagonistHook: z.string().describe('The opening situation/image that grabs attention'),
+
+  // Ozymandias Framework fields
+  theHook: z.string().describe('Opening image/situation that immediately grabs attention and poses a question'),
+  theTurn: z.string().describe('Midpoint/key event where the flaw causes a critical error or revelation'),
+  theAftermath: z.string().describe('The world or character is irreversibly changed'),
+
+  // Character-focused fields
+  protagonistHook: z.string().nullable().describe('The protagonist-specific opening situation'),
   fatalFlaw: z.string().describe('The internal character flaw that drives the conflict'),
   stakes: z.string().describe('What is at risk (Physical/Professional/Psychological)'),
   transformation: z.string().describe('How the character/world changes by the end'),
   inevitableConsequence: z.string().describe('The irreversible outcome caused by the flaw'),
-  thematicFocus: z.string().describe('The specific theme explored in this episode'),
+
+  // Meta
+  thematicFocus: z.string().describe('The specific theme explored in this episode (e.g. Hubris)'),
   charactersInvolved: z.array(z.string()).describe('Key characters in this episode'),
 })
 

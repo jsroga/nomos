@@ -3,9 +3,39 @@ import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
 
-export type InteractionMode = 'SELECT' | 'WALL' | 'FLOOR' | 'WATER' | 'OBJECT' | 'SCATTER' | 'SURFACE'
+export type InteractionMode = 'SELECT' | 'WALL' | 'FLOOR' | 'WATER' | 'OBJECT' | 'SCATTER' | 'SURFACE' | 'TERRAIN'
 
 export type SurfaceType = 'grass' | 'water' | 'road' | 'dirt' | 'pavement' | 'mars' | 'sand' | 'rock'
+
+// Terrain & Water Mode Types
+export type TerrainBrushType = 'raise' | 'lower' | 'flatten' | 'smooth'
+export type TerrainMaterialType = 'ground' | 'water'
+export type GridResolution = 'low' | 'medium' | 'high'
+
+export interface TerrainSettings {
+  // Global Levels
+  baseGroundHeight: number // Default 0m
+  waterSurfaceHeight: number // Default -3m
+  showWaterPlane: boolean
+  gridResolution: GridResolution
+
+  // Heightmap data - 2D array of heights
+  heightmapSize: number // Grid size (e.g., 64 = 64x64 grid)
+  heightmap: Float32Array | null // Stored as flat array
+
+  // Material map - which cells are water vs ground
+  materialMap: Uint8Array | null // 0 = ground, 1 = water (manual override)
+}
+
+export interface TerrainBrushSettings {
+  type: TerrainBrushType
+  size: number // 1-50
+  strength: number // 1-20
+}
+
+export interface TerrainMaterialPaintSettings {
+  activeMaterial: TerrainMaterialType
+}
 
 export interface Surface {
   id: string
@@ -105,6 +135,29 @@ interface InteriorState {
   approveRetexture: (elementId: string) => void
   cancelRetexture: (elementId: string) => void
 
+  // Terrain & Water Mode State
+  terrainSettings: TerrainSettings
+  terrainBrush: TerrainBrushSettings
+  terrainMaterialPaint: TerrainMaterialPaintSettings
+  terrainBrushPosition: [number, number, number] | null // Current brush position for preview
+
+  // Terrain & Water Mode Actions
+  setTerrainMode: (enabled: boolean) => void
+  setBaseGroundHeight: (height: number) => void
+  setWaterSurfaceHeight: (height: number) => void
+  setShowWaterPlane: (show: boolean) => void
+  setGridResolution: (resolution: GridResolution) => void
+  setTerrainBrushType: (type: TerrainBrushType) => void
+  setTerrainBrushSize: (size: number) => void
+  setTerrainBrushStrength: (strength: number) => void
+  setTerrainMaterial: (material: TerrainMaterialType) => void
+  setTerrainBrushPosition: (position: [number, number, number] | null) => void
+  initializeHeightmap: (size: number) => void
+  updateHeightmapAt: (x: number, z: number, radius: number, delta: number, brushType: TerrainBrushType) => void
+  autoFillWaterBelowLevel: () => void
+  paintMaterialAt: (x: number, z: number, radius: number, material: TerrainMaterialType) => void
+  resetTerrain: () => void
+
   // Actions
   setMode: (mode: InteractionMode) => void
   setActiveLevel: (level: number) => void
@@ -152,6 +205,34 @@ interface InteriorState {
 
 import { temporal } from 'zundo'
 
+// Helper function to create default terrain settings
+const createDefaultTerrainSettings = (): TerrainSettings => ({
+  baseGroundHeight: 0,
+  waterSurfaceHeight: -3,
+  showWaterPlane: true,
+  gridResolution: 'medium',
+  heightmapSize: 64,
+  heightmap: null,
+  materialMap: null,
+})
+
+const createDefaultTerrainBrush = (): TerrainBrushSettings => ({
+  type: 'raise',
+  size: 20,
+  strength: 10,
+})
+
+const createDefaultTerrainMaterialPaint = (): TerrainMaterialPaintSettings => ({
+  activeMaterial: 'ground',
+})
+
+// Grid resolution to size mapping
+const GRID_RESOLUTION_MAP: Record<GridResolution, number> = {
+  low: 32,
+  medium: 64,
+  high: 128,
+}
+
 export const useInteriorStore = create<InteriorState>()(
   persist(
     temporal(
@@ -170,6 +251,197 @@ export const useInteriorStore = create<InteriorState>()(
         isCurved: true,
         exportRequested: false,
         cameraResetRequested: false,
+
+        // Terrain & Water Mode Initial State
+        terrainSettings: createDefaultTerrainSettings(),
+        terrainBrush: createDefaultTerrainBrush(),
+        terrainMaterialPaint: createDefaultTerrainMaterialPaint(),
+        terrainBrushPosition: null,
+
+        // Terrain & Water Mode Actions
+        setTerrainMode: (enabled: boolean) => set({ mode: enabled ? 'TERRAIN' : 'SELECT' }),
+
+        setBaseGroundHeight: (height: number) => set(state => ({
+          terrainSettings: { ...state.terrainSettings, baseGroundHeight: height },
+          hasUnsavedChanges: true,
+        })),
+
+        setWaterSurfaceHeight: (height: number) => set(state => ({
+          terrainSettings: { ...state.terrainSettings, waterSurfaceHeight: height },
+          hasUnsavedChanges: true,
+        })),
+
+        setShowWaterPlane: (show: boolean) => set(state => ({
+          terrainSettings: { ...state.terrainSettings, showWaterPlane: show },
+        })),
+
+        setGridResolution: (resolution: GridResolution) => {
+          const size = GRID_RESOLUTION_MAP[resolution]
+          set(state => ({
+            terrainSettings: {
+              ...state.terrainSettings,
+              gridResolution: resolution,
+              heightmapSize: size,
+              heightmap: new Float32Array(size * size).fill(state.terrainSettings.baseGroundHeight),
+              materialMap: new Uint8Array(size * size).fill(0),
+            },
+            hasUnsavedChanges: true,
+          }))
+        },
+
+        setTerrainBrushType: (type: TerrainBrushType) => set(state => ({
+          terrainBrush: { ...state.terrainBrush, type },
+        })),
+
+        setTerrainBrushSize: (size: number) => set(state => ({
+          terrainBrush: { ...state.terrainBrush, size: Math.max(1, Math.min(50, size)) },
+        })),
+
+        setTerrainBrushStrength: (strength: number) => set(state => ({
+          terrainBrush: { ...state.terrainBrush, strength: Math.max(1, Math.min(20, strength)) },
+        })),
+
+        setTerrainMaterial: (material: TerrainMaterialType) => set(state => ({
+          terrainMaterialPaint: { ...state.terrainMaterialPaint, activeMaterial: material },
+        })),
+
+        setTerrainBrushPosition: (position: [number, number, number] | null) => set({
+          terrainBrushPosition: position,
+        }),
+
+        initializeHeightmap: (size: number) => set(state => ({
+          terrainSettings: {
+            ...state.terrainSettings,
+            heightmapSize: size,
+            heightmap: new Float32Array(size * size).fill(state.terrainSettings.baseGroundHeight),
+            materialMap: new Uint8Array(size * size).fill(0),
+          },
+          hasUnsavedChanges: true,
+        })),
+
+        updateHeightmapAt: (x: number, z: number, radius: number, delta: number, brushType: TerrainBrushType) => {
+          const state = get()
+          const { heightmapSize, heightmap, baseGroundHeight } = state.terrainSettings
+
+          if (!heightmap) return
+
+          const newHeightmap = new Float32Array(heightmap)
+          const gridX = Math.floor((x + heightmapSize / 2) * (heightmapSize / 64))
+          const gridZ = Math.floor((z + heightmapSize / 2) * (heightmapSize / 64))
+          const gridRadius = Math.ceil(radius * (heightmapSize / 64))
+
+          for (let dz = -gridRadius; dz <= gridRadius; dz++) {
+            for (let dx = -gridRadius; dx <= gridRadius; dx++) {
+              const px = gridX + dx
+              const pz = gridZ + dz
+
+              if (px < 0 || px >= heightmapSize || pz < 0 || pz >= heightmapSize) continue
+
+              const dist = Math.sqrt(dx * dx + dz * dz)
+              if (dist > gridRadius) continue
+
+              const falloff = 1 - (dist / gridRadius)
+              const idx = pz * heightmapSize + px
+
+              switch (brushType) {
+                case 'raise':
+                  newHeightmap[idx] += delta * falloff
+                  break
+                case 'lower':
+                  newHeightmap[idx] -= delta * falloff
+                  break
+                case 'flatten':
+                  // Flatten to the height at the center point
+                  const centerIdx = gridZ * heightmapSize + gridX
+                  const targetHeight = newHeightmap[centerIdx]
+                  newHeightmap[idx] = newHeightmap[idx] + (targetHeight - newHeightmap[idx]) * falloff * 0.5
+                  break
+                case 'smooth':
+                  // Average with neighbors
+                  let sum = 0
+                  let count = 0
+                  for (let sy = -1; sy <= 1; sy++) {
+                    for (let sx = -1; sx <= 1; sx++) {
+                      const nx = px + sx
+                      const nz = pz + sy
+                      if (nx >= 0 && nx < heightmapSize && nz >= 0 && nz < heightmapSize) {
+                        sum += heightmap[nz * heightmapSize + nx]
+                        count++
+                      }
+                    }
+                  }
+                  if (count > 0) {
+                    newHeightmap[idx] = newHeightmap[idx] + ((sum / count) - newHeightmap[idx]) * falloff * 0.3
+                  }
+                  break
+              }
+            }
+          }
+
+          set(state => ({
+            terrainSettings: { ...state.terrainSettings, heightmap: newHeightmap },
+            hasUnsavedChanges: true,
+          }))
+        },
+
+        autoFillWaterBelowLevel: () => set(state => {
+          const { heightmapSize, heightmap, waterSurfaceHeight } = state.terrainSettings
+
+          if (!heightmap) return {}
+
+          const newMaterialMap = new Uint8Array(heightmapSize * heightmapSize)
+
+          for (let i = 0; i < heightmap.length; i++) {
+            // If height is below water surface, mark as water
+            newMaterialMap[i] = heightmap[i] < waterSurfaceHeight ? 1 : 0
+          }
+
+          return {
+            terrainSettings: { ...state.terrainSettings, materialMap: newMaterialMap },
+            hasUnsavedChanges: true,
+          }
+        }),
+
+        paintMaterialAt: (x: number, z: number, radius: number, material: TerrainMaterialType) => {
+          const state = get()
+          const { heightmapSize, materialMap } = state.terrainSettings
+
+          if (!materialMap) return
+
+          const newMaterialMap = new Uint8Array(materialMap)
+          const gridX = Math.floor((x + heightmapSize / 2) * (heightmapSize / 64))
+          const gridZ = Math.floor((z + heightmapSize / 2) * (heightmapSize / 64))
+          const gridRadius = Math.ceil(radius * (heightmapSize / 64))
+          const materialValue = material === 'water' ? 1 : 0
+
+          for (let dz = -gridRadius; dz <= gridRadius; dz++) {
+            for (let dx = -gridRadius; dx <= gridRadius; dx++) {
+              const px = gridX + dx
+              const pz = gridZ + dz
+
+              if (px < 0 || px >= heightmapSize || pz < 0 || pz >= heightmapSize) continue
+
+              const dist = Math.sqrt(dx * dx + dz * dz)
+              if (dist > gridRadius) continue
+
+              const idx = pz * heightmapSize + px
+              newMaterialMap[idx] = materialValue
+            }
+          }
+
+          set(state => ({
+            terrainSettings: { ...state.terrainSettings, materialMap: newMaterialMap },
+            hasUnsavedChanges: true,
+          }))
+        },
+
+        resetTerrain: () => set(state => ({
+          terrainSettings: createDefaultTerrainSettings(),
+          terrainBrush: createDefaultTerrainBrush(),
+          terrainMaterialPaint: createDefaultTerrainMaterialPaint(),
+          terrainBrushPosition: null,
+          hasUnsavedChanges: true,
+        })),
 
         // Retexture Actions (integrated with GlobalStatusStore)
         approveRetexture: (elementId: string) => set(state => {
@@ -526,10 +798,41 @@ export const useInteriorStore = create<InteriorState>()(
               return {}
             }
 
+            let floorPoints = surface.points.map(p => [p[0], 0, p[2]] as [number, number, number])
+
+            // If combined/curved, we need to generate the curve points
+            // This logic mirrors RoadMesh.tsx
+            if (surface.curved && surface.points.length > 2) {
+              try {
+                const points = surface.points.map(p => new THREE.Vector3(p[0], 0, p[2]))
+
+                // Check for closed loop
+                const first = points[0]
+                const last = points[points.length - 1]
+                const isClosed = first.distanceTo(last) < 0.2
+
+                // CatmullRom expects unique control points for closed loops
+                const curvePoints = isClosed ? points.slice(0, -1) : points
+
+                const tension = surface.roundness ?? 0.5
+                const curve = new THREE.CatmullRomCurve3(curvePoints, isClosed, 'catmullrom', tension)
+
+                // Sample points based on length to ensure consistent density
+                const length = curve.getLength()
+                const steps = Math.max(20, Math.ceil(length * 5)) // 5 points per meter
+                const spacedPoints = curve.getSpacedPoints(steps)
+
+                floorPoints = spacedPoints.map(p => [p.x, 0, p.z])
+              } catch (e) {
+                console.error('Failed to generate curved floor geometry', e)
+                // Fallback to original points
+              }
+            }
+
             const floorId = uuidv4()
             const newFloor: Floor = {
               id: floorId,
-              points: surface.points.map(p => [p[0], 0, p[2]]), // Map 3D points
+              points: floorPoints,
               y: 0, // Base height
               // texture: undefined
             }
@@ -553,6 +856,15 @@ export const useInteriorStore = create<InteriorState>()(
             surfaces: state.surfaces,
             objects: state.objects,
             activeLevel: state.activeLevel,
+            terrainSettings: {
+              baseGroundHeight: state.terrainSettings.baseGroundHeight,
+              waterSurfaceHeight: state.terrainSettings.waterSurfaceHeight,
+              showWaterPlane: state.terrainSettings.showWaterPlane,
+              gridResolution: state.terrainSettings.gridResolution,
+              heightmapSize: state.terrainSettings.heightmapSize,
+              heightmap: state.terrainSettings.heightmap ? Array.from(state.terrainSettings.heightmap) : null,
+              materialMap: state.terrainSettings.materialMap ? Array.from(state.terrainSettings.materialMap) : null,
+            },
           }
 
           try {
@@ -606,6 +918,7 @@ export const useInteriorStore = create<InteriorState>()(
             const design = await res.json()
 
             if (design && design.sceneData) {
+              const savedTerrain = design.sceneData.terrainSettings
               set({
                 currentDesignId: design.id,
                 currentDesignName: design.name,
@@ -615,6 +928,15 @@ export const useInteriorStore = create<InteriorState>()(
                 surfaces: design.sceneData.surfaces || [],
                 objects: design.sceneData.objects || [],
                 activeLevel: design.sceneData.activeLevel || 0,
+                terrainSettings: savedTerrain ? {
+                  baseGroundHeight: savedTerrain.baseGroundHeight ?? 0,
+                  waterSurfaceHeight: savedTerrain.waterSurfaceHeight ?? -3,
+                  showWaterPlane: savedTerrain.showWaterPlane ?? true,
+                  gridResolution: savedTerrain.gridResolution ?? 'medium',
+                  heightmapSize: savedTerrain.heightmapSize ?? 64,
+                  heightmap: savedTerrain.heightmap ? new Float32Array(savedTerrain.heightmap) : null,
+                  materialMap: savedTerrain.materialMap ? new Uint8Array(savedTerrain.materialMap) : null,
+                } : createDefaultTerrainSettings(),
                 lastSaved: new Date(design.updatedAt),
                 hasUnsavedChanges: false,
               })
@@ -652,6 +974,10 @@ export const useInteriorStore = create<InteriorState>()(
             selectedId: null,
             lastSaved: null,
             hasUnsavedChanges: false,
+            terrainSettings: createDefaultTerrainSettings(),
+            terrainBrush: createDefaultTerrainBrush(),
+            terrainMaterialPaint: createDefaultTerrainMaterialPaint(),
+            terrainBrushPosition: null,
           }),
       }),
       {

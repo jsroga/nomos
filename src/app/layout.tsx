@@ -3,14 +3,16 @@ import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from '@/components/providers/AuthProvider'
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
-import { JetBrains_Mono, Inter } from 'next/font/google'
+import { JetBrains_Mono, Inter, Syne } from 'next/font/google'
 import { ErrorBoundaryWrapper } from '@/components/ErrorBoundaryWrapper'
+import { GlobalLiquidLoader } from '@/domains/marketing/components/GlobalLiquidLoader'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' })
+const syne = Syne({ subsets: ['latin'], variable: '--font-syne' })
 
 export const metadata = {
-  title: 'World Building Kit',
+  title: 'Cutafonina',
   description: 'AI-powered infinite canvas for world generation',
 }
 
@@ -27,13 +29,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" className="dark">
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} font-sans bg-background text-foreground flex h-screen w-screen overflow-hidden`}
+        className={`${inter.variable} ${jetbrainsMono.variable} ${syne.variable} font-sans bg-background text-foreground min-h-screen`}
       >
         <NextTopLoader color="#7c3aed" showSpinner={false} />
         <AuthProvider>
-          <ErrorBoundaryWrapper>
-            <div className="flex-1 h-full overflow-hidden">{children}</div>
-          </ErrorBoundaryWrapper>
+          <GlobalLiquidLoader />
+          {children}
           <Toaster
             position="bottom-right"
             toastOptions={{

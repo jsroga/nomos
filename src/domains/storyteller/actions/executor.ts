@@ -176,6 +176,7 @@ export class ActionExecutor {
       }
 
       // CHARACTER OPERATIONS
+      // CHARACTER OPERATIONS
       case 'CREATE_CHARACTER': {
         const newChar = {
           characterId: uuidv4(),
@@ -186,8 +187,20 @@ export class ActionExecutor {
           selfDelusion: '',
           actualMotivation: '',
           knowledgeState: [],
-          stressLevel: 30,
-          transformationProgress: 0,
+          // Initialize metrics (Default state)
+          metrics: {
+            valence: 0,
+            arousal: 50,
+            autonomy: 60,
+            competence: 60,
+            relatedness: 50,
+            cognitiveClarity: 70,
+            perceivedStakes: 40,
+            socialSafety: 60,
+            moralAlignment: 70,
+            transformation: 0,
+          },
+          metricsHistory: []
         }
         return {
           ...state,
@@ -209,11 +222,18 @@ export class ActionExecutor {
         const { characterId, delta } = action.payload
         return {
           ...state,
-          characters: state.characters.map(char =>
-            char.characterId === characterId
-              ? { ...char, stressLevel: Math.max(0, Math.min(100, char.stressLevel + delta)) }
-              : char
-          ),
+          characters: state.characters.map(char => {
+            if (char.characterId !== characterId) return char;
+            const currentStress = char.metrics?.arousal ?? 50; // Map stress to arousal
+            const newStress = Math.max(0, Math.min(100, currentStress + delta));
+            return {
+              ...char,
+              metrics: {
+                ...char.metrics,
+                arousal: newStress
+              }
+            }
+          }),
         }
       }
 
@@ -238,12 +258,19 @@ export class ActionExecutor {
         }
       }
 
-      case 'INSERT_SCRIPT_SECTION':
+      case 'INSERT_SCRIPT_SECTION': {
+        return {
+          ...state,
+          script: (state.script || '') + '\n\n' + action.payload.content,
+          scriptVersion: (state.scriptVersion || 0) + 1,
+        }
+      }
+
       case 'REVISE_SCRIPT_SECTION': {
         // For now, just append to script
         return {
           ...state,
-          script: (state.script || '') + '\n\n' + action.payload.content,
+          script: (state.script || '') + '\n\n' + action.payload.newContent,
           scriptVersion: (state.scriptVersion || 0) + 1,
         }
       }
@@ -256,6 +283,22 @@ export class ActionExecutor {
             ...state.seriesBible,
             ...action.payload,
           },
+        }
+      }
+
+      case 'UPDATE_EPISODE_PREMISE': {
+        return {
+          ...state,
+          episodePremise: action.payload.premise,
+          episodeId: action.payload.episodeId || state.episodeId,
+        }
+      }
+
+      case 'UPDATE_EPISODE_PREMISE': {
+        return {
+          ...state,
+          episodePremise: action.payload.premise,
+          episodeId: action.payload.episodeId || state.episodeId,
         }
       }
 
@@ -323,6 +366,12 @@ export class ActionExecutor {
       case 'UPDATE_SERIES_BIBLE':
       case 'ADD_WORLD_RULE':
         return { seriesBible: { ...state.seriesBible } }
+
+      case 'UPDATE_EPISODE_PREMISE':
+        return { episodePremise: state.episodePremise ? { ...state.episodePremise } : undefined }
+
+      case 'UPDATE_EPISODE_PREMISE':
+        return { episodePremise: state.episodePremise ? { ...state.episodePremise } : undefined }
 
       case 'ADD_SETUP':
       case 'RESOLVE_SETUP':

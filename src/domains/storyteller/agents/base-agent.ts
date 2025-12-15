@@ -5,6 +5,7 @@ import { WritersRoomState } from '../graph/state'
 import { AgentResponse, AgentAction, AgentQuestion, AGENT_RESPONSE_SCHEMA } from '../actions/types'
 import { assembleContext } from '../context/assembler'
 
+
 // ============================================
 // MODEL CONFIGURATION
 // ============================================
@@ -22,6 +23,7 @@ export const fastModel = new ChatOpenAI({
   temperature: 0.5,
   maxRetries: 2,
 })
+
 
 // ============================================
 // BASE AGENT - Common functionality for all agents
@@ -96,7 +98,7 @@ export abstract class BaseAgent {
     // Combine system content into single message (required for Claude)
     const combinedSystem = [context.systemPrompt, context.stateContext, structuredOutputInstruction].join('\n\n---\n\n')
     const conversationMessages = state.messages.slice(-6).filter(m => m._getType() !== 'system')
-    
+
     return [
       new SystemMessage(combinedSystem),
       ...conversationMessages,

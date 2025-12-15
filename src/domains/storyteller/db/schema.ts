@@ -81,6 +81,8 @@ export const episodes = pgTable('episodes', {
   planApproved: boolean('plan_approved').default(false), // Whether the plan has been approved
   currentPhase: text('current_phase').default('premise'), // premise, breaking, cardlock, writing, complete
   status: text('status').default('planning'), // planning, breaking, writing, completed
+  posterUrl: text('poster_url'), // Generated episode poster/cover URL
+  posterPrompt: text('poster_prompt'), // The prompt used to generate the poster
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
@@ -101,6 +103,8 @@ export const beats = pgTable('beats', {
   causalDependencies: jsonb('causal_dependencies').default([]), // Array of beat IDs
   setupsPayoffs: jsonb('setups_payoffs').default({}), // { setupId?: string; payoffFor?: string }
   status: text('status').default('proposed'), // proposed, challenged, approved, locked
+  imageUrl: text('image_url'), // Generated storyboard image URL
+  imagePrompt: text('image_prompt'), // The prompt used to generate the image
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })

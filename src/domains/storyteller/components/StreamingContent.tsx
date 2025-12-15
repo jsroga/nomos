@@ -46,6 +46,24 @@ const SECTION_NAMES: Record<string, string> = {
   full_bible: 'World Bible',
 }
 
+// Helper to format agent names
+const formatAgentName = (name: string): string => {
+  if (!name) return ''
+  if (name.includes('RunnableSequence')) return 'Supervisor'
+
+  // Format "delegate_to_x_y" -> "X Y"
+  if (name.startsWith('delegate_to_')) {
+    return name
+      .replace('delegate_to_', '')
+      .split('_')
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ')
+  }
+
+  // Default title case if not special
+  return name.charAt(0).toUpperCase() + name.slice(1)
+}
+
 export const StreamingContent: React.FC<StreamingContentProps> = ({
   agent,
   currentTokens,
@@ -71,7 +89,7 @@ export const StreamingContent: React.FC<StreamingContentProps> = ({
       <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 border-b border-primary/20">
         <Loader2 className={cn('w-4 h-4 text-primary', isStreaming && 'animate-spin')} />
         <span className="font-medium text-sm text-primary">
-          {agent || 'Premise Architect'} is generating...
+          {formatAgentName(agent) || 'Premise Architect'} is generating...
         </span>
       </div>
 
@@ -161,3 +179,6 @@ const StreamingText: React.FC<{ text: string; isStreaming: boolean }> = ({ text,
 }
 
 export default StreamingContent
+
+
+
