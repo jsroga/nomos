@@ -76,6 +76,17 @@ You can do more than just create beats. You can shape the narrative.
                     "motivation": "The ugly truth of WHY - not the noble reason, the real one",
                     "tone": "Specific atmosphere - 'suffocating suburban dread' not just 'tense'"
                 }
+                }
+            }
+        },
+        {
+            "type": "UPDATE_CHARACTER_METRICS",
+            "payload": {
+                "characterId": "CharacterName",
+                "changes": {
+                    "valence": -20, "arousal": 10 
+                },
+                "reason": "Why this beat affects them"
             }
         }
     ],
@@ -156,7 +167,7 @@ export const plotArchitectAgent = async (
 ): Promise<Partial<WritersRoomState>> => {
   // Create model inside function to use request-scoped config
   const model = getModel('plotArchitect')
-  
+
   console.log('Plot Architect proposing...')
 
   const context = assembleContext(state, 'plotArchitect')
@@ -164,7 +175,7 @@ export const plotArchitectAgent = async (
   // Combine system content into single message (required for Claude)
   const combinedSystem = [context.systemPrompt, context.stateContext, PLOT_ARCHITECT_STRUCTURED_PROMPT].join('\n\n---\n\n')
   const conversationMessages = getSafeMessageHistory(state.messages, 6).filter(m => m._getType() !== 'system')
-  
+
   const messages = [
     new SystemMessage(combinedSystem),
     ...conversationMessages,
@@ -242,6 +253,41 @@ export const plotArchitectAgent = async (
       };
     }
 
+    // Apply Character Metric Updates if present in actions
+    // This allows the beat to immediately affect character state
+    let updatedCharacters = [...state.characters];
+    for (const action of actions) {
+      if (action.type === 'UPDATE_CHARACTER_METRICS') {
+        const { characterId, changes, reason } = (action.payload as any)
+        updatedCharacters = updatedCharacters.map(char => {
+          if (char.characterId === characterId || char.name === characterId) {
+            const updatedMetrics = { ...char.metrics }
+            // Apply numeric changes
+            if (changes.valence !== undefined) updatedMetrics.valence = Math.min(100, Math.max(-100, (updatedMetrics.valence || 0) + changes.valence))
+            if (changes.arousal !== undefined) updatedMetrics.arousal = Math.min(100, Math.max(0, (updatedMetrics.arousal || 50) + changes.arousal))
+            if (changes.autonomy !== undefined) updatedMetrics.autonomy = Math.min(100, Math.max(0, (updatedMetrics.autonomy || 60) + changes.autonomy))
+            // ... (add other metrics as needed, keeping it concise for now)
+
+            return {
+              ...char,
+              metrics: updatedMetrics,
+              metricsHistory: [
+                ...(char.metricsHistory || []),
+                {
+                  beatId: proposedBeat?.id || 'unknown',
+                  beatSequence: state.beatBoard.length + 1,
+                  changes,
+                  reason: reason || 'Beat impact',
+                  timestamp: Date.now()
+                }
+              ]
+            }
+          }
+          return char
+        })
+      }
+    }
+
     const messageContent = parsed?.message || 'Beat proposal generated'
     const confidence = parsed?.confidence ?? 0.7
 
@@ -271,6 +317,7 @@ export const plotArchitectAgent = async (
     return {
       messages: [namedMessage],
       currentBeat: proposedBeat || undefined,
+      characters: updatedCharacters !== state.characters ? updatedCharacters : undefined
     }
   } catch (error) {
     console.error('Plot Architect error:', error)

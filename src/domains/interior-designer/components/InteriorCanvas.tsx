@@ -21,6 +21,10 @@ import { Exporter } from './Exporter'
 import { RetextureExporter } from './RetextureExporter'
 import { CameraController } from './CameraController'
 import { KeybindingManager } from './KeybindingManager'
+import { TerrainMesh } from './terrain/TerrainMesh'
+import { GlobalWaterPlane } from './terrain/GlobalWaterPlane'
+import { TerrainBrushPreview } from './terrain/TerrainBrushPreview'
+import { TerrainTool } from './tools/TerrainTool'
 
 export const InteriorCanvas: React.FC = () => {
   return (
@@ -79,6 +83,12 @@ export const InteriorCanvas: React.FC = () => {
       <ObjectTool />
       <ScatterTool />
       <TransformManager />
+
+      {/* Terrain & Water Mode Components */}
+      <TerrainMesh />
+      <GlobalWaterPlane />
+      <TerrainBrushPreview />
+      <TerrainTool />
 
       <Exporter />
       <RetextureExporter />

@@ -76,7 +76,7 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({ storyPlan, onU
     const [isEditing, setIsEditing] = useState(false)
     const [localPlan, setLocalPlan] = useState<Partial<StoryPlan>>({})
     const [primaryImageIndex, setPrimaryImageIndex] = useState<number | null>(null)
-    
+
     // Convert to Cast dialog state
     const [convertDialogOpen, setConvertDialogOpen] = useState(false)
     const [convertingCharacter, setConvertingCharacter] = useState<KeyCharacter | null>(null)
@@ -320,9 +320,12 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({ storyPlan, onU
         role: convertingCharacter.role,
     } : undefined
 
+    // Derived characters list (handling backwards compatibility safely)
+    const displayCharacters = [...(storyPlan.keyCharacters || [])]
+
     // Backwards compatibility for old "protagonist" field
-    if (storyPlan.protagonist && !characters.find(c => c.name === storyPlan.protagonist?.name)) {
-        characters.push({
+    if (storyPlan.protagonist && !displayCharacters.find(c => c.name === storyPlan.protagonist?.name)) {
+        displayCharacters.push({
             name: storyPlan.protagonist.name,
             role: 'Protagonist',
             archetype: 'Hero',
@@ -446,16 +449,55 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({ storyPlan, onU
                     {storyPlan.moodImages && storyPlan.moodImages.length > 0 ? (
                         <div className="grid grid-cols-3 gap-2 mb-4">
                             {storyPlan.moodImages.map((img, i) => {
+                                if (typeof img !== 'string') return null
                                 const imgProjectId = location.pathname.split('/')[1]
                                 const isPrimary = primaryImageIndex === i
+                                const isFile = img.match(/\.(png|jpg|jpeg|webp)$/i) || img.startsWith('http')
                                 return (
                                     <div key={i} className={`aspect-square rounded-lg overflow-hidden border relative group ${isPrimary ? 'border-yellow-400 border-2' : 'border-border'}`}>
-                                        <img
-                                            src={`/projects/${imgProjectId}/${img}`}
-                                            alt={`Mood ${i + 1}`}
-                                            className="w-full h-full object-cover transition-transform group-hover:scale-110"
-                                            onClick={() => window.open(`/projects/${imgProjectId}/${img}`, '_blank')}
-                                        />
+                                        {isFile ? (
+                                            <img
+                                                src={img.startsWith('http') ? img : `/projects/${imgProjectId}/${img}`}
+                                                alt={`Mood ${i + 1}`}
+                                                className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                                onClick={() => window.open(img.startsWith('http') ? img : `/projects/${imgProjectId}/${img}`, '_blank')}
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full bg-muted/30 p-2 flex flex-col items-center justify-center text-center">
+                                                <p className="text-[10px] text-muted-foreground line-clamp-3 mb-2">{img}</p>
+                                                {!isReadOnly && (
+                                                    <button
+                                                        onClick={async (e) => {
+                                                            e.stopPropagation()
+                                                            if (generatingIndices.has(i)) return
+                                                            const config = getProviderConfig()
+                                                            if (!config.apiKey) {
+                                                                toast.error(`Missing API key for ${config.provider}. Please configure in Settings.`)
+                                                                return
+                                                            }
+                                                            try {
+                                                                // Use the text as the prompt
+                                                                await moodboardGenerationService.generate(
+                                                                    projectId,
+                                                                    [img], // Pass single prompt
+                                                                    undefined,
+                                                                    config,
+                                                                    refetchMoodboardData,
+                                                                    i // promptIndex
+                                                                )
+                                                            } catch (err) {
+                                                                console.error(err)
+                                                                toast.error("Error starting generation")
+                                                            }
+                                                        }}
+                                                        disabled={generatingIndices.has(i)}
+                                                        className="p-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded text-xs transition-colors"
+                                                    >
+                                                        {generatingIndices.has(i) ? 'Generating...' : 'Generate Art'}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
                                         {/* Primary indicator */}
                                         {isPrimary && (
                                             <div className="absolute top-1 left-1 z-20">
@@ -737,9 +779,10 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({ storyPlan, onU
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {rules.map((rule, idx) => (
-                                <WorldRuleCard key={idx} rule={rule as any} />
-                            ))}
+                            {rules.map((rule, idx) => {
+                                if (!rule) return null
+                                return <WorldRuleCard key={idx} rule={rule as any} />
+                            })}
                         </div>
                     )}
                 </section>
@@ -842,9 +885,10 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({ storyPlan, onU
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {factions.map((faction, idx) => (
-                                <FactionCard key={idx} faction={faction as any} />
-                            ))}
+                            {factions.map((faction, idx) => {
+                                if (!faction) return null
+                                return <FactionCard key={idx} faction={faction as any} />
+                            })}
                         </div>
                     )}
                 </section>
@@ -1106,12 +1150,12 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({ storyPlan, onU
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {characters.length === 0 ? (
+                            {displayCharacters.length === 0 ? (
                                 <div className="col-span-full p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
                                     No key characters defined yet.
                                 </div>
                             ) : (
-                                characters.map((char, idx) => (
+                                displayCharacters.map((char, idx) => (
                                     <div key={idx} className="p-4 rounded-lg bg-muted/20 border border-border">
                                         <div className="font-bold mb-1 flex items-center justify-between">
                                             {char.name}

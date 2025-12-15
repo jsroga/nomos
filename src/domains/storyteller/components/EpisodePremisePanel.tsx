@@ -1,22 +1,33 @@
 import React, { useState } from 'react'
-import { Sparkles, Book, AlertCircle, Edit2, Save, X, Target, Zap, Skull, TrendingUp, Anchor } from 'lucide-react'
+import { Sparkles, Book, AlertCircle, Edit2, Save, X, Target, Zap, Skull, TrendingUp, Anchor, Image as ImageIcon } from 'lucide-react'
 import { EpisodePremise } from '../schemas/agent-schemas'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface EpisodePremisePanelProps {
     premise: EpisodePremise | null
     globalBible: any // Read-only context
+    posterUrl?: string | null
+    posterPrompt?: string | null
     onUpdate: (updates: EpisodePremise) => void
     onGenerate: () => void
+    onGeneratePoster?: () => void
     isGenerating?: boolean
+    isGeneratingPoster?: boolean
+    projectId: string
 }
 
 export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
     premise,
     globalBible,
+    posterUrl,
+    posterPrompt,
     onUpdate,
     onGenerate,
+    onGeneratePoster,
     isGenerating = false,
+    isGeneratingPoster = false,
+    projectId
 }) => {
     const [showBibleContext, setShowBibleContext] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
@@ -64,42 +75,102 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
         )
     }
 
+    const fullPosterUrl = posterUrl
+        ? (posterUrl.startsWith('http') ? posterUrl : `/projects/${projectId}/${posterUrl}`)
+        : null
+
     return (
         <div className="flex h-full overflow-hidden">
             {/* Main Premise Content */}
             <div className="flex-1 overflow-y-auto p-8 relative">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-8">
-                    <div>
-                        <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
-                            {localPremise.title || "Untitled Episode"}
-                        </h2>
-                        <div className="flex items-center gap-2 mt-2 text-muted-foreground">
-                            <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-bold uppercase tracking-wider">
-                                {localPremise.thematicFocus || "Theme Undefined"}
-                            </span>
-                            {localPremise.logline && (
-                                <span className="text-sm italic border-l-2 border-border pl-2">
-                                    "{localPremise.logline}"
-                                </span>
+                {/* Header covering Title & Poster */}
+                <div className="flex gap-8 mb-8">
+                    {/* Poster Section */}
+                    <div className="w-48 flex-shrink-0">
+                        <div className="aspect-[2/3] rounded-lg border border-border bg-muted/30 overflow-hidden relative group shadow-md hover:shadow-xl transition-all">
+                            {/* Loading Shimmer */}
+                            {isGeneratingPoster ? (
+                                <Skeleton className="w-full h-full" />
+                            ) : fullPosterUrl ? (
+                                <>
+                                    <img
+                                        src={fullPosterUrl}
+                                        alt="Episode Poster"
+                                        className="w-full h-full object-cover"
+                                    />
+                                    {/* Overlay Action */}
+                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
+                                        {onGeneratePoster && (
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                className="w-full gap-2 text-xs"
+                                                onClick={onGeneratePoster}
+                                            >
+                                                <Sparkles className="w-3 h-3" /> Regenerate
+                                            </Button>
+                                        )}
+                                        {posterPrompt && (
+                                            <div className="text-[10px] text-white/80 text-center line-clamp-3 px-1">
+                                                {posterPrompt}
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center">
+                                    <ImageIcon className="w-8 h-8 text-muted-foreground mb-2 opacity-50" />
+                                    <p className="text-xs text-muted-foreground mb-3">No Poster</p>
+                                    {onGeneratePoster && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="w-full gap-1 text-xs"
+                                            onClick={onGeneratePoster}
+                                        >
+                                            <Sparkles className="w-3 h-3" /> Generate
+                                        </Button>
+                                    )}
+                                </div>
                             )}
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => setShowBibleContext(!showBibleContext)} className="gap-2">
-                            <Book className="w-4 h-4" />
-                            {showBibleContext ? 'Hide Context' : 'View Bible'}
-                        </Button>
-                        {isEditing ? (
-                            <>
-                                <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Cancel</Button>
-                                <Button size="sm" onClick={handleSave} className="gap-2"><Save className="w-4 h-4" /> Save</Button>
-                            </>
-                        ) : (
-                            <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="gap-2">
-                                <Edit2 className="w-4 h-4" /> Edit
-                            </Button>
-                        )}
+
+                    {/* Title & Metadata */}
+                    <div className="flex-1 pt-2">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <h2 className="text-4xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+                                    {localPremise.title || "Untitled Episode"}
+                                </h2>
+                                <div className="flex items-center gap-2 mt-3 text-muted-foreground">
+                                    <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-bold uppercase tracking-wider">
+                                        {localPremise.thematicFocus || "Theme Undefined"}
+                                    </span>
+                                    {localPremise.logline && (
+                                        <span className="text-sm italic border-l-2 border-border pl-2">
+                                            "{localPremise.logline}"
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 self-start">
+                                <Button variant="ghost" size="sm" onClick={() => setShowBibleContext(!showBibleContext)} className="gap-2">
+                                    <Book className="w-4 h-4" />
+                                    {showBibleContext ? 'Hide Context' : 'View Bible'}
+                                </Button>
+                                {isEditing ? (
+                                    <>
+                                        <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Cancel</Button>
+                                        <Button size="sm" onClick={handleSave} className="gap-2"><Save className="w-4 h-4" /> Save</Button>
+                                    </>
+                                ) : (
+                                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="gap-2">
+                                        <Edit2 className="w-4 h-4" /> Edit
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -235,3 +306,4 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
         </div>
     )
 }
+

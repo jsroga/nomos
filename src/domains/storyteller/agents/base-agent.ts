@@ -5,6 +5,7 @@ import { WritersRoomState } from '../graph/state'
 import { AgentResponse, AgentAction, AgentQuestion, AGENT_RESPONSE_SCHEMA } from '../actions/types'
 import { assembleContext } from '../context/assembler'
 
+
 // ============================================
 // MODEL CONFIGURATION
 // ============================================
@@ -96,7 +97,7 @@ export abstract class BaseAgent {
     // Combine system content into single message (required for Claude)
     const combinedSystem = [context.systemPrompt, context.stateContext, structuredOutputInstruction].join('\n\n---\n\n')
     const conversationMessages = state.messages.slice(-6).filter(m => m._getType() !== 'system')
-    
+
     return [
       new SystemMessage(combinedSystem),
       ...conversationMessages,

@@ -203,11 +203,15 @@ function validatePhaseRelevance(
   }
 
   // Check if message matches another phase better
+  if (!phaseKeywords[phase]) {
+    return []
+  }
+
   const currentPhaseScore = phaseKeywords[phase].filter(k => lowerMessage.includes(k)).length
-  
+
   for (const [otherPhase, keywords] of Object.entries(phaseKeywords)) {
     if (otherPhase === phase) continue
-    
+
     const otherPhaseScore = keywords.filter(k => lowerMessage.includes(k)).length
     if (otherPhaseScore > currentPhaseScore && otherPhaseScore >= 2) {
       issues.push({
@@ -268,7 +272,7 @@ export async function validateUserInput(
 
   // 2. Check message length
   const tokenCount = estimateTokenCount(sanitized)
-  
+
   if (sanitized.length > MAX_MESSAGE_LENGTH) {
     blocked = {
       code: 'MESSAGE_TOO_LONG',
@@ -297,7 +301,7 @@ export async function validateUserInput(
   // 3. Check for injection attempts
   const injectionIssues = detectInjection(sanitized)
   const severeInjection = injectionIssues.find(i => i.severity === 'error')
-  
+
   if (severeInjection) {
     blocked = severeInjection
     return {
@@ -308,12 +312,12 @@ export async function validateUserInput(
       tokenCount,
     }
   }
-  
+
   warnings.push(...injectionIssues)
 
   // 4. Check content moderation
   const moderationResult = moderateContent(sanitized)
-  
+
   if (!moderationResult.isSafe) {
     blocked = {
       code: 'CONTENT_BLOCKED',
@@ -364,7 +368,7 @@ function sanitizeMessage(message: string): string {
   sanitized = sanitized.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
   sanitized = sanitized.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
   sanitized = sanitized.replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, '')
-  
+
   // Remove null bytes and other control characters (except newlines/tabs)
   sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
 
@@ -385,8 +389,8 @@ function sanitizeMessage(message: string): string {
 export function isInputSafe(message: string): boolean {
   // Quick checks only
   if (message.length > MAX_MESSAGE_LENGTH) return false
-  
-  const hasInjection = INJECTION_PATTERNS.some(({ pattern, severity }) => 
+
+  const hasInjection = INJECTION_PATTERNS.some(({ pattern, severity }) =>
     severity === 'error' && pattern.test(message)
   )
   if (hasInjection) return false
@@ -416,7 +420,7 @@ export async function validateInputForAgent(
   // Get the last user message from state
   const messages = state.messages || []
   const lastHumanMessage = messages.slice().reverse().find(m => m._getType() === 'human')
-  
+
   if (!lastHumanMessage) {
     return {
       isValid: true,
@@ -431,5 +435,8 @@ export async function validateInputForAgent(
 
   return validateUserInput(content, state)
 }
+
+
+
 
 

@@ -118,14 +118,22 @@ export type AgentAction =
   | {
     type: 'UPDATE_EPISODE_PREMISE'
     payload: {
+      episodeId?: string
       premise: {
+        // Core identification
         title?: string
         logline?: string
-        protagonistHook?: string
+        // Ozymandias Framework fields
+        theHook?: string
+        theTurn?: string
+        theAftermath?: string
+        // Character-focused fields
+        protagonistHook?: string | null
         fatalFlaw?: string
         stakes?: string
         transformation?: string
         inevitableConsequence?: string
+        // Meta
         thematicFocus?: string
         charactersInvolved?: string[]
       }

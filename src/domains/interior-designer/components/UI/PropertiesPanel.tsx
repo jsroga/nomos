@@ -3,6 +3,7 @@
 import React from 'react'
 import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
 import { SurfaceProperties } from './SurfaceProperties'
+import { TerrainEditorPanel } from './TerrainEditorPanel'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
 import { Move, RotateCw, Maximize, Layers, Check, X, Sparkles, Loader2, Wand2, Box } from 'lucide-react'
@@ -51,6 +52,11 @@ export const PropertiesPanel: React.FC = () => {
   const setTransformMode = useInteriorStore(state => state.setTransformMode)
   const multiSelectedIds = useInteriorStore(state => state.multiSelectedIds)
   const combineWalls = useInteriorStore(state => state.combineWalls)
+
+  // Show Terrain Editor Panel when in TERRAIN mode
+  if (mode === 'TERRAIN') {
+    return <TerrainEditorPanel />
+  }
 
   // Check Surface Selection First
   const selectedSurface = surfaces.find(s => s.id === selectedId)

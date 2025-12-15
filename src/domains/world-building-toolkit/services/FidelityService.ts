@@ -51,7 +51,12 @@ export class FidelityService {
 
     try {
       // 1. Fetch the tile image and convert to base64
-      const imageUrl = `/projects/${tile.project_id}/${tile.image_filename}`
+      let imageUrl = tile.image_filename
+      if (!imageUrl.startsWith('http')) {
+        imageUrl = `/projects/${tile.project_id}/${tile.image_filename}`
+      }
+
+      console.log('Fetching image for fidelity enhancement:', imageUrl)
       const response = await fetch(imageUrl)
       if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`)
       const blob = await response.blob()
@@ -183,11 +188,11 @@ export class FidelityService {
 
         // Images are now stored in Supabase Storage - use URL directly
         const enhancedUrl = output.enhancedUrl
-        
+
         // For original, prefer local existing tile (if any)
         const tiles = useWorldStore.getState().tiles
         const existingTile = tiles[`${runState.tileX},${runState.tileY}`]
-        const originalUrl = existingTile?.image_filename 
+        const originalUrl = existingTile?.image_filename
           ? `/projects/${runState.projectId}/${existingTile.image_filename}`
           : output.originalUrl || ''
 

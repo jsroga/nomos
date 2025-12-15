@@ -28,28 +28,28 @@ if (!langsmithConfig.enabled) {
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { 
-      message, 
-      projectId, 
-      threadId, 
-      seriesBible, 
-      characters, 
-      episodeId, 
-      currentPhase, 
+    const {
+      message,
+      projectId,
+      threadId,
+      seriesBible,
+      characters,
+      episodeId,
+      currentPhase,
       modelConfig,
       streamMode: requestedStreamMode,
       progressiveGeneration, // Enable progressive section-by-section bible generation
     } = body
-    
+
     // Determine streaming mode - 'events' enables token-level streaming
     const streamMode: StreamMode = requestedStreamMode === 'events' ? 'events' : 'nodes'
-    
+
     // Model config from frontend (Settings UI)
     const effectiveModelConfig: ModelConfig = {
       provider: modelConfig?.provider || 'openai',
       anthropicApiKey: modelConfig?.anthropicApiKey,
     }
-    
+
     if (effectiveModelConfig.provider === 'anthropic') {
       console.log('Using Anthropic (Claude) for this request')
     }
@@ -109,7 +109,7 @@ export async function POST(req: Request) {
         // Create stream callback for token-level streaming (passed to agents via state)
         const streamCallback: StreamCallback = (progress: StreamProgress) => {
           if (isClosed) return
-          
+
           // Emit different event types based on progress type
           switch (progress.type) {
             case 'token':
@@ -137,8 +137,8 @@ export async function POST(req: Request) {
                   type: 'section_complete',
                   section: progress.section,
                   agent: progress.agent,
-                  preview: typeof progress.content === 'string' 
-                    ? progress.content.substring(0, 200) 
+                  preview: typeof progress.content === 'string'
+                    ? progress.content.substring(0, 200)
                     : undefined,
                 })}\n\n`
               )
@@ -158,8 +158,8 @@ export async function POST(req: Request) {
         try {
           // Send initial event
           safeEnqueue(
-            `data: ${JSON.stringify({ 
-              type: 'start', 
+            `data: ${JSON.stringify({
+              type: 'start',
               message: 'Writers room is assembling...',
               streamMode,
             })}\n\n`
@@ -408,7 +408,7 @@ async function streamWithEvents(
   let actionCount = 0
   const maxMessages = 30
   const seenNodes = new Set<string>()
-  
+
   // Accumulate content per node for complete messages
   const nodeContent: Record<string, string> = {}
 
@@ -468,7 +468,25 @@ async function streamWithEvents(
           const nodeName = event.name
           const output = eventData?.output
 
-          if (output && typeof output === 'object') {
+          // Strict filtering: Only stream events from actual Graph Nodes to prevent duplication
+          // from internal runnables like RunnableGuards or RunnableLambdas
+          const VALID_NODES = new Set([
+            'supervisor',
+            'planner',
+            'plotArchitect',
+            'characterPsychology',
+            'consequenceTracker',
+            'devilsAdvocate',
+            'writer',
+            'scriptEditor',
+            'premiseArchitect',
+            'episodePremiseArchitect',
+            'magicAgent',
+            'utility_tools',
+            'writer_tools'
+          ])
+
+          if (nodeName && VALID_NODES.has(nodeName) && output && typeof output === 'object') {
             // Check for messages in output
             if ('messages' in output) {
               const messages = output.messages || []

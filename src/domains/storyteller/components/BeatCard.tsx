@@ -11,6 +11,8 @@ interface Beat {
   content?: string
   beatType?: string
   status?: string
+  imageUrl?: string
+  imagePrompt?: string
 }
 
 interface BeatCardProps {
@@ -130,6 +132,22 @@ export const BeatCard: React.FC<BeatCardProps> = ({
         <p className="text-sm leading-relaxed flex-1 overflow-y-auto scrollbar-hide text-foreground/90">
           {beat.logline}
         </p>
+      )}
+
+      {/* Storyboard Image */}
+      {beat.imageUrl && !isEditing && (
+        <div className="mt-2 w-full aspect-video rounded overflow-hidden border border-border/50 relative group/image">
+          <img
+            src={`/projects/${window.location.pathname.split('/')[1]}/${beat.imageUrl}`}
+            alt={beat.imagePrompt || "Beat storyboard"}
+            className="w-full h-full object-cover"
+          />
+          {beat.imagePrompt && (
+            <div className="absolute inset-0 bg-black/80 p-2 text-[10px] text-white opacity-0 group-hover/image:opacity-100 transition-opacity overflow-y-auto">
+              {beat.imagePrompt}
+            </div>
+          )}
+        </div>
       )}
 
       <div className="mt-3 flex justify-between items-end pt-2 border-t border-border/30">

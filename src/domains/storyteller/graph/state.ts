@@ -1,10 +1,12 @@
 import { BaseMessage } from '@langchain/core/messages'
+import { EpisodePremise } from '../schemas/agent-schemas'
 
 export interface BeatCard {
   id: string
   episodeId: string
   sequence: number
   logline: string
+  content?: string
   beatType: 'setup' | 'complication' | 'revelation' | 'decision' | 'consequence'
   charactersInvolved: string[]
   emotionalShifts: Record<string, { from: string; to: string }>
@@ -25,6 +27,10 @@ export interface BeatCard {
     motivation?: string // Why
     tone?: string // Atmosphere
   }
+
+  // Storyboard elements
+  imageUrl?: string
+  imagePrompt?: string
 }
 
 // Character metrics that can change per beat
@@ -119,6 +125,7 @@ export interface WritersRoomState {
 
   // Content
   seriesBible: Record<string, any>
+  episodePremise?: EpisodePremise
   characters: CharacterState[]
   beatBoard: BeatCard[]
   currentBeat?: BeatCard // Beat being deliberated
@@ -150,6 +157,21 @@ export interface WritersRoomState {
   lastScriptVerdict?: 'PASS' | 'REVISE' // Script editor verdict
   scriptRevisionCount: number // How many times script was revised
   scriptFeedback?: string[] // Feedback from script editor for revision
+
+  // Deep Agent State (Meta-Cognition)
+  plan: PlanItem[] // Structured list of tasks
+  deepMemory: Record<string, any> // Persistent cross-agent context
+  plannerThinking: string // Streamed thought process of the planner
+}
+
+export interface PlanItem {
+  id: string
+  description: string
+  assignedAgent: string // Using string to avoid circular dependency with AgentRole
+  status: 'pending' | 'in_progress' | 'complete' | 'failed'
+  dependencies: string[]
+  parallelGroupId?: string
+  result?: string
 }
 
 // Default state factory
@@ -160,6 +182,7 @@ export function createInitialState(overrides?: Partial<WritersRoomState>): Write
     phaseIterations: 0,
     maxIterationsPerPhase: 15,
     seriesBible: {},
+    episodePremise: undefined,
     characters: [],
     beatBoard: [],
     unresolvedSetups: [],
@@ -174,6 +197,10 @@ export function createInitialState(overrides?: Partial<WritersRoomState>): Write
     // Script evaluation defaults
     scriptRevisionCount: 0,
     scriptFeedback: [],
+    // Deep Agent defaults
+    plan: [],
+    deepMemory: {},
+    plannerThinking: '',
     ...overrides,
   }
 }

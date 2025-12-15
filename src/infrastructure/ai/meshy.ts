@@ -92,7 +92,7 @@ export class MeshyClient {
       model_url: modelUrlOrBase64,
       text_style_prompt: prompt,
       ai_model: aiModel,
-      enable_original_uv: true,
+      enable_original_uv: false,
       enable_pbr: true
     }
 

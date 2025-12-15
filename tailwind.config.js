@@ -12,6 +12,7 @@ module.exports = {
             fontFamily: {
                 sans: ["var(--font-sans)", "sans-serif"],
                 mono: ["var(--font-mono)", "monospace"],
+                syne: ["var(--font-syne)", "sans-serif"],
             },
             colors: {
                 border: "hsl(var(--border))",

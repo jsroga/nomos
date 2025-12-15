@@ -11,6 +11,8 @@ import { scriptEditorAgent } from '../agents/script-editor'
 import { WritersRoomState } from '../graph/state'
 import { AIMessage, HumanMessage } from '@langchain/core/messages'
 import { createRagTool } from './rag-tools'
+import { plannerAgent } from '../agents/planner'
+import { episodePremiseArchitectAgent } from '../agents/episode-premise-architect'
 
 // Define schemas for tool inputs
 const AgentInputSchema = z.object({
@@ -33,17 +35,17 @@ function createAgentTool(
       // In the Supervisor pattern, the tool execution happens in a separate node (ToolNode),
       // which can handle the state update merging.
       // However, `func` here is for the Tool instance itself.
-      
+
       // For the "Supervisor as Router" pattern, the Supervisor LLM emits a tool call.
       // The graph then routes to a node that *executes* that tool.
       // If we use LangGraph's prebuilt `ToolNode`, it expects the tool to return a string/Message.
-      
+
       // STRATEGY:
       // We will NOT put the full agent logic inside `func`.
       // Instead, this tool definition serves primarily as a SCHEMA for the LLM to bind to.
       // The actual execution will happen in the graph nodes routed by the tool name.
       // But to satisfy the interface, we return the instruction, which the node can use.
-      
+
       return `Delegating to ${name} with instruction: ${instruction}`;
     },
   })
@@ -86,6 +88,12 @@ export const premiseArchitectTool = createAgentTool(
   premiseArchitectAgent
 )
 
+export const episodePremiseArchitectTool = createAgentTool(
+  'delegate_to_episode_premise_architect',
+  'Use this agent to generate loglines, premises, and hooks for A SINGLE specific episode. Use this for requests like "generate premise for this episode" or "create a random episode".',
+  episodePremiseArchitectAgent
+)
+
 export const magicAgentTool = createAgentTool(
   'delegate_to_magic_agent',
   'Use this agent to inject random absurd suggestions, unexpected events, and chaotic spice into the story. Call them when things feel too predictable or need comedic relief.',
@@ -96,6 +104,12 @@ export const scriptEditorTool = createAgentTool(
   'delegate_to_script_editor',
   'Use this agent to review and critique script quality. They evaluate dialogue, visual hooks, pacing, format, and character voice. Returns PASS (approved) or REVISE (needs work) with detailed feedback.',
   scriptEditorAgent
+)
+
+export const plannerTool = createAgentTool(
+  'delegate_to_planner',
+  'The Master Architect. Call this tool to create, update, or decompose a complex plan. REQUIRED for any multi-step request (e.g. "Create a world and characters").',
+  plannerAgent
 )
 
 // RAG Tool placeholder - needs state injection, so we might need a factory or bind it later
@@ -111,8 +125,10 @@ export const getSupervisorTools = (state: WritersRoomState) => [
   devilsAdvocateTool,
   writerAgentTool,
   premiseArchitectTool,
+  episodePremiseArchitectTool,
   magicAgentTool,
   scriptEditorTool,
+  plannerTool,
   createRagTool(state)
 ]
 
@@ -124,7 +140,9 @@ export const supervisorTools = [
   devilsAdvocateTool,
   writerAgentTool,
   premiseArchitectTool,
+  episodePremiseArchitectTool,
   magicAgentTool,
   scriptEditorTool,
+  plannerTool,
   // RAG tool not included here as it needs state injection at runtime
 ]

@@ -45,9 +45,14 @@ Respond with a JSON object containing the episode premise:
     "episodePremise": {
         "title": "Episode Title",
         "logline": "A single sentence summary.",
-        "theHook": "Visual description of the opening.",
-        "theTurn": "The turning point description.",
-        "theAftermath": "The consequence/change.",
+        "theHook": "Opening image/situation that grabs attention and poses a question.",
+        "theTurn": "Midpoint event where the flaw causes a critical error or revelation.",
+        "theAftermath": "How the world or character is irreversibly changed.",
+        "protagonistHook": "The protagonist-specific opening situation (or null).",
+        "fatalFlaw": "The internal character flaw driving the conflict.",
+        "stakes": "What is at risk (Physical/Professional/Psychological).",
+        "transformation": "How the character/world changes by the end.",
+        "inevitableConsequence": "The irreversible outcome caused by the flaw.",
         "thematicFocus": "The central theme (e.g. Hubris)",
         "charactersInvolved": ["Char A", "Char B"]
     },
