@@ -12,16 +12,13 @@ export async function middleware(req: NextRequest) {
 
   const path = req.nextUrl.pathname
 
-  // Redirect logged-in users away from login page to /app ONLY if they are authorized
+  // Redirect logged-in users away from login page to /app
   if (path === '/login' && session) {
-    const adminEmail = process.env.ADMIN_EMAIL || 'jaceksroga@gmail.com'
-    if (session.user.email === adminEmail) {
-      return NextResponse.redirect(new URL('/app', req.url))
-    }
+    return NextResponse.redirect(new URL('/app', req.url))
   }
 
   // Allow public routes
-  if (path === '/' || path === '/login' || path.startsWith('/auth/') || path.startsWith('/api/') || path.startsWith('/_next/') || path.startsWith('/assets/')) {
+  if (path === '/' || path === '/login' || path.startsWith('/auth/') || path.startsWith('/api/') || path.startsWith('/_next/') || path.startsWith('/assets/') || path.startsWith('/scripts/')) {
     return res
   }
 
@@ -29,16 +26,6 @@ export async function middleware(req: NextRequest) {
   if (path.startsWith('/app')) {
     if (!session) {
       return NextResponse.redirect(new URL('/login', req.url))
-    }
-
-    const adminEmail = process.env.ADMIN_EMAIL || 'jaceksroga@gmail.com'
-    if (session.user.email !== adminEmail) {
-      // If not admin, redirect to root with error or just root
-      // Or a specific "Access Denied" page?
-      // For now, redirect to / with query param
-      const url = new URL('/', req.url)
-      // url.searchParams.set('error', 'access_denied')
-      return NextResponse.redirect(url)
     }
   }
 
@@ -61,6 +48,6 @@ export const config = {
      * - auth
      * - login (handled inside middleware but excluded from broad matcher to avoid loops if needed, but here we include it mentally or use negative lookahead)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|auth|assets|.*\\.png$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|auth|assets|scripts|.*\\.png$).*)',
   ],
 }

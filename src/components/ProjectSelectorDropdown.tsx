@@ -43,15 +43,27 @@ export function ProjectSelectorDropdown() {
   // Extract current module from pathname (e.g., /project-id/storyteller -> storyteller)
   // Pathname: /:projectId/:module...
   const getNextUrl = (nextProjectId: string) => {
-    if (!pathname) return `/${nextProjectId}/storyteller?bible=open`
+    if (!pathname) return `/app/${nextProjectId}/storyteller?bible=open`
 
     const parts = pathname.split('/').filter(Boolean)
-    // parts[0] is projectId, parts[1] is module
-    const module = parts[1] || 'storyteller'
+    // parts[0] is app, parts[1] is projectId, parts[2] is module
+    // But we need to be careful if we are already in /app/
 
-    // If we are deeper in the route, we might want to preserve it or just reset to module root
-    // For now, let's keep it simple and preserve the module
-    return `/${nextProjectId}/${module}`
+    // Assuming the structure is /app/[projectId]/[module]
+    // If we are simply in /app, parts might be ['app']
+
+    // Let's just hardcode the structure we want: /app/[projectId]/[module]
+
+    let module = 'storyteller'
+
+    // Check if we can extract a module from current path
+    // If path is /app/123/storyteller -> parts=['app', '123', 'storyteller']
+    // If path is /app/123/world -> parts=['app', '123', 'world']
+    if (parts.length >= 3 && parts[0] === 'app') {
+      module = parts[2]
+    }
+
+    return `/app/${nextProjectId}/${module}`
   }
 
   useEffect(() => {
@@ -85,7 +97,7 @@ export function ProjectSelectorDropdown() {
       setNewProjectPrompt('')
       await loadProjects()
       // Navigate to the new project with bible open
-      router.push(`/${id}/storyteller?bible=open`)
+      router.push(`/app/${id}/storyteller?bible=open`)
     }
   }
 

@@ -41,7 +41,7 @@ export default function ProjectSelectionPage() {
   }, [])
 
   const handleSelectProject = (projectId: string) => {
-    router.push(`/${projectId}/storyteller?bible=open`)
+    router.push(`/app/${projectId}/storyteller?bible=open`)
   }
 
   const handleDeleteProject = async (e: React.MouseEvent, projectId: string) => {
@@ -65,7 +65,7 @@ export default function ProjectSelectionPage() {
     setIsCreating(true)
     const id = await createProject(newProjectName, '')
     if (id) {
-      router.push(`/${id}/storyteller?bible=open`)
+      router.push(`/app/${id}/storyteller?bible=open`)
     } else {
       setIsCreating(false)
     }

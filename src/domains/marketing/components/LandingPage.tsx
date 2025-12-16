@@ -24,11 +24,11 @@ export function LandingPage() {
     const [contrast, setContrast] = useState(1.32)
     const [hue, setHue] = useState(0)
 
-    const [refraction, setRefraction] = useState(0.2)
-    const [bevelWidth, setBevelWidth] = useState(0.1)
-    const [bevelDepth, setBevelDepth] = useState(0.0) // Flat
-    const [intensity, setIntensity] = useState(5.0) // Strong interaction
-    const [frost, setFrost] = useState(1.0) // Strong blur
+    const [refraction, setRefraction] = useState(0.064)
+    const [bevelWidth, setBevelWidth] = useState(0.042)
+    const [bevelDepth, setBevelDepth] = useState(2.00)
+    const [intensity, setIntensity] = useState(0.00)
+    const [frost, setFrost] = useState(1.00)
 
     // State for the background element ref (for liquid snapshot)
     const [bgElement, setBgElement] = useState<HTMLDivElement | null>(null)
@@ -78,11 +78,11 @@ export function LandingPage() {
         setContrast(1.32)
         setHue(0)
         // Reset Liquid Options to User Defaults
-        setRefraction(0.2)
-        setBevelWidth(0.1)
-        setBevelDepth(0.0)
-        setIntensity(5.0)
-        setFrost(1.0)
+        setRefraction(0.064)
+        setBevelWidth(0.042)
+        setBevelDepth(2.00)
+        setIntensity(0.00)
+        setFrost(1.00)
     }
 
     return (
@@ -224,7 +224,7 @@ function FeatureCard({ icon, title, description, theme = 'blue' }: { icon: React
     }
 
     return (
-        <div className="p-8 h-full flex flex-col justify-center group relative overflow-hidden transition-all hover:scale-[1.02] bg-[#000000a6] rounded-2xl">
+        <div className="p-8 h-full flex flex-col justify-center group relative overflow-hidden transition-all hover:scale-[1.02] bg-[#0000005c] rounded-2xl">
             <div className="relative z-10">
                 <div className={`mb-6 w-16 h-16 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500 bg-white/5 border ${themeStyles[theme]} shadow-lg backdrop-blur-sm`}>
                     {icon}

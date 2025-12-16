@@ -120,6 +120,7 @@ export default function StorytellerPage() {
   const [isPlanApproved, setIsPlanApproved] = useState(false)
 
   const [isGeneratingPoster, setIsGeneratingPoster] = useState(false)
+  const [primaryMoodboardUrl, setPrimaryMoodboardUrl] = useState<string | null>(null)
 
   // ... (existing code)
 
@@ -1576,7 +1577,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
               <div className="flex-1 relative overflow-hidden">
                 {activeTab === 'plan' && (
                   <StoryPlanBoard
-                    storyPlan={storyPlan ? { ...storyPlan, isGeneratingPoster } : null}
+                    storyPlan={storyPlan ? { ...storyPlan, isGeneratingPoster } as any : null}
                     globalBible={currentProject?.series_bible}
                     onApprove={handleApprovePlan}
                     onUpdateSequence={handleUpdateSequence}
