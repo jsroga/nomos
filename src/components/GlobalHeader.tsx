@@ -15,7 +15,7 @@ export function GlobalHeader() {
 
   return (
     <>
-      <div className="h-14 bg-card border-b border-border flex items-center px-4 gap-4 shrink-0">
+      <div className="h-14 bg-card border-b border-border flex items-center px-4 gap-4 shrink-0 relative z-20">
         <div className="text-lg font-bold flex items-center gap-2">
           <span className="hidden sm:inline">World Building Kit</span>
         </div>

@@ -141,7 +141,7 @@ export default function ProjectSelectionPage() {
         <div className="w-full max-w-6xl flex flex-col md:flex-row gap-6 md:h-[80vh]">
 
           {/* LEFT: Project List (Glass Panel) */}
-          <div className="w-full md:w-1/3 flex flex-col bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+          <div className="w-full md:w-1/3 flex flex-col bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
             <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
               <h1 className="text-xl font-bold tracking-tight text-white/90">
                 Projects

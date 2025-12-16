@@ -18,13 +18,13 @@ export function LiquidBackgroundProvider({ children }: LiquidBackgroundProviderP
     // State for Liquid Context (to be consumed by Liquid components)
     const [bgElement, setBgElement] = useState<HTMLDivElement | null>(null)
 
-    // Default Liquid Options for the app
+    // Default Liquid Options for the app - matching Landing Page "sexy" defaults
     const liquidOptions = {
-        refraction: 0.04,
-        bevelWidth: 0.02,
-        bevelDepth: 1.0,
-        intensity: 0.0,
-        frost: 0.5,
+        refraction: 0.064,
+        bevelWidth: 0.042,
+        bevelDepth: 2.00,
+        intensity: 0.00,
+        frost: 1.00,
         specular: true,
         speed: speed
     }

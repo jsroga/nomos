@@ -13,6 +13,7 @@ interface TurbulentBackgroundProps {
   contrast?: number
   contrast?: number
   hue?: number
+  showCanvas?: boolean
   onRef?: (el: HTMLDivElement | null) => void
 }
 
@@ -260,6 +261,7 @@ export function TurbulentBackground({
   brightness = 2.39,
   contrast = 1.32,
   hue = 0,
+  showCanvas = true,
   onRef
 }: TurbulentBackgroundProps & { speed?: number, morphSpeed?: number }) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -398,9 +400,17 @@ export function TurbulentBackground({
   }, [zoom, rotation, colorShift, saturation, brightness, contrast, hue, speed, morphSpeed])
 
   return (
-    <div className="relative w-full min-h-screen overflow-hidden">
-      <div id="turbulent-bg-container" ref={containerRef} className="fixed inset-0" style={{ zIndex: -1 }} />
-      <div className="relative z-10">{children}</div>
+    <div className="relative w-full min-h-screen">
+      <div
+        id="turbulent-bg-container"
+        ref={containerRef}
+        className={`fixed inset-0 transition-opacity duration-1000 ${showCanvas ? 'opacity-100' : 'opacity-0'}`}
+        style={{ zIndex: -1 }}
+      />
+      <div className="relative z-10 pointer-events-none">
+        {/* Enable pointer events for children */}
+        <div className="pointer-events-auto">{children}</div>
+      </div>
     </div>
   )
 }
