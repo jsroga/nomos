@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { BeatCard } from './BeatCard'
+import { useParams } from 'next/navigation'
 import { Plus, Image as ImageIcon, Loader2 } from 'lucide-react'
 import { useConfirmDialog } from '@/components/ui/confirm-dialog'
 import { beatImageService } from '../services/beat-image-service'
@@ -15,7 +16,7 @@ export const CorkBoard: React.FC<CorkBoardProps> = ({ beats: initialBeats, episo
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
-  const projectId = typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : ''
+  const { projectId } = useParams() as { projectId: string }
 
   // CRITICAL: Sync internal state when parent prop changes
   useEffect(() => {
@@ -25,7 +26,7 @@ export const CorkBoard: React.FC<CorkBoardProps> = ({ beats: initialBeats, episo
 
   useEffect(() => {
     if (episodeId) {
-      fetch(`/api/storyteller/episodes/${episodeId}/beats`)
+      fetch(`/ api / storyteller / episodes / ${episodeId}/beats`)
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) setBeats(data)

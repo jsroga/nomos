@@ -44,9 +44,9 @@ export const GlobalSidebar = () => {
         </div>
       </div>
 
-      <Link href={`/${projectId}/storyteller`}>
+      <Link href={`/app/${projectId}/storyteller`}>
         <Button
-          variant={isActive(`/${projectId}/storyteller`) ? 'default' : 'ghost'}
+          variant={isActive(`/app/${projectId}/storyteller`) ? 'default' : 'ghost'}
           size="icon"
           title="Storyteller"
           className="w-10 h-10"
@@ -55,9 +55,9 @@ export const GlobalSidebar = () => {
         </Button>
       </Link>
 
-      <Link href={`/${projectId}/world-gen`}>
+      <Link href={`/app/${projectId}/world-gen`}>
         <Button
-          variant={isActive(`/${projectId}/world-gen`) ? 'default' : 'ghost'}
+          variant={isActive(`/app/${projectId}/world-gen`) ? 'default' : 'ghost'}
           size="icon"
           title="World Building"
           className="w-10 h-10"
@@ -66,9 +66,9 @@ export const GlobalSidebar = () => {
         </Button>
       </Link>
 
-      <Link href={`/${projectId}/asset-exporter`}>
+      <Link href={`/app/${projectId}/asset-exporter`}>
         <Button
-          variant={isActive(`/${projectId}/asset-exporter`) ? 'default' : 'ghost'}
+          variant={isActive(`/app/${projectId}/asset-exporter`) ? 'default' : 'ghost'}
           size="icon"
           title="3D Asset Exporter"
           className="w-10 h-10"
@@ -77,9 +77,9 @@ export const GlobalSidebar = () => {
         </Button>
       </Link>
 
-      <Link href={`/${projectId}/interior-design`}>
+      <Link href={`/app/${projectId}/interior-design`}>
         <Button
-          variant={isActive(`/${projectId}/interior-design`) ? 'default' : 'ghost'}
+          variant={isActive(`/app/${projectId}/interior-design`) ? 'default' : 'ghost'}
           size="icon"
           title="Interior Designer"
           className="w-10 h-10"

@@ -48,6 +48,6 @@ export const config = {
      * - auth
      * - login (handled inside middleware but excluded from broad matcher to avoid loops if needed, but here we include it mentally or use negative lookahead)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|auth|assets|scripts|.*\\.png$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|auth|assets|.*\\.png$).*)',
   ],
 }

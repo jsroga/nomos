@@ -22,6 +22,8 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Liquid } from '@/domains/marketing/components/Liquid'
+import { useLiquid } from '@/domains/marketing/context/LiquidContext'
 
 export function ProjectSelectorDropdown() {
   const router = useRouter()
@@ -39,6 +41,16 @@ export function ProjectSelectorDropdown() {
 
   const params = useParams()
   const currentProjectId = params?.projectId as string
+
+  // Safe access to liquid context in case it's not wrapped (though we wrapped it in layout)
+  let liquidOptions = {}
+  try {
+    const context = useLiquid()
+    liquidOptions = context.liquidOptions
+  } catch (e) {
+    // Fallback if not in LiquidProvider
+    console.warn('ProjectSelectorDropdown used outside LiquidProvider')
+  }
 
   // Extract current module from pathname (e.g., /project-id/storyteller -> storyteller)
   // Pathname: /:projectId/:module...
@@ -113,35 +125,39 @@ export function ProjectSelectorDropdown() {
             <ChevronDown size={16} className="ml-auto" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-[250px]">
-          {projects.length === 0 ? (
-            <div className="px-2 py-4 text-sm text-muted-foreground text-center">
-              No projects yet
-            </div>
-          ) : (
-            projects.map(project => (
+        <DropdownMenuContent align="start" className="w-[250px] bg-transparent border-none p-0 shadow-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2">
+          <Liquid {...liquidOptions} className="rounded-md border border-white/10 bg-black/40 backdrop-blur-md">
+            <div className="p-1">
+              {projects.length === 0 ? (
+                <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+                  No projects yet
+                </div>
+              ) : (
+                projects.map(project => (
+                  <DropdownMenuItem
+                    key={project.id}
+                    onClick={() => handleProjectChange(project.id)}
+                    className="cursor-pointer hover:bg-white/10 focus:bg-white/10 text-white/90 focus:text-white"
+                  >
+                    {currentProject?.id === project.id ? (
+                      <Check size={14} className="mr-2 text-primary" />
+                    ) : (
+                      <FolderOpen size={14} className="mr-2" />
+                    )}
+                    {project.name}
+                  </DropdownMenuItem>
+                ))
+              )}
+              <DropdownMenuSeparator className="bg-white/10" />
               <DropdownMenuItem
-                key={project.id}
-                onClick={() => handleProjectChange(project.id)}
-                className="cursor-pointer"
+                onClick={() => setIsCreating(true)}
+                className="cursor-pointer text-primary hover:text-primary hover:bg-primary/10 focus:bg-primary/10 focus:text-primary"
               >
-                {currentProject?.id === project.id ? (
-                  <Check size={14} className="mr-2 text-primary" />
-                ) : (
-                  <FolderOpen size={14} className="mr-2" />
-                )}
-                {project.name}
+                <Plus size={14} className="mr-2" />
+                Create New Project
               </DropdownMenuItem>
-            ))
-          )}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={() => setIsCreating(true)}
-            className="cursor-pointer text-primary"
-          >
-            <Plus size={14} className="mr-2" />
-            Create New Project
-          </DropdownMenuItem>
+            </div>
+          </Liquid>
         </DropdownMenuContent>
       </DropdownMenu>
 
