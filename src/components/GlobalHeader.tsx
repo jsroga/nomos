@@ -8,13 +8,14 @@ import { SettingsDialog } from '@/domains/world-building-toolkit/components/Sett
 import { ProjectSelectorDropdown } from '@/components/ProjectSelectorDropdown'
 import { AsyncStatusIndicator } from '@/components/AsyncStatusIndicator'
 import { TroubleshootIndicator } from '@/components/TroubleshootIndicator'
+import { LiquidBackgroundProvider } from '@/domains/marketing/components/LiquidBackgroundProvider'
 
 export function GlobalHeader() {
   const currentProject = useWorldStore(state => state.currentProject)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   return (
-    <>
+    <LiquidBackgroundProvider showCanvas={false}>
       <div className="h-14 bg-card border-b border-border flex items-center px-4 gap-4 shrink-0 relative z-20">
         <div className="text-lg font-bold flex items-center gap-2">
           <span className="hidden sm:inline">World Building Kit</span>
@@ -41,6 +42,6 @@ export function GlobalHeader() {
         onClose={() => setIsSettingsOpen(false)}
         projectId={currentProject?.id}
       />
-    </>
+    </LiquidBackgroundProvider>
   )
 }

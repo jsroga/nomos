@@ -11,7 +11,6 @@ interface TurbulentBackgroundProps {
   saturation?: number
   brightness?: number
   contrast?: number
-  contrast?: number
   hue?: number
   showCanvas?: boolean
   onRef?: (el: HTMLDivElement | null) => void

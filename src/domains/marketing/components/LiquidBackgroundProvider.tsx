@@ -6,9 +6,10 @@ import { LiquidProvider } from '@/domains/marketing/context/LiquidContext'
 
 interface LiquidBackgroundProviderProps {
     children: React.ReactNode
+    showCanvas?: boolean
 }
 
-export function LiquidBackgroundProvider({ children }: LiquidBackgroundProviderProps) {
+export function LiquidBackgroundProvider({ children, showCanvas = true }: LiquidBackgroundProviderProps) {
     // State for Turbulent Background
     const [zoom, setZoom] = useState(0.1)
     const [rotation, setRotation] = useState(3.33)
@@ -56,6 +57,7 @@ export function LiquidBackgroundProvider({ children }: LiquidBackgroundProviderP
             speed={speed}
             morphSpeed={morphSpeed}
             onRef={setBgElement}
+            showCanvas={showCanvas}
             // Fixed dark theme values
             colorShift={0}
             saturation={0.4} // Reduced saturation for background
