@@ -2,7 +2,7 @@ import { task, logger, metadata, AbortTaskRunError } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import { put } from '@vercel/blob'
 import { storageService } from '@/infrastructure/storage/StorageService'
-import { UPSCALE_PROMPTS, MASK_CONFIG, getCreativityPrompt } from '@/constants/prompts'
+import { UPSCALE_PROMPTS, MASK_CONFIG, getCreativityPrompt } from '@/lib/server/prompts'
 
 // Provider types
 type UpscaleProvider = 'midjourney' | 'replicate' | 'stability'
@@ -272,10 +272,10 @@ async function upscaleWithReplicate(
       image: inputImageUrl,
       prompt,
     },
-  })
+  }) as any
 
-  logger.info('Replicate raw output:', { 
-    type: typeof output, 
+  logger.info('Replicate raw output:', {
+    type: typeof output,
     isArray: Array.isArray(output),
     constructor: output?.constructor?.name,
     keys: typeof output === 'object' && output ? Object.keys(output) : [],
@@ -286,7 +286,7 @@ async function upscaleWithReplicate(
 
   // Replicate returns different formats depending on the model
   // Could be: URL string, array of URLs, FileOutput object, or ReadableStream
-  
+
   // Handle string output (URL or base64)
   if (typeof output === 'string') {
     if (output.startsWith('http')) {
@@ -298,7 +298,7 @@ async function upscaleWithReplicate(
       return { type: 'base64', data: output }
     }
   }
-  
+
   // Handle array output (common for image models)
   if (Array.isArray(output) && output.length > 0) {
     const firstOutput = output[0]
@@ -313,7 +313,7 @@ async function upscaleWithReplicate(
       }
     }
   }
-  
+
   // Handle object output (FileOutput or similar)
   if (output && typeof output === 'object' && !Array.isArray(output)) {
     // Check for common URL properties
@@ -321,13 +321,13 @@ async function upscaleWithReplicate(
     if (possibleUrl && typeof possibleUrl === 'string' && possibleUrl.startsWith('http')) {
       return { type: 'url', data: possibleUrl }
     }
-    
+
     // Some models return { output: "url" } or { image: "url" }
     const possibleImage = (output as any).image
     if (possibleImage && typeof possibleImage === 'string' && possibleImage.startsWith('http')) {
       return { type: 'url', data: possibleImage }
     }
-    
+
     // Handle ReadableStream (some newer models)
     if (typeof (output as any).getReader === 'function') {
       logger.info('Output is a ReadableStream, reading...')
@@ -632,7 +632,7 @@ export const upscaleTileTask = task({
 
     // Step 3: Upload images to Supabase Storage (accessible from anywhere)
     await metadata.set('stage', 'uploading')
-    
+
     const timestamp = Date.now()
     const upscaledFilename = `${tileId}_upscaled_${provider}_${timestamp}.png`
     const originalFilename = `original_${tileId}_${timestamp}.png`

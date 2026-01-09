@@ -1,7 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { characters } from '@/domains/storyteller/db/schema'
+import { characters, projects } from '@/domains/storyteller/db/schema'
 import { eq, desc } from 'drizzle-orm'
+import { requireAuth } from '@/lib/auth'
+
+async function verifyProjectAccess(projectId: string, userId: string) {
+  const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
+  if (!project || project.userId !== userId) {
+    return false
+  }
+  return true
+}
+
+async function verifyCharacterAccess(characterId: string, userId: string) {
+  const [character] = await db.select().from(characters).where(eq(characters.id, characterId))
+  if (!character) return false
+
+  const [project] = await db.select().from(projects).where(eq(projects.id, character.projectId))
+  if (!project || project.userId !== userId) {
+    return false
+  }
+  return true
+}
 
 /**
  * @openapi
@@ -196,6 +216,13 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
+
     const result = await db
       .select()
       .from(characters)
@@ -210,6 +237,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const body = await req.json()
     const {
       projectId,
@@ -232,6 +262,10 @@ export async function POST(req: NextRequest) {
 
     if (!projectId || !name) {
       return NextResponse.json({ error: 'Project ID and Name are required' }, { status: 400 })
+    }
+
+    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
     const [newCharacter] = await db
@@ -265,6 +299,9 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const body = await req.json()
     const {
       id,
@@ -288,6 +325,10 @@ export async function PATCH(req: NextRequest) {
 
     if (!id) {
       return NextResponse.json({ error: 'Character ID is required' }, { status: 400 })
+    }
+
+    if (!(await verifyCharacterAccess(id, session.user.id))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
     // Build update object with only valid fields
@@ -334,6 +375,13 @@ export async function DELETE(req: NextRequest) {
   }
 
   try {
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    if (!(await verifyCharacterAccess(id, session.user.id))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
+
     await db.delete(characters).where(eq(characters.id, id))
     return NextResponse.json({ success: true })
   } catch (error) {

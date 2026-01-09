@@ -13,7 +13,8 @@ const WallMesh: React.FC<{
   wall: Wall
   isSelected: boolean
   onClick: (e: ThreeEvent<MouseEvent>) => void
-}> = ({ wall, isSelected, onClick }) => {
+  opacity?: number
+}> = ({ wall, isSelected, onClick, opacity = 1 }) => {
   const start = new THREE.Vector3(...wall.start)
   const end = new THREE.Vector3(...wall.end)
   const direction = new THREE.Vector3().subVectors(end, start)
@@ -33,15 +34,21 @@ const WallMesh: React.FC<{
     >
       <boxGeometry args={[length, wall.height, wall.thickness]} />
       {textureUrl ? (
-        <TexturedMaterial url={textureUrl} isSelected={isSelected} />
+        <TexturedMaterial url={textureUrl} isSelected={isSelected} opacity={opacity} />
       ) : (
-        <meshStandardMaterial color={isSelected ? '#4f46e5' : color} roughness={0.8} />
+        <meshStandardMaterial
+          color={isSelected ? '#4f46e5' : color}
+          roughness={0.8}
+          transparent={opacity < 1}
+          opacity={opacity}
+        />
       )}
     </mesh>
   )
 }
 
-const TexturedMaterial: React.FC<{ url: string; isSelected: boolean }> = ({ url, isSelected }) => {
+
+const TexturedMaterial: React.FC<{ url: string; isSelected: boolean; opacity?: number }> = ({ url, isSelected, opacity = 1 }) => {
   const texture = useTexture(url)
 
   React.useLayoutEffect(() => {
@@ -55,9 +62,12 @@ const TexturedMaterial: React.FC<{ url: string; isSelected: boolean }> = ({ url,
       map={texture}
       color={isSelected ? '#4f46e5' : '#ffffff'}
       roughness={0.8}
+      transparent={opacity < 1}
+      opacity={opacity}
     />
   )
 }
+
 
 export const WallManager: React.FC = () => {
   const walls = useInteriorStore(state => state.walls)
@@ -69,24 +79,32 @@ export const WallManager: React.FC = () => {
   const activeLevel = useInteriorStore(state => state.activeLevel)
 
   return (
-    <group position={[0, activeLevel * 3, 0]}>
-      {walls.map(wall => (
-        <WallMesh
-          key={wall.id}
-          wall={wall}
-          isSelected={wall.id === selectedId || multiSelectedIds.includes(wall.id)}
-          onClick={e => {
-            e.stopPropagation()
-            if (mode === 'SELECT') {
-              if (e.shiftKey) {
-                toggleMultiSelect(wall.id)
-              } else {
-                setSelected(wall.id)
-              }
-            }
-          }}
-        />
-      ))}
+    <group>
+      {walls.map(wall => {
+        const wallLevel = wall.level ?? 0
+        const wallOpacity = wallLevel === activeLevel ? 1 : 0.3
+        return (
+          <group key={wall.id} position={[0, wallLevel * 3, 0]}>
+            <WallMesh
+              wall={wall}
+              isSelected={wall.id === selectedId || multiSelectedIds.includes(wall.id)}
+              onClick={e => {
+                e.stopPropagation()
+                if (mode === 'SELECT') {
+                  if (e.shiftKey) {
+                    toggleMultiSelect(wall.id)
+                  } else {
+                    setSelected(wall.id)
+                  }
+                }
+              }}
+              opacity={wallOpacity}
+            />
+
+          </group>
+        )
+      })}
     </group>
   )
 }
+

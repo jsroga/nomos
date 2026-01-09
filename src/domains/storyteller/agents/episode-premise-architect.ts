@@ -1,10 +1,4 @@
-/**
- * Episode Premise Architect Agent
- *
- * Specializes in generating high-stakes, transformative episode premises
- * following the "Ozymandias Framework".
- */
-
+import { buildAgentContext } from '../utils/context-builder'
 import { AIMessage, SystemMessage } from '@langchain/core/messages'
 import { WritersRoomState } from '../graph/state'
 import { getModel } from '../config/model-config'
@@ -15,51 +9,8 @@ import {
     EpisodePremiseArchitectResponse,
     parseAgentResponse,
 } from '../schemas/agent-schemas'
-
-// Model is created inside the function to use request-scoped config (AsyncLocalStorage)
-
-const EPISODE_PREMISE_PROMPT = `
-## YOU ARE THE EPISODE ARCHITECT (OZYMANDIAS FRAMEWORK)
-
-Your goal is to construct an episode premise that feels inevitable yet surprising. 
-We strictly follow the "Ozymandias" framework for high-impact storytelling.
-
-## THE OZYMANDIAS FRAMEWORK
-A perfect episode premise consists of:
-1. **THE HOOK**: An opening image or situation that immediately grabs attention and poses a question.
-2. **THE FLAW**: The protagonist's central character flaw that drives the plot.
-3. **THE TURN**: A midpoint or key event where the flaw causes a critical error or revelation.
-4. **THE INEVITABILITY**: The climax is a direct result of the choices made.
-5. **THE AFTERMATH**: The world or character is irreversibly changed.
-
-## INSTRUCTIONS
-- **Focus on CONFLICT**: Every scene must have conflict.
-- **Focus on CHANGE**: Something must change permanently by the end.
-- **Avoid Filler**: Every beat must advance the plot or character arc.
-
-## YOUR RESPONSE FORMAT
-Respond with a JSON object containing the episode premise:
-
-{
-    "message": "A brief explanation of why this premise works.",
-    "episodePremise": {
-        "title": "Episode Title",
-        "logline": "A single sentence summary.",
-        "theHook": "Opening image/situation that grabs attention and poses a question.",
-        "theTurn": "Midpoint event where the flaw causes a critical error or revelation.",
-        "theAftermath": "How the world or character is irreversibly changed.",
-        "protagonistHook": "The protagonist-specific opening situation (or null).",
-        "fatalFlaw": "The internal character flaw driving the conflict.",
-        "stakes": "What is at risk (Physical/Professional/Psychological).",
-        "transformation": "How the character/world changes by the end.",
-        "inevitableConsequence": "The irreversible outcome caused by the flaw.",
-        "thematicFocus": "The central theme (e.g. Hubris)",
-        "charactersInvolved": ["Char A", "Char B"]
-    },
-    "actions": [],
-    "confidence": 0.95
-}
-`
+import { EPISODE_PREMISE_PROMPT } from '../prompts/agents/episode-premise'
+import { loadPromptCached } from '../prompts/hub-loader'
 
 export const episodePremiseArchitectAgent = async (
     state: WritersRoomState
@@ -69,26 +20,16 @@ export const episodePremiseArchitectAgent = async (
 
     console.log('Episode Premise Architect generating premise...')
 
-    const bible = state.seriesBible || {}
-    const characters = bible.keyCharacters || []
-    const contextMessage = `
-## WORLD CONTEXT (SERIES BIBLE)
-Title: ${bible.title}
-Logline: ${bible.logline}
-Genre: ${bible.genre}
-Theme: ${bible.centralTheme}
+    // Load prompt from Hub
+    const loadedPrompt = await loadPromptCached('episodePremiseArchitect')
+    const promptMessages = (loadedPrompt.prompt as any).promptMessages || (loadedPrompt.prompt as any).messages || []
+    const systemMessage = promptMessages.find((m: any) => m.lc_id?.[3] === 'SystemMessagePromptTemplate' || m._type === 'system')
+    const systemTemplate = systemMessage?.prompt?.template || systemMessage?.template || EPISODE_PREMISE_PROMPT
 
-## KEY CHARACTERS
-${characters
-            .map(c => `- ${c.name} (${c.role}): ${c.motivation}. Flaw: ${c.archetype}`)
-            .join('\n')}
-
-## CURRENT SITUATION
-Evaluate the chat history to understand what kind of episode the user wants to create.
-`
+    const contextMessage = buildAgentContext(state, 'premise')
 
     // Combine system content into single message (required for Claude)
-    const combinedSystem = [EPISODE_PREMISE_PROMPT, contextMessage].join('\n\n---\n\n')
+    const combinedSystem = [systemTemplate, contextMessage].join('\n\n---\n\n')
     const conversationMessages = getSafeMessageHistory(state.messages, 10).filter(m => m._getType() !== 'system')
 
     const messages = [
@@ -100,24 +41,87 @@ Evaluate the chat history to understand what kind of episode the user wants to c
         let parsed: EpisodePremiseArchitectResponse | null = null
         let actions: AgentAction[] = []
 
-        try {
-            const structuredModel = model.withStructuredOutput(EpisodePremiseArchitectResponseSchema)
-            parsed = (await structuredModel.invoke(messages)) as EpisodePremiseArchitectResponse
-            actions = (parsed.actions || []) as AgentAction[]
-        } catch (structuredError) {
-            console.warn('Episode Premise Architect: Structured output failed, fallback...', structuredError)
-            const response = await model.invoke(messages)
-            const content = typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
-            parsed = parseAgentResponse(content, EpisodePremiseArchitectResponseSchema)
+        // Retry structured output with backoff before falling back
+        const MAX_RETRIES = 3
+        let lastError: Error | null = null
 
-            if (!parsed) {
-                parsed = {
-                    message: content,
-                    actions: [],
-                    confidence: 0.5
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                const structuredModel = model.withStructuredOutput(EpisodePremiseArchitectResponseSchema)
+                parsed = (await structuredModel.invoke(messages)) as EpisodePremiseArchitectResponse
+                actions = (parsed.actions || []) as AgentAction[]
+                break // Success - exit retry loop
+            } catch (structuredError) {
+                lastError = structuredError as Error
+                console.warn(`Episode Premise Architect: Attempt ${attempt}/${MAX_RETRIES} failed:`, structuredError)
+
+                if (attempt < MAX_RETRIES) {
+                    // Exponential backoff: 500ms, 1000ms, 2000ms
+                    const delay = 500 * Math.pow(2, attempt - 1)
+                    await new Promise(resolve => setTimeout(resolve, delay))
                 }
             }
-            actions = (parsed.actions || []) as AgentAction[]
+        }
+
+        // Final fallback: try raw invoke + manual parsing
+        if (!parsed) {
+            console.warn('Episode Premise Architect: All structured attempts failed, attempting raw parse...')
+            try {
+                const response = await model.invoke(messages)
+                const content = typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+                parsed = parseAgentResponse(content, EpisodePremiseArchitectResponseSchema)
+
+                if (parsed) {
+                    actions = (parsed.actions || []) as AgentAction[]
+                } else {
+                    console.warn('❌ PREMISE: Full schema parse failed, attempting targeted extraction...')
+
+                    // Try to extract just the episodePremise object from the content
+                    let extractedPremise: EpisodePremiseArchitectResponse['episodePremise'] = null
+                    try {
+                        // Look for JSON in the content
+                        const jsonMatch = content.match(/\{[\s\S]*\}/)
+                        if (jsonMatch) {
+                            const jsonContent = jsonMatch[0]
+                            const fullObj = JSON.parse(jsonContent)
+
+                            // Check if it's the full response or just episodePremise
+                            if (fullObj.episodePremise) {
+                                extractedPremise = fullObj.episodePremise
+                                console.log('✅ PREMISE: Extracted from nested episodePremise')
+                            } else {
+                                // Check if it looks like a partial premise (has at least one focused key)
+                                const premiseKeys = [
+                                    'title', 'logline', 'theHook', 'theTurn', 'theAftermath',
+                                    'protagonistHook', 'fatalFlaw', 'stakes', 'transformation',
+                                    'inevitableConsequence', 'thematicFocus'
+                                ];
+
+                                const hasPremiseKey = premiseKeys.some(key => key in fullObj);
+
+                                if (hasPremiseKey) {
+                                    extractedPremise = fullObj
+                                    console.log('✅ PREMISE: Extracted direct partial premise')
+                                }
+                            }
+                        }
+                    } catch (extractError) {
+                        console.warn('Targeted episodePremise extraction failed:', extractError)
+                    }
+
+                    parsed = {
+                        message: extractedPremise
+                            ? "I've updated the episode premise based on your request."
+                            : content, // Keep content if extraction failed so user sees what happened
+                        actions: [],
+                        confidence: extractedPremise ? 0.6 : 0.3,
+                        episodePremise: extractedPremise
+                    }
+                }
+            } catch (rawError) {
+                console.error('❌ PREMISE: Raw invoke also failed:', rawError)
+                throw lastError || rawError
+            }
         }
 
         const messageContent = parsed.message

@@ -9,9 +9,12 @@ export class StorageService {
    * In Dev: Uses local API route to save to filesystem.
    * In Prod: Uploads to Supabase Storage bucket 'projects'.
    */
-  async saveImage(projectId: string, filename: string, data: string | Buffer): Promise<string> {
+  async saveImage(projectId: string, filename: string, data: string | Buffer, contentType?: string): Promise<string> {
     // Clean filename to avoid deep nesting issues if needed, though existing structure uses folders
     const cleanFilename = filename.startsWith('/') ? filename.slice(1) : filename
+
+    // Auto-detect content type if not specific
+    const finalContentType = contentType || this.getContentType(filename)
 
     if (isProduction) {
       // SUPABASE STORAGE
@@ -28,7 +31,7 @@ export class StorageService {
       const { data: uploadData, error } = await supabase.storage
         .from('projects')
         .upload(`${projectId}/${cleanFilename}`, body, {
-          contentType: 'image/png',
+          contentType: finalContentType,
           upsert: true,
         })
 
@@ -242,6 +245,19 @@ export class StorageService {
     } catch (err) {
       console.error('Temp host upload failed:', err)
       return null
+    }
+  }
+  private getContentType(filename: string): string {
+    const ext = filename.split('.').pop()?.toLowerCase()
+    switch (ext) {
+      case 'glb': return 'model/gltf-binary'
+      case 'gltf': return 'model/gltf+json'
+      case 'png': return 'image/png'
+      case 'jpg':
+      case 'jpeg': return 'image/jpeg'
+      case 'webp': return 'image/webp'
+      case 'svg': return 'image/svg+xml'
+      default: return 'application/octet-stream'
     }
   }
 }

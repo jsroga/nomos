@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { interiorDesigns } from '@/db/schema'
+import { interiorDesigns, projects } from '@/db/schema'
 import { eq, and, desc } from 'drizzle-orm'
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { requireAuth } from '@/lib/auth'
+
+async function verifyProjectAccess(projectId: string, userId: string) {
+  const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
+  if (!project || project.userId !== userId) {
+    return false
+  }
+  return true
+}
+
+async function verifyDesignAccess(designId: string, userId: string) {
+  const [design] = await db.select().from(interiorDesigns).where(eq(interiorDesigns.id, designId))
+  if (!design) return false
+  return verifyProjectAccess(design.projectId, userId)
+}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -15,7 +28,15 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     if (designId) {
+      // Check access
+      if (!(await verifyDesignAccess(designId, session.user.id))) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      }
+
       // Fetch single design
       const [design] = await db
         .select()
@@ -23,6 +44,11 @@ export async function GET(req: NextRequest) {
         .where(eq(interiorDesigns.id, designId))
       return NextResponse.json(design || null)
     } else {
+      // Check access
+      if (!(await verifyProjectAccess(projectId!, session.user.id))) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      }
+
       // Fetch all designs for project
       const designs = await db
         .select()
@@ -39,12 +65,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerComponentClient({ cookies: () => cookieStore })
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-
+    const { session } = await requireAuth()
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -57,6 +78,10 @@ export async function POST(req: NextRequest) {
         { error: 'Project ID, name, and scene data are required' },
         { status: 400 }
       )
+    }
+
+    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
     const [newDesign] = await db
@@ -78,11 +103,20 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    const { session } = await requireAuth()
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await req.json()
     const { id, name, sceneData } = body
 
     if (!id) {
       return NextResponse.json({ error: 'Design ID is required' }, { status: 400 })
+    }
+
+    if (!(await verifyDesignAccess(id, session.user.id))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
     const updates: any = { updatedAt: new Date() }
@@ -111,6 +145,15 @@ export async function DELETE(req: NextRequest) {
   }
 
   try {
+    const { session } = await requireAuth()
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!(await verifyDesignAccess(id, session.user.id))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
+
     await db.delete(interiorDesigns).where(eq(interiorDesigns.id, id))
     return NextResponse.json({ success: true })
   } catch (error) {

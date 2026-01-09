@@ -4,6 +4,10 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 import { LocalStorageKeys } from '@/constants/localStorage'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Slider } from '@/components/ui/slider'
+import { Switch } from '@/components/ui/switch'
+
+import { ChevronLeft, ChevronRight, GripVertical } from 'lucide-react'
 
 const DEFAULT_WIDTH = 320
 const MIN_WIDTH = 280
@@ -152,6 +156,7 @@ export const DomainSidebar: React.FC<DomainSidebarProps> = ({
 }
 
 // Standardized section wrapper for grouping related controls
+// Standardized section wrapper for grouping related controls
 interface SidebarSectionProps {
   title?: string
   children: React.ReactNode
@@ -160,30 +165,74 @@ interface SidebarSectionProps {
   separator?: boolean
   /** Optional icon to display next to the title */
   icon?: React.ReactNode
+  /** If true, section can be collapsed */
+  collapsible?: boolean
+  /** Default collapsed state (if collapsible is true) */
+  defaultOpen?: boolean
+  /** Optional callback when toggle state changes */
+  onToggle?: (isOpen: boolean) => void
+  /** Optional subtitle or right-side content in header */
+  rightContent?: React.ReactNode
 }
 
 export const SidebarSection: React.FC<SidebarSectionProps> = ({
   title,
   children,
   className,
-  separator = false,
+  separator = true,
   icon,
+  collapsible = false,
+  defaultOpen = true,
+  onToggle,
+  rightContent
 }) => {
+  const [isOpen, setIsOpen] = React.useState(defaultOpen)
+
+  // Sync internal state if defaultOpen changes (optional, but good for reset)
+  // React.useEffect(() => setIsOpen(defaultOpen), [defaultOpen])
+
+  const handleToggle = () => {
+    const newState = !isOpen
+    setIsOpen(newState)
+    onToggle?.(newState)
+  }
+
   return (
     <div
       className={cn(
-        'space-y-3',
-        separator && 'pt-4 border-t border-border',
+        'space-y-2',
+        separator && 'py-4 border-t border-border first:py-0 first:border-0 first:mb-4',
         className
       )}
     >
       {title && (
-        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
-          {icon}
-          {title}
-        </h3>
+        <div className="flex items-center justify-between mb-2">
+          {collapsible ? (
+            <button
+              onClick={handleToggle}
+              className="text-xs font-mono font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5 hover:text-foreground transition-colors w-full text-left"
+            >
+              <div className={cn("transition-transform duration-200", isOpen ? "rotate-90" : "")}>
+                <ChevronRight size={12} />
+              </div>
+              {icon}
+              <span className="flex-1">{title}</span>
+              {rightContent}
+            </button>
+          ) : (
+            <h3 className="text-xs font-mono font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5 flex-1">
+              {icon}
+              {title}
+              {rightContent && <div className="ml-auto">{rightContent}</div>}
+            </h3>
+          )}
+        </div>
       )}
-      {children}
+      {(!collapsible || isOpen) && (
+        <div className={cn(collapsible && "animate-in slide-in-from-top-1 fade-in duration-200")}>
+          {children}
+        </div>
+      )}
     </div>
   )
 }
@@ -221,12 +270,23 @@ export const SidebarSettingsBox: React.FC<SidebarSettingsBoxProps> = ({
   )
 }
 
+// NEW: Standardized Header for Main Panel Title (e.g. "World Gen")
+export const SidebarHeader: React.FC<React.PropsWithChildren<{ className?: string }>> = ({ children, className }) => {
+  return (
+    <h2 className={cn('text-sm font-mono font-bold uppercase tracking-widest text-muted-foreground', className)}>
+      {children}
+    </h2>
+  )
+}
+
 // Standardized label for form fields
 interface SidebarLabelProps {
   children: React.ReactNode
   htmlFor?: string
   hint?: string
   className?: string
+  // Use small/mono style?
+  variant?: 'default' | 'small'
 }
 
 export const SidebarLabel: React.FC<SidebarLabelProps> = ({
@@ -234,12 +294,17 @@ export const SidebarLabel: React.FC<SidebarLabelProps> = ({
   htmlFor,
   hint,
   className,
+  variant = 'small' // Defaulting to small now for consistency
 }) => {
   return (
     <div className={cn('space-y-1', className)}>
       <label
         htmlFor={htmlFor}
-        className="block text-sm font-medium text-foreground"
+        // UPGRADED STYLE: Using inline-flex so icons appear next to text
+        className={cn(
+          'inline-flex items-center gap-1 font-mono font-medium text-muted-foreground',
+          variant === 'small' ? 'text-[10px] uppercase tracking-wide' : 'text-sm',
+        )}
       >
         {children}
       </label>
@@ -265,7 +330,7 @@ export const SidebarTextarea = React.forwardRef<
       <textarea
         ref={ref}
         className={cn(
-          'w-full bg-background/50 border-2 border-border/60 rounded-md p-3 text-sm resize-none',
+          'w-full bg-background/50 border-2 border-border/60 rounded-md p-3 text-sm font-mono resize-none',
           'hover:border-border transition-colors',
           'focus:border-primary focus:ring-1 focus:ring-primary/30 focus:outline-none',
           'placeholder:text-muted-foreground/60',
@@ -294,7 +359,7 @@ export const SidebarInput = React.forwardRef<HTMLInputElement, SidebarInputProps
         <input
           ref={ref}
           className={cn(
-            'w-full bg-background/50 border-2 border-border/60 rounded-md px-3 py-2 text-sm',
+            'w-full bg-background/50 border-2 border-border/60 rounded-md px-3 py-2 text-sm font-mono',
             'hover:border-border transition-colors',
             'focus:border-primary focus:ring-1 focus:ring-primary/30 focus:outline-none',
             'placeholder:text-muted-foreground/60',
@@ -333,18 +398,39 @@ export const SidebarSliderRow: React.FC<SidebarSliderRowProps> = ({
   return (
     <div className="space-y-2">
       <div className="flex justify-between text-sm">
-        <span className="font-medium">{label}</span>
-        <span className="text-muted-foreground">{displayValue}</span>
+        <span className="font-medium font-mono text-[10px] uppercase tracking-wide text-muted-foreground">{label}</span>
+        <span className="text-muted-foreground font-mono text-xs">{displayValue}</span>
       </div>
-      <input
-        type="range"
+      <Slider
         min={min}
         max={max}
         step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
+        value={[value]}
+        onValueChange={(vals) => onChange(vals[0])}
         className="w-full"
       />
+    </div>
+  )
+}
+
+// Standardized toggle row with label and switch
+interface SidebarToggleRowProps {
+  label: string
+  checked: boolean
+  onChange: (checked: boolean) => void
+  className?: string
+}
+
+export const SidebarToggleRow: React.FC<SidebarToggleRowProps> = ({
+  label,
+  checked,
+  onChange,
+  className,
+}) => {
+  return (
+    <div className={cn("flex items-center justify-between", className)}>
+      <span className="font-medium font-mono text-[10px] uppercase tracking-wide text-muted-foreground">{label}</span>
+      <Switch checked={checked} onCheckedChange={onChange} />
     </div>
   )
 }

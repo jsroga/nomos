@@ -19,6 +19,9 @@ import {
   DomainSidebar,
   SidebarSection,
   SidebarEmptyState,
+  SidebarHeader,
+  SidebarLabel,
+  SidebarSliderRow,
 } from '@/components/ui/domain-sidebar'
 import {
   Loader2,
@@ -57,6 +60,9 @@ export const Sidebar: React.FC = () => {
     'Isometric painted world in the style of Disco Elysium, detailed urban environment, painterly art style'
 
   const currentProject = useWorldStore(state => state.currentProject)
+  const assets = useWorldStore(state => state.assets)
+  const showAllAssetMasks = useWorldStore(state => state.showAllAssetMasks)
+  const setShowAllAssetMasks = useWorldStore(state => state.setShowAllAssetMasks)
 
   const [masterPrompt, setMasterPrompt] = useState(defaultMasterPrompt)
   const [tilePrompt, setTilePrompt] = useState('')
@@ -211,13 +217,13 @@ export const Sidebar: React.FC = () => {
         reject(new Error('Invalid blob'))
         return
       }
-      
+
       console.log('[Sidebar] Converting blob to data URL:', { size: blob.size, type: blob.type })
-      
+
       const reader = new FileReader()
       reader.onloadend = () => {
         const dataUrl = reader.result as string
-        console.log('[Sidebar] Data URL created:', { 
+        console.log('[Sidebar] Data URL created:', {
           length: dataUrl?.length,
           prefix: dataUrl?.substring(0, 50),
           isValid: dataUrl?.startsWith('data:image/')
@@ -467,12 +473,12 @@ export const Sidebar: React.FC = () => {
       ) : (
         <div className="space-y-6">
           {/* Master Prompt */}
-          <SidebarSection icon={<Palette size={12} />}>
-            <div className="flex items-center justify-between mb-2">
+          {/* Master Prompt */}
+          <SidebarSection
+            icon={<Palette size={12} />}
+            title="Style Prompt"
+            rightContent={
               <div className="flex items-center gap-2">
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                  Style Prompt
-                </label>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Info size={12} className="text-muted-foreground/60 cursor-help" />
@@ -481,34 +487,36 @@ export const Sidebar: React.FC = () => {
                     <p className="max-w-[200px]">Define the overall art style that will be applied to all generated tiles</p>
                   </TooltipContent>
                 </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-6 text-[10px] gap-1 font-mono"
+                      onClick={fetchWorldSummary}
+                      disabled={isFetchingSummary || !currentProject}
+                    >
+                      {isFetchingSummary ? (
+                        <Loader2 size={10} className="animate-spin" />
+                      ) : (
+                        <BookOpen size={10} />
+                      )}
+                      Fetch
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Import style from Storyteller World Bible</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-6 text-[10px] gap-1"
-                    onClick={fetchWorldSummary}
-                    disabled={isFetchingSummary || !currentProject}
-                  >
-                    {isFetchingSummary ? (
-                      <Loader2 size={10} className="animate-spin" />
-                    ) : (
-                      <BookOpen size={10} />
-                    )}
-                    Fetch
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Import style from Storyteller World Bible</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
+            }
+          >
             <textarea
               value={masterPrompt}
               onChange={e => handleMasterPromptChange(e.target.value)}
               placeholder="Define the overall art style and aesthetic..."
-              className="w-full h-24 bg-background/50 border-2 border-border/60 rounded-md p-3 text-sm resize-none hover:border-border transition-colors focus:border-primary focus:ring-1 focus:ring-primary/30 focus:outline-none placeholder:text-muted-foreground/60"
+              className="w-full h-24 bg-zinc-900/50 border border-zinc-800 rounded-md py-2 px-3 text-xs text-zinc-300 font-mono resize-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-all placeholder:text-zinc-600"
             />
           </SidebarSection>
 
@@ -521,7 +529,7 @@ export const Sidebar: React.FC = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-6 text-xs gap-1"
+                  className="h-6 text-xs gap-1 font-mono"
                   onClick={() => setShowDebug(!showDebug)}
                 >
                   {showDebug ? <EyeOff size={12} /> : <Eye size={12} />}
@@ -530,7 +538,7 @@ export const Sidebar: React.FC = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-6 text-xs"
+                  className="h-6 text-xs font-mono"
                   onClick={() => setGenerationDebugInfo(null)}
                 >
                   Clear
@@ -539,7 +547,7 @@ export const Sidebar: React.FC = () => {
             )}
 
             <div className="space-y-1 mb-3">
-              <label className="text-xs font-medium flex items-center gap-1">
+              <SidebarLabel className="flex items-center gap-1">
                 Tile Description
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -549,13 +557,13 @@ export const Sidebar: React.FC = () => {
                     <p>Describe what should appear in this tile</p>
                   </TooltipContent>
                 </Tooltip>
-              </label>
+              </SidebarLabel>
               <input
                 type="text"
                 value={tilePrompt}
                 onChange={e => setTilePrompt(e.target.value)}
                 placeholder="e.g., church, forest, river..."
-                className="w-full bg-background/50 border-2 border-border/60 rounded-md px-3 py-2 text-sm hover:border-border transition-colors focus:border-primary focus:ring-1 focus:ring-primary/30 focus:outline-none placeholder:text-muted-foreground/60"
+                className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md py-2 px-3 text-xs text-zinc-300 font-mono focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-all placeholder:text-zinc-600"
               />
             </div>
 
@@ -575,7 +583,7 @@ export const Sidebar: React.FC = () => {
                     disabled={
                       !!generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] || isUploading
                     }
-                    className="flex-1 gap-2 bg-primary/20 text-primary border border-primary hover:bg-primary hover:text-white"
+                    className="flex-1 gap-2 bg-primary/20 text-primary border border-primary hover:bg-primary hover:text-white font-mono"
                   >
                     {generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] ? (
                       <>
@@ -656,7 +664,7 @@ export const Sidebar: React.FC = () => {
 
             {/* Generation Debug View */}
             {generationDebugInfo && showDebug && (
-              <div className="mt-3 bg-background/50 p-3 rounded-lg border border-border">
+              <div className="mt-3 bg-zinc-900/30 p-3 rounded-lg border border-zinc-800/50">
                 <h4 className="text-xs font-semibold mb-2">Debug Context</h4>
 
                 {generationDebugInfo.assembledContext && (
@@ -731,7 +739,7 @@ export const Sidebar: React.FC = () => {
                     />
                   )}
                 </div>
-                <div className="text-[10px] text-muted-foreground bg-background p-2 rounded border border-border">
+                <div className="text-[10px] text-zinc-500 bg-zinc-950 p-2 rounded border border-zinc-800">
                   Prompt: {generationDebugInfo.prompt}
                 </div>
               </div>
@@ -741,30 +749,17 @@ export const Sidebar: React.FC = () => {
           {/* Upscale Group */}
           <SidebarSection separator title="Upscale" icon={<ZoomIn size={12} />}>
             <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium mb-2 flex items-center gap-1">
-                  Creativity
-                  <span className="text-muted-foreground">({upscaleCreativity})</span>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info size={10} className="text-muted-foreground/60 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Higher = more creative details, Lower = more faithful to original</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </label>
-                <Slider
-                  value={[upscaleCreativity]}
-                  min={0}
-                  max={1}
-                  step={0.1}
-                  onValueChange={([val]) => setUpscaleCreativity(val)}
-                />
-              </div>
+              <SidebarSliderRow
+                label="Creativity"
+                value={upscaleCreativity}
+                min={0}
+                max={1}
+                step={0.1}
+                onChange={setUpscaleCreativity}
+              />
               <Button
                 variant="ghost"
-                className="w-full gap-2 bg-primary/20 text-primary border border-primary hover:bg-primary hover:text-white"
+                className="w-full gap-2 bg-primary/20 text-primary border border-primary hover:bg-primary hover:text-white font-mono"
                 onClick={async () => {
                   if (selectedTile) {
                     const fullTile = tiles[`${selectedTile.x},${selectedTile.y}`]
@@ -791,27 +786,14 @@ export const Sidebar: React.FC = () => {
           {/* Enhance Fidelity Group */}
           <SidebarSection separator title="Enhance Fidelity" icon={<Sparkles size={12} />}>
             <div className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-xs font-medium flex items-center gap-1">
-                  Creativity
-                  <span className="text-muted-foreground">({fidelityCreativity})</span>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info size={10} className="text-muted-foreground/60 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Higher = more creative freedom, Lower = stricter adherence to original structure</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </label>
-                <Slider
-                  value={[fidelityCreativity]}
-                  min={0}
-                  max={1}
-                  step={0.1}
-                  onValueChange={([val]) => setFidelityCreativity(val)}
-                />
-              </div>
+              <SidebarSliderRow
+                label="Creativity"
+                value={fidelityCreativity}
+                min={0}
+                max={1}
+                step={0.1}
+                onChange={setFidelityCreativity}
+              />
 
               <Button
                 onClick={async () => {
@@ -827,7 +809,7 @@ export const Sidebar: React.FC = () => {
                   }
                 }}
                 variant="ghost"
-                className="w-full gap-2 bg-primary/20 text-primary border border-primary hover:bg-primary hover:text-white"
+                className="w-full gap-2 bg-primary/20 text-primary border border-primary hover:bg-primary hover:text-white font-mono"
                 disabled={
                   !selectedTile ||
                   (selectedTile && !!enhancingTiles[`${selectedTile.x},${selectedTile.y}`])
@@ -849,7 +831,25 @@ export const Sidebar: React.FC = () => {
           </SidebarSection>
 
           {/* Assets Group */}
-          <SidebarSection separator title="Assets" icon={<Package size={12} />}>
+          <SidebarSection
+            separator
+            title="Assets"
+            icon={<Package size={12} />}
+            rightContent={
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono text-muted-foreground">{assets.length}</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowAllAssetMasks(!showAllAssetMasks)
+                  }}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showAllAssetMasks ? <EyeOff size={12} /> : <Eye size={12} />}
+                </button>
+              </div>
+            }
+          >
             <AssetsPanel />
           </SidebarSection>
 
@@ -881,13 +881,14 @@ export const Sidebar: React.FC = () => {
     <>
       <DomainSidebar
         header={
-          <div className="flex items-center justify-between w-full">
-            <span>World Gen</span>
+          <div className="flex items-center justify-between w-full pl-2">
+            <SidebarHeader>World Gen</SidebarHeader>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Auto</span>
+              <span className="text-[10px] uppercase tracking-wider font-medium font-mono text-zinc-500">Auto</span>
               <Switch
                 checked={autoApprove}
                 onCheckedChange={handleAutoApproveChange}
+                className="scale-75 origin-right"
               />
             </div>
           </div>

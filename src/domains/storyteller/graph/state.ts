@@ -1,5 +1,7 @@
 import { BaseMessage } from '@langchain/core/messages'
 import { EpisodePremise } from '../schemas/agent-schemas'
+import { BeatType, BeatStatus, Phase, PlanStatus, Verdict } from '../enums'
+
 
 export interface BeatCard {
   id: string
@@ -7,13 +9,13 @@ export interface BeatCard {
   sequence: number
   logline: string
   content?: string
-  beatType: 'setup' | 'complication' | 'revelation' | 'decision' | 'consequence'
+  beatType: BeatType
   charactersInvolved: string[]
   emotionalShifts: Record<string, { from: string; to: string }>
   visualHook: string
   causalDependencies: string[]
   setupsPayoffs: { setupId?: string; payoffFor?: string }
-  status: 'proposed' | 'challenged' | 'approved' | 'locked'
+  status: BeatStatus
   // Mazur Benchmark elements
   mazurElements?: {
     character?: string // Deepened trait
@@ -111,7 +113,9 @@ export interface Setup {
   payoffBeatId?: string
 }
 
-export type Phase = 'premise' | 'breaking' | 'cardlock' | 'writing' | 'complete'
+// Phase type is now imported from enums.ts
+export { Phase }
+
 
 export interface WritersRoomState {
   // Project Context
@@ -125,8 +129,11 @@ export interface WritersRoomState {
 
   // Content
   seriesBible: Record<string, any>
+  masterPrompt?: string // The user's master instructions for the series
+  episodePrompt?: string // Specific instructions for this episode
   episodePremise?: EpisodePremise
   characters: CharacterState[]
+  activeCast?: string[] // IDs of characters currently relevant/in-scene
   beatBoard: BeatCard[]
   currentBeat?: BeatCard // Beat being deliberated
 
@@ -148,19 +155,20 @@ export interface WritersRoomState {
 
   // Self-reflection and critique tracking
   beatChallengeCount: number // How many times current beat was challenged
-  lastDevilVerdict?: 'PASS' | 'CHALLENGE' // Devil's advocate verdict
+  lastDevilVerdict?: Verdict
   reflectionNotes?: string[] // Notes from reflection process
   minConfidenceThreshold: number // Minimum confidence to accept (0-1)
   lastAgentConfidence?: number // Last agent's confidence score
 
   // Script evaluation (Evaluator-Optimizer loop)
-  lastScriptVerdict?: 'PASS' | 'REVISE' // Script editor verdict
+  lastScriptVerdict?: Verdict
   scriptRevisionCount: number // How many times script was revised
   scriptFeedback?: string[] // Feedback from script editor for revision
 
   // Deep Agent State (Meta-Cognition)
   plan: PlanItem[] // Structured list of tasks
   deepMemory: Record<string, any> // Persistent cross-agent context
+  memory: Record<string, any> // Agentic scratchpad (New)
   plannerThinking: string // Streamed thought process of the planner
 }
 
@@ -168,22 +176,27 @@ export interface PlanItem {
   id: string
   description: string
   assignedAgent: string // Using string to avoid circular dependency with AgentRole
-  status: 'pending' | 'in_progress' | 'complete' | 'failed'
+  status: PlanStatus
   dependencies: string[]
   parallelGroupId?: string
   result?: string
 }
 
+
 // Default state factory
 export function createInitialState(overrides?: Partial<WritersRoomState>): WritersRoomState {
   return {
     projectId: '',
-    currentPhase: 'premise',
+    currentPhase: Phase.PREMISE,
+
     phaseIterations: 0,
     maxIterationsPerPhase: 15,
     seriesBible: {},
+    masterPrompt: undefined,
+    episodePrompt: undefined,
     episodePremise: undefined,
     characters: [],
+    activeCast: [],
     beatBoard: [],
     unresolvedSetups: [],
     rejectedBeats: [],
@@ -200,6 +213,7 @@ export function createInitialState(overrides?: Partial<WritersRoomState>): Write
     // Deep Agent defaults
     plan: [],
     deepMemory: {},
+    memory: {},
     plannerThinking: '',
     ...overrides,
   }

@@ -84,7 +84,7 @@ export const MjVariantPicker: React.FC<MjVariantPickerProps> = ({
               alt="Midjourney variants"
               className="w-full h-full object-contain rounded-lg"
             />
-            
+
             {/* Clickable overlay buttons for each quadrant */}
             <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-1">
               {variantPositions.map(({ index, label }) => (
@@ -111,7 +111,7 @@ export const MjVariantPicker: React.FC<MjVariantPickerProps> = ({
                         Selecting...
                       </div>
                     ) : (
-                      <div className="bg-primary text-primary-foreground px-4 py-2 rounded-md font-medium shadow-lg">
+                      <div className="bg-primary text-primary-foreground px-4 py-2 rounded-md font-medium font-mono shadow-lg">
                         Select {label}
                       </div>
                     )}

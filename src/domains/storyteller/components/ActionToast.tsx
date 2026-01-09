@@ -178,28 +178,32 @@ interface ActionCommittedProps {
 export const ActionCommitted: React.FC<ActionCommittedProps> = ({ entry, compact = false }) => {
   const display = formatActionForDisplay(entry.action)
 
+  // Compact mode: subtle inline badge (default now)
   if (compact) {
     return (
-      <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-green-500/10 text-green-400 text-xs">
+      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-medium animate-in fade-in slide-in-from-left-2 duration-300">
         <Check className="w-3 h-3" />
+        <span>{display.icon}</span>
         <span>{display.title}</span>
       </div>
     )
   }
 
+  // Full mode: more subtle card (replaces the old loud "ACTION COMMITTED" banner)
   return (
-    <div className="border border-green-500/30 bg-green-500/5 rounded-lg p-3 my-2">
-      <div className="flex items-start gap-3">
-        <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-          <Check className="w-4 h-4 text-green-500" />
+    <div className="border border-green-500/20 bg-green-500/5 rounded-lg p-2.5 my-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="flex items-center gap-2.5">
+        <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
+          <Check className="w-3 h-3 text-green-500" />
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-sm">ACTION COMMITTED</span>
-            <span className="text-lg">{display.icon}</span>
+            <span className="text-sm">{display.icon}</span>
+            <span className="text-sm font-medium text-foreground">{display.title}</span>
           </div>
-          <p className="text-sm font-medium mt-0.5">{display.title}</p>
-          <p className="text-sm text-muted-foreground">{display.description}</p>
+          {display.description && (
+            <p className="text-xs text-muted-foreground truncate mt-0.5">{display.description}</p>
+          )}
         </div>
       </div>
     </div>

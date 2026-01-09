@@ -5,7 +5,7 @@ import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldSt
 import { AssetsPanel } from '@/domains/world-building-toolkit/components/AssetsPanel'
 import { SettingsDialog } from '@/domains/world-building-toolkit/components/SettingsDialog'
 import { AssetUploadZone } from './AssetUploadZone'
-import { Plus, Palette, Package, Info } from 'lucide-react'
+import { Plus, Palette, Package, Info, Eye, EyeOff } from 'lucide-react'
 import { LocalStorageKeys } from '@/constants/localStorage'
 import {
   DomainSidebar,
@@ -31,7 +31,11 @@ export const AssetExporterSidebar: React.FC = () => {
   })
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+
   const currentProject = useWorldStore(state => state.currentProject)
+  const assets = useWorldStore(state => state.assets)
+  const showAllAssetMasks = useWorldStore(state => state.showAllAssetMasks)
+  const setShowAllAssetMasks = useWorldStore(state => state.setShowAllAssetMasks)
 
   // Save master prompt to localStorage when it changes
   const handleMasterPromptChange = (value: string) => {
@@ -47,11 +51,11 @@ export const AssetExporterSidebar: React.FC = () => {
         {currentProject ? (
           <div className="space-y-6">
             {/* Master Prompt */}
-            <SidebarSection icon={<Palette size={12} />}>
-              <div className="flex items-center gap-2 mb-2">
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                  Master Prompt (Style)
-                </label>
+            {/* Master Prompt */}
+            <SidebarSection
+              title="Master Prompt (Style)"
+              icon={<Palette size={12} />}
+              rightContent={
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Info size={12} className="text-muted-foreground/60 cursor-help" />
@@ -60,20 +64,39 @@ export const AssetExporterSidebar: React.FC = () => {
                     <p className="max-w-[200px]">Define the overall art style that will be applied to all generated 3D assets</p>
                   </TooltipContent>
                 </Tooltip>
-              </div>
+              }
+            >
               <textarea
                 value={masterPrompt}
                 onChange={e => handleMasterPromptChange(e.target.value)}
                 placeholder="Define the overall art style and aesthetic..."
                 className="w-full h-24 bg-background/50 border-2 border-border/60 rounded-md p-3 text-sm resize-none hover:border-border transition-colors focus:border-primary focus:ring-1 focus:ring-primary/30 focus:outline-none placeholder:text-muted-foreground/60 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/30"
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-2">
                 This style will be applied to generated assets
               </p>
             </SidebarSection>
 
             {/* Assets */}
-            <SidebarSection separator title="Assets" icon={<Package size={12} />}>
+            <SidebarSection
+              separator
+              title="Assets"
+              icon={<Package size={12} />}
+              rightContent={
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-muted-foreground">{assets.length}</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowAllAssetMasks(!showAllAssetMasks)
+                    }}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showAllAssetMasks ? <EyeOff size={12} /> : <Eye size={12} />}
+                  </button>
+                </div>
+              }
+            >
               {/* Upload Zone */}
               <div className="mb-4">
                 <AssetUploadZone
@@ -88,7 +111,7 @@ export const AssetExporterSidebar: React.FC = () => {
                 />
               </div>
 
-              <AssetsPanel />
+              <AssetsPanel showHelpText={false} />
             </SidebarSection>
           </div>
         ) : (

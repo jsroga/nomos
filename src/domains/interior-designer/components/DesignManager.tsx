@@ -1,10 +1,8 @@
-'use client'
-
 import React, { useEffect, useState } from 'react'
 import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { Button } from '@/components/ui/button'
-import { Trash2, FileText, Plus } from 'lucide-react'
+import { Trash2, FileText, Plus, Edit2 } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Input } from '@/components/ui/input'
@@ -30,6 +28,7 @@ export const DesignManager: React.FC = () => {
   const loadDesign = useInteriorStore(state => state.loadDesign)
   const deleteDesign = useInteriorStore(state => state.deleteDesign)
   const newDesign = useInteriorStore(state => state.newDesign)
+  const renameDesign = useInteriorStore(state => state.renameDesign)
   const hasUnsavedChanges = useInteriorStore(state => state.hasUnsavedChanges)
 
   const [designs, setDesigns] = useState<Design[]>([])
@@ -37,6 +36,7 @@ export const DesignManager: React.FC = () => {
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false)
   const [newSceneName, setNewSceneName] = useState('New Scene')
+  const [editingDesignId, setEditingDesignId] = useState<string | null>(null)
 
   useEffect(() => {
     if (currentProject?.id && isOpen) {
@@ -82,21 +82,37 @@ export const DesignManager: React.FC = () => {
     if (hasUnsavedChanges && currentProject?.id) {
       await useInteriorStore.getState().saveDesign(currentProject.id)
     }
+    setEditingDesignId(null)
     setNewSceneName('New Scene')
     setIsNameDialogOpen(true)
   }
 
-  const handleCreateScene = async () => {
+  const handleRename = (designId: string, currentName: string) => {
+    setEditingDesignId(designId)
+    setNewSceneName(currentName)
+    setIsNameDialogOpen(true)
+  }
+
+  const handleSaveScene = async () => {
     if (newSceneName.trim()) {
-      newDesign()
-      // Immediately save the new design to create a record
-      if (currentProject?.id) {
-        await useInteriorStore.getState().saveDesign(currentProject.id, newSceneName.trim())
+      if (editingDesignId) {
+        // Renaming existing
+        await renameDesign(editingDesignId, newSceneName.trim())
         await fetchDesigns()
+      } else {
+        // Creating new
+        newDesign()
+        // Immediately save the new design to create a record
+        if (currentProject?.id) {
+          await useInteriorStore.getState().saveDesign(currentProject.id, newSceneName.trim())
+          await fetchDesigns()
+        }
       }
     }
     setIsNameDialogOpen(false)
-    setIsOpen(false)
+    if (!editingDesignId) {
+      setIsOpen(false)
+    }
   }
 
   if (!currentProject) {
@@ -135,7 +151,7 @@ export const DesignManager: React.FC = () => {
                 designs.map(design => (
                   <div
                     key={design.id}
-                    className={`p-3 rounded border mb-2 flex items-center justify-between ${design.id === currentDesignId
+                    className={`p-3 rounded border mb-2 flex items-center justify-between group ${design.id === currentDesignId
                       ? 'border-primary bg-accent'
                       : 'border-border hover:bg-accent/50'
                       }`}
@@ -146,16 +162,31 @@ export const DesignManager: React.FC = () => {
                         {new Date(design.updatedAt).toLocaleDateString()}
                       </div>
                     </button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={e => {
-                        e.stopPropagation()
-                        handleDelete(design.id)
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
+
+                    <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={e => {
+                          e.stopPropagation()
+                          handleRename(design.id, design.name)
+                        }}
+                        title="Rename"
+                      >
+                        <Edit2 className="w-4 h-4 text-muted-foreground" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={e => {
+                          e.stopPropagation()
+                          handleDelete(design.id)
+                        }}
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
                 ))
               )}
@@ -164,13 +195,15 @@ export const DesignManager: React.FC = () => {
         </div>
       )}
       {ConfirmDialogComponent}
-      
+
       {/* Scene Name Dialog */}
       <Dialog open={isNameDialogOpen} onOpenChange={setIsNameDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>New Scene</DialogTitle>
-            <DialogDescription>Enter a name for your new scene.</DialogDescription>
+            <DialogTitle>{editingDesignId ? 'Rename Scene' : 'New Scene'}</DialogTitle>
+            <DialogDescription>
+              {editingDesignId ? 'Enter a new name for the scene.' : 'Enter a name for your new scene.'}
+            </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Input
@@ -178,7 +211,7 @@ export const DesignManager: React.FC = () => {
               onChange={(e) => setNewSceneName(e.target.value)}
               placeholder="Scene name"
               onKeyDown={(e) => {
-                if (e.key === 'Enter') handleCreateScene()
+                if (e.key === 'Enter') handleSaveScene()
               }}
               autoFocus
             />
@@ -187,7 +220,9 @@ export const DesignManager: React.FC = () => {
             <Button variant="outline" onClick={() => setIsNameDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCreateScene}>Create</Button>
+            <Button onClick={handleSaveScene}>
+              {editingDesignId ? 'Save' : 'Create'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

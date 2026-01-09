@@ -13,7 +13,11 @@ import {
 } from '@/components/ui/dialog'
 import toast from 'react-hot-toast'
 
-export const AssetsPanel: React.FC = () => {
+interface AssetsPanelProps {
+  showHelpText?: boolean
+}
+
+export const AssetsPanel: React.FC<AssetsPanelProps> = ({ showHelpText = true }) => {
   const currentProject = useWorldStore(state => state.currentProject)
   const assets = useWorldStore(state => state.assets)
   const setAssets = useWorldStore(state => state.setAssets)
@@ -88,20 +92,7 @@ export const AssetsPanel: React.FC = () => {
 
   return (
     <div className="w-full">
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="font-medium text-sm">Exported Assets ({assets.length})</h3>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0"
-            onClick={() => setShowAllAssetMasks(!showAllAssetMasks)}
-            title={showAllAssetMasks ? 'Hide all masks' : 'Show all masks'}
-          >
-            {showAllAssetMasks ? <EyeOff size={14} /> : <Eye size={14} />}
-          </Button>
-        </div>
-      </div>
+
 
       <div className="w-full max-h-64 overflow-y-auto">
         {loading && assets.length === 0 ? (
@@ -109,7 +100,7 @@ export const AssetsPanel: React.FC = () => {
             <Loader2 className="animate-spin w-4 h-4" />
           </div>
         ) : assets.length === 0 ? (
-          <div className="text-xs text-muted-foreground text-center py-4 border border-dashed border-border rounded-lg">
+          <div className="text-xs text-zinc-500 text-center py-4 border border-dashed border-zinc-800 rounded-lg font-mono bg-zinc-900/30">
             No assets exported yet.
             <br />
             <span className="text-[10px]">Draw a box to select objects</span>
@@ -120,8 +111,8 @@ export const AssetsPanel: React.FC = () => {
               <div
                 key={asset.id}
                 className={`relative group aspect-square bg-muted rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${previewAssetId === asset.id
-                    ? 'border-primary ring-2 ring-primary/30'
-                    : 'border-border hover:border-primary/50'
+                  ? 'border-indigo-500 ring-2 ring-indigo-500/30'
+                  : 'border-zinc-800 hover:border-indigo-500/50'
                   }`}
                 onClick={() => handlePreview(asset.id)}
               >
@@ -162,10 +153,11 @@ export const AssetsPanel: React.FC = () => {
         )}
       </div>
 
-      {/* Help text */}
-      <div className="mt-2 text-[10px] text-muted-foreground">
-        Click asset to preview • {showAllAssetMasks ? 'All masks visible' : 'Click 👁 to show all'}
-      </div>
+      {showHelpText && (
+        <div className="mt-2 text-[10px] text-muted-foreground font-mono">
+          Click asset to preview • {showAllAssetMasks ? 'All masks visible' : 'Click 👁 to show all'}
+        </div>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

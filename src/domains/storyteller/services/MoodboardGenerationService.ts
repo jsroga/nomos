@@ -109,7 +109,12 @@ export class MoodboardGenerationService {
                 console.log(`📡 Moodboard status response:`, statusData.status)
 
                 if (statusResponse.status === 404) {
-                    console.warn('Moodboard generation run not found, clearing state')
+                    const elapsed = Date.now() - new Date(runState.startedAt).getTime()
+                    if (elapsed < 30000) {
+                        console.warn(`Moodboard run not found yet (elapsed ${elapsed}ms), retrying...`)
+                        return
+                    }
+                    console.warn('Moodboard generation run not found after grace period, clearing state')
                     this.clearRunState(runState, opId)
                     return
                 }

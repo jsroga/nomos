@@ -1,5 +1,5 @@
 import { HumanMessage, AIMessage } from '@langchain/core/messages'
-import { writersRoomGraph } from '@/domains/storyteller/graph/writers-room'
+import { getWritersRoomGraph, writersRoomGraph } from '@/domains/storyteller/graph/writers-room'
 import {
   actionExecutor,
   isSafeAction,
@@ -177,7 +177,11 @@ export async function POST(req: Request) {
               | 'writing'
               | 'complete',
             seriesBible: seriesBible || {},
+            // Extract master prompt from bible (frontend convention) or top level
+            masterPrompt: seriesBible?.masterPrompt || body.masterPrompt,
+            episodePrompt: body.episodePrompt,
             characters: characters || [],
+            activeCast: body.activeCast || [],
             beatBoard: existingBeats, // Use existing beats from database
             unresolvedSetups: [],
             rejectedBeats: [],
@@ -221,13 +225,16 @@ export async function POST(req: Request) {
             process.env.LANGCHAIN_TRACING_V2 ? 'ENABLED' : 'DISABLED'
           )
 
+          // Get compiled graph (compile() is async in LangGraph 1.x)
+          const graph = await getWritersRoomGraph()
+
           // Stream the graph execution using streamEvents for enhanced streaming
           if (streamMode === 'events') {
             // Use streamEvents for token-level streaming
-            await streamWithEvents(writersRoomGraph, initialState, config, safeEnqueue, () => isClosed)
+            await streamWithEvents(graph, initialState, config, safeEnqueue, () => isClosed)
           } else {
             // Use standard stream for node-level streaming
-            await streamWithNodes(writersRoomGraph, initialState, config, safeEnqueue, () => isClosed)
+            await streamWithNodes(graph, initialState, config, safeEnqueue, () => isClosed)
           }
 
           // Send completion event
@@ -279,12 +286,12 @@ async function streamWithNodes(
   safeEnqueue: (data: string) => void,
   isClosed: () => boolean
 ) {
-  const streamResult = await graph.stream(initialState, config)
   let messageCount = 0
   let actionCount = 0
   const maxMessages = 30 // Safety limit
 
-  for await (const chunk of streamResult) {
+  // LangGraph 1.x: stream() returns a Promise, needs await and streamMode
+  for await (const chunk of await graph.stream(initialState, { ...config, streamMode: 'updates' })) {
     if (isClosed() || messageCount >= maxMessages) {
       console.log(
         `Stream limit reached (messages: ${messageCount}, actions: ${actionCount})`
@@ -414,12 +421,11 @@ async function streamWithEvents(
 
   try {
     // Use streamEvents for enhanced streaming (token-level events from LLMs)
-    const eventStream = await graph.streamEvents(initialState, {
+    // LangGraph 1.x: streamEvents() returns a Promise
+    for await (const event of await graph.streamEvents(initialState, {
       ...config,
       version: 'v2',
-    })
-
-    for await (const event of eventStream) {
+    })) {
       if (isClosed() || messageCount >= maxMessages) {
         console.log(`Stream limit reached (messages: ${messageCount})`)
         break

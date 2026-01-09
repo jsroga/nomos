@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { Paintbrush, Eraser, Check, X, Loader2 } from 'lucide-react'
+import { Slider } from '@/components/ui/slider'
 import { repaintService } from '@/domains/world-building-toolkit/services/RepaintService'
 import toast from 'react-hot-toast'
 
@@ -102,12 +103,11 @@ export const RepaintToolbar: React.FC = () => {
 
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Size</span>
-            <input
-              type="range"
-              min="10"
-              max="200"
-              value={brushSize}
-              onChange={e => setBrushSize(Number(e.target.value))}
+            <Slider
+              min={10}
+              max={200}
+              value={[brushSize]}
+              onValueChange={(vals) => setBrushSize(vals[0])}
               className="w-32"
             />
             <span className="text-xs w-8">{brushSize}px</span>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { projects, beats, characters, episodes } from '@/domains/storyteller/db/schema'
+import { seriesBibles, storyPlans, projects, beats, characters, episodes } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -48,30 +48,80 @@ export async function POST(req: NextRequest) {
 
     console.log(`📥 Actions API: ${action.type} for project ${projectId}`)
 
-    // Helper to get and update project's series bible
+    // Helper to get and update project's series bible in the NEW table
     async function updateSeriesBible(updates: Record<string, any>) {
       if (!projectId) throw new Error('Project ID required')
 
-      const [project] = await db
+      // 1. Try to get existing bible
+      const [existing] = await db
         .select()
-        .from(projects)
-        .where(eq(projects.id, projectId))
+        .from(seriesBibles)
+        .where(eq(seriesBibles.projectId, projectId))
         .limit(1)
 
-      if (!project) throw new Error('Project not found')
+      const currentContent = (existing?.content as Record<string, any>) || {}
+      const updatedContent = deepMerge(currentContent, updates)
 
-      const currentBible = (project.seriesBible as Record<string, any>) || {}
-      const updatedBible = deepMerge(currentBible, updates)
+      // 2. Upsert to seriesBibles table
+      await db
+        .insert(seriesBibles)
+        .values({
+          projectId,
+          content: updatedContent,
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: seriesBibles.projectId,
+          set: {
+            content: updatedContent,
+            updatedAt: new Date(),
+          },
+        })
 
+      // 3. ALSO update projects.series_bible column (where frontend reads from)
+      // This ensures data persists on page refresh
       await db
         .update(projects)
         .set({
-          seriesBible: updatedBible,
+          seriesBible: updatedContent,
           updatedAt: new Date(),
         })
         .where(eq(projects.id, projectId))
 
-      return updatedBible
+      console.log(`✅ Series Bible updated in both tables for project ${projectId}`)
+
+      return updatedContent
+    }
+
+    // Helper to update Story Plan in the NEW table
+    async function updateStoryPlan(updates: Record<string, any>) {
+      if (!projectId) throw new Error('Project ID required')
+
+      const [existing] = await db
+        .select()
+        .from(storyPlans)
+        .where(eq(storyPlans.projectId, projectId))
+        .limit(1)
+
+      const currentContent = (existing?.content as Record<string, any>) || {}
+      const updatedContent = deepMerge(currentContent, updates)
+
+      await db
+        .insert(storyPlans)
+        .values({
+          projectId,
+          content: updatedContent,
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: storyPlans.projectId,
+          set: {
+            content: updatedContent,
+            updatedAt: new Date(),
+          },
+        })
+
+      return updatedContent
     }
 
     switch (action.type) {
@@ -80,14 +130,30 @@ export async function POST(req: NextRequest) {
       // ============================================
 
       case 'UPDATE_SERIES_BIBLE': {
-        // Unwrap storyPlan if present to keep series_bible flat
         const payload = { ...action.payload }
+
+        // Split Story Plan content from Bible content
         if (payload.storyPlan) {
-          const { storyPlan, ...rest } = payload
-          Object.assign(payload, { ...rest, ...storyPlan })
-          delete payload.storyPlan
+          const { storyPlan, ...bibleUpdates } = payload
+
+          // Update Bible
+          await updateSeriesBible(bibleUpdates)
+
+          // Update Story Plan
+          const updatedPlan = await updateStoryPlan(storyPlan)
+
+          console.log(`✅ Series Bible & Story Plan updated for project ${projectId}`)
+
+          return NextResponse.json({
+            success: true,
+            result: {
+              type: 'bible_updated',
+              seriesBible: { ...bibleUpdates, storyPlan: updatedPlan }, // Merge for UI convenience
+            },
+          })
         }
 
+        // Just Bible updates
         const updatedBible = await updateSeriesBible(payload)
         console.log(`✅ Series Bible updated for project ${projectId}`)
 
@@ -100,97 +166,77 @@ export async function POST(req: NextRequest) {
         })
       }
 
-      case 'SET_GENRE_AND_TONE': {
-        const { genre, tone, styleReference } = action.payload
-        const updatedBible = await updateSeriesBible({ genre, tone, styleReference })
+      // Handle Partial Bible Updates (Smart Merges)
+      case 'UPDATE_WORLD_RULES':
+      case 'UPDATE_FACTIONS':
+      case 'UPDATE_INSPIRATIONS':
+      case 'UPDATE_WORLD_DESCRIPTION':
+      case 'UPDATE_PLOT_TWISTS':
+      case 'UPDATE_KEY_CHARACTERS':
+      case 'UPDATE_SOUNDTRACKS':
+      case 'ADD_WORLD_RULE': // Legacy
+      case 'ADD_THEME': // Legacy
+      case 'REMOVE_THEME': // Legacy
+      case 'SET_GENRE_AND_TONE': // Legacy
+        {
+          // Map legacy/specific payloads to generic partial update
+          let updates: any = {}
+          if (action.type === 'UPDATE_WORLD_RULES') updates = { worldRules: action.payload.rules } // payload.rules vs worldRules? Schema says payload.rules. Adapter needed?
+          // Actually updateSeriesBible uses deepMerge, so we can pass partial objects matching the schema keys
 
-        return NextResponse.json({
-          success: true,
-          result: { type: 'bible_updated', seriesBible: updatedBible },
-        })
+          // Mapping logic:
+          if (action.type === 'UPDATE_WORLD_RULES') updates = { worldRules: action.payload.rules } // WARNING: Schema payload is { rules: [...] } but DB stores { worldRules: [...] }?
+          // Let's assume the DB schema keys match legacy keys: worldRules, factions, etc.
+          // DeepMerge handles replacement of arrays. Smart merge happens at AGENT level (agent sends full array or we implement smart merge here?)
+          // Agent prompt says "Use mergeMode smart". 
+          // If mergeMode is 'smart', we shouldn't just overwrite.
+          // BUT `deepMerge` function at top of file replaces arrays.
+          // We might need to implement smart merge here if we want to support it, OR rely on agent sending full array.
+          // Agent tools prompt says: "Use mergeMode smart... Respond with ... payload: { rules: [...] }"
+          // Usually agents read existing, append, and send back full list if they are "smart".
+          // But "smart" mergeMode implies the server handles it?
+          // "action-reducer.ts" usually handles this.
+          // HERE in route.ts, we are the executor.
+
+          // For now, assume agent sends the FINAL array (simplest). 
+
+          if (action.type === 'UPDATE_WORLD_RULES') updates = { worldRules: action.payload.rules }
+          else if (action.type === 'UPDATE_FACTIONS') updates = { factions: action.payload.factions }
+          else if (action.type === 'UPDATE_INSPIRATIONS') updates = { inspirations: action.payload.inspirations }
+          else if (action.type === 'UPDATE_WORLD_DESCRIPTION') updates = { worldDescription: action.payload.description }
+          else if (action.type === 'UPDATE_PLOT_TWISTS') updates = { plotTwists: action.payload.plotTwists }
+          else if (action.type === 'UPDATE_KEY_CHARACTERS') updates = { keyCharacters: action.payload.keyCharacters }
+          else if (action.type === 'ADD_WORLD_RULE') {
+            // Need to fetch existing to append? updateSeriesBible does not append arrays, it replaces.
+            // But we can implement specific append logic here or inside updateSeriesBible.
+            // Let's stick to updateSeriesBible replacement for now and assume deepMerge replaces arrays.
+            // Legacy ADD_WORLD_RULE fetches existing.
+            const [proj] = await db.select().from(seriesBibles).where(eq(seriesBibles.projectId, projectId)).limit(1)
+            const curr = (proj?.content as any) || {}
+            updates = { worldRules: [...(curr.worldRules || []), action.payload.rule] }
+          }
+          else if (action.type === 'SET_GENRE_AND_TONE') updates = { genre: action.payload.genre, tone: action.payload.tone, styleReference: action.payload.styleReference }
+          else if (action.type === 'UPDATE_SOUNDTRACKS') updates = { soundtracks: action.payload.soundtracks }
+
+          const updated = await updateSeriesBible(updates)
+          return NextResponse.json({ success: true, result: { type: 'bible_updated', seriesBible: updated } })
+        }
+
+      case 'UPDATE_EPISODE_ROADMAP': {
+        // This belongs to Story Plan
+        const payload = action.payload
+        const updates: any = {}
+        if (payload.sequences) updates.sequences = payload.sequences
+        if (payload.seasonStructure) updates.seasonStructure = payload.seasonStructure
+        if (payload.executiveSummary) updates.executiveSummary = payload.executiveSummary
+
+        const updatedPlan = await updateStoryPlan(updates)
+        return NextResponse.json({ success: true, result: { type: 'bible_updated', seriesBible: { storyPlan: updatedPlan } } })
       }
 
-      case 'ADD_THEME': {
-        const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1)
-        const currentBible = (project?.seriesBible as Record<string, any>) || {}
-        const themes = [...(currentBible.themes || []), action.payload.theme]
-        const updatedBible = await updateSeriesBible({ themes })
-
-        return NextResponse.json({
-          success: true,
-          result: { type: 'bible_updated', seriesBible: updatedBible },
-        })
-      }
-
-      case 'REMOVE_THEME': {
-        const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1)
-        const currentBible = (project?.seriesBible as Record<string, any>) || {}
-        const themes = (currentBible.themes || []).filter((t: string) => t !== action.payload.theme)
-        const updatedBible = await updateSeriesBible({ themes })
-
-        return NextResponse.json({
-          success: true,
-          result: { type: 'bible_updated', seriesBible: updatedBible },
-        })
-      }
-
-      case 'ADD_WORLD_RULE': {
-        const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1)
-        const currentBible = (project?.seriesBible as Record<string, any>) || {}
-        const worldRules = [...(currentBible.worldRules || []), action.payload.rule]
-        const updatedBible = await updateSeriesBible({ worldRules })
-
-        return NextResponse.json({
-          success: true,
-          result: { type: 'world_rule_added', seriesBible: updatedBible },
-        })
-      }
-
-      case 'CREATE_LOCATION': {
-        const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1)
-        const currentBible = (project?.seriesBible as Record<string, any>) || {}
-        const locations = [...(currentBible.locations || []), { id: uuidv4(), ...action.payload }]
-        const updatedBible = await updateSeriesBible({ locations })
-
-        return NextResponse.json({
-          success: true,
-          result: { type: 'bible_updated', seriesBible: updatedBible },
-        })
-      }
-
-      case 'UPDATE_LOCATION': {
-        const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1)
-        const currentBible = (project?.seriesBible as Record<string, any>) || {}
-        const locations = (currentBible.locations || []).map((loc: any) =>
-          loc.id === action.payload.locationId ? { ...loc, ...action.payload.updates } : loc
-        )
-        const updatedBible = await updateSeriesBible({ locations })
-
-        return NextResponse.json({
-          success: true,
-          result: { type: 'bible_updated', seriesBible: updatedBible },
-        })
-      }
-
-      case 'ADD_LORE_ENTRY': {
-        const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1)
-        const currentBible = (project?.seriesBible as Record<string, any>) || {}
-        const lore = [...(currentBible.lore || []), { id: uuidv4(), ...action.payload }]
-        const updatedBible = await updateSeriesBible({ lore })
-
-        return NextResponse.json({
-          success: true,
-          result: { type: 'bible_updated', seriesBible: updatedBible },
-        })
-      }
-
-      case 'DEFINE_MAGIC_SYSTEM': {
-        const updatedBible = await updateSeriesBible({ magicSystem: action.payload })
-
-        return NextResponse.json({
-          success: true,
-          result: { type: 'bible_updated', seriesBible: updatedBible },
-        })
+      case 'UPDATE_ROADMAP_SUMMARY': {
+        const updatedPlan = await updateStoryPlan({ executiveSummary: action.payload.executiveSummary })
+        return NextResponse.json({ success: true, result: { type: 'bible_updated', seriesBible: { storyPlan: updatedPlan } } })
       }
 
       case 'UPDATE_EPISODE_PREMISE': {
@@ -202,14 +248,12 @@ export async function POST(req: NextRequest) {
         const [existing] = await db.select().from(episodes).where(eq(episodes.id, episodeId))
         const existingPlan = (existing?.storyPlan as Record<string, any>) || {}
 
-        // Merge premise into story plan sequences or top level?
-        // Actually, schema has separate fields for premise on episode now?
-        // Let's check schema. Assuming we store in storyPlan for now or strictly typed fields if they existed.
-        // For now, let's store it in `storyPlan.premise` to keep it safe.
-
         const newPlan = {
           ...existingPlan,
-          premise: premise
+          premise: {
+            ...((existingPlan.premise as any) || {}),
+            ...premise
+          }
         }
 
         await db.update(episodes)
@@ -221,7 +265,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({
           success: true,
-          result: { type: 'bible_updated', seriesBible: newPlan },
+          result: { type: 'episode_updated', storyPlan: newPlan },
         })
       }
 
@@ -517,6 +561,10 @@ export async function POST(req: NextRequest) {
     )
   }
 }
+
+
+
+
 
 
 

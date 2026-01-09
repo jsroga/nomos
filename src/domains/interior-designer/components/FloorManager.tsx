@@ -13,7 +13,8 @@ const FloorMesh: React.FC<{
   floor: Floor
   isSelected: boolean
   onClick: (e: ThreeEvent<MouseEvent>) => void
-}> = ({ floor, isSelected, onClick }) => {
+  opacity?: number
+}> = ({ floor, isSelected, onClick, opacity = 1 }) => {
   // Create shape from points
   // Note: Shape uses X,Y coordinates. We use X and -Z (negated) because
   // the mesh rotation of -PI/2 around X axis will negate Y->Z transformation
@@ -44,15 +45,21 @@ const FloorMesh: React.FC<{
     >
       <shapeGeometry args={[shape]} />
       {textureUrl ? (
-        <TexturedMaterial url={textureUrl} isSelected={isSelected} />
+        <TexturedMaterial url={textureUrl} isSelected={isSelected} opacity={opacity} />
       ) : (
-        <meshStandardMaterial color={isSelected ? '#4f46e5' : color} side={THREE.DoubleSide} />
+        <meshStandardMaterial
+          color={isSelected ? '#4f46e5' : color}
+          side={THREE.DoubleSide}
+          transparent={opacity < 1}
+          opacity={opacity}
+        />
       )}
     </mesh>
   )
 }
 
-const TexturedMaterial: React.FC<{ url: string; isSelected: boolean }> = ({ url, isSelected }) => {
+
+const TexturedMaterial: React.FC<{ url: string; isSelected: boolean; opacity?: number }> = ({ url, isSelected, opacity = 1 }) => {
   const texture = useTexture(url)
 
   React.useLayoutEffect(() => {
@@ -66,9 +73,12 @@ const TexturedMaterial: React.FC<{ url: string; isSelected: boolean }> = ({ url,
       map={texture}
       color={isSelected ? '#4f46e5' : '#ffffff'}
       side={THREE.DoubleSide}
+      transparent={opacity < 1}
+      opacity={opacity}
     />
   )
 }
+
 
 export const FloorManager: React.FC = () => {
   const floors = useInteriorStore(state => state.floors)
@@ -78,20 +88,28 @@ export const FloorManager: React.FC = () => {
   const activeLevel = useInteriorStore(state => state.activeLevel)
 
   return (
-    <group position={[0, activeLevel * 3, 0]}>
-      {floors.map(floor => (
-        <FloorMesh
-          key={floor.id}
-          floor={floor}
-          isSelected={floor.id === selectedId}
-          onClick={e => {
-            e.stopPropagation()
-            if (mode === 'SELECT') {
-              setSelected(floor.id)
-            }
-          }}
-        />
-      ))}
+    <group>
+      {floors.map(floor => {
+        const floorLevel = floor.level ?? 0
+        const floorOpacity = floorLevel === activeLevel ? 1 : 0.3
+        return (
+          <group key={floor.id} position={[0, floorLevel * 3, 0]}>
+            <FloorMesh
+              floor={floor}
+              isSelected={floor.id === selectedId}
+              onClick={e => {
+                e.stopPropagation()
+                if (mode === 'SELECT') {
+                  setSelected(floor.id)
+                }
+              }}
+              opacity={floorOpacity}
+            />
+
+          </group>
+        )
+      })}
     </group>
   )
 }
+

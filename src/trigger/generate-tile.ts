@@ -1,7 +1,7 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import { put } from '@vercel/blob'
-import { GENERATION_PROMPTS, MASK_CONFIG, getGenerationCreativityPrompt } from '@/constants/prompts'
+import { GENERATION_PROMPTS, MASK_CONFIG, getGenerationCreativityPrompt } from '@/lib/server/prompts'
 
 export const generateTileTask = task({
   id: 'generate-tile',
@@ -67,13 +67,13 @@ export const generateTileTask = task({
     // Upload to Vercel Blob (accessible from anywhere, including trigger.dev cloud)
     await metadata.set('stage', 'uploading')
     await metadata.set('progress', 80)
-    
+
     const filename = `tiles/${projectId}/${x}_${y}_${Date.now()}.png`
     const base64Data = generatedImageBase64.replace(/^data:image\/\w+;base64,/, '')
 
     // Upload generated image to Vercel Blob
     const buffer = Buffer.from(base64Data, 'base64')
-    
+
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       throw new Error('BLOB_READ_WRITE_TOKEN not configured')
     }
@@ -119,9 +119,9 @@ export const generateTileTask = task({
     logger.info('Tile generated - pending user review', { filename, hasOriginal: !!originalUrl })
 
     // Return pendingReview: true so UI shows review dialog
-    return { 
-      success: true, 
-      filename, 
+    return {
+      success: true,
+      filename,
       newUrl,
       newBase64: base64Data, // Still include for acceptGeneration to save locally
       originalUrl,

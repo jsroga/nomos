@@ -20,5 +20,5 @@ export default async function Page() {
         // Better to check "Sign In" button behavior on Landing Page.
     }
 
-    return <LandingPage />
+    return <LandingPage isLoggedIn={!!session} />
 }

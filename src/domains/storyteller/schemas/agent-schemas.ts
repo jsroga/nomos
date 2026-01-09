@@ -104,15 +104,60 @@ export type BeatProposal = z.infer<typeof BeatProposalSchema>
 // STORY STRUCTURE SCHEMAS (Moved up for dependencies)
 // ============================================
 
+// ============================================
+// STORY STRUCTURE SCHEMAS (Moved up for dependencies)
+// ============================================
+
 export const StoryArcSchema = z.object({
   id: z.number(),
   name: z.string(),
   description: z.string(),
   keyFactionsInvolved: z.array(z.string()),
   worldConsequence: z.string().describe('How the world changes after this arc'),
+  consequences: z.array(z.string()).optional().describe('Ripple effects: World, Politics, Character'),
+  // Advanced Roadmap Fields
+  logline: z.string().optional().describe('Brief 1-sentence TV Guide style summary'),
+  thematicFocus: z.string().optional().describe('The specific theme explored in this episode'),
+  mainPlotBeat: z.string().optional().describe('A-Story: The core plot advancement'),
+  bPlotBeat: z.string().optional().describe('B-Story: The character-specific subplot'),
+  keyScenes: z.array(z.string()).optional().describe('Crucial moments or set pieces'),
+  hook: z.string().optional().describe('Teaser/Cold Open: The opening grab'),
+  cliffhanger: z.string().optional().describe('The ending hook to drive to the next episode'),
+  reasoning: z.string().optional().describe('Showrunner notes: Why this episode is necessary here'),
+  actStructure: z.string().optional().describe('e.g. "3 Acts" or "Teaser + 4 Acts"'),
 })
 
 export type StorySequence = z.infer<typeof StoryArcSchema>
+
+// Season Structure Schema (New Root Level Object)
+export const SeasonStructureSchema = z.object({
+  seasonLogline: z.string().describe('The elevator pitch for the entire season'),
+  incitingIncident: z.string().describe('The event that starts the clock (Ep 1-2)'),
+  midpointClimax: z.string().describe('The point of no return (Ep 4-5)'),
+  seasonClimax: z.string().describe('The final confrontation (Ep 8-10)'),
+  resolution: z.string().describe('The new normal after the climax'),
+  themeExploration: z.string().describe('How the central theme is challenged/explored'),
+})
+
+export type SeasonStructure = z.infer<typeof SeasonStructureSchema>
+
+// Soundtrack track with YouTube link
+export const SoundtrackTrackSchema = z.object({
+  title: z.string(),
+  artist: z.string(),
+  youtubeUrl: z.string(),
+  mood: z.string().optional().describe('e.g. "dark, brooding", "epic, triumphant"')
+})
+
+export type SoundtrackTrack = z.infer<typeof SoundtrackTrackSchema>
+
+// Inspiration item with description for tooltips
+export const InspirationItemSchema = z.object({
+  title: z.string(),
+  description: z.string().describe('1-2 sentence summary of what this is and why it inspires this world')
+})
+
+export type InspirationItem = z.infer<typeof InspirationItemSchema>
 
 export const StoryPlanSchema = z.object({
   title: z.string(),
@@ -139,19 +184,40 @@ export const StoryPlanSchema = z.object({
     motivation: z.string(),
   }).nullable(),
   sequences: z.array(StoryArcSchema).nullable(),
+  executiveSummary: z.string().nullable().describe('2-3 sentence pitch summarizing the entire season arc'),
+
+  // Season Structure (New)
+  seasonStructure: SeasonStructureSchema.optional().nullable(),
 
   // New World Premise fields
   worldDescription: z.string().nullable(),
   plotTwists: z.array(z.string()).nullable().describe('3 major plot twists that reshape the story'),
+
+  // Enhanced inspirations with descriptions
   inspirations: z.object({
-    books: z.array(z.string()),
-    movies: z.array(z.string()),
-    games: z.array(z.string())
+    books: z.array(InspirationItemSchema),
+    movies: z.array(InspirationItemSchema),
+    games: z.array(InspirationItemSchema)
   }).nullable(),
+
+  // Legacy moodSoundtrack (backwards compat)
   moodSoundtrack: z.string().nullable(),
+  // New soundtracks array with YouTube links
+  soundtracks: z.array(SoundtrackTrackSchema).nullable(),
+
+  imagePrompts: z.record(z.string()).optional(),
+
   moodImages: z.array(z.string()),
 
   themes: z.array(z.string()),
+
+  // Episode Poster / Combined Storyboard
+  posterUrl: z.string().optional().nullable(),
+  posterPrompt: z.string().optional().nullable(),
+
+  // Wireframe / Storyboard
+  storyboardUrl: z.string().optional().nullable(),
+  storyboardPrompt: z.string().optional().nullable(),
 })
 
 // ============================================
@@ -200,7 +266,7 @@ export const UpdateEpisodePremiseActionSchema = z.object({
   type: z.literal('UPDATE_EPISODE_PREMISE'),
   payload: z.object({
     episodeId: z.string().nullable(),
-    premise: EpisodePremiseSchema,
+    premise: EpisodePremiseSchema.partial(),
   }),
 })
 
@@ -526,9 +592,9 @@ export const UpdateInspirationsActionSchema = z.object({
   type: z.literal('UPDATE_INSPIRATIONS'),
   payload: z.object({
     inspirations: z.object({
-      books: z.array(z.string()).nullable(),
-      movies: z.array(z.string()).nullable(),
-      games: z.array(z.string()).nullable()
+      books: z.array(InspirationItemSchema).nullable(),
+      movies: z.array(InspirationItemSchema).nullable(),
+      games: z.array(InspirationItemSchema).nullable()
     }),
     mergeMode: z.enum(['replace', 'merge']).nullable()
   })
@@ -545,6 +611,14 @@ export const UpdateMoodSoundtrackActionSchema = z.object({
   type: z.literal('UPDATE_MOOD_SOUNDTRACK'),
   payload: z.object({
     moodSoundtrack: z.string().describe('Atmosphere description and soundtrack suggestion')
+  })
+})
+
+export const UpdateSoundtracksActionSchema = z.object({
+  type: z.literal('UPDATE_SOUNDTRACKS'),
+  payload: z.object({
+    soundtracks: z.array(SoundtrackTrackSchema),
+    mergeMode: z.enum(['replace', 'merge']).nullable()
   })
 })
 
@@ -574,10 +648,25 @@ export const UpdateEpisodeRoadmapActionSchema = z.object({
   type: z.literal('UPDATE_EPISODE_ROADMAP'),
   payload: z.object({
     sequences: z.array(StoryArcSchema),
+    seasonStructure: SeasonStructureSchema.optional().nullable(),
+    executiveSummary: z.string().nullable().optional(),
     mergeMode: z.enum(['replace', 'merge']).nullable()
   })
 })
 
+export const UpdateSeasonStructureActionSchema = z.object({
+  type: z.literal('UPDATE_SEASON_STRUCTURE'),
+  payload: z.object({
+    seasonStructure: SeasonStructureSchema
+  })
+})
+
+export const UpdateRoadmapSummaryActionSchema = z.object({
+  type: z.literal('UPDATE_ROADMAP_SUMMARY'),
+  payload: z.object({
+    executiveSummary: z.string().describe('2-3 sentence pitch summarizing the entire season arc')
+  })
+})
 
 // --- Unified Action Union ---
 
@@ -598,9 +687,12 @@ export const AgentActionSchema = z.discriminatedUnion('type', [
   UpdateInspirationsActionSchema,
   UpdateWorldDescriptionActionSchema,
   UpdateMoodSoundtrackActionSchema,
+  UpdateSoundtracksActionSchema,
   UpdatePlotTwistsActionSchema,
   UpdateKeyCharactersActionSchema,
   UpdateEpisodeRoadmapActionSchema,
+  UpdateSeasonStructureActionSchema,
+  UpdateRoadmapSummaryActionSchema,
   // Character
   CreateCharacterActionSchema,
   UpdateCharacterProfileActionSchema,
@@ -786,14 +878,14 @@ export type StoryPlan = z.infer<typeof StoryPlanSchema>
 
 
 export const EpisodePremiseArchitectResponseSchema = BaseAgentResponseSchema.extend({
-  episodePremise: EpisodePremiseSchema.nullable(),
+  episodePremise: EpisodePremiseSchema.partial().nullable(),
   actions: z.array(AgentActionSchema),
 })
 
 export type EpisodePremiseArchitectResponse = z.infer<typeof EpisodePremiseArchitectResponseSchema>
 
 export const PremiseArchitectResponseSchema = BaseAgentResponseSchema.extend({
-  actions: z.array(UpdateSeriesBibleActionSchema),
+  actions: z.array(AgentActionSchema),
   storyPlan: StoryPlanSchema.nullable(),
 })
 

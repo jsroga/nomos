@@ -7,6 +7,7 @@ import * as THREE from 'three'
 import { Extrude } from '@react-three/drei'
 import { useLoader } from '@react-three/fiber'
 import { RoadMesh } from '@/domains/interior-designer/components/meshes/RoadMesh'
+import { SculptableSurface } from './SculptableSurface'
 
 // Configuration for rendering each surface type
 const SURFACE_RENDER_CONFIG: Record<SurfaceType, {
@@ -88,29 +89,38 @@ export const SurfaceManager: React.FC = () => {
     const removeSurface = useInteriorStore(state => state.removeSurface)
 
     return (
-        <group position={[0, activeLevel * 3, 0]}>
-            {surfaces.map(surface => (
-                <SurfaceRenderer
-                    key={surface.id}
-                    surface={surface}
-                    isSelected={surface.id === selectedId}
-                    onClick={(e) => {
-                        e.stopPropagation()
-                        if (mode === 'SELECT') setSelected(surface.id)
-                        // Allow deleting in Surface mode with Alt key, handy for cleanup
-                        if (mode === 'SURFACE' && e.altKey) removeSurface(surface.id)
-                    }}
-                />
-            ))}
+        <group>
+            {surfaces.map(surface => {
+                const surfaceLevel = surface.level ?? 0
+                const isOnActiveLevel = surfaceLevel === activeLevel
+                return (
+                    <group key={surface.id} position={[0, surfaceLevel * 3, 0]}>
+                        <SurfaceRenderer
+                            surface={surface}
+                            isSelected={surface.id === selectedId}
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                if (mode === 'SELECT') setSelected(surface.id)
+                                // Allow deleting in Surface mode with Alt key, handy for cleanup
+                                if (mode === 'SURFACE' && e.altKey) removeSurface(surface.id)
+                            }}
+                            opacity={isOnActiveLevel ? 1 : 0.3}
+                        />
+                    </group>
+                )
+            })}
         </group>
     )
 }
+
 
 const SurfaceRenderer: React.FC<{
     surface: Surface
     isSelected: boolean
     onClick: (e: any) => void
-}> = ({ surface, isSelected, onClick }) => {
+    opacity?: number
+}> = ({ surface, isSelected, onClick, opacity = 1 }) => {
+
     const config = SURFACE_RENDER_CONFIG[surface.type]
 
     const textureMap = useMemo(() => {
@@ -148,14 +158,39 @@ const SurfaceRenderer: React.FC<{
                 config={config}
                 isSelected={isSelected}
                 onClick={onClick}
+                opacity={opacity}
             />
         )
     }
 
+
     if (!geometry) return null
 
+    // For ground surfaces (sculptable), use the new SculptableSurface component
+    // Check types: grass, dirt, sand, rock, mars
+    // Check types: grass, dirt, sand, rock, mars, road, pavement
+    const sculptableTypes = ['grass', 'dirt', 'sand', 'rock', 'mars', 'road', 'pavement']
+    if (sculptableTypes.includes(surface.type) && geometry.type === 'shape') {
+        return (
+            <SculptableSurface
+                surface={surface}
+                config={config}
+                isSelected={isSelected}
+                onClick={onClick}
+                opacity={opacity}
+                textureMap={textureMap}
+                geometry={geometry}
+            />
+        )
+    }
+
     return (
-        <group position={[0, config.verticalOffset, 0]}>
+        <group
+            position={[0, config.verticalOffset, 0]}
+            rotation={surface.rotation ? new THREE.Euler(...surface.rotation) : new THREE.Euler(0, 0, 0)}
+            userData={{ id: surface.id }}
+            name={surface.id}
+        >
             {geometry.type === 'shape' && (
                 <Extrude
                     args={[geometry.shape as THREE.Shape, { depth: config.depth, bevelEnabled: false }]}
@@ -170,8 +205,8 @@ const SurfaceRenderer: React.FC<{
                         metalness={surface.metalness ?? config.metalness}
                         roughness={surface.roughness ?? config.roughness}
                         transmission={config.transmission || 0}
-                        opacity={config.opacity || 1}
-                        transparent={!!config.opacity && config.opacity < 1}
+                        opacity={(config.opacity || 1) * opacity}
+                        transparent={opacity < 1 || (!!config.opacity && config.opacity < 1)}
                         envMapIntensity={surface.texture ? 1.0 : 0.5} // Add some environment mapping for nicer look if texture is present
                     />
                     {isSelected && <lineSegments>
@@ -180,6 +215,7 @@ const SurfaceRenderer: React.FC<{
                     </lineSegments>}
                 </Extrude>
             )}
+
 
             {isSelected && (
                 <group>

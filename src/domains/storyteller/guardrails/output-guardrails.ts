@@ -17,6 +17,11 @@ import {
 } from './types'
 import { checkConsistency, extractBibleRef } from './consistency-guardrails'
 import { AGENT_GUARDRAILS } from './agent-guardrails'
+import { 
+  validateURLsInText, 
+  extractURLsFromText,
+  URLValidationResult 
+} from '@/infrastructure/ai/tools/url-validator'
 
 // ============================================
 // ACTION SAFETY CONFIGURATION
@@ -259,7 +264,119 @@ function validateMessageContent(content: string, agentRole: AgentRole): Guardrai
     }
   }
 
+  // Check for potentially hallucinated URLs (sync check - patterns only)
+  const urlIssues = checkURLPatterns(content)
+  issues.push(...urlIssues)
+
   return issues
+}
+
+/**
+ * Check URLs in content for hallucination patterns (synchronous)
+ * For full URL validation, use validateAgentOutputWithURLs (async)
+ */
+function checkURLPatterns(content: string): GuardrailIssue[] {
+  const issues: GuardrailIssue[] = []
+  const urls = extractURLsFromText(content)
+  
+  if (urls.length === 0) return issues
+
+  // Check for obvious hallucination patterns
+  const hallucinationPatterns = [
+    { pattern: /youtube\.com\/watch\?v=.*(.)\1{4,}/, reason: 'Repeated characters in video ID' },
+    { pattern: /youtube\.com\/watch\?v=[X]{5,}/, reason: 'Placeholder X characters' },
+    { pattern: /example\.(com|org|net)/, reason: 'Example domain' },
+    { pattern: /placeholder\.(com|org|net)/, reason: 'Placeholder domain' },
+    { pattern: /lorem|ipsum|dolor|amet/i, reason: 'Lorem ipsum text in URL' },
+    { pattern: /fake|sample|dummy|mock/i, reason: 'Fake/sample keyword' },
+    { pattern: /12345|abcde|qwert/i, reason: 'Sequential characters' },
+  ]
+
+  for (const url of urls) {
+    for (const { pattern, reason } of hallucinationPatterns) {
+      if (pattern.test(url)) {
+        issues.push({
+          code: 'HALLUCINATED_URL_DETECTED',
+          message: `Potentially hallucinated URL detected: ${url} (${reason})`,
+          severity: 'error',
+          field: 'content',
+          context: { url, reason },
+        })
+        break // One issue per URL
+      }
+    }
+  }
+
+  return issues
+}
+
+/**
+ * Validate agent output with full URL verification (async)
+ * This performs network requests to validate URLs
+ */
+export async function validateAgentOutputWithURLs(
+  agentResult: Partial<WritersRoomState>,
+  agentRole: AgentRole,
+  state: WritersRoomState
+): Promise<OutputValidationResult> {
+  // First run the standard validation
+  const baseResult = await validateAgentOutput(agentResult, agentRole, state)
+  
+  // Extract message content
+  const messages = agentResult.messages || []
+  const lastMessage = messages[messages.length - 1] as AIMessage | undefined
+  
+  if (!lastMessage) return baseResult
+  
+  const content = typeof lastMessage.content === 'string'
+    ? lastMessage.content
+    : JSON.stringify(lastMessage.content)
+  
+  // Validate URLs asynchronously
+  try {
+    const urlValidation = await validateURLsInText(content)
+    
+    if (urlValidation.hasHallucinatedURLs) {
+      for (const urlResult of urlValidation.urls.filter(u => u.isLikelyHallucinated)) {
+        baseResult.issues.push({
+          code: 'HALLUCINATED_URL_VERIFIED',
+          message: `Hallucinated URL detected: ${urlResult.url}`,
+          severity: 'error',
+          field: 'content',
+          context: {
+            url: urlResult.url,
+            reason: urlResult.hallucinationReason,
+            platform: urlResult.platform,
+          },
+        })
+      }
+      baseResult.shouldBlock = true
+      baseResult.isValid = false
+    }
+    
+    if (urlValidation.hasInvalidURLs) {
+      for (const urlResult of urlValidation.urls.filter(u => !u.isValid || !u.isReachable)) {
+        if (!urlResult.isLikelyHallucinated) {
+          baseResult.issues.push({
+            code: 'INVALID_URL_DETECTED',
+            message: `Invalid/unreachable URL: ${urlResult.url}`,
+            severity: 'warning',
+            field: 'content',
+            context: {
+              url: urlResult.url,
+              error: urlResult.error,
+              platform: urlResult.platform,
+            },
+          })
+        }
+      }
+    }
+  } catch (error) {
+    console.warn('[OutputGuardrails] URL validation failed:', error)
+    // Don't block on URL validation failures
+  }
+  
+  return baseResult
 }
 
 // ============================================
@@ -464,6 +581,10 @@ export function getValidationSummary(validation: OutputValidationResult): string
 
   return `Output validation: ${parts.join(', ')}`
 }
+
+
+
+
 
 
 

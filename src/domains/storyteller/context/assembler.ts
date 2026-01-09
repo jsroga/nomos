@@ -30,9 +30,10 @@ const RAG_CACHE_TTL = 30000 // 30 seconds
 // Get master prompt context if set
 function getMasterPromptContext(state: WritersRoomState): string {
   const bible = state.seriesBible as SeriesBible | undefined
-  const masterPrompt = bible?.masterPrompt
+  // Check if masterPrompt exists on the object despite strictly typed interface
+  const masterPrompt = (bible as any)?.masterPrompt
   if (!masterPrompt || masterPrompt.trim() === '') return ''
-  
+
   return `
 ## PROJECT MASTER PROMPT (User-defined style & instructions)
 ${masterPrompt}
@@ -58,9 +59,9 @@ function summarizeCharacters(characters: CharacterState[]): string {
   return characters
     .map(
       c =>
-        `- ${c.name}: Stress ${c.stressLevel}%, Transform ${c.transformationProgress}%
-   Goals: ${c.currentGoals.join(', ') || 'None'}
-   Fears: ${c.fears.join(', ') || 'None'}
+        `- ${c.name}: Stress ${c.metrics?.perceivedStakes || 0}%, Transform ${c.metrics?.transformation || 0}%
+   Goals: ${Array.isArray(c.currentGoals) ? c.currentGoals.join(', ') : c.currentGoals || 'None'}
+   Fears: ${Array.isArray(c.fears) ? c.fears.join(', ') : c.fears || 'None'}
    Self-delusion: "${c.selfDelusion || 'Unknown'}"`
     )
     .join('\n')
@@ -118,7 +119,7 @@ Transform locked beats into screenplay prose.
 // Build context for Showrunner
 export function buildShowrunnerContext(state: WritersRoomState): AgentContext {
   const bible = state.seriesBible as SeriesBible | undefined
-  const userDecisions = bible?.userDecisions || {}
+
 
   return {
     role: 'Showrunner',
@@ -139,15 +140,14 @@ DO NOT:
 
 ${getPhaseInstructions(state.currentPhase).replace('{beatCount}', String(state.beatBoard.length))}
 
-${
-  bible?.genre
-    ? `ESTABLISHED BIBLE:
-- Genre: ${bible.genre}
-- Tone: ${bible.tone}
-- Themes: ${bible.themes?.join(', ') || 'TBD'}
+${bible?.genre
+        ? `ESTABLISHED BIBLE:
+- Genre: ${Array.isArray(bible.genre) ? bible.genre.join(', ') : bible.genre || 'TBD'}
+- Tone: ${Array.isArray(bible.tone) ? bible.tone.join(', ') : bible.tone || 'TBD'}
+- Themes: ${bible.centralTheme || 'TBD'}
 `
-    : 'No series bible yet - extract from user input or establish now.'
-}
+        : 'No series bible yet - extract from user input or establish now.'
+      }
 
 YOUR POWERS:
 - UPDATE_SERIES_BIBLE: Set genre, tone, themes
@@ -167,13 +167,8 @@ CURRENT STATE:
 - Unresolved setups: ${state.unresolvedSetups.length}
 
 USER DECISIONS ALREADY MADE (DO NOT ASK AGAIN):
-${
-  Object.entries(userDecisions).length > 0
-    ? Object.entries(userDecisions)
-        .map(([q, a]) => `- Q: "${q}" → A: "${a}"`)
-        .join('\n')
-    : 'None yet'
-}
+// userDecisions removed from types
+'None yet'
 
 RECENT BEATS:
 ${summarizeBeats(state.beatBoard)}
@@ -181,14 +176,13 @@ ${summarizeBeats(state.beatBoard)}
 CHARACTERS:
 ${summarizeCharacters(state.characters)}
 
-${
-  state.currentBeat
-    ? `
+${state.currentBeat
+        ? `
 BEAT UNDER REVIEW:
 ${JSON.stringify(state.currentBeat, null, 2)}
 `
-    : ''
-}`,
+        : ''
+      }`,
   }
 }
 
@@ -239,12 +233,11 @@ UNRESOLVED SETUPS:
 ${state.unresolvedSetups.map(s => `- ${s.description}`).join('\n') || 'None'}
 
 REJECTED BEATS (mine from):
-${
-  state.rejectedBeats
-    .slice(-5)
-    .map(b => `- ${b.logline}`)
-    .join('\n') || 'None'
-}
+${state.rejectedBeats
+        .slice(-5)
+        .map(b => `- ${b.logline}`)
+        .join('\n') || 'None'
+      }
 
 CHARACTERS:
 ${summarizeCharacters(state.characters)}
@@ -285,16 +278,15 @@ Be rigorous. A beat with invalid character psychology breaks the story.`,
 CHARACTERS IN SCENE:
 ${summarizeCharacters(state.characters)}
 
-${
-  state.currentBeat
-    ? `
+${state.currentBeat
+        ? `
 BEAT TO EVALUATE:
 ${JSON.stringify(state.currentBeat, null, 2)}
 
 For each character involved, validate their psychology.
 `
-    : 'No beat to evaluate.'
-}`,
+        : 'No beat to evaluate.'
+      }`,
   }
 }
 
@@ -327,16 +319,15 @@ ${state.unresolvedSetups.map((s, i) => `${i + 1}. ${s.description} (set up in be
 BEAT BOARD:
 ${summarizeBeats(state.beatBoard, 20)}
 
-${
-  state.currentBeat
-    ? `
+${state.currentBeat
+        ? `
 CURRENT BEAT:
 ${JSON.stringify(state.currentBeat, null, 2)}
 
 Analyze this beat for setups and payoffs.
 `
-    : ''
-}`,
+        : ''
+      }`,
   }
 }
 
@@ -364,16 +355,15 @@ YOU MUST PROVIDE:
 Be adversarial but constructive. Your job is to make the story BETTER by finding problems BEFORE they're locked in.`,
 
     stateContext: `
-${
-  state.currentBeat
-    ? `
+${state.currentBeat
+        ? `
 BEAT TO CHALLENGE:
 ${JSON.stringify(state.currentBeat, null, 2)}
 
 Previous challenges have been addressed. Find NEW problems or let it pass.
 `
-    : 'No beat to challenge.'
-}
+        : 'No beat to challenge.'
+      }
 
 RECENT BEATS (for context):
 ${summarizeBeats(state.beatBoard, 5)}`,
@@ -395,42 +385,39 @@ SCREENPLAY FORMAT:
 - Dialogue: Centered, character voice distinct
 - Parentheticals: Sparingly, for non-obvious delivery
 
-${
-  bible?.toneGuidelines
-    ? `
+${bible?.toneGuidelines
+        ? `
 TONE GUIDELINES:
 - Violence: ${bible.toneGuidelines.violence}
 - Humor: ${bible.toneGuidelines.humor}
 - Dialogue: ${bible.toneGuidelines.dialogue}
 `
-    : ''
-}
+        : ''
+      }
 
 The structure is set. Now do jazz. Make it sing.
 
 Keep each scene focused on its beat's purpose. Show, don't tell.`,
 
     stateContext: `
-${
-  state.currentBeat
-    ? `
+${state.currentBeat
+        ? `
 BEAT TO WRITE:
 Logline: ${state.currentBeat.logline}
 Visual Hook: ${state.currentBeat.visualHook}
-Characters: ${state.currentBeat.charactersInvolved.join(', ')}
+Characters: ${Array.isArray(state.currentBeat.charactersInvolved) ? state.currentBeat.charactersInvolved.join(', ') : state.currentBeat.charactersInvolved}
 Emotional Shifts: ${JSON.stringify(state.currentBeat.emotionalShifts)}
 `
-    : ''
-}
+        : ''
+      }
 
-${
-  state.script
-    ? `
+${state.script
+        ? `
 SCRIPT SO FAR (last 500 chars):
 ...${state.script.slice(-500)}
 `
-    : 'Starting fresh script.'
-}
+        : 'Starting fresh script.'
+      }
 
 Write the next scene based on the beat.`,
   }
@@ -545,7 +532,7 @@ function buildRagQuery(state: WritersRoomState, agentRole: string): string {
     parts.push(`Current beat: ${state.currentBeat.logline}`)
     parts.push(`Beat type: ${state.currentBeat.beatType}`)
     if (state.currentBeat.charactersInvolved.length > 0) {
-      parts.push(`Characters: ${state.currentBeat.charactersInvolved.join(', ')}`)
+      parts.push(`Characters: ${Array.isArray(state.currentBeat.charactersInvolved) ? state.currentBeat.charactersInvolved.join(', ') : state.currentBeat.charactersInvolved}`)
     }
   }
 

@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import React, { useMemo } from 'react'
-import { Surface } from '@/domains/interior-designer/store/useInteriorStore'
+import { useInteriorStore, Surface } from '@/domains/interior-designer/store/useInteriorStore'
 import { useLoader } from '@react-three/fiber'
 
 interface RoadMeshProps {
@@ -12,12 +12,15 @@ interface RoadMeshProps {
         color: string
         roughness: number
         metalness: number
+        opacity?: number
     }
     isSelected: boolean
     onClick: (e: any) => void
+    opacity?: number
 }
 
-export const RoadMesh: React.FC<RoadMeshProps> = ({ surface, config, isSelected, onClick }) => {
+export const RoadMesh: React.FC<RoadMeshProps> = ({ surface, config, isSelected, onClick, opacity = 1 }) => {
+
 
     // 1. Generate the Procedural Geometry using ExtrudeGeometry
     const geometry = useMemo(() => {
@@ -45,7 +48,7 @@ export const RoadMesh: React.FC<RoadMeshProps> = ({ surface, config, isSelected,
             // Based on Road behavior (X=Up, Y=Sideways), we need to swap dimensions.
 
             const thickness = surface.width || 0.5
-            const height = surface.height || 3
+            const height = surface.height || 0.1
 
             // Define rectangle:
             // X-axis = Vertical Height (0 to Height)
@@ -110,30 +113,102 @@ export const RoadMesh: React.FC<RoadMeshProps> = ({ surface, config, isSelected,
         return tex
     }, [surface.texture, surface.textureScale])
 
+
+    // Heightmap Conforming Logic with reactive updates
+    const meshRef = React.useRef<THREE.Mesh>(null)
+    const originalPositionsRef = React.useRef<Float32Array | null>(null)
+
+    // Store original positions once geometry is created
+    React.useEffect(() => {
+        if (!geometry) return
+        const positions = geometry.attributes.position.array as Float32Array
+        originalPositionsRef.current = new Float32Array(positions)
+    }, [geometry])
+
+    // Displacement function
+    const applyHeightmapDisplacement = React.useCallback(() => {
+        if (!meshRef.current || !geometry || !originalPositionsRef.current || surface.isVertical) return
+
+        const heightmap = useInteriorStore.getState().terrainSettings.heightmap
+        const heightmapSize = useInteriorStore.getState().terrainSettings.heightmapSize
+        const baseGroundHeight = useInteriorStore.getState().terrainSettings.baseGroundHeight
+
+        if (!heightmap) return
+
+        const geo = meshRef.current.geometry
+        const posAttribute = geo.attributes.position
+        const original = originalPositionsRef.current
+        const terrainSize = 64
+
+        for (let i = 0; i < posAttribute.count; i++) {
+            const origX = original[i * 3]
+            const origY = original[i * 3 + 1]
+            const origZ = original[i * 3 + 2]
+
+            // Road ExtrudeGeometry: path is CatmullRomCurve3 in XZ plane
+            // Shape is extruded perpendicular to path
+            // X and Z are world coordinates, Y is the extrusion cross-section
+            const worldX = origX
+            const worldZ = origZ
+
+            const gridX = Math.floor((worldX + terrainSize / 2) * (heightmapSize / terrainSize))
+            const gridZ = Math.floor((worldZ + terrainSize / 2) * (heightmapSize / terrainSize))
+
+            let h = baseGroundHeight
+            if (gridX >= 0 && gridX < heightmapSize && gridZ >= 0 && gridZ < heightmapSize) {
+                h = heightmap[gridZ * heightmapSize + gridX]
+            }
+
+            // Preserve original Y (cross-section shape) and add terrain height
+            posAttribute.setXYZ(i, origX, origY + h + (config.verticalOffset || 0.01), origZ)
+        }
+
+        posAttribute.needsUpdate = true
+        geo.computeVertexNormals()
+    }, [geometry, surface.isVertical, config.verticalOffset])
+
+    // Initial displacement
+    React.useEffect(() => {
+        applyHeightmapDisplacement()
+    }, [applyHeightmapDisplacement])
+
+    // Subscribe to heightmap changes
+    React.useEffect(() => {
+        let prevHeightmap = useInteriorStore.getState().terrainSettings.heightmap
+        const unsubscribe = useInteriorStore.subscribe((state) => {
+            if (state.terrainSettings.heightmap !== prevHeightmap) {
+                prevHeightmap = state.terrainSettings.heightmap
+                applyHeightmapDisplacement()
+            }
+        })
+        return unsubscribe
+    }, [applyHeightmapDisplacement])
+
+
     if (!geometry) return null
 
     return (
-        <group position={[0, config.verticalOffset, 0]}>
-            <mesh
-                geometry={geometry}
-                onClick={onClick}
-                castShadow
-                receiveShadow
-            >
-                <meshStandardMaterial
-                    color={surface.texture ? 'white' : config.color}
-                    map={surface.texture ? textureMap : null}
-                    metalness={surface.metalness ?? config.metalness}
-                    roughness={surface.roughness ?? config.roughness}
-                    side={THREE.DoubleSide}
-                />
-            </mesh>
-
-            {isSelected && (
-                <mesh geometry={geometry} position={[0, 0.005, 0]}>
-                    <meshBasicMaterial color="white" wireframe transparent opacity={0.3} />
-                </mesh>
-            )}
-        </group>
+        <mesh
+            ref={meshRef}
+            geometry={geometry}
+            userData={{ id: surface.id }}
+            onClick={onClick}
+            receiveShadow
+            castShadow
+        >
+            <meshStandardMaterial
+                color={surface.texture ? 'white' : config.color}
+                map={textureMap}
+                metalness={config.metalness}
+                roughness={config.roughness}
+                opacity={(config.opacity || 1) * opacity}
+                transparent={opacity < 1}
+                side={THREE.DoubleSide}
+            />
+            {isSelected && <lineSegments>
+                <edgesGeometry args={[geometry]} />
+                <lineBasicMaterial color="#ffffff" />
+            </lineSegments>}
+        </mesh>
     )
 }

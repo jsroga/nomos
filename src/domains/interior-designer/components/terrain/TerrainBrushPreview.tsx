@@ -5,33 +5,27 @@ import React, { useMemo } from 'react'
 import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
 import * as THREE from 'three'
 
+// Ground surface types
+const GROUND_SURFACE_TYPES = ['grass', 'dirt', 'sand', 'rock']
+
 export const TerrainBrushPreview: React.FC = () => {
   const terrainBrush = useInteriorStore(state => state.terrainBrush)
   const terrainBrushPosition = useInteriorStore(state => state.terrainBrushPosition)
   const mode = useInteriorStore(state => state.mode)
+  const surfaces = useInteriorStore(state => state.surfaces)
 
-  // Get brush color based on type
-  const brushColor = useMemo(() => {
-    switch (terrainBrush.type) {
-      case 'raise':
-        return '#22c55e' // Green
-      case 'lower':
-        return '#ef4444' // Red
-      case 'flatten':
-        return '#f59e0b' // Amber
-      case 'smooth':
-        return '#3b82f6' // Blue
-      default:
-        return '#ffffff'
-    }
-  }, [terrainBrush.type])
+  // Check if there are any ground surfaces
+  const hasGroundSurface = surfaces.some(s => GROUND_SURFACE_TYPES.includes(s.type))
+
+  // Force neutral color
+  const brushColor = '#ffffff'
 
   // Create circle geometry for brush preview
   const circleGeometry = useMemo(() => {
     const radius = terrainBrush.size / 10 // Scale brush size to world units
     const segments = 64
     const points: THREE.Vector3[] = []
-    
+
     for (let i = 0; i <= segments; i++) {
       const angle = (i / segments) * Math.PI * 2
       points.push(new THREE.Vector3(
@@ -40,38 +34,29 @@ export const TerrainBrushPreview: React.FC = () => {
         Math.sin(angle) * radius
       ))
     }
-    
+
     const geo = new THREE.BufferGeometry().setFromPoints(points)
     return geo
   }, [terrainBrush.size])
 
-  // Only show when in terrain mode and we have a position
-  if (mode !== 'TERRAIN' || !terrainBrushPosition) return null
+  // Only show when:
+  // 1. In terrain mode
+  // 2. There are ground surfaces
+  // 3. We have a brush position (meaning we're hovering over a surface)
+  if (mode !== 'TERRAIN' || !hasGroundSurface || !terrainBrushPosition) return null
 
   return (
     <group position={terrainBrushPosition}>
       {/* Brush circle outline */}
       <line geometry={circleGeometry}>
-        <lineBasicMaterial color={brushColor} linewidth={2} />
+        <lineBasicMaterial color={brushColor} linewidth={1} transparent opacity={0.5} />
       </line>
-      
+
       {/* Center dot */}
       <mesh position={[0, 0.15, 0]}>
-        <sphereGeometry args={[0.1]} />
+        <sphereGeometry args={[0.05]} />
         <meshBasicMaterial color={brushColor} />
-      </mesh>
-      
-      {/* Filled circle preview (semi-transparent) */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
-        <circleGeometry args={[terrainBrush.size / 10, 64]} />
-        <meshBasicMaterial 
-          color={brushColor} 
-          transparent 
-          opacity={0.15} 
-          side={THREE.DoubleSide}
-        />
       </mesh>
     </group>
   )
 }
-

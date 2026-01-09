@@ -3,11 +3,13 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, usePathname } from 'next/navigation'
-import { Map, Box, Settings, LogOut, User, BookOpen, Home } from 'lucide-react'
+import { Map, Box, Settings, LogOut, User, BookOpen, Home, Puzzle, Repeat } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { GlowEffect } from '@/components/ui/glow-effect'
+import { TOUR_STEP_IDS } from '@/lib/tour-constants'
 
 export const GlobalSidebar = () => {
   const pathname = usePathname()
@@ -37,11 +39,22 @@ export const GlobalSidebar = () => {
   }
 
   return (
-    <div className="w-16 h-screen bg-card border-r border-border flex flex-col items-center py-4 gap-4 z-50">
+    <div className="w-16 h-screen bg-card border-r border-border flex flex-col items-center pt-2 pb-4 gap-4 z-50">
       <div className="mb-4">
-        <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold">
-          T
-        </div>
+        <Link href="/app" className="w-10 h-10 flex items-center justify-center relative group z-50">
+          <GlowEffect
+            colors={['#4f46e5', '#3b82f6', '#8b5cf6', '#6366f1']}
+            mode="static"
+            blur="medium"
+            scale={0.8}
+            className="opacity-0 group-hover:opacity-50 transition-opacity duration-500"
+          />
+          <img
+            src="/logo.svg"
+            alt="Logo"
+            className="w-full h-full object-contain brightness-0 invert relative z-10 transition-transform duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_15px_rgba(168,85,247,0.8)]"
+          />
+        </Link>
       </div>
 
       <Link href={`/app/${projectId}/storyteller`}>
@@ -55,7 +68,7 @@ export const GlobalSidebar = () => {
         </Button>
       </Link>
 
-      <Link href={`/app/${projectId}/world-gen`}>
+      <Link href={`/app/${projectId}/world-gen`} id={TOUR_STEP_IDS.WORLD_GEN_NAV}>
         <Button
           variant={isActive(`/app/${projectId}/world-gen`) ? 'default' : 'ghost'}
           size="icon"
@@ -85,6 +98,28 @@ export const GlobalSidebar = () => {
           className="w-10 h-10"
         >
           <Home size={20} />
+        </Button>
+      </Link>
+
+      <Link href={`/app/${projectId}/deduction-puzzle`}>
+        <Button
+          variant={isActive(`/app/${projectId}/deduction-puzzle`) ? 'default' : 'ghost'}
+          size="icon"
+          title="Deduction Puzzle"
+          className="w-10 h-10"
+        >
+          <Puzzle size={20} />
+        </Button>
+      </Link>
+
+      <Link href={`/app/${projectId}/loop-creator`}>
+        <Button
+          variant={isActive(`/app/${projectId}/loop-creator`) ? 'default' : 'ghost'}
+          size="icon"
+          title="Loop Creator"
+          className="w-10 h-10"
+        >
+          <Repeat size={20} />
         </Button>
       </Link>
 

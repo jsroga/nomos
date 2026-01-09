@@ -31,7 +31,7 @@ export const generateEpisodePoster = task({
         try {
             // 1. Generate Image (Gemini / Nano Banana)
             await metadata.set('stage', 'generating_image');
-            const targetModel = modelId || 'gemini-2.0-flash-preview-image-generation';
+            const targetModel = 'gemini-3-pro-image-preview';
 
             // Enhance prompt for Poster style
             // "Movie poster style, cinematic composition, title card, dramatic lighting, high resolution."

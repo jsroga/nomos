@@ -33,17 +33,11 @@ export const AssetLibrary: React.FC = () => {
     const isObjectMode = mode === 'OBJECT' || mode === 'SCATTER'
 
     return (
-        <div className="p-0">
+        <div className="p-4">
             {/* Note: I removed inner padding as the shared component has it. 
                  But wait, shared component has "border-t". 
                  The original had "p-4 border-t". 
                  I'll let the shared component handle layout. */}
-
-            {!isObjectMode && (
-                <div className="px-4 py-2 bg-yellow-500/10 text-yellow-500 text-xs mb-0">
-                    Switch to Object or Scatter mode to place assets
-                </div>
-            )}
 
             <ProjectAssetLibrary
                 assets={assets}

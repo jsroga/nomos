@@ -12,8 +12,13 @@ export const GlobalWaterPlane: React.FC = () => {
   const meshRef = useRef<THREE.Mesh>(null)
   const terrainSettings = useInteriorStore(state => state.terrainSettings)
   const mode = useInteriorStore(state => state.mode)
-  
-  const { waterSurfaceHeight, showWaterPlane } = terrainSettings
+  const surfaces = useInteriorStore(state => state.surfaces)
+
+  const { waterSurfaceHeight, showWaterPlane, heightmap } = terrainSettings
+
+  // Check if there are any ground surfaces
+  const groundSurfaceTypes = ['grass', 'dirt', 'sand', 'rock']
+  const hasGroundSurface = surfaces.some(s => groundSurfaceTypes.includes(s.type))
 
   // Animate water slightly
   useFrame((state) => {
@@ -23,11 +28,11 @@ export const GlobalWaterPlane: React.FC = () => {
     meshRef.current.position.y = waterSurfaceHeight + Math.sin(time * 0.5) * 0.02
   })
 
-  // Only show when in terrain mode and showWaterPlane is true
-  if (mode !== 'TERRAIN' || !showWaterPlane) return null
+  // Only show when ground surface exists, heightmap initialized, in terrain mode, and showWaterPlane is true
+  if (!hasGroundSurface || !heightmap || mode !== 'TERRAIN' || !showWaterPlane) return null
 
   return (
-    <mesh 
+    <mesh
       ref={meshRef}
       rotation={[-Math.PI / 2, 0, 0]}
       position={[0, waterSurfaceHeight, 0]}

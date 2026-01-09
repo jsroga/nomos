@@ -1,4 +1,7 @@
-import { Music, Book, Film, Gamepad2, Save, Edit2, X, Sparkles, Zap, ScrollText, Crown, Users, RefreshCw, Star, Plus, Trash2, UserPlus } from 'lucide-react'
+import { Music, Book, Film, Gamepad2, Save, Edit2, X, Sparkles, Zap, ScrollText, Crown, Users, RefreshCw, Star, Plus, Trash2, UserPlus, ExternalLink } from 'lucide-react'
+import { Liquid } from '@/domains/marketing/components/Liquid'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Button } from '@/components/ui/button'
 import { useState, useEffect, useCallback } from 'react'
 import { LocalStorageKeys } from '@/constants/localStorage'
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
@@ -9,6 +12,9 @@ import { StoryPlan } from '../schemas/agent-schemas'
 import { WorldRuleCard } from './WorldRuleCard'
 import { FactionCard } from './FactionCard'
 import { CharacterCreationDialog } from './CharacterCreationDialog'
+import { EpisodeRoadmapCard } from './EpisodeRoadmapCard'
+import { SeasonOverviewCard } from './SeasonOverviewCard'
+import { StorytellerImage } from './StorytellerImage'
 
 // Helper to get provider config from localStorage
 const getProviderConfig = () => {
@@ -66,9 +72,10 @@ interface WorldBiblePanelProps {
     onSendMessage?: (msg: string) => void
     projectId?: string
     onConvertToCast?: (character: any) => void
+    onClose?: () => void
 }
 
-export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({ storyPlan, onUpdate, isReadOnly = false, onSendMessage, projectId: propProjectId, onConvertToCast }) => {
+export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({ storyPlan, onUpdate, isReadOnly = false, onSendMessage, projectId: propProjectId, onConvertToCast, onClose }) => {
     const rules = storyPlan.worldRules || []
     const factions = storyPlan.factions || []
     const characters = storyPlan.keyCharacters || []
@@ -334,866 +341,1083 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({ storyPlan, onU
     }
 
     return (
-        <div className="h-full pr-2 relative">
-            {!isReadOnly && onUpdate && (
-                <div className="absolute top-0 right-0 z-10">
-                    {isEditing ? (
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => {
-                                    setIsEditing(false)
-                                    setLocalPlan(storyPlan)
-                                }}
-                                className="p-2 bg-muted hover:bg-muted/80 rounded-full transition-colors"
-                                title="Cancel"
-                            >
-                                <X size={16} />
-                            </button>
-                            <button
-                                onClick={handleSave}
-                                className="p-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full transition-colors"
-                                title="Save Changes"
-                            >
-                                <Save size={16} />
-                            </button>
-                        </div>
-                    ) : (
-                        <button
-                            onClick={() => setIsEditing(true)}
-                            className="p-2 bg-muted hover:bg-muted/80 rounded-full transition-colors"
-                            title="Edit Bible"
-                        >
-                            <Edit2 size={16} />
-                        </button>
+        <div className="h-full relative flex flex-col">
+            {/* Fixed Header at top */}
+            <div className="bg-background/80 backdrop-blur-xl border-b border-border/40 pb-[10px] flex items-center justify-between rounded-lg" style={{ marginLeft: -25, marginRight: -25, paddingLeft: 25, paddingRight: 25, paddingTop: 10 }}>
+                <div>
+                    <h2 className="text-xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+                        World Bible
+                    </h2>
+                </div>
+                <div className="flex gap-2 items-center">
+                    {!isReadOnly && onUpdate && (
+                        <>
+                            {isEditing ? (
+                                <>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            setIsEditing(false)
+                                            setLocalPlan(storyPlan)
+                                        }}
+                                        className="gap-2"
+                                    >
+                                        <X size={16} /> Discard
+                                    </Button>
+                                    <Button
+                                        onClick={handleSave}
+                                        size="sm"
+                                        className="gap-2"
+                                    >
+                                        <Save size={16} /> Save Changes
+                                    </Button>
+                                </>
+                            ) : (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setIsEditing(true)}
+                                    className="gap-2"
+                                >
+                                    <Edit2 size={16} /> Edit Bible
+                                </Button>
+                            )}
+                        </>
                     )}
                 </div>
-            )}
+            </div>
 
-            <div className="space-y-8">
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto pr-2 pt-6">
+                <div className="space-y-8 pb-20">
 
-                {/* WORLD DESCRIPTION */}
-                <section>
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <Sparkles className="w-5 h-5 text-yellow-400" />
-                            <h3 className="font-bold text-lg">World Bible</h3>
-                        </div>
-                        {!isReadOnly && onSendMessage && (
-                            <button
-                                onClick={() => onSendMessage("Generate a rich world description including setting, atmosphere, and key details.")}
-                                className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
-                                title="Generate World Description"
-                            >
-                                <RefreshCw size={14} />
-                            </button>
-                        )}
-                    </div>
-                    {isEditing ? (
-                        <textarea
-                            className="w-full h-32 p-3 bg-background border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none"
-                            value={localPlan.worldDescription || ''}
-                            onChange={(e) => handleChange('worldDescription', e.target.value)}
-                            placeholder="Describe the world..."
-                        />
-                    ) : (
-                        <div className="p-4 bg-muted/20 border border-border rounded-lg text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">
-                            {storyPlan.worldDescription || <span className="text-muted-foreground italic">No world description available.</span>}
-                        </div>
-                    )}
-                </section>
-
-                {/* MOODBOARD SECTION */}
-                <section>
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <Sparkles className="w-5 h-5 text-pink-400" />
-                            <h3 className="font-bold text-lg">Moodboard</h3>
-                        </div>
-                        {isEditing && (
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={async () => {
-                                        if (isGenerating) return
-                                        if (!storyPlan.worldDescription) {
-                                            toast.error("Please add a world description first.")
-                                            return
-                                        }
-                                        const config = getProviderConfig()
-                                        if (!config.apiKey) {
-                                            toast.error(`Missing API key for ${config.provider}. Please configure in Settings.`)
-                                            return
-                                        }
-                                        try {
-                                            await moodboardGenerationService.generate(
-                                                projectId,
-                                                [], // Prompts are generated on backend
-                                                undefined, // Style ref handled on backend
-                                                config,
-                                                refetchMoodboardData
-                                            )
-                                        } catch (e) {
-                                            console.error(e)
-                                            toast.error("Error starting generation")
-                                        }
-                                    }}
-                                    disabled={isGenerating}
-                                    className={`p-1.5 rounded-md transition-colors ${isGenerating ? 'opacity-50 cursor-not-allowed' : 'text-white hover:bg-white/10'}`}
-                                    title="Generate Moodboard"
-                                >
-                                    <RefreshCw size={14} className={isGenerating ? 'animate-spin' : ''} />
-                                </button>
+                    {/* WORLD DESCRIPTION */}
+                    <section>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <Sparkles className="w-5 h-5 text-yellow-400" />
+                                <h3 className="font-bold text-lg">World Bible</h3>
                             </div>
-                        )}
-                    </div>
+                            {!isReadOnly && onSendMessage && (
+                                <button
+                                    onClick={() => onSendMessage("Generate a rich world description including setting, atmosphere, and key details.")}
+                                    className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
+                                    title="Generate World Description"
+                                >
+                                    <RefreshCw size={14} />
+                                </button>
+                            )}
+                        </div>
 
-                    {storyPlan.moodImages && storyPlan.moodImages.length > 0 ? (
-                        <div className="grid grid-cols-3 gap-2 mb-4">
-                            {storyPlan.moodImages.map((img, i) => {
-                                if (typeof img !== 'string') return null
-                                const imgProjectId = location.pathname.split('/')[1]
-                                const isPrimary = primaryImageIndex === i
-                                const isFile = img.match(/\.(png|jpg|jpeg|webp)$/i) || img.startsWith('http')
-                                return (
-                                    <div key={i} className={`aspect-square rounded-lg overflow-hidden border relative group ${isPrimary ? 'border-yellow-400 border-2' : 'border-border'}`}>
-                                        {isFile ? (
-                                            <img
-                                                src={img.startsWith('http') ? img : `/projects/${imgProjectId}/${img}`}
-                                                alt={`Mood ${i + 1}`}
-                                                className="w-full h-full object-cover transition-transform group-hover:scale-110"
-                                                onClick={() => window.open(img.startsWith('http') ? img : `/projects/${imgProjectId}/${img}`, '_blank')}
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full bg-muted/30 p-2 flex flex-col items-center justify-center text-center">
-                                                <p className="text-[10px] text-muted-foreground line-clamp-3 mb-2">{img}</p>
-                                                {!isReadOnly && (
-                                                    <button
-                                                        onClick={async (e) => {
-                                                            e.stopPropagation()
-                                                            if (generatingIndices.has(i)) return
-                                                            const config = getProviderConfig()
-                                                            if (!config.apiKey) {
-                                                                toast.error(`Missing API key for ${config.provider}. Please configure in Settings.`)
-                                                                return
-                                                            }
-                                                            try {
-                                                                // Use the text as the prompt
-                                                                await moodboardGenerationService.generate(
-                                                                    projectId,
-                                                                    [img], // Pass single prompt
-                                                                    undefined,
-                                                                    config,
-                                                                    refetchMoodboardData,
-                                                                    i // promptIndex
-                                                                )
-                                                            } catch (err) {
-                                                                console.error(err)
-                                                                toast.error("Error starting generation")
-                                                            }
-                                                        }}
-                                                        disabled={generatingIndices.has(i)}
-                                                        className="p-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded text-xs transition-colors"
-                                                    >
-                                                        {generatingIndices.has(i) ? 'Generating...' : 'Generate Art'}
-                                                    </button>
-                                                )}
-                                            </div>
+                        {/* High Level Meta Info (Title, Genre, Tone) */}
+                        {!isEditing && (storyPlan.title || storyPlan.genre || storyPlan.tone || storyPlan.centralQuestion) && (
+                            <div className="mb-6 space-y-4">
+                                {(storyPlan.title || storyPlan.genre || storyPlan.tone) && (
+                                    <div className="p-5 rounded-lg bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-transparent border border-indigo-500/20">
+                                        {storyPlan.title && (
+                                            <h1 className="text-3xl font-black bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-clip-text text-transparent mb-2 font-serif tracking-tight">
+                                                {storyPlan.title}
+                                            </h1>
                                         )}
-                                        {/* Primary indicator */}
-                                        {isPrimary && (
-                                            <div className="absolute top-1 left-1 z-20">
-                                                <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                                            </div>
-                                        )}
-                                        {/* Loading overlay */}
-                                        {generatingIndices.has(i) && (
-                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-30">
-                                                <Sparkles className="w-8 h-8 text-pink-400 animate-spin" />
-                                            </div>
-                                        )}
-                                        <div className={`absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 ${generatingIndices.has(i) ? 'hidden' : ''}`}>
-                                            {/* Set as Primary Button */}
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    handleSetPrimaryImage(i)
-                                                }}
-                                                className={`p-2 rounded-full transition-colors ${isPrimary ? 'bg-yellow-400 text-black' : 'bg-white/80 hover:bg-yellow-400 text-gray-700'}`}
-                                                title={isPrimary ? "Remove as primary" : "Set as primary background"}
-                                            >
-                                                <Star size={16} className={isPrimary ? 'fill-current' : ''} />
-                                            </button>
-                                            {/* Regenerate Button */}
-                                            {!isReadOnly && (
-                                                <button
-                                                    onClick={async (e) => {
-                                                        e.stopPropagation()
-                                                        if (generatingIndices.has(i)) return
-                                                        const config = getProviderConfig()
-                                                        if (!config.apiKey) {
-                                                            toast.error(`Missing API key for ${config.provider}. Please configure in Settings.`)
-                                                            return
-                                                        }
-                                                        try {
-                                                            await moodboardGenerationService.generate(
-                                                                projectId,
-                                                                [],
-                                                                undefined,
-                                                                config,
-                                                                refetchMoodboardData,
-                                                                i // promptIndex for single image regeneration
-                                                            )
-                                                        } catch (err) {
-                                                            console.error(err)
-                                                            toast.error("Error starting regeneration")
-                                                        }
-                                                    }}
-                                                    disabled={generatingIndices.has(i)}
-                                                    className={`p-2 rounded-full text-white transition-colors ${generatingIndices.has(i) ? 'bg-pink-500/50 cursor-not-allowed' : 'bg-pink-500/80 hover:bg-pink-500'}`}
-                                                    title="Regenerate"
-                                                >
-                                                    <Sparkles size={16} className={generatingIndices.has(i) ? 'animate-spin' : ''} />
-                                                </button>
+                                        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm font-mono text-muted-foreground/80">
+                                            {storyPlan.genre && (
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-indigo-400 uppercase text-xs tracking-wider font-bold">Genre</span>
+                                                    <span>{storyPlan.genre}</span>
+                                                </div>
+                                            )}
+                                            {storyPlan.tone && (
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-purple-400 uppercase text-xs tracking-wider font-bold">Tone</span>
+                                                    <span>{storyPlan.tone}</span>
+                                                </div>
                                             )}
                                         </div>
                                     </div>
-                                )
-                            })}
-                        </div>
-                    ) : (
-                        <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic mb-4">
-                            No mood visuals generated yet.
-                        </div>
-                    )}
-                </section>
+                                )}
 
-                <section>
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <Music className="w-5 h-5 text-blue-400" />
-                            <h3 className="font-bold text-lg">Atmosphere & Soundtrack</h3>
-                        </div>
-                        {!isReadOnly && onSendMessage && (
-                            <button
-                                onClick={() => onSendMessage("Suggest a unique musical atmosphere and specific soundtrack recommendations for this world that reinforce its tone.")}
-                                className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
-                                title="Generate Soundtrack"
-                            >
-                                <RefreshCw size={14} />
-                            </button>
+                                {storyPlan.centralQuestion && (
+                                    <div className="flex items-start gap-4 p-4 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                                        <div className="mt-1 p-1 bg-amber-500/20 rounded-full">
+                                            <Zap className="w-4 h-4 text-amber-500" />
+                                        </div>
+                                        <div>
+                                            <div className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">Central Question</div>
+                                            <div className="text-lg font-serif italic text-amber-100/90 leading-relaxed">
+                                                "{storyPlan.centralQuestion}"
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {storyPlan.themes && storyPlan.themes.length > 0 && (
+                                    /* Themes hidden per user request
+                                    <div className="flex flex-wrap gap-2">
+                                        {storyPlan.themes.map((theme, i) => (
+                                            <span key={i} className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-xs text-muted-foreground font-medium">
+                                                {theme}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    */
+                                    null
+                                )}
+                            </div>
                         )}
-                    </div>
-
-                    {isEditing ? (
-                        <input
-                            type="text"
-                            className="w-full p-2 bg-background border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none"
-                            value={localPlan.moodSoundtrack || ''}
-                            onChange={(e) => handleChange('moodSoundtrack', e.target.value)}
-                            placeholder="Link to soundtrack or describe the mood music..."
-                        />
-                    ) : (
-                        <div className="flex items-center gap-3 p-3 bg-muted/20 border border-border rounded-lg">
-                            <div className="bg-pink-500/10 p-2 rounded-full">
-                                <Music className="w-4 h-4 text-pink-500" />
+                        {isEditing ? (
+                            <textarea
+                                className="w-full h-32 p-3 bg-background border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none"
+                                value={localPlan.worldDescription || ''}
+                                onChange={(e) => handleChange('worldDescription', e.target.value)}
+                                placeholder="Describe the world..."
+                            />
+                        ) : (
+                            <div className="p-4 bg-muted/20 border border-border rounded-lg text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">
+                                {storyPlan.worldDescription || <span className="text-muted-foreground italic">No world description available.</span>}
                             </div>
-                            <span className="text-sm font-medium">
-                                {storyPlan.moodSoundtrack || <span className="text-muted-foreground italic font-normal">No soundtrack defined.</span>}
-                            </span>
-                        </div>
-                    )}
-                </section>
-
-                {/* INSPIRATIONS */}
-                <section>
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <Zap className="w-5 h-5 text-cyan-400" />
-                            <h3 className="font-bold text-lg">Inspirations</h3>
-                        </div>
-                        {!isReadOnly && onSendMessage && (
-                            <button
-                                onClick={() => onSendMessage("Generate diverse inspirations for this world - include relevant books, movies, and games that capture similar themes, atmosphere, or world-building elements.")}
-                                className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
-                                title="Generate Inspirations"
-                            >
-                                <RefreshCw size={14} />
-                            </button>
                         )}
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* BOOKS */}
-                        <div className="p-4 bg-muted/10 border border-border rounded-lg">
-                            <div className="flex items-center gap-2 mb-3 text-cyan-400 font-semibold text-sm">
-                                <Book className="w-4 h-4" /> Books
-                            </div>
-                            {isEditing ? (
-                                <textarea
-                                    className="w-full h-20 p-2 bg-background border border-border rounded text-xs resize-none"
-                                    placeholder="Comma separated..."
-                                    value={localPlan.inspirations?.books?.join(', ') || ''}
-                                    onChange={(e) => handleInspirationChange('books', e.target.value)}
-                                />
-                            ) : (
-                                <div className="space-y-1">
-                                    {storyPlan.inspirations?.books?.length ? (
-                                        storyPlan.inspirations.books.map((item, i) => (
-                                            <div key={i} className="text-xs text-muted-foreground">• {item}</div>
-                                        ))
-                                    ) : <div className="text-xs text-muted-foreground italic">None</div>}
-                                </div>
-                            )}
-                        </div>
+                    </section>
 
-                        {/* MOVIES */}
-                        <div className="p-4 bg-muted/10 border border-border rounded-lg">
-                            <div className="flex items-center gap-2 mb-3 text-cyan-400 font-semibold text-sm">
-                                <Film className="w-4 h-4" /> Movies
+                    {/* MOODBOARD SECTION */}
+                    <section>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <Sparkles className="w-5 h-5 text-pink-400" />
+                                <h3 className="font-bold text-lg">Moodboard</h3>
                             </div>
-                            {isEditing ? (
-                                <textarea
-                                    className="w-full h-20 p-2 bg-background border border-border rounded text-xs resize-none"
-                                    placeholder="Comma separated..."
-                                    value={localPlan.inspirations?.movies?.join(', ') || ''}
-                                    onChange={(e) => handleInspirationChange('movies', e.target.value)}
-                                />
-                            ) : (
-                                <div className="space-y-1">
-                                    {storyPlan.inspirations?.movies?.length ? (
-                                        storyPlan.inspirations.movies.map((item, i) => (
-                                            <div key={i} className="text-xs text-muted-foreground">• {item}</div>
-                                        ))
-                                    ) : <div className="text-xs text-muted-foreground italic">None</div>}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* GAMES */}
-                        <div className="p-4 bg-muted/10 border border-border rounded-lg">
-                            <div className="flex items-center gap-2 mb-3 text-cyan-400 font-semibold text-sm">
-                                <Gamepad2 className="w-4 h-4" /> Games
-                            </div>
-                            {isEditing ? (
-                                <textarea
-                                    className="w-full h-20 p-2 bg-background border border-border rounded text-xs resize-none"
-                                    placeholder="Comma separated..."
-                                    value={localPlan.inspirations?.games?.join(', ') || ''}
-                                    onChange={(e) => handleInspirationChange('games', e.target.value)}
-                                />
-                            ) : (
-                                <div className="space-y-1">
-                                    {storyPlan.inspirations?.games?.length ? (
-                                        storyPlan.inspirations.games.map((item, i) => (
-                                            <div key={i} className="text-xs text-muted-foreground">• {item}</div>
-                                        ))
-                                    ) : <div className="text-xs text-muted-foreground italic">None</div>}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </section>
-
-                {/* WORLD RULES SECTION */}
-                <section>
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <ScrollText className="w-5 h-5 text-purple-400" />
-                            <h3 className="font-bold text-lg">The Laws of the World</h3>
-                        </div>
-                        <div className="flex gap-2">
                             {isEditing && (
-                                <button
-                                    onClick={handleAddWorldRule}
-                                    className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
-                                    title="Add World Rule"
-                                >
-                                    <Plus size={14} />
-                                </button>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={async () => {
+                                            if (isGenerating) return
+                                            if (!storyPlan.worldDescription) {
+                                                toast.error("Please add a world description first.")
+                                                return
+                                            }
+                                            const config = getProviderConfig()
+                                            if (!config.apiKey) {
+                                                toast.error(`Missing API key for ${config.provider}. Please configure in Settings.`)
+                                                return
+                                            }
+                                            try {
+                                                await moodboardGenerationService.generate(
+                                                    projectId,
+                                                    [], // Prompts are generated on backend
+                                                    undefined, // Style ref handled on backend
+                                                    config,
+                                                    refetchMoodboardData
+                                                )
+                                            } catch (e) {
+                                                console.error(e)
+                                                toast.error("Error starting generation")
+                                            }
+                                        }}
+                                        disabled={isGenerating}
+                                        className={`p-1.5 rounded-md transition-colors ${isGenerating ? 'opacity-50 cursor-not-allowed' : 'text-white hover:bg-white/10'}`}
+                                        title="Generate Moodboard"
+                                    >
+                                        <RefreshCw size={14} className={isGenerating ? 'animate-spin' : ''} />
+                                    </button>
+                                </div>
                             )}
+                        </div>
+
+                        {storyPlan.moodImages && storyPlan.moodImages.length > 0 ? (
+                            <div className="grid grid-cols-3 gap-2 mb-4">
+                                {storyPlan.moodImages.map((img, i) => {
+                                    if (typeof img !== 'string') return null
+                                    const isPrimary = primaryImageIndex === i
+                                    const isFile = img.match(/\.(png|jpg|jpeg|webp)$/i) || img.startsWith('http')
+                                    const imageUrl = isFile
+                                        ? (img.startsWith('http') ? img : `/projects/${projectId}/${img}`)
+                                        : null
+
+                                    const isLoading = generatingIndices.has(i)
+
+                                    return (
+                                        <StorytellerImage
+                                            key={i}
+                                            src={imageUrl}
+                                            alt={`Mood ${i + 1}`}
+                                            isLoading={isLoading}
+                                            isPrimary={isPrimary}
+                                            className="group relative"
+                                            emptyLabel={!isFile ? img : "No Image"}
+                                            overlay={
+                                                !isReadOnly && (
+                                                    <div className="flex gap-2">
+                                                        {/* Set as Primary Button */}
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                handleSetPrimaryImage(i)
+                                                            }}
+                                                            className={`p-2 rounded-full transition-colors ${isPrimary ? 'bg-yellow-400 text-black' : 'bg-white/20 hover:bg-yellow-400 text-white hover:text-black backdrop-blur-md'}`}
+                                                            title={isPrimary ? "Remove as primary" : "Set as primary background"}
+                                                        >
+                                                            <Star size={16} className={isPrimary ? 'fill-current' : ''} />
+                                                        </button>
+                                                        {/* Regenerate Button */}
+                                                        <button
+                                                            onClick={async (e) => {
+                                                                e.stopPropagation()
+                                                                if (isLoading) return
+                                                                const config = getProviderConfig()
+                                                                if (!config.apiKey) {
+                                                                    toast.error(`Missing API key for ${config.provider}. Please configure in Settings.`)
+                                                                    return
+                                                                }
+                                                                try {
+                                                                    await moodboardGenerationService.generate(
+                                                                        projectId,
+                                                                        [],
+                                                                        undefined,
+                                                                        config,
+                                                                        refetchMoodboardData,
+                                                                        i // promptIndex for single image regeneration
+                                                                    )
+                                                                } catch (err) {
+                                                                    console.error(err)
+                                                                    toast.error("Error starting regeneration")
+                                                                }
+                                                            }}
+                                                            disabled={isLoading}
+                                                            className={`p-2 rounded-full text-white transition-colors ${isLoading ? 'bg-pink-500/50 cursor-not-allowed' : 'bg-pink-500/80 hover:bg-pink-500 backdrop-blur-md'}`}
+                                                            title="Regenerate"
+                                                        >
+                                                            <Sparkles size={16} className={isLoading ? 'animate-spin' : ''} />
+                                                        </button>
+                                                    </div>
+                                                )
+                                            }
+                                        >
+                                            {/* Primary indicator (always visible if primary) */}
+                                            {isPrimary && (
+                                                <div className="absolute top-1 left-1 z-20">
+                                                    <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 drop-shadow-md" />
+                                                </div>
+                                            )}
+                                        </StorytellerImage>
+                                    )
+                                })}
+                            </div>
+                        ) : (
+                            <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic mb-4">
+                                No mood visuals generated yet.
+                            </div>
+                        )}
+
+                        {/* Image Prompts Display */}
+                        {storyPlan.imagePrompts && (
+                            <div className="mt-4 p-3 bg-pink-500/5 border border-pink-500/10 rounded-lg">
+                                <h4 className="text-xs font-bold text-pink-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                    <Sparkles className="w-3 h-3" /> Visual Direction (Prompts)
+                                </h4>
+                                <div className="space-y-2">
+                                    {Object.entries(storyPlan.imagePrompts as Record<string, string>).map(([key, prompt], i) => (
+                                        <div key={i} className="text-xs text-muted-foreground/80">
+                                            <span className="font-mono text-pink-300 mr-2 uppercase text-[10px]">{key}:</span>
+                                            <span className="italic">"{prompt}"</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </section>
+
+                    <section>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <Music className="w-5 h-5 text-blue-400" />
+                                <h3 className="font-mono font-bold text-lg">Atmosphere & Soundtrack</h3>
+                            </div>
                             {!isReadOnly && onSendMessage && (
                                 <button
-                                    onClick={() => onSendMessage("Generate the fundamental laws and rules that govern this world - magic systems, physics, social contracts, etc.")}
+                                    onClick={() => onSendMessage("Suggest 3-5 real YouTube soundtrack recommendations for this world. For each track, provide the song title, artist name, and actual YouTube URL. Choose music that reinforces the tone and atmosphere.")}
                                     className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
-                                    title="Generate World Rules"
+                                    title="Generate Soundtracks"
                                 >
                                     <RefreshCw size={14} />
                                 </button>
                             )}
                         </div>
-                    </div>
 
-                    {isEditing ? (
-                        <div className="space-y-4">
-                            {(localPlan.worldRules || []).length === 0 ? (
-                                <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
-                                    No world rules defined. Click + to add one.
-                                </div>
-                            ) : (
-                                (localPlan.worldRules || []).map((rule, idx) => (
-                                    <div key={idx} className="p-4 bg-muted/10 border border-border rounded-lg space-y-3">
-                                        <div className="flex items-start justify-between">
-                                            <select
-                                                className="p-2 bg-background border border-border rounded text-sm"
-                                                value={rule.category}
-                                                onChange={(e) => handleWorldRuleChange(idx, 'category', e.target.value)}
+                        {isEditing ? (
+                            <div className="space-y-2">
+                                <input
+                                    type="text"
+                                    className="w-full p-2 bg-background border border-border rounded text-sm font-mono focus:ring-1 focus:ring-primary/50 outline-none"
+                                    value={localPlan.moodSoundtrack || ''}
+                                    onChange={(e) => handleChange('moodSoundtrack', e.target.value)}
+                                    placeholder="General mood/atmosphere description..."
+                                />
+                                <p className="text-xs text-muted-foreground font-mono">Soundtracks generated via refresh button.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {/* Legacy mood description */}
+                                {storyPlan.moodSoundtrack && (
+                                    <div className="p-3 bg-muted/10 border border-border rounded">
+                                        <span className="text-sm text-muted-foreground font-mono">
+                                            {storyPlan.moodSoundtrack}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* YouTube Tracks */}
+                                {storyPlan.soundtracks && storyPlan.soundtracks.length > 0 ? (
+                                    <div className="space-y-1">
+                                        {storyPlan.soundtracks.map((track: any, i: number) => (
+                                            <a
+                                                key={i}
+                                                href={track.youtubeUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-3 p-2 bg-muted/10 border border-border rounded hover:bg-muted/20 transition-colors group"
                                             >
-                                                {['Physics', 'Magic', 'Technology', 'Society', 'Politics', 'Economics'].map(cat => (
-                                                    <option key={cat} value={cat}>{cat}</option>
+                                                <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-cyan-400 flex-shrink-0" />
+                                                <div className="flex-1 min-w-0 font-mono">
+                                                    <span className="text-sm text-foreground">{track.title}</span>
+                                                    <span className="text-xs text-muted-foreground ml-2">— {track.artist}</span>
+                                                    {track.mood && <span className="text-xs text-muted-foreground/60 ml-1">({track.mood})</span>}
+                                                </div>
+                                            </a>
+                                        ))}
+                                    </div>
+                                ) : !storyPlan.moodSoundtrack && (
+                                    <div className="p-3 border border-dashed border-border rounded text-sm text-muted-foreground font-mono italic">
+                                        No soundtrack defined.
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </section>
+
+                    {/* INSPIRATIONS */}
+                    <section>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <Zap className="w-5 h-5 text-cyan-400" />
+                                <h3 className="font-mono font-bold text-lg">Inspirations</h3>
+                            </div>
+                            {!isReadOnly && onSendMessage && (
+                                <button
+                                    onClick={() => onSendMessage("Generate diverse inspirations for this world - include relevant books, movies, and games. For each, provide the exact title and 1-2 sentences describing what it is and why it's thematically relevant.")}
+                                    className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
+                                    title="Generate Inspirations"
+                                >
+                                    <RefreshCw size={14} />
+                                </button>
+                            )}
+                        </div>
+                        <TooltipProvider>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                {/* BOOKS */}
+                                <div className="p-3 bg-muted/10 border border-border rounded">
+                                    <div className="flex items-center gap-2 mb-2 text-cyan-400 font-mono text-xs uppercase tracking-wide">
+                                        <Book className="w-3.5 h-3.5" /> Books
+                                    </div>
+                                    {isEditing ? (
+                                        <textarea
+                                            className="w-full h-16 p-2 bg-background border border-border rounded text-xs font-mono resize-none"
+                                            placeholder="Comma separated..."
+                                            value={(localPlan.inspirations?.books || []).map((item: any) => typeof item === 'string' ? item : item.title).join(', ')}
+                                            onChange={(e) => handleInspirationChange('books', e.target.value)}
+                                        />
+                                    ) : (
+                                        <div className="space-y-1">
+                                            {storyPlan.inspirations?.books?.length ? (
+                                                storyPlan.inspirations.books.map((item: any, i: number) => {
+                                                    const title = typeof item === 'string' ? item : item.title;
+                                                    const description = typeof item === 'object' ? item.description : null;
+                                                    return description ? (
+                                                        <Tooltip key={i}>
+                                                            <TooltipTrigger asChild>
+                                                                <a
+                                                                    href={`https://www.google.com/search?q=${encodeURIComponent(title + ' book')}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="block text-xs text-muted-foreground font-mono hover:text-cyan-400 transition-colors"
+                                                                >
+                                                                    • {title}
+                                                                </a>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent side="right" className="max-w-xs font-mono text-xs">
+                                                                <p>{description}</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    ) : (
+                                                        <a
+                                                            key={i}
+                                                            href={`https://www.google.com/search?q=${encodeURIComponent(title + ' book')}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="block text-xs text-muted-foreground font-mono hover:text-cyan-400 transition-colors"
+                                                        >
+                                                            • {title}
+                                                        </a>
+                                                    );
+                                                })
+                                            ) : <div className="text-xs text-muted-foreground/60 font-mono italic">None</div>}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* MOVIES */}
+                                <div className="p-3 bg-muted/10 border border-border rounded">
+                                    <div className="flex items-center gap-2 mb-2 text-cyan-400 font-mono text-xs uppercase tracking-wide">
+                                        <Film className="w-3.5 h-3.5" /> Movies
+                                    </div>
+                                    {isEditing ? (
+                                        <textarea
+                                            className="w-full h-16 p-2 bg-background border border-border rounded text-xs font-mono resize-none"
+                                            placeholder="Comma separated..."
+                                            value={(localPlan.inspirations?.movies || []).map((item: any) => typeof item === 'string' ? item : item.title).join(', ')}
+                                            onChange={(e) => handleInspirationChange('movies', e.target.value)}
+                                        />
+                                    ) : (
+                                        <div className="space-y-1">
+                                            {storyPlan.inspirations?.movies?.length ? (
+                                                storyPlan.inspirations.movies.map((item: any, i: number) => {
+                                                    const title = typeof item === 'string' ? item : item.title;
+                                                    const description = typeof item === 'object' ? item.description : null;
+                                                    return description ? (
+                                                        <Tooltip key={i}>
+                                                            <TooltipTrigger asChild>
+                                                                <a
+                                                                    href={`https://www.google.com/search?q=${encodeURIComponent(title + ' movie')}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="block text-xs text-muted-foreground font-mono hover:text-cyan-400 transition-colors"
+                                                                >
+                                                                    • {title}
+                                                                </a>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent side="right" className="max-w-xs font-mono text-xs">
+                                                                <p>{description}</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    ) : (
+                                                        <a
+                                                            key={i}
+                                                            href={`https://www.google.com/search?q=${encodeURIComponent(title + ' movie')}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="block text-xs text-muted-foreground font-mono hover:text-cyan-400 transition-colors"
+                                                        >
+                                                            • {title}
+                                                        </a>
+                                                    );
+                                                })
+                                            ) : <div className="text-xs text-muted-foreground/60 font-mono italic">None</div>}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* GAMES */}
+                                <div className="p-3 bg-muted/10 border border-border rounded">
+                                    <div className="flex items-center gap-2 mb-2 text-cyan-400 font-mono text-xs uppercase tracking-wide">
+                                        <Gamepad2 className="w-3.5 h-3.5" /> Games
+                                    </div>
+                                    {isEditing ? (
+                                        <textarea
+                                            className="w-full h-16 p-2 bg-background border border-border rounded text-xs font-mono resize-none"
+                                            placeholder="Comma separated..."
+                                            value={(localPlan.inspirations?.games || []).map((item: any) => typeof item === 'string' ? item : item.title).join(', ')}
+                                            onChange={(e) => handleInspirationChange('games', e.target.value)}
+                                        />
+                                    ) : (
+                                        <div className="space-y-1">
+                                            {storyPlan.inspirations?.games?.length ? (
+                                                storyPlan.inspirations.games.map((item: any, i: number) => {
+                                                    const title = typeof item === 'string' ? item : item.title;
+                                                    const description = typeof item === 'object' ? item.description : null;
+                                                    return description ? (
+                                                        <Tooltip key={i}>
+                                                            <TooltipTrigger asChild>
+                                                                <a
+                                                                    href={`https://www.google.com/search?q=${encodeURIComponent(title + ' game')}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="block text-xs text-muted-foreground font-mono hover:text-cyan-400 transition-colors"
+                                                                >
+                                                                    • {title}
+                                                                </a>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent side="right" className="max-w-xs font-mono text-xs">
+                                                                <p>{description}</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    ) : (
+                                                        <a
+                                                            key={i}
+                                                            href={`https://www.google.com/search?q=${encodeURIComponent(title + ' game')}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="block text-xs text-muted-foreground font-mono hover:text-cyan-400 transition-colors"
+                                                        >
+                                                            • {title}
+                                                        </a>
+                                                    );
+                                                })
+                                            ) : <div className="text-xs text-muted-foreground/60 font-mono italic">None</div>}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </TooltipProvider>
+                    </section>
+
+                    {/* WORLD RULES SECTION */}
+                    <section>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <ScrollText className="w-5 h-5 text-purple-400" />
+                                <h3 className="font-bold text-lg">The Laws of the World</h3>
+                            </div>
+                            <div className="flex gap-2">
+                                {isEditing && (
+                                    <button
+                                        onClick={handleAddWorldRule}
+                                        className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
+                                        title="Add World Rule"
+                                    >
+                                        <Plus size={14} />
+                                    </button>
+                                )}
+                                {!isReadOnly && onSendMessage && (
+                                    <button
+                                        onClick={() => onSendMessage("Generate the fundamental laws and rules that govern this world - magic systems, physics, social contracts, etc. Mention examples of excellent world rules like in Death Note, Case of Golden Idol (game), Game of Thrones, Pluribus.")}
+                                        className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
+                                        title="Generate World Rules"
+                                    >
+                                        <RefreshCw size={14} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {isEditing ? (
+                            <div className="space-y-4">
+                                {(localPlan.worldRules || []).length === 0 ? (
+                                    <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
+                                        No world rules defined. Click + to add one.
+                                    </div>
+                                ) : (
+                                    (localPlan.worldRules || []).map((rule, idx) => (
+                                        <div key={idx} className="p-4 bg-muted/10 border border-border rounded-lg space-y-3">
+                                            <div className="flex items-start justify-between">
+                                                <select
+                                                    className="p-2 bg-background border border-border rounded text-sm"
+                                                    value={rule.category}
+                                                    onChange={(e) => handleWorldRuleChange(idx, 'category', e.target.value)}
+                                                >
+                                                    {['Physics', 'Magic', 'Technology', 'Society', 'Politics', 'Economics'].map(cat => (
+                                                        <option key={cat} value={cat}>{cat}</option>
+                                                    ))}
+                                                </select>
+                                                <button
+                                                    onClick={() => handleRemoveWorldRule(idx)}
+                                                    className="p-1.5 text-red-400 hover:bg-red-400/20 rounded"
+                                                    title="Remove Rule"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 bg-background border border-border rounded text-sm"
+                                                placeholder="The rule..."
+                                                value={rule.rule || ''}
+                                                onChange={(e) => handleWorldRuleChange(idx, 'rule', e.target.value)}
+                                            />
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 bg-background border border-border rounded text-sm"
+                                                placeholder="Consequence if broken..."
+                                                value={rule.consequence || ''}
+                                                onChange={(e) => handleWorldRuleChange(idx, 'consequence', e.target.value)}
+                                            />
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 bg-background border border-border rounded text-sm"
+                                                placeholder="Exceptions (optional)..."
+                                                value={rule.exceptions || ''}
+                                                onChange={(e) => handleWorldRuleChange(idx, 'exceptions', e.target.value || null)}
+                                            />
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        ) : rules.length === 0 ? (
+                            <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
+                                No world rules defined yet. The laws of nature (or magic) are unspoken.
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {rules.map((rule, idx) => {
+                                    if (!rule) return null
+                                    return <WorldRuleCard key={idx} rule={rule as any} />
+                                })}
+                            </div>
+                        )}
+                    </section>
+
+                    {/* FACTIONS SECTION */}
+                    <section>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <Crown className="w-5 h-5 text-orange-400" />
+                                <h3 className="font-bold text-lg">Power & Factions</h3>
+                            </div>
+                            <div className="flex gap-2">
+                                {isEditing && (
+                                    <button
+                                        onClick={handleAddFaction}
+                                        className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
+                                        title="Add Faction"
+                                    >
+                                        <Plus size={14} />
+                                    </button>
+                                )}
+                                {!isReadOnly && onSendMessage && (
+                                    <button
+                                        onClick={() => onSendMessage("Generate the major factions, power structures, and political forces in this world.")}
+                                        className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
+                                        title="Generate Factions"
+                                    >
+                                        <RefreshCw size={14} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {isEditing ? (
+                            <div className="space-y-4">
+                                {(localPlan.factions || []).length === 0 ? (
+                                    <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
+                                        No factions defined. Click + to add one.
+                                    </div>
+                                ) : (
+                                    (localPlan.factions || []).map((faction, idx) => (
+                                        <div key={idx} className="p-4 bg-muted/10 border border-border rounded-lg space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <input
+                                                    type="text"
+                                                    className="flex-1 p-2 bg-background border border-border rounded text-sm font-bold"
+                                                    placeholder="Faction Name..."
+                                                    value={faction.name || ''}
+                                                    onChange={(e) => handleFactionChange(idx, 'name', e.target.value)}
+                                                />
+                                                <button
+                                                    onClick={() => handleRemoveFaction(idx)}
+                                                    className="ml-2 p-1.5 text-red-400 hover:bg-red-400/20 rounded"
+                                                    title="Remove Faction"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                            <textarea
+                                                className="w-full p-2 bg-background border border-border rounded text-sm resize-none h-16"
+                                                placeholder="Ideology / Core belief..."
+                                                value={faction.ideology || ''}
+                                                onChange={(e) => handleFactionChange(idx, 'ideology', e.target.value)}
+                                            />
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 bg-background border border-border rounded text-sm"
+                                                placeholder="Goals (comma separated)..."
+                                                value={(faction.goals || []).join(', ')}
+                                                onChange={(e) => handleFactionChange(idx, 'goals', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                                            />
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 bg-background border border-border rounded text-sm"
+                                                placeholder="Resources / Power..."
+                                                value={faction.resources || ''}
+                                                onChange={(e) => handleFactionChange(idx, 'resources', e.target.value)}
+                                            />
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 bg-background border border-border rounded text-sm"
+                                                placeholder="Weaknesses (optional)..."
+                                                value={faction.weaknesses || ''}
+                                                onChange={(e) => handleFactionChange(idx, 'weaknesses', e.target.value || null)}
+                                            />
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 bg-background border border-border rounded text-sm"
+                                                placeholder="Rivals (comma separated, optional)..."
+                                                value={(faction.rivals || []).join(', ')}
+                                                onChange={(e) => handleFactionChange(idx, 'rivals', e.target.value ? e.target.value.split(',').map(s => s.trim()).filter(Boolean) : null)}
+                                            />
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        ) : factions.length === 0 ? (
+                            <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
+                                No factions defined. Power is a vacuum.
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {factions.map((faction, idx) => {
+                                    if (!faction) return null
+                                    return <FactionCard key={idx} faction={faction as any} />
+                                })}
+                            </div>
+                        )}
+                    </section>
+
+                    {/* PLOT TWISTS SECTION */}
+                    <section>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <Zap className="w-5 h-5 text-red-400" />
+                                <h3 className="font-bold text-lg">Plot Twists</h3>
+                            </div>
+                            <div className="flex gap-2">
+                                {isEditing && (
+                                    <button
+                                        onClick={handleAddPlotTwist}
+                                        className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
+                                        title="Add Plot Twist"
+                                    >
+                                        <Plus size={14} />
+                                    </button>
+                                )}
+                                {!isReadOnly && onSendMessage && (
+                                    <button
+                                        onClick={() => onSendMessage("Generate 3 major plot twists for this story.")}
+                                        className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
+                                        title="Generate Twists"
+                                    >
+                                        <RefreshCw size={14} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                        {isEditing ? (
+                            <div className="space-y-2">
+                                {(localPlan.plotTwists || []).length === 0 ? (
+                                    <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
+                                        No plot twists defined. Click + to add one.
+                                    </div>
+                                ) : (
+                                    (localPlan.plotTwists || []).map((twist, i) => (
+                                        <div key={i} className="flex items-center gap-2">
+                                            <span className="text-muted-foreground text-sm">{i + 1}.</span>
+                                            <input
+                                                type="text"
+                                                className="flex-1 p-2 bg-background border border-border rounded text-sm"
+                                                placeholder="Describe the plot twist..."
+                                                value={twist}
+                                                onChange={(e) => handlePlotTwistChange(i, e.target.value)}
+                                            />
+                                            <button
+                                                onClick={() => handleRemovePlotTwist(i)}
+                                                className="p-1.5 text-red-400 hover:bg-red-400/20 rounded"
+                                                title="Remove Twist"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        ) : storyPlan.plotTwists && storyPlan.plotTwists.length > 0 ? (
+                            <ul className="list-disc pl-5 space-y-2">
+                                {storyPlan.plotTwists.map((twist, i) => (
+                                    <li key={i} className="text-sm text-muted-foreground">{twist}</li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
+                                No plot twists revealed yet.
+                            </div>
+                        )}
+                    </section>
+
+                    {/* EPISODE ROADMAP SECTION */}
+                    <section>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <Film className="w-5 h-5 text-green-400" />
+                                <h3 className="font-bold text-lg">Episode Roadmap</h3>
+                            </div>
+                            <div className="flex gap-2">
+                                {isEditing && (
+                                    <button
+                                        onClick={handleAddSequence}
+                                        className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
+                                        title="Add Episode"
+                                    >
+                                        <Plus size={14} />
+                                    </button>
+                                )}
+                                {!isReadOnly && onSendMessage && !storyPlan.executiveSummary && storyPlan.sequences?.length > 0 && (
+                                    <button
+                                        onClick={() => onSendMessage("Generate an executive summary for the episode roadmap - a 2-3 sentence pitch summarizing the entire season arc, the core conflict, the stakes, and what makes this story unique.")}
+                                        className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
+                                        title="Generate Executive Summary"
+                                    >
+                                        <Sparkles size={14} />
+                                    </button>
+                                )}
+                                {!isReadOnly && onSendMessage && (
+                                    <button
+                                        onClick={() => window.dispatchEvent(new CustomEvent('trigger-agent-action', { detail: { type: 'generate_roadmap' } }))}
+                                        className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
+                                        title="Generate Roadmap"
+                                    >
+                                        <RefreshCw size={14} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Executive Summary */}
+                        {isEditing ? (
+                            <div className="mb-4">
+                                <label className="block text-xs font-medium text-muted-foreground mb-1">Executive Summary (Season Pitch)</label>
+                                <textarea
+                                    className="w-full h-20 p-3 bg-background border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none"
+                                    value={localPlan.executiveSummary || ''}
+                                    onChange={(e) => handleChange('executiveSummary', e.target.value)}
+                                    placeholder="A 2-3 sentence pitch summarizing the entire season arc..."
+                                />
+                            </div>
+                        ) : storyPlan.executiveSummary ? (
+                            <div className="mb-4 p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-lg">
+                                <p className="text-sm text-foreground/90 leading-relaxed italic">
+                                    "{storyPlan.executiveSummary}"
+                                </p>
+                            </div>
+                        ) : null}
+
+                        {/* Episode Cards */}
+                        {isEditing ? (
+                            <div className="space-y-4">
+                                {(localPlan.sequences || []).length === 0 ? (
+                                    <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
+                                        No episodes defined. Click + to add one.
+                                    </div>
+                                ) : (
+                                    (localPlan.sequences || []).map((seq, i) => (
+                                        <div key={i} className="p-4 bg-muted/10 border border-border rounded-lg space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-mono text-xs text-primary/70">Episode {i + 1}</span>
+                                                <button
+                                                    onClick={() => handleRemoveSequence(i)}
+                                                    className="p-1.5 text-red-400 hover:bg-red-400/20 rounded"
+                                                    title="Remove Episode"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 bg-background border border-border rounded text-sm font-bold"
+                                                placeholder="Episode Name..."
+                                                value={seq.name || ''}
+                                                onChange={(e) => handleSequenceChange(i, 'name', e.target.value)}
+                                            />
+                                            <textarea
+                                                className="w-full p-2 bg-background border border-border rounded text-sm resize-none h-20"
+                                                placeholder="Episode description..."
+                                                value={seq.description || ''}
+                                                onChange={(e) => handleSequenceChange(i, 'description', e.target.value)}
+                                            />
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 bg-background border border-border rounded text-sm"
+                                                placeholder="Key factions involved (comma separated)..."
+                                                value={(seq.keyFactionsInvolved || []).join(', ')}
+                                                onChange={(e) => handleSequenceChange(i, 'keyFactionsInvolved', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                                            />
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 bg-background border border-border rounded text-sm"
+                                                placeholder="World consequence (how the world changes after)..."
+                                                value={seq.worldConsequence || ''}
+                                                onChange={(e) => handleSequenceChange(i, 'worldConsequence', e.target.value)}
+                                            />
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        ) : (
+                            <>
+                                {storyPlan.seasonStructure && (
+                                    <SeasonOverviewCard seasonStructure={storyPlan.seasonStructure} />
+                                )}
+                                {storyPlan.sequences && storyPlan.sequences.length > 0 ? (
+                                    <div className="relative">
+                                        {/* Timeline line removed for cleaner look */}
+
+                                        {/* Episode Cards */}
+                                        <div className="space-y-0">
+                                            {storyPlan.sequences.map((seq, i) => (
+                                                <EpisodeRoadmapCard
+                                                    key={seq.id || i}
+                                                    episode={seq}
+                                                    index={i}
+                                                    isLast={i === storyPlan.sequences!.length - 1}
+                                                    factions={factions as any}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    // Only show "No roadmap" if there is also no season structure? 
+                                    // Or just show it if no episodes.
+                                    !storyPlan.seasonStructure && (
+                                        <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
+                                            No episode roadmap defined.
+                                        </div>
+                                    )
+                                )}
+                            </>
+                        )}
+                    </section>
+
+                    {/* CHARACTERS SECTION */}
+                    <section>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <Users className="w-5 h-5 text-blue-400" />
+                                <h3 className="font-bold text-lg">Key Players</h3>
+                            </div>
+                            <div className="flex gap-2">
+                                {isEditing && (
+                                    <button
+                                        onClick={handleAddKeyCharacter}
+                                        className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
+                                        title="Add Character"
+                                    >
+                                        <Plus size={14} />
+                                    </button>
+                                )}
+                                {!isReadOnly && onSendMessage && (
+                                    <button
+                                        onClick={() => onSendMessage("Generate key characters for this story - protagonists, antagonists, and supporting cast with their motivations and roles.")}
+                                        className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
+                                        title="Generate Key Players"
+                                    >
+                                        <RefreshCw size={14} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                        {isEditing ? (
+                            <div className="space-y-4">
+                                {(localPlan.keyCharacters || []).length === 0 ? (
+                                    <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
+                                        No key characters defined. Click + to add one.
+                                    </div>
+                                ) : (
+                                    (localPlan.keyCharacters || []).map((char, idx) => (
+                                        <div key={idx} className="p-4 bg-muted/10 border border-border rounded-lg space-y-3">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <input
+                                                    type="text"
+                                                    className="flex-1 p-2 bg-background border border-border rounded text-sm font-bold"
+                                                    placeholder="Character Name..."
+                                                    value={char.name || ''}
+                                                    onChange={(e) => handleKeyCharacterChange(idx, 'name', e.target.value)}
+                                                />
+                                                <button
+                                                    onClick={() => handleRemoveKeyCharacter(idx)}
+                                                    className="p-1.5 text-red-400 hover:bg-red-400/20 rounded"
+                                                    title="Remove Character"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <input
+                                                    type="text"
+                                                    className="w-full p-2 bg-background border border-border rounded text-sm"
+                                                    placeholder="Role (e.g. Protagonist, Antagonist)..."
+                                                    value={char.role || ''}
+                                                    onChange={(e) => handleKeyCharacterChange(idx, 'role', e.target.value)}
+                                                />
+                                                <input
+                                                    type="text"
+                                                    className="w-full p-2 bg-background border border-border rounded text-sm"
+                                                    placeholder="Archetype (e.g. Hero, Trickster)..."
+                                                    value={char.archetype || ''}
+                                                    onChange={(e) => handleKeyCharacterChange(idx, 'archetype', e.target.value)}
+                                                />
+                                            </div>
+                                            <textarea
+                                                className="w-full p-2 bg-background border border-border rounded text-sm resize-none h-16"
+                                                placeholder="Motivation - what drives this character..."
+                                                value={char.motivation || ''}
+                                                onChange={(e) => handleKeyCharacterChange(idx, 'motivation', e.target.value)}
+                                            />
+                                            <select
+                                                className="w-full p-2 bg-background border border-border rounded text-sm"
+                                                value={char.factionId || ''}
+                                                onChange={(e) => handleKeyCharacterChange(idx, 'factionId', e.target.value || null)}
+                                            >
+                                                <option value="">No faction alignment</option>
+                                                {(localPlan.factions || factions).map((f: any) => (
+                                                    <option key={f.id} value={f.id}>{f.name}</option>
                                                 ))}
                                             </select>
-                                            <button
-                                                onClick={() => handleRemoveWorldRule(idx)}
-                                                className="p-1.5 text-red-400 hover:bg-red-400/20 rounded"
-                                                title="Remove Rule"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
                                         </div>
-                                        <input
-                                            type="text"
-                                            className="w-full p-2 bg-background border border-border rounded text-sm"
-                                            placeholder="The rule..."
-                                            value={rule.rule || ''}
-                                            onChange={(e) => handleWorldRuleChange(idx, 'rule', e.target.value)}
-                                        />
-                                        <input
-                                            type="text"
-                                            className="w-full p-2 bg-background border border-border rounded text-sm"
-                                            placeholder="Consequence if broken..."
-                                            value={rule.consequence || ''}
-                                            onChange={(e) => handleWorldRuleChange(idx, 'consequence', e.target.value)}
-                                        />
-                                        <input
-                                            type="text"
-                                            className="w-full p-2 bg-background border border-border rounded text-sm"
-                                            placeholder="Exceptions (optional)..."
-                                            value={rule.exceptions || ''}
-                                            onChange={(e) => handleWorldRuleChange(idx, 'exceptions', e.target.value || null)}
-                                        />
+                                    ))
+                                )}
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {displayCharacters.length === 0 ? (
+                                    <div className="col-span-full p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
+                                        No key characters defined yet.
                                     </div>
-                                ))
-                            )}
-                        </div>
-                    ) : rules.length === 0 ? (
-                        <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
-                            No world rules defined yet. The laws of nature (or magic) are unspoken.
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {rules.map((rule, idx) => {
-                                if (!rule) return null
-                                return <WorldRuleCard key={idx} rule={rule as any} />
-                            })}
-                        </div>
-                    )}
-                </section>
-
-                {/* FACTIONS SECTION */}
-                <section>
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <Crown className="w-5 h-5 text-orange-400" />
-                            <h3 className="font-bold text-lg">Power & Factions</h3>
-                        </div>
-                        <div className="flex gap-2">
-                            {isEditing && (
-                                <button
-                                    onClick={handleAddFaction}
-                                    className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
-                                    title="Add Faction"
-                                >
-                                    <Plus size={14} />
-                                </button>
-                            )}
-                            {!isReadOnly && onSendMessage && (
-                                <button
-                                    onClick={() => onSendMessage("Generate the major factions, power structures, and political forces in this world.")}
-                                    className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
-                                    title="Generate Factions"
-                                >
-                                    <RefreshCw size={14} />
-                                </button>
-                            )}
-                        </div>
-                    </div>
-
-                    {isEditing ? (
-                        <div className="space-y-4">
-                            {(localPlan.factions || []).length === 0 ? (
-                                <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
-                                    No factions defined. Click + to add one.
-                                </div>
-                            ) : (
-                                (localPlan.factions || []).map((faction, idx) => (
-                                    <div key={idx} className="p-4 bg-muted/10 border border-border rounded-lg space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <input
-                                                type="text"
-                                                className="flex-1 p-2 bg-background border border-border rounded text-sm font-bold"
-                                                placeholder="Faction Name..."
-                                                value={faction.name || ''}
-                                                onChange={(e) => handleFactionChange(idx, 'name', e.target.value)}
-                                            />
-                                            <button
-                                                onClick={() => handleRemoveFaction(idx)}
-                                                className="ml-2 p-1.5 text-red-400 hover:bg-red-400/20 rounded"
-                                                title="Remove Faction"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
-                                        <textarea
-                                            className="w-full p-2 bg-background border border-border rounded text-sm resize-none h-16"
-                                            placeholder="Ideology / Core belief..."
-                                            value={faction.ideology || ''}
-                                            onChange={(e) => handleFactionChange(idx, 'ideology', e.target.value)}
-                                        />
-                                        <input
-                                            type="text"
-                                            className="w-full p-2 bg-background border border-border rounded text-sm"
-                                            placeholder="Goals (comma separated)..."
-                                            value={(faction.goals || []).join(', ')}
-                                            onChange={(e) => handleFactionChange(idx, 'goals', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                                        />
-                                        <input
-                                            type="text"
-                                            className="w-full p-2 bg-background border border-border rounded text-sm"
-                                            placeholder="Resources / Power..."
-                                            value={faction.resources || ''}
-                                            onChange={(e) => handleFactionChange(idx, 'resources', e.target.value)}
-                                        />
-                                        <input
-                                            type="text"
-                                            className="w-full p-2 bg-background border border-border rounded text-sm"
-                                            placeholder="Weaknesses (optional)..."
-                                            value={faction.weaknesses || ''}
-                                            onChange={(e) => handleFactionChange(idx, 'weaknesses', e.target.value || null)}
-                                        />
-                                        <input
-                                            type="text"
-                                            className="w-full p-2 bg-background border border-border rounded text-sm"
-                                            placeholder="Rivals (comma separated, optional)..."
-                                            value={(faction.rivals || []).join(', ')}
-                                            onChange={(e) => handleFactionChange(idx, 'rivals', e.target.value ? e.target.value.split(',').map(s => s.trim()).filter(Boolean) : null)}
-                                        />
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    ) : factions.length === 0 ? (
-                        <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
-                            No factions defined. Power is a vacuum.
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {factions.map((faction, idx) => {
-                                if (!faction) return null
-                                return <FactionCard key={idx} faction={faction as any} />
-                            })}
-                        </div>
-                    )}
-                </section>
-
-                {/* PLOT TWISTS SECTION */}
-                <section>
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <Zap className="w-5 h-5 text-red-400" />
-                            <h3 className="font-bold text-lg">Plot Twists</h3>
-                        </div>
-                        <div className="flex gap-2">
-                            {isEditing && (
-                                <button
-                                    onClick={handleAddPlotTwist}
-                                    className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
-                                    title="Add Plot Twist"
-                                >
-                                    <Plus size={14} />
-                                </button>
-                            )}
-                            {!isReadOnly && onSendMessage && (
-                                <button
-                                    onClick={() => onSendMessage("Generate 3 major plot twists for this story.")}
-                                    className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
-                                    title="Generate Twists"
-                                >
-                                    <RefreshCw size={14} />
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                    {isEditing ? (
-                        <div className="space-y-2">
-                            {(localPlan.plotTwists || []).length === 0 ? (
-                                <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
-                                    No plot twists defined. Click + to add one.
-                                </div>
-                            ) : (
-                                (localPlan.plotTwists || []).map((twist, i) => (
-                                    <div key={i} className="flex items-center gap-2">
-                                        <span className="text-muted-foreground text-sm">{i + 1}.</span>
-                                        <input
-                                            type="text"
-                                            className="flex-1 p-2 bg-background border border-border rounded text-sm"
-                                            placeholder="Describe the plot twist..."
-                                            value={twist}
-                                            onChange={(e) => handlePlotTwistChange(i, e.target.value)}
-                                        />
-                                        <button
-                                            onClick={() => handleRemovePlotTwist(i)}
-                                            className="p-1.5 text-red-400 hover:bg-red-400/20 rounded"
-                                            title="Remove Twist"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    ) : storyPlan.plotTwists && storyPlan.plotTwists.length > 0 ? (
-                        <ul className="list-disc pl-5 space-y-2">
-                            {storyPlan.plotTwists.map((twist, i) => (
-                                <li key={i} className="text-sm text-muted-foreground">{twist}</li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
-                            No plot twists revealed yet.
-                        </div>
-                    )}
-                </section>
-
-                {/* EPISODE ROADMAP SECTION */}
-                <section>
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <Film className="w-5 h-5 text-green-400" />
-                            <h3 className="font-bold text-lg">Episode Roadmap</h3>
-                        </div>
-                        <div className="flex gap-2">
-                            {isEditing && (
-                                <button
-                                    onClick={handleAddSequence}
-                                    className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
-                                    title="Add Episode"
-                                >
-                                    <Plus size={14} />
-                                </button>
-                            )}
-                            {!isReadOnly && onSendMessage && (
-                                <button
-                                    onClick={() => onSendMessage("Create an episode breakdown for this season.")}
-                                    className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
-                                    title="Generate Roadmap"
-                                >
-                                    <RefreshCw size={14} />
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                    {isEditing ? (
-                        <div className="space-y-4">
-                            {(localPlan.sequences || []).length === 0 ? (
-                                <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
-                                    No episodes defined. Click + to add one.
-                                </div>
-                            ) : (
-                                (localPlan.sequences || []).map((seq, i) => (
-                                    <div key={i} className="p-4 bg-muted/10 border border-border rounded-lg space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-mono text-xs text-primary/70">Episode {i + 1}</span>
-                                            <button
-                                                onClick={() => handleRemoveSequence(i)}
-                                                className="p-1.5 text-red-400 hover:bg-red-400/20 rounded"
-                                                title="Remove Episode"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
-                                        <input
-                                            type="text"
-                                            className="w-full p-2 bg-background border border-border rounded text-sm font-bold"
-                                            placeholder="Episode Name..."
-                                            value={seq.name || ''}
-                                            onChange={(e) => handleSequenceChange(i, 'name', e.target.value)}
-                                        />
-                                        <textarea
-                                            className="w-full p-2 bg-background border border-border rounded text-sm resize-none h-20"
-                                            placeholder="Episode description..."
-                                            value={seq.description || ''}
-                                            onChange={(e) => handleSequenceChange(i, 'description', e.target.value)}
-                                        />
-                                        <input
-                                            type="text"
-                                            className="w-full p-2 bg-background border border-border rounded text-sm"
-                                            placeholder="Key factions involved (comma separated)..."
-                                            value={(seq.keyFactionsInvolved || []).join(', ')}
-                                            onChange={(e) => handleSequenceChange(i, 'keyFactionsInvolved', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                                        />
-                                        <input
-                                            type="text"
-                                            className="w-full p-2 bg-background border border-border rounded text-sm"
-                                            placeholder="World consequence (how the world changes after)..."
-                                            value={seq.worldConsequence || ''}
-                                            onChange={(e) => handleSequenceChange(i, 'worldConsequence', e.target.value)}
-                                        />
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    ) : storyPlan.sequences && storyPlan.sequences.length > 0 ? (
-                        <div className="space-y-4">
-                            {storyPlan.sequences.map((seq, i) => (
-                                <div key={i} className="p-3 bg-muted/20 border border-border rounded-lg">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="font-mono text-xs text-primary/70">Episode {i + 1}</span>
-                                        <span className="font-bold text-sm">{seq.name}</span>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground">{seq.description}</p>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
-                            No episode roadmap defined.
-                        </div>
-                    )}
-                </section>
-
-                {/* CHARACTERS SECTION */}
-                <section>
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <Users className="w-5 h-5 text-blue-400" />
-                            <h3 className="font-bold text-lg">Key Players</h3>
-                        </div>
-                        <div className="flex gap-2">
-                            {isEditing && (
-                                <button
-                                    onClick={handleAddKeyCharacter}
-                                    className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
-                                    title="Add Character"
-                                >
-                                    <Plus size={14} />
-                                </button>
-                            )}
-                            {!isReadOnly && onSendMessage && (
-                                <button
-                                    onClick={() => onSendMessage("Generate key characters for this story - protagonists, antagonists, and supporting cast with their motivations and roles.")}
-                                    className="p-1.5 rounded-md transition-colors text-white hover:bg-white/10"
-                                    title="Generate Key Players"
-                                >
-                                    <RefreshCw size={14} />
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                    {isEditing ? (
-                        <div className="space-y-4">
-                            {(localPlan.keyCharacters || []).length === 0 ? (
-                                <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
-                                    No key characters defined. Click + to add one.
-                                </div>
-                            ) : (
-                                (localPlan.keyCharacters || []).map((char, idx) => (
-                                    <div key={idx} className="p-4 bg-muted/10 border border-border rounded-lg space-y-3">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <input
-                                                type="text"
-                                                className="flex-1 p-2 bg-background border border-border rounded text-sm font-bold"
-                                                placeholder="Character Name..."
-                                                value={char.name || ''}
-                                                onChange={(e) => handleKeyCharacterChange(idx, 'name', e.target.value)}
-                                            />
-                                            <button
-                                                onClick={() => handleRemoveKeyCharacter(idx)}
-                                                className="p-1.5 text-red-400 hover:bg-red-400/20 rounded"
-                                                title="Remove Character"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <input
-                                                type="text"
-                                                className="w-full p-2 bg-background border border-border rounded text-sm"
-                                                placeholder="Role (e.g. Protagonist, Antagonist)..."
-                                                value={char.role || ''}
-                                                onChange={(e) => handleKeyCharacterChange(idx, 'role', e.target.value)}
-                                            />
-                                            <input
-                                                type="text"
-                                                className="w-full p-2 bg-background border border-border rounded text-sm"
-                                                placeholder="Archetype (e.g. Hero, Trickster)..."
-                                                value={char.archetype || ''}
-                                                onChange={(e) => handleKeyCharacterChange(idx, 'archetype', e.target.value)}
-                                            />
-                                        </div>
-                                        <textarea
-                                            className="w-full p-2 bg-background border border-border rounded text-sm resize-none h-16"
-                                            placeholder="Motivation - what drives this character..."
-                                            value={char.motivation || ''}
-                                            onChange={(e) => handleKeyCharacterChange(idx, 'motivation', e.target.value)}
-                                        />
-                                        <select
-                                            className="w-full p-2 bg-background border border-border rounded text-sm"
-                                            value={char.factionId || ''}
-                                            onChange={(e) => handleKeyCharacterChange(idx, 'factionId', e.target.value || null)}
-                                        >
-                                            <option value="">No faction alignment</option>
-                                            {(localPlan.factions || factions).map((f: any) => (
-                                                <option key={f.id} value={f.id}>{f.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {displayCharacters.length === 0 ? (
-                                <div className="col-span-full p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
-                                    No key characters defined yet.
-                                </div>
-                            ) : (
-                                displayCharacters.map((char, idx) => (
-                                    <div key={idx} className="p-4 rounded-lg bg-muted/20 border border-border">
-                                        <div className="font-bold mb-1 flex items-center justify-between">
-                                            {char.name}
-                                            <div className="flex items-center gap-2">
-                                                {onConvertToCast && (
-                                                    <button
-                                                        onClick={() => handleOpenConvertDialog(char as KeyCharacter)}
-                                                        className="p-1.5 rounded bg-primary/10 hover:bg-primary/30 transition-colors border border-primary/20"
-                                                        title="Convert to Cast"
-                                                    >
-                                                        <UserPlus className="w-4 h-4 text-primary" />
-                                                    </button>
-                                                )}
-                                                <span className="text-[10px] uppercase bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                                                    {char.role}
-                                                </span>
+                                ) : (
+                                    displayCharacters.map((char, idx) => (
+                                        <div key={idx} className="p-4 rounded-lg bg-muted/20 border border-border">
+                                            <div className="font-bold mb-1 flex items-center justify-between">
+                                                {char.name}
+                                                <div className="flex items-center gap-2">
+                                                    {onConvertToCast && (
+                                                        <button
+                                                            onClick={() => handleOpenConvertDialog(char as KeyCharacter)}
+                                                            className="p-1.5 rounded bg-primary/10 hover:bg-primary/30 transition-colors border border-primary/20"
+                                                            title="Convert to Cast"
+                                                        >
+                                                            <UserPlus className="w-4 h-4 text-primary" />
+                                                        </button>
+                                                    )}
+                                                    <span className="text-[10px] uppercase bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                                                        {char.role}
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="text-xs text-muted-foreground italic mb-2">
-                                            "{char.archetype}"
-                                        </div>
-                                        <div className="text-xs">
-                                            <span className="font-semibold text-muted-foreground">Motivation: </span>
-                                            {char.motivation}
-                                        </div>
-                                        {char.factionId && (
-                                            <div className="mt-2 pt-2 border-t border-border/50 text-[10px] text-orange-400 flex items-center gap-1">
-                                                <Zap className="w-3 h-3" />
-                                                Aligned with {factions.find((f: any) => f.id === char.factionId)?.name || 'Unknown Faction'}
+                                            <div className="text-xs text-muted-foreground italic mb-2">
+                                                "{char.archetype}"
                                             </div>
-                                        )}
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    )}
-                </section>
+                                            <div className="text-xs">
+                                                <span className="font-semibold text-muted-foreground">Motivation: </span>
+                                                {char.motivation}
+                                            </div>
+                                            {char.factionId && (
+                                                <div className="mt-2 pt-2 border-t border-border/50 text-[10px] text-orange-400 flex items-center gap-1">
+                                                    <Zap className="w-3 h-3" />
+                                                    Aligned with {factions.find((f: any) => f.id === char.factionId)?.name || 'Unknown Faction'}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        )}
+                    </section>
 
+                </div>
             </div>
 
             {/* Convert to Cast Dialog */}
@@ -1204,6 +1428,6 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({ storyPlan, onU
                 projectId={projectId}
                 initialData={convertInitialData}
             />
-        </div >
+        </div>
     )
 }

@@ -480,10 +480,13 @@
           return true;
         } catch (e) {
           // Check for known html2canvas element fetch issues that we can ignore if bridging
-          const isElementError = e && (e.message || "").includes("Unable to find element");
+          const errStr = String(e) + (e && e.message ? e.message : "");
+          const isElementError = errStr.includes("Unable to find element");
+          const isCloneError = errStr.includes("cloned iframe");
+          const isImageError = errStr.includes("Error loading image");
 
-          if (isElementError) {
-            console.warn("liquidGL: Snapshot capture issue ignored (assuming manual texture bridge active).");
+          if (isElementError || isCloneError || isImageError) {
+            console.warn("liquidGL: Snapshot capture issue ignored (element/image error).");
             return true; // Fake success to proceed
           }
 

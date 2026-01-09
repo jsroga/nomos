@@ -7,43 +7,88 @@ interface StoryPlanBoardProps {
   onApprove: () => void
   isGenerating?: boolean
   onUpdateSequence?: (id: number, updates: any) => void
+  isGeneratingPoster?: boolean
+  isGeneratingStoryboard?: boolean
+  isLoading?: boolean
+  projectId: string
+  episodeId?: string | null
+  generatingSection?: string | null
 }
+
 
 export const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
   storyPlan,
   globalBible,
   onApprove,
   isGenerating = false,
+  isGeneratingPoster = false,
+  isGeneratingStoryboard = false,
+  isLoading = false,
+  projectId,
+  episodeId,
+  generatingSection = null,
 }) => {
   // Extract episode premise if it exists within storyPlan (temporary bridging or permanent structure)
   // Assuming storyPlan MIGHT be the episode plan structure.
   // Actually, we need to know if we are looking at an Episode Plan.
 
+  // If loading, show shimmer
+  if (isLoading) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center p-12">
+        <div className="space-y-4 w-full max-w-md">
+          <div className="w-16 h-16 bg-muted rounded-full mx-auto animate-pulse" />
+          <div className="h-8 bg-muted rounded w-3/4 mx-auto animate-pulse" />
+          <div className="h-4 bg-muted rounded w-full animate-pulse" />
+          <div className="h-4 bg-muted rounded w-2/3 mx-auto animate-pulse" />
+        </div>
+      </div>
+    )
+  }
+
   // If no storyPlan (Episode Plan), we show the "Create Premise" view via EpisodePremisePanel (which handles empty state)
 
   // Bridge: Cast storyPlan to EpisodePremise if it fits, or pass null
-  const episodePremise = (storyPlan as any)?.premise || storyPlan; // Handle both nested and flat structures
+  // Ensure title is passed down even if it's on the root object
+  const rawPremise = (storyPlan as any)?.premise || storyPlan;
+  const episodePremise = rawPremise ? {
+    ...rawPremise,
+    title: rawPremise.title || (storyPlan as any)?.title
+  } : null;
 
   return (
     <div className="h-full flex flex-col">
       <EpisodePremisePanel
         premise={episodePremise}
+        episodeId={episodeId || (storyPlan as any)?.id}
         globalBible={globalBible}
         posterUrl={(storyPlan as any)?.posterUrl}
+        storyboardUrl={(storyPlan as any)?.storyboardUrl}
         posterPrompt={(storyPlan as any)?.posterPrompt}
-        projectId={(storyPlan as any)?.projectId || 'unknown'}
+        projectId={projectId}
         onUpdate={(updated) => {
           // Handle updates - likely need a prop for this or dispatch event
           console.log("Update premise:", updated)
+          window.dispatchEvent(new CustomEvent('update_episode_premise', {
+            detail: updated
+          }))
         }}
         onGenerate={() => window.dispatchEvent(new CustomEvent('trigger-agent-action', {
           detail: { type: 'generate_episode_premise' }
         }))}
         onGeneratePoster={() => window.dispatchEvent(new CustomEvent('generate-episode-poster', {
-          detail: { episodeId: (storyPlan as any)?.id } // Assuming storyPlan has ID if it's an episode
+          detail: { episodeId: (storyPlan as any)?.id }
+        }))}
+        onGenerateStoryboard={() => window.dispatchEvent(new CustomEvent('trigger-storyboard-generation', {
+          detail: { episodeId: (storyPlan as any)?.id }
+        }))}
+        onGenerateSection={(section) => window.dispatchEvent(new CustomEvent('trigger-agent-action', {
+          detail: { type: 'generate_episode_premise_section', section }
         }))}
         isGenerating={isGenerating}
-        isGeneratingPoster={(storyPlan as any)?.isGeneratingPoster}
+        generatingSection={generatingSection}
+        isGeneratingPoster={isGeneratingPoster}
+        isGeneratingStoryboard={isGeneratingStoryboard}
       />
     </div>
   )

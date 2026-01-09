@@ -11,6 +11,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
+import { TOUR_STEP_IDS } from '@/lib/tour-constants'
 
 interface ToolButtonProps {
     icon: React.ReactNode
@@ -190,12 +191,14 @@ export const WorldGenToolbar: React.FC = () => {
                     onClick={handleGrabMode}
                 />
 
-                <ToolButton
-                    icon={<Square size={20} />}
-                    label="Select Mode (S)"
-                    isActive={isSelectMode}
-                    onClick={handleSelectMode}
-                />
+                <div id={TOUR_STEP_IDS.GENERATION_TRIGGER}>
+                    <ToolButton
+                        icon={<Square size={20} />}
+                        label="Select Mode (S)"
+                        isActive={isSelectMode}
+                        onClick={handleSelectMode}
+                    />
+                </div>
 
                 <ToolButton
                     icon={<Paintbrush size={20} />}
@@ -204,7 +207,7 @@ export const WorldGenToolbar: React.FC = () => {
                     onClick={handleRepaintMode}
                 />
 
-                <div className="w-full border-t border-border my-2" />
+                <div className="w-full border-t border-zinc-900 my-2" />
 
                 <Tooltip>
                     <TooltipTrigger asChild>

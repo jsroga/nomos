@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { episodes, projects } from '@/domains/storyteller/db/schema'
+import { episodes, projects, storyPlans } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'
 
 // GET: Fetch story plan for an episode or project
@@ -19,6 +19,8 @@ export async function GET(req: NextRequest) {
           currentPhase: episodes.currentPhase,
           posterUrl: episodes.posterUrl,
           posterPrompt: episodes.posterPrompt,
+          scriptContent: episodes.scriptContent,
+          title: episodes.title,
         })
         .from(episodes)
         .where(eq(episodes.id, episodeId))
@@ -31,32 +33,41 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         storyPlan: {
           ...(episode.storyPlan as any || {}),
-          posterUrl: episode.posterUrl,
-          posterPrompt: episode.posterPrompt,
-          projectId: projectId, // Inject project ID if available in context or query, but wait, projectId var comes from query param which might be null if fetching by episodeId?
-          // Actually, I can join projects to get projectId if needed, or trust the client passed it?
-          // Client passes projectId in query sometimes.
-          // But safer to just attach poster data.
+          title: episode.title, // Ensure DB title is authoritative
+          posterUrl: episode.posterUrl || (episode.storyPlan as any)?.posterUrl || (episode.storyPlan as any)?.poster_url,
+          posterPrompt: episode.posterPrompt || (episode.storyPlan as any)?.posterPrompt || (episode.storyPlan as any)?.poster_prompt,
+          storyboardUrl: (episode.storyPlan as any)?.storyboardUrl || (episode.storyPlan as any)?.storyboard_url,
+          projectId: projectId,
         },
         planApproved: episode.planApproved,
         currentPhase: episode.currentPhase || 'premise',
+        script: episode.scriptContent || '',
       })
     } else if (projectId) {
-      // Fetch project-level plan
-      const [project] = await db
-        .select({
-          storyPlan: projects.storyPlan,
-        })
-        .from(projects)
-        .where(eq(projects.id, projectId))
+      // Fetch project-level plan from NEW table
+      const [plan] = await db
+        .select()
+        .from(storyPlans)
+        .where(eq(storyPlans.projectId, projectId))
         .limit(1)
 
-      if (!project) {
-        return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      if (!plan) {
+        // Fallback to old table during migration (optional, but robust)
+        const [project] = await db
+          .select({ storyPlan: projects.storyPlan })
+          .from(projects)
+          .where(eq(projects.id, projectId))
+          .limit(1)
+
+        if (project?.storyPlan) {
+          return NextResponse.json({ storyPlan: project.storyPlan })
+        }
+
+        return NextResponse.json({ storyPlan: null })
       }
 
       return NextResponse.json({
-        storyPlan: project.storyPlan,
+        storyPlan: plan.content,
       })
     } else {
       return NextResponse.json({ error: 'Episode ID or Project ID is required' }, { status: 400 })
@@ -101,19 +112,20 @@ export async function POST(req: NextRequest) {
         episode: updated,
       })
     } else if (projectId) {
-      // Save to project (series-level)
-      const [updated] = await db
-        .update(projects)
-        .set({
-          storyPlan,
-          updatedAt: new Date(),
+      // Save to project (series-level) - NEW table
+      await db.insert(storyPlans)
+        .values({
+          projectId: projectId,
+          content: storyPlan,
+          updatedAt: new Date()
         })
-        .where(eq(projects.id, projectId))
-        .returning()
+        .onConflictDoUpdate({
+          target: storyPlans.projectId,
+          set: { content: storyPlan, updatedAt: new Date() }
+        })
 
       return NextResponse.json({
-        success: true,
-        project: updated,
+        success: true
       })
     } else {
       return NextResponse.json({ error: 'Episode ID or Project ID is required' }, { status: 400 })
@@ -145,12 +157,24 @@ export async function PATCH(req: NextRequest) {
         .limit(1)
       existingPlan = episode?.storyPlan
     } else if (projectId) {
-      const [project] = await db
-        .select({ storyPlan: projects.storyPlan })
-        .from(projects)
-        .where(eq(projects.id, projectId))
+      // Fetch from new storyPlans table
+      const [plan] = await db
+        .select()
+        .from(storyPlans)
+        .where(eq(storyPlans.projectId, projectId))
         .limit(1)
-      existingPlan = project?.storyPlan
+
+      existingPlan = plan?.content
+
+      // Fallback
+      if (!existingPlan) {
+        const [project] = await db
+          .select({ storyPlan: projects.storyPlan })
+          .from(projects)
+          .where(eq(projects.id, projectId))
+          .limit(1)
+        existingPlan = project?.storyPlan
+      }
     }
 
     if (!existingPlan || !existingPlan.sequences) {
@@ -177,13 +201,16 @@ export async function PATCH(req: NextRequest) {
         })
         .where(eq(episodes.id, episodeId))
     } else if (projectId) {
-      await db
-        .update(projects)
-        .set({
-          storyPlan: updatedPlan,
-          updatedAt: new Date(),
+      await db.insert(storyPlans)
+        .values({
+          projectId: projectId,
+          content: updatedPlan,
+          updatedAt: new Date()
         })
-        .where(eq(projects.id, projectId))
+        .onConflictDoUpdate({
+          target: storyPlans.projectId,
+          set: { content: updatedPlan, updatedAt: new Date() }
+        })
     }
 
     return NextResponse.json({

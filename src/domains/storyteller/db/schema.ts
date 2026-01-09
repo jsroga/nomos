@@ -14,6 +14,7 @@ import { relations } from 'drizzle-orm'
 // Projects Table - The container for a story
 export const projects = pgTable('projects', {
   id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull(), // Owner of the project
   name: text('name').notNull(),
   description: text('description'),
   masterPrompt: text('master_prompt'), // Global style/instruction
@@ -135,10 +136,42 @@ export const documentEmbeddings = pgTable('document_embeddings', {
 })
 
 // Relations for Drizzle Queries
-export const projectsRelations = relations(projects, ({ many }) => ({
+// New tables for migration
+export const seriesBibles = pgTable('series_bibles', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  projectId: uuid('project_id')
+    .references(() => projects.id, { onDelete: 'cascade' })
+    .notNull()
+    .unique(),
+  content: jsonb('content').notNull().default({}),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+export const storyPlans = pgTable('story_plans', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  projectId: uuid('project_id')
+    .references(() => projects.id, { onDelete: 'cascade' })
+    .notNull()
+    .unique(),
+  content: jsonb('content').default({}),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+// Relations for Drizzle Queries
+export const projectsRelations = relations(projects, ({ one, many }) => ({
   characters: many(characters),
   episodes: many(episodes),
   embeddings: many(documentEmbeddings),
+  seriesBibleTable: one(seriesBibles, {
+    fields: [projects.id],
+    references: [seriesBibles.projectId],
+  }),
+  storyPlanTable: one(storyPlans, {
+    fields: [projects.id],
+    references: [storyPlans.projectId],
+  }),
 }))
 
 export const episodesRelations = relations(episodes, ({ one, many }) => ({
@@ -153,5 +186,19 @@ export const beatsRelations = relations(beats, ({ one }) => ({
   episode: one(episodes, {
     fields: [beats.episodeId],
     references: [episodes.id],
+  }),
+}))
+
+export const seriesBiblesRelations = relations(seriesBibles, ({ one }) => ({
+  project: one(projects, {
+    fields: [seriesBibles.projectId],
+    references: [projects.id],
+  }),
+}))
+
+export const storyPlansRelations = relations(storyPlans, ({ one }) => ({
+  project: one(projects, {
+    fields: [storyPlans.projectId],
+    references: [projects.id],
   }),
 }))

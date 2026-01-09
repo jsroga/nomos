@@ -399,7 +399,7 @@ export function TurbulentBackground({
   }, [zoom, rotation, colorShift, saturation, brightness, contrast, hue, speed, morphSpeed])
 
   return (
-    <div className="relative w-full min-h-screen">
+    <div className="relative w-full">
       <div
         id="turbulent-bg-container"
         ref={containerRef}

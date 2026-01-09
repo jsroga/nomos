@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { X, Trash2, AlertTriangle, Clock, FileCode } from 'lucide-react'
+import { Liquid } from '@/domains/marketing/components/Liquid'
 import { useErrorStore, CapturedError } from '@/store/useErrorStore'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -111,51 +112,62 @@ export const TroubleshootPanel: React.FC = () => {
       {/* Panel */}
       <div
         className={cn(
-          'fixed top-0 right-0 h-full w-full sm:w-[400px] bg-background border-l border-border z-50 shadow-2xl',
+          'fixed top-0 right-0 h-full w-full sm:w-[400px] z-50 shadow-2xl overflow-hidden',
           'transition-transform duration-300 ease-out',
           isPanelOpen ? 'translate-x-0' : 'translate-x-full'
         )}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="text-red-500" size={20} />
-            <h2 className="text-lg font-semibold">Troubleshoot</h2>
-            <span className="text-sm text-muted-foreground">
-              ({errors.length} error{errors.length !== 1 ? 's' : ''})
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            {errors.length > 0 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={clearErrors}
-                title="Clear all errors"
-              >
-                <Trash2 size={18} />
-              </Button>
-            )}
-            <Button variant="ghost" size="icon" onClick={closePanel} title="Close">
-              <X size={18} />
-            </Button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <ScrollArea className="h-[calc(100vh-73px)]">
-          <div className="p-4 space-y-3">
-            {errors.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <AlertTriangle size={48} className="mb-4 opacity-20" />
-                <p className="text-sm">No errors captured</p>
-                <p className="text-xs mt-1">Errors will appear here when they occur</p>
+        <Liquid className="h-full w-full rounded-l-2xl border-l border-white/20">
+          <div className="flex flex-col h-full bg-background/30 backdrop-blur-xl">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-white/10 shrink-0">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="text-red-400 drop-shadow-md" size={20} />
+                <h2 className="text-lg font-semibold text-white drop-shadow-md">Troubleshoot</h2>
+                <span className="text-sm text-white/60">
+                  ({errors.length} error{errors.length !== 1 ? 's' : ''})
+                </span>
               </div>
-            ) : (
-              errors.map(error => <ErrorCard key={error.id} error={error} />)
-            )}
+              <div className="flex items-center gap-1">
+                {errors.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={clearErrors}
+                    title="Clear all errors"
+                    className="text-white/70 hover:text-white hover:bg-white/10"
+                  >
+                    <Trash2 size={18} />
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={closePanel}
+                  title="Close"
+                  className="text-white/70 hover:text-white hover:bg-white/10"
+                >
+                  <X size={18} />
+                </Button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <ScrollArea className="flex-1">
+              <div className="p-4 space-y-3">
+                {errors.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-white/40">
+                    <AlertTriangle size={48} className="mb-4 opacity-20" />
+                    <p className="text-sm">No errors captured</p>
+                    <p className="text-xs mt-1">Errors will appear here when they occur</p>
+                  </div>
+                ) : (
+                  errors.map(error => <ErrorCard key={error.id} error={error} />)
+                )}
+              </div>
+            </ScrollArea>
           </div>
-        </ScrollArea>
+        </Liquid>
       </div>
     </>
   )

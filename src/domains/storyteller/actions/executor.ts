@@ -1,6 +1,8 @@
 import { v4 as uuidv4 } from 'uuid'
 import { AgentAction, ActionHistoryEntry, ActionHistory } from './types'
-import { WritersRoomState, BeatCard, Setup } from '../graph/state'
+import { WritersRoomState, BeatCard, Setup, Phase } from '../graph/state'
+import { BeatType, BeatStatus, ActionStatus } from '../enums'
+
 
 // ============================================
 // ACTION EXECUTOR - Commits actions to state
@@ -27,7 +29,7 @@ export class ActionExecutor {
       agentName,
       action,
       previousState: this.captureRelevantState(state, action),
-      status: 'committed',
+      status: ActionStatus.COMMITTED,
     }
 
     // Execute the action
@@ -52,7 +54,7 @@ export class ActionExecutor {
     }
 
     const entry = this.history.entries[this.history.currentIndex]
-    entry.status = 'undone'
+    entry.status = ActionStatus.UNDONE
 
     // Restore previous state
     const newState = this.restoreState(state, entry)
@@ -73,7 +75,7 @@ export class ActionExecutor {
 
     this.history.currentIndex++
     const entry = this.history.entries[this.history.currentIndex]
-    entry.status = 'redone'
+    entry.status = ActionStatus.REDONE
 
     const newState = await this.executeAction(state, entry.action)
     return { state: newState, entry }
@@ -109,13 +111,13 @@ export class ActionExecutor {
           episodeId: state.episodeId || 'default',
           sequence: state.beatBoard.length + 1,
           logline: action.payload.logline,
-          beatType: action.payload.beatType || 'complication',
+          beatType: action.payload.beatType || BeatType.COMPLICATION,
           charactersInvolved: action.payload.charactersInvolved || [],
           emotionalShifts: action.payload.emotionalShifts || {},
           visualHook: action.payload.visualHook || '',
           causalDependencies: action.payload.causalDependencies || [],
           setupsPayoffs: action.payload.setupsPayoffs || {},
-          status: 'proposed',
+          status: BeatStatus.PROPOSED,
           mazurElements: action.payload.mazurElements,
         }
         return {
@@ -169,9 +171,9 @@ export class ActionExecutor {
           ...state,
           beatBoard: state.beatBoard.map(beat => ({
             ...beat,
-            status: 'approved' as const,
+            status: BeatStatus.APPROVED,
           })),
-          currentPhase: 'writing',
+          currentPhase: Phase.WRITING,
         }
       }
 

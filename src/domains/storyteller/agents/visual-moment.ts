@@ -2,49 +2,26 @@ import { AIMessage, SystemMessage } from '@langchain/core/messages'
 import { WritersRoomState } from '../graph/state'
 import { getModel } from '../config/model-config'
 import { getSafeMessageHistory, extractReadableMessage } from '../utils/message-utils'
+import { loadPromptCached } from '../prompts/hub-loader'
 
-const VISUAL_PROMPT = `You are the VISUAL MOMENT SPECIALIST - the cinematographer of the writers room.
-
-## YOUR MISSION: MAKE IT CINEMATIC
-
-"What's the first thing we see? Make it iconic, meaningful, memorable."
-
-## THINK LIKE A DIRECTOR
-
-Every great scene has a VISUAL HOOK - an image that:
-- Burns into the viewer's memory
-- Conveys subtext without dialogue
-- Uses the frame as a storytelling tool
-
-## WHAT TO SPECIFY
-
-1. **FRAMING**: Wide/close/extreme close-up? What's in focus?
-2. **LIGHTING**: Natural/artificial? Shadows? Color temperature?
-3. **MOVEMENT**: Static? Tracking? Handheld?
-4. **COMPOSITION**: Rule of thirds? Symmetry? Leading lines?
-5. **SYMBOLIC ELEMENT**: What object/detail carries meaning?
-
-## OUTPUT FORMAT
-{
-    "message": "Description of the visual moment",
-    "visualHook": "The specific image we see",
-    "framing": "How it's shot",
-    "symbolism": "What it means",
-    "reference": "Similar iconic shot from cinema history"
-}
-
-Respond with JSON only.`
+import { VISUAL_MOMENT_PROMPT } from '../prompts/agents/visual-moment'
 
 export const visualMomentAgent = async (state: WritersRoomState) => {
   // Create model inside function to use request-scoped config
   const model = getModel('visualMoment')
-  
-  const { messages } = state
 
-  const systemMessage = new SystemMessage(VISUAL_PROMPT)
+  const { messages: stateMessages } = state
+
+  // Load prompt from Hub
+  const loadedPrompt = await loadPromptCached('visualMoment')
+  const promptMessages = (loadedPrompt.prompt as any).promptMessages || (loadedPrompt.prompt as any).messages || []
+  const systemMessageFromPrompt = promptMessages.find((m: any) => m.lc_id?.[3] === 'SystemMessagePromptTemplate' || m._type === 'system')
+  const systemTemplate = systemMessageFromPrompt?.prompt?.template || systemMessageFromPrompt?.template || VISUAL_MOMENT_PROMPT
+
+  const systemMessage = new SystemMessage(systemTemplate)
 
   try {
-    const response = await model.invoke([systemMessage, ...getSafeMessageHistory(messages, 5)])
+    const response = await model.invoke([systemMessage, ...getSafeMessageHistory(stateMessages, 5)])
     const rawContent = typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
     const content = extractReadableMessage(rawContent)
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Settings, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Slider } from '@/components/ui/slider'
 
 interface FluidControlsProps {
     zoom: number
@@ -120,14 +121,13 @@ export function FluidControls({
                                 <label className="text-white/80 text-sm font-medium block mb-2">
                                     Zoom: {zoom.toFixed(2)}x
                                 </label>
-                                <input
-                                    type="range"
-                                    min="0.1"
-                                    max="3"
-                                    step="0.01"
-                                    value={zoom}
-                                    onChange={(e) => onZoomChange(parseFloat(e.target.value))}
-                                    className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer slider"
+                                <Slider
+                                    min={0.1}
+                                    max={3}
+                                    step={0.01}
+                                    value={[zoom]}
+                                    onValueChange={(vals) => onZoomChange(vals[0])}
+                                    className="w-full"
                                 />
                             </div>
 
@@ -137,13 +137,12 @@ export function FluidControls({
                                     <span>Rotation</span>
                                     <span>{Math.round(rotation * 180 / Math.PI)}°</span>
                                 </label>
-                                <input
-                                    type="range"
-                                    min="0"
+                                <Slider
+                                    min={0}
                                     max={Math.PI * 2}
-                                    step="0.01"
-                                    value={rotation}
-                                    onChange={(e) => onRotationChange(parseFloat(e.target.value))}
+                                    step={0.01}
+                                    value={[rotation]}
+                                    onValueChange={(vals) => onRotationChange(vals[0])}
                                     className="w-full"
                                 />
                             </div>
@@ -154,14 +153,13 @@ export function FluidControls({
                                     <span>Flow Speed</span>
                                     <span>{speed.toFixed(2)}x</span>
                                 </label>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="2"
-                                    step="0.01"
-                                    value={speed}
-                                    onChange={(e) => onSpeedChange(parseFloat(e.target.value))}
-                                    className="w-full accent-cyan-400"
+                                <Slider
+                                    min={0}
+                                    max={2}
+                                    step={0.01}
+                                    value={[speed]}
+                                    onValueChange={(vals) => onSpeedChange(vals[0])}
+                                    className="w-full"
                                 />
                             </div>
 
@@ -171,14 +169,13 @@ export function FluidControls({
                                     <span>Morph Speed</span>
                                     <span>{morphSpeed.toFixed(1)}x</span>
                                 </label>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="5"
-                                    step="0.1"
-                                    value={morphSpeed}
-                                    onChange={(e) => onMorphSpeedChange(parseFloat(e.target.value))}
-                                    className="w-full accent-purple-400"
+                                <Slider
+                                    min={0}
+                                    max={5}
+                                    step={0.1}
+                                    value={[morphSpeed]}
+                                    onValueChange={(vals) => onMorphSpeedChange(vals[0])}
+                                    className="w-full"
                                 />
                             </div>
 
@@ -187,14 +184,13 @@ export function FluidControls({
                                 <label className="text-white/80 text-sm font-medium block mb-2">
                                     Brightness: {(brightness * 100).toFixed(0)}%
                                 </label>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="3"
-                                    step="0.01"
-                                    value={brightness}
-                                    onChange={(e) => onBrightnessChange(parseFloat(e.target.value))}
-                                    className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer slider"
+                                <Slider
+                                    min={0}
+                                    max={3}
+                                    step={0.01}
+                                    value={[brightness]}
+                                    onValueChange={(vals) => onBrightnessChange(vals[0])}
+                                    className="w-full"
                                 />
                             </div>
 
@@ -203,14 +199,13 @@ export function FluidControls({
                                 <label className="text-white/80 text-sm font-medium block mb-2">
                                     Contrast: {(contrast * 100).toFixed(0)}%
                                 </label>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="3"
-                                    step="0.01"
-                                    value={contrast}
-                                    onChange={(e) => onContrastChange(parseFloat(e.target.value))}
-                                    className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer slider"
+                                <Slider
+                                    min={0}
+                                    max={3}
+                                    step={0.01}
+                                    value={[contrast]}
+                                    onValueChange={(vals) => onContrastChange(vals[0])}
+                                    className="w-full"
                                 />
                             </div>
 
@@ -219,14 +214,13 @@ export function FluidControls({
                                 <label className="text-white/80 text-sm font-medium block mb-2">
                                     Saturation: {(saturation * 100).toFixed(0)}%
                                 </label>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="3"
-                                    step="0.01"
-                                    value={saturation}
-                                    onChange={(e) => onSaturationChange(parseFloat(e.target.value))}
-                                    className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer slider"
+                                <Slider
+                                    min={0}
+                                    max={3}
+                                    step={0.01}
+                                    value={[saturation]}
+                                    onValueChange={(vals) => onSaturationChange(vals[0])}
+                                    className="w-full"
                                 />
                             </div>
 
@@ -235,14 +229,13 @@ export function FluidControls({
                                 <label className="text-white/80 text-sm font-medium block mb-2">
                                     Hue Shift: {(hue * 360).toFixed(0)}°
                                 </label>
-                                <input
-                                    type="range"
-                                    min="-1"
-                                    max="1"
-                                    step="0.01"
-                                    value={hue}
-                                    onChange={(e) => onHueChange(parseFloat(e.target.value))}
-                                    className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer slider"
+                                <Slider
+                                    min={-1}
+                                    max={1}
+                                    step={0.01}
+                                    value={[hue]}
+                                    onValueChange={(vals) => onHueChange(vals[0])}
+                                    className="w-full"
                                 />
                             </div>
 
@@ -251,14 +244,13 @@ export function FluidControls({
                                 <label className="text-white/80 text-sm font-medium block mb-2">
                                     Color Shift: {colorShift.toFixed(2)}
                                 </label>
-                                <input
-                                    type="range"
-                                    min="-1"
-                                    max="1"
-                                    step="0.01"
-                                    value={colorShift}
-                                    onChange={(e) => onColorShiftChange(parseFloat(e.target.value))}
-                                    className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer slider"
+                                <Slider
+                                    min={-1}
+                                    max={1}
+                                    step={0.01}
+                                    value={[colorShift]}
+                                    onValueChange={(vals) => onColorShiftChange(vals[0])}
+                                    className="w-full"
                                 />
                             </div>
 

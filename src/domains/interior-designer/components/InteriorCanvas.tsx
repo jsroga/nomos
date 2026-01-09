@@ -21,14 +21,12 @@ import { Exporter } from './Exporter'
 import { RetextureExporter } from './RetextureExporter'
 import { CameraController } from './CameraController'
 import { KeybindingManager } from './KeybindingManager'
-import { TerrainMesh } from './terrain/TerrainMesh'
-import { GlobalWaterPlane } from './terrain/GlobalWaterPlane'
-import { TerrainBrushPreview } from './terrain/TerrainBrushPreview'
+import { GlobalWaterPlane, TerrainBrushPreview } from './terrain'
 import { TerrainTool } from './tools/TerrainTool'
 
 export const InteriorCanvas: React.FC = () => {
   return (
-    <Canvas shadows className="w-full h-full">
+    <Canvas shadows className="w-full h-full" gl={{ stencil: true }}>
       <color attach="background" args={['#1e1e1e']} />
 
       {/* Disco Elysium Style Camera (Adjusted for Isometric) */}
@@ -50,16 +48,9 @@ export const InteriorCanvas: React.FC = () => {
       />
 
       {/* Fill light for atmosphere */}
-      <pointLight position={[-10, 10, -10]} intensity={0.5} color="#4f46e5" />
+      <pointLight position={[-10, 10, -10]} intensity={0.5} color="#ffffff" />
 
-      <Grid
-        infiniteGrid
-        cellSize={1}
-        sectionSize={5}
-        fadeDistance={100}
-        cellColor="#444"
-        sectionColor="#666"
-      />
+
 
       <OrbitControls
         makeDefault
@@ -84,9 +75,7 @@ export const InteriorCanvas: React.FC = () => {
       <ScatterTool />
       <TransformManager />
 
-      {/* Terrain & Water Mode Components */}
-      <TerrainMesh />
-      <GlobalWaterPlane />
+      {/* Terrain Tool - operates on surfaces directly, no separate terrain mesh */}
       <TerrainBrushPreview />
       <TerrainTool />
 
@@ -95,8 +84,19 @@ export const InteriorCanvas: React.FC = () => {
       <CameraController />
       <KeybindingManager />
 
+      {/* Grid rendered last to appear on top of terrain */}
+      <Grid
+        infiniteGrid
+        cellSize={1}
+        sectionSize={5}
+        fadeDistance={100}
+        cellColor="#444"
+        sectionColor="#666"
+        renderOrder={1} // Ensure it renders on top
+      />
+
       {/* Post Processing for Disco Elysium Atmosphere */}
-      <EffectComposer>
+      <EffectComposer stencilBuffer>
         <Bloom luminanceThreshold={0.8} mipmapBlur intensity={0.5} radius={0.4} />
         <Noise opacity={0.15} />
         <Vignette eskil={false} offset={0.1} darkness={0.5} />

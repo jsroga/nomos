@@ -35,12 +35,13 @@ export default function LoginPage() {
       <div className="flex min-h-screen w-full items-center justify-center p-4 relative z-10">
         <div className="w-full max-w-md space-y-8 animate-in fade-in zoom-in duration-500">
           <div className="flex flex-col items-center space-y-2 text-center">
-            <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center text-white font-bold text-3xl mb-4 shadow-lg ring-1 ring-white/20 font-syne">
+            {/* <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center text-white font-bold text-3xl mb-4 shadow-lg ring-1 ring-white/20 font-syne">
               C
             </div>
             <h1 className="text-4xl font-black tracking-tighter text-white drop-shadow-lg mt-4 font-syne">
               Cutafonina
-            </h1>
+            </h1> */}
+            <img src="/logo.svg" alt="Cutafonina" className="h-32 w-auto drop-shadow-lg mb-4" />
             <p className="text-white/70 text-lg">
               Create infinite worlds and 3D assets with AI
             </p>

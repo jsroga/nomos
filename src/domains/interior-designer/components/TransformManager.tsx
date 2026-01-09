@@ -23,6 +23,11 @@ export const TransformManager: React.FC = () => {
 
   // We only support transforming objects for now, not walls/floors
   const selectedObject = objects.find(o => o.id === selectedId)
+  const surfaces = useInteriorStore(state => state.surfaces)
+  const selectedSurface = surfaces.find(s => s.id === selectedId)
+  const updateSurface = useInteriorStore(state => state.updateSurface)
+
+  const isValidSelection = selectedObject || selectedSurface
 
   // Find the actual mesh in the scene to attach to
   const [target, setTarget] = useState<THREE.Object3D | undefined>(undefined)
@@ -65,7 +70,7 @@ export const TransformManager: React.FC = () => {
     }
   }, [selectedId, scene, objects]) // Re-run if objects change (e.g. position update)
 
-  if (mode !== 'SELECT' || !selectedObject || !target) {
+  if (mode !== 'SELECT' || !isValidSelection || !target) {
     return null
   }
 
@@ -90,11 +95,22 @@ export const TransformManager: React.FC = () => {
 
         // Update store on drag end
         if (target) {
-          updateObject(selectedObject.id, {
-            position: [target.position.x, target.position.y, target.position.z],
-            rotation: [target.rotation.x, target.rotation.y, target.rotation.z],
-            scale: [target.scale.x, target.scale.y, target.scale.z],
-          })
+          if (selectedObject) {
+            updateObject(selectedObject.id, {
+              position: [target.position.x, target.position.y, target.position.z],
+              rotation: [target.rotation.x, target.rotation.y, target.rotation.z],
+              scale: [target.scale.x, target.scale.y, target.scale.z],
+            })
+          } else if (selectedSurface) {
+            updateSurface(selectedSurface.id, {
+              // Surfaces are group-based, so we update the group transform
+              // Position is usually [0,0,0] relative to parent, but if we move it, we update it?
+              // Usually surface geometry handles position. Let's focus on rotation for now.
+              // Actually, if we translate, we might want to move points? 
+              // No, that's complex. Let's start with just rotation as requested.
+              rotation: [target.rotation.x, target.rotation.y, target.rotation.z],
+            })
+          }
         }
       }}
     />

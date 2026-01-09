@@ -18,17 +18,16 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'projectId is required' }, { status: 400 })
         }
 
-        if (!characterId) {
-            return NextResponse.json({ error: 'characterId is required' }, { status: 400 })
-        }
+        // characterId is optional - use temp ID for new characters
+        const effectiveCharacterId = characterId || `temp-${Date.now()}`
 
         // Get API key from request body (client-side config) or environment variable as fallback
-        const apiKey = clientApiKey || process.env.COMET_API_KEY
+        const apiKey = clientApiKey || process.env.LEGNEXT_API_KEY
 
         if (!apiKey) {
             return NextResponse.json({
-                error: 'Comet API key not provided',
-                message: 'Please configure your Comet API key in Settings',
+                error: 'LegNext API key not provided',
+                message: 'Please configure your LegNext API key in Settings',
             }, { status: 401 })
         }
 
@@ -48,7 +47,7 @@ export async function POST(req: Request) {
         const handle = await tasks.trigger<typeof generatePortrait>("generate-portrait", {
             prompt,
             projectId,
-            characterId,
+            characterId: effectiveCharacterId,
             apiKey,
             styleReferenceUrls
         });
@@ -56,7 +55,7 @@ export async function POST(req: Request) {
         return NextResponse.json({
             success: true,
             handleId: handle.id,
-            characterId,
+            characterId: effectiveCharacterId,
             status: 'queued'
         })
 

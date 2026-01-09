@@ -45,7 +45,7 @@ export const TroubleshootIndicator: React.FC = () => {
             )}
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="bottom" align="end">
+        <TooltipContent side="bottom" align="end" className="z-[200]">
           <span className="text-sm">
             {hasErrors ? `${errorCount} error(s) - click to view` : 'Troubleshoot'}
           </span>

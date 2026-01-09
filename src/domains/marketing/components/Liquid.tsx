@@ -32,13 +32,13 @@ export function Liquid({
     className = "",
     style = {},
     resolution = 2.0,
-    refraction = 0.015, // Updated default
-    bevelDepth = 0.1,   // Updated default
-    bevelWidth = 0.01,  // Updated default
+    refraction = 0.015, // Reverted to default
+    bevelDepth = 0.1,   // Reverted to default
+    bevelWidth = 0.01,  // Reverted to default
     intensity, // No default here
     speed = 1.0,
     specular = true,
-    frost = 0.05,       // Updated default
+    frost = 0.05,       // Reverted to default
     text = null,
     snapshot
 }: LiquidProps) {

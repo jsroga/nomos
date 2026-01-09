@@ -19,6 +19,7 @@ import {
   PaintBucket
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { SidebarSection, SidebarHeader, SidebarLabel, SidebarSliderRow, SidebarToggleRow } from '@/components/ui/domain-sidebar'
 
 // Brush type icon component
 const BrushIcon: React.FC<{ type: 'raise' | 'lower' | 'flatten' | 'smooth', size?: number }> = ({ type, size = 20 }) => {
@@ -34,22 +35,7 @@ const BrushIcon: React.FC<{ type: 'raise' | 'lower' | 'flatten' | 'smooth', size
   }
 }
 
-interface SectionProps {
-  title: string
-  icon?: React.ReactNode
-  children: React.ReactNode
-  className?: string
-}
 
-const Section: React.FC<SectionProps> = ({ title, icon, children, className }) => (
-  <div className={cn('bg-card/50 rounded-lg border border-border p-4', className)}>
-    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-      {icon}
-      {title}
-    </h3>
-    {children}
-  </div>
-)
 
 export const TerrainEditorPanel: React.FC = () => {
   // Terrain Settings
@@ -71,13 +57,6 @@ export const TerrainEditorPanel: React.FC = () => {
   const autoFillWaterBelowLevel = useInteriorStore(state => state.autoFillWaterBelowLevel)
   const resetTerrain = useInteriorStore(state => state.resetTerrain)
 
-  // Initialize heightmap if not already done
-  React.useEffect(() => {
-    if (!terrainSettings.heightmap) {
-      initializeHeightmap(terrainSettings.heightmapSize)
-    }
-  }, [terrainSettings.heightmap, terrainSettings.heightmapSize, initializeHeightmap])
-
   const brushTypes: Array<{ type: 'raise' | 'lower' | 'flatten' | 'smooth', label: string }> = [
     { type: 'raise', label: 'Raise' },
     { type: 'lower', label: 'Lower' },
@@ -85,10 +64,39 @@ export const TerrainEditorPanel: React.FC = () => {
     { type: 'smooth', label: 'Smooth' },
   ]
 
+  // Check if there are any ground surfaces (grass, dirt, sand, rock)
+  const surfaces = useInteriorStore(state => state.surfaces)
+  const groundSurfaceTypes = ['grass', 'dirt', 'sand', 'rock']
+  const hasGroundSurface = surfaces.some(s => groundSurfaceTypes.includes(s.type))
+
+  // Show message when no ground surface exists
+  if (!hasGroundSurface) {
+    return (
+      <div className="p-4 space-y-4">
+        <SidebarHeader>Terrain & Water Editor</SidebarHeader>
+        <div className="flex flex-col items-center justify-center py-8 space-y-4">
+          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+            <Square size={32} className="text-muted-foreground" />
+          </div>
+          <p className="text-sm text-muted-foreground text-center font-mono">
+            Place a ground surface first using the Surface tool (grass, dirt, sand, or rock).
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Auto-initialize heightmap when ground surface exists but heightmap doesn't
+  React.useEffect(() => {
+    if (hasGroundSurface && !terrainSettings.heightmap) {
+      initializeHeightmap(terrainSettings.heightmapSize)
+    }
+  }, [hasGroundSurface, terrainSettings.heightmap, terrainSettings.heightmapSize, initializeHeightmap])
+
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between mb-2">
-        <h2 className="font-bold text-lg">Terrain & Water Editor</h2>
+        <SidebarHeader>Terrain & Water Editor</SidebarHeader>
         <Button
           variant="ghost"
           size="icon"
@@ -101,52 +109,41 @@ export const TerrainEditorPanel: React.FC = () => {
       </div>
 
       {/* Section 1: Global Levels */}
-      <Section title="Global Levels" icon={<SlidersHorizontal size={16} />}>
+      <SidebarSection title="Global Levels" icon={<SlidersHorizontal size={12} />}>
         <div className="space-y-4">
           {/* Base Ground Height */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <label className="font-medium">Base Ground Ht (0m)</label>
-              <span className="text-muted-foreground font-mono">{terrainSettings.baseGroundHeight}m</span>
-            </div>
-            <Slider
-              value={[terrainSettings.baseGroundHeight]}
-              min={-10}
-              max={10}
-              step={0.5}
-              onValueChange={([val]) => setBaseGroundHeight(val)}
-            />
-          </div>
+          <SidebarSliderRow
+            label="Base Ground Ht (0m)"
+            value={terrainSettings.baseGroundHeight}
+            min={-10}
+            max={10}
+            step={0.5}
+            onChange={setBaseGroundHeight}
+            formatValue={(v) => `${v}m`}
+          />
 
           {/* Water Surface Height */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <label className="font-medium">Water Surface Ht ({terrainSettings.waterSurfaceHeight}m)</label>
-              <span className="text-muted-foreground font-mono">{terrainSettings.waterSurfaceHeight}m</span>
-            </div>
-            <Slider
-              value={[terrainSettings.waterSurfaceHeight]}
-              min={-10}
-              max={10}
-              step={0.5}
-              onValueChange={([val]) => setWaterSurfaceHeight(val)}
-              className="[&_[role=slider]]:bg-cyan-500"
-            />
-          </div>
+          <SidebarSliderRow
+            label={`Water Surface Ht (${terrainSettings.waterSurfaceHeight}m)`}
+            value={terrainSettings.waterSurfaceHeight}
+            min={-10}
+            max={10}
+            step={0.5}
+            onChange={setWaterSurfaceHeight}
+            formatValue={(v) => `${v}m`}
+          />
 
           {/* Show Water Plane Toggle */}
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">Show Water Plane</label>
-            <Switch
-              checked={terrainSettings.showWaterPlane}
-              onCheckedChange={setShowWaterPlane}
-            />
-          </div>
+          <SidebarToggleRow
+            label="Show Water Plane"
+            checked={terrainSettings.showWaterPlane}
+            onChange={setShowWaterPlane}
+          />
         </div>
-      </Section>
+      </SidebarSection>
 
       {/* Section 2: Sculpting Brushes */}
-      <Section title="Sculpting Brushes" icon={<Brush size={16} />}>
+      <SidebarSection title="Sculpting Brushes" icon={<Brush size={12} />} separator>
         <div className="space-y-4">
           {/* Brush Type Toggles */}
           <div className="grid grid-cols-4 gap-2">
@@ -155,101 +152,91 @@ export const TerrainEditorPanel: React.FC = () => {
                 key={type}
                 onClick={() => setTerrainBrushType(type)}
                 className={cn(
-                  'flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all',
+                  'flex flex-col items-center justify-center p-2 rounded-sm border-2 transition-all',
                   terrainBrush.type === type
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border hover:border-muted-foreground/50'
                 )}
               >
                 <BrushIcon type={type} size={24} />
-                <span className="text-[10px] mt-1 font-medium">{label}</span>
+                <span className="text-[10px] mt-1 font-mono font-medium uppercase">{label}</span>
               </button>
             ))}
           </div>
 
           {/* Brush Size */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <label className="font-medium">Brush Size</label>
-              <span className="text-muted-foreground font-mono">{terrainBrush.size}</span>
-            </div>
-            <Slider
-              value={[terrainBrush.size]}
-              min={1}
-              max={50}
-              step={1}
-              onValueChange={([val]) => setTerrainBrushSize(val)}
-            />
-          </div>
+          <SidebarSliderRow
+            label="Brush Size"
+            value={terrainBrush.size}
+            min={1}
+            max={50}
+            step={1}
+            onChange={setTerrainBrushSize}
+          />
 
           {/* Strength */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <label className="font-medium">Strength</label>
-              <span className="text-muted-foreground font-mono">{terrainBrush.strength}</span>
-            </div>
-            <Slider
-              value={[terrainBrush.strength]}
-              min={1}
-              max={20}
-              step={1}
-              onValueChange={([val]) => setTerrainBrushStrength(val)}
-            />
-          </div>
+          <SidebarSliderRow
+            label="Strength"
+            value={terrainBrush.strength}
+            min={1}
+            max={20}
+            step={1}
+            onChange={setTerrainBrushStrength}
+          />
         </div>
-      </Section>
+      </SidebarSection>
 
       {/* Section 3: Material Paint */}
-      <Section title="Material Paint" icon={<PaintBucket size={16} />}>
+      <SidebarSection title="Material Paint" icon={<PaintBucket size={12} />} separator>
         <div className="space-y-4">
           {/* Material Selection */}
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => setTerrainMaterial('ground')}
               className={cn(
-                'flex items-center gap-2 p-3 rounded-lg border-2 transition-all',
+                'flex flex-col items-start gap-2 p-3 rounded-sm border-2 transition-all h-full text-left',
                 terrainMaterialPaint.activeMaterial === 'ground'
                   ? 'border-amber-600 bg-amber-600/10'
                   : 'border-border hover:border-muted-foreground/50'
               )}
             >
-              <div className="w-8 h-8 rounded bg-amber-700 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-sm bg-amber-700 flex items-center justify-center shrink-0">
                 <Square size={16} className="text-amber-200" />
               </div>
-              <span className="text-sm font-medium">Ground (Pavement/Grass)</span>
+              <span className="text-xs font-mono font-medium leading-tight">Ground</span>
             </button>
 
             <button
               onClick={() => setTerrainMaterial('water')}
               className={cn(
-                'flex items-center gap-2 p-3 rounded-lg border-2 transition-all',
+                'flex flex-col items-start gap-2 p-3 rounded-sm border-2 transition-all h-full text-left',
                 terrainMaterialPaint.activeMaterial === 'water'
                   ? 'border-cyan-500 bg-cyan-500/10'
                   : 'border-border hover:border-muted-foreground/50'
               )}
             >
-              <div className="w-8 h-8 rounded bg-cyan-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-sm bg-cyan-600 flex items-center justify-center shrink-0">
                 <Droplets size={16} className="text-cyan-200" />
               </div>
-              <span className="text-sm font-medium">Water Source</span>
+              <span className="text-xs font-mono font-medium leading-tight">Water Source</span>
             </button>
           </div>
 
           {/* Auto-Fill Water Button */}
           <Button
             variant="outline"
-            className="w-full gap-2"
+            className="w-full gap-2 font-mono text-xs rounded-sm h-9"
             onClick={autoFillWaterBelowLevel}
           >
             <Wand2 size={16} />
             Auto-Fill Water below Level
           </Button>
 
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[10px] font-mono text-muted-foreground">
             Automatically marks all terrain below the water surface height as water.
           </p>
         </div>
-      </Section>
+      </SidebarSection>
     </div>
   )
 }

@@ -165,23 +165,37 @@ IMPORTANT:
   }
 
   /**
-   * Get structured response from LLM
+   * Get structured response from LLM with self-correction
    */
-  protected async getStructuredResponse(messages: any[]): Promise<AgentResponse> {
-    const response = await this.config.model.invoke(messages)
-    const content =
-      typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+  protected async getStructuredResponse(messages: any[], attempt: number = 1): Promise<AgentResponse> {
+    const MAX_RETRIES = 2
 
-    // Try to parse as JSON
     try {
-      // Extract JSON from response (handle markdown code blocks)
+      const response = await this.config.model.invoke(messages)
+      const content =
+        typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+
+      // Try to parse as JSON
       let jsonStr = content
+      // Fuzzy match: look for JSON object structure if not in code block
       const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/)
       if (jsonMatch) {
         jsonStr = jsonMatch[1].trim()
+      } else {
+        // Try to find first { and last }
+        const firstOpen = content.indexOf('{')
+        const lastClose = content.lastIndexOf('}')
+        if (firstOpen !== -1 && lastClose !== -1 && lastClose > firstOpen) {
+          jsonStr = content.substring(firstOpen, lastClose + 1)
+        }
       }
 
       const parsed = JSON.parse(jsonStr) as AgentResponse
+
+      // Basic validation: must have message and confidence
+      if (!parsed.message && !parsed.actions) {
+        throw new Error("Missing 'message' or 'actions' in response")
+      }
 
       // Ensure required fields
       return {
@@ -193,12 +207,24 @@ IMPORTANT:
         nextAgent: parsed.nextAgent,
       }
     } catch (e) {
-      // If parsing fails, return plain message
-      console.warn(`${this.config.name}: Failed to parse structured response, using plain text`)
+      const errorMsg = e instanceof Error ? e.message : 'Unknown JSON parse error'
+      console.warn(`${this.config.name}: validation failed (attempt ${attempt}/${MAX_RETRIES + 1}): ${errorMsg}`)
+
+      if (attempt <= MAX_RETRIES) {
+        console.log(`${this.config.name}: Self-correcting...`)
+        // Add specific instruction to fix the error
+        const correctionMessage = new SystemMessage(
+          `Your last response failed validation. Error: ${errorMsg}\n\nPlease correct the JSON format and retry.`
+        )
+        return this.getStructuredResponse([...messages, correctionMessage], attempt + 1)
+      }
+
+      // If all retries fail, return fallback
+      console.warn(`${this.config.name}: All validation attempts failed. Falling back to plain text.`)
       return {
-        message: content,
+        message: "I encountered an error generating the structured response.",
         actions: [],
-        confidence: 0.5,
+        confidence: 0.0,
       }
     }
   }

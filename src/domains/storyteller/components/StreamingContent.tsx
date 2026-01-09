@@ -1,8 +1,12 @@
 'use client'
 
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
-import { Loader2, BookOpen, Users, Globe, Sparkles, Lightbulb, FileText } from 'lucide-react'
+import { 
+  Loader2, BookOpen, Users, Globe, Sparkles, Lightbulb, FileText, 
+  Check, Circle, Search, Brain, Pen, ChevronDown, ChevronRight,
+  Music, Target, Zap, Eye
+} from 'lucide-react'
 
 export interface StreamingSection {
   key: string
@@ -23,16 +27,29 @@ interface StreamingContentProps {
   isStreaming: boolean
 }
 
-// Section icons
+// Section icons - expanded for more operation types
 const SECTION_ICONS: Record<string, React.ReactNode> = {
-  worldDescription: <Globe className="w-4 h-4" />,
-  worldRules: <FileText className="w-4 h-4" />,
-  factions: <Users className="w-4 h-4" />,
-  keyCharacters: <Users className="w-4 h-4" />,
-  plotTwists: <Sparkles className="w-4 h-4" />,
-  metadata: <BookOpen className="w-4 h-4" />,
-  episodeRoadmap: <Lightbulb className="w-4 h-4" />,
-  full_bible: <BookOpen className="w-4 h-4" />,
+  // World building
+  worldDescription: <Globe className="w-3.5 h-3.5" />,
+  worldRules: <FileText className="w-3.5 h-3.5" />,
+  factions: <Users className="w-3.5 h-3.5" />,
+  keyCharacters: <Users className="w-3.5 h-3.5" />,
+  plotTwists: <Sparkles className="w-3.5 h-3.5" />,
+  metadata: <BookOpen className="w-3.5 h-3.5" />,
+  episodeRoadmap: <Lightbulb className="w-3.5 h-3.5" />,
+  full_bible: <BookOpen className="w-3.5 h-3.5" />,
+  // Premise sections
+  title: <Pen className="w-3.5 h-3.5" />,
+  protagonistHook: <Target className="w-3.5 h-3.5" />,
+  fatalFlaw: <Zap className="w-3.5 h-3.5" />,
+  inevitableConsequence: <Eye className="w-3.5 h-3.5" />,
+  thematicFocus: <Brain className="w-3.5 h-3.5" />,
+  soundtracks: <Music className="w-3.5 h-3.5" />,
+  // Operations
+  analyzing: <Search className="w-3.5 h-3.5" />,
+  reading: <BookOpen className="w-3.5 h-3.5" />,
+  generating: <Sparkles className="w-3.5 h-3.5" />,
+  thinking: <Brain className="w-3.5 h-3.5" />,
 }
 
 const SECTION_NAMES: Record<string, string> = {
@@ -44,6 +61,18 @@ const SECTION_NAMES: Record<string, string> = {
   metadata: 'Story Metadata',
   episodeRoadmap: 'Episode Roadmap',
   full_bible: 'World Bible',
+  // Premise sections
+  title: 'Episode Title',
+  protagonistHook: 'Protagonist Hook',
+  fatalFlaw: 'Fatal Flaw',
+  inevitableConsequence: 'Inevitable Consequence',
+  thematicFocus: 'Thematic Focus',
+  soundtracks: 'Soundtracks',
+  // Operations
+  analyzing: 'Analyzing context',
+  reading: 'Reading data',
+  generating: 'Generating content',
+  thinking: 'Thinking',
 }
 
 // Helper to format agent names
@@ -71,6 +100,7 @@ export const StreamingContent: React.FC<StreamingContentProps> = ({
   isStreaming,
 }) => {
   const contentRef = useRef<HTMLDivElement>(null)
+  const [isExpanded, setIsExpanded] = useState(true)
 
   // Auto-scroll as content streams
   useEffect(() => {
@@ -83,63 +113,92 @@ export const StreamingContent: React.FC<StreamingContentProps> = ({
     return null
   }
 
+  const completedCount = sections.filter(s => s.status === 'complete').length
+  const totalCount = sections.length
+
   return (
-    <div className="border border-primary/30 rounded-lg bg-primary/5 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 border-b border-primary/20">
-        <Loader2 className={cn('w-4 h-4 text-primary', isStreaming && 'animate-spin')} />
-        <span className="font-medium text-sm text-primary">
-          {formatAgentName(agent) || 'Premise Architect'} is generating...
+    <div className="border border-border/30 rounded-lg bg-muted/5 overflow-hidden transition-all duration-300">
+      {/* Cursor-like Header - Minimalist */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-muted/20 transition-colors text-left"
+      >
+        {isStreaming ? (
+          <Loader2 className="w-3 h-3 text-primary/70 animate-spin" />
+        ) : (
+          <Check className="w-3 h-3 text-green-500/70" />
+        )}
+        
+        <span className="text-[10px] uppercase tracking-[0.15em] font-bold text-muted-foreground/80 flex-1">
+          {formatAgentName(agent) || 'Agent'} {isStreaming ? 'Working' : 'Ready'}
         </span>
-      </div>
-
-      {/* Progressive Sections */}
-      {sections.length > 0 && (
-        <div className="px-4 py-3 border-b border-primary/10">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {sections.map(section => (
-              <SectionIndicator key={section.key} section={section} />
-            ))}
-          </div>
+        
+        {totalCount > 0 && (
+          <span className="text-[10px] font-mono text-muted-foreground/40">
+            {completedCount}/{totalCount}
+          </span>
+        )}
+        
+        <div className="ml-1 opacity-40">
+          {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
         </div>
-      )}
+      </button>
 
-      {/* Streaming Content */}
-      {currentTokens && (
-        <div
-          ref={contentRef}
-          className="px-4 py-3 max-h-64 overflow-y-auto font-mono text-sm text-foreground/80"
-        >
-          <StreamingText text={currentTokens} isStreaming={isStreaming} />
-        </div>
-      )}
+      {isExpanded && (
+        <div className="animate-in slide-in-from-top-1 duration-200">
+          {/* Cursor-like Progress Checklist */}
+          {sections.length > 0 && (
+            <div className="px-3 py-2 border-t border-border/10 space-y-0.5">
+              {sections.map(section => (
+                <ProgressStep key={section.key} section={section} />
+              ))}
+            </div>
+          )}
 
-      {/* Section Previews */}
-      {sections.filter(s => s.status === 'complete' && s.preview).length > 0 && (
-        <div className="px-4 py-3 space-y-2 border-t border-primary/10">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Generated Sections
-          </p>
-          {sections
-            .filter(s => s.status === 'complete' && s.preview)
-            .map(section => (
-              <div
-                key={section.key}
-                className="p-2 rounded bg-muted/30 text-xs text-muted-foreground"
-              >
-                <span className="font-medium text-foreground">
-                  {SECTION_NAMES[section.key] || section.name}:
-                </span>{' '}
-                {section.preview}
-              </div>
-            ))}
+          {/* Streaming Content - Tiny font, minimalist */}
+          {currentTokens && (
+            <div
+              ref={contentRef}
+              className="px-3 py-2 max-h-24 overflow-y-auto border-t border-border/10"
+            >
+              <StreamingText text={currentTokens} isStreaming={isStreaming} />
+            </div>
+          )}
         </div>
       )}
     </div>
   )
 }
 
-// Section indicator pill
+// Cursor-like progress step - Minimalist text-based version
+const ProgressStep: React.FC<{ section: StreamingSection }> = ({ section }) => {
+  const name = SECTION_NAMES[section.key] || section.name
+
+  return (
+    <div className="flex items-center gap-2 py-0.5 animate-in fade-in duration-200">
+      <div className="w-3.5 h-3.5 flex items-center justify-center">
+        {section.status === 'complete' ? (
+          <Check className="w-2.5 h-2.5 text-green-500/70" />
+        ) : section.status === 'streaming' ? (
+          <Loader2 className="w-2.5 h-2.5 text-primary/70 animate-spin" />
+        ) : (
+          <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/20" />
+        )}
+      </div>
+      
+      <span className={cn(
+        "text-[10px] uppercase tracking-wider font-medium",
+        section.status === 'complete' && 'text-muted-foreground/50',
+        section.status === 'streaming' && 'text-foreground/80',
+        section.status === 'pending' && 'text-muted-foreground/30'
+      )}>
+        {name}
+      </span>
+    </div>
+  )
+}
+
+// Legacy section indicator (grid style) - kept for backwards compatibility
 const SectionIndicator: React.FC<{ section: StreamingSection }> = ({ section }) => {
   const icon = SECTION_ICONS[section.key] || <FileText className="w-3 h-3" />
   const name = SECTION_NAMES[section.key] || section.name
@@ -165,13 +224,13 @@ const SectionIndicator: React.FC<{ section: StreamingSection }> = ({ section }) 
   )
 }
 
-// Streaming text with cursor
+// Streaming text with cursor - more compact
 const StreamingText: React.FC<{ text: string; isStreaming: boolean }> = ({ text, isStreaming }) => {
-  // Limit displayed text to last ~1000 characters for performance
-  const displayText = text.length > 1000 ? '...' + text.slice(-1000) : text
+  // Limit displayed text to last ~500 characters for performance  
+  const displayText = text.length > 500 ? '...' + text.slice(-500) : text
 
   return (
-    <span className="whitespace-pre-wrap break-words">
+    <span className="whitespace-pre-wrap break-words text-xs text-muted-foreground font-mono">
       {displayText}
       {isStreaming && <span className="animate-pulse text-primary">▊</span>}
     </span>
@@ -179,6 +238,12 @@ const StreamingText: React.FC<{ text: string; isStreaming: boolean }> = ({ text,
 }
 
 export default StreamingContent
+export { ProgressStep, SectionIndicator }
+
+
+
+
+
 
 
 

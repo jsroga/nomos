@@ -4,9 +4,11 @@ import { runs } from '@trigger.dev/sdk/v3'
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
+    let runId: string | null = null
     try {
         const { searchParams } = new URL(request.url)
-        const runId = searchParams.get('runId')
+        runId = searchParams.get('runId')
+
 
         if (!runId) {
             return NextResponse.json({ error: 'Missing runId parameter' }, { status: 400 })
@@ -35,6 +37,7 @@ export async function GET(request: Request) {
 
         // Handle specific Trigger.dev errors
         if (error.message?.includes('not found') || error.status === 404) {
+            console.warn(`Run ID not found: ${runId}`)
             return NextResponse.json({ error: 'Run not found' }, { status: 404 })
         }
 

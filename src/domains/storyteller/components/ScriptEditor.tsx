@@ -33,9 +33,11 @@ export const ScriptEditor: React.FC<ScriptEditorProps> = ({
     if (editorRef.current) {
       const currentText = editorRef.current.innerText
       // Only update if content changed externally (not from user typing)
+      // Relaxed check: Allow update if content is longer (AI added text) 
+      // or if we haven't initialized yet.
       if (
         !isInitializedRef.current ||
-        (content !== currentText && content.length > currentText.length + 50)
+        (content !== currentText && content.length > currentText.length)
       ) {
         editorRef.current.innerText = content || ''
         isInitializedRef.current = true
@@ -116,12 +118,6 @@ export const ScriptEditor: React.FC<ScriptEditorProps> = ({
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-muted-foreground">Script</span>
           {isLoading && <span className="text-xs text-primary animate-pulse">Writing...</span>}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="h-7 text-xs">
-            <RotateCcw size={12} className="mr-1" />
-            Undo
-          </Button>
         </div>
       </div>
 

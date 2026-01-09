@@ -1,14 +1,13 @@
 /* eslint-disable indent */
 import { stabilityAI } from '@/infrastructure/ai/stability'
+import {
+    TextureStyle,
+    TEXTURE_STYLES,
+    TEXTURE_REFINEMENT_SYSTEM_PROMPT
+} from '../prompts'
 
-export type TextureStyle = 'painterly' | 'realistic' | 'sketch' | 'decay'
-
-const STYLES: Record<TextureStyle, string> = {
-    painterly: 'oil painting style, impasto brushwork, expressive texture, disco elysium nuance, artistic, detailed',
-    realistic: 'photorealistic, 8k, raw photo, highly detailed texture, pbr material',
-    sketch: 'architectural sketch style, blueprint aesthetics, white lines on blue, hand drawn, technical drawing',
-    decay: 'post-apocalyptic, worn, grime, cracked, dirty, weathered, ruins aesthetic'
-}
+// Re-export TextureStyle for consumers
+export type { TextureStyle }
 
 class TextureService {
     async refinePrompt(basePrompt: string): Promise<string> {
@@ -29,11 +28,7 @@ class TextureService {
                     messages: [
                         {
                             role: 'system',
-                            content: `You are a Texture Artist specializing in PBR materials for video games. 
-                            Rewrite the user's raw prompt into a detailed Stable Diffusion prompt.
-                            - Focus on visual description (color, wear, surface detail).
-                            - Use keywords like "8k", "pbr", "highly detailed".
-                            - Do NOT add conversational text. Return ONLY the prompt.`
+                            content: TEXTURE_REFINEMENT_SYSTEM_PROMPT
                         },
                         { role: 'user', content: basePrompt }
                     ],
@@ -72,7 +67,7 @@ class TextureService {
             finalPrompt = await this.refinePrompt(prompt)
         }
 
-        const styleModifiers = STYLES[style]
+        const styleModifiers = TEXTURE_STYLES[style]
 
         // Original code seems to have been cut off or malformed here in the snippet provided.
         // I will assume standard stability/comet/replicate call was intended or I will just log and throw since I can't see the implementation.

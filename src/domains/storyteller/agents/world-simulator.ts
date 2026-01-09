@@ -6,6 +6,7 @@ import { getModel } from '../config/model-config'
 import { SystemMessage, AIMessage } from '@langchain/core/messages'
 import { z } from 'zod'
 import { getSafeMessageHistory } from '../utils/message-utils'
+import { loadPromptCached } from '../prompts/hub-loader'
 
 // Model is created inside the function to use request-scoped config (AsyncLocalStorage)
 
@@ -21,36 +22,14 @@ const SimulationResponseSchema = BaseAgentResponseSchema.extend({
     worldConsequences: z.array(z.string()).describe('How the world state changes')
 })
 
-const SIMULATOR_PROMPT = `
-## YOU ARE THE WORLD SIMULATOR
-
-Your job is NOT to write a story. Your job is to run a simulation based on the DEFINED RULES and FACTION GOALS.
-
-## INPUT
-- World Rules: Physics, Magic, Society
-- Factions: Goals, Resources, Ideologies
-- Event: The "Spark" or recent action
-
-## TASK
-Predict how each faction reacts to the event.
-1. **Check Ideology**: Does this event offend them?
-2. **Check Goals**: Does this event help or hinder them?
-3. **Check Resources**: Do they have the means to react?
-
-## CRITICAL
-- Be ruthless. If a faction would kill for this, say so.
-- Consequences must be logical, not dramatic.
-- If a rule is broken, the consequence DEFINED in the rules must happen.
-
-Respond with a JSON object containing the reactions and world consequences.
-`
+import { WORLD_SIMULATOR_PROMPT } from '../prompts/agents/world-simulator'
 
 export const worldSimulatorAgent = async (
     state: WritersRoomState
 ): Promise<Partial<WritersRoomState>> => {
     // Create model inside function to use request-scoped config
     const model = getModel('plotArchitect')
-    
+
     console.log('World Simulator running...')
 
     const bible = state.seriesBible
@@ -68,9 +47,15 @@ export const worldSimulatorAgent = async (
   ${getSafeMessageHistory(state.messages, 3).map(m => `${m.name || 'User'}: ${m.content}`).join('\n')}
   `
 
+    // Load prompt from Hub
+    const loadedPrompt = await loadPromptCached('worldSimulator')
+    const promptMessages = (loadedPrompt.prompt as any).promptMessages || (loadedPrompt.prompt as any).messages || []
+    const systemMessageFromPrompt = promptMessages.find((m: any) => m.lc_id?.[3] === 'SystemMessagePromptTemplate' || m._type === 'system')
+    const systemTemplate = systemMessageFromPrompt?.prompt?.template || systemMessageFromPrompt?.template || WORLD_SIMULATOR_PROMPT
+
     // Combine system content into single message (required for Claude)
-    const combinedSystem = [SIMULATOR_PROMPT, contextMessage].join('\n\n---\n\n')
-    
+    const combinedSystem = [systemTemplate, contextMessage].join('\n\n---\n\n')
+
     const messages = [
         new SystemMessage(combinedSystem),
     ]

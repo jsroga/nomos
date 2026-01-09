@@ -31,7 +31,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} ${syne.variable} font-sans bg-background text-foreground min-h-screen`}
       >
-        <NextTopLoader color="#7c3aed" showSpinner={false} />
+        <NextTopLoader color="hsl(240, 85%, 65%)" showSpinner={false} />
         <AuthProvider>
           <GlobalLiquidLoader />
           {children}

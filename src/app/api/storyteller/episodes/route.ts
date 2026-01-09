@@ -1,5 +1,17 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { requireAuth } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { projects } from '@/domains/storyteller/db/schema'
+import { eq } from 'drizzle-orm'
+
+async function verifyProjectAccess(projectId: string, userId: string) {
+  const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
+  if (!project || project.userId !== userId) {
+    return false
+  }
+  return true
+}
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -10,6 +22,16 @@ export async function GET(req: Request) {
   }
 
   try {
+    const { session } = await requireAuth()
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const hasAccess = await verifyProjectAccess(projectId, session.user.id)
+    if (!hasAccess) {
+      return NextResponse.json({ error: 'Unauthorized access to project' }, { status: 403 })
+    }
+
     const { data: projectEpisodes, error } = await supabaseAdmin
       .from('episodes')
       .select('*')
@@ -27,8 +49,18 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const { session } = await requireAuth()
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await req.json()
     const { projectId, title, sequence, masterPrompt, summary } = body
+
+    const hasAccess = await verifyProjectAccess(projectId, session.user.id)
+    if (!hasAccess) {
+      return NextResponse.json({ error: 'Unauthorized access to project' }, { status: 403 })
+    }
 
     const { data: newEpisode, error } = await supabaseAdmin
       .from('episodes')

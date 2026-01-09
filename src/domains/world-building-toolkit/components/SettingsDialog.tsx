@@ -1,5 +1,6 @@
 /* eslint-disable */
 import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { aiService } from '@/infrastructure/ai/service'
 import {
   X,
@@ -31,6 +32,9 @@ type Tab = 'generation' | 'upscaling' | 'tools' | 'apikeys' | 'storyteller' | 'p
 import { LocalStorageKeys } from '@/constants/localStorage'
 
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose, projectId }) => {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
   const [activeTab, setActiveTab] = useState<Tab>('generation')
 
   const [activeId, setActiveId] = useState(aiService.getActiveModelId())
@@ -202,13 +206,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
     </div>
   )
 
-  if (!isOpen) return null
+  if (!isOpen || !mounted) return null
 
   const selectedModel = models.find(m => m.id === activeId)
 
-  return (
-    <div className="fixed inset-0 z-[99] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-4xl h-[600px] bg-card border border-border rounded-lg shadow-lg flex overflow-hidden relative">
+  return createPortal(
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+      <div className="w-full max-w-4xl h-[600px] bg-zinc-950 border border-zinc-900 rounded-lg shadow-lg flex overflow-hidden relative text-zinc-200">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-50 text-muted-foreground hover:text-foreground"
@@ -217,7 +221,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
         </button>
 
         {/* Sidebar */}
-        <div className="w-[200px] bg-muted/30 border-r border-border flex flex-col p-4">
+        <div className="w-[200px] bg-zinc-900/30 border-r border-zinc-900 flex flex-col p-4">
           <h2 className="text-lg font-bold mb-6 px-2">Settings</h2>
           <nav className="space-y-2 flex-1">
             <Button
@@ -285,18 +289,18 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
 
                     <div className="space-y-6">
                       {/* Card: Tile Generation */}
-                      <div className="p-4 rounded-lg bg-card border border-border space-y-4">
+                      <div className="p-4 rounded-lg bg-zinc-900/20 border border-zinc-900 space-y-4">
                         <div className="flex items-center gap-2 mb-2">
                           <Sparkles className="w-4 h-4 text-primary" />
                           <h4 className="font-semibold text-sm">Tile Generator</h4>
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium mb-1.5">Primary Model</label>
+                          <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">Primary Model</label>
                           <select
                             value={activeId}
                             onChange={e => handleModelChange(e.target.value)}
-                            className="w-full p-2 rounded-md border border-input bg-background text-sm focus:ring-2 focus:ring-primary outline-none"
+                            className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md py-2 px-3 text-xs text-zinc-300 font-mono focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-all"
                           >
                             {models.map(m => (
                               <option key={m.id} value={m.id}>
@@ -311,26 +315,26 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
 
                         {activeId === 'custom' && (
                           <div>
-                            <label className="block text-sm font-medium mb-1.5">Base URL</label>
+                            <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">Base URL</label>
                             <input
                               type="text"
                               value={config.baseUrl || ''}
                               onChange={e => handleConfigChange({ baseUrl: e.target.value })}
                               placeholder="https://..."
-                              className="w-full p-2 rounded-md border border-input bg-background text-sm"
+                              className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md py-2 px-3 text-xs text-zinc-300 font-mono focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-all placeholder:text-zinc-600"
                             />
                           </div>
                         )}
 
                         {activeId === 'gemini' && (
                           <div>
-                            <label className="block text-sm font-medium mb-1.5">Model ID</label>
+                            <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">Model ID</label>
                             <input
                               type="text"
                               value={config.params?.modelId || 'imagen-3.0-generate-001'}
                               onChange={e => handleParamChange('modelId', e.target.value)}
                               placeholder="imagen-3.0-generate-001"
-                              className="w-full p-2 rounded-md border border-input bg-background text-sm"
+                              className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md py-2 px-3 text-xs text-zinc-300 font-mono focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-all placeholder:text-zinc-600"
                             />
                             <p className="text-xs text-muted-foreground mt-1.5">
                               Try <code>imagen-3.0-generate-001</code> or <code>gemini-1.5-pro</code>
@@ -468,28 +472,28 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                         <div className="grid grid-cols-2 gap-4">
                           {/* Image Generation */}
                           <div className="space-y-2">
-                            <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Image Generation</h5>
+                            <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">Image Generation</h5>
                             <ConnectionStatus isConnected={!!geminiConfig.apiKey} label="Gemini / Nano Banana" />
                             <ConnectionStatus isConnected={!!legnextConfig.apiKey} label="Midjourney (LegNext AI)" />
                           </div>
 
                           {/* Upscaling */}
                           <div className="space-y-2">
-                            <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Upscaling</h5>
+                            <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">Upscaling</h5>
                             <ConnectionStatus isConnected={!!upscale4kConfig.apiKey} label="Stability AI" />
                             <ConnectionStatus isConnected={!!replicateConfig.apiKey} label="Replicate" />
                           </div>
 
                           {/* 3D Generation */}
                           <div className="space-y-2">
-                            <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">3D Generation</h5>
+                            <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">3D Generation</h5>
                             <ConnectionStatus isConnected={!!hyper3dConfig.apiKey} label="Hyper3D" />
                             <ConnectionStatus isConnected={!!meshyConfig.apiKey} label="Meshy" />
                           </div>
 
                           {/* Tools & AI */}
                           <div className="space-y-2">
-                            <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tools & AI</h5>
+                            <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">Tools & AI</h5>
                             <ConnectionStatus isConnected={!!openaiConfig.apiKey} label="OpenAI" />
                             <ConnectionStatus isConnected={!!anthropicApiKey} label="Anthropic (Claude)" />
                             <ConnectionStatus isConnected={!!falConfig.apiKey} label="Fal.ai (Smart Select)" />
@@ -579,7 +583,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           <div className="bg-muted/30 p-4 rounded-md space-y-4 border border-border">
                             <h4 className="text-sm font-semibold">Replicate Configuration</h4>
                             <div>
-                              <label className="block text-sm font-medium mb-1.5">Model ID</label>
+                              <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">Model ID</label>
                               <input
                                 type="text"
                                 value={replicateConfig.model || 'recraft-ai/recraft-creative-upscale'}
@@ -587,7 +591,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                                   setReplicateConfig({ ...replicateConfig, model: e.target.value })
                                 }
                                 placeholder="recraft-ai/recraft-creative-upscale"
-                                className="w-full p-2 rounded-md border border-input bg-background text-sm"
+                                className="w-full p-2 rounded-md border border-input bg-background text-sm font-mono"
                               />
                             </div>
                           </div>
@@ -801,13 +805,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           <div className="space-y-3 pt-2">
                             <ConnectionStatus isConnected={!!geminiConfig.apiKey} label="Nano Banana (via Gemini key)" />
                             <div>
-                              <label className="block text-sm font-medium mb-1.5">Model ID</label>
+                              <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">Model ID</label>
                               <input
                                 type="text"
                                 value={nanoBananaModelId}
                                 onChange={e => setNanoBananaModelId(e.target.value)}
                                 placeholder="flux-pro"
-                                className="w-full p-2 rounded-md border border-input bg-background text-sm"
+                                className="w-full p-2 rounded-md border border-input bg-background text-sm font-mono"
                               />
                               <p className="text-xs text-muted-foreground mt-1.5">
                                 Uses your Gemini API key from the API Keys tab.
@@ -1131,6 +1135,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
           </div>
         </div>
       </div >
-    </div >
+    </div >,
+    document.body
   )
 }

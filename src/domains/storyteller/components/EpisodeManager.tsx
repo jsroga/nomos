@@ -18,15 +18,44 @@ interface EpisodeManagerProps {
   projectId: string
   currentEpisodeId: string | null
   onEpisodeChange: (episodeId: string) => void
+  onEpisodeTitleChange?: (title: string) => void
+  isWorldBibleOpen?: boolean
 }
 
 export const EpisodeManager: React.FC<EpisodeManagerProps> = ({
   projectId,
   currentEpisodeId,
   onEpisodeChange,
+  onEpisodeTitleChange,
+  isWorldBibleOpen
 }) => {
   const [episodes, setEpisodes] = useState<Episode[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Update parent with current episode title when episodes or currentEpisodeId changes
+  useEffect(() => {
+    if (currentEpisodeId && episodes.length > 0) {
+      const current = episodes.find(ep => ep.id === currentEpisodeId)
+      if (current && onEpisodeTitleChange) {
+        onEpisodeTitleChange(current.title || 'Untitled Episode')
+      }
+    }
+  }, [currentEpisodeId, episodes, onEpisodeTitleChange])
+
+  // Listen for external title updates (e.g. from AI)
+  useEffect(() => {
+    const handleRemoteUpdate = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      if (detail && detail.title && currentEpisodeId) {
+        setEpisodes(prev => prev.map(ep =>
+          ep.id === currentEpisodeId ? { ...ep, title: detail.title } : ep
+        ))
+      }
+    }
+    window.addEventListener('update_episode_premise', handleRemoteUpdate)
+    return () => window.removeEventListener('update_episode_premise', handleRemoteUpdate)
+  }, [currentEpisodeId])
 
   const handleRename = async (id: string, newTitle: string) => {
     setEditingId(null)
@@ -44,15 +73,16 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = ({
 
   useEffect(() => {
     if (projectId) {
+      setIsLoading(true)
       fetch(`/api/storyteller/episodes?projectId=${projectId}`)
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) {
             setEpisodes(data)
-            // Auto-select first episode if none selected
-            if (data.length > 0 && !currentEpisodeId) {
-              onEpisodeChange(data[0].id)
-            }
+            // Auto-select removed to keep Bible open
+            // if (data.length > 0 && !currentEpisodeId) {
+            //   onEpisodeChange(data[0].id)
+            // }
           } else {
             console.error('Failed to fetch episodes:', data)
             setEpisodes([])
@@ -62,6 +92,7 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = ({
           console.error('Error fetching episodes:', err)
           setEpisodes([])
         })
+        .finally(() => setIsLoading(false))
     }
   }, [projectId]) // remove currentEpisodeId dependency to avoid loop, though onEpisodeChange is stable usually
 
@@ -93,9 +124,10 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = ({
           <div className="flex items-center gap-1">
             <Button
               size="sm"
-              variant="outline"
-              className="h-6 px-2 text-[10px] gap-1"
+              variant={isWorldBibleOpen ? "default" : "outline"}
+              className={`h-6 px-2 text-[10px] gap-1 ${isWorldBibleOpen ? "bg-primary text-primary-foreground" : ""}`}
               onClick={() => window.dispatchEvent(new CustomEvent('toggle-world-bible'))}
+              disabled={!currentEpisodeId}
             >
               <BookOpen size={10} />
               Bible
@@ -114,59 +146,71 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = ({
         </div>
 
         <div className="space-y-1">
-          {episodes.map(ep => (
-            <div
-              key={ep.id}
-              className={`px-3 py-2 rounded text-sm cursor-pointer flex items-center justify-between group ${currentEpisodeId === ep.id ? 'bg-primary/20 text-primary' : 'hover:bg-accent'
-                }`}
-              onClick={() => onEpisodeChange(ep.id)}
-            >
-              <div className="flex-1 flex items-center gap-2">
-                <span className="text-xs font-mono opacity-50">#{ep.sequence}</span>
-                {editingId === ep.id ? (
-                  <input
-                    autoFocus
-                    className="bg-transparent border-b-2 border-primary focus:outline-none w-full text-sm"
-                    defaultValue={ep.title}
-                    onBlur={e => handleRename(ep.id, e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') handleRename(ep.id, e.currentTarget.value)
-                    }}
-                    onClick={e => e.stopPropagation()}
-                  />
-                ) : (
-                  <span
-                    onDoubleClick={e => {
-                      e.stopPropagation()
-                      setEditingId(ep.id)
-                    }}
-                  >
-                    {ep.title || 'Untitled Episode'}
-                  </span>
-                )}
+          {isLoading ? (
+            // Shimmer loading state
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="px-3 py-2 rounded border border-transparent flex items-center justify-between">
+                <div className="flex-1 flex items-center gap-2">
+                  <div className="w-4 h-3 bg-muted/50 rounded animate-pulse" />
+                  <div className="h-4 bg-muted/50 rounded w-2/3 animate-pulse" />
+                </div>
               </div>
-              <div className="opacity-0 group-hover:opacity-100 flex gap-1">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-6 w-6 p-0"
-                      onClick={e => {
+            ))
+          ) : (
+            episodes.map(ep => (
+              <div
+                key={ep.id}
+                className={`px-3 py-2 rounded text-sm cursor-pointer flex items-center justify-between group ${currentEpisodeId === ep.id ? 'bg-primary/20 text-primary' : 'hover:bg-accent'
+                  }`}
+                onClick={() => onEpisodeChange(ep.id)}
+              >
+                <div className="flex-1 flex items-center gap-2">
+                  <span className="text-xs font-mono opacity-50">#{ep.sequence}</span>
+                  {editingId === ep.id ? (
+                    <input
+                      autoFocus
+                      className="bg-transparent border-b-2 border-primary focus:outline-none w-full text-sm"
+                      defaultValue={ep.title}
+                      onBlur={e => handleRename(ep.id, e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') handleRename(ep.id, e.currentTarget.value)
+                      }}
+                      onClick={e => e.stopPropagation()}
+                    />
+                  ) : (
+                    <span
+                      onDoubleClick={e => {
                         e.stopPropagation()
                         setEditingId(ep.id)
                       }}
                     >
-                      <Edit2 size={12} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Rename episode</p>
-                  </TooltipContent>
-                </Tooltip>
+                      {ep.title || 'Untitled Episode'}
+                    </span>
+                  )}
+                </div>
+                <div className="opacity-0 group-hover:opacity-100 flex gap-1">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 w-6 p-0"
+                        onClick={e => {
+                          e.stopPropagation()
+                          setEditingId(ep.id)
+                        }}
+                      >
+                        <Edit2 size={12} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Rename episode</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </TooltipProvider>

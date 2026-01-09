@@ -63,14 +63,23 @@ import { projects } from '@/domains/storyteller/db/schema'
  *         description: Server error
  */
 
+import { requireAuth } from '@/lib/auth'
+import { eq } from 'drizzle-orm'
+
 export async function POST(req: Request) {
   try {
+    const { session, error } = await requireAuth()
+    if (error || !session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await req.json()
     const { name, description, seriesBible } = body
 
     const [newProject] = await db
       .insert(projects)
       .values({
+        userId: session.user.id,
         name,
         description,
         seriesBible: seriesBible || {},
@@ -86,7 +95,16 @@ export async function POST(req: Request) {
 
 export async function GET() {
   try {
-    const allProjects = await db.select().from(projects)
+    const { session, error } = await requireAuth()
+    if (error || !session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const allProjects = await db
+      .select()
+      .from(projects)
+      .where(eq(projects.userId, session.user.id))
+
     return NextResponse.json(allProjects)
   } catch (error) {
     console.error('Error fetching projects:', error)

@@ -1,4 +1,6 @@
 import { BeatCard, CharacterState, Setup } from '../graph/state'
+import { QuestionType, QuestionUrgency, QuestionStatus, ActionStatus, MergeMode } from '../enums'
+
 
 // ============================================
 // AGENT ACTIONS - Operations agents can commit
@@ -82,7 +84,11 @@ export type AgentAction =
   | {
     type: 'UPDATE_INSPIRATIONS'
     payload: {
-      inspirations: { books?: string[]; movies?: string[]; games?: string[] }
+      inspirations: {
+        books?: Array<string | { title: string; description: string }>;
+        movies?: Array<string | { title: string; description: string }>;
+        games?: Array<string | { title: string; description: string }>
+      }
       mergeMode?: 'replace' | 'merge'
     }
   }
@@ -93,6 +99,13 @@ export type AgentAction =
   | {
     type: 'UPDATE_MOOD_SOUNDTRACK'
     payload: { moodSoundtrack: string }
+  }
+  | {
+    type: 'UPDATE_SOUNDTRACKS'
+    payload: {
+      soundtracks: Array<{ title: string; artist: string; youtubeUrl: string; mood?: string }>
+      mergeMode?: 'replace' | 'merge'
+    }
   }
   | {
     type: 'UPDATE_PLOT_TWISTS'
@@ -112,7 +125,14 @@ export type AgentAction =
     type: 'UPDATE_EPISODE_ROADMAP'
     payload: {
       sequences: Array<{ id: number; name: string; description: string; keyFactionsInvolved?: string[]; worldConsequence?: string }>
+      executiveSummary?: string | null
       mergeMode?: 'replace' | 'merge'
+    }
+  }
+  | {
+    type: 'UPDATE_ROADMAP_SUMMARY'
+    payload: {
+      executiveSummary: string
     }
   }
   | {
@@ -139,13 +159,22 @@ export type AgentAction =
       }
     }
   }
+  | {
+    type: 'GENERATE_POSTER'
+    payload: {
+      episodeId: string
+      prompt: string
+    }
+  }
 
 // ============================================
 // AGENT QUESTIONS - Interactive user prompts
 // ============================================
 
-export type QuestionType = 'single_choice' | 'multiple_choice' | 'free_text' | 'confirmation'
-export type QuestionUrgency = 'blocking' | 'important' | 'optional'
+// QuestionType is now imported from enums.ts
+// QuestionUrgency is now imported from enums.ts
+export { QuestionType, QuestionUrgency }
+
 
 export interface QuestionOption {
   id: string
@@ -191,8 +220,9 @@ export interface ActionHistoryEntry {
   agentName: string
   action: AgentAction
   previousState?: any // State before action (for undo)
-  status: 'committed' | 'undone' | 'redone'
+  status: ActionStatus
 }
+
 
 export interface ActionHistory {
   entries: ActionHistoryEntry[]
@@ -203,7 +233,9 @@ export interface ActionHistory {
 // QUESTION STATE
 // ============================================
 
-export type QuestionStatus = 'pending' | 'answered' | 'skipped' | 'timeout'
+// QuestionStatus is now imported from enums.ts
+export { QuestionStatus }
+
 
 export interface QuestionState {
   question: AgentQuestion
@@ -255,7 +287,9 @@ export const AGENT_RESPONSE_SCHEMA = {
               'UPDATE_PLOT_TWISTS',
               'UPDATE_KEY_CHARACTERS',
               'UPDATE_EPISODE_ROADMAP',
+              'UPDATE_ROADMAP_SUMMARY',
               'UPDATE_EPISODE_PREMISE',
+              'GENERATE_POSTER',
             ],
           },
           payload: { type: 'object' },

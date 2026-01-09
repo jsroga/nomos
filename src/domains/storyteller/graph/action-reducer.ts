@@ -1,6 +1,9 @@
 import { WritersRoomState } from '../graph/state';
 import { AgentActionValidated, WorldRule, Faction } from '../schemas/agent-schemas';
 import { v4 as uuidv4 } from 'uuid';
+import { BeatStatus, BeatType } from '../enums';
+
+
 
 // =================================================================
 // SMART MERGE HELPERS
@@ -235,16 +238,25 @@ export function reduceAgentActions(
         const currentInspirations = storyPlan.inspirations || currentBible.inspirations || { books: [], movies: [], games: [] };
         const mode = action.payload.mergeMode;
 
+        // Helper to merge inspiration arrays (handles both string and object formats)
+        const mergeInspirationArray = (existing: any[], incoming: any[] | undefined): any[] => {
+          if (!incoming) return existing || [];
+          if (mode === 'replace') return incoming;
+          // Merge: add new items
+          const existingTitles = new Set((existing || []).map((item: any) =>
+            typeof item === 'string' ? item : item.title
+          ));
+          const newItems = incoming.filter((item: any) => {
+            const title = typeof item === 'string' ? item : item.title;
+            return !existingTitles.has(title);
+          });
+          return [...(existing || []), ...newItems];
+        };
+
         const mergedInspirations = {
-          books: action.payload.inspirations.books
-            ? mergeStringArrays(currentInspirations.books, action.payload.inspirations.books, mode)
-            : currentInspirations.books || [],
-          movies: action.payload.inspirations.movies
-            ? mergeStringArrays(currentInspirations.movies, action.payload.inspirations.movies, mode)
-            : currentInspirations.movies || [],
-          games: action.payload.inspirations.games
-            ? mergeStringArrays(currentInspirations.games, action.payload.inspirations.games, mode)
-            : currentInspirations.games || []
+          books: mergeInspirationArray(currentInspirations.books, action.payload.inspirations.books),
+          movies: mergeInspirationArray(currentInspirations.movies, action.payload.inspirations.movies),
+          games: mergeInspirationArray(currentInspirations.games, action.payload.inspirations.games)
         };
 
         updates.seriesBible = {
@@ -283,6 +295,31 @@ export function reduceAgentActions(
           storyPlan: {
             ...storyPlan,
             moodSoundtrack: action.payload.moodSoundtrack
+          }
+        };
+        break;
+      }
+
+      case 'UPDATE_SOUNDTRACKS': {
+        const currentBible = getCurrentState().seriesBible || {};
+        const storyPlan = currentBible.storyPlan || {};
+        const existingSoundtracks = storyPlan.soundtracks || [];
+        const mode = action.payload.mergeMode;
+
+        let mergedSoundtracks;
+        if (mode === 'merge') {
+          const existingUrls = new Set(existingSoundtracks.map((s: any) => s.youtubeUrl));
+          const newTracks = action.payload.soundtracks.filter((s: any) => !existingUrls.has(s.youtubeUrl));
+          mergedSoundtracks = [...existingSoundtracks, ...newTracks];
+        } else {
+          mergedSoundtracks = action.payload.soundtracks;
+        }
+
+        updates.seriesBible = {
+          ...currentBible,
+          storyPlan: {
+            ...storyPlan,
+            soundtracks: mergedSoundtracks
           }
         };
         break;
@@ -348,7 +385,23 @@ export function reduceAgentActions(
           ...currentBible,
           storyPlan: {
             ...storyPlan,
-            sequences: mergedSequences
+            sequences: mergedSequences,
+            // Also update executiveSummary if provided
+            ...(action.payload.executiveSummary !== undefined ? { executiveSummary: action.payload.executiveSummary } : {})
+          }
+        };
+        break;
+      }
+
+      case 'UPDATE_ROADMAP_SUMMARY': {
+        const currentBible = getCurrentState().seriesBible || {};
+        const storyPlan = currentBible.storyPlan || {};
+
+        updates.seriesBible = {
+          ...currentBible,
+          storyPlan: {
+            ...storyPlan,
+            executiveSummary: action.payload.executiveSummary
           }
         };
         break;
@@ -413,18 +466,30 @@ export function reduceAgentActions(
       // =================================================================
       case 'CREATE_BEAT': {
         const currentBeats = getCurrentState().beatBoard || [];
+        const payload = action.payload as any; // Use any to access optional BeatCard properties
         const newBeat = {
           id: uuidv4(),
           episodeId: state.episodeId || 'EP_01',
           sequence: currentBeats.length + 1,
-          status: 'proposed' as const,
-          ...action.payload,
+          logline: payload.logline,
+          beatType: (payload.beatType || BeatType.COMPLICATION) as BeatType,
+          charactersInvolved: payload.charactersInvolved || [],
+          emotionalShifts: payload.emotionalShifts || {},
+          visualHook: payload.visualHook || '',
+          causalDependencies: payload.causalDependencies || [],
+          setupsPayoffs: payload.setupsPayoffs || {},
+          status: BeatStatus.PROPOSED,
+          mazurElements: payload.mazurElements,
+          content: payload.content,
+          imageUrl: payload.imageUrl,
+          imagePrompt: payload.imagePrompt,
         };
         updates.beatBoard = [...currentBeats, newBeat];
         // Automatically set this as the current beat for review
         updates.currentBeat = newBeat;
         break;
       }
+
 
       case 'UPDATE_BEAT_CONTENT':
       case 'UPDATE_BEAT': {
@@ -438,12 +503,13 @@ export function reduceAgentActions(
             return {
               ...beat,
               ...payload.updates,
-            };
+            } as typeof beat;
           }
           return beat;
         });
         break;
       }
+
 
       case 'DELETE_BEAT': {
         const currentBeats = getCurrentState().beatBoard || [];

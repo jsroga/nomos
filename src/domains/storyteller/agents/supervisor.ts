@@ -1,6 +1,6 @@
 import { WritersRoomState, Phase } from '../graph/state'
 import { AIMessage, SystemMessage, HumanMessage } from '@langchain/core/messages'
-import { assembleContext } from '../context/assembler'
+import { buildAgentContext } from '../utils/context-builder'
 import { getModel } from '../config/model-config'
 import { supervisorTools } from '../tools/agent-tools'
 
@@ -30,17 +30,20 @@ export const PHASE_ALLOWED_AGENTS: Record<Phase, string[]> = {
     'magicAgent',
     'premiseArchitect', // Allow bible updates during breaking
     'search_series_bible',
+    'planner',
   ],
   cardlock: [
     'devilsAdvocate',
     'writer',
     'scriptEditor',
     'search_series_bible',
+    'planner',
   ],
   writing: [
     'writer',
     'scriptEditor',
     'search_series_bible',
+    'planner',
   ],
   complete: [
     'search_series_bible', // Only lookup allowed
@@ -160,55 +163,8 @@ export function getPhaseGuidance(state: WritersRoomState): string {
   return phaseDescriptions[phase] || ''
 }
 
-const SUPERVISOR_SYSTEM_PROMPT = `
-## YOUR ROLE: THE SUPERVISOR (PROJECT MANAGER)
-You are the manager of a Writers Room. Your job is to **PLAN** and **DELEGATE**.
-
-
-## DEEP AGENT WORKFLOW (PLANNER-EXECUTOR)
-1. **ANALYZE**: Is the request "Atomic" (single step) or "Complex" (multi-step)?
-   - **Atomic**: "Generate episode premise", "Create character X", "What do you think?". -> **EXECUTE DIRECTLY**.
-   - **Complex**: "Create a whole season arc", "Build 5 factions", "Write the whole script". -> **PLAN FIRST**.
-
-2. **EXECUTE DIRECTLY**: If Atomic, delegate to the specific specialist immediately. DO NOT call the Planner.
-
-3. **PLAN**: If Complex and no plan exists, delegate to \`delegate_to_planner\`.
-
-4. **EXECUTE PLAN**: If a plan exists, look for the next "pending" task.
-   - Delegate that specific task to the appropriate specialist.
-   - You can execute multiple tasks in PARALLEL if they are independent.
-
-5. **REVIEW**: When a worker finishes, the task is marked complete. Check the plan again.
-
-## TEAM MEMBERS (TOOLS)
-- **Planner**: The Architect. Creates the \`ActionPlan\`. CALL THIS FIRST for any complex request.
-- **Plot Architect**: [BREAKING] Structure & Beats.
-- **Character Psychology**: [BREAKING] Character logic.
-- **Consequence Tracker**: [BREAKING] Continuity.
-- **Devil's Advocate**: [BREAKING/CARDLOCK] Critique.
-- **Writer**: [WRITING] Script writing.
-- **Script Editor**: [WRITING] Script review.
-- **Premise Architect**: [PREMISE] World building.
-- **Episode Premise Architect**: [PREMISE] Episode hooks.
-- **Magic Agent**: Chaos/Ideas.
-- **Search Bible**: Fact lookup.
-
-## ROUTING LOGIC
-- **"Make a world and characters"** -> **Planner** (Needs breakdown).
-- **"Generate episode premise"** or **"Generate premise for this episode"** (any wording containing both "episode" and "premise") -> **Episode Premise Architect** (Direct delegation, regardless of phase).
-- **"Write the script"** (Premise done) -> **Planner** (Needs breakdown).
-- **"What do you think?"** -> **Answer directly**.
-- **"Change the protagonist's name"** -> **Premise Architect** (Simple task, no plan needed).
-
-## SEQUENTIAL EXECUTION
-Execute one task at a time. Wait for the result before starting the next one.
-DO NOT call multiple tools in the same turn.
-
-## CRITICAL INSTRUCTION
-- ALWAYS check \`state.plan\` first.
-- If \`state.plan\` has pending items, prioritize executing them.
-- If user input ignores the plan, you may cancel the plan or re-plan.
-`
+import { SUPERVISOR_SYSTEM_PROMPT } from '../prompts/agents/supervisor'
+import { loadPromptCached } from '../prompts/hub-loader'
 
 
 export const supervisorAgent = async (
@@ -232,7 +188,7 @@ export const supervisorAgent = async (
     return { awaitingUserInput: true }
   }
 
-  const context = assembleContext(state, 'showrunner') // Reusing showrunner context builder
+  const contextXml = buildAgentContext(state, 'general')
 
   // Context Fix: Ensure last user message is always present
   const lastMessage = state.messages[state.messages.length - 1];
@@ -310,11 +266,16 @@ ${episodeContext}
 ${planContext}
 `
 
+  // Load prompt from Hub
+  const loadedPrompt = await loadPromptCached('supervisor')
+  const promptMessages = (loadedPrompt.prompt as any).promptMessages || (loadedPrompt.prompt as any).messages || []
+  const systemMessage = promptMessages.find((m: any) => m.lc_id?.[3] === 'SystemMessagePromptTemplate' || m._type === 'system')
+  const systemTemplate = systemMessage?.prompt?.template || systemMessage?.template || SUPERVISOR_SYSTEM_PROMPT
+
   // Combine all system content into a single SystemMessage (required for Claude)
   const combinedSystemContent = [
-    context.systemPrompt,
-    context.stateContext,
-    SUPERVISOR_SYSTEM_PROMPT,
+    systemTemplate,
+    contextXml,
     phaseContext,
   ].join('\n\n---\n\n')
 

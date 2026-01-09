@@ -63,26 +63,37 @@ const GLBModel: React.FC<{
   url: string
   isSelected: boolean
   onLoaded: () => void
-}> = ({ url, isSelected, onLoaded }) => {
+  onDimensionsCalculated?: (dimensions: THREE.Vector3) => void
+}> = ({ url, isSelected, onLoaded, onDimensionsCalculated }) => {
   const proxiedUrl = getProxiedUrl(url)
   // useGLTF suspends automatically. We rely on Suspense parent.
   const { scene } = useGLTF(proxiedUrl)
 
-  const clonedScene = useMemo(() => {
+  // Calculate dimensions once when scene loads
+  const { clonedScene, naturalSize } = useMemo(() => {
     const clone = scene.clone()
 
     // Auto-Fix Pivot: Center X/Z and Floor Y
     const box = new THREE.Box3().setFromObject(clone)
     const center = new THREE.Vector3()
+    const size = new THREE.Vector3()
     box.getCenter(center)
+    box.getSize(size)
 
     // Shift geometry so pivot is at bottom-center
     clone.position.x += (clone.position.x - center.x)
     clone.position.z += (clone.position.z - center.z)
     clone.position.y += (clone.position.y - box.min.y)
 
-    return clone
+    return { clonedScene: clone, naturalSize: size }
   }, [scene])
+
+  // Notify parent of natural dimensions AFTER render (avoids state update during render)
+  useEffect(() => {
+    if (onDimensionsCalculated && naturalSize) {
+      onDimensionsCalculated(naturalSize)
+    }
+  }, [naturalSize, onDimensionsCalculated])
 
   useEffect(() => {
     onLoaded()
@@ -96,19 +107,19 @@ const ObjectRenderer: React.FC<{
   obj: SceneObject
   isSelected: boolean
   onClick: () => void
-}> = ({ obj, isSelected, onClick }) => {
+  opacity?: number
+}> = ({ obj, isSelected, onClick, opacity = 1 }) => {
+
   const [isLoaded, setIsLoaded] = useState(false)
   const updateObject = useInteriorStore(state => state.updateObject)
 
-  // Retexture Preview Logic
-  const pendingRetextureUrl = useInteriorStore(state => state.pendingRetextureUrl)
-  const isRetexturing = useInteriorStore(state => state.isRetexturing)
+  // Retexture Preview is now handled by updating obj.modelUrl directly in the store
+  // const pendingRetextureUrl = useInteriorStore(state => state.pendingRetextureUrl)
+  // const isRetexturing = useInteriorStore(state => state.isRetexturing)
   const selectedId = useInteriorStore(state => state.selectedId)
 
   // Determine effective URL
-  const effectiveModelUrl = (isSelected && isRetexturing && pendingRetextureUrl && selectedId === obj.id)
-    ? pendingRetextureUrl
-    : obj.modelUrl
+  const effectiveModelUrl = obj.modelUrl
 
   const isPrimitive = ['cube', 'sphere', 'cylinder', 'cone', 'building', 'tree'].includes(effectiveModelUrl)
   const isExternalModel = effectiveModelUrl.startsWith('http://') || effectiveModelUrl.startsWith('https://') || effectiveModelUrl.startsWith('data:')
@@ -117,6 +128,26 @@ const ObjectRenderer: React.FC<{
     setIsLoaded(true)
     if (obj.isLoading) {
       updateObject(obj.id, { isLoading: false })
+    }
+  }
+
+  const handleDimensionsCalculated = (naturalSize: THREE.Vector3) => {
+    // If we have target dimensions, apply auto-scaling
+    if (obj.targetDimensions) {
+      const [targetX, targetY, targetZ] = obj.targetDimensions
+
+      // Prevent division by zero
+      const scaleX = naturalSize.x > 0.01 ? targetX / naturalSize.x : 1
+      const scaleY = naturalSize.y > 0.01 ? targetY / naturalSize.y : 1
+      const scaleZ = naturalSize.z > 0.01 ? targetZ / naturalSize.z : 1
+
+      console.log(`[Auto-Scale] ${obj.id}`, { natural: naturalSize, target: obj.targetDimensions, newScale: [scaleX, scaleY, scaleZ] })
+
+      // Apply new scale and clear targetDimensions to prevent re-loop
+      updateObject(obj.id, {
+        scale: [scaleX, scaleY, scaleZ],
+        targetDimensions: undefined
+      })
     }
   }
 
@@ -193,7 +224,6 @@ const ObjectRenderer: React.FC<{
       )}
 
       {/* External GLB Models */}
-      {/* External GLB Models */}
       {isExternalModel && (
         <ModelErrorBoundary
           fallback={
@@ -207,6 +237,7 @@ const ObjectRenderer: React.FC<{
               url={effectiveModelUrl}
               isSelected={isSelected}
               onLoaded={handleLoaded}
+              onDimensionsCalculated={handleDimensionsCalculated}
             />
           </Suspense>
         </ModelErrorBoundary>
@@ -223,20 +254,31 @@ export const ObjectManager: React.FC = () => {
   const activeLevel = useInteriorStore(state => state.activeLevel)
 
   return (
-    <group position={[0, activeLevel * 3, 0]}>
-      {objects.map(obj => (
-        <ObjectRenderer
-          key={obj.id}
-          obj={obj}
-          isSelected={obj.id === selectedId}
-          onClick={() => {
-            if (mode === 'SELECT') {
-              setSelected(obj.id)
-            }
-          }}
-        />
-      ))}
+    <group>
+      {objects.map(obj => {
+        const objectLevel = obj.level ?? 0
+        const isOnActiveLevel = objectLevel === activeLevel
+        return (
+          <group
+            key={obj.id}
+            position={[0, objectLevel * 3, 0]}
+          >
+            <ObjectRenderer
+              obj={obj}
+              isSelected={obj.id === selectedId}
+              onClick={() => {
+                if (mode === 'SELECT') {
+                  setSelected(obj.id)
+                }
+              }}
+              opacity={isOnActiveLevel ? 1 : 0.3}
+            />
+          </group>
+        )
+      })}
     </group>
   )
 }
+
+
 

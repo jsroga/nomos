@@ -23,6 +23,20 @@ import {
 
 import { getSafeMessageHistory } from '../utils/message-utils'
 import { StreamCallback, WritersRoomStateWithStream } from '../guardrails/types'
+import { loadPromptCached } from '../prompts/hub-loader'
+import { PROMPT_IDS } from '../config/storyteller-config'
+
+const SECTION_TO_PROMPT_ID: Record<BibleSection, keyof typeof PROMPT_IDS> = {
+  worldDescription: 'sectionWorldDescription',
+  worldRules: 'sectionWorldRules',
+  factions: 'sectionFactions',
+  inspirations: 'sectionInspirations',
+  plotTwists: 'sectionPlotTwists',
+  episodeRoadmap: 'sectionEpisodeRoadmap',
+  keyCharacters: 'sectionKeyCharacters',
+  soundtracks: 'sectionSoundtracks',
+  full: 'premiseArchitect'
+}
 
 // Model is created inside the function to use request-scoped config (AsyncLocalStorage)
 
@@ -30,14 +44,16 @@ import { StreamCallback, WritersRoomStateWithStream } from '../guardrails/types'
 // SECTION-FOCUSED UPDATE DETECTION
 // =================================================================
 
-type BibleSection = 
-  | 'worldDescription' 
-  | 'worldRules' 
-  | 'factions' 
-  | 'inspirations' 
-  | 'plotTwists' 
-  | 'episodeRoadmap' 
+type BibleSection =
+  | 'worldDescription'
+  | 'worldRules'
+  | 'factions'
+  | 'inspirations'
+  | 'plotTwists'
+  | 'episodeRoadmap'
+  | 'episodeRoadmap'
   | 'keyCharacters'
+  | 'soundtracks'
   | 'full'
 
 interface SectionDetection {
@@ -50,49 +66,55 @@ interface SectionDetection {
  */
 function detectTargetSection(userMessage: string): SectionDetection {
   const msg = userMessage.toLowerCase()
-  
+
   // World Description
-  if (msg.includes('world description') || msg.includes('world bible') || 
-      (msg.includes('description') && msg.includes('world'))) {
+  if (msg.includes('world description') || msg.includes('world bible') ||
+    (msg.includes('description') && msg.includes('world'))) {
     return { section: 'worldDescription', instruction: userMessage }
   }
-  
+
   // World Rules / Laws
-  if (msg.includes('world rules') || msg.includes('laws of') || 
-      msg.includes('rules') || msg.includes('magic system') ||
-      msg.includes('laws of the world')) {
+  if (msg.includes('world rules') || msg.includes('laws of') ||
+    msg.includes('rules') || msg.includes('magic system') ||
+    msg.includes('laws of the world')) {
     return { section: 'worldRules', instruction: userMessage }
   }
-  
+
   // Factions
-  if (msg.includes('faction') || msg.includes('power') || 
-      msg.includes('groups') || msg.includes('organizations')) {
+  if (msg.includes('faction') || msg.includes('power') ||
+    msg.includes('groups') || msg.includes('organizations')) {
     return { section: 'factions', instruction: userMessage }
   }
-  
+
   // Inspirations
   if (msg.includes('inspiration') || msg.includes('reference') ||
-      msg.includes('books') || msg.includes('movies') || msg.includes('games')) {
+    msg.includes('books') || msg.includes('movies') || msg.includes('games')) {
     return { section: 'inspirations', instruction: userMessage }
   }
-  
+
   // Plot Twists
   if (msg.includes('plot twist') || msg.includes('twist') || msg.includes('surprise')) {
     return { section: 'plotTwists', instruction: userMessage }
   }
-  
+
   // Episode Roadmap
-  if (msg.includes('episode') || msg.includes('roadmap') || 
-      msg.includes('season') || msg.includes('arc breakdown')) {
+  if (msg.includes('episode') || msg.includes('roadmap') ||
+    msg.includes('season') || msg.includes('arc breakdown')) {
     return { section: 'episodeRoadmap', instruction: userMessage }
   }
-  
+
   // Key Characters
-  if (msg.includes('character') || msg.includes('key player') || 
-      msg.includes('protagonist') || msg.includes('antagonist')) {
+  if (msg.includes('character') || msg.includes('key player') ||
+    msg.includes('protagonist') || msg.includes('antagonist')) {
     return { section: 'keyCharacters', instruction: userMessage }
   }
-  
+
+  // Soundtracks
+  if (msg.includes('soundtrack') || msg.includes('music') ||
+    msg.includes('songs') || msg.includes('playlist')) {
+    return { section: 'soundtracks', instruction: userMessage }
+  }
+
   // Default to full bible
   return { section: 'full', instruction: userMessage }
 }
@@ -118,7 +140,7 @@ Respond with:
   "confidence": 0.9
 }
 `,
-  
+
   worldRules: `
 ## SECTION UPDATE: WORLD RULES (Laws of the World)
 
@@ -173,7 +195,11 @@ Respond with:
 ## SECTION UPDATE: INSPIRATIONS
 
 You are updating ONLY the Inspirations section.
-Suggest books, movies, and games that match the world's tone and genre.
+For each inspiration (book, movie, game), provide:
+- title: The exact name
+- description: 1-2 sentences explaining what it is and why it's relevant to this world
+
+Choose real, existing works that match the world's tone and genre.
 
 Use mergeMode "merge" to add to existing inspirations.
 
@@ -183,7 +209,11 @@ Respond with:
   "actions": [{
     "type": "UPDATE_INSPIRATIONS",
     "payload": {
-      "inspirations": { "books": ["Book 1"], "movies": ["Movie 1"], "games": ["Game 1"] },
+      "inspirations": { 
+        "books": [{ "title": "Dune", "description": "Epic sci-fi about power, religion, and ecology on a desert planet." }], 
+        "movies": [{ "title": "Blade Runner", "description": "Neo-noir vision of a dystopian future with questions about humanity." }], 
+        "games": [{ "title": "Dark Souls", "description": "Grim fantasy with cryptic lore and interconnected world design." }]
+      },
       "mergeMode": "merge"
     }
   }],
@@ -213,20 +243,60 @@ Respond with:
 `,
 
   episodeRoadmap: `
-## SECTION UPDATE: EPISODE ROADMAP
+## SECTION UPDATE: EPISODE ROADMAP (Chain-of-Thought)
 
-You are creating/updating the episode breakdown.
-Define the arc of the season with 8-10 episodes.
+You are an Elite TV Showrunner breaking a season for a premium network (HBO/Netflix).
+You must plan the "Season Spine" first, then break it down into episodes.
+
+### STEP 1: DEFINE THE SEASON SPINE
+Define the macro narrative arc:
+- **Inciting Incident**: The event that disrupts the status quo.
+- **Midpoint Climax**: The point of no return.
+- **Season Climax**: The final confrontation and resolution.
+- **Theme Exploration**: How the central theme is challenged throughout the season.
+
+### STEP 2: BREAK DOWN THE EPISODES
+Generate a roadmap of episodes (typically 8-10). Each episode must be a structured chapter.
+For each episode, define:
+- **Title**: Evocative and thematic.
+- **Logline**: A TV-Guide style summary (1 sentence).
+- **Main Plot (A-Story)**: The external conflict advancement.
+- **Subplot (B-Story)**: The internal/character-specific arc.
+- **The Hook**: A compelling teaser/cold open description.
+- **The Cliffhanger**: The reason the audience clicks "Next Episode".
+- **Showrunner Reasoning**: Why is this episode necessary structurally? (e.g., "Setup for the finale", "Breather before the climax").
 
 Respond with:
 {
-  "message": "Brief explanation of the roadmap",
+  "message": "Brief explanation of the season arc and roadmap",
   "actions": [{
     "type": "UPDATE_EPISODE_ROADMAP",
     "payload": {
+      "seasonStructure": {
+        "seasonLogline": "Elevator pitch",
+        "incitingIncident": "...",
+        "midpointClimax": "...",
+        "seasonClimax": "...",
+        "resolution": "...",
+        "themeExploration": "..."
+      },
       "sequences": [
-        { "id": 1, "name": "Episode Title", "description": "1-2 sentences", "keyFactionsInvolved": ["Faction"], "worldConsequence": "What changes" }
+        { 
+          "id": 1, 
+          "name": "Title", 
+          "logline": "Summary",
+          "description": "Full description...",
+          "mainPlotBeat": "A-Story...",
+          "bPlotBeat": "B-Story...",
+          "hook": "Opening teaser...",
+          "cliffhanger": "Ending hook...",
+          "reasoning": "Structural note...",
+          "keyFactionsInvolved": ["Faction"], 
+          "worldConsequence": "Global impact of the episode",
+          "consequences": ["Character A loses trust", "Faction B gains power"]
+        }
       ],
+      "executiveSummary": "A 2-3 sentence pitch summarizing the entire season arc.",
       "mergeMode": "merge"
     }
   }],
@@ -258,6 +328,33 @@ Respond with:
 }
 `,
 
+  soundtracks: `
+## SECTION UPDATE: SOUNDTRACKS
+
+You are updating ONLY the Soundtracks section.
+Suggest 3-5 real songs that fit the world's atmosphere.
+
+**CRITICAL: You MUST respond with ONLY valid JSON. No prose, no explanations outside the JSON structure.**
+**Do NOT describe the songs in a text list. ONLY return the JSON object below.**
+
+You MUST respond with this EXACT JSON structure:
+{
+  "message": "Brief 1-line summary of music choices",
+  "actions": [{
+    "type": "UPDATE_SOUNDTRACKS",
+    "payload": {
+      "soundtracks": [
+        { "title": "Song Title", "artist": "Artist Name", "youtubeUrl": "https://youtube.com/watch?v=...", "mood": "Eerie/Upbeat/etc" }
+      ],
+      "mergeMode": "replace"
+    }
+  }],
+  "confidence": 0.9
+}
+
+RESPOND WITH ONLY THIS JSON. NO OTHER TEXT.
+`,
+
   full: '' // Uses the standard PREMISE_ARCHITECT_PROMPT
 }
 
@@ -267,13 +364,13 @@ Respond with:
  */
 function buildSectionContext(section: BibleSection, bible: any, storyPlan: any): string {
   const parts: string[] = []
-  
+
   // Always include world description for context
   if (storyPlan.worldDescription || bible.worldDescription) {
     const desc = storyPlan.worldDescription || bible.worldDescription
     parts.push(`**World Description (Summary):** ${desc.substring(0, 200)}...`)
   }
-  
+
   switch (section) {
     case 'worldRules':
       const rules = storyPlan.worldRules || bible.worldRules || []
@@ -288,7 +385,7 @@ function buildSectionContext(section: BibleSection, bible: any, storyPlan: any):
         })
       }
       break
-      
+
     case 'factions':
       const factions = storyPlan.factions || bible.factions || []
       if (factions.length > 0) {
@@ -298,7 +395,7 @@ function buildSectionContext(section: BibleSection, bible: any, storyPlan: any):
         })
       }
       break
-      
+
     case 'inspirations':
       const insp = storyPlan.inspirations || bible.inspirations
       if (insp) {
@@ -308,7 +405,7 @@ function buildSectionContext(section: BibleSection, bible: any, storyPlan: any):
         if (insp.games?.length) parts.push(`- Games: ${insp.games.join(', ')}`)
       }
       break
-      
+
     case 'plotTwists':
       const twists = storyPlan.plotTwists || []
       if (twists.length > 0) {
@@ -316,15 +413,25 @@ function buildSectionContext(section: BibleSection, bible: any, storyPlan: any):
         twists.forEach((t: string, i: number) => parts.push(`${i + 1}. ${t}`))
       }
       break
-      
+
     case 'episodeRoadmap':
       const seqs = storyPlan.sequences || []
+      const seasonStruct = storyPlan.seasonStructure
+
+      if (seasonStruct) {
+        parts.push(`\n**Existing Season Structure:**`)
+        parts.push(`- Logline: ${seasonStruct.seasonLogline}`)
+        parts.push(`- Inciting Incident: ${seasonStruct.incitingIncident}`)
+        parts.push(`- Midpoint: ${seasonStruct.midpointClimax}`)
+        parts.push(`- Climax: ${seasonStruct.seasonClimax}`)
+      }
+
       if (seqs.length > 0) {
         parts.push(`\n**Existing Episode Roadmap:**`)
-        seqs.forEach((s: any) => parts.push(`- Ep ${s.id}: ${s.name} - ${s.description}`))
+        seqs.forEach((s: any) => parts.push(`- Ep ${s.id}: ${s.name} - ${s.logline || s.description}`))
       }
       break
-      
+
     case 'keyCharacters':
       const chars = storyPlan.keyCharacters || bible.keyCharacters || []
       if (chars.length > 0) {
@@ -333,7 +440,7 @@ function buildSectionContext(section: BibleSection, bible: any, storyPlan: any):
       }
       break
   }
-  
+
   return parts.join('\n')
 }
 
@@ -351,17 +458,17 @@ async function streamPremiseGeneration(
 ): Promise<{ parsed: PremiseArchitectResponse | null; fullContent: string }> {
   let fullContent = ''
   let tokenCount = 0
-  
+
   try {
     // Use model.stream() for token-by-token streaming
     const stream = await model.stream(messages)
-    
+
     for await (const chunk of stream) {
       const token = typeof chunk.content === 'string' ? chunk.content : ''
       if (token) {
         fullContent += token
         tokenCount++
-        
+
         // Emit token progress every token (or could batch for performance)
         streamCallback({
           type: 'token',
@@ -369,12 +476,12 @@ async function streamPremiseGeneration(
           token,
           progress: Math.min(tokenCount / 100, 0.99), // Rough progress estimate
         })
-        
+
         // Detect sections being generated and emit section progress
         detectAndEmitSectionProgress(fullContent, streamCallback)
       }
     }
-    
+
     // Signal streaming complete
     streamCallback({
       type: 'section_complete',
@@ -382,10 +489,10 @@ async function streamPremiseGeneration(
       section: 'full_bible',
       content: fullContent.substring(0, 200) + '...', // Preview
     })
-    
+
     // Parse the accumulated content
     const parsed = parseAgentResponse(fullContent, PremiseArchitectResponseSchema)
-    
+
     return {
       parsed: parsed || {
         message: extractMessageFromContent(fullContent),
@@ -396,7 +503,7 @@ async function streamPremiseGeneration(
     }
   } catch (error) {
     console.error('Streaming error in Premise Architect:', error)
-    
+
     // Return what we have so far
     return {
       parsed: {
@@ -423,7 +530,7 @@ function detectAndEmitSectionProgress(content: string, streamCallback: StreamCal
     { marker: '"sequences"', section: 'episodeRoadmap' },
     { marker: '"inspirations"', section: 'inspirations' },
   ]
-  
+
   for (const { marker, section } of sectionMarkers) {
     if (content.includes(marker) && lastDetectedSection !== section) {
       lastDetectedSection = section
@@ -442,16 +549,16 @@ function detectAndEmitSectionProgress(content: string, streamCallback: StreamCal
  */
 function extractMessageFromContent(content: string): string {
   // Try to find a "message" field
-  const messageMatch = content.match(/"message"\s*:\s*"([^"]+)"/s)
+  const messageMatch = content.match(/"message"\s*:\s*"([^"]+)"/)
   if (messageMatch) {
     return messageMatch[1]
   }
-  
+
   // Otherwise, return a truncated version of the raw content
   if (content.length > 500) {
     return content.substring(0, 500) + '...'
   }
-  
+
   return content || 'World bible generated'
 }
 
@@ -520,6 +627,25 @@ Each twist should make the audience want to rewatch from the beginning.
 Return ONLY valid JSON: { "plotTwists": ["Twist 1", "Twist 2", "Twist 3"] }`,
   },
   {
+    key: 'episodeRoadmap',
+    name: 'Season Roadmap',
+    prompt: `You are an Elite TV Showrunner. Plan the Season Spine first, then break it down into episodes.
+
+STEP 1: DEFINE THE SEASON SPINE
+- Inciting Incident, Midpoint, Climax, Resolution.
+
+STEP 2: EPISODE BREAKDOWN (8-10 Episodes)
+For each episode:
+- A-Plot (Main Arc) & B-Plot (Character Arc)
+- Hook (Teaser) & Cliffhanger
+- Showrunner Reasoning (Why this episode?)
+
+Return ONLY valid JSON: { 
+  "seasonStructure": { "seasonLogline": "...", "incitingIncident": "...", "midpointClimax": "...", "seasonClimax": "...", "resolution": "...", "themeExploration": "..." },
+  "sequences": [{ "id": 1, "name": "Title", "logline": "...", "mainPlotBeat": "...", "bPlotBeat": "...", "hook": "...", "cliffhanger": "...", "reasoning": "...", "keyFactionsInvolved": [], "worldConsequence": "..." }] 
+}`,
+  },
+  {
     key: 'metadata',
     name: 'Metadata',
     prompt: `Define the story's core metadata:
@@ -543,7 +669,7 @@ export async function generateBibleProgressively(
   existingBible: any = {}
 ): Promise<any> {
   const generatedSections: Record<string, any> = {}
-  
+
   for (const section of PROGRESSIVE_SECTIONS) {
     // Signal section start
     streamCallback({
@@ -551,37 +677,37 @@ export async function generateBibleProgressively(
       agent: 'PremiseArchitect',
       section: section.key,
     })
-    
+
     // Build context including previously generated sections
     const contextParts = [
       baseContext,
       `\n## USER REQUEST\n${userRequest}`,
       '\n## PREVIOUSLY GENERATED SECTIONS',
     ]
-    
+
     // Include already generated sections for context
     for (const [key, value] of Object.entries(generatedSections)) {
       contextParts.push(`${key}: ${JSON.stringify(value).substring(0, 500)}...`)
     }
-    
+
     // Include existing bible sections for reference
     if (Object.keys(existingBible).length > 0) {
       contextParts.push('\n## EXISTING BIBLE (for reference)')
       contextParts.push(JSON.stringify(existingBible).substring(0, 1000) + '...')
     }
-    
+
     contextParts.push(`\n## CURRENT TASK: Generate ${section.name}`)
     contextParts.push(section.prompt)
-    
+
     const sectionPrompt = contextParts.join('\n')
-    
+
     try {
       // Stream this section's generation
       let sectionContent = ''
       const sectionStream = await model.stream([
         new SystemMessage(sectionPrompt),
       ])
-      
+
       for await (const chunk of sectionStream) {
         const token = typeof chunk.content === 'string' ? chunk.content : ''
         if (token) {
@@ -594,7 +720,7 @@ export async function generateBibleProgressively(
           })
         }
       }
-      
+
       // Parse the section content
       try {
         // Try to extract JSON from content
@@ -602,7 +728,7 @@ export async function generateBibleProgressively(
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0])
           Object.assign(generatedSections, parsed)
-          
+
           // Signal section complete with parsed content
           streamCallback({
             type: 'section_complete',
@@ -626,7 +752,7 @@ export async function generateBibleProgressively(
       // Continue with next section
     }
   }
-  
+
   return generatedSections
 }
 
@@ -647,6 +773,7 @@ function buildStoryPlanFromSections(sections: Record<string, any>): any {
     themes: sections.themes || [],
     inspirations: sections.inspirations || { books: [], movies: [], games: [] },
     sequences: sections.sequences || [],
+    seasonStructure: sections.seasonStructure || null,
     moodImages: [],
   }
 }
@@ -655,59 +782,77 @@ const PREMISE_ARCHITECT_PROMPT = `
 ## YOU ARE THE WORLD & CONFLICT ARCHITECT
 
 Your job is NOT to write a screenplay. Your job is to build a volatile ecosystem aka the "World Bible".
-We follow the "Gardener" philosophy (George R.R. Martin, Vince Gilligan):
-**"Create characters and a world so distinct that the story writes itself through their collisions."**
+We follow the "Gardener" philosophy (George R.R. Martin, Vince Gilligan) mixed with the "Clockwork" logic (DARK by Netflix):
+**"Create characters and a world so distinct that the story writes itself through their collisions. Everything is connected."**
+
+## CORE PHILOSOPHY: THE WEB
+1. **The Web of Connectivity (DARK style)**: No event is isolated. A decision made by a character in Episode 1 must ripple through to Episode 8. Secrets are the currency of this world. There are no coincidences, only inevitabilities.
+2. **The Gardener (GRRM style)**: Don't force the plot. Plant the seeds (factions, flaws, rules) and let the conflict grow organically. If a character makes a mistake, they suffer. No plot armor.
+3. **Atmosphere is Character**: The world itself should feel like an antagonist. Describe it with sensory precision—oppressive rains, glowing neon, decaying brutalism, ancient forests. The mood should be "Sexy, Dangerous, and Intellectual."
 
 ## STEP 1: THE RULES OF PLAY (World Building)
 Define the hard constraints. Magic, physics, politics, technology.
-Rules create conflict. "Magic has a terrible cost" is better than "Magic can do anything".
+Rules create conflict. "Time travel burns your soul" is better than "Time travel is fun".
+The logic must be watertight. If X exists, what does that imply for Y?
 
 ## STEP 2: THE PLAYERS (Factions & Characters)
 Create opposing forces. NOT just "Good vs Evil".
-Create factions with incompatible goals.
+Create factions with incompatible goals and **hidden connections**.
 - Faction A wants X.
 - Faction B wants Y.
-- X and Y cannot coexist.
-- The Protagonist is caught in the middle.
+- They share a secret history or a common ancestor.
+- The Protagonist is the knot in the rope that binds them.
 
 ## STEP 3: THE SPARK (Inciting Incident)
-What disrupts the equilibrium? A death? An invention? A betrayal?
-How do the factions react?
+What disrupts the equilibrium? A body found where it shouldn't be? A signal from the void?
+How do the factions react? The reaction must be disproportionate and revealing.
 
 ## STEP 4: PLOT TWISTS & ROADMAP
-- **Plot Twists**: Provide exactly 3 major plot twists that completely recontextualize the story.
-- **Episode Breakdown**: Define the arc of the season. 
+- **Plot Twists**: Provide exactly 3 major plot twists that recontextualize the story (e.g., "The villain is the hero's future self").
+- **Episode Breakdown**: Define the arc of the season using "Therefore" and "But" logic. 
   - IF the number is known (or you decide to propose, e.g. 8-10), generate a 1-2 sentence summary for each episode in the \`sequences\` field.
 
 ## FULL BIBLE GENERATION
 If the user asks for a "Whole Bible", "Full World", or "Create World", you MUST populate ALL fields in the \`storyPlan\` object.
 Do not leave fields empty. Invent details if they are missing.
-- worldDescription (Visuals, sensory details)
-- worldRules (Magic, technology, society)
-- factions (At least 2 conflicting factions)
-- keyCharacters (Protagonist, Antagonist, Supporting)
+- worldDescription (Visuals, sensory details - THINK ATMOSPHERE)
+- worldRules (Magic, technology, society - THINK CONSEQUENCES)
+- factions (At least 2 conflicting factions with hidden ties)
+- keyCharacters (Protagonist, Antagonist, Supporting - connected by secrets)
 - plotTwists (3 major twists)
-- sequences (Episode breakdown - assume 8-10 episodes if not specified)
+- sequences (Episode breakdown - assume 8-10 episodes)
+- executiveSummary (2-3 sentence pitch for the entire season)
 - tone, genre, themes, inspirations
+- imagePrompts (Visual direction)
 
 ## YOUR RESPONSE FORMAT
 Respond with a JSON object containing the complete story plan:
 
 {
-    "message": "Explain the core conflict and why this world is a powder keg.",
+    "message": "Explain the core conflict, the web of secrets, and why this world is a powder keg.",
     "actions": [
         {
             "type": "UPDATE_SERIES_BIBLE",
             "payload": {
                 "storyPlan": {
                     "title": "Working title",
-                    "worldDescription": "A vivid, atmospheric description of the world. Sensory details. The look and feel.",
+                    "worldDescription": "A vivid, atmospheric description of the world. Sensory details. The look and feel. Think HBO/Netflix Premium.",
                     "inspirations": {
-                        "books": ["Book 1", "Book 2"],
-                        "movies": ["Movie 1"],
-                        "games": ["Game 1"]
+                        "books": [
+                            { "title": "Book Title", "description": "1-2 sentences about what this book is and why it's relevant." }
+                        ],
+                        "movies": [
+                            { "title": "Movie Title", "description": "1-2 sentences about the film and its thematic connection." }
+                        ],
+                        "games": [
+                            { "title": "Game Title", "description": "1-2 sentences about the game and what it shares with this world." }
+                        ]
                     },
-                    "moodSoundtrack": "Link to a song or description of the musical vibe (e.g. 'Industrial synthwave mixed with gregorian chants')",
+                    "moodSoundtrack": "Overall atmosphere description (legacy field)",
+                    "soundtracks": [
+                        { "title": "Song Title", "artist": "Artist Name", "youtubeUrl": "https://www.youtube.com/watch?v=REAL_VIDEO_ID", "mood": "dark, brooding" },
+                        { "title": "Apparat - Goodbye", "artist": "Apparat", "youtubeUrl": "https://www.youtube.com/watch?v=REAL_VIDEO_ID", "mood": "melancholic, fateful" }
+                    ],
                     "imagePrompts": {
                         "world": "A prompt describing a wide shot of the world setting. High fidelity, cinematic lighting, 8k.",
                         "scene1": "A prompt describing a key character moment or close-up detail.",
@@ -746,7 +891,8 @@ Respond with a JSON object containing the complete story plan:
                             "worldConsequence": "Martial law is declared."
                         }
                     ],
-                    "themes": ["Greed", "Memory"]
+                    "executiveSummary": "A 2-3 sentence pitch summarizing the entire season: the core conflict, the stakes, and what makes this story unique.",
+                    "themes": ["Greed", "Memory", "Determinism"]
                 }
             }
         }
@@ -755,10 +901,11 @@ Respond with a JSON object containing the complete story plan:
 }
 
 ## CRITICAL REQUIREMENTS
-1. **NO GENERIC TROPES** - Be weird. Be specific.
-2. **LOGIC IS KING** - People act in their self-interest.
-3. **CONSEQUENCES** - Every action by a faction must have a reaction.
+1. **NO GENERIC TROPES** - Be weird. Be specific. Avoid "chosen ones" unless subverted.
+2. **LOGIC IS KING (DARK Style)** - Construct complex causal chains. X happened because Y happened 20 years ago.
+3. **THE WEB IS COMPLEX** - Create connections between seemingly unrelated things (families, factions, times).
 4. **MORAL GREY** - No clear good guys. Everyone is the hero of their own story.
+5. **ATMOSPHERE** - The setting is a character. Treat it with respect.
 `
 
 export const premiseArchitectAgent = async (
@@ -766,13 +913,13 @@ export const premiseArchitectAgent = async (
 ): Promise<Partial<WritersRoomState>> => {
   // Reset section detection for fresh tracking
   resetSectionDetection()
-  
+
   // Create model inside function to use request-scoped config
   const model = getModel('premiseArchitect')
-  
+
   // Check for streaming callback
   const streamCallback: StreamCallback | undefined = (state as WritersRoomStateWithStream)._streamCallback
-  
+
   // Build context from user input and any existing bible
   const existingBible = state.seriesBible || {}
   const storyPlan = existingBible.storyPlan || {}
@@ -781,14 +928,14 @@ export const premiseArchitectAgent = async (
   // Get the last user message to detect section-focused updates
   const conversationMessages = getSafeMessageHistory(state.messages, 5).filter(m => m._getType() !== 'system')
   const lastUserMessage = conversationMessages.slice().reverse().find(m => m._getType() === 'human')
-  const userInstruction = typeof lastUserMessage?.content === 'string' 
-    ? lastUserMessage.content 
+  const userInstruction = typeof lastUserMessage?.content === 'string'
+    ? lastUserMessage.content
     : ''
-  
+
   // Detect if this is a section-focused update
   const { section } = detectTargetSection(userInstruction)
   const isSectionUpdate = section !== 'full'
-  
+
   console.log(`Premise Architect: ${isSectionUpdate ? `Section update [${section}]` : 'Full bible generation'}`)
 
   // Signal streaming start if callback provided
@@ -804,13 +951,22 @@ export const premiseArchitectAgent = async (
   let systemPrompt: string
   let contextMessage: string
 
+  const promptId = SECTION_TO_PROMPT_ID[section]
+  const loadedPrompt = await loadPromptCached(promptId)
+  
+  // Extract system template from ChatPromptTemplate
+  // This is a bit of a hack since LangChain's ChatPromptTemplate isn't just a string
+  const promptMessages = (loadedPrompt.prompt as any).promptMessages || (loadedPrompt.prompt as any).messages || []
+  const systemMessage = promptMessages.find((m: any) => m.lc_id?.[3] === 'SystemMessagePromptTemplate' || m._type === 'system')
+  const systemTemplate = systemMessage?.prompt?.template || systemMessage?.template || (isSectionUpdate ? SECTION_PROMPTS[section] : PREMISE_ARCHITECT_PROMPT)
+
   if (isSectionUpdate) {
     // Section-focused update - minimal context, focused prompt
-    systemPrompt = SECTION_PROMPTS[section]
-    
+    systemPrompt = systemTemplate
+
     // Include relevant existing content for context
     const sectionContext = buildSectionContext(section, existingBible, storyPlan)
-    
+
     contextMessage = `
 ## EXISTING WORLD CONTEXT (For Reference)
 
@@ -823,12 +979,12 @@ ${sectionContext}
 ## USER'S REQUEST
 ${userInstruction}
 
-Generate the update for the ${section} section. Use smart merge to preserve existing content while incorporating changes.
+    Generate the update for the ${section} section. Use smart merge to preserve existing content while incorporating changes.
 `
   } else {
     // Full bible generation
-    systemPrompt = PREMISE_ARCHITECT_PROMPT
-    
+    systemPrompt = systemTemplate
+
     contextMessage = `
 ## PROJECT CONTEXT
 
@@ -845,7 +1001,7 @@ Based on the conversation, create the World Bible and Initial Conflict.
 
   // Combine system content into single message (required for Claude)
   const combinedSystem = [systemPrompt, contextMessage].join('\n\n---\n\n')
-  
+
   const messages = [
     new SystemMessage(combinedSystem),
     ...conversationMessages,
@@ -853,7 +1009,7 @@ Based on the conversation, create the World Bible and Initial Conflict.
 
   // Check if progressive generation is requested
   const useProgressiveGeneration = (state as any)._useProgressiveGeneration === true
-  
+
   try {
     // Try structured output first
     let parsed: PremiseArchitectResponse | null = null
@@ -872,10 +1028,10 @@ Based on the conversation, create the World Bible and Initial Conflict.
           streamCallback,
           existingBible
         )
-        
+
         // Build story plan from progressive sections
         const storyPlan = buildStoryPlanFromSections(progressiveSections)
-        
+
         parsed = {
           message: 'World Bible generated progressively. Review each section above.',
           actions: [{
@@ -916,17 +1072,109 @@ Based on the conversation, create the World Bible and Initial Conflict.
         parsed = parseAgentResponse(content, PremiseArchitectResponseSchema)
 
         if (!parsed) {
-          parsed = {
-            message: content,
-            actions: [],
-            confidence: 0.5,
+          // Even if full schema parsing failed, try to extract any storyPlan-like content
+          // This handles cases where LLM returns a valid storyPlan object but doesn't match the exact schema
+          let extractedStoryPlan = null
+          let extractedActions: AgentAction[] = []
+
+          try {
+            const jsonMatch = content.match(/\{[\s\S]*\}/)
+            if (jsonMatch) {
+              const rawParsed = JSON.parse(jsonMatch[0])
+
+              // Extract actions array if present (for section updates like UPDATE_SOUNDTRACKS)
+              if (rawParsed.actions && Array.isArray(rawParsed.actions)) {
+                extractedActions = rawParsed.actions
+                console.log('PremiseArchitect: Extracted actions from fallback:', extractedActions.map(a => a.type))
+              }
+
+              // Check for storyPlan at various locations the LLM might put it
+              extractedStoryPlan = rawParsed.storyPlan
+                || rawParsed.payload?.storyPlan
+                || rawParsed.actions?.[0]?.payload?.storyPlan
+                || (rawParsed.worldDescription ? rawParsed : null) // The object itself might be a storyPlan
+            }
+          } catch (e) {
+            console.warn('PremiseArchitect: Could not extract from fallback content:', e)
           }
+
+          parsed = {
+            message: extractMessageFromContent(content),
+            actions: extractedActions,
+            confidence: extractedActions.length > 0 ? 0.8 : 0.5,
+            storyPlan: extractedStoryPlan,
+          } as any
         }
         actions = (parsed.actions || []) as any
       }
     }
 
-    const messageContent = parsed.message
+    // Generate user-friendly message for section updates
+    let messageContent = parsed.message
+
+    // If we have section-specific actions, generate a better confirmation message
+    if (actions.length > 0 && isSectionUpdate) {
+      const actionType = actions[0]?.type
+      const payload = actions[0]?.payload as any
+
+      switch (actionType) {
+        case 'UPDATE_SOUNDTRACKS':
+          const soundtracks = payload?.soundtracks || []
+          if (soundtracks.length > 0) {
+            messageContent = `✅ **Soundtracks Updated**\n\nI've added ${soundtracks.length} soundtrack recommendations:\n\n` +
+              soundtracks.map((s: any, i: number) =>
+                `${i + 1}. **"${s.title}"** – ${s.artist}\n   ${s.mood ? `_${s.mood}_` : ''}\n   ${s.youtubeUrl || ''}`
+              ).join('\n\n')
+          }
+          break
+        case 'UPDATE_WORLD_RULES':
+          const rules = payload?.rules || []
+          if (rules.length > 0) {
+            messageContent = `✅ **World Rules Updated**\n\nI've added/updated ${rules.length} world rules:\n\n` +
+              rules.slice(0, 5).map((r: any, i: number) =>
+                `${i + 1}. **[${r.category}]** ${r.rule}`
+              ).join('\n')
+          }
+          break
+        case 'UPDATE_FACTIONS':
+          const factions = payload?.factions || []
+          if (factions.length > 0) {
+            messageContent = `✅ **Factions Updated**\n\nI've added/updated ${factions.length} factions:\n\n` +
+              factions.slice(0, 5).map((f: any, i: number) =>
+                `${i + 1}. **${f.name}** – "${f.ideology}"`
+              ).join('\n')
+          }
+          break
+        case 'UPDATE_INSPIRATIONS':
+          messageContent = `✅ **Inspirations Updated**\n\nI've updated the reference materials for this world.`
+          break
+        case 'UPDATE_WORLD_DESCRIPTION':
+          messageContent = `✅ **World Description Updated**\n\nI've updated the atmospheric description of your world.`
+          break
+        case 'UPDATE_KEY_CHARACTERS':
+          const chars = payload?.keyCharacters || []
+          if (chars.length > 0) {
+            messageContent = `✅ **Key Characters Updated**\n\nI've added/updated ${chars.length} key characters:\n\n` +
+              chars.slice(0, 5).map((c: any, i: number) =>
+                `${i + 1}. **${c.name}** (${c.role}) – ${c.archetype}`
+              ).join('\n')
+          }
+          break
+        case 'UPDATE_PLOT_TWISTS':
+          const twists = payload?.plotTwists || []
+          if (twists.length > 0) {
+            messageContent = `✅ **Plot Twists Updated**\n\nI've added ${twists.length} plot twists to your story.`
+          }
+          break
+        case 'UPDATE_EPISODE_ROADMAP':
+          messageContent = `✅ **Episode Roadmap Updated**\n\nI've updated the season structure and episode breakdown.`
+          break
+        default:
+          // Keep the original message
+          break
+      }
+    }
+
     const confidence = parsed.confidence ?? 0.8
 
     const namedMessage = new AIMessage({
@@ -938,11 +1186,28 @@ Based on the conversation, create the World Bible and Initial Conflict.
       ; (namedMessage as any).actions = actions
       ; (namedMessage as any).confidence = confidence
 
-    // Extract story plan from actions if present
+    // Extract story plan from:
+    // 1. Actions array (the proper structured output path)
+    // 2. Top-level storyPlan field (common when LLM doesn't follow action structure)
+    // 3. Synthesize action if storyPlan exists but actions is empty
     let storyPlan = null
     const bibleAction = actions.find(a => a.type === 'UPDATE_SERIES_BIBLE')
     if (bibleAction?.payload?.storyPlan) {
       storyPlan = bibleAction.payload.storyPlan
+    } else if (parsed?.storyPlan) {
+      // LLM returned storyPlan at top level but not as an action
+      // This happens when structured output partially works
+      storyPlan = parsed.storyPlan
+      console.log('PremiseArchitect: Found storyPlan at top level, synthesizing UPDATE_SERIES_BIBLE action')
+
+      // Synthesize the action so it gets persisted properly
+      const synthesizedAction = {
+        type: 'UPDATE_SERIES_BIBLE' as const,
+        payload: { storyPlan }
+      }
+      actions = [synthesizedAction as any]
+        // Also attach to message for downstream handlers
+        ; (namedMessage as any).actions = actions
     }
 
     // SMART TERMINATION: Pause after generating premise for user review

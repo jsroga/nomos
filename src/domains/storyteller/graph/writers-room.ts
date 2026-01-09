@@ -1,11 +1,11 @@
-import { StateGraph, END } from '@langchain/langgraph'
+import { StateGraph, END, START, Annotation } from '@langchain/langgraph'
 import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres'
 import { WritersRoomState, Phase } from './state'
 import * as agents from '../agents'
 import { supervisorAgent } from '../agents/supervisor'
 import { scriptEditorAgent } from '../agents/script-editor'
 import { ToolNode } from '@langchain/langgraph/prebuilt'
-import { RunnableLambda } from '@langchain/core/runnables'
+import { RunnableLambda, RunnableConfig } from '@langchain/core/runnables'
 import { supervisorTools } from '../tools/agent-tools'
 import { scriptEditTools } from '../tools/script-tools'
 import { plannerAgent } from '../agents/planner'
@@ -17,6 +17,43 @@ import {
 } from '../guardrails'
 import { RunnableGuard } from '../guardrails/runnable-guard'
 import { InputSafetyValidator, OutputSafetyValidator, ConsistencyValidator } from '../guardrails/validators'
+import { validateURLsInText, extractURLsFromText } from '@/infrastructure/ai/tools/url-validator'
+
+// ==================================================================
+// HUMAN-IN-THE-LOOP TYPES
+// ==================================================================
+
+export interface HITLInterrupt {
+  type: 'url_validation' | 'dangerous_action' | 'critical_decision' | 'user_confirmation'
+  reason: string
+  details: any
+  agentName: string
+  timestamp: number
+  requiresApproval: boolean
+  suggestions?: string[]
+}
+
+export interface HITLCheckpoint {
+  state: Partial<WritersRoomState>
+  interrupt?: HITLInterrupt
+  canResume: boolean
+}
+
+// Actions that require human confirmation
+const DANGEROUS_ACTIONS = [
+  'DELETE_BEAT',
+  'LOCK_BEAT_BOARD',
+  'DELETE_EPISODE',
+  'RESET_CHARACTERS',
+]
+
+// Actions that should trigger URL validation
+const URL_GENERATING_ACTIONS = [
+  'UPDATE_SERIES_BIBLE',
+  'UPDATE_INSPIRATIONS',
+  'UPDATE_MOOD_SOUNDTRACK',
+  'CREATE_BEAT',
+]
 
 // PostgreSQL checkpointer for thread persistence
 const DATABASE_URL = process.env.DATABASE_URL
@@ -154,10 +191,194 @@ function routeFromSupervisor(state: WritersRoomState) {
 }
 
 // ==================================================================
+// HUMAN-IN-THE-LOOP MIDDLEWARE
+// ==================================================================
+
+/**
+ * Check if result contains URLs and validate them
+ */
+async function validateResultURLs(
+  result: Partial<WritersRoomState>,
+  agentName: string
+): Promise<HITLInterrupt | null> {
+  // Extract text content to check for URLs
+  const messages = result.messages || []
+  const lastMessage = messages[messages.length - 1]
+  
+  if (!lastMessage) return null
+  
+  const content = typeof lastMessage.content === 'string'
+    ? lastMessage.content
+    : JSON.stringify(lastMessage.content)
+  
+  const urls = extractURLsFromText(content)
+  if (urls.length === 0) return null
+  
+  try {
+    const validation = await validateURLsInText(content)
+    
+    if (validation.hasHallucinatedURLs) {
+      const hallucinated = validation.urls.filter(u => u.isLikelyHallucinated)
+      return {
+        type: 'url_validation',
+        reason: `Detected ${hallucinated.length} potentially hallucinated URL(s)`,
+        details: {
+          urls: hallucinated.map(u => ({
+            url: u.url,
+            reason: u.hallucinationReason,
+            platform: u.platform,
+          })),
+        },
+        agentName,
+        timestamp: Date.now(),
+        requiresApproval: true,
+        suggestions: [
+          'Remove the hallucinated URLs from the response',
+          'Ask the user for the correct URL',
+          'Generate content without referencing external URLs',
+        ],
+      }
+    }
+  } catch (error) {
+    console.warn('[HITL] URL validation failed:', error)
+  }
+  
+  return null
+}
+
+/**
+ * Check if result contains dangerous actions
+ */
+function checkDangerousActions(
+  result: Partial<WritersRoomState>,
+  agentName: string
+): HITLInterrupt | null {
+  const messages = result.messages || []
+  const lastMessage = messages[messages.length - 1]
+  
+  if (!lastMessage || !('actions' in lastMessage)) return null
+  
+  const actions = (lastMessage as any).actions || []
+  const dangerous = actions.filter((a: any) => 
+    DANGEROUS_ACTIONS.includes(a.type)
+  )
+  
+  if (dangerous.length > 0) {
+    return {
+      type: 'dangerous_action',
+      reason: `Agent attempting ${dangerous.length} potentially dangerous action(s)`,
+      details: {
+        actions: dangerous.map((a: any) => ({
+          type: a.type,
+          payload: a.payload,
+        })),
+      },
+      agentName,
+      timestamp: Date.now(),
+      requiresApproval: true,
+      suggestions: [
+        'Review the actions before proceeding',
+        'These actions may be irreversible',
+        'Consider if this is the intended behavior',
+      ],
+    }
+  }
+  
+  return null
+}
+
+/**
+ * Human-in-the-Loop Middleware
+ * Wraps agent execution with interrupt checkpoints
+ */
+class HITLMiddleware {
+  private pendingInterrupt: HITLInterrupt | null = null
+  private checkpoints: Map<string, HITLCheckpoint> = new Map()
+  
+  /**
+   * Check if we should interrupt before agent execution
+   */
+  async shouldInterruptBefore(
+    state: WritersRoomState,
+    agentName: string
+  ): Promise<HITLInterrupt | null> {
+    // Check for explicit user interrupt request
+    if (state.awaitingUserInput) {
+      return null // Already waiting
+    }
+    
+    // Check for any pending interrupts from previous runs
+    if (this.pendingInterrupt) {
+      const interrupt = this.pendingInterrupt
+      this.pendingInterrupt = null
+      return interrupt
+    }
+    
+    return null
+  }
+  
+  /**
+   * Check if we should interrupt after agent execution
+   */
+  async shouldInterruptAfter(
+    state: WritersRoomState,
+    result: Partial<WritersRoomState>,
+    agentName: string
+  ): Promise<HITLInterrupt | null> {
+    // Check for URL hallucinations in URL-generating actions
+    const urlInterrupt = await validateResultURLs(result, agentName)
+    if (urlInterrupt) return urlInterrupt
+    
+    // Check for dangerous actions
+    const dangerousInterrupt = checkDangerousActions(result, agentName)
+    if (dangerousInterrupt) return dangerousInterrupt
+    
+    return null
+  }
+  
+  /**
+   * Save checkpoint for potential rollback
+   */
+  saveCheckpoint(sessionId: string, state: Partial<WritersRoomState>, interrupt?: HITLInterrupt): void {
+    this.checkpoints.set(sessionId, {
+      state,
+      interrupt,
+      canResume: true,
+    })
+  }
+  
+  /**
+   * Get checkpoint for resume
+   */
+  getCheckpoint(sessionId: string): HITLCheckpoint | null {
+    return this.checkpoints.get(sessionId) || null
+  }
+  
+  /**
+   * Clear checkpoint after successful resume
+   */
+  clearCheckpoint(sessionId: string): void {
+    this.checkpoints.delete(sessionId)
+  }
+  
+  /**
+   * Set pending interrupt for next check
+   */
+  setPendingInterrupt(interrupt: HITLInterrupt): void {
+    this.pendingInterrupt = interrupt
+  }
+}
+
+// Global HITL middleware instance
+const hitlMiddleware = new HITLMiddleware()
+
+export { hitlMiddleware, HITLMiddleware }
+
+// ==================================================================
 // AGENT WRAPPER (REDUX) - REPLACED BY RUNNABLE GUARD
 // ==================================================================
 
-// Helper to create a guarded agent
+// Helper to create a guarded agent with HITL support
 const createGuardedAgent = (agentFn: any, role: AgentRole) => {
   const guard = new RunnableGuard({
     agent: RunnableLambda.from(agentFn),
@@ -174,6 +395,23 @@ const createGuardedAgent = (agentFn: any, role: AgentRole) => {
     const lastMsg = state.messages[state.messages.length - 1]
     let toolMessage: ToolMessage | null = null
     let inputState = state
+
+    // 0. HITL: Check for pre-execution interrupts
+    const preInterrupt = await hitlMiddleware.shouldInterruptBefore(state, role)
+    if (preInterrupt) {
+      console.log(`[HITL] Pre-interrupt for ${role}: ${preInterrupt.reason}`)
+      // Save checkpoint and pause
+      hitlMiddleware.saveCheckpoint(state.projectId, state, preInterrupt)
+      return {
+        awaitingUserInput: true,
+        messages: [
+          new AIMessage({
+            content: `⚠️ ${preInterrupt.reason}\n\nPlease review before continuing.`,
+            name: role,
+          }),
+        ],
+      }
+    }
 
     // 1. Check for dangling tool call from Supervisor
     if (lastMsg && 'tool_calls' in lastMsg && (lastMsg as any).tool_calls?.length > 0) {
@@ -194,7 +432,44 @@ const createGuardedAgent = (agentFn: any, role: AgentRole) => {
     // 2. Invoke Guard (which invokes Agent)
     const result = await guard.invoke(inputState, config)
 
-    // 3. Ensure the tool message is returned to the graph state
+    // 3. HITL: Check for post-execution interrupts
+    const postInterrupt = await hitlMiddleware.shouldInterruptAfter(state, result, role)
+    if (postInterrupt) {
+      console.log(`[HITL] Post-interrupt for ${role}: ${postInterrupt.reason}`)
+      
+      // Save checkpoint with the result that needs review
+      hitlMiddleware.saveCheckpoint(state.projectId, result, postInterrupt)
+      
+      // Return modified result that flags the issue
+      const warningMessage = new AIMessage({
+        content: `⚠️ **Review Required**: ${postInterrupt.reason}\n\n` +
+          `${postInterrupt.suggestions?.map(s => `- ${s}`).join('\n') || ''}`,
+        name: role,
+      })
+      
+      // Depending on severity, either block or warn
+      if (postInterrupt.requiresApproval) {
+        return {
+          awaitingUserInput: true,
+          messages: [
+            toolMessage,
+            warningMessage,
+          ].filter(Boolean) as BaseMessage[],
+        }
+      }
+      
+      // Warning only - continue with result
+      return {
+        ...result,
+        messages: [
+          toolMessage,
+          ...(result.messages || []),
+          warningMessage,
+        ].filter(Boolean) as BaseMessage[],
+      }
+    }
+
+    // 4. Ensure the tool message is returned to the graph state
     if (toolMessage) {
       return {
         ...result,
@@ -313,7 +588,7 @@ workflow.addConditionalEdges('scriptEditor', routeFromScriptEditor, {
   supervisor: 'supervisor',
 })
 
-// Compilation
+// Compilation (sync in LangGraph 1.x)
 const baseGraph = workflow.compile({})
 let compiledGraphWithCheckpointer: ReturnType<typeof workflow.compile> | null = null
 

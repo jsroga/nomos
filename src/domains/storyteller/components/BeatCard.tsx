@@ -3,6 +3,8 @@ import { Trash2, Edit2, Check, X, GripVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 
+import { Skeleton } from '@/components/ui/skeleton'
+
 interface Beat {
   id: string
   logline: string
@@ -22,6 +24,8 @@ interface BeatCardProps {
   onDragStart: (e: React.DragEvent, id: string) => void
   onDragOver: (e: React.DragEvent, id: string) => void
   onDrop: (e: React.DragEvent, id: string) => void
+  onExpand?: (id: string) => void
+  projectId: string
 }
 
 export const BeatCard: React.FC<BeatCardProps> = ({
@@ -31,6 +35,8 @@ export const BeatCard: React.FC<BeatCardProps> = ({
   onDragStart,
   onDragOver,
   onDrop,
+  onExpand,
+  projectId,
 }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [editState, setEditState] = useState(beat)
@@ -134,15 +140,28 @@ export const BeatCard: React.FC<BeatCardProps> = ({
         </p>
       )}
 
-      {/* Storyboard Image */}
-      {beat.imageUrl && !isEditing && (
-        <div className="mt-2 w-full aspect-video rounded overflow-hidden border border-border/50 relative group/image">
-          <img
-            src={`/projects/${window.location.pathname.split('/')[1]}/${beat.imageUrl}`}
-            alt={beat.imagePrompt || "Beat storyboard"}
-            className="w-full h-full object-cover"
-          />
-          {beat.imagePrompt && (
+      {/* Storyboard Image or Skeleton */}
+      {(beat.imageUrl || beat.imagePrompt) && !isEditing && (
+        <div
+          className="mt-2 w-full aspect-video rounded overflow-hidden border border-border/50 relative group/image cursor-zoom-in"
+          onClick={() => beat.imageUrl && onExpand?.(beat.id)}
+        >
+          {beat.imageUrl ? (
+            <img
+              src={`/projects/${projectId}/${beat.imageUrl}`}
+              alt={beat.imagePrompt || "Beat storyboard"}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover/image:scale-105"
+            />
+          ) : (
+            <div className="w-full h-full relative">
+              <Skeleton className="w-full h-full absolute inset-0 bg-white/5" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-xs text-white/30 font-medium animate-pulse">Generating Scene...</span>
+              </div>
+            </div>
+          )}
+
+          {beat.imagePrompt && beat.imageUrl && (
             <div className="absolute inset-0 bg-black/80 p-2 text-[10px] text-white opacity-0 group-hover/image:opacity-100 transition-opacity overflow-y-auto">
               {beat.imagePrompt}
             </div>

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { HumanMessage } from '@langchain/core/messages'
-import { writersRoomGraph } from '@/domains/storyteller/graph/writers-room'
 
 export const runtime = 'nodejs'
 

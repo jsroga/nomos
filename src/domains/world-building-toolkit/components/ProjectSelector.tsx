@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
+import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Plus, FolderOpen } from 'lucide-react'
 
@@ -16,6 +17,7 @@ export const ProjectSelector: React.FC = () => {
   const switchProject = useWorldStore(state => state.switchProject)
   const createProject = useWorldStore(state => state.createProject)
   const user = useWorldStore(state => state.user)
+  const resetInterior = useInteriorStore(state => state.resetInterior)
 
   useEffect(() => {
     if (user) {
@@ -88,7 +90,10 @@ export const ProjectSelector: React.FC = () => {
 
       <select
         value={currentProject?.id || ''}
-        onChange={e => switchProject(e.target.value)}
+        onChange={e => {
+          switchProject(e.target.value)
+          resetInterior()
+        }}
         className="w-full bg-background border border-input rounded px-2 py-1 text-sm"
       >
         <option value="" disabled>

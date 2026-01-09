@@ -33,7 +33,7 @@ const ComparisonSlider: React.FC<{
     const [newLoaded, setNewLoaded] = useState(false)
     const [originalError, setOriginalError] = useState(false)
     const [newError, setNewError] = useState(false)
-    
+
     // Debug logging
     useEffect(() => {
         console.log('[ComparisonSlider] URLs:', { originalUrl, newUrl })
@@ -155,14 +155,14 @@ const ComparisonSlider: React.FC<{
             </div>
 
             {/* Labels */}
-            <div 
-                className="absolute top-2 left-2 px-2 py-1 bg-black/70 rounded text-xs text-white font-medium pointer-events-none transition-opacity"
+            <div
+                className="absolute top-2 left-2 px-2 py-1 bg-black/70 rounded text-xs text-white font-medium font-mono pointer-events-none transition-opacity"
                 style={{ opacity: sliderPosition > 15 ? 1 : 0 }}
             >
                 {newLabel}
             </div>
-            <div 
-                className="absolute top-2 right-2 px-2 py-1 bg-black/70 rounded text-xs text-white font-medium pointer-events-none transition-opacity"
+            <div
+                className="absolute top-2 right-2 px-2 py-1 bg-black/70 rounded text-xs text-white font-medium font-mono pointer-events-none transition-opacity"
                 style={{ opacity: sliderPosition < 85 ? 1 : 0 }}
             >
                 Original

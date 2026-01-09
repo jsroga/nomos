@@ -66,11 +66,11 @@ export default function InteriorDesignerPage() {
     }, [hasUnsavedChanges, debouncedSave])
 
     return (
-        <div className="w-full h-screen flex flex-col bg-background text-foreground">
+        <div className="w-full h-screen flex flex-col bg-black text-zinc-200 font-sans selection:bg-indigo-500/30">
             {/* Header */}
-            <header className="h-14 border-b border-border flex items-center px-4 justify-between">
+            <header className="h-14 border-b border-zinc-900 bg-zinc-950 flex items-center px-6 justify-between relative z-50">
                 <div className="flex items-center gap-4">
-                    <h1 className="font-bold text-lg">Scene Builder</h1>
+                    <h1 className="font-semibold text-sm tracking-tight text-zinc-100">Scene Builder</h1>
                 </div>
                 <div className="flex items-center gap-2">
                     {hasUnsavedChanges && !isSaving && (
@@ -98,19 +98,34 @@ export default function InteriorDesignerPage() {
                         <Download className="w-4 h-4 mr-2" />
                         Export GLTF
                     </Button>
+                    <Button size="sm" variant="outline" onClick={async () => {
+                        const { walls, objects } = useInteriorStore.getState()
+                        const zipBlob = await import('@/domains/interior-designer/utils/UnityExporter').then(m => m.UnityExporter.createExportZip({ walls, objects }))
+
+                        const url = URL.createObjectURL(zipBlob)
+                        const link = document.createElement('a')
+                        link.href = url
+                        link.download = 'interior-design-unity.zip'
+                        document.body.appendChild(link)
+                        link.click()
+                        document.body.removeChild(link)
+                    }}>
+                        <Download className="w-4 h-4 mr-2" />
+                        Export to Unity
+                    </Button>
                 </div>
             </header>
 
             {/* Main Content */}
             <div className="flex-1 flex overflow-hidden">
                 {/* Toolbar (Left) */}
-                <div className="w-16 border-r border-border bg-card z-10 relative">
+                <div className="w-16 border-r border-zinc-900 bg-zinc-950 z-10 relative">
                     <Toolbar />
                 </div>
 
                 {/* 3D Canvas (Center) - with drop handling */}
                 <div
-                    className="flex-1 relative bg-slate-900"
+                    className="flex-1 relative bg-black"
                     onDragOver={(e) => {
                         e.preventDefault()
                         e.dataTransfer.dropEffect = 'copy'
@@ -140,12 +155,12 @@ export default function InteriorDesignerPage() {
                 </div>
 
                 {/* Layer Panel (Right) */}
-                <div className="w-56 border-l border-border bg-card z-10">
+                <div className="w-64 border-l border-zinc-900 bg-zinc-950 z-10">
                     <LayerPanel />
                 </div>
 
                 {/* Properties Panel (Right) */}
-                <div className="w-80 border-l border-border bg-card z-10 overflow-y-auto flex flex-col">
+                <div className="w-80 border-l border-zinc-900 bg-zinc-950 z-10 overflow-y-auto flex flex-col">
                     <PropertiesPanel />
                     <AssetLibrary />
                 </div>

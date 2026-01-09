@@ -1,19 +1,20 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { CharacterCreationDialog } from './CharacterCreationDialog'
-import { Slider } from '@/components/ui/slider'
 import { Button } from '@/components/ui/button'
 import {
   Plus,
   ChevronUp,
   ChevronDown,
-  Save,
   Trash2,
-  Activity,
-  Shield,
-  Zap,
-  Scale,
-  Sun,
-  Users,
+  Heart, // Valence
+  Zap, // Arousal
+  Compass, // Autonomy
+  Target, // Competence
+  Users, // Relatedness
+  Brain, // CognitiveClarity
+  Flame, // PerceivedStakes
+  ShieldCheck, // SocialSafety
+  Scale, // MoralAlignment
   TrendingUp,
   Edit2,
 } from 'lucide-react'
@@ -25,15 +26,19 @@ import {
 } from '@/components/ui/tooltip'
 import { useConfirmDialog } from '@/components/ui/confirm-dialog'
 
-// Character metrics that can change per beat (0-100)
+// Character metrics based on Affective Circumplex + Self-Determination Theory
+// Aligned with src/domains/storyteller/graph/state.ts
 interface CharacterMetrics {
-  stress: number // Psychological pressure
-  trust: number // Trust in others/world
-  power: number // Perceived control/agency
-  morality: number // Moral standing (0=corrupt, 100=pure)
-  hope: number // Optimism/belief in positive outcome
-  isolation: number // Social disconnection
-  transformation: number // Progress along character arc
+  valence: number // -100 to +100: Emotional tone (negative to positive)
+  arousal: number // 0-100: Energy/activation level
+  autonomy: number // 0-100: Perceived freedom (SDT)
+  competence: number // 0-100: Belief in capability (SDT)
+  relatedness: number // 0-100: Sense of connection (SDT)
+  cognitiveClarity: number // 0-100: Mental sharpness
+  perceivedStakes: number // 0-100: How much is on the line
+  socialSafety: number // 0-100: Perceived safety in social context
+  moralAlignment: number // 0-100: Alignment between actions and values
+  transformation: number // 0-100: Arc progress
 }
 
 interface Character {
@@ -42,20 +47,24 @@ interface Character {
   role: string
   gender?: string
   characterPrompt?: string
-  stress: number
-  transformation: number
-  // Extended metrics
-  trust?: number
-  power?: number
-  morality?: number
-  hope?: number
-  isolation?: number
+  // Core metrics from database
+  valence?: number
+  arousal?: number
+  autonomy?: number
+  competence?: number
+  relatedness?: number
+  cognitiveClarity?: number
+  perceivedStakes?: number
+  socialSafety?: number
+  moralAlignment?: number
+  transformation?: number
+  // Meta
   mbti?: string
   voiceSignature?: string
-  emotionHistory?: { timestamp: number; value: number; note: string }[]
+  portraitUrl?: string
 }
 
-// Metric configuration for UI
+// Metric configuration for UI - aligned with backend psychological model
 const METRIC_CONFIG: {
   key: keyof CharacterMetrics
   label: string
@@ -63,71 +72,100 @@ const METRIC_CONFIG: {
   color: string
   lowLabel: string
   highLabel: string
+  isValence?: boolean // Special handling for -100 to +100 scale
 }[] = [
-  {
-    key: 'stress',
-    label: 'Stress',
-    icon: Activity,
-    color: 'text-red-400',
-    lowLabel: 'Calm',
-    highLabel: 'Breaking',
-  },
-  {
-    key: 'trust',
-    label: 'Trust',
-    icon: Shield,
-    color: 'text-blue-400',
-    lowLabel: 'Paranoid',
-    highLabel: 'Trusting',
-  },
-  {
-    key: 'power',
-    label: 'Power',
-    icon: Zap,
-    color: 'text-yellow-400',
-    lowLabel: 'Powerless',
-    highLabel: 'In Control',
-  },
-  {
-    key: 'morality',
-    label: 'Morality',
-    icon: Scale,
-    color: 'text-purple-400',
-    lowLabel: 'Corrupt',
-    highLabel: 'Righteous',
-  },
-  {
-    key: 'hope',
-    label: 'Hope',
-    icon: Sun,
-    color: 'text-amber-400',
-    lowLabel: 'Despair',
-    highLabel: 'Hopeful',
-  },
-  {
-    key: 'isolation',
-    label: 'Isolation',
-    icon: Users,
-    color: 'text-cyan-400',
-    lowLabel: 'Connected',
-    highLabel: 'Alone',
-  },
-  {
-    key: 'transformation',
-    label: 'Arc Progress',
-    icon: TrendingUp,
-    color: 'text-green-400',
-    lowLabel: 'Start',
-    highLabel: 'Complete',
-  },
-]
+    {
+      key: 'valence',
+      label: 'Mood',
+      icon: Heart,
+      color: 'text-pink-400',
+      lowLabel: 'Negative',
+      highLabel: 'Positive',
+      isValence: true,
+    },
+    {
+      key: 'arousal',
+      label: 'Energy',
+      icon: Zap,
+      color: 'text-yellow-400',
+      lowLabel: 'Calm',
+      highLabel: 'Activated',
+    },
+    {
+      key: 'autonomy',
+      label: 'Freedom',
+      icon: Compass,
+      color: 'text-blue-400',
+      lowLabel: 'Constrained',
+      highLabel: 'Free',
+    },
+    {
+      key: 'competence',
+      label: 'Confidence',
+      icon: Target,
+      color: 'text-green-400',
+      lowLabel: 'Doubt',
+      highLabel: 'Capable',
+    },
+    {
+      key: 'relatedness',
+      label: 'Connection',
+      icon: Users,
+      color: 'text-cyan-400',
+      lowLabel: 'Isolated',
+      highLabel: 'Connected',
+    },
+    {
+      key: 'cognitiveClarity',
+      label: 'Clarity',
+      icon: Brain,
+      color: 'text-purple-400',
+      lowLabel: 'Confused',
+      highLabel: 'Sharp',
+    },
+    {
+      key: 'perceivedStakes',
+      label: 'Tension',
+      icon: Flame,
+      color: 'text-orange-400',
+      lowLabel: 'Low',
+      highLabel: 'Critical',
+    },
+    {
+      key: 'socialSafety',
+      label: 'Security',
+      icon: ShieldCheck,
+      color: 'text-teal-400',
+      lowLabel: 'Threatened',
+      highLabel: 'Safe',
+    },
+    {
+      key: 'moralAlignment',
+      label: 'Integrity',
+      icon: Scale,
+      color: 'text-indigo-400',
+      lowLabel: 'Compromised',
+      highLabel: 'Aligned',
+    },
+    {
+      key: 'transformation',
+      label: 'Arc Progress',
+      icon: TrendingUp,
+      color: 'text-emerald-400',
+      lowLabel: 'Start',
+      highLabel: 'Complete',
+    },
+  ]
 
 interface CharacterPanelProps {
   characters: Character[]
   onUpdate?: (characterId: string, updates: Partial<Character>) => void
   onCreate?: (character: Partial<Character>) => void
   onDelete?: (characterId: string) => void
-  projectId?: string // For project-scoped style references
+  projectId?: string
+  // NEW: For beat-linked metrics
+  selectedBeatId?: string | null
+  episodeId?: string | null
 }
 export const CharacterPanel: React.FC<CharacterPanelProps> = ({
   characters,
@@ -135,8 +173,52 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
   onCreate,
   onDelete,
   projectId,
+  selectedBeatId,
+  episodeId,
 }) => {
   const [isCreationOpen, setIsCreationOpen] = useState(false)
+  const [editingCharacter, setEditingCharacter] = useState<Character | null>(null)
+  const [beatSnapshots, setBeatSnapshots] = useState<Record<string, Partial<CharacterMetrics>>>({})
+
+  // Fetch character metric snapshots when selected beat changes
+  useEffect(() => {
+    if (selectedBeatId && episodeId) {
+      fetch(`/api/storyteller/timeline?episodeId=${episodeId}&beatId=${selectedBeatId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.snapshots) {
+            // Convert array to map by characterId
+            const snapshotMap: Record<string, Partial<CharacterMetrics>> = {}
+            for (const snap of data.snapshots) {
+              snapshotMap[snap.characterId] = {
+                valence: snap.valence ?? snap.stressLevel, // fallback for legacy
+                arousal: snap.arousal ?? 50,
+                autonomy: snap.autonomy ?? 60,
+                competence: snap.competence ?? 60,
+                relatedness: snap.relatedness ?? 50,
+                cognitiveClarity: snap.cognitiveClarity ?? 70,
+                perceivedStakes: snap.perceivedStakes ?? 40,
+                socialSafety: snap.socialSafety ?? 60,
+                moralAlignment: snap.moralAlignment ?? 70,
+                transformation: snap.transformationProgress ?? snap.transformation ?? 0,
+              }
+            }
+            setBeatSnapshots(snapshotMap)
+          }
+        })
+        .catch(err => console.error('Failed to fetch character snapshots:', err))
+    } else {
+      // No beat selected - clear snapshots to show base character data
+      setBeatSnapshots({})
+    }
+  }, [selectedBeatId, episodeId])
+
+  // Merge base character with beat-specific snapshot
+  const getCharacterWithSnapshot = (char: Character): Character => {
+    const snapshot = beatSnapshots[char.id]
+    if (!snapshot) return char
+    return { ...char, ...snapshot }
+  }
 
   return (
     <TooltipProvider>
@@ -165,7 +247,13 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
 
         <div className="space-y-3">
           {characters.map(char => (
-            <CharacterCard key={char.id} character={char} onUpdate={onUpdate} onDelete={onDelete} />
+            <CharacterCard
+              key={char.id}
+              character={getCharacterWithSnapshot(char)}
+              onUpdate={onUpdate}
+              onDelete={onDelete}
+              onEdit={(character) => setEditingCharacter(character)}
+            />
           ))}
           {characters.length === 0 && (
             <div className="text-center py-4 text-muted-foreground text-xs flex flex-col items-center gap-2">
@@ -175,6 +263,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
           )}
         </div>
 
+        {/* Create Dialog */}
         <CharacterCreationDialog
           isOpen={isCreationOpen}
           onClose={() => setIsCreationOpen(false)}
@@ -183,6 +272,39 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
             setIsCreationOpen(false)
           }}
           projectId={projectId}
+          mode="create"
+        />
+
+        {/* Edit Dialog */}
+        <CharacterCreationDialog
+          isOpen={!!editingCharacter}
+          onClose={() => setEditingCharacter(null)}
+          onCreate={() => { }} // Not used in edit mode
+          onUpdate={(id, updates) => {
+            if (onUpdate) onUpdate(id, updates)
+            setEditingCharacter(null)
+          }}
+          projectId={projectId}
+          mode="edit"
+          initialData={editingCharacter ? {
+            id: editingCharacter.id,
+            name: editingCharacter.name,
+            role: editingCharacter.role,
+            gender: editingCharacter.gender,
+            mbti: editingCharacter.mbti,
+            description: editingCharacter.characterPrompt,
+            portraitUrl: (editingCharacter as any).portraitUrl,
+            // Map metrics from character state
+            valence: (editingCharacter as any).valence,
+            arousal: (editingCharacter as any).arousal,
+            autonomy: (editingCharacter as any).autonomy,
+            competence: (editingCharacter as any).competence,
+            relatedness: (editingCharacter as any).relatedness,
+            cognitiveClarity: (editingCharacter as any).cognitiveClarity,
+            perceivedStakes: (editingCharacter as any).perceivedStakes,
+            socialSafety: (editingCharacter as any).socialSafety,
+            moralAlignment: (editingCharacter as any).moralAlignment,
+          } : undefined}
         />
       </div>
     </TooltipProvider>
@@ -193,20 +315,12 @@ interface CharacterCardProps {
   character: Character
   onUpdate?: (characterId: string, updates: Partial<Character>) => void
   onDelete?: (characterId: string) => void
+  onEdit?: (character: Character) => void
 }
 
-const CharacterCard: React.FC<CharacterCardProps> = ({ character, onUpdate, onDelete }) => {
-  const [isEditing, setIsEditing] = useState(false)
-  const [editState, setEditState] = useState<Partial<Character>>(character)
+const CharacterCard: React.FC<CharacterCardProps> = ({ character, onUpdate, onDelete, onEdit }) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
-
-  const handleSave = () => {
-    if (onUpdate) {
-      onUpdate(character.id, editState)
-    }
-    setIsEditing(false)
-  }
 
   const handleDelete = async () => {
     const confirmed = await confirm({
@@ -231,60 +345,51 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onUpdate, onDe
           <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary border border-primary/30">
             {character.name[0]}
           </div>
-          <div>
-            <div className="font-bold text-sm leading-none">{character.name}</div>
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
+          <div className="min-w-0 flex-1">
+            <div className="font-bold text-sm leading-none truncate">{character.name}</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider leading-tight break-words mt-0.5">
               {character.role}
             </div>
           </div>
         </div>
-        {isExpanded ? (
-          <ChevronUp size={14} className="text-muted-foreground" />
-        ) : (
-          <ChevronDown size={14} className="text-muted-foreground" />
-        )}
+        <div className="flex items-center gap-1">
+          {/* Actions visible on hover or always if preferred - keeping always for clarity */}
+          {onEdit && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 w-6 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
+              onClick={(e) => {
+                e.stopPropagation()
+                onEdit(character)
+              }}
+            >
+              <Edit2 size={12} />
+            </Button>
+          )}
+          {onDelete && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 w-6 p-0 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleDelete()
+              }}
+            >
+              <Trash2 size={12} />
+            </Button>
+          )}
+          {isExpanded ? (
+            <ChevronUp size={14} className="text-muted-foreground ml-1" />
+          ) : (
+            <ChevronDown size={14} className="text-muted-foreground ml-1" />
+          )}
+        </div>
       </div>
 
       {isExpanded && (
         <div className="space-y-3 pt-2 border-t border-border/50">
-          {/* Action buttons at top */}
-          <div className="flex justify-between gap-2">
-            {onDelete && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-6 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
-                onClick={handleDelete}
-              >
-                <Trash2 size={12} />
-                Delete
-              </Button>
-            )}
-            {ConfirmDialogComponent}
-            <div className="flex gap-2 ml-auto">
-              {isEditing ? (
-                <Button
-                  size="sm"
-                  variant="default"
-                  className="h-6 text-xs gap-1"
-                  onClick={handleSave}
-                >
-                  <Save size={12} />
-                  Save
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-6 text-xs gap-1"
-                  onClick={() => setIsEditing(true)}
-                >
-                  <Edit2 size={12} />
-                  Edit
-                </Button>
-              )}
-            </div>
-          </div>
 
           {/* Character Metrics Grid */}
           <div className="space-y-2">
@@ -292,13 +397,43 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onUpdate, onDe
               Character Metrics
             </div>
             {METRIC_CONFIG.map(metric => {
-              const value = (editState as any)[metric.key] ?? 50
+              const rawValue = (character as any)[metric.key]
+              // Handle valence (-100 to +100) vs standard (0-100)
+              const isValenceMetric = metric.isValence
+              const defaultValue = isValenceMetric ? 0 : 50
+              const value = rawValue ?? defaultValue
+
+              // Calculate display percentage (0-100% for progress bar)
+              const displayPercentage = isValenceMetric
+                ? (value + 100) / 2 // Map -100..+100 to 0..100
+                : value
+
+              // Display value (show actual value for clarity)
+              const displayValue = isValenceMetric
+                ? `${value > 0 ? '+' : ''}${value}`
+                : `${value}%`
+
               const Icon = metric.icon
+
+              // High risk conditions for new metrics
               const isHighRisk =
-                (metric.key === 'stress' && value > 80) ||
-                (metric.key === 'isolation' && value > 80) ||
-                (metric.key === 'morality' && value < 20) ||
-                (metric.key === 'hope' && value < 20)
+                (metric.key === 'valence' && value < -50) || // Very negative mood
+                (metric.key === 'autonomy' && value < 25) || // Feels trapped
+                (metric.key === 'socialSafety' && value < 25) || // Feels threatened
+                (metric.key === 'perceivedStakes' && value > 85) || // Extremely high stakes
+                (metric.key === 'moralAlignment' && value < 25) // Acting against values
+
+              // Color gradient based on value
+              const getBarColor = () => {
+                if (isHighRisk) return undefined // Let className handle it
+                if (isValenceMetric) {
+                  // Gradient from red (negative) to green (positive)
+                  const normalizedValue = (value + 100) / 200 // 0 to 1
+                  const hue = Math.round(normalizedValue * 120) // 0 (red) to 120 (green)
+                  return `hsl(${hue}, 70%, 50%)`
+                }
+                return `hsl(var(--primary) / ${0.4 + displayPercentage / 166})`
+              }
 
               return (
                 <div key={metric.key} className="space-y-0.5">
@@ -312,38 +447,24 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onUpdate, onDe
                         isHighRisk ? 'text-destructive font-bold' : 'text-muted-foreground'
                       }
                     >
-                      {value}%
+                      {displayValue}
                     </span>
                   </div>
-                  {isEditing ? (
-                    <Slider
-                      value={[value]}
-                      max={100}
-                      step={1}
-                      onValueChange={([val]) =>
-                        setEditState(prev => ({ ...prev, [metric.key]: val }))
-                      }
-                      className="py-0.5"
-                    />
-                  ) : (
-                    <div className="relative">
-                      <div className="h-1 bg-secondary rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-500 ${isHighRisk ? 'bg-destructive' : ''}`}
-                          style={{
-                            width: `${value}%`,
-                            backgroundColor: isHighRisk
-                              ? undefined
-                              : `hsl(var(--primary) / ${0.5 + value / 200})`,
-                          }}
-                        />
-                      </div>
-                      <div className="flex justify-between text-[9px] text-muted-foreground/50 mt-0.5">
-                        <span>{metric.lowLabel}</span>
-                        <span>{metric.highLabel}</span>
-                      </div>
+                  <div className="relative">
+                    <div className="h-1 bg-secondary rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-500 ${isHighRisk ? 'bg-destructive' : ''}`}
+                        style={{
+                          width: `${Math.max(0, Math.min(100, displayPercentage))}%`,
+                          backgroundColor: getBarColor(),
+                        }}
+                      />
                     </div>
-                  )}
+                    <div className="flex justify-between text-[9px] text-muted-foreground/50 mt-0.5">
+                      <span>{metric.lowLabel}</span>
+                      <span>{metric.highLabel}</span>
+                    </div>
+                  </div>
                 </div>
               )
             })}
@@ -353,33 +474,13 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onUpdate, onDe
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="bg-background/50 p-2 rounded border border-border">
               <div className="text-[10px] text-muted-foreground uppercase mb-1">MBTI</div>
-              {isEditing ? (
-                <input
-                  className="w-full bg-background/50 border-2 border-border/60 rounded px-2 py-1 text-xs hover:border-border transition-colors focus:border-primary focus:ring-1 focus:ring-primary/30 focus:outline-none"
-                  value={editState.mbti || ''}
-                  onChange={e => setEditState(prev => ({ ...prev, mbti: e.target.value }))}
-                  placeholder="INTJ"
-                />
-              ) : (
-                <div className="font-mono">{character.mbti || '????'}</div>
-              )}
+              <div className="font-mono">{character.mbti || '????'}</div>
             </div>
             <div className="bg-background/50 p-2 rounded border border-border">
               <div className="text-[10px] text-muted-foreground uppercase mb-1">Voice</div>
-              {isEditing ? (
-                <input
-                  className="w-full bg-background/50 border-2 border-border/60 rounded px-2 py-1 text-xs hover:border-border transition-colors focus:border-primary focus:ring-1 focus:ring-primary/30 focus:outline-none"
-                  value={editState.voiceSignature || ''}
-                  onChange={e =>
-                    setEditState(prev => ({ ...prev, voiceSignature: e.target.value }))
-                  }
-                  placeholder="Gruff, terse"
-                />
-              ) : (
-                <div className="truncate" title={character.voiceSignature}>
-                  {character.voiceSignature || 'Undefined'}
-                </div>
-              )}
+              <div className="truncate" title={character.voiceSignature}>
+                {character.voiceSignature || 'Undefined'}
+              </div>
             </div>
           </div>
 
@@ -387,39 +488,20 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onUpdate, onDe
           <div className="space-y-2 text-xs">
             <div className="bg-background/50 p-2 rounded border border-border">
               <div className="text-[10px] text-muted-foreground uppercase mb-1">Gender</div>
-              {isEditing ? (
-                <input
-                  className="w-full bg-background/50 border-2 border-border/60 rounded px-2 py-1 text-xs hover:border-border transition-colors focus:border-primary focus:ring-1 focus:ring-primary/30 focus:outline-none"
-                  value={editState.gender || ''}
-                  onChange={e => setEditState(prev => ({ ...prev, gender: e.target.value }))}
-                  placeholder="Male/Female/Other"
-                />
-              ) : (
-                <div>{character.gender || 'Not specified'}</div>
-              )}
+              <div>{character.gender || 'Not specified'}</div>
             </div>
             <div className="bg-background/50 p-2 rounded border border-border">
               <div className="text-[10px] text-muted-foreground uppercase mb-1">
                 Character Prompt
               </div>
-              {isEditing ? (
-                <textarea
-                  className="w-full bg-background/50 border-2 border-border/60 rounded px-2 py-1 text-xs min-h-[60px] hover:border-border transition-colors focus:border-primary focus:ring-1 focus:ring-primary/30 focus:outline-none"
-                  value={editState.characterPrompt || ''}
-                  onChange={e =>
-                    setEditState(prev => ({ ...prev, characterPrompt: e.target.value }))
-                  }
-                  placeholder="Specific instructions for this character..."
-                />
-              ) : (
-                <div className="line-clamp-3 italic text-muted-foreground">
-                  {character.characterPrompt || 'No prompt set.'}
-                </div>
-              )}
+              <div className="line-clamp-3 italic text-muted-foreground">
+                {character.characterPrompt || 'No prompt set.'}
+              </div>
             </div>
           </div>
         </div>
-      )}
-    </div>
+      )
+      }
+    </div >
   )
 }

@@ -33,19 +33,19 @@ export default function WorldBuildingPage() {
   const addToQueue = useCallback((item: Omit<ReviewQueueItem, 'id'>) => {
     const id = `${item.type}-${item.tileX}-${item.tileY}-${Date.now()}`
     const cacheBust = `?t=${Date.now()}`
-    
+
     // Add cache-busting to URLs
     const newUrl = item.newUrl ? `${item.newUrl}${cacheBust}` : item.newUrl
     const originalUrl = item.originalUrl ? `${item.originalUrl}${cacheBust}` : item.originalUrl
-    
-    console.log('[ReviewQueue] Adding item:', { 
-      type: item.type, 
-      tileX: item.tileX, 
+
+    console.log('[ReviewQueue] Adding item:', {
+      type: item.type,
+      tileX: item.tileX,
       tileY: item.tileY,
       newUrl,
       originalUrl
     })
-    
+
     setReviewQueue(prev => [...prev, { ...item, id, newUrl, originalUrl }])
     setIsDialogOpen(true)
   }, [])
@@ -113,11 +113,11 @@ export default function WorldBuildingPage() {
   }, [addToQueue])
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-background text-foreground">
+    <div className="flex h-full w-full overflow-hidden bg-black text-zinc-200 font-sans selection:bg-indigo-500/30">
       <Sidebar />
 
       {/* Toolbar (Left) */}
-      <div className="w-16 border-r border-border bg-card z-10 relative">
+      <div className="w-16 border-r border-zinc-900 bg-zinc-950 z-10 relative">
         <WorldGenToolbar />
       </div>
 

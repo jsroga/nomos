@@ -4,62 +4,33 @@ import { AgentAction } from '../actions/types'
 import { v4 as uuidv4 } from 'uuid'
 import { getModel } from '../config/model-config'
 import { getSafeMessageHistory } from '../utils/message-utils'
+import { loadPromptCached } from '../prompts/hub-loader'
 
 // Model is created inside the function to use request-scoped config (AsyncLocalStorage)
 
-const CONSEQUENCE_PROMPT = `You are the CONSEQUENCE TRACKER - the memory of the story.
-
-## YOUR MISSION: MAINTAIN CAUSALITY
-
-"Nothing is free. Every action has consequences. Every setup needs payoff."
-
-## TRACK THESE
-
-1. **SETUPS AWAITING PAYOFF (Chekhov's Guns)**
-   - If a gun appears in Act 1, it MUST fire in Act 3
-   - Every introduced element needs resolution
-
-2. **WHO KNOWS WHAT (Dramatic Irony)**
-   - Track each character's knowledge state
-   - Dramatic irony = audience knows more than character
-
-3. **DANGLING THREADS**
-   - Setups without payoffs after too many beats = warning
-   - Plot threads that were forgotten
-
-## OUTPUT FORMAT
-{
-    "message": "Analysis of setups, payoffs, and knowledge states",
-    "actions": [
-        { "type": "ADD_SETUP", "payload": { "description": "What was set up", "beatId": "current-beat-id" } },
-        { "type": "RESOLVE_SETUP", "payload": { "setupId": "setup-id", "payoffBeatId": "current-beat-id" } },
-        { "type": "ADD_KNOWLEDGE", "payload": { "characterId": "char-id", "knowledge": "What they learned" } }
-    ],
-    "danglingWarnings": ["Setups that are taking too long to resolve"],
-    "newSetups": ["New setups from this beat"],
-    "resolvedSetups": ["Setups paid off by this beat"]
-}
-
-CURRENT UNRESOLVED SETUPS:
-{unresolvedSetups}
-
-Respond with JSON only.`
+import { CONSEQUENCE_TRACKER_PROMPT } from '../prompts/agents/consequence-tracker'
 
 export const consequenceTrackerAgent = async (state: WritersRoomState) => {
   // Create model inside function to use request-scoped config
   const model = getModel('consequenceTracker')
-  
-  const { messages, unresolvedSetups } = state
+
+  const { messages: stateMessages, unresolvedSetups } = state
+
+  // Load prompt from Hub
+  const loadedPrompt = await loadPromptCached('consequenceTracker')
+  const promptMessages = (loadedPrompt.prompt as any).promptMessages || (loadedPrompt.prompt as any).messages || []
+  const systemMessageFromPrompt = promptMessages.find((m: any) => m.lc_id?.[3] === 'SystemMessagePromptTemplate' || m._type === 'system')
+  const systemTemplate = systemMessageFromPrompt?.prompt?.template || systemMessageFromPrompt?.template || CONSEQUENCE_TRACKER_PROMPT
 
   const systemMessage = new SystemMessage(
-    CONSEQUENCE_PROMPT.replace(
+    systemTemplate.replace(
       '{unresolvedSetups}',
       JSON.stringify(unresolvedSetups || [], null, 2)
     )
   )
 
   try {
-    const response = await model.invoke([systemMessage, ...messages.slice(-5)])
+    const response = await model.invoke([systemMessage, ...stateMessages.slice(-5)])
     const content =
       typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
 
@@ -89,7 +60,7 @@ export const consequenceTrackerAgent = async (state: WritersRoomState) => {
       name: 'ConsequenceTracker',
     })
 
-    ;(namedMessage as any).actions = actions
+      ; (namedMessage as any).actions = actions
 
     return {
       messages: [namedMessage],

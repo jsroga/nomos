@@ -127,10 +127,7 @@ export const SurfaceTool: React.FC = () => {
         if (mode !== 'SURFACE') return
         // Right click check for some browsers/devices might be e.button === 2
         // But we'll try to use onContextMenu for cleaner separate handling or check button here
-        if (e.button === 2) {
-            handleContextMenu(e as any)
-            return
-        }
+        if (e.button === 2) return // Handled by onContextMenu
 
         const point = getIntersection()
         if (!point) return
@@ -165,13 +162,22 @@ export const SurfaceTool: React.FC = () => {
 
     const finishSurface = (closed: boolean) => {
         const config = SURFACE_CONFIG[activeType]
+
+        const isRoad = activeType === 'road'
+
+        if (points.length < 2) return
+
         addSurface({
             type: activeType,
             points: points,
             isPath: config.isPath,
             curved: isCurved,
             width: config.width,
-            layerIndex: config.layer
+            layerIndex: config.layer,
+            // Vertical Road Defaults
+            isVertical: isRoad,
+            height: isRoad ? 0.1 : undefined,
+            rotation: [0, 0, 0]
         })
         setPoints([])
     }

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
+import * as THREE from 'three'
 
 export type InteractionMode = 'SELECT' | 'WALL' | 'FLOOR' | 'WATER' | 'OBJECT' | 'SCATTER' | 'SURFACE' | 'TERRAIN'
 
@@ -52,6 +53,8 @@ export interface Surface {
   roundness?: number // 0..1 curve tension
   height?: number // for vertical surfaces
   isVertical?: boolean // true = Wall-like surface
+  rotation?: [number, number, number] // Euler rotation
+  level?: number // Building level/floor (0 = ground)
 }
 
 export interface Wall {
@@ -61,6 +64,7 @@ export interface Wall {
   height: number
   thickness: number
   texture?: string
+  level?: number // Building level/floor (0 = ground)
 }
 
 export interface Floor {
@@ -68,6 +72,7 @@ export interface Floor {
   points: [number, number, number][] // Polygon vertices
   y: number
   texture?: string
+  level?: number // Building level/floor (0 = ground)
 }
 
 export interface Water {
@@ -84,9 +89,11 @@ export interface SceneObject {
   scale: [number, number, number]
   isLoading?: boolean // True while GLB is being fetched
   thumbnailUrl?: string // Preview image for loading state
+  targetDimensions?: [number, number, number] // If set, model will be auto-scaled to these world dimensions on load
+  level?: number // Building level/floor (0 = ground)
 }
 
-interface InteriorState {
+export interface InteriorState {
   mode: InteractionMode
   walls: Wall[]
   // Legacy support (to be migrated/removed)
@@ -132,6 +139,8 @@ interface InteriorState {
   setRetextureModelBase64: (base64: string | null) => void
 
   // Retexture Actions (now managed via GlobalStatusStore)
+  previewRetexture: (elementId: string, retexturedUrl: string) => void
+  revertRetexture: (elementId: string) => void
   approveRetexture: (elementId: string) => void
   cancelRetexture: (elementId: string) => void
 
@@ -157,6 +166,8 @@ interface InteriorState {
   autoFillWaterBelowLevel: () => void
   paintMaterialAt: (x: number, z: number, radius: number, material: TerrainMaterialType) => void
   resetTerrain: () => void
+  resetInterior: () => void
+
 
   // Actions
   setMode: (mode: InteractionMode) => void
@@ -198,12 +209,16 @@ interface InteriorState {
   // Persistence actions
   saveDesign: (projectId: string, name?: string) => Promise<void>
   loadDesign: (designId: string) => Promise<void>
+  renameDesign: (designId: string, newName: string) => Promise<void>
   deleteDesign: (designId: string) => Promise<void>
   newDesign: () => void
   markUnsaved: () => void
 }
 
+
 import { temporal } from 'zundo'
+
+const TERRAIN_WORLD_SIZE = 64
 
 // Helper function to create default terrain settings
 const createDefaultTerrainSettings = (): TerrainSettings => ({
@@ -259,7 +274,10 @@ export const useInteriorStore = create<InteriorState>()(
         terrainBrushPosition: null,
 
         // Terrain & Water Mode Actions
-        setTerrainMode: (enabled: boolean) => set({ mode: enabled ? 'TERRAIN' : 'SELECT' }),
+        setTerrainMode: (enabled: boolean) => {
+          console.log(`[InteriorStore] setTerrainMode: ${enabled}`)
+          set({ mode: enabled ? 'TERRAIN' : 'SELECT' })
+        },
 
         setBaseGroundHeight: (height: number) => set(state => ({
           terrainSettings: { ...state.terrainSettings, baseGroundHeight: height },
@@ -309,15 +327,18 @@ export const useInteriorStore = create<InteriorState>()(
           terrainBrushPosition: position,
         }),
 
-        initializeHeightmap: (size: number) => set(state => ({
-          terrainSettings: {
-            ...state.terrainSettings,
-            heightmapSize: size,
-            heightmap: new Float32Array(size * size).fill(state.terrainSettings.baseGroundHeight),
-            materialMap: new Uint8Array(size * size).fill(0),
-          },
-          hasUnsavedChanges: true,
-        })),
+        initializeHeightmap: (size: number) => {
+          console.log(`[InteriorStore] initializeHeightmap: size=${size}`)
+          set(state => ({
+            terrainSettings: {
+              ...state.terrainSettings,
+              heightmapSize: size,
+              heightmap: new Float32Array(size * size).fill(state.terrainSettings.baseGroundHeight),
+              materialMap: new Uint8Array(size * size).fill(0),
+            },
+            hasUnsavedChanges: true,
+          }))
+        },
 
         updateHeightmapAt: (x: number, z: number, radius: number, delta: number, brushType: TerrainBrushType) => {
           const state = get()
@@ -325,10 +346,15 @@ export const useInteriorStore = create<InteriorState>()(
 
           if (!heightmap) return
 
+          // console.log(`[InteriorStore] updateHeightmapAt: brush=${brushType} pos=(${x.toFixed(2)},${z.toFixed(2)}) r=${radius}`)
+
           const newHeightmap = new Float32Array(heightmap)
-          const gridX = Math.floor((x + heightmapSize / 2) * (heightmapSize / 64))
-          const gridZ = Math.floor((z + heightmapSize / 2) * (heightmapSize / 64))
-          const gridRadius = Math.ceil(radius * (heightmapSize / 64))
+          const gridX = Math.floor((x + TERRAIN_WORLD_SIZE / 2) * (heightmapSize / TERRAIN_WORLD_SIZE))
+          const gridZ = Math.floor((z + TERRAIN_WORLD_SIZE / 2) * (heightmapSize / TERRAIN_WORLD_SIZE))
+          const gridRadius = Math.ceil(radius * (heightmapSize / TERRAIN_WORLD_SIZE))
+
+          let minHeight = Infinity
+          let maxHeight = -Infinity
 
           for (let dz = -gridRadius; dz <= gridRadius; dz++) {
             for (let dx = -gridRadius; dx <= gridRadius; dx++) {
@@ -375,7 +401,14 @@ export const useInteriorStore = create<InteriorState>()(
                   }
                   break
               }
+              minHeight = Math.min(minHeight, newHeightmap[idx])
+              maxHeight = Math.max(maxHeight, newHeightmap[idx])
             }
+          }
+
+          // Only log significant updates to avoid spam
+          if (brushType !== 'smooth') {
+            // console.log(`[InteriorStore] Heightmap updated. Range: ${minHeight.toFixed(2)} to ${maxHeight.toFixed(2)}`)
           }
 
           set(state => ({
@@ -409,9 +442,9 @@ export const useInteriorStore = create<InteriorState>()(
           if (!materialMap) return
 
           const newMaterialMap = new Uint8Array(materialMap)
-          const gridX = Math.floor((x + heightmapSize / 2) * (heightmapSize / 64))
-          const gridZ = Math.floor((z + heightmapSize / 2) * (heightmapSize / 64))
-          const gridRadius = Math.ceil(radius * (heightmapSize / 64))
+          const gridX = Math.floor((x + TERRAIN_WORLD_SIZE / 2) * (heightmapSize / TERRAIN_WORLD_SIZE))
+          const gridZ = Math.floor((z + TERRAIN_WORLD_SIZE / 2) * (heightmapSize / TERRAIN_WORLD_SIZE))
+          const gridRadius = Math.ceil(radius * (heightmapSize / TERRAIN_WORLD_SIZE))
           const materialValue = material === 'water' ? 1 : 0
 
           for (let dz = -gridRadius; dz <= gridRadius; dz++) {
@@ -443,44 +476,42 @@ export const useInteriorStore = create<InteriorState>()(
           hasUnsavedChanges: true,
         })),
 
+        resetInterior: () => set(state => ({
+          mode: 'SELECT',
+          walls: [],
+          floors: [],
+          water: [],
+          surfaces: [],
+          objects: [],
+          selectedId: null,
+          multiSelectedIds: [],
+          activeLevel: 0,
+          activeModelUrl: 'cube',
+          activeSurfaceType: 'road',
+          isCurved: true,
+          currentDesignId: null,
+          currentDesignName: null,
+          hasUnsavedChanges: false,
+          lastSaved: null,
+          // Reset terrain as well? Maybe optional. Yes, "start from blank" implies blank terrain too.
+          terrainSettings: createDefaultTerrainSettings(),
+          terrainBrush: createDefaultTerrainBrush(),
+          terrainMaterialPaint: createDefaultTerrainMaterialPaint(),
+        })),
+
+
         // Retexture Actions (integrated with GlobalStatusStore)
-        approveRetexture: (elementId: string) => set(state => {
-          const { objects, walls } = state
-
-          // Find the operation in GlobalStatusStore to get the result URL
-          const operation = useGlobalStatusStore.getState().operations.find(
-            op => op.id === `retexture-${elementId}`
-          )
-
-          if (!operation || operation.status !== 'completed') return {}
-
-          // Extract URL from operation details (stored as JSON)
-          let pendingRetextureUrl: string | null = null
-          try {
-            const metadata = JSON.parse(operation.details || '{}')
-            pendingRetextureUrl = metadata.retexturedUrl
-          } catch (e) {
-            console.error('Failed to parse operation metadata', e)
-            return {}
-          }
-
-          if (!pendingRetextureUrl) return {}
+        previewRetexture: (elementId: string, retexturedUrl: string) => set(state => {
+          const { objects, walls, surfaces } = state
 
           // Check if it's an object
-          const objectExists = objects.some(o => o.id === elementId)
-          if (objectExists) {
-            const updatedObjects = objects.map(obj => {
-              if (obj.id === elementId) {
-                return { ...obj, modelUrl: pendingRetextureUrl, isLoading: false }
-              }
-              return obj
-            })
-
-            // Remove the operation from GlobalStatusStore
-            useGlobalStatusStore.getState().removeOperation(`retexture-${elementId}`)
-
+          const object = objects.find(o => o.id === elementId)
+          if (object) {
+            // Backup original state if not already in operation? 
+            // We rely on the operation having 'originalModelUrl' set during init.
+            // Just update the object model
             return {
-              objects: updatedObjects,
+              objects: objects.map(o => o.id === elementId ? { ...o, modelUrl: retexturedUrl } : o),
               hasUnsavedChanges: true
             }
           }
@@ -488,20 +519,39 @@ export const useInteriorStore = create<InteriorState>()(
           // Check if it's a wall
           const wall = walls.find(w => w.id === elementId)
           if (wall) {
+            // It's a wall! We need to convert it to an object for preview.
+            // AND we must save the wall data to the operation so we can revert it.
+            // We can't easily update the operation from here without circular dependency issues 
+            // if we try to write to GlobalStatusStore.
+            // BUT we can assume PropertiesPanel handles the metadata update? 
+            // Or better: We store the "revert" data in the *InteriorStore* temporarily? 
+            // No, persist it in the operation is safest.
+            // Let's rely on PropertiesPanel to save the wall data before calling this? 
+            // Actually, let's just do the DOM change here.
+
             const midX = (wall.start[0] + wall.end[0]) / 2
             const midZ = (wall.start[2] + wall.end[2]) / 2
+            const rotationY = Math.atan2(wall.end[0] - wall.start[0], wall.end[2] - wall.start[2])
+
+            const dx = wall.end[0] - wall.start[0]
+            const dz = wall.end[2] - wall.start[2]
+            const length = Math.sqrt(dx * dx + dz * dz)
+            const thickness = wall.thickness || 0.2 // Default thickness
+
+            // Rotation aligns with Z axis (atan2(dx, dz) where 0 means +Z)
+            // So Z scale should be Length.
+            // X scale should be Thickness.
+            // Y scale is Height.
 
             const newObject: SceneObject = {
-              id: wall.id,
-              modelUrl: pendingRetextureUrl,
+              id: wall.id, // Keep same ID so selection works
+              modelUrl: retexturedUrl,
               position: [midX, wall.start[1], midZ],
-              rotation: [0, 0, 0],
-              scale: [1, 1, 1],
+              rotation: [0, rotationY, 0],
+              scale: [1, 1, 1], // Reset scale to 1, rely on targetDimensions
+              targetDimensions: [thickness, wall.height, length],
               isLoading: false
             }
-
-            // Remove the operation from GlobalStatusStore
-            useGlobalStatusStore.getState().removeOperation(`retexture-${elementId}`)
 
             return {
               walls: walls.filter(w => w.id !== elementId),
@@ -510,13 +560,174 @@ export const useInteriorStore = create<InteriorState>()(
             }
           }
 
+          // Check if it's a surface (combined walls, roads, etc.)
+          const surface = surfaces.find(s => s.id === elementId)
+          if (surface) {
+            // Add preview object WITHOUT removing surface (surface stays visible during load)
+            // Try to get the original bounding box center from the operation
+            const operation = useGlobalStatusStore.getState().operations.find(op => op.id === `retexture-${elementId}`)
+            let centerX: number, centerZ: number, width: number, depth: number, minY: number = 0
+
+            try {
+              const metadata = JSON.parse(operation?.details || '{}')
+              const bbox = metadata.originalBoundingBox
+
+              if (bbox && bbox.center) {
+                // Use the actual bounding box center from the exported geometry
+                centerX = bbox.center[0]
+                centerZ = bbox.center[2]
+                width = bbox.size[0]
+                depth = bbox.size[2]
+                minY = bbox.min ? bbox.min[1] : 0 // Get original minY if available
+                console.log('[previewRetexture] Using original bounding box:', {
+                  center: bbox.center,
+                  size: bbox.size,
+                  min: bbox.min,
+                  max: bbox.max,
+                  calculatedPosition: [centerX, minY, centerZ]
+                })
+              } else {
+                throw new Error('No bounding box in metadata, fallback to surface points')
+              }
+            } catch (e) {
+              // Fallback: Calculate bounding box center from surface points
+              console.log('[previewRetexture] Falling back to surface point calculation')
+              const xs = surface.points.map(p => p[0])
+              const zs = surface.points.map(p => p[2])
+              const minX = Math.min(...xs)
+              const maxX = Math.max(...xs)
+              const minZ = Math.min(...zs)
+              const maxZ = Math.max(...zs)
+              centerX = (minX + maxX) / 2
+              centerZ = (minZ + maxZ) / 2
+              width = maxX - minX
+              depth = maxZ - minZ
+            }
+
+            const height = surface.height || 3
+
+            // Use a preview ID so we can identify it later
+            const previewId = `preview-${surface.id}`
+
+            // Remove any existing preview for this surface
+            const filteredObjects = objects.filter(o => o.id !== previewId)
+
+            // Position at centerX/Z, and minY (usually 0 for walls starting at ground)
+            // GLBModel will auto-rebase the pivot to bottom-center of the loaded geometry
+            const newObject: SceneObject = {
+              id: previewId, // Use preview ID
+              modelUrl: retexturedUrl,
+              position: [centerX, minY, centerZ], // Use minY from original bounding box
+              rotation: [0, 0, 0],
+              scale: [1, 1, 1],
+              targetDimensions: [width || 1, height, depth || 1],
+              isLoading: true // Show loading indicator
+            }
+
+            console.log('[previewRetexture] Creating preview object:', newObject)
+
+            return {
+              // Keep surface visible during preview!
+              objects: [...filteredObjects, newObject],
+              hasUnsavedChanges: true
+            }
+          }
+
+          return {}
+
+
+        }),
+
+        revertRetexture: (elementId: string) => set(state => {
+          // We need to restore original state. 
+          // Problem: We need the original data (Wall data or Object URL).
+          // We can look this up from GlobalStatusStore operation details.
+          const operation = useGlobalStatusStore.getState().operations.find(op => op.id === `retexture-${elementId}`)
+          if (!operation) return {}
+
+          try {
+            const metadata = JSON.parse(operation.details || '{}')
+
+            // Case 1: Was a Wall
+            if (metadata.originalType === 'wall' && metadata.originalData) {
+              const wallData = metadata.originalData as Wall
+              // Remove the preview object
+              const newObjects = state.objects.filter(o => o.id !== elementId)
+              // Restore the wall
+              return {
+                objects: newObjects,
+                walls: [...state.walls, wallData],
+                hasUnsavedChanges: true
+              }
+            }
+
+            // Case 2: Was a Surface (combined walls, roads, etc.)
+            if (metadata.originalType === 'surface' && metadata.originalData) {
+              const surfaceData = metadata.originalData as Surface
+              // Remove the preview object
+              const newObjects = state.objects.filter(o => o.id !== elementId)
+              // Restore the surface
+              return {
+                objects: newObjects,
+                surfaces: [...state.surfaces, surfaceData],
+                hasUnsavedChanges: true
+              }
+            }
+
+            // Case 3: Was an Object
+            if (metadata.originalModelUrl) {
+              return {
+                objects: state.objects.map(o => o.id === elementId ? { ...o, modelUrl: metadata.originalModelUrl } : o),
+                hasUnsavedChanges: true
+              }
+            }
+          } catch (e) {
+            console.error('Failed to revert', e)
+          }
           return {}
         }),
 
-        cancelRetexture: (elementId: string) => {
-          // Remove the operation from GlobalStatusStore
+        approveRetexture: (elementId: string) => set(state => {
+          // Check if there's a preview object to finalize
+          const previewId = `preview-${elementId}`
+          const previewObject = state.objects.find(o => o.id === previewId)
+
+          if (previewObject) {
+            // Surface case: remove surface and rename preview object to original ID
+            // Also remove the operation from GlobalStatusStore
+            useGlobalStatusStore.getState().removeOperation(`retexture-${elementId}`)
+            return {
+              surfaces: state.surfaces.filter(s => s.id !== elementId),
+              objects: state.objects.map(o =>
+                o.id === previewId ? { ...o, id: elementId } : o
+              ),
+              hasUnsavedChanges: true
+            }
+          }
+
+          // Just remove the operation for walls/objects (already applied via preview)
           useGlobalStatusStore.getState().removeOperation(`retexture-${elementId}`)
-        },
+          return {}
+        }),
+
+        cancelRetexture: (elementId: string) => set(state => {
+          // Remove preview object if exists (surface case)
+          const previewId = `preview-${elementId}`
+          const hasPreview = state.objects.some(o => o.id === previewId)
+
+          if (hasPreview) {
+            useGlobalStatusStore.getState().removeOperation(`retexture-${elementId}`)
+            return {
+              objects: state.objects.filter(o => o.id !== previewId),
+              hasUnsavedChanges: true
+            }
+          }
+
+          // Fallback to revert for walls/objects
+          get().revertRetexture(elementId)
+          useGlobalStatusStore.getState().removeOperation(`retexture-${elementId}`)
+          return {}
+        }),
 
         // Retexture Export
         requestRetextureExport: false,
@@ -534,7 +745,7 @@ export const useInteriorStore = create<InteriorState>()(
         markUnsaved: () => set({ hasUnsavedChanges: true }),
 
         setMode: mode => set({ mode }),
-        setActiveLevel: level => set({ activeLevel: level }),
+        setActiveLevel: level => set({ activeLevel: level, selectedId: null, multiSelectedIds: [] }),
         setActiveModelUrl: url => set({ activeModelUrl: url }),
         setActiveSurfaceType: type => set({ activeSurfaceType: type }),
         setIsCurved: curved => set({ isCurved: curved }),
@@ -553,7 +764,7 @@ export const useInteriorStore = create<InteriorState>()(
 
         addWall: wall =>
           set(state => ({
-            walls: [...state.walls, { ...wall, id: uuidv4() }],
+            walls: [...state.walls, { ...wall, id: uuidv4(), level: state.activeLevel }],
             hasUnsavedChanges: true,
           })),
         updateWall: (id, updates) =>
@@ -569,7 +780,7 @@ export const useInteriorStore = create<InteriorState>()(
 
         addFloor: floor =>
           set(state => ({
-            floors: [...state.floors, { ...floor, id: uuidv4() }],
+            floors: [...state.floors, { ...floor, id: uuidv4(), level: state.activeLevel }],
             hasUnsavedChanges: true,
           })),
         updateFloor: (id, updates) =>
@@ -601,7 +812,7 @@ export const useInteriorStore = create<InteriorState>()(
 
         addSurface: surface =>
           set(state => ({
-            surfaces: [...state.surfaces, { ...surface, id: uuidv4() }].sort((a, b) => a.layerIndex - b.layerIndex),
+            surfaces: [...state.surfaces, { ...surface, id: uuidv4(), level: state.activeLevel }].sort((a, b) => a.layerIndex - b.layerIndex),
             hasUnsavedChanges: true,
           })),
         updateSurface: (id, updates) =>
@@ -619,9 +830,10 @@ export const useInteriorStore = create<InteriorState>()(
 
         addObject: obj =>
           set(state => ({
-            objects: [...state.objects, { ...obj, id: uuidv4() }],
+            objects: [...state.objects, { ...obj, id: uuidv4(), level: state.activeLevel }],
             hasUnsavedChanges: true,
           })),
+
         updateObject: (id, updates) =>
           set(state => ({
             objects: state.objects.map(o => (o.id === id ? { ...o, ...updates } : o)),
@@ -946,7 +1158,26 @@ export const useInteriorStore = create<InteriorState>()(
           }
         },
 
+        renameDesign: async (designId: string, newName: string) => {
+          const supabase = (await import('@/infrastructure/storage/supabaseClient')).getSupabaseClient()
+          const { error } = await supabase
+            .from('interior_designs')
+            .update({ name: newName })
+            .eq('id', designId)
+
+          if (error) {
+            console.error('Failed to rename design:', error)
+            throw error
+          }
+
+          // If we are currently editing this design, update local name
+          if (get().currentDesignId === designId) {
+            set({ currentDesignName: newName })
+          }
+        },
+
         deleteDesign: async (designId: string) => {
+
           try {
             await fetch(`/api/interior-designer/designs?id=${designId}`, {
               method: 'DELETE',

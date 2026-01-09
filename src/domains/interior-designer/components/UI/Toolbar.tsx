@@ -155,7 +155,7 @@ export const Toolbar: React.FC = () => {
           onClick={() => setMode('SCATTER')}
         />
 
-        <div className="w-full h-px bg-border my-2" />
+        <div className="w-full h-px bg-zinc-900 my-3" />
 
         <ToolButton
           icon={<Mountain size={20} />}
@@ -164,7 +164,7 @@ export const Toolbar: React.FC = () => {
           onClick={() => setMode('TERRAIN')}
         />
 
-        <div className="w-full h-px bg-border my-2" />
+        <div className="w-full h-px bg-zinc-900 my-3" />
 
         <div className="flex flex-col items-center gap-1">
           <Tooltip>
@@ -198,7 +198,7 @@ export const Toolbar: React.FC = () => {
           </Tooltip>
         </div>
 
-        <div className="w-full h-px bg-border my-2" />
+        <div className="w-full h-px bg-zinc-900 my-3" />
 
         <Tooltip>
           <TooltipTrigger asChild>
@@ -215,7 +215,7 @@ export const Toolbar: React.FC = () => {
           </TooltipContent>
         </Tooltip>
 
-        <div className="w-full h-px bg-border my-2" />
+        <div className="w-full h-px bg-zinc-900 my-3" />
 
         <div className="flex flex-col items-center gap-1">
           <span className="text-[10px] font-medium">
@@ -235,11 +235,14 @@ export const Toolbar: React.FC = () => {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  <p>{mode === 'TERRAIN' ? `View Slice ${level}` : `Floor ${level}`}</p>
+                  <p>{mode === 'TERRAIN' ? `View Slice ${level}` : `Floor ${level} (${level * 3}m)`}</p>
                 </TooltipContent>
               </Tooltip>
             ))}
           </div>
+          <span className="text-[9px] text-muted-foreground mt-1">
+            {activeLevel * 3}m
+          </span>
         </div>
       </div>
     </TooltipProvider>

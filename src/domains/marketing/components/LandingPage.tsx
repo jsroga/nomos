@@ -13,7 +13,7 @@ import { TurbulentBackground } from './TurbulentBackground'
 
 import { Liquid } from './Liquid'
 
-export function LandingPage() {
+export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
     const [zoom, setZoom] = useState(0.1)
     const [rotation, setRotation] = useState(3.33) // 191 degrees
     const [speed, setSpeed] = useState(1.0) // Flow Speed
@@ -136,11 +136,23 @@ export function LandingPage() {
             <div className="relative z-10 w-full min-h-screen text-white overflow-y-auto">
                 {/* Navigation */}
                 <nav className="fixed top-0 left-0 right-0 z-50 p-6 flex justify-between items-center max-w-7xl mx-auto w-full mix-blend-difference">
-                    <div className="text-2xl font-black tracking-tighter font-syne">C.</div>
+                    <div className="flex items-center gap-2">
+                        <img src="/logo.svg" alt="Cutafonina" className="h-16 w-auto brightness-0 invert" />
+                    </div>
                     <div className="flex gap-4">
-                        <Link href="/login">
-                            <Button variant="ghost" className="text-white hover:text-white/80">Sign In</Button>
-                        </Link>
+                        {isLoggedIn ? (
+                            <Link href="/app">
+                                <Button className="bg-white text-black hover:bg-white/90 font-medium">
+                                    Go to App
+                                </Button>
+                            </Link>
+                        ) : (
+                            <Link href="/login">
+                                <Button variant="ghost" className="text-white hover:text-white/80">
+                                    Sign In
+                                </Button>
+                            </Link>
+                        )}
                     </div>
                 </nav>
 

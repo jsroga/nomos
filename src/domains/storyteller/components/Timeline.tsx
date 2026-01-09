@@ -1,11 +1,10 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Play, Pause, User, Zap } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Play, Pause, ChevronUp, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { PendingActions } from './PendingActions'
+
 import { QuestionSession } from '../questions/types'
-import { ActionHistoryEntry } from '../actions/types'
 
 interface Beat {
   id: string
@@ -29,7 +28,6 @@ interface TimelineProps {
   onBeatSelect: (beatId: string | null) => void
   selectedBeatId: string | null
   pendingQuestions: QuestionSession[]
-  recentActions: ActionHistoryEntry[]
 }
 
 // Beat type colors
@@ -48,12 +46,24 @@ export const Timeline: React.FC<TimelineProps> = ({
   onBeatSelect,
   selectedBeatId,
   pendingQuestions,
-  recentActions,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [snapshots, setSnapshots] = useState<CharacterSnapshot[]>([])
   const [hoveredBeat, setHoveredBeat] = useState<string | null>(null)
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    // Initialize from localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('storyteller-timeline-collapsed')
+      return saved === 'true'
+    }
+    return false
+  })
+
+  // Persist collapsed state to localStorage
+  useEffect(() => {
+    localStorage.setItem('storyteller-timeline-collapsed', String(isCollapsed))
+  }, [isCollapsed])
 
   // Sort beats by sequence
   const sortedBeats = [...beats].sort((a, b) => a.sequence - b.sequence)
@@ -121,8 +131,15 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   if (!episodeId) {
     return (
-      <div className="h-32 border-t border-border bg-card/80 backdrop-blur flex items-center justify-center text-muted-foreground text-sm">
-        Select an episode to view timeline
+      <div className="h-10 border-t border-border bg-card/80 backdrop-blur flex items-center justify-center text-muted-foreground text-sm">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 px-3 text-xs gap-1"
+          disabled
+        >
+          Select an episode to view timeline
+        </Button>
       </div>
     )
   }
@@ -130,38 +147,56 @@ export const Timeline: React.FC<TimelineProps> = ({
   const currentBeat = sortedBeats[currentIndex]
 
   return (
-    <div className="h-40 border-t border-border bg-card/95 backdrop-blur flex flex-col">
-      {/* Timeline Header with Controls */}
-      <div className="h-10 px-4 flex items-center justify-between border-b border-border">
+    <div
+      className={`border-t border-border bg-card/95 backdrop-blur flex flex-col transition-all duration-300 ease-in-out ${isCollapsed ? 'h-10' : 'h-40'
+        }`}
+    >
+      {/* Collapse Toggle Header */}
+      <div className="h-10 px-4 flex items-center justify-between border-b border-border shrink-0">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
-            onClick={handlePrevious}
-            disabled={currentIndex === 0}
+            onClick={() => setIsCollapsed(!isCollapsed)}
             className="h-7 w-7 p-0"
+            title={isCollapsed ? 'Expand timeline' : 'Collapse timeline'}
           >
-            <ChevronLeft size={16} />
+            {isCollapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsPlaying(!isPlaying)}
-            className="h-7 w-7 p-0"
-          >
-            {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleNext}
-            disabled={currentIndex >= sortedBeats.length - 1}
-            className="h-7 w-7 p-0"
-          >
-            <ChevronRight size={16} />
-          </Button>
+
+          {!isCollapsed && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handlePrevious}
+                disabled={currentIndex === 0}
+                className="h-7 w-7 p-0"
+              >
+                <ChevronLeft size={16} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsPlaying(!isPlaying)}
+                className="h-7 w-7 p-0"
+              >
+                {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleNext}
+                disabled={currentIndex >= sortedBeats.length - 1}
+                className="h-7 w-7 p-0"
+              >
+                <ChevronRight size={16} />
+              </Button>
+            </>
+          )}
+
           <span className="text-xs text-muted-foreground ml-2">
-            Beat {currentIndex + 1} of {sortedBeats.length}
+            {sortedBeats.length > 0 ? `Beat ${currentIndex + 1} of ${sortedBeats.length}` : 'No beats'}
           </span>
         </div>
 
@@ -179,10 +214,13 @@ export const Timeline: React.FC<TimelineProps> = ({
         )}
       </div>
 
-      {/* Timeline Track */}
-      <div className="flex-1 flex overflow-hidden">
+      {/* Timeline Track - with overflow visible for tooltips */}
+      <div
+        className={`flex-1 flex transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100'
+          }`}
+      >
         {/* Beat Track */}
-        <div className="flex-1 px-4 py-2 overflow-x-auto">
+        <div className="flex-1 px-4 py-2 overflow-x-auto overflow-y-visible">
           <div className="relative h-8 bg-muted/30 rounded-full flex items-center px-2">
             {/* Progress line */}
             <div
@@ -204,29 +242,26 @@ export const Timeline: React.FC<TimelineProps> = ({
                   onMouseEnter={() => setHoveredBeat(beat.id)}
                   onMouseLeave={() => setHoveredBeat(null)}
                   className={`relative w-4 h-4 rounded-full transition-all duration-200 ${index === currentIndex
-                      ? 'scale-150 ring-2 ring-primary ring-offset-2 ring-offset-card'
-                      : 'hover:scale-125'
+                    ? 'scale-150 ring-2 ring-primary ring-offset-2 ring-offset-card'
+                    : 'hover:scale-125'
                     } ${BEAT_COLORS[beat.beatType] || BEAT_COLORS.default}`}
                   title={beat.logline}
                 >
                   {hoveredBeat === beat.id && (
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-popover border border-border rounded text-xs whitespace-nowrap z-[80] shadow-lg">
-                      {beat.logline.slice(0, 50)}...
+                    <div
+                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-popover border border-border rounded-lg text-xs whitespace-nowrap shadow-xl pointer-events-none"
+                      style={{ zIndex: 9999 }}
+                    >
+                      <div className="font-medium text-foreground mb-1">{beat.beatType.toUpperCase()}</div>
+                      <div className="text-muted-foreground max-w-[200px] truncate">{beat.logline}</div>
+                      {/* Arrow */}
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-border" />
                     </div>
                   )}
                 </button>
               ))}
             </div>
           </div>
-        </div>
-
-        {/* Recent Actions (Replaces Character States) */}
-        <div className="w-80 border-l border-border bg-card/50 overflow-y-auto">
-          <PendingActions
-            pendingQuestions={pendingQuestions}
-            recentActions={recentActions}
-            className="p-2"
-          />
         </div>
       </div>
     </div>

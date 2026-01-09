@@ -12,6 +12,7 @@ import { useConfirmDialog } from '@/components/ui/confirm-dialog'
 // New Imports for Liquid UI
 import { TurbulentBackground } from '@/domains/marketing/components/TurbulentBackground'
 import { Liquid } from '@/domains/marketing/components/Liquid'
+import { GlowEffect } from '@/components/ui/glow-effect'
 
 export default function ProjectSelectionPage() {
   const router = useRouter()
@@ -143,9 +144,11 @@ export default function ProjectSelectionPage() {
           {/* LEFT: Project List (Glass Panel) */}
           <div className="w-full md:w-1/3 flex flex-col bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
             <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
-              <h1 className="text-xl font-bold tracking-tight text-white/90">
-                Projects
-              </h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-bold tracking-tight text-white/90">
+                  Projects
+                </h1>
+              </div>
               <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout" className="hover:bg-white/10 text-white/70">
                 <LogOut size={18} />
               </Button>
@@ -207,7 +210,10 @@ export default function ProjectSelectionPage() {
             <Liquid speed={speed} {...liquidOptions}>
               <div className="w-full h-full p-8 md:p-12 flex flex-col justify-center items-center text-center bg-[#0000005c] rounded-2xl border border-white/10 shadow-2xl backdrop-blur-sm">
                 <div className="max-w-md w-full space-y-8">
-                  <div className="space-y-4">
+                  <div className="space-y-4 flex flex-col items-center relative group">
+                    <div className="relative">
+                      <img src="/logo.svg" alt="Logo" className="h-[240px] w-[240px] brightness-0 invert mb-4 opacity-80 relative z-10" />
+                    </div>
                     <h2 className="text-4xl md:text-5xl font-black tracking-tighter text-white drop-shadow-lg font-syne">
                       Create Potential
                     </h2>
@@ -219,31 +225,49 @@ export default function ProjectSelectionPage() {
 
                   <form onSubmit={handleCreateProject} className="space-y-6 w-full">
                     <div className="space-y-2 relative group w-full">
-                      <input
-                        type="text"
-                        placeholder="Name your world..."
-                        value={newProjectName}
-                        onChange={(e) => setNewProjectName(e.target.value)}
-                        className="w-full px-6 py-4 bg-black/40 border border-white/20 rounded-xl focus:outline-none focus:border-white/50 focus:bg-black/60 text-xl placeholder:text-white/30 transition-all text-white text-center"
-                      />
+                      <div className="relative">
+                        <GlowEffect
+                          colors={['#4f46e5', '#3b82f6', '#8b5cf6', '#6366f1']}
+                          mode="static"
+                          blur="soft"
+                          scale={0.9}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Name your world..."
+                          value={newProjectName}
+                          onChange={(e) => setNewProjectName(e.target.value)}
+                          className="w-full px-6 py-4 bg-black border border-white/20 rounded-xl focus:outline-none focus:border-white/50 focus:bg-black text-xl placeholder:text-white/30 transition-all duration-300 text-white text-center relative z-10"
+                        />
+                      </div>
                     </div>
-                    <Button
-                      type="submit"
-                      className="w-full h-14 text-lg font-bold shadow-xl hover:shadow-2xl transition-all bg-white text-black hover:bg-white/90 rounded-xl"
-                      disabled={isCreating || !newProjectName.trim()}
-                    >
-                      {isCreating ? (
-                        <>
-                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                          Forging...
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="mr-2 h-5 w-5" />
-                          Create New World
-                        </>
-                      )}
-                    </Button>
+                    <div className="relative group">
+                      <GlowEffect
+                        colors={['#4f46e5', '#3b82f6', '#8b5cf6', '#6366f1']}
+                        mode="static"
+                        blur="medium"
+                        scale={0.9}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                      />
+                      <Button
+                        type="submit"
+                        className="w-full h-14 text-lg font-bold shadow-xl hover:shadow-2xl transition-all bg-white text-black hover:bg-white/90 rounded-xl relative z-10"
+                        disabled={isCreating || !newProjectName.trim()}
+                      >
+                        {isCreating ? (
+                          <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            Forging...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="mr-2 h-5 w-5" />
+                            Create New World
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </form>
                 </div>
               </div>

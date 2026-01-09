@@ -73,7 +73,8 @@ export class MeshyClient {
   async retextureModel(
     modelUrlOrBase64: string,
     prompt: string,
-    aiModel: 'latest' | 'meshy-4' | 'meshy-5' = 'latest'
+    aiModel: 'latest' | 'meshy-4' | 'meshy-5' = 'latest',
+    styleImageUrl?: string
   ): Promise<string> {
     // Determine if input is valid URL or needs to be treated as Base64 Data URI
     // Meshy API expects "model_url" to be either a public URL or a Data URI.
@@ -96,10 +97,17 @@ export class MeshyClient {
       enable_pbr: true
     }
 
+    // Add style reference image if provided (from project settings)
+    if (styleImageUrl) {
+      payload.image_style_url = styleImageUrl
+      log('info', 'Using style reference image', { styleImageUrl })
+    }
+
     log('info', 'Retexture request', {
       url: textureBaseUrl,
       prompt,
       aiModel,
+      styleImageUrl: styleImageUrl || 'none',
       modelUrlLength: modelUrlOrBase64.length,
       isDataUri: modelUrlOrBase64.startsWith('data:'),
       isHttpUrl: modelUrlOrBase64.startsWith('http')

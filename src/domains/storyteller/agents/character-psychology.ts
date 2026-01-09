@@ -5,63 +5,32 @@ import { AgentAction } from '../actions/types'
 import { getModel } from '../config/model-config'
 import { isSafeAction } from '../actions/executor'
 import { getSafeMessageHistory } from '../utils/message-utils'
+import { loadPromptCached } from '../prompts/hub-loader'
 
 // Model is created inside the function to use request-scoped config (AsyncLocalStorage)
 
-const STRUCTURED_PROMPT = `
-## RESPONSE FORMAT
-You must commit actions, not just describe them.
-
-When you APPROVE a beat with emotional/psychological shifts, respond with JSON:
-{
-    "message": "Your character analysis",
-    "decision": "APPROVED" | "REJECTED",
-    "actions": [
-        // Update multiple metrics at once:
-        { "type": "UPDATE_CHARACTER_METRICS", "payload": { 
-            "characterId": "char-id", 
-            "changes": { 
-                "valence": -20,      // Emotional tone shift
-                "arousal": 30,       // Energy increase
-                "autonomy": -15,     // Loss of control
-                "cognitiveClarity": -25  // Impaired thinking
-            },
-            "reason": "Explanation of why these changes occurred"
-        }},
-        // Add knowledge:
-        { "type": "ADD_KNOWLEDGE", "payload": { "characterId": "char-id", "knowledge": "What they learned" } }
-    ]
-}
-
-## Psychological Metrics Guide:
-- **valence** (-100 to +100): Emotional tone (negative events decrease, positive increase)
-- **arousal** (0-100): Energy level (threats/excitement increase, exhaustion/calm decrease)
-- **autonomy** (0-100): Freedom (control/choice increase, coercion/constraints decrease)
-- **competence** (0-100): Capability belief (success increases, failure decreases)
-- **relatedness** (0-100): Connection (bonding increases, betrayal/isolation decrease)
-- **cognitiveClarity** (0-100): Mental sharpness (stress/trauma decrease, rest/insight increase)
-- **perceivedStakes** (0-100): What's at risk (escalation increases, resolution decreases)
-- **socialSafety** (0-100): Safety in context (support increases, threat/judgment decrease)
-- **moralAlignment** (0-100): Acting with integrity (values-aligned actions increase, compromises decrease)
-
-ALWAYS commit metric changes when beats affect characters. Be specific about which metrics change and why.
-Respond ONLY with valid JSON.
-`
+import { CHARACTER_PSYCHOLOGY_PROMPT } from '../prompts/agents/character-psychology'
 
 export const characterPsychologyAgent = async (
   state: WritersRoomState
 ): Promise<Partial<WritersRoomState>> => {
   // Create model inside function to use request-scoped config
   const model = getModel('characterPsychology')
-  
+
   console.log('Character Psychology validating...')
 
   const context = assembleContext(state, 'characterPsychology')
 
+  // Load prompt from Hub
+  const loadedPrompt = await loadPromptCached('characterPsychology')
+  const promptMessages = (loadedPrompt.prompt as any).promptMessages || (loadedPrompt.prompt as any).messages || []
+  const systemMessage = promptMessages.find((m: any) => m.lc_id?.[3] === 'SystemMessagePromptTemplate' || m._type === 'system')
+  const systemTemplate = systemMessage?.prompt?.template || systemMessage?.template || CHARACTER_PSYCHOLOGY_PROMPT
+
   // Combine system content into single message (required for Claude)
-  const combinedSystem = [context.systemPrompt, context.stateContext, STRUCTURED_PROMPT].join('\n\n---\n\n')
+  const combinedSystem = [context.systemPrompt, context.stateContext, systemTemplate].join('\n\n---\n\n')
   const conversationMessages = getSafeMessageHistory(state.messages, 5).filter(m => m._getType() !== 'system')
-  
+
   const messages = [
     new SystemMessage(combinedSystem),
     ...conversationMessages,
@@ -102,9 +71,9 @@ export const characterPsychologyAgent = async (
       name: 'CharacterPsychology',
     })
 
-    // Attach actions for UI
-    ;(namedMessage as any).actions = actions
-    ;(namedMessage as any).decision = decision || lastAction
+      // Attach actions for UI
+      ; (namedMessage as any).actions = actions
+      ; (namedMessage as any).decision = decision || lastAction
 
     // Apply safe actions directly to state
     let updatedCharacters = [...state.characters]
@@ -217,7 +186,7 @@ export const characterPsychologyAgent = async (
       lastAction,
       characters:
         updatedCharacters.length !== state.characters.length ||
-        JSON.stringify(updatedCharacters) !== JSON.stringify(state.characters)
+          JSON.stringify(updatedCharacters) !== JSON.stringify(state.characters)
           ? updatedCharacters
           : undefined,
     }

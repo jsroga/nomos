@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { MeshyClient } from '@/infrastructure/ai/meshy'
 import { storageService } from '@/infrastructure/storage/StorageService'
 import { v4 as uuidv4 } from 'uuid'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export const retextureModelTask = task({
     id: 'retexture-model',
@@ -17,8 +18,9 @@ export const retextureModelTask = task({
         prompt: string
         apiKey: string
         aiModel?: 'latest' | 'meshy-4' | 'meshy-5'
+        styleImageUrl?: string // Style reference image URL from project settings
     }) => {
-        const { projectId, assetId, modelBase64, prompt, apiKey, aiModel } = payload
+        const { projectId, assetId, modelBase64, prompt, apiKey, aiModel, styleImageUrl } = payload
 
         logger.info(`Starting retexture for asset ${assetId}`, { prompt })
 
@@ -53,7 +55,7 @@ export const retextureModelTask = task({
         // Call Meshy (blocks until completion or timeout)
         let retexturedGlbUrl: string
         try {
-            retexturedGlbUrl = await meshy.retextureModel(finalModelInput, prompt, aiModel || 'latest')
+            retexturedGlbUrl = await meshy.retextureModel(finalModelInput, prompt, aiModel || 'latest', styleImageUrl)
             // Log the taskId to metadata for tracking
             if (meshy.currentTaskId) {
                 await metadata.set('meshy_task_id', meshy.currentTaskId)
@@ -74,12 +76,42 @@ export const retextureModelTask = task({
         const glbBuffer = await glbResponse.arrayBuffer()
 
         // 2. Upload to Supabase Storage
-        const newFilename = `retextured_${uuidv4()}.glb`
-        // We use the storage service logic. We need to handle the fact it expects Node Buffer vs string.
-        // storageService.saveImage handles Buffer.
-        const savedUrl = await storageService.saveImage(projectId, newFilename, Buffer.from(glbBuffer))
+        let savedUrl: string
+        try {
+            const newFilename = `retextured_${uuidv4()}.glb`
+            const path = `${projectId}/${newFilename}`
 
-        logger.info('Saved retextured model to storage', { savedUrl })
+            // Ensure bucket exists
+            const { data: buckets } = await supabaseAdmin.storage.listBuckets()
+            if (!buckets?.find(b => b.name === 'projects')) {
+                logger.info('Creating "projects" bucket...')
+                await supabaseAdmin.storage.createBucket('projects', {
+                    public: true,
+                    fileSizeLimit: 52428800, // 50MB
+                    allowedMimeTypes: ['image/*', 'model/gltf-binary', 'model/gltf+json']
+                })
+            }
+
+            // Use Supabase Admin client directly to bypass RLS and avoid local fetch issues
+            const { error: uploadError } = await supabaseAdmin.storage
+                .from('projects')
+                .upload(path, Buffer.from(glbBuffer), {
+                    contentType: 'model/gltf-binary',
+                    upsert: true
+                })
+
+            if (uploadError) throw uploadError
+
+            const { data: { publicUrl } } = supabaseAdmin.storage
+                .from('projects')
+                .getPublicUrl(path)
+
+            savedUrl = publicUrl
+            logger.info('Saved retextured model to storage', { savedUrl })
+        } catch (saveError: any) {
+            logger.error('Failed to save retextured model to storage', { error: saveError.message })
+            throw saveError
+        }
 
         // 3. Return the result. We DO NOT update the DB yet because the user needs to Approve/Disapprove.
         // The UI will receive this result, show it, and if approved, the UI will call an API to save the new asset

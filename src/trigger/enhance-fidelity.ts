@@ -1,7 +1,7 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import { put } from '@vercel/blob'
-import { FIDELITY_PROMPTS, getCreativityPrompt } from '@/constants/prompts'
+import { FIDELITY_PROMPTS, getCreativityPrompt } from '@/lib/server/prompts'
 
 // NOTE: getCreativityPrompt is now imported from @/constants/prompts
 

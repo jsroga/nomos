@@ -11,6 +11,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { LiquidGlass } from '@/components/LiquidGlass'
 
 export const AsyncStatusIndicator: React.FC = () => {
   const operations = useGlobalStatusStore(state => state.operations)
@@ -274,73 +275,81 @@ export const AsyncStatusIndicator: React.FC = () => {
         <TooltipContent
           side="bottom"
           align="end"
-          className="bg-card border border-border p-3 min-w-[200px] max-w-[300px]"
+          className="p-0 border-none bg-transparent min-w-[300px] max-w-[400px] overflow-hidden rounded-xl shadow-2xl z-[200]"
         >
-          {isLoading ? (
-            <div className="space-y-2">
-              <div className="text-sm font-medium text-foreground">
-                {totalCount} operation{totalCount > 1 ? 's' : ''} in progress
-              </div>
-              <div className="space-y-1 max-h-[150px] overflow-y-auto">
-                {pendingOperations.map(op => {
-                  const colorClass = getOperationColor(op.type)
-                  const [textColor, bgColor] = colorClass.split(' ')
+          <LiquidGlass className="w-full rounded-xl border border-white/20">
+            <div className="bg-background/40 backdrop-blur-xl p-4">
+              {isLoading ? (
+                <div className="space-y-3">
+                  <div className="text-sm font-semibold text-white flex items-center gap-2">
+                    <Loader2 size={16} className="text-primary animate-spin" />
+                    {totalCount} operation{totalCount > 1 ? 's' : ''} in progress
+                  </div>
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+                    {pendingOperations.map(op => {
+                      const colorClass = getOperationColor(op.type)
+                      const [textColor, bgColor] = colorClass.split(' ')
 
-                  // Format details nicely instead of showing raw JSON
-                  let statusText = 'In progress'
-                  if (op.details) {
-                    try {
-                      const metadata = JSON.parse(op.details)
-                      // Show prompt if available, otherwise just generic status
-                      if (metadata.prompt) {
-                        statusText = metadata.prompt.length > 30
-                          ? metadata.prompt.substring(0, 30) + '...'
-                          : metadata.prompt
+                      // Format details nicely instead of showing raw JSON
+                      let statusText = 'In progress'
+                      if (op.details) {
+                        try {
+                          const metadata = JSON.parse(op.details)
+                          // Show prompt if available, otherwise just generic status
+                          if (metadata.prompt) {
+                            statusText = metadata.prompt.length > 40
+                              ? metadata.prompt.substring(0, 40) + '...'
+                              : metadata.prompt
+                          }
+                        } catch (e) {
+                          // If JSON parsing fails, treat as plain text
+                          statusText = op.details.length > 40
+                            ? op.details.substring(0, 40) + '...'
+                            : op.details
+                        }
                       }
-                    } catch (e) {
-                      // If JSON parsing fails, treat as plain text
-                      statusText = op.details.length > 30
-                        ? op.details.substring(0, 30) + '...'
-                        : op.details
-                    }
-                  }
 
-                  return (
-                    <div key={op.id} className="text-xs py-1 group/op">
-                      <div className="flex items-center gap-2">
-                        <div className={cn('w-1.5 h-1.5 rounded-full animate-pulse', bgColor)} />
-                        <span className={cn('font-medium flex-1', textColor)}>{op.label}</span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            removeOperation(op.id)
-                          }}
-                          className="opacity-0 group-hover/op:opacity-100 p-0.5 hover:bg-muted rounded transition-opacity"
-                          title="Dismiss"
-                        >
-                          <XCircle size={12} className="text-muted-foreground hover:text-destructive" />
-                        </button>
-                      </div>
-                      <div className="text-muted-foreground text-[11px] ml-3.5 truncate">
-                        {statusText}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-              {totalCount > 0 && (
-                <button
-                  onClick={clearAllOperations}
-                  className="w-full mt-2 pt-2 border-t border-border text-xs text-muted-foreground hover:text-destructive transition-colors flex items-center justify-center gap-1"
-                >
-                  <XCircle size={12} />
-                  Clear all stale operations
-                </button>
+                      return (
+                        <div key={op.id} className="text-xs py-2 px-3 rounded-lg bg-black/20 group/op border border-white/5 hover:border-white/10 transition-colors">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className={cn('w-1.5 h-1.5 rounded-full animate-pulse shadow-glow', bgColor)} />
+                            <span className={cn('font-medium flex-1 tracking-wide', textColor)}>{op.label}</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                removeOperation(op.id)
+                              }}
+                              className="opacity-0 group-hover/op:opacity-100 p-1 hover:bg-white/10 rounded-full transition-all"
+                              title="Dismiss"
+                            >
+                              <XCircle size={14} className="text-white/40 hover:text-red-400" />
+                            </button>
+                          </div>
+                          <div className="text-white/60 text-[11px] truncate pl-3.5 border-l border-white/10 ml-0.5">
+                            {statusText}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  {totalCount > 0 && (
+                    <button
+                      onClick={clearAllOperations}
+                      className="w-full mt-2 pt-2 border-t border-white/10 text-xs text-white/40 hover:text-red-400 transition-colors flex items-center justify-center gap-1.5 uppercase tracking-wider font-medium"
+                    >
+                      <XCircle size={12} />
+                      Clear all stale operations
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="text-sm text-white/50 text-center py-2 flex items-center justify-center gap-2">
+                  <CheckCircle2 size={16} className="text-green-500/50" />
+                  No active operations
+                </div>
               )}
             </div>
-          ) : (
-            <div className="text-sm text-muted-foreground">No active operations</div>
-          )}
+          </LiquidGlass>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

@@ -5,8 +5,10 @@
 @layer base {
   :root {
     /* Default to Dark Mode (Cursor/Antigravity inspired) */
-    --background: 240 10% 3.9%; /* Zinc 950 */
-    --foreground: 0 0% 98%; /* Zinc 50 */
+    --background: 240 10% 3.9%;
+    /* Zinc 950 */
+    --foreground: 0 0% 98%;
+    /* Zinc 50 */
 
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
@@ -14,16 +16,19 @@
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 266 100% 64%; /* Vibrant Purple for that "Antigravity" feel */
+    --primary: 235 88% 65%;
+    /* Vibrant Blue/Indigo */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 5% 26%; /* Zinc 700/800 mix - lighter than bg for contrast */
+    --secondary: 240 5% 26%;
+    /* Zinc 700/800 mix - lighter than bg for contrast */
     --secondary-foreground: 0 0% 98%;
 
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
 
-    --accent: 266 80% 60%; /* Slightly darker purple for hover/accent */
+    --accent: 235 70% 55%;
+    /* Slightly darker blue for hover/accent */
     --accent-foreground: 0 0% 98%;
 
     --destructive: 0 62.8% 30.6%;
@@ -31,7 +36,7 @@
 
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 266 100% 64%;
+    --ring: 235 88% 65%;
 
     --radius: 0.5rem;
   }
@@ -41,6 +46,7 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -80,7 +86,8 @@ nextjs-portal {
 }
 
 /* Force liquidGL canvas to background */
-canvas[data-engine="liquidGL"], canvas.liquidGL-canvas {
+canvas[data-engine="liquidGL"],
+canvas.liquidGL-canvas {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
