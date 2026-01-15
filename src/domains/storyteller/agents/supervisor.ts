@@ -143,6 +143,13 @@ export function isAgentAllowedInPhase(agentName: string, phase: Phase | string):
   }
 
   const resolvedAgent = toolToAgent[agentName] || agentName
+
+  // Specific override: allow Plot Architect to be called during Premise phase if it's for story breaking
+  // This avoids the annoying warning when the user says "break into beats"
+  if (resolvedAgent === 'plotArchitect' && phase === 'premise') {
+    return true
+  }
+
   return allowedAgents.includes(resolvedAgent)
 }
 
@@ -284,9 +291,82 @@ ${planContext}
     .slice(-10)
     .filter(m => m._getType() !== 'system')
 
+  // Validation: LangChain/OpenAI strict rule:
+  // 1. AIMessages with tool_calls must be followed by matching ToolMessages
+  // 2. ToolMessages must have a preceding AIMessage with matching tool_calls
+
+  // Step 1: Identify all tool_call IDs from AIMessages in the conversation
+  const allToolCallIds = new Set<string>();
+  conversationMessages.forEach(m => {
+    if (m._getType() === 'ai' && (m as any).tool_calls?.length > 0) {
+      const toolCalls = (m as any).tool_calls as any[];
+      toolCalls.forEach(tc => allToolCallIds.add(tc.id));
+    }
+  });
+
+  // Step 2: Identify all tool_call_ids from ToolMessages
+  const allToolResponseIds = new Set(
+    state.messages
+      .filter(m => m._getType() === 'tool')
+      .map(m => (m as any).tool_call_id)
+  );
+
+  // Step 3: Clean the conversation slice - handle both directions
+  const cleanMessages = conversationMessages
+    // First, filter out orphan ToolMessages (no matching AIMessage with tool_calls)
+    .filter((m) => {
+      if (m._getType() === 'tool') {
+        const toolCallId = (m as any).tool_call_id;
+        if (!allToolCallIds.has(toolCallId)) {
+          console.warn(`⚠️ Supervisor: Removing orphan ToolMessage (no matching tool_call): ${toolCallId}`);
+          return false;
+        }
+      }
+      return true;
+    })
+    // Then, clean AIMessages with dangling tool_calls
+    .map((m) => {
+      if (m._getType() === 'ai' && (m as any).tool_calls?.length > 0) {
+        const toolCalls = (m as any).tool_calls as any[];
+        // Keep only calls that have a matching response anywhere in the state
+        const validToolCalls = toolCalls.filter(tc => allToolResponseIds.has(tc.id));
+
+        if (validToolCalls.length !== toolCalls.length) {
+          console.warn(`⚠️ Supervisor: Stripping ${toolCalls.length - validToolCalls.length} dangling tool_calls.`);
+
+          // If NO calls are valid, remove tool_calls entirely
+          if (validToolCalls.length === 0) {
+            // Use a simple text message instead of tool_calls
+            const newMsg = new AIMessage({
+              content: m.content || 'Processing...',
+              name: (m as any).name,
+            });
+            // CRITICAL: Force remove from additional_kwargs as well
+            if (newMsg.additional_kwargs) {
+              delete (newMsg.additional_kwargs as any).tool_calls;
+            }
+            return newMsg;
+          }
+
+          // Otherwise, keep only the valid ones
+          const validMsg = new AIMessage({
+            content: m.content,
+            name: (m as any).name,
+            tool_calls: validToolCalls,
+          });
+          // Sync additional_kwargs
+          if (validMsg.additional_kwargs) {
+            (validMsg.additional_kwargs as any).tool_calls = validToolCalls;
+          }
+          return validMsg;
+        }
+      }
+      return m;
+    });
+
   const messages = [
     new SystemMessage(combinedSystemContent),
-    ...conversationMessages,
+    ...cleanMessages,
   ];
 
   // If the last message in the slice isn't the user's command (due to system logs stuffing context),
@@ -299,6 +379,53 @@ ${planContext}
   }
 
   try {
+    // FORCE DELEGATION: Check if user is requesting a Bible section update
+    // LLMs sometimes ignore the routing instructions, so we enforce it here
+    const userContent = lastHumanMessage?.content?.toString().toLowerCase() || ''
+    // Comprehensive Bible section keywords - matches detectTargetSection in premise-architect
+    const bibleSectionKeywords = [
+      // Soundtracks
+      'soundtrack', 'music', 'songs', 'tracks', 'playlist', 'theme music',
+      // World Rules
+      'world rules', 'laws', 'rules of the world', 'magic system', 'laws of',
+      // Factions
+      'factions', 'faction', 'power groups', 'organizations', 'groups',
+      // Inspirations
+      'inspirations', 'inspiration', 'references', 'influences', 'books', 'movies', 'games',
+      // World Description
+      'world description', 'atmosphere', 'setting', 'describe the world',
+      // Key Characters
+      'key characters', 'protagonist', 'antagonist', 'main character', 'characters',
+      // Plot Twists
+      'plot twists', 'twists', 'twist', 'surprise',
+      // Episode Roadmap
+      'episode roadmap', 'season arc', 'episode breakdown', 'roadmap', 'season structure',
+      // Generic Bible updates
+      'world bible', 'series bible', 'bible'
+    ]
+
+    const requestsBibleUpdate = bibleSectionKeywords.some(kw => userContent.includes(kw))
+
+    if (requestsBibleUpdate && state.currentPhase === 'premise') {
+      console.log('Supervisor: Detected Bible section request -> Forcing delegation to PremiseArchitect')
+
+      // Create a forced tool call response
+      const delegationMessage = new AIMessage({
+        content: 'Delegating to Premise Architect for World Bible update.',
+        name: 'Showrunner',
+        tool_calls: [{
+          id: `forced-${Date.now()}`,
+          name: 'delegate_to_premise_architect',
+          args: {}
+        }]
+      })
+
+      return {
+        messages: [delegationMessage],
+        awaitingUserInput: false,
+      }
+    }
+
     // Invoke the model with tools bound
     const response = await supervisorModel.invoke(messages)
 
@@ -369,10 +496,10 @@ ${planContext}
       const userCommand = lastHumanMessage?.content?.toString().toLowerCase() || ''
 
       // Auto-advance phase commands
-      if (userCommand.includes('start breaking') || userCommand.includes('move to breaking')) {
+      if (userCommand.includes('start breaking') || userCommand.includes('move to breaking') || userCommand.includes('break into beats') || userCommand.includes('create beats') || (userCommand.includes('beats') && state.currentPhase === 'premise')) {
         const check = PHASE_TRANSITION_CONDITIONS['premise -> breaking']?.(state)
         if (check?.canAdvance && state.currentPhase === 'premise') {
-          console.log('Auto-advancing to breaking phase')
+          console.log('Auto-advancing to breaking phase based on user intent')
           phaseUpdate = { currentPhase: 'breaking' as Phase }
         }
       } else if (userCommand.includes('lock cards') || userCommand.includes('start writing')) {

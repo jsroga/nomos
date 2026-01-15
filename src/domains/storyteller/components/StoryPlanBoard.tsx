@@ -1,5 +1,7 @@
 import { StoryPlan } from '../schemas/agent-schemas'
 import { EpisodePremisePanel } from './EpisodePremisePanel'
+import { Button } from '@/components/ui/button'
+import { CheckCircle } from 'lucide-react'
 
 interface StoryPlanBoardProps {
   storyPlan: StoryPlan | null
@@ -56,6 +58,13 @@ export const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
     title: rawPremise.title || (storyPlan as any)?.title
   } : null;
 
+  // Check if plan is complete (has all required sections)
+  const isPlanComplete = episodePremise && 
+    episodePremise.protagonistHook && 
+    episodePremise.fatalFlaw && 
+    episodePremise.stakes && 
+    episodePremise.inevitableConsequence
+
   return (
     <div className="h-full flex flex-col">
       <EpisodePremisePanel
@@ -90,6 +99,20 @@ export const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
         isGeneratingPoster={isGeneratingPoster}
         isGeneratingStoryboard={isGeneratingStoryboard}
       />
+      
+      {/* Plan Ready Button - Only show when premise is complete */}
+      {isPlanComplete && (
+        <div className="p-4 border-t bg-background/95 backdrop-blur">
+          <Button 
+            onClick={onApprove}
+            className="w-full gap-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white shadow-lg shadow-emerald-500/25"
+            size="lg"
+          >
+            <CheckCircle className="w-5 h-5" />
+            Plan Ready - Proceed to Beats
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

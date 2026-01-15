@@ -9,8 +9,8 @@
  * - Grounding scores
  */
 
-import { useState, useRef, useCallback } from 'react';
-import { Message, AgentAction, AgentQuestion, QuestionSession } from '../types';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { Message, AgentAction, AgentQuestion, QuestionSession, ActionStatus } from '../types';
 import { AgentStatusInfo, AgentStatus } from '../components/AgentLog';
 import { Citation } from '../components/CitationDisplay';
 import { ProgressSection } from '../components/SectionProgress';
@@ -22,6 +22,8 @@ interface UseChatStreamProps {
     onStreamingUpdate?: (data: any) => void;
     onCitationsUpdate?: (citations: Citation[]) => void;
     onGroundingUpdate?: (score: number, details: any) => void;
+    /** Optional key for sessionStorage persistence (e.g., project/episode ID) */
+    persistKey?: string;
 }
 
 export interface StreamState {
@@ -56,8 +58,52 @@ export function useChatStream({
     onStreamingUpdate,
     onCitationsUpdate,
     onGroundingUpdate,
+    persistKey,
 }: UseChatStreamProps = {}) {
-    const [messages, setMessages] = useState<Message[]>(initialMessages);
+    // Get initial messages from sessionStorage if persistKey is provided
+    const getInitialMessages = (): Message[] => {
+        if (persistKey && typeof window !== 'undefined') {
+            try {
+                const stored = sessionStorage.getItem(`chat-messages-${persistKey}`);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        console.log(`📦 [useChatStream] Restored ${parsed.length} messages from sessionStorage`);
+                        return parsed;
+                    }
+                }
+            } catch (e) {
+                console.error('[useChatStream] Failed to restore messages:', e);
+            }
+        }
+        return initialMessages;
+    };
+
+    const [messages, setMessagesInternal] = useState<Message[]>(getInitialMessages);
+    
+    // Persist messages to sessionStorage whenever they change
+    useEffect(() => {
+        if (persistKey && typeof window !== 'undefined' && messages.length > 1) {
+            try {
+                sessionStorage.setItem(`chat-messages-${persistKey}`, JSON.stringify(messages));
+            } catch (e) {
+                console.error('[useChatStream] Failed to persist messages:', e);
+            }
+        }
+    }, [messages, persistKey]);
+    
+    // DEBUG: Wrap setMessages to track all changes
+    const setMessages = useCallback((updater: Message[] | ((prev: Message[]) => Message[])) => {
+        setMessagesInternal(prev => {
+            const next = typeof updater === 'function' ? updater(prev) : updater;
+            console.log(`📝 [useChatStream] setMessages: ${prev.length} -> ${next.length} messages`);
+            if (next.length < prev.length && prev.length > 1) {
+                console.warn('⚠️ [useChatStream] Message count DECREASED!');
+                console.trace('Stack trace');
+            }
+            return next;
+        });
+    }, []);
     const [isSending, setIsSending] = useState(false);
     const [thinkingAgent, setThinkingAgent] = useState<string | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
@@ -134,6 +180,33 @@ export function useChatStream({
                 details,
                 startTime: Date.now(),
             }];
+        });
+    }, []);
+
+    /**
+     * Update action status within a message
+     * Used for the approve/reject flow
+     */
+    const updateActionStatus = useCallback((
+        messageIndex: number,
+        actionIndex: number,
+        newStatus: ActionStatus
+    ) => {
+        console.log(`🔄 [updateActionStatus] Setting msg[${messageIndex}].actions[${actionIndex}].status = ${newStatus}`);
+        setMessagesInternal(prev => {
+            const newMessages = prev.map((msg, mIdx) => {
+                if (mIdx !== messageIndex || !msg.actions) return msg;
+                return {
+                    ...msg,
+                    actions: msg.actions.map((action, aIdx) => 
+                        aIdx === actionIndex 
+                            ? { ...action, status: newStatus } 
+                            : action
+                    )
+                };
+            });
+            console.log(`🔄 [updateActionStatus] Updated messages, action status now:`, newMessages[messageIndex]?.actions?.[actionIndex]?.status);
+            return newMessages;
         });
     }, []);
 
@@ -319,7 +392,10 @@ export function useChatStream({
                                 
                             } else if (data.type === 'action') {
                                 if (onAction) {
-                                    const promise = onAction(data.action);
+                                    // data.action is the full action object with { type, payload, confidence, reasoning }
+                                    const actionObj = data.action;
+                                    console.log('[useChatStream] Action received:', actionObj?.type, actionObj?.payload?.label || actionObj?.payload?.id);
+                                    const promise = onAction(actionObj);
                                     if (pendingActionsRef) pendingActionsRef.current++;
                                     promise.finally(() => {
                                         if (pendingActionsRef) pendingActionsRef.current--;
@@ -364,11 +440,27 @@ export function useChatStream({
                                 setIsAwaitingInput(false);
                                 
                             } else if (data.type === 'error') {
-                                setMessages(prev => [...prev, {
-                                    sender: 'System',
-                                    content: `Error: ${data.message || data.error}`,
-                                    type: 'ai'
-                                }]);
+                                const errorMsg = data.message || data.error || 'Unknown error';
+                                
+                                // Special handling for tool chain corruption
+                                if (errorMsg.includes('tool') && errorMsg.includes('must be')) {
+                                    console.warn('🔄 [useChatStream] Tool chain error detected, clearing session...');
+                                    // Clear persisted messages to reset corrupted state
+                                    if (persistKey && typeof window !== 'undefined') {
+                                        sessionStorage.removeItem(`chat-messages-${persistKey}`);
+                                    }
+                                    setMessages(prev => [...prev, {
+                                        sender: 'System',
+                                        content: '⚠️ Session state was corrupted. Please refresh the page and try again.',
+                                        type: 'ai'
+                                    }]);
+                                } else {
+                                    setMessages(prev => [...prev, {
+                                        sender: 'System',
+                                        content: `Error: ${errorMsg}`,
+                                        type: 'ai'
+                                    }]);
+                                }
                                 // Ensure cleanup on error event
                                 setThinkingAgent(null);
                                 setIsTokenStreaming(false);
@@ -400,6 +492,40 @@ export function useChatStream({
                     }
                 } catch (e) {
                     // Not JSON
+                }
+
+                // NEW: Flush remaining tokens to a message if it's not JSON and looks like narrative text
+                // OR if it's a broken JSON, extract the message part.
+                // This prevents text from vanishing if the stream ends without a formal 'message' event
+                const text = streamingTokensRef.current.trim();
+                if (text) {
+                    let finalContent = text;
+                    
+                    // If it looks like JSON, try to extract the message field even if broken
+                    if (text.startsWith('{')) {
+                        // More robust regex: look for "message" key and capture the string value, 
+                        // handling escaped quotes and cross-line content.
+                        const messageMatch = text.match(/"message"\s*:\s*"((?:[^"\\]|\\.)*)"?/s);
+                        if (messageMatch) {
+                            // Unescape the captured string
+                            finalContent = messageMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n');
+                        } else {
+                            // It's technical JSON without a message, don't flush as narrative
+                            return;
+                        }
+                    }
+
+                    setMessages(prev => {
+                        const lastMsg = prev[prev.length - 1];
+                        // If the last message is already this text (dedupe), don't append
+                        if (lastMsg && lastMsg.content === finalContent) return prev;
+                        
+                        return [...prev, {
+                            sender: thinkingAgent || 'Agent',
+                            content: finalContent,
+                            type: 'ai'
+                        }];
+                    });
                 }
             }
 
@@ -434,9 +560,16 @@ export function useChatStream({
         } catch (error: any) {
             if (error.name !== 'AbortError') {
                 console.error("Failed to send message:", error);
+                // Check for common dev-mode issues
+                const isDevReload = error.message?.includes('network error') || 
+                                    error.message?.includes('incomplete') ||
+                                    error.message?.includes('chunked');
+                const errorMessage = isDevReload
+                    ? 'Connection interrupted (possibly due to Hot Reload). Please try again.'
+                    : 'Failed to send message. Please try again.';
                 setMessages(prev => [...prev, {
                     sender: 'System',
-                    content: 'Failed to send message. Please try again.',
+                    content: errorMessage,
                     type: 'system'
                 }]);
             }
@@ -481,6 +614,9 @@ export function useChatStream({
         // Agent status
         activeAgents,
         updateAgentStatus,
+        
+        // Action approval
+        updateActionStatus,
         
         // Citations
         citations,

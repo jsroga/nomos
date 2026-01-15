@@ -10,7 +10,7 @@
 
 import { ChatOpenAI } from '@langchain/openai'
 import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages'
-import { LoopCreatorState, NextAgent, LoopCreatorPhase, LoopAgentQuestion } from '../graph/state'
+import { LoopCreatorState, NextAgent, LoopCreatorPhase, LoopAgentQuestion, LoopAgentActionType } from '../graph/state'
 import { v4 as uuidv4 } from 'uuid'
 
 const SUPERVISOR_SYSTEM_PROMPT = `You are a Game Loop Design Supervisor - an expert orchestrator for designing compelling gameplay loops.
@@ -21,10 +21,11 @@ You coordinate a team of specialists to help users design game mechanics and loo
 - **Mechanics Designer**: Creates individual game mechanics with inputs/outputs
 - **Balance Analyst**: Evaluates effort/reward balance and identifies issues
 - **Progression Architect**: Designs progression systems and milestones
+- **Market Analyst**: Performs market research, competitor analysis, and viability scoring
 
 ## Your Responsibilities
 1. **Understand Intent**: Parse what the user wants to accomplish
-2. **Route Tasks**: Delegate to the right specialist for the current need
+2. **Route Tasks**: Delegate to the right specialist ONLY when you have a specific task
 3. **Synthesize**: Combine specialist outputs into coherent responses
 4. **Manage Flow**: Progress through design phases appropriately
 5. **Ask Questions**: When context is missing, ask the user
@@ -43,12 +44,70 @@ You coordinate a team of specialists to help users design game mechanics and loo
 You MUST respond with a JSON object:
 {
   "thinking": "Your internal reasoning about what to do",
-  "nextAgent": "supervisor|loop_planner|mechanics_designer|balance_analyst|progression_architect|END",
+  "nextAgent": "loop_planner|mechanics_designer|balance_analyst|progression_architect|market_analyst|END",
   "nextPhase": "current phase or new phase",
-  "message": "Your message to the user (optional if delegating)",
+  "message": "Your message to the user",
   "questions": [{ "id": "uuid", "question": "...", "options": [...], "required": true }],
-  "taskForAgent": "If delegating, what should the agent do"
+  "taskForAgent": "If delegating, the SPECIFIC task for the agent",
+  "actions": [{ "type": "ACTION_TYPE", "payload": {...} }]
 }
+
+## Canvas Actions
+When the user asks to modify the canvas, include actions in your response:
+
+- **ADD_NODE**: Add a new node
+  { "type": "ADD_NODE", "payload": { "id": "unique-id", "label": "Node Name", "description": "...", "nodeType": "challenge|action|reward|feedback" } }
+
+- **REMOVE_NODE**: Remove a specific node
+  { "type": "REMOVE_NODE", "payload": { "id": "node-id-to-remove" } }
+
+- **REMOVE_ALL_NODES**: Clear all nodes from canvas
+  { "type": "REMOVE_ALL_NODES", "payload": {} }
+
+- **MODIFY_NODE**: Update a node's properties
+  { "type": "MODIFY_NODE", "payload": { "id": "node-id", "updates": { "label": "New Name", "description": "..." } } }
+
+- **ADD_EDGE**: Connect two nodes
+  { "type": "ADD_EDGE", "payload": { "source": "source-id", "target": "target-id", "label": "connection label" } }
+
+- **REMOVE_EDGE**: Remove a connection
+  { "type": "REMOVE_EDGE", "payload": { "id": "edge-id" } }
+
+IMPORTANT: Actions are shown to the user for approval before being applied. Always emit actions when the user requests canvas modifications.
+
+## CRITICAL ROUTING RULES
+1. When DELEGATING to a specialist:
+   - Set nextAgent to the specialist (loop_planner, mechanics_designer, etc.)
+   - Provide a BRIEF status message like "Let me have the Mechanics Designer create some game loop nodes..."
+   - DO NOT provide the actual content - the specialist will do that
+   
+2. When specialists COMPLETE their work (comingFromSpecialist=true):
+   - Just provide a brief acknowledgment: "Done! Here's what was created. Let me know if you'd like changes."
+   - DO NOT repeat the specialist's detailed output
+   - Use "END" to wait for user's next request
+
+3. When answering DIRECTLY (no specialist needed):
+   - Provide your response in "message"
+   - Use "END" as nextAgent
+
+4. When ASKING questions:
+   - Use "END" to wait for user response
+
+5. NEVER route to "supervisor" - use "END" instead
+
+6. Route to specialists for these tasks:
+   - "generate nodes/mechanics" → mechanics_designer
+   - "design loops" → loop_planner  
+   - "analyze balance" → balance_analyst
+   - "add progression" → progression_architect
+   - "market analysis" → market_analyst
+
+## DESIGN VALIDATION RULES
+As the Supervisor, you must ensure all design proposals adhere to the "Loop Pattern Mandate":
+- **Pattern**: Challenge ➔ Action ➔ Feedback ➔ Reward.
+- **Connectivity**: Nodes of the same type connect to each other BEFORE moving to the next stage in the sequence.
+- **Timeframes**: Every node MUST have a defined duration/timeframe.
+If a specialist deviates, ask them to realign their proposal to these rules.
 
 ## Current State Context
 {{STATE_CONTEXT}}
@@ -66,36 +125,49 @@ You MUST respond with a JSON object:
  */
 function buildStateContext(state: LoopCreatorState): string {
   const parts: string[] = []
-  
+
   parts.push(`Session: ${state.sessionId}`)
   parts.push(`Phase: ${state.currentPhase}`)
   parts.push(`Round: ${state.roundCount}`)
-  
+
   if (state.gameGenre) parts.push(`Genre: ${state.gameGenre}`)
   if (state.gamePlatform) parts.push(`Platform: ${state.gamePlatform}`)
   if (state.targetAudience) parts.push(`Audience: ${state.targetAudience}`)
   if (state.gameDescription) parts.push(`Description: ${state.gameDescription}`)
-  
-  parts.push(`\nMechanics: ${state.mechanics.length}`)
+
+  // Show current canvas state
+  parts.push(`\n=== CURRENT CANVAS ===`)
+  parts.push(`Mechanics/Nodes: ${state.mechanics.length}`)
   if (state.mechanics.length > 0) {
-    state.mechanics.slice(0, 5).forEach(m => {
-      const desc = m.description ? m.description.slice(0, 50) + '...' : 'No description'
-      parts.push(`  - ${m.name || 'Unnamed'} (${m.type || 'unknown'}): ${desc}`)
+    state.mechanics.forEach(m => {
+      const desc = m.description ? ` - ${m.description.slice(0, 60)}` : ''
+      parts.push(`  • ${m.name} (${m.type})${desc}`)
     })
-    if (state.mechanics.length > 5) {
-      parts.push(`  ... and ${state.mechanics.length - 5} more`)
-    }
+  } else {
+    parts.push(`  (No nodes on canvas yet)`)
   }
-  
-  parts.push(`Connections: ${state.connections.length}`)
-  parts.push(`Loops: ${state.loops.length}`)
+
+  parts.push(`\nConnections: ${state.connections.length}`)
+  if (state.connections.length > 0) {
+    state.connections.forEach(c => {
+      parts.push(`  • ${c.source} → ${c.target}${c.label ? ` (${c.label})` : ''}`)
+    })
+  }
+
+  parts.push(`\nLoops: ${state.loops.length}`)
+  if (state.loops.length > 0) {
+    state.loops.forEach(l => {
+      parts.push(`  • ${l.name} (${l.type}): ${l.description?.slice(0, 50) || 'No description'}`)
+    })
+  }
+
   parts.push(`Progression Systems: ${state.progressionSystems.length}`)
-  
+
   if (state.balanceAnalysis) {
-    parts.push(`Balance Score: ${state.balanceAnalysis.overallScore}/10`)
+    parts.push(`\nBalance Score: ${state.balanceAnalysis.overallScore}/10`)
     parts.push(`Balance Issues: ${state.balanceAnalysis.issues.length}`)
   }
-  
+
   return parts.join('\n')
 }
 
@@ -109,6 +181,7 @@ interface SupervisorResponse {
   message?: string
   questions?: Array<{ id?: string; question: string; options?: string[]; required?: boolean }>
   taskForAgent?: string
+  actions?: Array<{ type: string; payload: any }>
 }
 
 function parseResponse(content: string): SupervisorResponse {
@@ -116,18 +189,28 @@ function parseResponse(content: string): SupervisorResponse {
   const jsonMatch = content.match(/\{[\s\S]*\}/)
   if (jsonMatch) {
     try {
-      return JSON.parse(jsonMatch[0])
+      const parsed = JSON.parse(jsonMatch[0])
+      // Validate nextAgent - if invalid, default to END to prevent loops
+      const validAgents = ['supervisor', 'loop_planner', 'mechanics_designer', 'balance_analyst', 'progression_architect', 'market_analyst', 'END']
+      if (!validAgents.includes(parsed.nextAgent)) {
+        parsed.nextAgent = 'END'
+      }
+      return {
+        ...parsed,
+        actions: parsed.actions || [],
+      }
     } catch {
       // Fall through to defaults
     }
   }
-  
-  // Default response
+
+  // Default response - END to prevent infinite loops
   return {
     thinking: 'Unable to parse structured response',
-    nextAgent: 'supervisor',
+    nextAgent: 'END',
     nextPhase: 'initial',
     message: content,
+    actions: [],
   }
 }
 
@@ -141,36 +224,120 @@ export async function supervisorAgent(
     modelName: state.modelConfig?.model || 'gpt-4o',
     temperature: state.modelConfig?.temperature ?? 0.3,
   })
-  
+
+  // Check if we're returning from a specialist - if so, we should synthesize and END
+  const specialists = ['loop_planner', 'mechanics_designer', 'balance_analyst', 'progression_architect', 'market_analyst']
+  const comingFromSpecialist = state.lastAgent && specialists.includes(state.lastAgent)
+
   // Build system prompt with context
-  const systemPrompt = SUPERVISOR_SYSTEM_PROMPT.replace(
+  let systemPrompt = SUPERVISOR_SYSTEM_PROMPT.replace(
     '{{STATE_CONTEXT}}',
     buildStateContext(state)
   )
-  
+
+  // Add instruction if coming from specialist
+  if (comingFromSpecialist) {
+    systemPrompt += `\n\n## IMPORTANT: You just received results from ${state.lastAgent}
+The specialist has completed their work. You MUST:
+1. Provide a BRIEF acknowledgment (1-2 sentences max) - the specialist's detailed output is already visible to the user
+2. DO NOT repeat or summarize the specialist's output - it's already displayed above your message  
+3. Use "END" as nextAgent to wait for user's next request
+4. Example good response: "Done! I've created some game loop nodes. Check the suggestion panel on the left to approve them, or let me know if you'd like changes."
+5. Example BAD response: Repeating all the nodes, mechanics, and connections the specialist already created.
+DO NOT route to another specialist unless the user explicitly asks for more.`
+  }
+
   // Build messages
   const messages = [
     new SystemMessage(systemPrompt),
     ...state.messages.slice(-10), // Last 10 messages for context
   ]
-  
+
   // Call the model
   const response = await model.invoke(messages)
-  const content = typeof response.content === 'string' 
-    ? response.content 
+  const content = typeof response.content === 'string'
+    ? response.content
     : JSON.stringify(response.content)
-  
+
   const parsed = parseResponse(content)
-  
+
   console.log(`[Supervisor] Thinking: ${parsed.thinking}`)
   console.log(`[Supervisor] Next: ${parsed.nextAgent}, Phase: ${parsed.nextPhase}`)
-  
+  console.log(`[Supervisor] Last agent was: ${state.lastAgent}`)
+
+  // Determine next agent with safeguards against infinite loops
+  let nextAgent = parsed.nextAgent
+
+  // RULE 1: If coming from a specialist, ALWAYS end to show results to user
+  if (comingFromSpecialist) {
+    console.log(`[Supervisor] Coming from specialist ${state.lastAgent} - forcing END`)
+    nextAgent = 'END'
+  }
+  // RULE 2: If supervisor provided a message but routing to self, end
+  else if (parsed.message && (nextAgent === 'supervisor' || !nextAgent)) {
+    console.log(`[Supervisor] Has message but routing to self - forcing END`)
+    nextAgent = 'END'
+  }
+
+  // Extract game references from conversation (like "Disco Elysium", "Fallout 2", etc.)
+  const lastUserMessage = [...state.messages].reverse().find(m => m._getType() === 'human')
+  let referenceGames = [...(state.referenceGames || [])]
+  let gameDescription = state.gameDescription
+
+  if (lastUserMessage) {
+    const msgContent = typeof lastUserMessage.content === 'string'
+      ? lastUserMessage.content
+      : JSON.stringify(lastUserMessage.content)
+
+    // Common game references - extract from message
+    const gamePatterns = [
+      /disco\s*elysium/gi,
+      /case\s*of\s*(?:the\s*)?golden\s*idol/gi,
+      /fallout\s*\d*/gi,
+      /vampire\s*survivors?/gi,
+      /hades/gi,
+      /slay\s*the\s*spire/gi,
+      /balatro/gi,
+      /darkest\s*dungeon/gi,
+      /tarkov/gi,
+      /escape\s*from\s*tarkov/gi,
+      /hunt:?\s*showdown/gi,
+      /stardew\s*valley/gi,
+      /hollow\s*knight/gi,
+      /celeste/gi,
+      /elden\s*ring/gi,
+      /dark\s*souls?\s*\d*/gi,
+      /returnal/gi,
+      /dead\s*cells/gi,
+      /binding\s*of\s*isaac/gi,
+    ]
+
+    for (const pattern of gamePatterns) {
+      const matches = msgContent.match(pattern)
+      if (matches) {
+        for (const match of matches) {
+          const normalized = match.trim()
+          if (!referenceGames.some(g => g.toLowerCase() === normalized.toLowerCase())) {
+            referenceGames.push(normalized)
+          }
+        }
+      }
+    }
+
+    // If user describes a game concept and we don't have a description, capture it
+    if (!gameDescription && msgContent.length > 20) {
+      gameDescription = msgContent
+    }
+  }
+
   // Build result
   const result: Partial<LoopCreatorState> = {
-    nextAgent: parsed.nextAgent,
+    nextAgent: nextAgent as NextAgent,
     currentPhase: parsed.nextPhase,
+    referenceGames: referenceGames.length > (state.referenceGames?.length || 0) ? referenceGames : undefined,
+    gameDescription: gameDescription !== state.gameDescription ? gameDescription : undefined,
   }
-  
+
   // Add message if provided
   if (parsed.message) {
     result.messages = [
@@ -180,7 +347,7 @@ export async function supervisorAgent(
       }),
     ]
   }
-  
+
   // Add questions if provided
   if (parsed.questions && parsed.questions.length > 0) {
     result.pendingQuestions = parsed.questions.map(q => ({
@@ -190,7 +357,17 @@ export async function supervisorAgent(
       required: q.required ?? false,
     }))
   }
-  
+
+  // Add actions if provided (for canvas modifications)
+  if (parsed.actions && parsed.actions.length > 0) {
+    console.log(`[Supervisor] Emitting ${parsed.actions.length} actions:`, parsed.actions.map(a => a.type))
+    result.pendingActions = parsed.actions.map(action => ({
+      type: action.type as LoopAgentActionType,
+      payload: action.payload,
+      confidence: 1.0,
+      reasoning: parsed.thinking,
+    }))
+  }
+
   return result
 }
-

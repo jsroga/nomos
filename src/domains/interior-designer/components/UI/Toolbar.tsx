@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { cn } from '@/lib/utils'
 import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
 import { MousePointer2, BrickWall, Square, Box, Undo2, Redo2, Sparkles, Focus, Droplets, GitCommit, Mountain } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -67,10 +68,7 @@ export const Toolbar: React.FC = () => {
           setMode('SURFACE')
           setActiveSurfaceType('grass')
           break;
-        case 'l': // Keeping L for legacy habits or Water
-          setMode('SURFACE')
-          setActiveSurfaceType('water')
-          break;
+
         case 'r':
           setMode('SURFACE')
           setActiveSurfaceType('road')
@@ -95,76 +93,68 @@ export const Toolbar: React.FC = () => {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex flex-col items-center gap-2 p-2">
-        <ToolButton
-          icon={<MousePointer2 size={20} />}
-          label="Select (V)"
-          isActive={mode === 'SELECT'}
-          onClick={() => setMode('SELECT')}
-        />
+      <div className="flex flex-col items-center gap-3 p-2">
+        <div className="flex flex-col items-center gap-2">
+          <ToolButton
+            icon={<MousePointer2 size={18} className={mode === 'SELECT' ? 'text-indigo-400' : ''} />}
+            label="Select (V)"
+            isActive={mode === 'SELECT'}
+            onClick={() => setMode('SELECT')}
+          />
+
+          <ToolButton
+            icon={<BrickWall size={18} className={mode === 'WALL' ? 'text-indigo-400' : ''} />}
+            label="Draw Walls (W)"
+            isActive={mode === 'WALL'}
+            onClick={() => setMode('WALL')}
+          />
+
+          <ToolButton
+            icon={<Square size={18} className={mode === 'SURFACE' && activeSurfaceType === 'grass' ? 'text-indigo-400' : ''} />}
+            label="Draw Land (G)"
+            isActive={mode === 'SURFACE' && activeSurfaceType === 'grass'}
+            onClick={() => {
+              setMode('SURFACE')
+              setActiveSurfaceType('grass')
+            }}
+          />
+
+          <ToolButton
+            icon={<GitCommit size={18} className={mode === 'SURFACE' && activeSurfaceType === 'road' ? 'text-indigo-400' : ''} />}
+            label="Draw Road (R)"
+            isActive={mode === 'SURFACE' && activeSurfaceType === 'road'}
+            onClick={() => {
+              setMode('SURFACE')
+              setActiveSurfaceType('road')
+              setIsCurved(true)
+            }}
+          />
+
+          <ToolButton
+            icon={<Box size={18} className={mode === 'OBJECT' ? 'text-indigo-400' : ''} />}
+            label="Place Objects (O)"
+            isActive={mode === 'OBJECT'}
+            onClick={() => setMode('OBJECT')}
+          />
+
+          <ToolButton
+            icon={<Sparkles size={18} className={mode === 'SCATTER' ? 'text-indigo-400' : ''} />}
+            label="Scatter Tool (S)"
+            isActive={mode === 'SCATTER'}
+            onClick={() => setMode('SCATTER')}
+          />
+        </div>
+
+        <div className="w-8 h-px bg-white/10 my-1" />
 
         <ToolButton
-          icon={<BrickWall size={20} />}
-          label="Draw Walls (W)"
-          isActive={mode === 'WALL'}
-          onClick={() => setMode('WALL')}
-        />
-
-        <ToolButton
-          icon={<Square size={20} />}
-          label="Draw Land (G)"
-          isActive={mode === 'SURFACE' && activeSurfaceType === 'grass'}
-          onClick={() => {
-            setMode('SURFACE')
-            setActiveSurfaceType('grass')
-          }}
-        />
-
-        <ToolButton
-          icon={<Droplets size={20} />}
-          label="Draw Water (L)"
-          isActive={mode === 'SURFACE' && activeSurfaceType === 'water'}
-          onClick={() => {
-            setMode('SURFACE')
-            setActiveSurfaceType('water')
-          }}
-        />
-
-        <ToolButton
-          icon={<GitCommit size={20} />}
-          label="Draw Road (R)"
-          isActive={mode === 'SURFACE' && activeSurfaceType === 'road'}
-          onClick={() => {
-            setMode('SURFACE')
-            setActiveSurfaceType('road')
-            setIsCurved(true)
-          }}
-        />
-
-        <ToolButton
-          icon={<Box size={20} />}
-          label="Place Objects (O)"
-          isActive={mode === 'OBJECT'}
-          onClick={() => setMode('OBJECT')}
-        />
-
-        <ToolButton
-          icon={<Sparkles size={20} />}
-          label="Scatter Tool (S)"
-          isActive={mode === 'SCATTER'}
-          onClick={() => setMode('SCATTER')}
-        />
-
-        <div className="w-full h-px bg-zinc-900 my-3" />
-
-        <ToolButton
-          icon={<Mountain size={20} />}
+          icon={<Mountain size={18} className={mode === 'TERRAIN' ? 'text-indigo-400' : ''} />}
           label="Terrain & Water (T)"
           isActive={mode === 'TERRAIN'}
           onClick={() => setMode('TERRAIN')}
         />
 
-        <div className="w-full h-px bg-zinc-900 my-3" />
+        <div className="w-8 h-px bg-white/10 my-1" />
 
         <div className="flex flex-col items-center gap-1">
           <Tooltip>
@@ -172,13 +162,14 @@ export const Toolbar: React.FC = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => useInteriorStore.temporal.getState().undo()}
+                className="h-11 w-11 hover:bg-white/10 text-zinc-300 transition-all"
+                onClick={() => undo()}
               >
-                <Undo2 size={20} />
+                <Undo2 size={24} />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right">
-              <p>Undo (Ctrl+Z)</p>
+              <p>Undo (⌘Z)</p>
             </TooltipContent>
           </Tooltip>
 
@@ -187,27 +178,29 @@ export const Toolbar: React.FC = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => useInteriorStore.temporal.getState().redo()}
+                className="h-11 w-11 hover:bg-white/10 text-zinc-300 transition-all"
+                onClick={() => redo()}
               >
-                <Redo2 size={20} />
+                <Redo2 size={24} />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right">
-              <p>Redo (Ctrl+Y)</p>
+              <p>Redo (⌘Y)</p>
             </TooltipContent>
           </Tooltip>
         </div>
 
-        <div className="w-full h-px bg-zinc-900 my-3" />
+        <div className="w-8 h-px bg-white/10 my-1" />
 
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
+              className="h-9 w-9 hover:bg-white/5"
               onClick={() => setCameraResetRequested(true)}
             >
-              <Focus size={20} />
+              <Focus size={18} />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right">
@@ -215,37 +208,52 @@ export const Toolbar: React.FC = () => {
           </TooltipContent>
         </Tooltip>
 
-        <div className="w-full h-px bg-zinc-900 my-3" />
+        <div className="w-8 h-px bg-white/10 my-1" />
 
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-[10px] font-medium">
+        {/* Vertical Level Navigator / Slice Stack */}
+        <div className="flex flex-col items-center gap-3 pt-2">
+          <span className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-1">
             {mode === 'TERRAIN' ? 'Slice' : 'Level'}
           </span>
-          <div className="flex flex-col gap-1">
-            {[0, 1, 2].map(level => (
-              <Tooltip key={level}>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={activeLevel === level ? 'default' : 'outline'}
-                    size="sm"
-                    className="h-6 w-8 text-xs"
-                    onClick={() => setActiveLevel(level)}
-                  >
-                    {level}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <p>{mode === 'TERRAIN' ? `View Slice ${level}` : `Floor ${level} (${level * 3}m)`}</p>
-                </TooltipContent>
-              </Tooltip>
-            ))}
+          <div className="flex flex-col-reverse gap-2">
+            {[0, 1, 2].map(level => {
+              const isActive = activeLevel === level;
+              return (
+                <Tooltip key={level}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setActiveLevel(level)}
+                      className={cn(
+                        "relative w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-500 overflow-hidden border group",
+                        isActive
+                          ? "bg-zinc-100 border-zinc-100 text-zinc-950 shadow-xl shadow-white/5 scale-110 z-10"
+                          : "bg-white/5 border-white/5 text-zinc-500 hover:text-zinc-300 hover:border-white/10"
+                      )}
+                    >
+                      {/* Depth effect for inactive ones */}
+                      {!isActive && (
+                        <div className="absolute inset-0 bg-gradient-to-tr from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      )}
+
+                      <span className="relative z-10 text-[10px] font-black">
+                        L{level}
+                      </span>
+
+                      {/* Active indicator bar */}
+                      {isActive && (
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3 bg-indigo-500 rounded-r-full" />
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p>{mode === 'TERRAIN' ? `Terrain Slice ${level}` : `Level ${level}`}</p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
           </div>
-          <span className="text-[9px] text-muted-foreground mt-1">
-            {activeLevel * 3}m
-          </span>
         </div>
       </div>
     </TooltipProvider>
   )
 }
-

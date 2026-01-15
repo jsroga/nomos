@@ -30,6 +30,9 @@ import {
 import {
   progressionArchitectAgent
 } from '../agents/progression-architect'
+import {
+  marketAnalystAgent
+} from '../agents/market-analyst-wrapper'
 
 // Maximum rounds before forcing termination
 const MAX_ROUNDS = 15
@@ -60,39 +63,68 @@ async function getCheckpointer(): Promise<PostgresSaver | null> {
  * Router function to determine next node
  */
 function routeToNextAgent(state: LoopCreatorState): NextAgent | 'END' {
+  console.log(`[LoopGraph routeToNextAgent] Checking termination conditions...`)
+  
   // Check termination conditions
   if (state.roundCount >= MAX_ROUNDS) {
-    console.log('[LoopGraph] Max rounds reached, ending')
+    console.log('[LoopGraph routeToNextAgent] Max rounds reached, ending')
     return 'END'
   }
   
   if (state.currentPhase === 'complete') {
+    console.log('[LoopGraph routeToNextAgent] Phase is complete, ending')
     return 'END'
   }
   
-  // Check for questions that need user input
-  if (state.pendingQuestions.length > 0) {
+  // If supervisor explicitly wants to delegate to a specialist, do that first
+  // Only pause for questions if nextAgent is END (supervisor wants to wait for user)
+  const nextAgent = state.nextAgent
+  if (nextAgent && nextAgent !== 'END' && nextAgent !== 'supervisor') {
+    console.log(`[LoopGraph routeToNextAgent] Delegating to specialist: ${nextAgent}`)
+    return nextAgent
+  }
+  
+  // Check for questions that need user input (only when not delegating)
+  if (state.pendingQuestions && state.pendingQuestions.length > 0) {
+    console.log('[LoopGraph routeToNextAgent] Has pending questions, ending')
     return 'END' // Pause for user input
   }
   
+  console.log(`[LoopGraph routeToNextAgent] Returning state.nextAgent: ${nextAgent}`)
   // Route based on nextAgent set by supervisor
-  return state.nextAgent
+  return nextAgent
 }
 
 /**
  * Conditional edges function
  */
 function getNextNode(state: LoopCreatorState): string {
+  console.log(`[LoopGraph Router] state.nextAgent=${state.nextAgent}, roundCount=${state.roundCount}, phase=${state.currentPhase}`)
   const next = routeToNextAgent(state)
+  console.log(`[LoopGraph Router] routeToNextAgent returned: ${next}`)
   
-  if (next === 'END') return END
-  if (next === 'supervisor') return 'supervisor'
-  if (next === 'loop_planner') return 'loop_planner'
-  if (next === 'mechanics_designer') return 'mechanics_designer'
-  if (next === 'balance_analyst') return 'balance_analyst'
-  if (next === 'progression_architect') return 'progression_architect'
+  // Handle END conditions
+  if (next === 'END' || next === END) {
+    console.log(`[LoopGraph Router] Routing to END`)
+    return END
+  }
   
-  return 'supervisor' // Default
+  // Route to specific agents
+  let result: string
+  switch (next) {
+    case 'supervisor': result = 'supervisor'; break
+    case 'loop_planner': result = 'loop_planner'; break
+    case 'mechanics_designer': result = 'mechanics_designer'; break
+    case 'balance_analyst': result = 'balance_analyst'; break
+    case 'progression_architect': result = 'progression_architect'; break
+    case 'market_analyst': result = 'market_analyst'; break
+    default:
+      // Unknown agent - end to prevent loops
+      console.log(`[LoopGraph Router] Unknown nextAgent: ${next}, ending`)
+      return END
+  }
+  console.log(`[LoopGraph Router] ✅ Routing to: ${result}`)
+  return result
 }
 
 /**
@@ -104,23 +136,45 @@ function wrapAgent(
 ) {
   return RunnableLambda.from(async (state: LoopCreatorState) => {
     try {
-      console.log(`[LoopGraph] Invoking ${agentName}`)
+      console.log(`[LoopGraph] Invoking ${agentName}...`)
+      const startTime = Date.now()
+      
       const result = await agentFn(state)
+      
+      const duration = Date.now() - startTime
+      console.log(`[LoopGraph] ${agentName} completed in ${duration}ms`)
+      
+      // Track which agent just executed
+      const baseResult = {
+        ...result,
+        lastAgent: agentName as any,
+      }
       
       // Increment round count if this is the supervisor
       if (agentName === 'supervisor') {
         return {
-          ...result,
+          ...baseResult,
           roundCount: state.roundCount + 1,
         }
       }
       
-      return result
+      return baseResult
     } catch (error) {
-      console.error(`[LoopGraph] Agent ${agentName} error:`, error)
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+      console.error(`[LoopGraph] ❌ Agent ${agentName} FAILED:`, errorMsg)
+      console.error(`[LoopGraph] Stack:`, error instanceof Error ? error.stack : 'No stack')
+      
+      // Return error message that will be visible to user
       return {
-        errors: [error instanceof Error ? error.message : 'Unknown error in ' + agentName],
-        nextAgent: 'supervisor' as NextAgent,
+        errors: [errorMsg],
+        nextAgent: 'END' as NextAgent,
+        lastAgent: agentName as any,
+        messages: [
+          new AIMessage({
+            content: `⚠️ Error in ${agentName}: ${errorMsg}. Please try again.`,
+            name: agentName,
+          }),
+        ],
       }
     }
   })
@@ -142,6 +196,7 @@ export async function getLoopCreatorGraph() {
   workflow.addNode('mechanics_designer', wrapAgent(mechanicsDesignerAgent, 'mechanics_designer'))
   workflow.addNode('balance_analyst', wrapAgent(balanceAnalystAgent, 'balance_analyst'))
   workflow.addNode('progression_architect', wrapAgent(progressionArchitectAgent, 'progression_architect'))
+  workflow.addNode('market_analyst', wrapAgent(marketAnalystAgent, 'market_analyst'))
   
   // Set entry point
   workflow.addEdge(START, 'supervisor')
@@ -153,6 +208,7 @@ export async function getLoopCreatorGraph() {
     mechanics_designer: 'mechanics_designer',
     balance_analyst: 'balance_analyst',
     progression_architect: 'progression_architect',
+    market_analyst: 'market_analyst',
     [END]: END,
   })
   
@@ -161,6 +217,7 @@ export async function getLoopCreatorGraph() {
   workflow.addEdge('mechanics_designer', 'supervisor')
   workflow.addEdge('balance_analyst', 'supervisor')
   workflow.addEdge('progression_architect', 'supervisor')
+  workflow.addEdge('market_analyst', 'supervisor')
   
   // Compile with optional checkpointer (sync in LangGraph 1.x)
   const compiled = saver
@@ -182,15 +239,38 @@ export async function streamLoopCreator(
   
   let finalState = initialState
   
+  console.log('[LoopGraph] Starting stream...')
+  
   // LangGraph 1.x requires streamMode to be specified
   for await (const event of await graph.stream(initialState, { ...config, streamMode: 'updates' })) {
+    console.log('[LoopGraph] Received event keys:', Object.keys(event))
+    
     for (const [nodeName, nodeOutput] of Object.entries(event)) {
       const output = nodeOutput as Partial<LoopCreatorState>
+      console.log(`[LoopGraph] Processing node: ${nodeName}, nextAgent: ${output.nextAgent}`)
       
-      // Emit node event
-      onEvent({
-        type: 'node',
+      // Emit node start event with friendly name
+      const friendlyNames: Record<string, string> = {
+        supervisor: 'Showrunner',
+        loop_planner: 'Loop Planner',
+        mechanics_designer: 'Mechanics Designer',
+        balance_analyst: 'Balance Analyst',
+        progression_architect: 'Progression Architect',
+        market_analyst: 'Market Analyst',
+      }
+      
+      const nodeEvent = {
+        type: 'node' as const,
         node: nodeName,
+        agent: friendlyNames[nodeName] || nodeName,
+        timestamp: Date.now(),
+      }
+      onEvent(nodeEvent)
+      
+      // Also emit as token for raw JSON visibility (Activity panel)
+      onEvent({
+        type: 'token',
+        token: JSON.stringify(nodeEvent, null, 2) + '\n',
         timestamp: Date.now(),
       })
       
@@ -204,8 +284,8 @@ export async function streamLoopCreator(
           if (isAI) {
             const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
             console.log(`[LoopGraph] Emitting AI message from ${nodeName}: ${content.slice(0, 100)}...`)
-            onEvent({
-              type: 'message',
+            const msgEvent = {
+              type: 'message' as const,
               node: nodeName,
               agent: nodeName,
               message: {
@@ -215,19 +295,41 @@ export async function streamLoopCreator(
                 name: nodeName,
               },
               timestamp: Date.now(),
+            }
+            onEvent(msgEvent)
+            
+            // Also emit as token for raw JSON visibility
+            onEvent({
+              type: 'token',
+              token: JSON.stringify(msgEvent, null, 2) + '\n',
+              timestamp: Date.now(),
             })
           }
         }
       }
       
-      // Emit action events
+      // Emit action events - pass full action object so handler can use action.type and action.payload
       if (output.pendingActions) {
+        console.log(`[LoopGraph] Emitting ${output.pendingActions.length} actions from ${nodeName}`)
         for (const action of output.pendingActions) {
-          onEvent({
-            type: 'action',
-            action: action.type,
-            payload: action.payload,
+          console.log(`[LoopGraph] Action: ${action.type} - ${action.payload?.label || action.payload?.id || 'no label'}`)
+          const actionEvent = {
+            type: 'action' as const,
+            action: {
+              type: action.type,
+              payload: action.payload,
+              confidence: action.confidence,
+              reasoning: action.reasoning,
+            },
             agent: nodeName,
+            timestamp: Date.now(),
+          }
+          onEvent(actionEvent)
+          
+          // Also emit as token for raw JSON visibility
+          onEvent({
+            type: 'token',
+            token: JSON.stringify(actionEvent, null, 2) + '\n',
             timestamp: Date.now(),
           })
         }
@@ -261,8 +363,12 @@ export interface StreamEvent {
     sender: string
     name: string
   }
-  action?: string
-  payload?: any
+  action?: {
+    type: string
+    payload: any
+    confidence?: number
+    reasoning?: string
+  }
   questions?: any[]
   error?: string
   timestamp: number

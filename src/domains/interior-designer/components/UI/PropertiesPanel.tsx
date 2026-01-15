@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { cn } from '@/lib/utils'
 import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { SurfaceProperties } from './SurfaceProperties'
@@ -56,34 +57,24 @@ export const PropertiesPanel: React.FC = () => {
   const multiSelectedIds = useInteriorStore(state => state.multiSelectedIds)
   const combineWalls = useInteriorStore(state => state.combineWalls)
 
+  // Derive selected surface from selectedId
+  const selectedSurface = selectedId ? surfaces.find(s => s.id === selectedId) : null
+
   // Show Terrain Editor Panel when in TERRAIN mode
   if (mode === 'TERRAIN') {
     return <TerrainEditorPanel />
   }
 
   // Check Surface Selection First
-  const selectedSurface = surfaces.find(s => s.id === selectedId)
   if (selectedSurface) {
     return (
-      <div className="p-4">
-        <SidebarSection title="Properties">
-          <div className="text-[10px] font-medium bg-zinc-900/50 p-2.5 rounded-md mb-6 text-zinc-500 border border-zinc-800/50 flex items-center gap-2">
-            <span className="uppercase tracking-wider opacity-50">ID</span>
-            <span className="font-mono text-zinc-400">{selectedSurface.id.slice(0, 8)}</span>
-          </div>
-
-          {/* Surface Properties handles all controls for surfaces including walls */}
-          <SurfaceProperties />
-
-          {/* AI RETEXTURE for Surfaces (including combined walls) */}
-          <RetextureControls
-            objectId={selectedSurface.id}
-            modelUrl={selectedSurface.texture || ''}
-          />
-        </SidebarSection>
+      <div className="h-full overflow-y-auto">
+        <SurfaceProperties />
       </div>
     )
   }
+
+
 
 
 
@@ -103,19 +94,19 @@ export const PropertiesPanel: React.FC = () => {
     const allAreWalls = selectedWalls.length === multiSelectedIds.length
 
     return (
-      <div className="p-4 space-y-6">
+      <div className="p-6 space-y-8 h-full overflow-y-auto">
         <SidebarSection
           title="Multi-Selection"
-          rightContent={<span className="text-xs font-mono text-muted-foreground ml-2">{multiSelectedIds.length} items</span>}
+          rightContent={<span className="text-[10px] font-bold text-zinc-500 uppercase ml-2">{multiSelectedIds.length} items</span>}
         >
 
           {allAreWalls && (
-            <>
+            <div className="space-y-6 pt-2">
               {/* Batch Height */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs font-medium">
+              <div className="space-y-3">
+                <div className="flex justify-between text-[11px] font-semibold text-zinc-400">
                   <SidebarLabel>Batch Height</SidebarLabel>
-                  <span className="text-muted-foreground">{batchHeight}m</span>
+                  <span className="font-mono text-zinc-500">{batchHeight}m</span>
                 </div>
                 <Slider
                   value={[batchHeight]}
@@ -129,40 +120,40 @@ export const PropertiesPanel: React.FC = () => {
               </div>
 
               {/* Combine Actions */}
-              <div className="pt-4 border-t border-zinc-800 space-y-4">
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs font-medium">
+              <div className="pt-6 border-t border-white/5 space-y-6">
+                <div className="space-y-3">
+                  <div className="flex justify-between text-[11px] font-semibold text-zinc-400">
                     <SidebarLabel>Combine Roundness</SidebarLabel>
-                    <span className="text-muted-foreground">{combineRoundness}</span>
+                    <span className="font-mono text-zinc-500">{combineRoundness}</span>
                   </div>
                   <Slider
                     value={[combineRoundness]}
                     min={0} max={1} step={0.05}
                     onValueChange={(vals) => setCombineRoundness(vals[0])}
                   />
-                  <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <div className="flex justify-between text-[10px] text-zinc-600 font-medium">
                     <span>Sharp</span>
                     <span>Round</span>
                   </div>
                 </div>
 
-                <button
+                <Button
                   onClick={() => combineWalls({ roundness: combineRoundness })}
-                  className="w-full bg-primary text-primary-foreground py-2 rounded text-sm hover:bg-primary/90 flex items-center justify-center gap-2"
+                  className="w-full bg-zinc-100 text-zinc-950 font-bold py-2 rounded-xl text-xs hover:bg-white flex items-center justify-center gap-2 shadow-xl shadow-white/5"
                 >
-                  <Layers size={16} />
+                  <Layers size={14} />
                   Combine Walls
-                </button>
+                </Button>
 
-                <div className="text-xs text-zinc-500 bg-zinc-950/50 p-2 rounded">
+                <div className="text-[10px] text-zinc-500 bg-white/5 p-3 rounded-xl border border-white/5 leading-relaxed">
                   Merges selected walls into a single curved surface with the specified roundness.
                 </div>
               </div>
-            </>
+            </div>
           )}
 
           {!allAreWalls && (
-            <div className="text-xs text-zinc-500 bg-zinc-950/50 p-2 rounded">
+            <div className="text-[10px] text-zinc-500 bg-white/5 p-3 rounded-xl border border-white/5">
               Multiple types selected. Actions limited.
             </div>
           )}
@@ -181,145 +172,156 @@ export const PropertiesPanel: React.FC = () => {
   }
 
   return (
-    <div className="p-4">
-      <SidebarSection title="Properties">
-        {/* Show snap controls in OBJECT mode when nothing selected */}
-        {mode === 'OBJECT' && !selectedId && (
-          <div className="space-y-4">
-            <div className="text-xs font-mono font-bold uppercase tracking-wide text-muted-foreground mb-2">Object Placement</div>
-            <SnapControls />
-          </div>
-        )}
-
-        {!selectedId && mode !== 'OBJECT' && (
-          <div className="text-sm text-muted-foreground">
-            {mode === 'SELECT' ? 'Select an object to edit properties' : `Mode: ${mode}`}
-          </div>
-        )}
-
-        {selectedItem && (
-          <>
-            <div className="text-[10px] font-medium bg-zinc-900/50 p-2.5 rounded-md mb-6 text-zinc-500 border border-zinc-800/50 flex items-center gap-2">
-              <span className="uppercase tracking-wider opacity-50">ID</span>
-              <span className="font-mono text-zinc-400">{selectedItem.id.slice(0, 8)}</span>
+    <div className="p-6 h-full overflow-y-auto">
+      <SidebarSection title="Element Properties">
+        <div className="space-y-8 pt-2">
+          {/* Show snap controls in OBJECT mode when nothing selected */}
+          {mode === 'OBJECT' && !selectedId && (
+            <div className="space-y-6">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4">Object Placement</div>
+              <SnapControls />
             </div>
+          )}
 
-            {/* Color/Texture Input */}
-            <div>
-              <SidebarLabel className="mb-1">Color / Texture</SidebarLabel>
-              <input
-                type="text"
-                className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md py-2 px-3 text-xs text-zinc-300 focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-all placeholder:text-zinc-600"
-                value={isObject(selectedItem) ? selectedItem.modelUrl : selectedItem.texture || ''}
-                placeholder="#ffffff or url"
-                onChange={e => {
-                  const val = e.target.value
-                  if (isWall(selectedItem)) updateWall(selectedId!, { texture: val })
-                  else if (isFloor(selectedItem)) updateFloor(selectedId!, { texture: val })
-                  else if (isObject(selectedItem)) updateObject(selectedId!, { modelUrl: val })
-                }}
-              />
+          {!selectedId && mode !== 'OBJECT' && (
+            <div className="text-sm text-zinc-500 italic">
+              {mode === 'SELECT' ? 'Select an object to edit properties' : `Mode: ${mode}`}
             </div>
+          )}
 
-            {/* Height Input (Walls only) */}
-            {isWall(selectedItem) && (
-              <div>
-                <SidebarLabel className="mb-1">Height</SidebarLabel>
+          {selectedItem && (
+            <div className="space-y-8">
+              <div className="text-[10px] font-bold bg-white/5 p-3 rounded-xl text-zinc-400 border border-white/5 flex items-center justify-between">
+                <span className="uppercase tracking-widest opacity-50">Reference ID</span>
+                <span className="font-mono text-zinc-100">{selectedItem.id.slice(0, 8)}</span>
+              </div>
+
+              {/* Color/Texture Input */}
+              <div className="space-y-2">
+                <SidebarLabel className="text-zinc-400 font-semibold text-[11px]">Color / Texture</SidebarLabel>
                 <input
-                  type="number"
-                  className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md py-2 px-3 text-xs text-zinc-300 focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-all"
-                  value={selectedItem.height}
-                  onChange={e => updateWall(selectedId!, { height: Number(e.target.value) })}
+                  type="text"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-xs text-zinc-100 focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all placeholder:text-zinc-600"
+                  value={isObject(selectedItem) ? selectedItem.modelUrl : selectedItem.texture || ''}
+                  placeholder="#ffffff or url"
+                  onChange={e => {
+                    const val = e.target.value
+                    if (isWall(selectedItem)) updateWall(selectedId!, { texture: val })
+                    else if (isFloor(selectedItem)) updateFloor(selectedId!, { texture: val })
+                    else if (isObject(selectedItem)) updateObject(selectedId!, { modelUrl: val })
+                  }}
                 />
               </div>
-            )}
 
-
-            {/* Object Transform Controls */}
-            {isObject(selectedItem) && (
-              <div className="space-y-5 pt-4 border-t border-zinc-800/50 mt-4">
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-3">Transform Settings</h3>
-
-                <SnapControls />
-
-                {/* Mode Switcher */}
-                <div className="flex bg-zinc-900 p-1 rounded-md mb-4 border border-zinc-800">
-                  <button
-                    className={`flex-1 flex items-center justify-center py-1.5 rounded-md text-xs transition-all ${transformMode === 'translate'
-                      ? 'bg-background shadow-sm text-foreground font-medium'
-                      : 'text-muted-foreground hover:bg-background/50'
-                      }`}
-                    onClick={() => setTransformMode('translate')}
-                    title="Move (G)"
-                  >
-                    <Move size={12} className="mr-1.5" />
-                    Move
-                  </button>
-                  <button
-                    className={`flex-1 flex items-center justify-center py-1.5 rounded-md text-xs transition-all ${transformMode === 'rotate'
-                      ? 'bg-background shadow-sm text-foreground font-medium'
-                      : 'text-muted-foreground hover:bg-background/50'
-                      }`}
-                    onClick={() => setTransformMode('rotate')}
-                    title="Rotate (R)"
-                  >
-                    <RotateCw size={12} className="mr-1.5" />
-                    Rotate
-                  </button>
-                  <button
-                    className={`flex-1 flex items-center justify-center py-1.5 rounded-md text-xs transition-all ${transformMode === 'scale'
-                      ? 'bg-background shadow-sm text-foreground font-medium'
-                      : 'text-muted-foreground hover:bg-background/50'
-                      }`}
-                    onClick={() => setTransformMode('scale')}
-                    title="Scale (S)"
-                  >
-                    <Maximize size={12} className="mr-1.5" />
-                    Scale
-                  </button>
-                </div>
-
-                {/* Height Slider - Shows when scale mode is active */}
-                {transformMode === 'scale' && (
-                  <HeightScaleControl
-                    objectId={selectedItem.id}
-                    currentScale={selectedItem.scale}
-                    onScaleChange={(newScale) => updateObject(selectedItem.id, { scale: newScale })}
+              {/* Height Input (Walls only) */}
+              {isWall(selectedItem) && (
+                <div className="space-y-2">
+                  <SidebarLabel className="text-zinc-400 font-semibold text-[11px]">Height</SidebarLabel>
+                  <input
+                    type="number"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-xs text-zinc-100 focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all"
+                    value={selectedItem.height}
+                    onChange={e => updateWall(selectedId!, { height: Number(e.target.value) })}
                   />
-                )}
-              </div>
-            )}
+                </div>
+              )}
 
-            {/* RETEXTURE UI (Placement Update: Above Delete) */}
-            {/* Enable for Objects AND Walls (though Walls might fail if no modelUrl, we'll handle gracefully) */}
-            {(isObject(selectedItem) || isWall(selectedItem)) && (
-              <RetextureControls
-                objectId={selectedItem.id}
-                modelUrl={isObject(selectedItem) ? selectedItem.modelUrl : (selectedItem.texture || '')}
-              />
-            )}
 
-            {/* TEXT TO 3D UI - Generate new 3D object from text prompt */}
-            {isObject(selectedItem) && (
-              <TextTo3DControls
-                objectId={selectedItem.id}
-                onModelGenerated={(modelUrl) => updateObject(selectedItem.id, { modelUrl, isLoading: false })}
-              />
-            )}
+              {/* Object Transform Controls */}
+              {isObject(selectedItem) && (
+                <div className="space-y-6 pt-6 border-t border-white/5">
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Transform Settings</h3>
 
-            <button
-              onClick={handleDelete}
-              className="w-full bg-destructive text-destructive-foreground py-2 rounded text-sm hover:bg-destructive/90"
-            >
-              Delete
-            </button>
-          </>
-        )}
+                  <SnapControls />
+
+                  {/* Mode Switcher */}
+                  <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                    <button
+                      className={cn(
+                        "flex-1 flex items-center justify-center py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                        transformMode === 'translate'
+                          ? 'bg-zinc-100 text-zinc-950 shadow-lg'
+                          : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                      )}
+                      onClick={() => setTransformMode('translate')}
+                      title="Move (G)"
+                    >
+                      <Move size={12} className="mr-1.5" />
+                      Move
+                    </button>
+                    <button
+                      className={cn(
+                        "flex-1 flex items-center justify-center py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                        transformMode === 'rotate'
+                          ? 'bg-zinc-100 text-zinc-950 shadow-lg'
+                          : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                      )}
+                      onClick={() => setTransformMode('rotate')}
+                      title="Rotate (R)"
+                    >
+                      <RotateCw size={12} className="mr-1.5" />
+                      Rotate
+                    </button>
+                    <button
+                      className={cn(
+                        "flex-1 flex items-center justify-center py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                        transformMode === 'scale'
+                          ? 'bg-zinc-100 text-zinc-950 shadow-lg'
+                          : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                      )}
+                      onClick={() => setTransformMode('scale')}
+                      title="Scale (S)"
+                    >
+                      <Maximize size={12} className="mr-1.5" />
+                      Scale
+                    </button>
+                  </div>
+
+                  {/* Height Slider - Shows when scale mode is active */}
+                  {transformMode === 'scale' && (
+                    <HeightScaleControl
+                      objectId={selectedItem.id}
+                      currentScale={selectedItem.scale}
+                      onScaleChange={(newScale) => updateObject(selectedItem.id, { scale: newScale })}
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* RETEXTURE UI */}
+              {(isObject(selectedItem) || isWall(selectedItem)) && (
+                <div className="pt-6 border-t border-white/5">
+                  <RetextureControls
+                    objectId={selectedItem.id}
+                    modelUrl={isObject(selectedItem) ? selectedItem.modelUrl : (selectedItem.texture || '')}
+                  />
+                </div>
+              )}
+
+              {/* TEXT TO 3D UI */}
+              {isObject(selectedItem) && (
+                <div className="pt-6 border-t border-white/5">
+                  <TextTo3DControls
+                    objectId={selectedItem.id}
+                    onModelGenerated={(modelUrl) => updateObject(selectedItem.id, { modelUrl, isLoading: false })}
+                  />
+                </div>
+              )}
+
+              <Button
+                onClick={handleDelete}
+                variant="ghost"
+                className="w-full text-red-400 hover:text-red-300 hover:bg-red-500/10 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all"
+              >
+                Delete Object
+              </Button>
+            </div>
+          )}
+        </div>
       </SidebarSection>
     </div>
   )
 }
-
 // Snap Controls Component (used in both OBJECT mode and when object selected)
 function SnapControls() {
   const lockY = useInteriorStore(state => state.lockY)
