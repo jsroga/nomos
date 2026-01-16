@@ -1,4 +1,13 @@
 import { BeatCard, CharacterState, Setup } from '../graph/state'
+import {
+  StoryPlan,
+  WorldRule,
+  Faction,
+  SoundtrackTrack,
+  InspirationItem,
+  KeyCharacter,
+  EpisodePremise,
+} from '../schemas/agent-schemas'
 import { QuestionType, QuestionUrgency, QuestionStatus, ActionStatus, MergeMode } from '../enums'
 
 // ============================================
@@ -6,16 +15,20 @@ import { QuestionType, QuestionUrgency, QuestionStatus, ActionStatus, MergeMode 
 // ============================================
 
 export type AgentAction = // Beat Operations
-(| { type: 'CREATE_BEAT'; payload: Partial<BeatCard> & { logline: string } }
-  | { type: 'UPDATE_BEAT'; payload: { beatId: string; updates: Partial<BeatCard> } }
-  | { type: 'DELETE_BEAT'; payload: { beatId: string } }
-  | { type: 'REORDER_BEATS'; payload: { beatIds: string[] } }
-  | { type: 'LOCK_BEAT_BOARD'; payload: { episodeId: string } }
+  (
+    | { type: 'CREATE_BEAT'; payload: Partial<BeatCard> & { logline: string } }
+    | { type: 'UPDATE_BEAT'; payload: { beatId: string; updates: Partial<BeatCard> } }
+    | { type: 'DELETE_BEAT'; payload: { beatId: string } }
+    | { type: 'REORDER_BEATS'; payload: { beatIds: string[] } }
+    | { type: 'LOCK_BEAT_BOARD'; payload: { episodeId: string } }
 
-  // Character Operations
-  | { type: 'CREATE_CHARACTER'; payload: { name: string; role: string; description?: string } }
-  | { type: 'UPDATE_CHARACTER'; payload: { characterId: string; updates: Record<string, any> } }
-  | {
+    // Character Operations
+    | { type: 'CREATE_CHARACTER'; payload: { name: string; role: string; description?: string } }
+    | {
+      type: 'UPDATE_CHARACTER'
+      payload: { characterId: string; updates: Partial<CharacterState> }
+    }
+    | {
       type: 'UPDATE_CHARACTER_METRICS'
       payload: {
         characterId: string
@@ -36,109 +49,90 @@ export type AgentAction = // Beat Operations
         reason?: string
       }
     }
-  | {
+    | {
       type: 'UPDATE_STRESS_LEVEL'
       payload: { characterId: string; delta: number; reason?: string }
     } // Deprecated: use UPDATE_CHARACTER_METRICS
-  | { type: 'ADD_KNOWLEDGE'; payload: { characterId: string; knowledge: string } }
+    | { type: 'ADD_KNOWLEDGE'; payload: { characterId: string; knowledge: string } }
 
-  // Script Operations
-  | { type: 'UPDATE_SCRIPT'; payload: { content: string; beatId?: string } }
-  | { type: 'INSERT_SCRIPT_SECTION'; payload: { afterBeatId: string; content: string } }
-  | { type: 'REVISE_SCRIPT_SECTION'; payload: { beatId: string; newContent: string } }
+    // Script Operations
+    | { type: 'UPDATE_SCRIPT'; payload: { content: string; beatId?: string } }
+    | { type: 'INSERT_SCRIPT_SECTION'; payload: { afterBeatId: string; content: string } }
+    | { type: 'REVISE_SCRIPT_SECTION'; payload: { beatId: string; newContent: string } }
 
-  // Story Bible Operations
-  | {
+    // Story Bible Operations
+    | {
       type: 'UPDATE_SERIES_BIBLE'
       payload: {
         genre?: string
         tone?: string
         themes?: string[]
-        worldRules?: any[] // Relaxed to support WorldRule objects or strings
-        factions?: any[] // Support Faction objects
-        keyCharacters?: any[]
-        storyPlan?: any // Support full story plan object
+        worldRules?: WorldRule[]
+        factions?: Faction[]
+        keyCharacters?: KeyCharacter[]
+        storyPlan?: Partial<StoryPlan>
       }
     }
-  | { type: 'ADD_WORLD_RULE'; payload: { rule: string } }
-  | { type: 'ADD_SETUP'; payload: { description: string; beatId: string } }
-  | { type: 'RESOLVE_SETUP'; payload: { setupId: string; payoffBeatId: string } }
+    | { type: 'ADD_WORLD_RULE'; payload: { rule: string } }
+    | { type: 'ADD_SETUP'; payload: { description: string; beatId: string } }
+    | { type: 'RESOLVE_SETUP'; payload: { setupId: string; payoffBeatId: string } }
 
-  // Partial Bible Update Operations (Smart Merge)
-  | {
+    // Partial Bible Update Operations (Smart Merge)
+    | {
       type: 'UPDATE_WORLD_RULES'
       payload: {
-        rules: Array<{
-          category: string
-          rule: string
-          consequence: string
-          exceptions?: string | null
-        }>
+        rules: WorldRule[]
         mergeMode: 'replace' | 'merge' | 'smart'
       }
     }
-  | {
+    | {
       type: 'UPDATE_FACTIONS'
       payload: {
-        factions: Array<{
-          id: string
-          name: string
-          ideology: string
-          goals: string[]
-          resources: string
-          weaknesses?: string | null
-          rivals?: string[] | null
-        }>
+        factions: Faction[]
         mergeMode: 'replace' | 'merge' | 'smart'
       }
     }
-  | {
+    | {
       type: 'UPDATE_INSPIRATIONS'
       payload: {
         inspirations: {
-          books?: Array<string | { title: string; description: string }>
-          movies?: Array<string | { title: string; description: string }>
-          games?: Array<string | { title: string; description: string }>
+          books?: Array<string | InspirationItem>
+          movies?: Array<string | InspirationItem>
+          games?: Array<string | InspirationItem>
         }
         mergeMode?: 'replace' | 'merge'
       }
     }
-  | {
+    | {
       type: 'UPDATE_WORLD_DESCRIPTION'
       payload: { description: string }
     }
-  | {
+    | {
       type: 'UPDATE_MOOD_SOUNDTRACK'
       payload: { moodSoundtrack: string }
     }
-  | {
+    | {
       type: 'UPDATE_SOUNDTRACKS'
       payload: {
-        soundtracks: Array<{ title: string; artist: string; youtubeUrl: string; mood?: string }>
+        soundtracks: SoundtrackTrack[]
         mergeMode?: 'replace' | 'merge'
       }
     }
-  | {
+    | {
       type: 'UPDATE_PLOT_TWISTS'
       payload: {
         plotTwists: string[]
         mergeMode?: 'replace' | 'merge'
       }
     }
-  | {
+    | {
       type: 'UPDATE_KEY_CHARACTERS'
       payload: {
-        keyCharacters: Array<{
-          name: string
-          role: string
-          archetype: string
-          motivation: string
-          factionId?: string | null
-        }>
+        keyCharacters: KeyCharacter[]
         mergeMode: 'replace' | 'merge' | 'smart'
       }
     }
-  | {
+    | {
       type: 'UPDATE_EPISODE_ROADMAP'
       payload: {
         sequences: Array<{
@@ -152,46 +146,63 @@ export type AgentAction = // Beat Operations
         mergeMode?: 'replace' | 'merge'
       }
     }
-  | {
+    | {
       type: 'UPDATE_ROADMAP_SUMMARY'
       payload: {
         executiveSummary: string
       }
     }
-  | {
+    | {
       type: 'UPDATE_EPISODE_PREMISE'
       payload: {
         episodeId?: string
-        premise: {
-          // Core identification
-          title?: string
-          logline?: string
-          // Ozymandias Framework fields
-          theHook?: string
-          theTurn?: string
-          theAftermath?: string
-          // Character-focused fields
-          protagonistHook?: string | null
-          fatalFlaw?: string
-          stakes?: string
-          transformation?: string
-          inevitableConsequence?: string
-          // Meta
-          thematicFocus?: string
-          charactersInvolved?: string[]
-        }
+        premise: Partial<EpisodePremise>
       }
     }
-  | {
+    | {
       type: 'GENERATE_POSTER'
       payload: {
         episodeId: string
         prompt: string
       }
     }
-) & {
-  status?: 'pending' | 'executing' | 'committed' | 'rejected'
-}
+    | {
+      type: 'SET_GENRE_AND_TONE'
+      payload: {
+        genre: string
+        tone: string
+        styleReference?: string
+      }
+    }
+    | { type: 'ADD_THEME'; payload: { theme: string } }
+    | { type: 'REMOVE_THEME'; payload: { theme: string } }
+    | {
+      type: 'CREATE_LOCATION'
+      payload: {
+        name: string
+        description: string
+        type?: string
+        importance?: string
+      }
+    }
+    | {
+      type: 'UPDATE_LOCATION'
+      payload: {
+        locationId: string
+        updates: Record<string, any>
+      }
+    }
+    | {
+      type: 'ADD_LORE_ENTRY'
+      payload: {
+        title: string
+        content: string
+        category?: string
+      }
+    }
+  ) & {
+    status?: 'pending' | 'executing' | 'committed' | 'rejected'
+  }
 
 // ============================================
 // AGENT QUESTIONS - Interactive user prompts

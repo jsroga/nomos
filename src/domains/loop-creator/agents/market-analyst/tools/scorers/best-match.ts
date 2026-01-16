@@ -375,10 +375,12 @@ Returns:
         viabilityReason = `Design has ${primaryArchetype.archetypeName} elements but needs enhancement to fully capture that audience.`
       } else if (primaryArchetype.score >= 25) {
         viabilityVerdict = 'niche'
-        viabilityReason = 'Design doesn\'t strongly match any reference archetype. May need unique positioning or hybrid appeal.'
+        viabilityReason =
+          'Design doesn\'t strongly match any reference archetype. May need unique positioning or hybrid appeal.'
       } else {
         viabilityVerdict = 'unclear'
-        viabilityReason = 'Design needs more definition. Consider which archetype you want to target and add relevant patterns.'
+        viabilityReason =
+          'Design needs more definition. Consider which archetype you want to target and add relevant patterns.'
       }
 
       // Generate recommendation

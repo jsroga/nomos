@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { put } from '@vercel/blob'
 import sharp from 'sharp'
+import { withAuth, withRateLimit, verifyProjectAccess, type AuthenticatedRequest } from '@/lib/api-utils'
 
 const TILE_SIZE = 1024
 
-export async function POST(req: NextRequest) {
-  try {
-    const formData = await req.formData()
+export const POST = withRateLimit(
+  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
+    const formData = await request.formData()
     const file = formData.get('file') as File
     const projectId = formData.get('projectId') as string
     const x = parseInt(formData.get('x') as string)
@@ -20,6 +20,12 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Verify project access
+    const hasAccess = await verifyProjectAccess(supabase, projectId)
+    if (!hasAccess) {
+      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+    }
+
     // Validate file type
     const validTypes = ['image/png', 'image/jpeg', 'image/webp']
     if (!validTypes.includes(file.type)) {
@@ -29,23 +35,16 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Read file buffer
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
-    // Resize to 512x512 (1:1 aspect ratio)
     const resizedBuffer = await sharp(buffer)
-      .resize(TILE_SIZE, TILE_SIZE, {
-        fit: 'cover', // Crop to fill 512x512
-        position: 'center',
-      })
+      .resize(TILE_SIZE, TILE_SIZE, { fit: 'cover', position: 'center' })
       .png()
       .toBuffer()
 
-    // Generate filename
     const filename = `tiles/${projectId}/${x}_${y}_${Date.now()}.png`
 
-    // Upload to Vercel Blob
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       return NextResponse.json({ error: 'BLOB_READ_WRITE_TOKEN not configured' }, { status: 500 })
     }
@@ -56,12 +55,7 @@ export async function POST(req: NextRequest) {
       contentType: 'image/png',
     })
 
-    // Save to database
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-
+    // Save to database using authenticated client (RLS enforced)
     const { data: tile, error } = await supabase
       .from('tiles')
       .upsert(
@@ -70,7 +64,7 @@ export async function POST(req: NextRequest) {
           x,
           y,
           tile_prompt: `Uploaded tile at (${x}, ${y})`,
-          image_filename: blob.url, // Store the full Vercel Blob URL
+          image_filename: blob.url,
         },
         { onConflict: 'project_id,x,y' }
       )
@@ -82,13 +76,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({
-      success: true,
-      url: blob.url,
-      tile,
-    })
-  } catch (error: any) {
-    console.error('Error uploading tile:', error)
-    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 })
-  }
-}
+    return NextResponse.json({ success: true, url: blob.url, tile })
+  }),
+  { maxRequests: 30, windowMs: 60000 }
+)

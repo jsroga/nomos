@@ -16,6 +16,16 @@ export class FidelityService {
   private pollingIntervals: Map<string, NodeJS.Timeout> = new Map()
 
   /**
+   * Cleanup all polling intervals - call on unmount to prevent memory leaks
+   */
+  cleanup() {
+    for (const [runId, timeout] of this.pollingIntervals) {
+      clearTimeout(timeout)
+    }
+    this.pollingIntervals.clear()
+  }
+
+  /**
    * Enhance tile fidelity using Gemini with a style prompt
    */
   async enhance(
@@ -131,53 +141,84 @@ export class FidelityService {
   }
 
   /**
-   * Start polling for task status
+   * Start adaptive polling for task status
    */
   private startPolling(runState: FidelityRunState, opId: string) {
-    const pollInterval = setInterval(async () => {
+    let consecutiveErrors = 0
+    let lastProgress = 0
+    let stableProgressCount = 0
+
+    const poll = async () => {
       try {
         const statusResponse = await fetch(`/api/trigger-fidelity/status?runId=${runState.runId}`)
         const statusData = await statusResponse.json()
 
-        console.log('Fidelity poll response:', {
-          status: statusData.status,
-          metadata: statusData.metadata,
-          error: statusData.error,
-        })
-
         if (statusResponse.status === 404) {
-          console.warn('Fidelity run not found, clearing state')
-          this.clearRunState(runState, opId)
+          consecutiveErrors++
+          if (consecutiveErrors > 5) {
+            console.warn('Fidelity run not found after retries, clearing state')
+            this.clearRunState(runState, opId)
+            return
+          }
+          this.scheduleNextPoll(runState.runId, poll, 2000)
           return
         }
 
+        consecutiveErrors = 0
         const progress = statusData.metadata?.progress || 0
         const stage = statusData.metadata?.stage || 'unknown'
 
-        // Update global status with progress
+        if (progress === lastProgress) {
+          stableProgressCount++
+        } else {
+          stableProgressCount = 0
+          lastProgress = progress
+        }
+
         useGlobalStatusStore.getState().updateOperation(opId, {
           details: `(${runState.tileX}, ${runState.tileY}) ${stage} ${progress}%`,
         })
 
-        // Check if completed
         if (statusData.status === 'COMPLETED') {
           console.log('Fidelity enhancement completed:', statusData.output)
           await this.handleCompletion(runState, statusData.output, opId)
           return
         }
 
-        // Check if failed
         if (!ACTIVE_TASK_STATUSES.includes(statusData.status)) {
           console.error('Fidelity enhancement failed:', statusData.error || statusData.status)
           this.clearRunState(runState, opId)
           return
         }
+
+        let nextInterval = POLLING_INTERVALS.DEFAULT
+        if (stableProgressCount === 0) {
+          nextInterval = 2000
+        } else if (stableProgressCount < 3) {
+          nextInterval = POLLING_INTERVALS.DEFAULT
+        } else {
+          nextInterval = POLLING_INTERVALS.SLOW
+        }
+
+        this.scheduleNextPoll(runState.runId, poll, nextInterval)
       } catch (error) {
         console.error('Status polling error:', error)
+        consecutiveErrors++
+        const backoffInterval = Math.min(consecutiveErrors * 3000, 30000)
+        this.scheduleNextPoll(runState.runId, poll, backoffInterval)
       }
-    }, POLLING_INTERVALS.DEFAULT) // Poll every 5 seconds
+    }
 
-    this.pollingIntervals.set(runState.runId, pollInterval)
+    poll()
+  }
+
+  private scheduleNextPoll(runId: string, pollFn: () => Promise<void>, interval: number) {
+    const existingTimeout = this.pollingIntervals.get(runId)
+    if (existingTimeout) {
+      clearTimeout(existingTimeout)
+    }
+    const timeoutId = setTimeout(pollFn, interval)
+    this.pollingIntervals.set(runId, timeoutId)
   }
 
   /**
@@ -271,10 +312,10 @@ export class FidelityService {
    * Clear run state and stop polling
    */
   private clearRunState(runState: FidelityRunState, opId: string) {
-    // Stop polling
-    const interval = this.pollingIntervals.get(runState.runId)
-    if (interval) {
-      clearInterval(interval)
+    // Stop polling (now uses timeouts instead of intervals)
+    const timeout = this.pollingIntervals.get(runState.runId)
+    if (timeout) {
+      clearTimeout(timeout)
       this.pollingIntervals.delete(runState.runId)
     }
 

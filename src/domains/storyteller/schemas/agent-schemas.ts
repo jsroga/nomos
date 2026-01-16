@@ -175,6 +175,16 @@ export const InspirationItemSchema = z.object({
 
 export type InspirationItem = z.infer<typeof InspirationItemSchema>
 
+export const KeyCharacterSchema = z.object({
+  name: z.string(),
+  role: z.string(),
+  archetype: z.string(),
+  motivation: z.string(),
+  factionId: z.string().nullable(),
+})
+
+export type KeyCharacter = z.infer<typeof KeyCharacterSchema>
+
 export const StoryPlanSchema = z.object({
   title: z.string(),
   genre: z.string(),
@@ -182,15 +192,7 @@ export const StoryPlanSchema = z.object({
   centralQuestion: z.string(),
   worldRules: z.array(WorldRuleSchema),
   factions: z.array(FactionSchema),
-  keyCharacters: z.array(
-    z.object({
-      name: z.string(),
-      role: z.string(),
-      archetype: z.string(),
-      motivation: z.string(),
-      factionId: z.string().nullable(),
-    })
-  ),
+  keyCharacters: z.array(KeyCharacterSchema),
   protagonist: z
     .object({
       name: z.string(),
@@ -252,6 +254,16 @@ export const StoryPlanSchema = z.object({
   // Wireframe / Storyboard
   storyboardUrl: z.string().nullable().optional(),
   storyboardPrompt: z.string().nullable().optional(),
+
+  // UI / Permission State
+  isLocked: z.boolean().nullable().optional(),
+  lockedBy: z.string().nullable().optional(),
+  lockedAt: z.date().nullable().optional(),
+
+  // Legacy / Reducer compatibility fields
+  styleReference: z.string().nullable().optional(),
+  locations: z.array(z.any()).nullable().optional(),
+  storyPlan: z.lazy(() => StoryPlanSchema.partial()).nullable().optional(),
 })
 
 // ============================================

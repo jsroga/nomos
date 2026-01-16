@@ -300,10 +300,12 @@ export const ActionSuggestion: React.FC<ActionSuggestionProps> = ({
 
           {/* Action Description / Preview Toggle */}
           <div className="relative">
-            <p className={cn(
-              "text-xs text-muted-foreground leading-relaxed transition-all duration-200",
-              showPreview ? "" : "line-clamp-2"
-            )}>
+            <p
+              className={cn(
+                'text-xs text-muted-foreground leading-relaxed transition-all duration-200',
+                showPreview ? '' : 'line-clamp-2'
+              )}
+            >
               {display.description}
             </p>
             {display.description && display.description.length > 100 && (
@@ -360,6 +362,5 @@ export const ActionSuggestion: React.FC<ActionSuggestionProps> = ({
     </div>
   )
 }
-
 
 export default ActionToast

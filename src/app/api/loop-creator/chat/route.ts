@@ -13,8 +13,10 @@ import {
 } from '@/domains/loop-creator/graph/loop-graph'
 import { createInitialLoopState, LoopCreatorState } from '@/domains/loop-creator/graph/state'
 import { HumanMessage } from '@langchain/core/messages'
+import { requireAuth } from '@/lib/auth'
+import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
 
-export const maxDuration = 120 // 2 minutes max
+export const maxDuration = 120
 
 interface ChatRequest {
   message: string
@@ -34,9 +36,6 @@ interface ChatRequest {
   }
 }
 
-/**
- * Helper to safely encode SSE data
- */
 function formatSSE(data: any): string {
   const jsonStr = JSON.stringify(data)
   return `data: ${jsonStr}\n\n`
@@ -44,6 +43,14 @@ function formatSSE(data: any): string {
 
 export async function POST(req: NextRequest) {
   try {
+    const { session } = await requireAuth()
+    if (!session) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
     const body: ChatRequest = await req.json()
     const { message, projectId, threadId, context, modelConfig } = body
 
@@ -54,7 +61,14 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Create SSE stream
+    // Verify project access
+    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+      return new Response(JSON.stringify({ error: 'Project not found or access denied' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
     const stream = new ReadableStream({
       async start(controller) {
         let isClosed = false
@@ -80,10 +94,8 @@ export async function POST(req: NextRequest) {
         }
 
         try {
-          // Create initial state or continue from thread
           let initialState: LoopCreatorState
 
-          // Helper to convert canvas nodes to mechanics format
           const convertCanvasToMechanics = (nodes: any[], edges: any[]) => {
             const mechanics = (nodes || [])
               .filter((n: any) => n.type !== 'group')
@@ -109,12 +121,10 @@ export async function POST(req: NextRequest) {
           }
 
           if (threadId) {
-            // Continue existing conversation - add new human message
             const graph = await getLoopCreatorGraph()
             const existingState = await graph.getState({ configurable: { thread_id: threadId } })
 
             if (existingState.values) {
-              // IMPORTANT: Always update with current canvas state
               const { mechanics, connections } = convertCanvasToMechanics(
                 context?.nodes || [],
                 context?.edges || []
@@ -126,7 +136,6 @@ export async function POST(req: NextRequest) {
                   ...(existingState.values as LoopCreatorState).messages,
                   new HumanMessage(message),
                 ],
-                // Update with current canvas state
                 mechanics:
                   mechanics.length > 0
                     ? mechanics
@@ -135,7 +144,6 @@ export async function POST(req: NextRequest) {
                   connections.length > 0
                     ? connections
                     : (existingState.values as LoopCreatorState).connections,
-                // Update game context if provided
                 gameGenre:
                   context?.gameGenre || (existingState.values as LoopCreatorState).gameGenre,
                 gamePlatform:
@@ -143,11 +151,10 @@ export async function POST(req: NextRequest) {
                 gameDescription:
                   context?.gameDescription ||
                   (existingState.values as LoopCreatorState).gameDescription,
-                pendingQuestions: [], // Clear pending questions
-                pendingActions: [], // Clear pending actions
+                pendingQuestions: [],
+                pendingActions: [],
               }
             } else {
-              // Thread not found, create new
               initialState = createInitialLoopState(projectId, message, {
                 ...context,
                 existingNodes: context?.nodes,
@@ -155,7 +162,6 @@ export async function POST(req: NextRequest) {
               })
             }
           } else {
-            // New conversation
             initialState = createInitialLoopState(projectId, message, {
               ...context,
               existingNodes: context?.nodes,
@@ -163,15 +169,6 @@ export async function POST(req: NextRequest) {
             })
           }
 
-          // Debug: Log what canvas context we received
-          console.log(
-            `[LoopAPI] Canvas context: ${context?.nodes?.length || 0} nodes, ${context?.edges?.length || 0} edges`
-          )
-          console.log(
-            `[LoopAPI] State mechanics: ${initialState.mechanics.length}, connections: ${initialState.connections.length}`
-          )
-
-          // Add model config if provided
           if (modelConfig) {
             initialState.modelConfig = {
               model: modelConfig.model || 'gpt-4o',
@@ -179,14 +176,12 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          // Emit start event
           safeEnqueue({
             type: 'start',
             threadId: threadId || initialState.sessionId,
             timestamp: Date.now(),
           })
 
-          // Stream events from the graph
           const config = {
             configurable: {
               thread_id: threadId || initialState.sessionId,
@@ -198,7 +193,6 @@ export async function POST(req: NextRequest) {
             safeEnqueue(event)
           })
 
-          // Emit final state summary
           safeEnqueue({
             type: 'state',
             mechanics: finalState.mechanics.length,
@@ -210,7 +204,6 @@ export async function POST(req: NextRequest) {
             timestamp: Date.now(),
           })
 
-          // Emit complete event
           safeEnqueue({
             type: 'complete',
             threadId: threadId || initialState.sessionId,
@@ -246,9 +239,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/**
- * GET endpoint for health check
- */
 export async function GET() {
   return new Response(
     JSON.stringify({

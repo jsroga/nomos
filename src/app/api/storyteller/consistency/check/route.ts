@@ -10,18 +10,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runConsistencyCheck } from '@/domains/storyteller/agents/consistency-agent'
 import { ConsistencyCheckRequest } from '@/domains/storyteller/consistency/types'
+import { requireAuth } from '@/lib/auth'
+import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60 // 60 seconds for AI processing
+export const maxDuration = 60
 
 export async function POST(request: NextRequest) {
   try {
-    const body: ConsistencyCheckRequest = await request.json()
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const body: ConsistencyCheckRequest = await request.json()
     const { projectId, episodeId, trigger } = body
 
     if (!projectId) {
       return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+    }
+
+    // Verify project access
+    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
     }
 
     if (!trigger || !trigger.context) {
@@ -30,13 +39,8 @@ export async function POST(request: NextRequest) {
 
     console.log('[Consistency Check API] Starting check for project:', projectId)
 
-    // Run consistency check
     const result = await runConsistencyCheck(
-      {
-        projectId,
-        episodeId,
-        ...trigger.context,
-      },
+      { projectId, episodeId, ...trigger.context },
       trigger.action
     )
 
@@ -48,12 +52,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result)
   } catch (error) {
     console.error('[Consistency Check API] Error:', error)
-
     return NextResponse.json(
-      {
-        error: 'Failed to run consistency check',
-        details: error instanceof Error ? error.message : String(error),
-      },
+      { error: 'Failed to run consistency check', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }

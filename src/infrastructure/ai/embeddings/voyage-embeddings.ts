@@ -249,6 +249,60 @@ export class VoyageEmbeddings extends Embeddings {
 
     return embedding
   }
+
+  /**
+   * Embed multiple queries in a single batch (uses 'query' input_type)
+   * More efficient than calling embedQuery multiple times
+   */
+  async embedQueries(texts: string[]): Promise<number[][]> {
+    if (texts.length === 0) return []
+
+    const results: number[][] = []
+    const uncachedTexts: string[] = []
+    const uncachedIndices: number[] = []
+
+    // Check cache first
+    for (let i = 0; i < texts.length; i++) {
+      const cacheKey = getCacheKey(texts[i], 'query', this.model)
+      const cached = checkCache(cacheKey)
+      if (cached) {
+        results[i] = cached
+      } else {
+        uncachedTexts.push(texts[i])
+        uncachedIndices.push(i)
+      }
+    }
+
+    // Batch uncached texts
+    if (uncachedTexts.length > 0) {
+      const batches: string[][] = []
+      for (let i = 0; i < uncachedTexts.length; i += MAX_BATCH_SIZE) {
+        batches.push(uncachedTexts.slice(i, i + MAX_BATCH_SIZE))
+      }
+
+      let embeddingIndex = 0
+      for (const batch of batches) {
+        const embeddings = await callVoyageAPI(batch, {
+          model: this.model as VoyageEmbeddingConfig['model'],
+          inputType: 'query',
+          truncation: this.truncation,
+        })
+
+        for (let i = 0; i < embeddings.length; i++) {
+          const originalIndex = uncachedIndices[embeddingIndex]
+          results[originalIndex] = embeddings[i]
+
+          // Cache the result
+          const cacheKey = getCacheKey(batch[i], 'query', this.model)
+          setCache(cacheKey, embeddings[i])
+
+          embeddingIndex++
+        }
+      }
+    }
+
+    return results
+  }
 }
 
 /**

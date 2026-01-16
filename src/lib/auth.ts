@@ -1,8 +1,34 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 
+// Mock session for E2E tests in development
+const DEV_MOCK_SESSION = {
+  user: {
+    id: 'e2e-test-user-id',
+    email: 'e2e-test@example.com',
+    app_metadata: {},
+    user_metadata: {},
+    aud: 'authenticated',
+    created_at: new Date().toISOString(),
+  },
+  access_token: 'e2e-mock-token',
+  token_type: 'bearer',
+  expires_in: 3600,
+  expires_at: Math.floor(Date.now() / 1000) + 3600,
+  refresh_token: 'e2e-mock-refresh',
+}
+
 export async function getUserSession() {
+  // Check for E2E test bypass in development
+  if (process.env.NODE_ENV === 'development') {
+    const headersList = await headers()
+    const e2eHeader = headersList.get('x-e2e-test')
+    if (e2eHeader === 'true') {
+      return { session: DEV_MOCK_SESSION as any, supabase: null as any, error: null }
+    }
+  }
+
   const cookieStore = await cookies()
   const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
   const {

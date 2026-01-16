@@ -1,12 +1,19 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
-import path from 'path'
 import { requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { projects } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'
+import {
+  sanitizePath,
+  sanitizeFilename,
+  isValidProjectId,
+  isAllowedUrl,
+  safeFetch,
+  secureLog,
+} from '@/lib/security'
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const { session } = await requireAuth()
     if (!session) {
@@ -19,46 +26,67 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // Security Check: Ensure user owns the project
-    const project = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1)
-    if (!project.length || project[0].userId !== session.user.id) {
-      return NextResponse.json({ error: 'Access denied to project' }, { status: 403 })
+    // Validate project ID format
+    if (!isValidProjectId(projectId)) {
+      return NextResponse.json({ error: 'Invalid project ID format' }, { status: 400 })
     }
 
-    // Security Check: Path Traversal prevention
-    // Ensure filename does not contain slashes
-    if (filename.includes('/') || filename.includes('\\') || filename.includes('..')) {
+    // Verify user owns the project
+    const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
+    if (!project || project.userId !== session.user.id) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
+
+    // Sanitize filename
+    const safeFilename = sanitizeFilename(filename)
+    if (!safeFilename) {
+      secureLog.warn('Invalid filename rejected', { filename })
       return NextResponse.json({ error: 'Invalid filename' }, { status: 400 })
     }
 
-    // Security Check: SSRF Prevention (Basic)
-    // Ensure URL is http/https
-    const parsedUrl = new URL(modelUrl)
-    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-      return NextResponse.json({ error: 'Invalid URL protocol' }, { status: 400 })
+    // SSRF protection on modelUrl
+    const urlCheck = isAllowedUrl(modelUrl)
+    if (!urlCheck.allowed) {
+      secureLog.warn('SSRF attempt blocked in save-model', { modelUrl, reason: urlCheck.reason })
+      return NextResponse.json({ error: 'URL not allowed' }, { status: 403 })
     }
 
-    const projectDir = path.join(process.cwd(), 'public', 'projects', projectId)
-    const assetsDir = path.join(projectDir, 'assets')
-    const filePath = path.join(assetsDir, filename)
+    // Construct safe file path
+    const relativePath = `${projectId}/assets/${safeFilename}`
+    const { safe, sanitizedPath, error } = sanitizePath(relativePath, 'projects')
+
+    if (!safe || !sanitizedPath) {
+      secureLog.warn('Path traversal blocked in save-model', { relativePath, error })
+      return NextResponse.json({ error: 'Invalid file path' }, { status: 400 })
+    }
 
     // Ensure directory exists
-    if (!fs.existsSync(assetsDir)) {
-      fs.mkdirSync(assetsDir, { recursive: true })
+    const dir = sanitizedPath.substring(0, sanitizedPath.lastIndexOf('/'))
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true })
     }
 
-    // Fetch the model file from the remote URL
-    const response = await fetch(modelUrl)
+    // Fetch the model file with SSRF protection
+    const response = await safeFetch(modelUrl)
     if (!response.ok) {
-      throw new Error(`Failed to fetch model from URL: ${response.statusText}`)
+      throw new Error(`Failed to fetch model: ${response.statusText}`)
     }
 
     const buffer = await response.arrayBuffer()
-    fs.writeFileSync(filePath, Buffer.from(buffer))
 
-    return NextResponse.json({ success: true, path: `/projects/${projectId}/assets/${filename}` })
+    // Validate file size (max 100MB)
+    if (buffer.byteLength > 100 * 1024 * 1024) {
+      return NextResponse.json({ error: 'File too large (max 100MB)' }, { status: 413 })
+    }
+
+    fs.writeFileSync(sanitizedPath, Buffer.from(buffer))
+
+    return NextResponse.json({
+      success: true,
+      path: `/projects/${projectId}/assets/${safeFilename}`,
+    })
   } catch (error: any) {
-    console.error('Error saving model:', error)
-    return NextResponse.json({ error: error.message || 'Failed to save model' }, { status: 500 })
+    secureLog.error('Error saving model:', { message: error.message })
+    return NextResponse.json({ error: 'Failed to save model' }, { status: 500 })
   }
 }

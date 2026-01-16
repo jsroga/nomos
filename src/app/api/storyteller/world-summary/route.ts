@@ -8,9 +8,14 @@ import {
   SeriesBible,
 } from '@/domains/storyteller/context/series-bible'
 import { ragService } from '@/domains/storyteller/services/rag-service'
+import { requireAuth } from '@/lib/auth'
+import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
 
 export async function GET(req: NextRequest) {
   try {
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const { searchParams } = new URL(req.url)
     const projectId = searchParams.get('projectId')
 
@@ -18,7 +23,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
     }
 
-    // 1. Fetch Project Bible
+    // Verify project access
+    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
+
     const [project] = await db
       .select({ seriesBible: projects.seriesBible })
       .from(projects)
@@ -31,7 +40,6 @@ export async function GET(req: NextRequest) {
 
     const bible = project.seriesBible as SeriesBible
 
-    // Check if bible has been created (has at least title or logline or premise)
     if (!bible || (!bible.title && !bible.logline && !bible.premise)) {
       return NextResponse.json(
         {
@@ -42,13 +50,9 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // 2. Generate Summaries
     let summary = bibleToPrompt(bible)
     const worldGenPrompt = bibleToVisualPrompt(bible)
 
-    // 3. (Optional) Enhance with RAG for deep lore
-    // Retrieve extra world rules or context that might not be in the structured bible yet
-    // or provides more color.
     try {
       const ragResults = await ragService.retrieveByType(
         projectId,
@@ -65,7 +69,6 @@ export async function GET(req: NextRequest) {
       }
     } catch (e) {
       console.warn('Failed to fetch RAG context:', e)
-      // Continue without RAG if it fails
     }
 
     return NextResponse.json({

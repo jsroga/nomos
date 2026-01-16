@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { HumanMessage } from '@langchain/core/messages'
+import { requireAuth } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 
@@ -7,8 +8,11 @@ export const runtime = 'nodejs'
  * POST /api/storyteller/chat/answer
  * Submit an answer to a question and continue the agent flow
  */
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const body = await req.json()
     const { questionId, answer, projectId, threadId, previousState, freeText } = body
 
@@ -29,8 +33,6 @@ export async function POST(req: Request) {
       name: 'User',
     })
 
-    // If we have previous state, we can continue from there
-    // Otherwise, this is just a regular message to be processed
     const responseData = {
       success: true,
       questionId,
@@ -41,7 +43,6 @@ export async function POST(req: Request) {
         name: 'User',
         sender: 'User',
       },
-      // The frontend should add this message and trigger a new stream
       continueStream: true,
     }
 

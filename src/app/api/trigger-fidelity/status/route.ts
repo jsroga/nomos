@@ -1,17 +1,18 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { runs } from '@trigger.dev/sdk/v3'
+import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: Request) {
+export const GET = withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
+  const { searchParams } = new URL(request.url)
+  const runId = searchParams.get('runId')
+
+  if (!runId) {
+    return NextResponse.json({ error: 'Missing runId parameter' }, { status: 400 })
+  }
+
   try {
-    const { searchParams } = new URL(request.url)
-    const runId = searchParams.get('runId')
-
-    if (!runId) {
-      return NextResponse.json({ error: 'Missing runId parameter' }, { status: 400 })
-    }
-
     const run = await runs.retrieve(runId)
 
     if (!run) {
@@ -30,7 +31,7 @@ export async function GET(request: Request) {
       finishedAt: run.finishedAt,
     })
   } catch (error: any) {
-    console.error('Failed to get fidelity enhancement status:', error)
+    console.error('Failed to get fidelity status:', error)
 
     if (error.message?.includes('not found') || error.status === 404) {
       return NextResponse.json({ error: 'Run not found' }, { status: 404 })
@@ -38,4 +39,4 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ error: error.message || 'Failed to get status' }, { status: 500 })
   }
-}
+})

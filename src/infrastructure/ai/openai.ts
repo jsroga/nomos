@@ -2,6 +2,25 @@ import { AIModel, AIModelConfig, TileContext } from './types'
 import OpenAI from 'openai'
 import { assembleContextImage } from './contextAssembler'
 
+// Singleton client cache - reuse clients with same API key
+const clientCache = new Map<string, OpenAI>()
+
+function getOpenAIClient(apiKey: string): OpenAI {
+  if (!clientCache.has(apiKey)) {
+    clientCache.set(
+      apiKey,
+      new OpenAI({
+        apiKey,
+        // Note: dangerouslyAllowBrowser removed - this code should run server-side
+        // If browser usage is needed, move to API route
+        timeout: 60000,
+        maxRetries: 2,
+      })
+    )
+  }
+  return clientCache.get(apiKey)!
+}
+
 export class OpenAIModel implements AIModel {
   id = 'openai'
   name = 'OpenAI DALL-E'
@@ -14,12 +33,7 @@ export class OpenAIModel implements AIModel {
   async generate(prompt: string, context: TileContext, config: AIModelConfig): Promise<string> {
     if (!config.apiKey) throw new Error('API Key missing')
 
-    const openai = new OpenAI({
-      apiKey: config.apiKey,
-      dangerouslyAllowBrowser: true,
-      timeout: 60000, // 60 second timeout
-      maxRetries: 2, // Retry on failures
-    })
+    const openai = getOpenAIClient(config.apiKey)
 
     const hasNeighbors = Object.values(context.neighbors).some(Boolean)
 

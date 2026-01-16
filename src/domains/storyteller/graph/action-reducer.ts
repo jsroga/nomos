@@ -1,5 +1,5 @@
-import { WritersRoomState } from '../graph/state'
-import { AgentActionValidated, WorldRule, Faction } from '../schemas/agent-schemas'
+import { WritersRoomState, CharacterState } from './state'
+import { AgentActionValidated, WorldRule, Faction, InspirationItem } from '../schemas/agent-schemas'
 import { v4 as uuidv4 } from 'uuid'
 import { BeatStatus, BeatType } from '../enums'
 
@@ -261,17 +261,24 @@ export function reduceAgentActions(
         const mode = action.payload.mergeMode
 
         // Helper to merge inspiration arrays (handles both string and object formats)
-        const mergeInspirationArray = (existing: any[], incoming: any[] | undefined): any[] => {
+        const mergeInspirationArray = (
+          existing: Array<InspirationItem>,
+          incoming: Array<string | InspirationItem> | undefined
+        ): Array<InspirationItem> => {
           if (!incoming) return existing || []
-          if (mode === 'replace') return incoming
+
+          // Convert incoming to objects if they are strings
+          const incomingObjects: InspirationItem[] = incoming.map(item =>
+            typeof item === 'string' ? { title: item } : item
+          )
+
+          if (mode === 'replace') return incomingObjects
+
           // Merge: add new items
           const existingTitles = new Set(
-            (existing || []).map((item: any) => (typeof item === 'string' ? item : item.title))
+            (existing || []).map(item => item.title)
           )
-          const newItems = incoming.filter((item: any) => {
-            const title = typeof item === 'string' ? item : item.title
-            return !existingTitles.has(title)
-          })
+          const newItems = incomingObjects.filter(item => !existingTitles.has(item.title))
           return [...(existing || []), ...newItems]
         }
 
@@ -383,8 +390,8 @@ export function reduceAgentActions(
         const storyPlan = currentBible.storyPlan || {}
         const existingChars = storyPlan.keyCharacters || currentBible.keyCharacters || []
         const mergedChars = smartMergeKeyCharacters(
-          existingChars,
-          action.payload.keyCharacters,
+          existingChars as any[],
+          action.payload.keyCharacters as any[],
           action.payload.mergeMode
         )
 
@@ -476,9 +483,9 @@ export function reduceAgentActions(
             moralAlignment: 50,
             transformation: 0,
           },
+          metricsHistory: [],
         }
-        // @ts-ignore - partial match to CharacterState
-        updates.characters = [...currentCharacters, newCharacter]
+        updates.characters = [...currentCharacters, newCharacter] as CharacterState[]
         break
       }
 

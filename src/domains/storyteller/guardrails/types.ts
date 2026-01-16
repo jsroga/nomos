@@ -138,12 +138,14 @@ export interface SeriesBibleRef {
 // ============================================
 
 export interface StreamProgress {
-  type: 'token' | 'section_start' | 'section_complete' | 'thinking' | 'action'
+  type: 'token' | 'section_start' | 'section_complete' | 'thinking' | 'action' | 'agent_status'
   agent: string
   token?: string
   section?: string
   content?: unknown
   progress?: number
+  status?: string
+  message?: string
 }
 
 export type StreamCallback = (progress: StreamProgress) => void

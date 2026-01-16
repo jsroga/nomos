@@ -18,6 +18,24 @@ import {
 } from '../types'
 import OpenAI from 'openai'
 
+// Singleton client cache - reuse clients with same API key
+const clientCache = new Map<string, OpenAI>()
+
+function getOpenAIClient(apiKey: string): OpenAI {
+  if (!clientCache.has(apiKey)) {
+    clientCache.set(
+      apiKey,
+      new OpenAI({
+        apiKey,
+        // Note: dangerouslyAllowBrowser removed - gateway runs server-side
+        timeout: 60000,
+        maxRetries: 2,
+      })
+    )
+  }
+  return clientCache.get(apiKey)!
+}
+
 export class OpenAIAdapter extends BaseProviderAdapter {
   id = 'openai'
   name = 'OpenAI'
@@ -38,12 +56,7 @@ export class OpenAIAdapter extends BaseProviderAdapter {
   ]
 
   private getClient(config: AIProviderConfig): OpenAI {
-    return new OpenAI({
-      apiKey: config.apiKey,
-      dangerouslyAllowBrowser: true,
-      timeout: 60000,
-      maxRetries: 2,
-    })
+    return getOpenAIClient(config.apiKey!)
   }
 
   async execute<T>(

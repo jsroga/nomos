@@ -1,33 +1,21 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { tasks } from '@trigger.dev/sdk/v3'
 import type { upscaleTileTask } from '@/trigger/upscale-tile'
-import { createClient } from '@supabase/supabase-js'
+import {
+  withAuth,
+  withRateLimit,
+  verifyProjectAccess,
+  type AuthenticatedRequest,
+} from '@/lib/api-utils'
 
 export const dynamic = 'force-dynamic'
 
-// Helper to fetch project style references
-async function fetchProjectStyleRefs(projectId: string): Promise<string[]> {
-  try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-
-    const { data, error } = await supabase
-      .from('projects')
-      .select('style_reference_urls')
-      .eq('id', projectId)
-      .single()
-
-    if (error || !data) return []
-    return (data.style_reference_urls as string[]) || []
-  } catch {
-    return []
-  }
-}
-
-export async function POST(request: Request) {
-  try {
+/**
+ * POST /api/trigger-upscale
+ * Trigger tile upscale task
+ */
+export const POST = withRateLimit(
+  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
     const payload = await request.json()
 
     // Validate required fields
@@ -50,9 +38,23 @@ export async function POST(request: Request) {
       )
     }
 
-    // Fetch project style references if not provided
-    const styleReferenceUrls =
-      payload.styleReferenceUrls || (await fetchProjectStyleRefs(payload.projectId))
+    // Verify project access via RLS
+    const hasAccess = await verifyProjectAccess(supabase, payload.projectId)
+    if (!hasAccess) {
+      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+    }
+
+    // Fetch project style references using authenticated client
+    let styleReferenceUrls = payload.styleReferenceUrls
+    if (!styleReferenceUrls) {
+      const { data } = await supabase
+        .from('projects')
+        .select('style_reference_urls')
+        .eq('id', payload.projectId)
+        .single()
+
+      styleReferenceUrls = data?.style_reference_urls || []
+    }
 
     // Trigger the upscale task with style references
     const handle = await tasks.trigger<typeof upscaleTileTask>(
@@ -71,11 +73,6 @@ export async function POST(request: Request) {
       runId: handle.id,
       publicAccessToken: handle.publicAccessToken,
     })
-  } catch (error: any) {
-    console.error('Failed to trigger upscale task:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to trigger upscale task' },
-      { status: 500 }
-    )
-  }
-}
+  }),
+  { maxRequests: 10, windowMs: 60000 } // 10 upscales per minute
+)

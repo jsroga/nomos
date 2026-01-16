@@ -180,7 +180,7 @@ export class PortraitGenerationService {
   }
 
   /**
-   * Start polling for task status
+   * Start adaptive polling for task status
    */
   private startPolling(
     runState: PortraitGenRunState,
@@ -189,22 +189,33 @@ export class PortraitGenerationService {
   ) {
     // Clear any existing polling for this run
     if (this.pollingIntervals.has(runState.runId)) {
-      clearInterval(this.pollingIntervals.get(runState.runId)!)
+      clearTimeout(this.pollingIntervals.get(runState.runId)!)
     }
 
-    const pollInterval = setInterval(async () => {
+    let consecutiveErrors = 0
+    let lastStatus = ''
+
+    const poll = async () => {
       try {
         const statusResponse = await fetch(
           `/api/storyteller/generate-portrait/status?runId=${runState.runId}`
         )
 
         if (statusResponse.status === 404) {
-          console.warn('Run not found, cleaning up')
-          this.finish(runState, opId, false)
+          consecutiveErrors++
+          if (consecutiveErrors > 10) {
+            console.warn('Run not found, cleaning up')
+            this.finish(runState, opId, false)
+            return
+          }
+          this.scheduleNextPoll(runState.runId, poll, 2000)
           return
         }
 
+        consecutiveErrors = 0
         const statusData = await statusResponse.json()
+        const statusChanged = statusData.status !== lastStatus
+        lastStatus = statusData.status
 
         // Check if completed
         if (statusData.status === 'COMPLETED') {
@@ -231,7 +242,6 @@ export class PortraitGenerationService {
 
             this.finish(runState, opId, true)
           } else {
-            // Completed but failed
             useGlobalStatusStore.getState().updateOperation(opId, {
               status: 'failed',
               details: 'Generation returned error',
@@ -257,22 +267,33 @@ export class PortraitGenerationService {
           return
         }
 
-        // Still running - check if it's an active status
-        if (!ACTIVE_TASK_STATUSES.includes(statusData.status)) {
-          console.warn('Unknown status:', statusData.status)
-        }
+        // Still running - adaptive polling
+        const nextInterval = statusChanged ? 2000 : POLLING_INTERVALS.SLOW
+        this.scheduleNextPoll(runState.runId, poll, nextInterval)
       } catch (error) {
         console.error('Status polling error:', error)
+        consecutiveErrors++
+        const backoffInterval = Math.min(consecutiveErrors * 3000, 30000)
+        this.scheduleNextPoll(runState.runId, poll, backoffInterval)
       }
-    }, POLLING_INTERVALS.DEFAULT) // Poll every 5 seconds
+    }
 
-    this.pollingIntervals.set(runState.runId, pollInterval)
+    poll()
+  }
+
+  private scheduleNextPoll(runId: string, pollFn: () => Promise<void>, interval: number) {
+    const existingTimeout = this.pollingIntervals.get(runId)
+    if (existingTimeout) {
+      clearTimeout(existingTimeout)
+    }
+    const timeoutId = setTimeout(pollFn, interval)
+    this.pollingIntervals.set(runId, timeoutId)
   }
 
   private finish(runState: PortraitGenRunState, opId: string, success: boolean) {
-    const interval = this.pollingIntervals.get(runState.runId)
-    if (interval) {
-      clearInterval(interval)
+    const timeout = this.pollingIntervals.get(runState.runId)
+    if (timeout) {
+      clearTimeout(timeout)
       this.pollingIntervals.delete(runState.runId)
     }
 

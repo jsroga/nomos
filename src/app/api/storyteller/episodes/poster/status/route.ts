@@ -1,15 +1,19 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { runs } from '@trigger.dev/sdk/v3'
+import { requireAuth } from '@/lib/auth'
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url)
-  const runId = searchParams.get('runId')
-
-  if (!runId) {
-    return NextResponse.json({ error: 'Missing runId' }, { status: 400 })
-  }
-
+export async function GET(req: NextRequest) {
   try {
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { searchParams } = new URL(req.url)
+    const runId = searchParams.get('runId')
+
+    if (!runId) {
+      return NextResponse.json({ error: 'Missing runId' }, { status: 400 })
+    }
+
     const run = await runs.retrieve(runId)
 
     if (!run) {

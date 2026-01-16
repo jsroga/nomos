@@ -1,12 +1,13 @@
 import { tasks } from '@trigger.dev/sdk/v3'
 import { NextRequest, NextResponse } from 'next/server'
 import type { surfaceMaterialTask } from '@/trigger/surface-material'
+import { withAuth, withRateLimit, verifyProjectAccess, type AuthenticatedRequest } from '@/lib/api-utils'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json()
+export const POST = withRateLimit(
+  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
+    const body = await request.json()
     const { projectId, surfaceId, prompt, apiKey, artStyle, surfaceBounds } = body
 
     if (!projectId || !surfaceId || !prompt) {
@@ -16,13 +17,17 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Use provided API key or fall back to server env
+    // Verify project access via RLS
+    const hasAccess = await verifyProjectAccess(supabase, projectId)
+    if (!hasAccess) {
+      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+    }
+
     const meshyApiKey = apiKey || process.env.MESHY_API_KEY
     if (!meshyApiKey) {
       return NextResponse.json({ error: 'Meshy API key not configured' }, { status: 400 })
     }
 
-    // Trigger the task
     const handle = await tasks.trigger<typeof surfaceMaterialTask>(
       'surface-material',
       {
@@ -33,9 +38,7 @@ export async function POST(req: NextRequest) {
         artStyle: artStyle || 'realistic',
         surfaceBounds,
       },
-      {
-        ttl: '1h', // Match maxDuration
-      }
+      { ttl: '1h' }
     )
 
     return NextResponse.json({
@@ -43,8 +46,6 @@ export async function POST(req: NextRequest) {
       runId: handle.id,
       publicAccessToken: handle.publicAccessToken,
     })
-  } catch (error: any) {
-    console.error('Failed to trigger surface-material:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-}
+  }),
+  { maxRequests: 10, windowMs: 60000 }
+)

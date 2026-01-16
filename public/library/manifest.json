@@ -1,0 +1,27 @@
+{
+  "version": "1.0",
+  "description": "Kurtvitza 3D Asset Library - Curated collection of showcase models",
+  "assets": [
+    {
+      "id": "example-terrain-01",
+      "name": "Dark Forest Ruins",
+      "description": "Procedurally generated dark fantasy forest with ancient ruins",
+      "category": "terrain",
+      "tags": ["fantasy", "forest", "ruins", "dark"],
+      "file": "models/example-terrain-01.glb",
+      "thumbnail": "thumbnails/example-terrain-01.png",
+      "format": "glb",
+      "polyCount": 50000,
+      "createdAt": "2026-01-16",
+      "featured": true
+    }
+  ],
+  "categories": [
+    { "id": "terrain", "name": "Terrain & Landscapes", "icon": "🏔️" },
+    { "id": "props", "name": "Props & Objects", "icon": "🏺" },
+    { "id": "characters", "name": "Characters & NPCs", "icon": "👤" },
+    { "id": "buildings", "name": "Buildings & Structures", "icon": "🏛️" },
+    { "id": "vehicles", "name": "Vehicles & Mounts", "icon": "🚀" },
+    { "id": "effects", "name": "VFX & Particles", "icon": "✨" }
+  ]
+}

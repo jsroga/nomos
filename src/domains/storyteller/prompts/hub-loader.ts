@@ -120,8 +120,10 @@ User request: {input}`,
   sectionSoundtracks: 'Generate soundtracks. Context: {input}',
 
   // Additional agents
-  magicAgent: 'You are the Magic Agent, generating creative ideas. Context: {context} Request: {input}',
-  worldSimulator: 'You are the World Simulator, simulating world events. Context: {context} Request: {input}',
+  magicAgent:
+    'You are the Magic Agent, generating creative ideas. Context: {context} Request: {input}',
+  worldSimulator:
+    'You are the World Simulator, simulating world events. Context: {context} Request: {input}',
   visualMoment: 'You are the Visual Moment specialist. Context: {context} Request: {input}',
 }
 

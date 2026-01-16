@@ -6,6 +6,6 @@ export default async function ProjectRootPage({
   params: Promise<{ projectId: string }>
 }) {
   const { projectId } = await params
-  
+
   return <GameHubDashboard projectId={projectId} />
 }

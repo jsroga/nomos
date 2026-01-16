@@ -1,12 +1,20 @@
 import Replicate from 'replicate'
 
+// Singleton client cache - reuse clients with same API key
+const clientCache = new Map<string, Replicate>()
+
+function getReplicateClient(apiKey: string): Replicate {
+  if (!clientCache.has(apiKey)) {
+    clientCache.set(apiKey, new Replicate({ auth: apiKey }))
+  }
+  return clientCache.get(apiKey)!
+}
+
 export class ReplicateClient {
   private replicate: Replicate
 
   constructor(apiKey: string) {
-    this.replicate = new Replicate({
-      auth: apiKey,
-    })
+    this.replicate = getReplicateClient(apiKey)
   }
 
   async segmentObject(
@@ -72,25 +80,3 @@ export class ReplicateClient {
   }
 }
 
-export class ReplicateAIModel {
-  private replicate: Replicate
-  private model: string
-
-  constructor(apiKey: string, model: string) {
-    this.replicate = new Replicate({ auth: apiKey })
-    this.model = model
-  }
-
-  async upscale(image: string, prompt: string, creativity: number): Promise<string> {
-    // Basic implementation to satisfy build.
-    // Actual params depend on the specific model used for upscaling.
-    const output = await this.replicate.run(this.model as any, {
-      input: {
-        image: image.startsWith('data:') ? image : `data:image/png;base64,${image}`,
-        prompt,
-        creativity,
-      },
-    })
-    return String(output)
-  }
-}

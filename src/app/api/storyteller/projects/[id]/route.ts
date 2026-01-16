@@ -1,11 +1,21 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { projects, seriesBibles, storyPlans } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'
+import { requireAuth } from '@/lib/auth'
+import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
 
-export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params
   try {
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    // Verify project access
+    if (!(await verifyProjectAccess(params.id, session.user.id))) {
+      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+    }
+
     const project = await db.query.projects.findFirst({
       where: eq(projects.id, params.id),
       with: {
@@ -20,10 +30,8 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
 
     return NextResponse.json({
       ...project,
-      // Map content from relation if available, otherwise fallback to old column (during migration)
       seriesBible: project.seriesBibleTable?.content || project.seriesBible || {},
       storyPlan: project.storyPlanTable?.content || project.storyPlan || {},
-      // Clean up relation properties
       seriesBibleTable: undefined,
       storyPlanTable: undefined,
     })
@@ -33,19 +41,22 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
   }
 }
 
-export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params
   try {
-    const body = await req.json()
-    console.log('📦 Project PATCH body:', body)
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // Remove id from body if present
+    // Verify project access
+    if (!(await verifyProjectAccess(params.id, session.user.id))) {
+      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+    }
+
+    const body = await req.json()
     const { id, series_bible, seriesBible, story_plan, storyPlan, ...updates } = body
 
     // 1. Update Project Table
-    const dbUpdates: Partial<typeof projects.$inferInsert> = {
-      updatedAt: new Date(),
-    }
+    const dbUpdates: Partial<typeof projects.$inferInsert> = { updatedAt: new Date() }
 
     if (updates.style_reference_urls !== undefined)
       dbUpdates.styleReferenceUrls = updates.style_reference_urls
@@ -57,7 +68,6 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
     if (updates.masterPrompt !== undefined) dbUpdates.masterPrompt = updates.masterPrompt
 
     if (Object.keys(dbUpdates).length > 1) {
-      // more than just updatedAt
       await db.update(projects).set(dbUpdates).where(eq(projects.id, params.id))
     }
 
@@ -87,7 +97,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('❌ Error updating project:', error)
+    console.error('Error updating project:', error)
     return NextResponse.json({ error: 'Failed to update project' }, { status: 500 })
   }
 }

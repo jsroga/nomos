@@ -125,7 +125,9 @@ const LabeledSlider: React.FC<{
 }> = ({ label, value, onChange, min, max, step, unit = '', minLabel, maxLabel }) => (
   <div className="space-y-3 py-1">
     <div className="flex justify-between items-center">
-      <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500/80">{label}</span>
+      <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500/80">
+        {label}
+      </span>
       <span className="text-[10px] font-bold text-indigo-400 font-mono">
         {value}
         {unit}

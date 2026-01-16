@@ -2,19 +2,32 @@
 
 import { useRef, useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion, useScroll, useTransform, useSpring, AnimatePresence } from 'framer-motion'
-import { Map, Palette, Brain, Boxes, Zap, Skull, ArrowRight, Play, Plus, Flame, Shield } from 'lucide-react'
+import {
+  Map,
+  Palette,
+  Brain,
+  Boxes,
+  Zap,
+  Skull,
+  ArrowRight,
+  Play,
+  Plus,
+  Flame,
+  Shield,
+  X,
+  Check,
+} from 'lucide-react'
 import { TurbulentBackground } from './TurbulentBackground'
 import { GlowEffect } from '@/components/ui/glow-effect'
 import {
   DecryptedText,
-  FuzzyText,
-  TextPressure,
   MotionHighlight,
   LiquidDistortionText,
   AggressiveGlitchText,
 } from '@/components/ui/text-effects'
-import { useExperiment } from '@/lib/experiments'
+import { BleedingText } from './BleedingText'
 
 // ═══════════════════════════════════════════════════════════════════
 // FEATURES DATA
@@ -22,56 +35,56 @@ import { useExperiment } from '@/lib/experiments'
 const FEATURES = [
   {
     icon: Map,
-    title: 'INFINITE PROCEDURAL WORLDS',
+    title: 'World Generation',
     description:
-      'Tile-able terrain generation using diffusion models. No boundaries. No limits. Expand into the void.',
+      'Generate infinite tile-able terrain with AI. Days of work → minutes. Export-ready.',
     accent: '#5c7cfa',
     code: 'WLD_GEN',
   },
   {
     icon: Brain,
-    title: 'EMERGENT AI NARRATIVES',
+    title: 'AI Storyteller',
     description:
-      'Faction warfare. Political intrigue. Betrayal. The AI dungeon master that doesn\'t pull punches.',
-    accent: '#00ff66',
+      'Auto-generate quests, factions, and narrative arcs. Your AI co-writer that never sleeps.',
+    accent: '#5c7cfa',
     code: 'NAR_SYS',
   },
   {
     icon: Palette,
-    title: 'BRUTAL TERRAIN SCULPTING',
+    title: 'Terrain Sculpting',
     description:
-      'Carve mountains. Dig trenches. Shape the battlefield. Every scar on the land tells a story.',
-    accent: '#ff6600',
+      'Shape landscapes with AI-assisted tools. Mountains, rivers, dungeons. Fast iteration.',
+    accent: '#5c7cfa',
     code: 'TER_SCL',
   },
   {
     icon: Boxes,
-    title: 'PRODUCTION-READY EXPORT',
+    title: 'One-Click Export',
     description:
-      'GLTF. Unity. Unreal. Rip your creations straight into your engine. Zero friction.',
-    accent: '#00ccff',
+      'GLTF, Unity, Unreal. Production-ready assets straight into your engine. No conversion hassle.',
+    accent: '#5c7cfa',
     code: 'EXP_SYS',
   },
   {
     icon: Zap,
-    title: 'GAME LOOP ARCHITECTURE',
+    title: 'Game Loop Designer',
     description:
-      'Design compulsion loops that hook players. Psychology-driven. Market-tested. Ruthlessly effective.',
-    accent: '#ff00cc',
+      'AI analyzes successful games to help you design addictive core loops. Data-driven.',
+    accent: '#5c7cfa',
     code: 'LOP_DES',
   },
   {
     icon: Flame,
-    title: 'STRESS-TESTED SCENES',
-    description: 'Simulate combat and chaos before you commit to production.',
-    accent: '#ff3300',
+    title: 'Scene Simulator',
+    description: 'Test combat, physics, and chaos before you code. Catch issues early.',
+    accent: '#5c7cfa',
     code: 'STR_TST',
   },
   {
     icon: Shield,
-    title: 'SECURE ASSETS',
-    description: 'Encrypted storage and permission-based sharing for large teams.',
-    accent: '#33ccff',
+    title: 'Team Collaboration',
+    description: 'Secure asset storage. Role-based access. Built for studios of any size.',
+    accent: '#5c7cfa',
     code: 'SEC_AST',
   },
 ]
@@ -79,74 +92,48 @@ const FEATURES = [
 const STEPS = [
   {
     icon: Zap,
-    title: 'INITIALIZE SYSTEM',
+    title: 'Initialize System',
     description:
       'Connect your dataset and define your world parameters. The AI begins mapping the latent space.',
   },
   {
     icon: Palette,
-    title: 'SHAPE REALITY',
+    title: 'Shape Reality',
     description:
       'Use brutal sculpting tools and procedural generation to carve your vision into existence.',
   },
   {
     icon: Brain,
-    title: 'INFUSE LIFE',
-    description: 'Deploy emergent AI narratives and faction systems. Watch your world evolve and react.',
+    title: 'Infuse Life',
+    description:
+      'Deploy emergent AI narratives and faction systems. Watch your world evolve and react.',
   },
   {
     icon: Boxes,
-    title: 'PRODUCTION EXPORT',
+    title: 'Production Export',
     description:
       'Rip your production-ready assets straight into your engine. Unity, Unreal, or GLTF.',
   },
 ]
 
 // ═══════════════════════════════════════════════════════════════════
-// HEADLINE A/B TEST VARIANTS
+// HERO HEADLINE - 3-line AI-POWERED WORLD BUILDING
 // ═══════════════════════════════════════════════════════════════════
 const HeadlineVariant = () => {
-  const { variant, isLoading } = useExperiment('landing-hero-headline')
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  // Show a stable default during loading/SSG to avoid flash
-  if (!mounted || isLoading) {
-    return (
-      <LiquidDistortionText
-        text="World-Building Infrastructure"
-      />
-    )
-  }
-
-  if (variant === 'fuzzy_text') {
-    return <FuzzyText text="World-Building Infrastructure" fontSize={100} className="text-white" />
-  }
-
-  if (variant === 'magic_mushrooms') {
-    return (
-      <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black uppercase tracking-[-0.03em] font-syne text-primary animate-pulse text-center leading-none">
-        MAGIC WORLD ON MAGIC MUSHROOMS
-      </h1>
-    )
-  }
-
-  if (variant === 'that_bleed') {
-    return (
-      <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black uppercase tracking-[-0.03em] font-syne text-white text-center leading-none">
-        BUILD WORLDS <span className="text-red-600">THAT BLEED</span>
-      </h1>
-    )
-  }
-
-  // Default to LiquidDistortion for the WOW effect
   return (
-    <LiquidDistortionText
-      text="World-Building Infrastructure"
-    />
+    <h1 className="flex flex-col items-center gap-1 font-black uppercase tracking-[-0.02em] font-syne text-white text-center leading-[0.85]">
+      <LiquidDistortionText
+        text="BUILD"
+        className="text-[clamp(2.4rem,8vw,6.4rem)]"
+        intensity={15}
+      />
+      <LiquidDistortionText
+        text="WORLDS"
+        className="text-[clamp(3rem,10vw,8rem)]"
+        intensity={20}
+      />
+      <BleedingText text="THAT BLEED" />
+    </h1>
   )
 }
 
@@ -159,7 +146,7 @@ const ConceptToCarnageTile = () => {
   return (
     <motion.div
       onClick={() => setState(prev => (prev === 'concept' ? 'carnage' : 'concept'))}
-      className="group relative h-full min-h-[400px] border border-white/5 bg-black/40 backdrop-blur-sm cursor-pointer overflow-hidden rounded-2xl"
+      className="group relative h-full min-h-[400px] border border-white/5 bg-black/40 backdrop-blur-sm cursor-pointer overflow-hidden rounded-xl"
     >
       <div className="absolute inset-0 z-0">
         <AnimatePresence mode="wait">
@@ -185,10 +172,10 @@ const ConceptToCarnageTile = () => {
           <span className="font-mono text-[10px] text-primary mb-2 block tracking-widest uppercase">
             [INTERACTIVE_PREVIEW]
           </span>
-          <h3 className="text-3xl font-black uppercase tracking-tighter leading-none mb-4 font-syne">
-            FROM CONCEPT
+          <h3 className="text-3xl font-black tracking-wide leading-none mb-4 font-syne">
+            From Concept
             <br />
-            <span className={state === 'carnage' ? 'text-primary' : 'text-white'}>TO CARNAGE</span>
+            <span className={state === 'carnage' ? 'text-primary' : 'text-white'}>To Carnage</span>
           </h3>
         </div>
 
@@ -218,7 +205,7 @@ const BrutalCard = ({ feature, index }: { feature: (typeof FEATURES)[0]; index: 
       onMouseLeave={() => setIsHovered(false)}
       className="group relative h-full"
     >
-      <div className="relative h-full border border-white/5 bg-black/40 backdrop-blur-sm p-8 transition-all duration-300 hover:border-white/20 rounded-2xl overflow-hidden">
+      <div className="relative h-full border border-white/5 bg-black/40 backdrop-blur-sm p-8 transition-all duration-300 hover:border-white/20 rounded-xl overflow-hidden">
         <div
           className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 transition-all duration-300 opacity-20 group-hover:opacity-100"
           style={{ borderColor: feature.accent }}
@@ -226,13 +213,13 @@ const BrutalCard = ({ feature, index }: { feature: (typeof FEATURES)[0]; index: 
 
         <div className="flex items-start justify-between mb-6">
           <div
-            className="p-3 border transition-all duration-300"
+            className="p-3 border rounded-lg transition-all duration-300"
             style={{
-              borderColor: isHovered ? feature.accent : 'rgba(255,255,255,0.1)',
-              backgroundColor: isHovered ? `${feature.accent}15` : 'transparent',
+              borderColor: isHovered ? 'rgba(92, 124, 250, 0.4)' : 'rgba(255,255,255,0.1)',
+              backgroundColor: isHovered ? 'rgba(92, 124, 250, 0.08)' : 'transparent',
             }}
           >
-            <Icon className="w-6 h-6" style={{ color: feature.accent }} />
+            <Icon className="w-8 h-8 text-primary" />
           </div>
           <span
             className="font-mono text-[10px] tracking-wider transition-colors duration-300"
@@ -242,7 +229,7 @@ const BrutalCard = ({ feature, index }: { feature: (typeof FEATURES)[0]; index: 
           </span>
         </div>
 
-        <h3 className="text-xl font-black uppercase tracking-tight text-white mb-3 font-syne">
+        <h3 className="text-xl font-black tracking-wide text-white mb-3 font-syne">
           {feature.title}
         </h3>
         <p className="text-white/40 leading-relaxed text-sm font-mono">{feature.description}</p>
@@ -287,13 +274,13 @@ const SystemModuleCard = ({ step, index }: { step: (typeof STEPS)[0]; index: num
       whileInView={{ opacity: 1, scale: 1 }}
       transition={{ delay: index * 0.1 }}
       viewport={{ once: true }}
-      className="group relative p-8 rounded-3xl bg-black/40 border border-white/5 hover:border-primary/20 transition-all duration-500 overflow-hidden"
+      className="group relative p-8 rounded-xl bg-black/40 border border-white/5 hover:border-primary/20 transition-all duration-500 overflow-hidden"
     >
       {/* Module Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <step.icon className="w-5 h-5 text-primary" />
+          <div className="w-12 h-12 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+            <step.icon className="w-6 h-6 text-primary" />
           </div>
           <div className="flex flex-col">
             <span className="text-[10px] font-mono text-primary uppercase tracking-widest leading-none">
@@ -306,7 +293,7 @@ const SystemModuleCard = ({ step, index }: { step: (typeof STEPS)[0]; index: num
         </div>
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/10">
           <div
-            className={`w-1 h-1 rounded-full ${bootStatus === 'READY' ? 'bg-primary' : 'bg-yellow-500 animate-pulse'
+            className={`w-1 h-1 rounded-full ${bootStatus === 'READY' ? 'bg-primary' : 'bg-primary/50 animate-pulse'
               }`}
           />
           <span className="text-[8px] font-mono text-white/40">{bootStatus}</span>
@@ -315,7 +302,7 @@ const SystemModuleCard = ({ step, index }: { step: (typeof STEPS)[0]; index: num
 
       {/* Content */}
       <div className="relative z-10">
-        <h3 className="text-xl font-black uppercase tracking-tight text-white mb-3 font-syne">
+        <h3 className="text-xl font-black tracking-wide text-white mb-3 font-syne">
           {bootStatus === 'READY' ? (
             step.title
           ) : (
@@ -331,8 +318,7 @@ const SystemModuleCard = ({ step, index }: { step: (typeof STEPS)[0]; index: num
           {[...Array(4)].map((_, i) => (
             <div
               key={i}
-              className={`w-4 h-1 rounded-full ${i <= index ? 'bg-primary' : 'bg-white/10'
-                }`}
+              className={`w-4 h-1 rounded-full ${i <= index ? 'bg-primary' : 'bg-white/10'}`}
             />
           ))}
         </div>
@@ -384,8 +370,8 @@ const TerminalInput = () => {
         <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-white/[0.02]">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-primary/80" />
-            <div className="w-2 h-2 rounded-full bg-yellow-500/80" />
-            <div className="w-2 h-2 rounded-full bg-green-500/80" />
+            <div className="w-2 h-2 rounded-full bg-primary/80" />
+            <div className="w-2 h-2 rounded-full bg-primary/80" />
           </div>
           <span className="text-[10px] font-mono text-white/30 tracking-widest uppercase">
             TERMINAL::ACCESS_REQUEST
@@ -414,12 +400,12 @@ const TerminalInput = () => {
                 <motion.span
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="text-green-500 font-mono text-xs"
+                  className="text-primary font-mono text-xs"
                 >
                   [GRANTED]
                 </motion.span>
               ) : status === 'loading' ? (
-                <span className="text-yellow-500 font-mono text-xs animate-pulse">
+                <span className="text-primary/70 font-mono text-xs animate-pulse">
                   [PROCESSING...]
                 </span>
               ) : (
@@ -440,7 +426,7 @@ const TerminalInput = () => {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-4 p-3 border border-green-500/30 bg-green-500/5 font-mono text-xs text-green-500 rounded-lg"
+          className="mt-4 p-3 border border-primary/30 bg-primary/5 font-mono text-xs text-primary rounded-lg"
         >
           &gt; ACCESS_PENDING: You will receive deployment credentials shortly.
         </motion.div>
@@ -534,13 +520,13 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
           className="relative min-h-[90vh] flex flex-col items-center justify-center px-6 pt-24"
         >
           <div className="text-center max-w-5xl mx-auto mb-16">
-            <div className="min-h-[120px] md:min-h-[160px] flex items-center justify-center mb-8">
+            <div className="min-h-[200px] md:min-h-[320px] flex items-center justify-center mb-8">
               <HeadlineVariant />
             </div>
 
             <div className="text-sm md:text-xl text-white/50 max-w-3xl mx-auto leading-relaxed min-h-[4rem] md:h-16">
               <AggressiveGlitchText
-                text="Procedural generation, AI-driven narratives, and production-ready exports. The complete infrastructure for studio-scale world building."
+                text="AI-powered tools to build games faster. Or better. Or both. Pick what you need, skip what you don't."
                 className="font-mono tracking-tight"
               />
             </div>
@@ -554,14 +540,14 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
           >
             <Link
               href={isLoggedIn ? '/app' : '/login'}
-              className="group relative inline-flex items-center gap-3 px-10 py-5 text-base font-black bg-white text-black hover:bg-white/95 transition-all duration-500 rounded-2xl shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] font-syne"
+              className="group relative inline-flex items-center gap-3 px-10 py-5 text-base font-black bg-white text-black hover:bg-white/95 transition-all duration-500 rounded-xl shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] font-syne"
             >
               <Plus className="w-5 h-5" />
               START BUILDING FREE
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
 
-            <button className="group inline-flex items-center gap-3 px-8 py-5 text-sm font-bold text-white/60 hover:text-white transition-all border border-white/10 hover:border-white/30 rounded-2xl bg-black/40 backdrop-blur-xl font-syne">
+            <button className="group inline-flex items-center gap-3 px-8 py-5 text-sm font-bold text-white/60 hover:text-white transition-all border border-white/10 hover:border-white/30 rounded-xl bg-black/40 backdrop-blur-xl font-syne">
               <Play className="w-4 h-4" />
               WATCH DEMO
             </button>
@@ -587,9 +573,17 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
               whileInView={{ opacity: 1, y: 0 }}
               className="text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter font-mono"
             >
-              <span className="text-white">ARSENAL</span>
-              <span className="text-white/20"> OF CREATION</span>
+              <span className="text-white">AI</span>
+              <span className="text-primary"> ARSENAL</span>
             </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-sm md:text-base font-mono text-white/40 mt-4 tracking-widest"
+            >
+              AI TOOLS • BUILD FASTER • SHIP BETTER
+            </motion.p>
           </div>
 
           {/* FEATURE SUMMARY BAR */}
@@ -598,26 +592,43 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="flex flex-wrap items-center justify-between gap-6 px-10 py-6 bg-white/[0.02] border border-white/5 rounded-3xl backdrop-blur-xl"
+              className="flex flex-wrap items-center justify-between gap-6 px-8 py-5 bg-white/[0.02] border border-white/5 rounded-xl backdrop-blur-sm"
             >
               {[
-                { label: 'WORLD_GEN', val: '∞ PROXIMAL', color: 'text-primary' },
-                { label: 'AI_NARRATIVE', val: 'EMERGENT', color: 'text-green-500' },
-                { label: 'SCULPT_SIM', val: 'BATTLE_TESTED', color: 'text-orange-500' },
-                { label: 'EXPORT_SEC', val: 'PROD_READY', color: 'text-cyan-500' },
-              ].map((stat, i) => (
-                <div key={i} className="flex items-center gap-4">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-mono text-white/20 tracking-widest uppercase">
-                      {stat.label}
-                    </span>
-                    <span className={`text-xs font-black font-mono tracking-tight ${stat.color}`}>
-                      {stat.val}
-                    </span>
+                { label: 'WORLD_GEN', val: '∞ PROXIMAL', icon: Map },
+                { label: 'AI_NARRATIVE', val: 'EMERGENT', icon: Brain },
+                { label: 'SCULPT_SIM', val: 'BATTLE_TESTED', icon: Palette },
+                { label: 'EXPORT_SEC', val: 'PROD_READY', icon: Boxes },
+              ].map((stat, i) => {
+                const Icon = stat.icon
+                return (
+                  <div key={i} className="group/stat flex items-center gap-4">
+                    {/* 3D Icon Container */}
+                    <div className="relative">
+                      {/* Glow */}
+                      <div className="absolute inset-0 bg-primary rounded-xl blur-xl opacity-30 group-hover/stat:opacity-50 transition-opacity duration-500" />
+                      {/* 3D Box */}
+                      <div 
+                        className="relative w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center transition-all duration-300 group-hover/stat:scale-110 group-hover/stat:-translate-y-1"
+                        style={{
+                          boxShadow: '0 10px 30px -10px rgba(147, 51, 234, 0.6), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -2px 4px rgba(0,0,0,0.2)',
+                        }}
+                      >
+                        <Icon className="w-7 h-7 text-white" />
+                      </div>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-mono text-white/40 tracking-widest uppercase">
+                        {stat.label}
+                      </span>
+                      <span className="text-sm font-bold font-mono tracking-tight text-white">
+                        {stat.val}
+                      </span>
+                    </div>
+                    {i < 3 && <div className="hidden lg:block w-px h-10 bg-white/10 ml-2" />}
                   </div>
-                  {i < 3 && <div className="hidden lg:block w-px h-8 bg-white/10" />}
-                </div>
-              ))}
+                )
+              })}
               <div className="hidden xl:flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                 <span className="text-[10px] font-mono text-primary font-bold uppercase tracking-widest leading-none">
@@ -633,12 +644,12 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
               <motion.div
                 initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                className="lg:col-span-2 lg:row-span-2 rounded-3xl border border-white/5 bg-black/40 backdrop-blur-xl overflow-hidden group shadow-2xl"
+                className="lg:col-span-2 lg:row-span-2 rounded-xl border border-white/5 bg-black/40 backdrop-blur-xl overflow-hidden group"
               >
                 <div className="aspect-video lg:aspect-auto lg:h-[500px] relative bg-black/40 overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                   <div className="absolute inset-0 flex items-center justify-center border-b border-white/5">
-                    <Map className="w-24 h-24 text-primary/20 group-hover:scale-110 transition-transform duration-700" />
+                    <Map className="w-32 h-32 text-primary/20 group-hover:scale-110 transition-transform duration-700" />
                   </div>
                   <div className="absolute inset-x-0 bottom-0 h-1 bg-primary/20 overflow-hidden">
                     <motion.div
@@ -655,8 +666,8 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                     </div>
                     <span className="text-[10px] font-mono text-white/20">CORE::SYSTEM</span>
                   </div>
-                  <h3 className="text-4xl font-black uppercase tracking-tight text-white mb-6 font-syne">
-                    INFINITE PROCEDURAL WORLDS
+                  <h3 className="text-4xl font-black tracking-wide text-white mb-6 font-syne">
+                    Infinite Procedural Worlds
                   </h3>
                   <p className="text-white/50 font-mono text-base leading-relaxed">
                     Battle-tested terrain generation algorithms. Scale from a single dungeon to a
@@ -684,23 +695,23 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
               <motion.div
                 initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                className="lg:col-span-2 rounded-3xl border border-white/5 bg-black/40 backdrop-blur-xl p-10 group"
+                className="lg:col-span-2 rounded-xl border border-white/5 bg-black/40 backdrop-blur-xl p-10 group"
               >
                 <div className="flex items-center gap-4 mb-8">
-                  <div className="p-4 rounded-2xl bg-green-500/10 border border-green-500/20">
-                    <Brain className="w-8 h-8 text-green-500" />
+                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                    <Brain className="w-10 h-10 text-primary" />
                   </div>
-                  <h3 className="text-3xl font-black uppercase tracking-tighter text-white font-syne">
-                    EMERGENT AI NARRATIVES
+                  <h3 className="text-3xl font-black tracking-wide text-white font-syne">
+                    Emergent AI Narratives
                   </h3>
                 </div>
                 <p className="text-white/40 font-mono text-base leading-relaxed mb-8">
                   The AI dungeon master that doesn&apos;t pull punches. Faction warfare, political
                   intrigue, and cold-blooded betrayal.
                 </p>
-                <div className="h-32 rounded-2xl bg-black/60 border border-white/5 flex items-center justify-center relative overflow-hidden">
+                <div className="h-32 rounded-xl bg-black/60 border border-white/5 flex items-center justify-center relative overflow-hidden">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(34,197,94,0.1),transparent)] group-hover:scale-150 transition-transform duration-1000" />
-                  <span className="text-[10px] font-mono text-green-500/40 tracking-[0.4em] uppercase">
+                  <span className="text-[10px] font-mono text-white/30 tracking-[0.3em] uppercase">
                     SYMLINK::NEURAL_DRIVE
                   </span>
                 </div>
@@ -711,15 +722,15 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                 <motion.div
                   initial={{ opacity: 0, y: 40 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  className="h-full rounded-3xl border border-white/5 bg-black/40 backdrop-blur-xl p-10 group flex flex-col justify-between"
+                  className="h-full rounded-xl border border-white/5 bg-black/40 backdrop-blur-xl p-10 group flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-center gap-4 mb-8">
-                      <div className="p-4 rounded-2xl bg-orange-500/10 border border-orange-500/20">
-                        <Palette className="w-8 h-8 text-orange-500" />
+                      <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                        <Palette className="w-10 h-10 text-primary" />
                       </div>
-                      <h3 className="text-3xl font-black uppercase tracking-tighter text-white font-syne">
-                        BRUTAL SCULPTING
+                      <h3 className="text-3xl font-black tracking-wide text-white font-syne">
+                        Brutal Sculpting
                       </h3>
                     </div>
                     <p className="text-white/40 font-mono text-base leading-relaxed">
@@ -732,11 +743,11 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                       {[...Array(4)].map((_, i) => (
                         <div
                           key={i}
-                          className="w-8 h-8 rounded-full border-2 border-black bg-orange-500/20"
+                          className="w-8 h-8 rounded-full border-2 border-black bg-primary/20"
                         />
                       ))}
                     </div>
-                    <span className="text-[10px] font-mono text-orange-500/50 uppercase tracking-widest">
+                    <span className="text-[10px] font-mono text-primary/50 uppercase tracking-widest">
                       ACTIVE_SCULPTORS_04
                     </span>
                   </div>
@@ -845,19 +856,19 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                     'Finally, a tool that understands procedural generation the way I need it.',
                   author: 'Sarah Miller',
                   role: 'Tech Artist',
-                  icon: <Boxes className="w-5 h-5 text-cyan-500" />,
+                  icon: <Boxes className="w-5 h-5 text-primary" />,
                 },
                 {
                   quote: 'The narrative AI is like having a co-writer who never sleeps.',
                   author: 'Marcus Wright',
                   role: 'Game Writer',
-                  icon: <Brain className="w-5 h-5 text-green-500" />,
+                  icon: <Brain className="w-5 h-5 text-primary" />,
                 },
               ].map((t, i) => (
                 <motion.div
                   key={i}
                   whileHover={{ y: -10 }}
-                  className="p-8 rounded-3xl bg-black/40 border border-white/5 backdrop-blur-xl relative overflow-hidden group"
+                  className="p-8 rounded-xl bg-black/40 border border-white/5 backdrop-blur-xl relative overflow-hidden group"
                 >
                   <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-100 transition-opacity">
                     {t.icon}
@@ -879,6 +890,138 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                 </motion.div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* Our Manifesto */}
+        <section className="py-40 px-6 relative overflow-hidden">
+          {/* Background effects */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(147,51,234,0.15),transparent_50%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(220,38,38,0.08),transparent_50%)]" />
+          <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }} />
+          
+          <div className="max-w-6xl mx-auto relative z-10">
+            {/* Giant statement */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="mb-24"
+            >
+              <div className="text-center mb-8">
+                <span className="inline-block px-4 py-2 border border-primary/30 rounded-full text-[10px] font-mono text-primary tracking-[0.3em] uppercase bg-primary/5">
+                  MANIFESTO
+                </span>
+              </div>
+              
+              <h2 className="text-5xl md:text-7xl lg:text-8xl font-black text-center leading-[0.9] font-syne">
+                <span className="block text-white/20">WE DON&apos;T</span>
+                <span className="block text-white">REPLACE</span>
+                <span className="block bg-gradient-to-r from-primary via-purple-400 to-primary bg-clip-text text-transparent">
+                  CREATORS
+                </span>
+              </h2>
+              
+              <motion.div
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.3, duration: 0.8 }}
+                className="h-1 bg-gradient-to-r from-transparent via-primary to-transparent max-w-md mx-auto mt-12"
+              />
+            </motion.div>
+
+            {/* Two column layout */}
+            <div className="grid md:grid-cols-2 gap-16 mb-24">
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="space-y-6"
+              >
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-12 h-12 rounded-xl bg-red-600 flex items-center justify-center">
+                    <X className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="text-2xl font-black font-syne text-white">NOT THIS</span>
+                </div>
+                <p className="text-lg text-white/50 font-mono leading-relaxed">
+                  &ldquo;AI will replace artists&rdquo;
+                </p>
+                <p className="text-lg text-white/50 font-mono leading-relaxed">
+                  &ldquo;Creativity is dead&rdquo;
+                </p>
+                <p className="text-lg text-white/50 font-mono leading-relaxed">
+                  &ldquo;Humans are obsolete&rdquo;
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+                className="space-y-6"
+              >
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
+                    <Check className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="text-2xl font-black font-syne text-white">BUT THIS</span>
+                </div>
+                <p className="text-lg text-white/80 font-mono leading-relaxed">
+                  AI handles the <span className="text-primary font-bold">tedious grunt work</span>
+                </p>
+                <p className="text-lg text-white/80 font-mono leading-relaxed">
+                  Humans focus on <span className="text-primary font-bold">creative vision</span>
+                </p>
+                <p className="text-lg text-white/80 font-mono leading-relaxed">
+                  Together: <span className="text-primary font-bold">10x the output</span>
+                </p>
+              </motion.div>
+            </div>
+
+            {/* Core belief */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center p-12 rounded-xl border border-white/10 bg-white/[0.02] backdrop-blur-sm"
+            >
+              <p className="text-2xl md:text-3xl font-black font-syne text-white leading-snug max-w-3xl mx-auto">
+                Your taste. Your vision. Your instinct.
+                <br />
+                <span className="text-primary">That&apos;s the magic we can&apos;t automate.</span>
+              </p>
+            </motion.div>
+
+            {/* Stats */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
+              className="mt-20 grid grid-cols-3 gap-8"
+            >
+              {[
+                { value: '100%', label: 'HUMAN CREATIVITY', sub: 'irreplaceable' },
+                { value: '0%', label: 'TEDIOUS WORK', sub: 'automated' },
+                { value: '∞', label: 'POSSIBILITIES', sub: 'unlocked' },
+              ].map((stat, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.1 * i }}
+                  className="text-center"
+                >
+                  <div className="text-5xl md:text-6xl font-black text-primary font-mono mb-2">{stat.value}</div>
+                  <div className="text-xs font-mono text-white/60 tracking-[0.2em] uppercase">{stat.label}</div>
+                  <div className="text-[10px] font-mono text-white/30 mt-1">{stat.sub}</div>
+                </motion.div>
+              ))}
+            </motion.div>
           </div>
         </section>
 

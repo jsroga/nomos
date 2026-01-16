@@ -1,21 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { interiorDesigns, projects } from '@/db/schema'
-import { eq, and, desc } from 'drizzle-orm'
-import { requireAuth } from '@/lib/auth'
+import { eq, desc } from 'drizzle-orm'
+import { requireAuth, checkRateLimit } from '@/lib/api-utils'
+import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
 
-async function verifyProjectAccess(projectId: string, userId: string) {
-  const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
-  if (!project || project.userId !== userId) {
-    return false
-  }
-  return true
-}
+/**
+ * Verify design access using single JOIN query
+ */
+async function verifyDesignAccess(designId: string, userId: string): Promise<{
+  hasAccess: boolean
+  projectId?: string
+}> {
+  const result = await db
+    .select({
+      designId: interiorDesigns.id,
+      projectId: projects.id,
+      projectUserId: projects.userId,
+    })
+    .from(interiorDesigns)
+    .innerJoin(projects, eq(interiorDesigns.projectId, projects.id))
+    .where(eq(interiorDesigns.id, designId))
+    .limit(1)
 
-async function verifyDesignAccess(designId: string, userId: string) {
-  const [design] = await db.select().from(interiorDesigns).where(eq(interiorDesigns.id, designId))
-  if (!design) return false
-  return verifyProjectAccess(design.projectId, userId)
+  if (result.length === 0) return { hasAccess: false }
+  
+  const row = result[0]
+  if (row.projectUserId !== userId) return { hasAccess: false }
+
+  return { hasAccess: true, projectId: row.projectId }
 }
 
 export async function GET(req: NextRequest) {
@@ -32,24 +45,21 @@ export async function GET(req: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     if (designId) {
-      // Check access
-      if (!(await verifyDesignAccess(designId, session.user.id))) {
+      const { hasAccess } = await verifyDesignAccess(designId, session.user.id)
+      if (!hasAccess) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
       }
 
-      // Fetch single design
       const [design] = await db
         .select()
         .from(interiorDesigns)
         .where(eq(interiorDesigns.id, designId))
       return NextResponse.json(design || null)
     } else {
-      // Check access
       if (!(await verifyProjectAccess(projectId!, session.user.id))) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
       }
 
-      // Fetch all designs for project
       const designs = await db
         .select()
         .from(interiorDesigns)
@@ -66,18 +76,16 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const { session } = await requireAuth()
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { allowed } = checkRateLimit(`design-create:${session.user.id}`, { maxRequests: 20, windowMs: 60000 })
+    if (!allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
 
     const body = await req.json()
     const { projectId, name, sceneData } = body
 
     if (!projectId || !name || !sceneData) {
-      return NextResponse.json(
-        { error: 'Project ID, name, and scene data are required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Project ID, name, and scene data are required' }, { status: 400 })
     }
 
     if (!(await verifyProjectAccess(projectId, session.user.id))) {
@@ -86,12 +94,7 @@ export async function POST(req: NextRequest) {
 
     const [newDesign] = await db
       .insert(interiorDesigns)
-      .values({
-        projectId,
-        userId: session.user.id,
-        name,
-        sceneData,
-      })
+      .values({ projectId, userId: session.user.id, name, sceneData })
       .returning()
 
     return NextResponse.json(newDesign)
@@ -104,22 +107,17 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const { session } = await requireAuth()
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
     const { id, name, sceneData } = body
 
-    if (!id) {
-      return NextResponse.json({ error: 'Design ID is required' }, { status: 400 })
-    }
+    if (!id) return NextResponse.json({ error: 'Design ID is required' }, { status: 400 })
 
-    if (!(await verifyDesignAccess(id, session.user.id))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
-    }
+    const { hasAccess } = await verifyDesignAccess(id, session.user.id)
+    if (!hasAccess) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
 
-    const updates: any = { updatedAt: new Date() }
+    const updates: Record<string, any> = { updatedAt: new Date() }
     if (name !== undefined) updates.name = name
     if (sceneData !== undefined) updates.sceneData = sceneData
 
@@ -140,19 +138,14 @@ export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
 
-  if (!id) {
-    return NextResponse.json({ error: 'Design ID is required' }, { status: 400 })
-  }
+  if (!id) return NextResponse.json({ error: 'Design ID is required' }, { status: 400 })
 
   try {
     const { session } = await requireAuth()
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    if (!(await verifyDesignAccess(id, session.user.id))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
-    }
+    const { hasAccess } = await verifyDesignAccess(id, session.user.id)
+    if (!hasAccess) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
 
     await db.delete(interiorDesigns).where(eq(interiorDesigns.id, id))
     return NextResponse.json({ success: true })

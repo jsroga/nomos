@@ -157,11 +157,12 @@ export const generateTileTask = task({
     logger.info('Tile generated - pending user review', { filename, hasOriginal: !!originalUrl })
 
     // Return pendingReview: true so UI shows review dialog
+    // Note: base64 removed from response to reduce payload size
+    // Images are stored in Vercel Blob and accessed via newUrl
     return {
       success: true,
       filename,
       newUrl,
-      newBase64: base64Data, // Still include for acceptGeneration to save locally
       originalUrl,
       isFirstTile: !originalUrl,
       pendingReview: true,

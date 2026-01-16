@@ -1,6 +1,6 @@
 /**
  * Loop Planner Agent
- * 
+ *
  * Designs overall game loop structure by:
  * - Identifying core, session, and meta loops
  * - Understanding player motivation cycles
@@ -9,12 +9,7 @@
 
 import { ChatOpenAI } from '@langchain/openai'
 import { AIMessage, SystemMessage } from '@langchain/core/messages'
-import {
-  LoopCreatorState,
-  GameLoop,
-  LoopAgentAction,
-  NextAgent
-} from '../graph/state'
+import { LoopCreatorState, GameLoop, LoopAgentAction, NextAgent } from '../graph/state'
 import { v4 as uuidv4 } from 'uuid'
 
 const LOOP_PLANNER_SYSTEM_PROMPT = `You are a Game Loop Planner - an expert in designing engaging gameplay loop structures.
@@ -170,9 +165,10 @@ REMEMBER:
  * Build context for the agent
  */
 function buildContext(state: LoopCreatorState): string {
-  const mechanicsList = state.mechanics.length > 0
-    ? state.mechanics.map(m => `- ${m.id}: ${m.name} (${m.type})`).join('\n')
-    : 'No mechanics defined yet'
+  const mechanicsList =
+    state.mechanics.length > 0
+      ? state.mechanics.map(m => `- ${m.id}: ${m.name} (${m.type})`).join('\n')
+      : 'No mechanics defined yet'
 
   // Include reference games in description for better context
   let description = state.gameDescription || 'Not specified'
@@ -181,12 +177,12 @@ function buildContext(state: LoopCreatorState): string {
   }
 
   // Get selected timeframes or default to all
-  const timeframes = state.selectedTimeframes?.length > 0
-    ? state.selectedTimeframes.join(', ')
-    : 'micro, core, session, meta (all)'
+  const timeframes =
+    state.selectedTimeframes?.length > 0
+      ? state.selectedTimeframes.join(', ')
+      : 'micro, core, session, meta (all)'
 
-  return LOOP_PLANNER_SYSTEM_PROMPT
-    .replace('{{GENRE}}', state.gameGenre || 'Not specified')
+  return LOOP_PLANNER_SYSTEM_PROMPT.replace('{{GENRE}}', state.gameGenre || 'Not specified')
     .replace('{{PLATFORM}}', state.gamePlatform || 'Not specified')
     .replace('{{AUDIENCE}}', state.targetAudience || 'Not specified')
     .replace('{{DESCRIPTION}}', description)
@@ -227,7 +223,10 @@ function parseResponse(content: string): LoopPlannerResponse {
         timeframe: l.timeframe || l.type, // Preserve timeframe
       }))
 
-      console.log(`[LoopPlanner] Parsed ${loops.length} loops:`, loops.map((l: GameLoop) => l.name))
+      console.log(
+        `[LoopPlanner] Parsed ${loops.length} loops:`,
+        loops.map((l: GameLoop) => l.name)
+      )
 
       return {
         analysis: parsed.analysis || '',
@@ -304,7 +303,9 @@ export async function loopPlannerAgent(
   // Get the task from the last human message or use default
   const lastHumanMsg = [...state.messages].reverse().find(m => m._getType() === 'human')
   const task = lastHumanMsg
-    ? (typeof lastHumanMsg.content === 'string' ? lastHumanMsg.content : 'Design the game loop structure')
+    ? typeof lastHumanMsg.content === 'string'
+      ? lastHumanMsg.content
+      : 'Design the game loop structure'
     : 'Design the initial game loop structure based on the game context'
 
   console.log('[LoopPlanner] Task:', task.slice(0, 100))
@@ -312,18 +313,14 @@ export async function loopPlannerAgent(
 
   const systemPrompt = buildContext(state).replace('{{TASK}}', task)
 
-  const messages = [
-    new SystemMessage(systemPrompt),
-    ...state.messages.slice(-5),
-  ]
+  const messages = [new SystemMessage(systemPrompt), ...state.messages.slice(-5)]
 
   console.log('[LoopPlanner] Calling LLM...')
   const response = await model.invoke(messages)
   console.log('[LoopPlanner] LLM response received')
 
-  const content = typeof response.content === 'string'
-    ? response.content
-    : JSON.stringify(response.content)
+  const content =
+    typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
 
   console.log('[LoopPlanner] Response length:', content.length)
 
@@ -335,7 +332,7 @@ export async function loopPlannerAgent(
   // SMART LAYOUT: Groups arranged HORIZONTALLY by timeframe (left to right)
   // Nodes within groups arranged VERTICALLY (top to bottom: challenge → action → feedback)
   const nodeActions: LoopAgentAction[] = []
-  
+
   // Layout constants - GENEROUS SPACING for readability
   const GROUP_WIDTH = 420
   const GROUP_GAP = 150
@@ -344,35 +341,35 @@ export async function loopPlannerAgent(
   const NODE_GAP_Y = 80
   const GROUP_PADDING = 80
   const GROUP_HEADER_HEIGHT = 80
-  
+
   // Map psychological phases to node types
   const phaseToNodeType: Record<string, string> = {
-    'challenge': 'challenge',
-    'action': 'action', 
-    'feedback': 'reward',  // feedback maps to reward visually
+    challenge: 'challenge',
+    action: 'action',
+    feedback: 'reward', // feedback maps to reward visually
   }
-  
+
   // Timeframe order for horizontal positioning (left to right)
   const timeframeOrder = ['micro', 'core', 'session', 'meta', 'progression']
-  
+
   // Sort loops by timeframe
   const sortedLoops = [...parsed.loops].sort((a, b) => {
     const aTimeframe = a.timeframe || a.type
     const bTimeframe = b.timeframe || b.type
     return timeframeOrder.indexOf(aTimeframe) - timeframeOrder.indexOf(bTimeframe)
   })
-  
+
   // Track group positions for inter-group edges
   const groupPositions: Record<string, { x: number; y: number; width: number; height: number }> = {}
-  
+
   // Process each loop and create GROUPS HORIZONTALLY
   let currentGroupX = 50
-  
+
   for (const loop of sortedLoops) {
     const loopNodes = loop.nodes || []
     const timeframe = loop.timeframe || loop.type
     const durationUnit = (loop.duration as { unit?: string })?.unit || 'seconds'
-    
+
     // Sort nodes by psychological order
     const phaseOrder = ['challenge', 'action', 'feedback']
     const sortedNodes = [...loopNodes].sort((a: any, b: any) => {
@@ -380,15 +377,19 @@ export async function loopPlannerAgent(
       const bIdx = phaseOrder.indexOf(b.psychPhase || 'action')
       return aIdx - bIdx
     })
-    
+
     // Calculate group height based on number of nodes
     const nodeCount = Math.max(sortedNodes.length, 1)
-    const groupHeight = GROUP_HEADER_HEIGHT + GROUP_PADDING * 2 + nodeCount * NODE_HEIGHT + (nodeCount - 1) * NODE_GAP_Y
-    
+    const groupHeight =
+      GROUP_HEADER_HEIGHT +
+      GROUP_PADDING * 2 +
+      nodeCount * NODE_HEIGHT +
+      (nodeCount - 1) * NODE_GAP_Y
+
     // Create a group/container node
     const groupId = `group-${loop.id}`
     groupPositions[loop.id] = { x: currentGroupX, y: 50, width: GROUP_WIDTH, height: groupHeight }
-    
+
     nodeActions.push({
       type: 'ADD_NODE',
       payload: {
@@ -409,17 +410,17 @@ export async function loopPlannerAgent(
       confidence: 0.85,
       reasoning: `${timeframe.toUpperCase()} LOOP: ${loop.name}`,
     })
-    
+
     // Create nodes VERTICALLY within the group
     const nodeIds: string[] = []
     const nodeCenterX = currentGroupX + GROUP_WIDTH / 2 - NODE_WIDTH / 2
     let nodeY = 50 + GROUP_HEADER_HEIGHT + GROUP_PADDING
-    
+
     for (const node of sortedNodes) {
       const nodeId = `${loop.id}-${node.name?.replace(/\s+/g, '-').toLowerCase() || uuidv4()}`
       const psychPhase = node.psychPhase || 'action'
       const nodeType = phaseToNodeType[psychPhase] || 'action'
-      
+
       nodeActions.push({
         type: 'ADD_NODE',
         payload: {
@@ -435,16 +436,16 @@ export async function loopPlannerAgent(
         confidence: 0.85,
         reasoning: `${psychPhase.toUpperCase()}: ${node.description?.slice(0, 40) || node.name}`,
       })
-      
+
       nodeIds.push(nodeId)
       nodeY += NODE_HEIGHT + NODE_GAP_Y
     }
-    
+
     // Create VERTICAL edges connecting nodes (challenge → action → feedback)
     for (let i = 0; i < nodeIds.length - 1; i++) {
       const sourcePhase = sortedNodes[i]?.psychPhase || 'challenge'
       const targetPhase = sortedNodes[i + 1]?.psychPhase || 'action'
-      
+
       nodeActions.push({
         type: 'ADD_EDGE',
         payload: {
@@ -459,7 +460,7 @@ export async function loopPlannerAgent(
         reasoning: `${sourcePhase} → ${targetPhase}`,
       })
     }
-    
+
     // Loop closure edge (feedback → challenge, wrapping around)
     if (nodeIds.length >= 2) {
       nodeActions.push({
@@ -477,18 +478,18 @@ export async function loopPlannerAgent(
         reasoning: 'Loop closure: feeds back to start',
       })
     }
-    
+
     // Move to next group position (horizontal)
     currentGroupX += GROUP_WIDTH + GROUP_GAP
   }
-  
+
   // Connect groups HORIZONTALLY (micro → core → session → meta)
   for (let i = 0; i < sortedLoops.length - 1; i++) {
     const sourceLoop = sortedLoops[i]
     const targetLoop = sortedLoops[i + 1]
     const sourceTimeframe = sourceLoop.timeframe || sourceLoop.type
     const targetTimeframe = targetLoop.timeframe || targetLoop.type
-    
+
     nodeActions.push({
       type: 'ADD_EDGE',
       payload: {
@@ -510,10 +511,11 @@ export async function loopPlannerAgent(
     nextAgent: 'supervisor' as NextAgent,
     messages: [
       new AIMessage({
-        content: parsed.message || `Created ${parsed.loops.length} game loops with ${nodeActions.length} canvas elements.`,
+        content:
+          parsed.message ||
+          `Created ${parsed.loops.length} game loops with ${nodeActions.length} canvas elements.`,
         name: 'loop_planner',
       }),
     ],
   }
 }
-

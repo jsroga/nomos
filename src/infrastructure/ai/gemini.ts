@@ -1,13 +1,38 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AIModel, AIModelConfig, TileContext } from './types'
 import { assembleContextImage } from './contextAssembler'
 import axios from 'axios'
+
+interface GeminiPart {
+  text?: string
+  inline_data?: {
+    mime_type: string
+    data: string
+  }
+  inlineData?: {
+    mime_type: string
+    data: string
+  }
+}
+
+interface GeminiCandidate {
+  content?: {
+    parts?: GeminiPart[]
+  }
+  finishReason?: string
+}
+
+interface GeminiResponse {
+  candidates?: GeminiCandidate[]
+  error?: {
+    message: string
+  }
+}
 
 export class GeminiAIModel implements AIModel {
   id = 'gemini'
   name = 'Nano Banana Pro (Gemini 3)'
   description =
-    'Uses Google\'s state-of-the-art Gemini 3 Pro Image model for high-fidelity generation.'
+    "Uses Google's state-of-the-art Gemini 3 Pro Image model for high-fidelity generation."
 
   validateConfig(config: AIModelConfig): boolean {
     return !!config.apiKey
@@ -51,7 +76,7 @@ export class GeminiAIModel implements AIModel {
     }
 
     try {
-      const response = await axios.post(url, payload, {
+      const response = await axios.post<GeminiResponse>(url, payload, {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -73,29 +98,35 @@ export class GeminiAIModel implements AIModel {
       if (!parts || parts.length === 0) throw new Error('No content parts returned')
 
       // Look for inline_data (image)
-      const imagePart = parts.find((p: any) => p.inline_data || p.inlineData)
+      const imagePart = parts.find(p => p.inline_data || p.inlineData)
 
       if (!imagePart) {
         // If no image, maybe it returned text?
-        const textPart = parts.find((p: any) => p.text)
+        const textPart = parts.find(p => p.text)
         if (textPart) {
           // If it returned text, it might be refusing or describing.
           // But we need an image.
           throw new Error(
-            `Gemini returned text instead of image: ${textPart.text.substring(0, 100)}...`
+            `Gemini returned text instead of image: ${textPart.text?.substring(0, 100)}...`
           )
         }
         throw new Error('No image found in response')
       }
 
       const inlineData = imagePart.inline_data || imagePart.inlineData
+      if (!inlineData) throw new Error('Image data missing in response part')
+
       const generatedBase64 = inlineData.data
       const dataUrl = `data:image/png;base64,${generatedBase64}`
 
       return await this.cropImage(dataUrl, cropRect)
-    } catch (error: any) {
-      console.error('Gemini generation failed', error.response?.data || error)
-      throw new Error(`Gemini failed: ${error.response?.data?.error?.message || error.message}`)
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error('Gemini generation failed', error.response?.data || error)
+        throw new Error(`Gemini failed: ${error.response?.data?.error?.message || error.message}`)
+      }
+      console.error('Gemini generation failed', error)
+      throw new Error(`Gemini failed: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 

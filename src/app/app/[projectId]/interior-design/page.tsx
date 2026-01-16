@@ -243,11 +243,20 @@ export default function InteriorDesignerPage() {
             zenMode ? 'translate-x-full opacity-0 pointer-events-none' : 'translate-x-0'
           )}
         >
-          <DomainSidebar header={null} position="right" storageKey="interior-properties" defaultWidth={400} rawContent>
+          <DomainSidebar
+            header={null}
+            position="right"
+            storageKey="interior-properties"
+            defaultWidth={400}
+            rawContent
+          >
             <div className="flex flex-col h-full bg-background/20">
               {/* Upper Section: Asset Library (only for OBJECT mode) */}
               {mode === 'OBJECT' && (
-                <div id={TOUR_STEP_IDS.INTERIOR_ASSETS} className="h-[40%] border-b border-border/50">
+                <div
+                  id={TOUR_STEP_IDS.INTERIOR_ASSETS}
+                  className="h-[40%] border-b border-border/50"
+                >
                   <AssetLibrary />
                 </div>
               )}

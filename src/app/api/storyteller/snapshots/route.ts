@@ -1,9 +1,14 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
+import { requireAuth } from '@/lib/auth'
+import { verifyBeatAccess, verifyCharacterAccess } from '@/domains/storyteller/lib/access-verification'
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const body = await req.json()
     const {
       beatId,
@@ -20,10 +25,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'beatId and characterId are required' }, { status: 400 })
     }
 
+    // Verify beat access
+    if (!(await verifyBeatAccess(beatId, session.user.id))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
+
     const cookieStore = await cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
-    // Upsert the snapshot (update if exists, insert if not)
     const { data, error } = await supabase
       .from('character_state_snapshots')
       .upsert(
@@ -37,9 +46,7 @@ export async function POST(req: Request) {
           fears: fears ?? [],
           notes: notes ?? null,
         },
-        {
-          onConflict: 'character_id,beat_id',
-        }
+        { onConflict: 'character_id,beat_id' }
       )
       .select()
       .single()
@@ -56,8 +63,11 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const { searchParams } = new URL(req.url)
     const beatId = searchParams.get('beatId')
     const characterId = searchParams.get('characterId')
@@ -66,21 +76,25 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'beatId or characterId is required' }, { status: 400 })
     }
 
+    // Verify access
+    if (beatId && !(await verifyBeatAccess(beatId, session.user.id))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
+    if (characterId && !(await verifyCharacterAccess(characterId, session.user.id))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
+
     const cookieStore = await cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
     let query = supabase.from('character_state_snapshots').select(`
-                *,
-                characters (id, name),
-                beats (id, sequence, logline)
-            `)
+      *,
+      characters (id, name),
+      beats (id, sequence, logline)
+    `)
 
-    if (beatId) {
-      query = query.eq('beat_id', beatId)
-    }
-    if (characterId) {
-      query = query.eq('character_id', characterId)
-    }
+    if (beatId) query = query.eq('beat_id', beatId)
+    if (characterId) query = query.eq('character_id', characterId)
 
     const { data, error } = await query.order('created_at', { ascending: true })
 

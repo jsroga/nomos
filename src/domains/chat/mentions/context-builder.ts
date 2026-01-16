@@ -1,6 +1,6 @@
 /**
  * Context Builder for Mentions
- * 
+ *
  * Transforms selected mentions into XML context that gets prepended to user messages.
  * This allows the AI to have full context about referenced entities, agents, and sections.
  */
@@ -22,12 +22,10 @@ export function buildMentionContext(mentions: MentionItem[]): string {
 
   // Entities with full context
   for (const entity of entities) {
-    const contextJson = entity.context 
-      ? JSON.stringify(entity.context, null, 2)
-      : '{}'
+    const contextJson = entity.context ? JSON.stringify(entity.context, null, 2) : '{}'
     parts.push(`  <entity type="${entity.type}" name="${escapeXml(entity.name)}">`)
     parts.push(`    ${contextJson}`)
-    parts.push(`  </entity>`)
+    parts.push('  </entity>')
   }
 
   // Agents (routing hints)
@@ -37,12 +35,10 @@ export function buildMentionContext(mentions: MentionItem[]): string {
 
   // Sections with content
   for (const section of sections) {
-    const contextJson = section.context
-      ? JSON.stringify(section.context, null, 2)
-      : '[]'
+    const contextJson = section.context ? JSON.stringify(section.context, null, 2) : '[]'
     parts.push(`  <section type="${section.type}" name="${escapeXml(section.name)}">`)
     parts.push(`    ${contextJson}`)
-    parts.push(`  </section>`)
+    parts.push('  </section>')
   }
 
   parts.push('</mentioned_context>')
@@ -70,9 +66,7 @@ export function buildMessageWithContext(
  * Returns agent names that should be prioritized for routing
  */
 export function extractAgentHints(mentions: MentionItem[]): string[] {
-  return mentions
-    .filter(m => m.category === 'agent')
-    .map(m => m.type)
+  return mentions.filter(m => m.category === 'agent').map(m => m.type)
 }
 
 /**
@@ -128,7 +122,7 @@ export function formatMentionsInText(
 
   for (const mention of mentions) {
     const mentionPattern = new RegExp(`@${escapeRegex(mention.name)}\\b`, 'g')
-    
+
     if (format === 'markdown') {
       result = result.replace(mentionPattern, `**@${mention.name}**`)
     }

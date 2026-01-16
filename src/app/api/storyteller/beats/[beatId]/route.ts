@@ -1,22 +1,49 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { beats, episodes, projects } from '@/domains/storyteller/db/schema'
-import { eq } from 'drizzle-orm'
+import { eq, and, sql } from 'drizzle-orm'
 import { requireAuth } from '@/lib/auth'
 
-async function verifyBeatAccess(beatId: string, userId: string) {
-  // Join not supported directly in simple query easily, so simple lookup chain for now
-  // Beat -> Episode -> Project
-  const [beat] = await db.select().from(beats).where(eq(beats.id, beatId))
-  if (!beat) return false
+/**
+ * Verify beat access using a single JOIN query instead of 3 sequential queries
+ * Returns { hasAccess, projectId, episodeId } for potential reuse
+ */
+async function verifyBeatAccess(
+  beatId: string,
+  userId: string
+): Promise<{
+  hasAccess: boolean
+  projectId?: string
+  episodeId?: string
+}> {
+  // Single query with JOINs: beat -> episode -> project
+  const result = await db
+    .select({
+      beatId: beats.id,
+      episodeId: episodes.id,
+      projectId: projects.id,
+      projectUserId: projects.userId,
+    })
+    .from(beats)
+    .innerJoin(episodes, eq(beats.episodeId, episodes.id))
+    .innerJoin(projects, eq(episodes.projectId, projects.id))
+    .where(eq(beats.id, beatId))
+    .limit(1)
 
-  const [episode] = await db.select().from(episodes).where(eq(episodes.id, beat.episodeId))
-  if (!episode) return false
+  if (result.length === 0) {
+    return { hasAccess: false }
+  }
 
-  const [project] = await db.select().from(projects).where(eq(projects.id, episode.projectId))
-  if (!project || project.userId !== userId) return false
+  const row = result[0]
+  if (row.projectUserId !== userId) {
+    return { hasAccess: false }
+  }
 
-  return true
+  return {
+    hasAccess: true,
+    projectId: row.projectId,
+    episodeId: row.episodeId,
+  }
 }
 
 export async function PATCH(req: Request, props: { params: Promise<{ beatId: string }> }) {
@@ -26,8 +53,9 @@ export async function PATCH(req: Request, props: { params: Promise<{ beatId: str
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { beatId } = params
+    const { hasAccess } = await verifyBeatAccess(beatId, session.user.id)
 
-    if (!(await verifyBeatAccess(beatId, session.user.id))) {
+    if (!hasAccess) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
@@ -49,8 +77,9 @@ export async function DELETE(req: Request, props: { params: Promise<{ beatId: st
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { beatId } = params
+    const { hasAccess } = await verifyBeatAccess(beatId, session.user.id)
 
-    if (!(await verifyBeatAccess(beatId, session.user.id))) {
+    if (!hasAccess) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 

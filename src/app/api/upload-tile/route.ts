@@ -1,12 +1,12 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
+import { withAuth, withRateLimit, verifyProjectAccess, type AuthenticatedRequest } from '@/lib/api-utils'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(request: Request) {
-  try {
+export const POST = withRateLimit(
+  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
     const { projectId, x, y, imageBase64, prompt } = await request.json()
 
     if (!projectId || x === undefined || y === undefined || !imageBase64) {
@@ -14,6 +14,12 @@ export async function POST(request: Request) {
         { error: 'Missing required fields: projectId, x, y, imageBase64' },
         { status: 400 }
       )
+    }
+
+    // Verify project access
+    const hasAccess = await verifyProjectAccess(supabase, projectId)
+    if (!hasAccess) {
+      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
     }
 
     // Generate filename
@@ -33,12 +39,7 @@ export async function POST(request: Request) {
     const filePath = path.join(projectDir, filename)
     fs.writeFileSync(filePath, buffer)
 
-    // Update database
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-
+    // Update database using authenticated client (RLS enforced)
     const { data, error } = await supabase
       .from('tiles')
       .upsert(
@@ -65,9 +66,6 @@ export async function POST(request: Request) {
       imageUrl: `/projects/${projectId}/${filename}`,
       tile: data,
     })
-  } catch (error: unknown) {
-    console.error('Upload tile error:', error)
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    return NextResponse.json({ error: message }, { status: 500 })
-  }
-}
+  }),
+  { maxRequests: 30, windowMs: 60000 }
+)

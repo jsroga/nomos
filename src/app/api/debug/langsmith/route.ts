@@ -1,11 +1,20 @@
 import { NextResponse } from 'next/server'
 import { checkLangSmithConfig } from '@/lib/langsmith'
+import { requireAuth } from '@/lib/api-utils'
 
 /**
  * Debug endpoint to check LangSmith configuration
  * GET /api/debug/langsmith
+ * 
+ * PROTECTED - requires authentication
  */
 export async function GET() {
+  // Require auth - debug endpoints should not be public
+  const { session, error } = await requireAuth()
+  if (error || !session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const config = checkLangSmithConfig()
 
   // Test the connection if configured
@@ -43,7 +52,6 @@ export async function GET() {
       project: process.env.LANGCHAIN_PROJECT || 'default',
       endpoint: process.env.LANGCHAIN_ENDPOINT || 'https://api.smith.langchain.com',
       apiKeySet: !!process.env.LANGCHAIN_API_KEY,
-      apiKeyPrefix: process.env.LANGCHAIN_API_KEY?.slice(0, 10) + '...',
     },
     connectionTest,
     instructions: !config.enabled

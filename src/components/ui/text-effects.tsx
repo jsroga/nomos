@@ -157,7 +157,7 @@ const PressureChar = ({
     const containerRect = containerRef.current.getBoundingClientRect()
     const distance = Math.sqrt(
       Math.pow(window.scrollX + centerX - (mousePos.x + containerRect.left), 2) +
-      Math.pow(window.scrollY + centerY - (mousePos.y + containerRect.top), 2)
+        Math.pow(window.scrollY + centerY - (mousePos.y + containerRect.top), 2)
     )
 
     const newWeight = Math.max(minWeight, maxWeight - distance * 2)
@@ -276,10 +276,24 @@ export const LiquidDistortionText = ({
   fontSize?: string
 }) => {
   return (
-    <div className={`relative ${className} group cursor-default py-8 px-12 md:px-20 overflow-visible flex items-center justify-center`}>
+    <div
+      className={`relative ${className} group cursor-default py-8 px-12 md:px-20 overflow-visible flex items-center justify-center`}
+    >
       <svg className="absolute w-0 h-0 pointer-events-none">
-        <filter id="liquidFilter" x="-20%" y="-20%" width="140%" height="140%" filterUnits="objectBoundingBox">
-          <feTurbulence type="fractalNoise" baseFrequency="0.005 0.005" numOctaves="1" result="warp">
+        <filter
+          id="liquidFilter"
+          x="-20%"
+          y="-20%"
+          width="140%"
+          height="140%"
+          filterUnits="objectBoundingBox"
+        >
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.005 0.005"
+            numOctaves="1"
+            result="warp"
+          >
             <animate
               attributeName="baseFrequency"
               values="0.005 0.005; 0.008 0.01; 0.005 0.005"
@@ -339,14 +353,20 @@ export const AggressiveGlitchText = ({
         // Scramble some chars more aggressively
         if (rand > 0.95) {
           setGlitchText(prev =>
-            prev.split('').map(c => Math.random() > 0.7 ? '01X_#!$?'[Math.floor(Math.random() * 8)] : c).join('')
+            prev
+              .split('')
+              .map(c => (Math.random() > 0.7 ? '01X_#!$?'[Math.floor(Math.random() * 8)] : c))
+              .join('')
           )
         }
 
-        setTimeout(() => {
-          setIsGlitching(false)
-          setGlitchText(text)
-        }, 100 + Math.random() * 200)
+        setTimeout(
+          () => {
+            setIsGlitching(false)
+            setGlitchText(text)
+          },
+          100 + Math.random() * 200
+        )
       }
     }, 1500)
 
@@ -354,10 +374,17 @@ export const AggressiveGlitchText = ({
   }, [text])
 
   return (
-    <div className={`relative inline-block ${className} font-mono font-bold uppercase tracking-[0.1em] md:tracking-[0.2em]`}>
-      <span className="relative z-10 transition-transform duration-75" style={{
-        transform: isGlitching ? `translate(${(Math.random() - 0.5) * 4}px, ${(Math.random() - 0.5) * 2}px)` : 'none'
-      }}>
+    <div
+      className={`relative inline-block ${className} font-mono font-bold uppercase tracking-[0.1em] md:tracking-[0.2em]`}
+    >
+      <span
+        className="relative z-10 transition-transform duration-75"
+        style={{
+          transform: isGlitching
+            ? `translate(${(Math.random() - 0.5) * 4}px, ${(Math.random() - 0.5) * 2}px)`
+            : 'none',
+        }}
+      >
         {glitchText}
       </span>
 

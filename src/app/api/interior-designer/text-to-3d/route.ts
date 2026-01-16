@@ -1,12 +1,13 @@
 import { tasks } from '@trigger.dev/sdk/v3'
 import { NextRequest, NextResponse } from 'next/server'
 import type { textTo3DTask } from '@/trigger/text-to-3d'
+import { withAuth, withRateLimit, verifyProjectAccess, type AuthenticatedRequest } from '@/lib/api-utils'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json()
+export const POST = withRateLimit(
+  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
+    const body = await request.json()
     const { projectId, prompt, seed, apiKey, artStyle, enablePbr, targetPolycount, topology } = body
 
     if (!projectId || !prompt) {
@@ -16,13 +17,17 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Use provided API key or fall back to server env
+    // Verify project access
+    const hasAccess = await verifyProjectAccess(supabase, projectId)
+    if (!hasAccess) {
+      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+    }
+
     const meshyApiKey = apiKey || process.env.MESHY_API_KEY
     if (!meshyApiKey) {
       return NextResponse.json({ error: 'Meshy API key not configured' }, { status: 400 })
     }
 
-    // Trigger the task
     const handle = await tasks.trigger<typeof textTo3DTask>(
       'text-to-3d',
       {
@@ -35,9 +40,7 @@ export async function POST(req: NextRequest) {
         targetPolycount: targetPolycount || 30000,
         topology: topology || 'triangle',
       },
-      {
-        ttl: '1h', // Match maxDuration
-      }
+      { ttl: '1h' }
     )
 
     return NextResponse.json({
@@ -45,8 +48,7 @@ export async function POST(req: NextRequest) {
       runId: handle.id,
       publicAccessToken: handle.publicAccessToken,
     })
-  } catch (error: any) {
-    console.error('Failed to trigger text-to-3d:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-}
+  }),
+  { maxRequests: 5, windowMs: 60000 }
+)
+

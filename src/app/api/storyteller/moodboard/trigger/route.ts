@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { tasks } from '@trigger.dev/sdk/v3'
 import { generateMoodboard } from '@/trigger/generate-moodboard'
 import { db } from '@/lib/db'
@@ -6,17 +6,27 @@ import { projects } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'
 import { StoryPlan } from '@/domains/storyteller/schemas/agent-schemas'
 import OpenAI from 'openai'
+import { requireAuth } from '@/lib/auth'
+import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const { projectId, providerConfig, styleReference, promptIndex } = await req.json()
 
     if (!projectId) {
       return NextResponse.json({ error: 'Missing projectId' }, { status: 400 })
+    }
+
+    // Verify project access
+    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
     }
 
     // Fetch Project Bible Data and Settings
@@ -52,7 +62,6 @@ export async function POST(req: Request) {
     let prompts: string[] = []
 
     try {
-      // Generate Prompts with OpenAI
       let systemPrompt = `You are a creative director for a film or game project. Generate 4 distinct, highly visual image generation prompts for an AI art generator (like Midjourney or Imagen).
 Project: ${projectTitle}
 Genre: ${genre}
@@ -88,22 +97,16 @@ Output ONLY the single prompt string.`
       const content = gptResponse.choices[0]?.message?.content?.trim() || ''
 
       if (typeof promptIndex === 'number' && promptIndex >= 0 && promptIndex < 4) {
-        prompts = [content.replace(/^"|"$/g, '')] // Remove quotes if present
+        prompts = [content.replace(/^"|"$/g, '')]
       } else {
-        // Try parsing JSON array
         try {
-          // Remove markdown code blocks if present
           const cleanContent = content
             .replace(/```json/g, '')
             .replace(/```/g, '')
             .trim()
           prompts = JSON.parse(cleanContent)
         } catch (e) {
-          console.warn(
-            'Failed to parse GPT prompts as JSON, falling back to manual construction',
-            e
-          )
-          // Fallback mechanism if JSON parse fails
+          console.warn('Failed to parse GPT prompts as JSON, falling back to manual construction', e)
           prompts = [
             `Movie concept art, ${projectTitle}, ${genre}, ${tone}. ${worldDesc}. Wide environment shot.`,
             `Movie concept art, ${projectTitle}, ${genre}, ${tone}. ${worldDesc}. Key artifact close-up.`,
@@ -114,7 +117,6 @@ Output ONLY the single prompt string.`
       }
     } catch (openaiError) {
       console.error('OpenAI Prompt Generation failed:', openaiError)
-      // Fallback to static prompts
       const baseContext = `Project: ${projectTitle}. Genre: ${genre}. Tone: ${tone}. World: ${worldDesc}.`
       const allPrompts = [
         `${baseContext} Wide establishing shot of the main environment. Grand scale.`,
@@ -130,15 +132,14 @@ Output ONLY the single prompt string.`
       }
     }
 
-    // Trigger the Task
     const handle = await tasks.trigger('generate-moodboard', {
       projectId,
       prompts,
       styleReference: undefined,
-      replaceIndex: typeof promptIndex === 'number' ? promptIndex : undefined, // NEW: Tell task which index to replace
+      replaceIndex: typeof promptIndex === 'number' ? promptIndex : undefined,
       providerConfig: {
         ...providerConfig,
-        styleReferenceUrls, // Pass all URLs here
+        styleReferenceUrls,
       },
     })
 

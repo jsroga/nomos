@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { FalClient, SamParams } from '@/infrastructure/ai/fal'
+import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/lib/api-utils'
 
 // Set max duration for longer processing (App Router)
 export const maxDuration = 60
 
-export async function POST(request: NextRequest) {
-  try {
+/**
+ * POST /api/ai/fal-segment
+ * Segment objects in an image using FAL AI
+ */
+export const POST = withRateLimit(
+  withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
     // Parse body manually to handle large payloads
     const body = await request.text()
 
@@ -13,6 +18,7 @@ export async function POST(request: NextRequest) {
     console.log('[fal/segment] Raw body size:', {
       bytes: body.length,
       mb: (body.length / 1024 / 1024).toFixed(2),
+      userId: session.user.id,
     })
 
     const { image, box, apiKey, textPrompt, samParams } = JSON.parse(body)
@@ -52,8 +58,6 @@ export async function POST(request: NextRequest) {
     const output = await client.segmentObject(image, box, textPrompt, samParams as SamParams)
 
     return NextResponse.json({ output })
-  } catch (error: any) {
-    console.error('[fal/segment] Error:', error)
-    return NextResponse.json({ error: error.message || 'Segmentation failed' }, { status: 500 })
-  }
-}
+  }),
+  { maxRequests: 30, windowMs: 60000 } // 30 segmentation requests per minute
+)

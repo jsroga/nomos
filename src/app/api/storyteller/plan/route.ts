@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { episodes, projects, storyPlans } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'
+import { requireAuth } from '@/lib/auth'
+import { verifyProjectAccess, verifyEpisodeAccess } from '@/domains/storyteller/lib/access-verification'
 
 // GET: Fetch story plan for an episode or project
 export async function GET(req: NextRequest) {
@@ -10,8 +12,14 @@ export async function GET(req: NextRequest) {
   const projectId = searchParams.get('projectId')
 
   try {
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     if (episodeId) {
-      // Fetch episode-level plan
+      if (!(await verifyEpisodeAccess(episodeId, session.user.id))) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      }
+
       const [episode] = await db
         .select({
           storyPlan: episodes.storyPlan,
@@ -33,7 +41,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         storyPlan: {
           ...((episode.storyPlan as any) || {}),
-          title: episode.title, // Ensure DB title is authoritative
+          title: episode.title,
           posterUrl:
             episode.posterUrl ||
             (episode.storyPlan as any)?.posterUrl ||
@@ -51,7 +59,10 @@ export async function GET(req: NextRequest) {
         script: episode.scriptContent || '',
       })
     } else if (projectId) {
-      // Fetch project-level plan from NEW table
+      if (!(await verifyProjectAccess(projectId, session.user.id))) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      }
+
       const [plan] = await db
         .select()
         .from(storyPlans)
@@ -59,7 +70,6 @@ export async function GET(req: NextRequest) {
         .limit(1)
 
       if (!plan) {
-        // Fallback to old table during migration (optional, but robust)
         const [project] = await db
           .select({ storyPlan: projects.storyPlan })
           .from(projects)
@@ -73,9 +83,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ storyPlan: null })
       }
 
-      return NextResponse.json({
-        storyPlan: plan.content,
-      })
+      return NextResponse.json({ storyPlan: plan.content })
     } else {
       return NextResponse.json({ error: 'Episode ID or Project ID is required' }, { status: 400 })
     }
@@ -88,53 +96,43 @@ export async function GET(req: NextRequest) {
 // POST: Save/update story plan
 export async function POST(req: NextRequest) {
   try {
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const body = await req.json()
     const { episodeId, projectId, storyPlan, approved, currentPhase } = body
 
     if (episodeId) {
-      // Build update object
-      const updateData: any = {
-        updatedAt: new Date(),
+      if (!(await verifyEpisodeAccess(episodeId, session.user.id))) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
       }
 
-      if (storyPlan !== undefined) {
-        updateData.storyPlan = storyPlan
-      }
-      if (approved !== undefined) {
-        updateData.planApproved = approved
-      }
-      if (currentPhase !== undefined) {
-        updateData.currentPhase = currentPhase
-      }
+      const updateData: any = { updatedAt: new Date() }
+      if (storyPlan !== undefined) updateData.storyPlan = storyPlan
+      if (approved !== undefined) updateData.planApproved = approved
+      if (currentPhase !== undefined) updateData.currentPhase = currentPhase
 
-      // Save to episode
       const [updated] = await db
         .update(episodes)
         .set(updateData)
         .where(eq(episodes.id, episodeId))
         .returning()
 
-      return NextResponse.json({
-        success: true,
-        episode: updated,
-      })
+      return NextResponse.json({ success: true, episode: updated })
     } else if (projectId) {
-      // Save to project (series-level) - NEW table
+      if (!(await verifyProjectAccess(projectId, session.user.id))) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      }
+
       await db
         .insert(storyPlans)
-        .values({
-          projectId: projectId,
-          content: storyPlan,
-          updatedAt: new Date(),
-        })
+        .values({ projectId, content: storyPlan, updatedAt: new Date() })
         .onConflictDoUpdate({
           target: storyPlans.projectId,
           set: { content: storyPlan, updatedAt: new Date() },
         })
 
-      return NextResponse.json({
-        success: true,
-      })
+      return NextResponse.json({ success: true })
     } else {
       return NextResponse.json({ error: 'Episode ID or Project ID is required' }, { status: 400 })
     }
@@ -147,6 +145,9 @@ export async function POST(req: NextRequest) {
 // PATCH: Update individual sequence in story plan
 export async function PATCH(req: NextRequest) {
   try {
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const body = await req.json()
     const { episodeId, projectId, sequenceId, updates } = body
 
@@ -154,10 +155,13 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Sequence ID and updates are required' }, { status: 400 })
     }
 
-    // Get existing plan
     let existingPlan: any = null
 
     if (episodeId) {
+      if (!(await verifyEpisodeAccess(episodeId, session.user.id))) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      }
+
       const [episode] = await db
         .select({ storyPlan: episodes.storyPlan })
         .from(episodes)
@@ -165,7 +169,10 @@ export async function PATCH(req: NextRequest) {
         .limit(1)
       existingPlan = episode?.storyPlan
     } else if (projectId) {
-      // Fetch from new storyPlans table
+      if (!(await verifyProjectAccess(projectId, session.user.id))) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      }
+
       const [plan] = await db
         .select()
         .from(storyPlans)
@@ -174,7 +181,6 @@ export async function PATCH(req: NextRequest) {
 
       existingPlan = plan?.content
 
-      // Fallback
       if (!existingPlan) {
         const [project] = await db
           .select({ storyPlan: projects.storyPlan })
@@ -189,43 +195,28 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'No existing plan found' }, { status: 404 })
     }
 
-    // Update the specific sequence
     const updatedSequences = existingPlan.sequences.map((seq: any) =>
       seq.id === sequenceId ? { ...seq, ...updates } : seq
     )
 
-    const updatedPlan = {
-      ...existingPlan,
-      sequences: updatedSequences,
-    }
+    const updatedPlan = { ...existingPlan, sequences: updatedSequences }
 
-    // Save updated plan
     if (episodeId) {
       await db
         .update(episodes)
-        .set({
-          storyPlan: updatedPlan,
-          updatedAt: new Date(),
-        })
+        .set({ storyPlan: updatedPlan, updatedAt: new Date() })
         .where(eq(episodes.id, episodeId))
     } else if (projectId) {
       await db
         .insert(storyPlans)
-        .values({
-          projectId: projectId,
-          content: updatedPlan,
-          updatedAt: new Date(),
-        })
+        .values({ projectId, content: updatedPlan, updatedAt: new Date() })
         .onConflictDoUpdate({
           target: storyPlans.projectId,
           set: { content: updatedPlan, updatedAt: new Date() },
         })
     }
 
-    return NextResponse.json({
-      success: true,
-      storyPlan: updatedPlan,
-    })
+    return NextResponse.json({ success: true, storyPlan: updatedPlan })
   } catch (error) {
     console.error('Error updating sequence:', error)
     return NextResponse.json({ error: 'Failed to update sequence' }, { status: 500 })

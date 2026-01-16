@@ -42,27 +42,23 @@ const CanvasLoader: React.FC = () => {
 const ModelLoader: React.FC<{ url: string; onLoaded?: () => void }> = ({ url, onLoaded }) => {
   const proxiedUrl = getProxiedUrl(url)
 
-  // Early return AFTER we establish that hooks won't be called
-  // The parent component only renders this when useGLTF is available
-  if (!useGLTF || !Center) {
-    return null
-  }
-
-  // Now hooks are called unconditionally within this component's lifecycle
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const { scene } = useGLTF(proxiedUrl)
+  // Hooks must be called unconditionally
+  const gltf = useGLTF?.(proxiedUrl)
+  const scene = gltf?.scene
 
   // Clone the scene to avoid issues with reuse
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const clonedScene = React.useMemo(() => scene.clone(), [scene])
+  const clonedScene = React.useMemo(() => (scene ? scene.clone() : null), [scene])
 
   // Call onLoaded when model is ready
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (scene && onLoaded) {
       onLoaded()
     }
   }, [scene, onLoaded])
+
+  if (!useGLTF || !Center || !clonedScene) {
+    return null
+  }
 
   return (
     <Center>
@@ -84,11 +80,10 @@ const FitToView: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 // Helper to zoom on click (optional)
 const SelectToZoom: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Early return before hook if dependency not loaded
-  if (!useBounds) return <>{children}</>
+  // Call hook unconditionally if possible, or ensure parent only renders this when hook is available
+  const bounds = useBounds?.()
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const bounds = useBounds()
+  if (!useBounds || !bounds) return <>{children}</>
 
   return (
     <group

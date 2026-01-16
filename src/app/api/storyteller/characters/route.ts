@@ -294,29 +294,32 @@ export async function POST(req: NextRequest) {
     // Create game entity for cross-domain visibility
     let entityId: string | null = null
     try {
-      const entityResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/entities`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId,
-          userId: session.user.id,
-          entityType: 'character',
-          name,
-          description: description || characterPrompt,
-          sourceDomain: 'storyteller',
-          sourceEntityId: newCharacter.id,
-          metadata: {
-            role,
-            gender,
-            mbti,
-            voiceSignature,
-            metrics: { stress, trust, power, morality, hope, isolation, transformation },
-          },
-          imageUrl: portraitUrl,
-          tags: [role || 'Supporting', gender].filter(Boolean),
-        }),
-      })
-      
+      const entityResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/entities`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId,
+            userId: session.user.id,
+            entityType: 'character',
+            name,
+            description: description || characterPrompt,
+            sourceDomain: 'storyteller',
+            sourceEntityId: newCharacter.id,
+            metadata: {
+              role,
+              gender,
+              mbti,
+              voiceSignature,
+              metrics: { stress, trust, power, morality, hope, isolation, transformation },
+            },
+            imageUrl: portraitUrl,
+            tags: [role || 'Supporting', gender].filter(Boolean),
+          }),
+        }
+      )
+
       if (entityResponse.ok) {
         const { entity } = await entityResponse.json()
         entityId = entity?.id
@@ -343,7 +346,7 @@ export async function POST(req: NextRequest) {
         id: `char-to-home-${newCharacter.id}`,
         type: 'cross_domain',
         title: `Build ${name}'s home`,
-        description: "Design the character's living space in 3D",
+        description: 'Design the character\'s living space in 3D',
         targetDomain: 'interior-designer',
         targetRoute: `/app/${projectId}/interior-design`,
         priority: 3,
@@ -459,7 +462,7 @@ export async function DELETE(req: NextRequest) {
         )
         const { entities } = await entitiesResponse.json()
         const entity = entities?.find((e: any) => e.source_entity_id === id)
-        
+
         if (entity) {
           await fetch(
             `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/entities/${entity.id}`,

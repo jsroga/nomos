@@ -1,6 +1,6 @@
 /**
  * Cross-Domain Suggestion Engine
- * 
+ *
  * Provides intelligent workflow suggestions that guide users across domains.
  * Analyzes entities and suggests relevant actions in other tools.
  */
@@ -28,10 +28,7 @@ export class SuggestionEngine {
   /**
    * Get suggestions for a newly created entity
    */
-  static getSuggestionsForEntity(
-    entity: GameEntity,
-    projectId: string
-  ): CrossDomainSuggestion[] {
+  static getSuggestionsForEntity(entity: GameEntity, projectId: string): CrossDomainSuggestion[] {
     const suggestions: CrossDomainSuggestion[] = []
 
     switch (entity.entityType) {
@@ -81,7 +78,7 @@ export class SuggestionEngine {
       suggestions.push({
         id: `char-to-home-${entity.id}`,
         title: `Build ${entity.name}'s home`,
-        description: "Design the character's living space in 3D",
+        description: 'Design the character\'s living space in 3D',
         sourceDomain: 'storyteller',
         targetDomain: 'interior-designer',
         targetRoute: `/app/${projectId}/interior-design`,
@@ -240,9 +237,7 @@ export class SuggestionEngine {
   /**
    * Get suggestions based on project state (future: analyze entire project)
    */
-  static async getContextualSuggestions(
-    projectId: string
-  ): Promise<CrossDomainSuggestion[]> {
+  static async getContextualSuggestions(projectId: string): Promise<CrossDomainSuggestion[]> {
     // Fetch all entities for the project
     try {
       const response = await fetch(`/api/entities?projectId=${projectId}`)
@@ -282,32 +277,4 @@ export class SuggestionEngine {
       return []
     }
   }
-}
-
-/**
- * Format suggestion for display
- */
-export function formatSuggestion(suggestion: CrossDomainSuggestion): {
-  title: string
-  subtitle: string
-  actionLabel: string
-} {
-  return {
-    title: suggestion.title,
-    subtitle: suggestion.description,
-    actionLabel: `Go to ${getDomainLabel(suggestion.targetDomain)}`,
-  }
-}
-
-/**
- * Get domain label for display
- */
-function getDomainLabel(domain: string): string {
-  const labels: Record<string, string> = {
-    storyteller: 'Storyteller',
-    'loop-creator': 'Loop Creator',
-    'interior-designer': 'Interior Designer',
-    'world-building': 'World Builder',
-  }
-  return labels[domain] || domain
 }

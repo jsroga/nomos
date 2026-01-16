@@ -146,7 +146,7 @@ export class PosterGenerationService {
   }
 
   /**
-   * Start polling for task status
+   * Start adaptive polling for task status
    */
   private startPolling(
     runState: PosterGenRunState,
@@ -154,34 +154,42 @@ export class PosterGenerationService {
     onComplete?: (url: string) => void
   ) {
     if (this.pollingIntervals.has(runState.runId)) {
-      clearInterval(this.pollingIntervals.get(runState.runId)!)
+      clearTimeout(this.pollingIntervals.get(runState.runId)!)
     }
 
     console.log(
       `📡 Starting status polling for run: ${runState.runId} (${runState.type || 'unknown'})`
     )
 
-    const pollInterval = setInterval(async () => {
+    let consecutiveErrors = 0
+    let lastStatus = ''
+
+    const poll = async () => {
       try {
-        // Determine status endpoint based on type?
-        // Using generic poster status endpoint for now as it likely wraps runs.retrieve which finds any run.
         const statusResponse = await fetch(
           `/api/storyteller/episodes/poster/status?runId=${runState.runId}`
         )
         const statusData = await statusResponse.json()
 
         if (statusResponse.status === 404) {
-          console.warn('Poster generation run not found, clearing state')
-          this.clearRunState(runState, opId)
+          consecutiveErrors++
+          if (consecutiveErrors > 10) {
+            console.warn('Poster generation run not found, clearing state')
+            this.clearRunState(runState, opId)
+            return
+          }
+          this.scheduleNextPoll(runState.runId, poll, 2000)
           return
         }
 
-        // Update operation with current status
+        consecutiveErrors = 0
+        const statusChanged = statusData.status !== lastStatus
+        lastStatus = statusData.status
+
         useGlobalStatusStore.getState().updateOperation(opId, {
           details: `Status: ${statusData.status}`,
         })
 
-        // Check if completed
         if (statusData.status === 'COMPLETED') {
           console.log('✅ Poster generation completed:', statusData.output)
 
@@ -195,18 +203,33 @@ export class PosterGenerationService {
           return
         }
 
-        // Check if failed
         if (!ACTIVE_TASK_STATUSES.includes(statusData.status)) {
           console.error('❌ Poster generation failed:', statusData.error || statusData.status)
           this.clearRunState(runState, opId)
           return
         }
+
+        // Adaptive polling
+        const nextInterval = statusChanged ? 2000 : POLLING_INTERVALS.SLOW
+        this.scheduleNextPoll(runState.runId, poll, nextInterval)
       } catch (error) {
         console.error('Status polling error:', error)
+        consecutiveErrors++
+        const backoffInterval = Math.min(consecutiveErrors * 3000, 30000)
+        this.scheduleNextPoll(runState.runId, poll, backoffInterval)
       }
-    }, POLLING_INTERVALS.DEFAULT) // Poll every 5 seconds
+    }
 
-    this.pollingIntervals.set(runState.runId, pollInterval)
+    poll()
+  }
+
+  private scheduleNextPoll(runId: string, pollFn: () => Promise<void>, interval: number) {
+    const existingTimeout = this.pollingIntervals.get(runId)
+    if (existingTimeout) {
+      clearTimeout(existingTimeout)
+    }
+    const timeoutId = setTimeout(pollFn, interval)
+    this.pollingIntervals.set(runId, timeoutId)
   }
 
   /**
@@ -267,10 +290,10 @@ export class PosterGenerationService {
    * Clear run state and stop polling
    */
   private clearRunState(runState: PosterGenRunState, opId: string) {
-    // Stop polling
-    const interval = this.pollingIntervals.get(runState.runId)
-    if (interval) {
-      clearInterval(interval)
+    // Stop polling (now uses timeouts instead of intervals)
+    const timeout = this.pollingIntervals.get(runState.runId)
+    if (timeout) {
+      clearTimeout(timeout)
       this.pollingIntervals.delete(runState.runId)
     }
 

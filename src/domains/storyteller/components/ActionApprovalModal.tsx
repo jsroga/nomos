@@ -270,3 +270,4 @@ function formatActionType(type: string): string {
 }
 
 export default ActionApprovalModal
+

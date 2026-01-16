@@ -1,6 +1,8 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
+import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/lib/api-utils'
+import { sanitizePath, isValidProjectId, safeFetch, secureLog } from '@/lib/security'
 
 /**
  * @openapi
@@ -56,8 +58,8 @@ import path from 'path'
  *         description: Generation failed
  */
 
-export async function POST(request: Request) {
-  try {
+export const POST = withRateLimit(
+  withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
     const { assetId, imageUrl, provider, apiKey } = await request.json()
 
     if (!assetId || !imageUrl || !provider || !apiKey) {
@@ -68,14 +70,28 @@ export async function POST(request: Request) {
     let finalImageUrl = imageUrl
 
     if (imageUrl.startsWith('/projects/')) {
-      // Read local file and convert to base64 data URI
-      const filePath = path.join(process.cwd(), 'public', imageUrl)
+      // Extract and validate project ID from path
+      const pathParts = imageUrl.split('/')
+      const projectId = pathParts[2]
 
-      if (!fs.existsSync(filePath)) {
-        return NextResponse.json({ error: `Image file not found: ${imageUrl}` }, { status: 404 })
+      if (!projectId || !isValidProjectId(projectId)) {
+        return NextResponse.json({ error: 'Invalid project ID in path' }, { status: 400 })
       }
 
-      const fileBuffer = fs.readFileSync(filePath)
+      // Sanitize and validate the path to prevent directory traversal
+      const relativePath = imageUrl.replace('/projects/', '')
+      const { safe, sanitizedPath, error } = sanitizePath(relativePath, 'projects')
+
+      if (!safe || !sanitizedPath) {
+        secureLog.warn('Path traversal attempt blocked', { imageUrl, error })
+        return NextResponse.json({ error: 'Invalid file path' }, { status: 400 })
+      }
+
+      if (!fs.existsSync(sanitizedPath)) {
+        return NextResponse.json({ error: `Image file not found` }, { status: 404 })
+      }
+
+      const fileBuffer = fs.readFileSync(sanitizedPath)
       const base64 = fileBuffer.toString('base64')
       const mimeType = imageUrl.endsWith('.png') ? 'image/png' : 'image/jpeg'
       finalImageUrl = `data:${mimeType};base64,${base64}`
@@ -86,7 +102,7 @@ export async function POST(request: Request) {
     if (provider === 'meshy') {
       // Meshy API - Image to 3D
       // Step 1: Create task
-      const createResponse = await fetch('https://api.meshy.ai/v1/image-to-3d', {
+      const createResponse = await safeFetch('https://api.meshy.ai/v1/image-to-3d', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -114,7 +130,7 @@ export async function POST(request: Request) {
       while (status !== 'SUCCEEDED' && status !== 'FAILED' && attempts < maxAttempts) {
         await new Promise(resolve => setTimeout(resolve, 5000)) // Wait 5 seconds
 
-        const statusResponse = await fetch(`https://api.meshy.ai/v1/image-to-3d/${taskId}`, {
+        const statusResponse = await safeFetch(`https://api.meshy.ai/v1/image-to-3d/${taskId}`, {
           headers: {
             Authorization: `Bearer ${apiKey}`,
           },
@@ -140,7 +156,7 @@ export async function POST(request: Request) {
       modelUrl = result.model_urls?.glb || result.model_url
     } else if (provider === 'hyper3d') {
       // Hyper3D API
-      const response = await fetch('https://api.hyper3d.ai/v1/rodin', {
+      const response = await safeFetch('https://api.hyper3d.ai/v1/rodin', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -169,7 +185,7 @@ export async function POST(request: Request) {
       while (status === 'processing' && attempts < maxAttempts) {
         await new Promise(resolve => setTimeout(resolve, 5000))
 
-        const statusResponse = await fetch(
+        const statusResponse = await safeFetch(
           `https://api.hyper3d.ai/v1/rodin/status?subscription_key=${subscription_key}`,
           {
             headers: {
@@ -201,8 +217,6 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true, modelUrl })
-  } catch (error: any) {
-    console.error('3D generation error:', error)
-    return NextResponse.json({ error: error.message || 'Generation failed' }, { status: 500 })
-  }
-}
+  }),
+  { maxRequests: 5, windowMs: 60000 } // 5 3D generations per minute (expensive operation)
+)

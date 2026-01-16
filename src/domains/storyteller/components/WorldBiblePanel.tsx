@@ -40,13 +40,22 @@ import toast from 'react-hot-toast'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { isCentralUser, canEditBible, getBibleLockMessage } from '@/lib/bible-permissions'
 
-import { StoryPlan } from '../schemas/agent-schemas'
+import {
+  StoryPlan,
+  WorldRule,
+  Faction,
+  SoundtrackTrack,
+  InspirationItem,
+  KeyCharacter,
+  StorySequence,
+} from '../schemas/agent-schemas'
 import { WorldRuleCard } from './WorldRuleCard'
 import { FactionCard } from './FactionCard'
 import { CharacterCreationDialog } from './CharacterCreationDialog'
 import { EpisodeRoadmapCard } from './EpisodeRoadmapCard'
 import { SeasonOverviewCard } from './SeasonOverviewCard'
 import { StorytellerImage } from './StorytellerImage'
+import { YouTubePlayer, YouTubeEmbedPlayer } from './YouTubePlayer'
 
 // Helper to get provider config from localStorage
 const getProviderConfig = () => {
@@ -89,12 +98,27 @@ const getProviderConfig = () => {
   }
 }
 
-interface KeyCharacter {
-  name: string
-  role: string
-  archetype: string
-  motivation: string
-  factionId?: string | null
+// Local KeyCharacter will be replaced by import
+
+/**
+ * Extracts YouTube video ID from various URL formats
+ */
+function extractVideoId(url: string): string | null {
+  if (!url) return null
+
+  // Handle youtu.be shorts
+  const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/)
+  if (shortMatch) return shortMatch[1]
+
+  // Handle youtube.com/watch?v=
+  const watchMatch = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/)
+  if (watchMatch) return watchMatch[1]
+
+  // Handle youtube.com/embed/
+  const embedMatch = url.match(/embed\/([a-zA-Z0-9_-]{11})/)
+  if (embedMatch) return embedMatch[1]
+
+  return null
 }
 
 interface WorldBiblePanelProps {
@@ -103,7 +127,7 @@ interface WorldBiblePanelProps {
   isReadOnly?: boolean
   onSendMessage?: (msg: string) => void
   projectId?: string
-  onConvertToCast?: (character: any) => void
+  onConvertToCast?: (character: KeyCharacter) => void
   onClose?: () => void
 }
 
@@ -142,6 +166,10 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
   // Convert to Cast dialog state
   const [convertDialogOpen, setConvertDialogOpen] = useState(false)
   const [convertingCharacter, setConvertingCharacter] = useState<KeyCharacter | null>(null)
+
+  // Soundtrack player state
+  const [playingTrackIndex, setPlayingTrackIndex] = useState<number | null>(null)
+  const [playingVideoId, setPlayingVideoId] = useState<string | null>(null)
 
   // Get projectId from prop or URL
   const projectId =
@@ -338,7 +366,7 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
     setIsEditing(false)
   }
 
-  const handleChange = (field: keyof StoryPlan, value: any) => {
+  const handleChange = <K extends keyof StoryPlan>(field: K, value: StoryPlan[K]) => {
     // Check permissions before changing
     if (!canUserEditBible) {
       toast.error('Cannot edit locked Bible')
@@ -364,10 +392,16 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
   }
 
   // World Rules handlers
-  const handleWorldRuleChange = (index: number, field: string, value: any) => {
+  const handleWorldRuleChange = <K extends keyof WorldRule>(
+    index: number,
+    field: K,
+    value: WorldRule[K]
+  ) => {
     const rules = [...(localPlan.worldRules || [])]
-    rules[index] = { ...rules[index], [field]: value }
-    setLocalPlan(prev => ({ ...prev, worldRules: rules }))
+    if (rules[index]) {
+      rules[index] = { ...rules[index], [field]: value }
+      setLocalPlan(prev => ({ ...prev, worldRules: rules }))
+    }
   }
 
   const handleAddWorldRule = () => {
@@ -383,10 +417,16 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
   }
 
   // Factions handlers
-  const handleFactionChange = (index: number, field: string, value: any) => {
+  const handleFactionChange = <K extends keyof Faction>(
+    index: number,
+    field: K,
+    value: Faction[K]
+  ) => {
     const factions = [...(localPlan.factions || [])]
-    factions[index] = { ...factions[index], [field]: value }
-    setLocalPlan(prev => ({ ...prev, factions }))
+    if (factions[index]) {
+      factions[index] = { ...factions[index], [field]: value }
+      setLocalPlan(prev => ({ ...prev, factions }))
+    }
   }
 
   const handleAddFaction = () => {
@@ -429,10 +469,16 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
   }
 
   // Sequences (Episode Roadmap) handlers
-  const handleSequenceChange = (index: number, field: string, value: any) => {
+  const handleSequenceChange = <K extends keyof StorySequence>(
+    index: number,
+    field: K,
+    value: StorySequence[K]
+  ) => {
     const sequences = [...(localPlan.sequences || [])]
-    sequences[index] = { ...sequences[index], [field]: value }
-    setLocalPlan(prev => ({ ...prev, sequences }))
+    if (sequences[index]) {
+      sequences[index] = { ...sequences[index], [field]: value }
+      setLocalPlan(prev => ({ ...prev, sequences }))
+    }
   }
 
   const handleAddSequence = () => {
@@ -455,10 +501,16 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
   }
 
   // Key Characters handlers
-  const handleKeyCharacterChange = (index: number, field: string, value: any) => {
+  const handleKeyCharacterChange = <K extends keyof KeyCharacter>(
+    index: number,
+    field: K,
+    value: KeyCharacter[K]
+  ) => {
     const chars = [...(localPlan.keyCharacters || [])]
-    chars[index] = { ...chars[index], [field]: value }
-    setLocalPlan(prev => ({ ...prev, keyCharacters: chars }))
+    if (chars[index]) {
+      chars[index] = { ...chars[index], [field]: value }
+      setLocalPlan(prev => ({ ...prev, keyCharacters: chars }))
+    }
   }
 
   const handleAddKeyCharacter = () => {
@@ -484,7 +536,7 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
     setConvertingCharacter(null)
   }
 
-  const handleCreateFromConvert = (character: any) => {
+  const handleCreateFromConvert = (character: KeyCharacter) => {
     if (onConvertToCast) {
       onConvertToCast(character)
     }
@@ -494,15 +546,15 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
   // Build initial data for the dialog from the key player
   const convertInitialData = convertingCharacter
     ? {
-        name: convertingCharacter.name,
-        description: [
-          convertingCharacter.archetype && `Archetype: ${convertingCharacter.archetype}`,
-          convertingCharacter.motivation && `Motivation: ${convertingCharacter.motivation}`,
-        ]
-          .filter(Boolean)
-          .join('. '),
-        role: convertingCharacter.role,
-      }
+      name: convertingCharacter.name,
+      description: [
+        convertingCharacter.archetype && `Archetype: ${convertingCharacter.archetype}`,
+        convertingCharacter.motivation && `Motivation: ${convertingCharacter.motivation}`,
+      ]
+        .filter(Boolean)
+        .join('. '),
+      role: convertingCharacter.role,
+    }
     : undefined
 
   // Derived characters list (handling backwards compatibility safely)
@@ -553,11 +605,11 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
                       ? 'border-amber-500/50 text-amber-500'
                       : 'border-muted-foreground/30 text-muted-foreground',
                     isUserCentralUser &&
-                      isBibleLocked &&
-                      'hover:bg-amber-500/10 hover:border-amber-500',
+                    isBibleLocked &&
+                    'hover:bg-amber-500/10 hover:border-amber-500',
                     isUserCentralUser &&
-                      !isBibleLocked &&
-                      'hover:bg-muted/50 hover:border-muted-foreground/50',
+                    !isBibleLocked &&
+                    'hover:bg-muted/50 hover:border-muted-foreground/50',
                     !isUserCentralUser && 'cursor-default opacity-70'
                   )}
                 >
@@ -570,15 +622,22 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
                   )}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-[200px]">
+              <TooltipContent side="bottom" className="max-w-[250px]">
                 <p className="text-sm font-medium">
-                  {isBibleLocked ? 'Bible is locked' : 'Bible is unlocked'}
+                  {isBibleLocked ? '🔒 Bible is locked' : '🔓 Bible is unlocked'}
                 </p>
                 {isBibleLocked && lockedBy && (
-                  <p className="text-xs text-muted-foreground mt-1">Locked by {lockedBy}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Locked by <span className="font-medium text-amber-400">{lockedBy}</span>
+                  </p>
+                )}
+                {isBibleLocked && lockedAt && (
+                  <p className="text-xs text-muted-foreground">
+                    {lockedAt.toLocaleDateString()} at {lockedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
                 )}
                 {isUserCentralUser && (
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-amber-400 mt-2">
                     Click to {isBibleLocked ? 'unlock' : 'lock'}
                   </p>
                 )}
@@ -626,10 +685,30 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
 
           {/* Locked Info for Non-Central Users */}
           {isBibleLocked && !canUserEditBible && !isUserCentralUser && (
-            <div className="flex items-center gap-2 px-3 py-1 bg-muted/20 border border-border/30 rounded-md">
-              <Shield className="w-3.5 h-3.5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground italic">View Only</span>
-            </div>
+            <TooltipProvider delayDuration={100}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2 px-3 py-1 bg-muted/20 border border-amber-500/30 rounded-md cursor-help">
+                    <Shield className="w-3.5 h-3.5 text-amber-500" />
+                    <span className="text-xs text-amber-500 font-medium">Read Only</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[250px]">
+                  <p className="text-sm font-medium">🔒 Bible is locked</p>
+                  {lockedBy && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Locked by <span className="font-medium text-amber-400">{lockedBy}</span>
+                    </p>
+                  )}
+                  {lockedAt && (
+                    <p className="text-xs text-muted-foreground">
+                      {lockedAt.toLocaleDateString()} at {lockedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-2">Contact an admin to unlock</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
       </div>
@@ -660,7 +739,7 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
 
             {/* High Level Meta Info (Title, Genre, Tone) */}
             {!isEditing &&
-            (storyPlan.title || storyPlan.genre || storyPlan.tone || storyPlan.centralQuestion) ? (
+              (storyPlan.title || storyPlan.genre || storyPlan.tone || storyPlan.centralQuestion) ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 {/* Title, Genre, Tone Card */}
                 {(storyPlan.title || storyPlan.genre || storyPlan.tone) && (
@@ -937,28 +1016,38 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
                 {/* YouTube Tracks */}
                 {storyPlan.soundtracks && storyPlan.soundtracks.length > 0 ? (
                   <div className="space-y-1">
-                    {storyPlan.soundtracks.map((track: any, i: number) => (
-                      <a
+                    {storyPlan.soundtracks.map((track: SoundtrackTrack, i: number) => (
+                      <YouTubePlayer
                         key={i}
-                        href={track.youtubeUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-2 bg-muted/10 border border-border rounded hover:bg-muted/20 transition-colors group"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-cyan-400 flex-shrink-0" />
-                        <div className="flex-1 min-w-0 font-mono">
-                          <span className="text-sm text-foreground">{track.title}</span>
-                          <span className="text-xs text-muted-foreground ml-2">
-                            — {track.artist}
-                          </span>
-                          {track.mood && (
-                            <span className="text-xs text-muted-foreground/60 ml-1">
-                              ({track.mood})
-                            </span>
-                          )}
-                        </div>
-                      </a>
+                        title={track.title}
+                        artist={track.artist}
+                        youtubeUrl={track.youtubeUrl}
+                        mood={track.mood}
+                        isCurrentlyPlaying={playingTrackIndex === i}
+                        onPlay={() => {
+                          const videoId = extractVideoId(track.youtubeUrl)
+                          if (videoId) {
+                            setPlayingTrackIndex(i)
+                            setPlayingVideoId(videoId)
+                          }
+                        }}
+                        onStop={() => {
+                          setPlayingTrackIndex(null)
+                          setPlayingVideoId(null)
+                        }}
+                      />
                     ))}
+
+                    {/* Floating YouTube Player */}
+                    {playingVideoId && (
+                      <YouTubeEmbedPlayer
+                        videoId={playingVideoId}
+                        onEnded={() => {
+                          setPlayingTrackIndex(null)
+                          setPlayingVideoId(null)
+                        }}
+                      />
+                    )}
                   </div>
                 ) : (
                   !storyPlan.moodSoundtrack && (
@@ -1004,14 +1093,14 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
                       className="w-full h-16 p-2 bg-background border border-border rounded text-xs font-mono resize-none"
                       placeholder="Comma separated..."
                       value={(localPlan.inspirations?.books || [])
-                        .map((item: any) => (typeof item === 'string' ? item : item.title))
+                        .map((item: string | InspirationItem) => (typeof item === 'string' ? item : item.title))
                         .join(', ')}
                       onChange={e => handleInspirationChange('books', e.target.value)}
                     />
                   ) : (
                     <div className="space-y-1">
                       {storyPlan.inspirations?.books?.length ? (
-                        storyPlan.inspirations.books.map((item: any, i: number) => {
+                        storyPlan.inspirations.books.map((item: InspirationItem, i: number) => {
                           const title = typeof item === 'string' ? item : item.title
                           const description = typeof item === 'object' ? item.description : null
                           return description ? (
@@ -1061,14 +1150,14 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
                       className="w-full h-16 p-2 bg-background border border-border rounded text-xs font-mono resize-none"
                       placeholder="Comma separated..."
                       value={(localPlan.inspirations?.movies || [])
-                        .map((item: any) => (typeof item === 'string' ? item : item.title))
+                        .map((item: string | InspirationItem) => (typeof item === 'string' ? item : item.title))
                         .join(', ')}
                       onChange={e => handleInspirationChange('movies', e.target.value)}
                     />
                   ) : (
                     <div className="space-y-1">
                       {storyPlan.inspirations?.movies?.length ? (
-                        storyPlan.inspirations.movies.map((item: any, i: number) => {
+                        storyPlan.inspirations.movies.map((item: InspirationItem, i: number) => {
                           const title = typeof item === 'string' ? item : item.title
                           const description = typeof item === 'object' ? item.description : null
                           return description ? (
@@ -1118,14 +1207,14 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
                       className="w-full h-16 p-2 bg-background border border-border rounded text-xs font-mono resize-none"
                       placeholder="Comma separated..."
                       value={(localPlan.inspirations?.games || [])
-                        .map((item: any) => (typeof item === 'string' ? item : item.title))
+                        .map((item: string | InspirationItem) => (typeof item === 'string' ? item : item.title))
                         .join(', ')}
                       onChange={e => handleInspirationChange('games', e.target.value)}
                     />
                   ) : (
                     <div className="space-y-1">
                       {storyPlan.inspirations?.games?.length ? (
-                        storyPlan.inspirations.games.map((item: any, i: number) => {
+                        storyPlan.inspirations.games.map((item: InspirationItem, i: number) => {
                           const title = typeof item === 'string' ? item : item.title
                           const description = typeof item === 'object' ? item.description : null
                           return description ? (
@@ -1217,7 +1306,13 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
                         <select
                           className="p-2 bg-background border border-border rounded text-sm"
                           value={rule.category}
-                          onChange={e => handleWorldRuleChange(idx, 'category', e.target.value)}
+                          onChange={e =>
+                            handleWorldRuleChange(
+                              idx,
+                              'category',
+                              e.target.value as WorldRule['category']
+                            )
+                          }
                         >
                           {[
                             'Physics',
@@ -1275,7 +1370,7 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {rules.map((rule, idx) => {
                   if (!rule) return null
-                  return <WorldRuleCard key={idx} rule={rule as any} />
+                  return <WorldRuleCard key={idx} rule={rule as WorldRule} />
                 })}
               </div>
             )}
@@ -1391,9 +1486,9 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
                             'rivals',
                             e.target.value
                               ? e.target.value
-                                  .split(',')
-                                  .map(s => s.trim())
-                                  .filter(Boolean)
+                                .split(',')
+                                .map(s => s.trim())
+                                .filter(Boolean)
                               : null
                           )
                         }
@@ -1410,7 +1505,7 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {factions.map((faction, idx) => {
                   if (!faction) return null
-                  return <FactionCard key={idx} faction={faction as any} />
+                  return <FactionCard key={idx} faction={faction as Faction} />
                 })}
               </div>
             )}
@@ -1639,7 +1734,7 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
                           episode={seq}
                           index={i}
                           isLast={i === storyPlan.sequences!.length - 1}
-                          factions={factions as any}
+                          factions={(factions || []).filter(f => f.id && f.name) as Faction[]}
                         />
                       ))}
                     </div>
@@ -1747,7 +1842,7 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
                         }
                       >
                         <option value="">No faction alignment</option>
-                        {(localPlan.factions || factions).map((f: any) => (
+                        {(localPlan.factions || factions).map((f: Faction) => (
                           <option key={f.id} value={f.id}>
                             {f.name}
                           </option>
@@ -1794,7 +1889,7 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = ({
                         <div className="mt-2 pt-2 border-t border-border/50 text-[10px] text-orange-400 flex items-center gap-1">
                           <Zap className="w-3 h-3" />
                           Aligned with{' '}
-                          {factions.find((f: any) => f.id === char.factionId)?.name ||
+                          {factions.find((f: Faction) => f.id === char.factionId)?.name ||
                             'Unknown Faction'}
                         </div>
                       )}

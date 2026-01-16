@@ -1,55 +1,54 @@
 /**
  * Bible Lock API
  *
- * POST /api/storyteller/bible/lock
- *
- * Allows central users to lock/unlock the Series Bible
+ * POST /api/storyteller/bible/lock - Lock/unlock the Series Bible
+ * GET /api/storyteller/bible/lock - Get Bible lock status
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 import { isCentralUser } from '@/lib/bible-permissions'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+import { requireAuth } from '@/lib/auth'
+import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // Get user email from request body (since we're on server side)
     const body = await request.json()
-    const { projectId, action, userEmail } = body as {
+    const { projectId, action } = body as {
       projectId: string
       action: 'lock' | 'unlock'
-      userEmail?: string
-    }
-
-    // For now, we'll trust the client-provided email
-    // In production, you'd verify this via JWT or session
-
-    if (!isCentralUser(userEmail)) {
-      return NextResponse.json(
-        { error: 'Only central users can lock/unlock the Bible' },
-        { status: 403 }
-      )
     }
 
     if (!projectId) {
       return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
     }
 
+    // Verify project access
+    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+    }
+
+    // Check if user is a central user
+    if (!isCentralUser(session.user.email)) {
+      return NextResponse.json({ error: 'Only central users can lock/unlock the Bible' }, { status: 403 })
+    }
+
     if (action !== 'lock' && action !== 'unlock') {
       return NextResponse.json({ error: 'Action must be "lock" or "unlock"' }, { status: 400 })
     }
 
-    console.log(`[Bible Lock API] ${action} Bible for project ${projectId} by ${userEmail}`)
+    console.log(`[Bible Lock API] ${action} Bible for project ${projectId} by ${session.user.email}`)
 
-    // Update the Bible lock status
+    const cookieStore = await cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+
     const updates: any = {
       is_locked: action === 'lock',
-      locked_by: action === 'lock' ? userEmail : null,
+      locked_by: action === 'lock' ? session.user.email : null,
       locked_at: action === 'lock' ? new Date().toISOString() : null,
     }
 
@@ -66,30 +65,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       action,
-      lockedBy: action === 'lock' ? userEmail : null,
+      lockedBy: action === 'lock' ? session.user.email : null,
       lockedAt: action === 'lock' ? new Date().toISOString() : null,
     })
   } catch (error) {
     console.error('[Bible Lock API] Error:', error)
-
     return NextResponse.json(
-      {
-        error: 'Failed to update Bible lock status',
-        details: error instanceof Error ? error.message : String(error),
-      },
+      { error: 'Failed to update Bible lock status', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }
 }
 
-/**
- * GET /api/storyteller/bible/lock
- *
- * Get Bible lock status for a project
- */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
@@ -98,7 +89,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
     }
 
-    // Fetch Bible lock status
+    // Verify project access
+    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+    }
+
+    const cookieStore = await cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+
     const { data, error } = await supabase
       .from('series_bibles')
       .select('is_locked, locked_by, locked_at')
@@ -117,12 +115,8 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('[Bible Lock API] Error:', error)
-
     return NextResponse.json(
-      {
-        error: 'Failed to get Bible lock status',
-        details: error instanceof Error ? error.message : String(error),
-      },
+      { error: 'Failed to get Bible lock status', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }

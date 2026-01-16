@@ -1,9 +1,14 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
+import { requireAuth } from '@/lib/auth'
+import { verifyEpisodeAccess } from '@/domains/storyteller/lib/access-verification'
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const { searchParams } = new URL(req.url)
     const episodeId = searchParams.get('episodeId')
     const beatId = searchParams.get('beatId')
@@ -12,11 +17,15 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'episodeId is required' }, { status: 400 })
     }
 
+    // Verify episode access
+    if (!(await verifyEpisodeAccess(episodeId, session.user.id))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
+
     const cookieStore = await cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
     // Get beats for the episode
-    console.log('📥 Timeline API - fetching beats for episode:', episodeId)
     const { data: beats, error: beatsError } = await supabase
       .from('beats')
       .select('*')
@@ -24,27 +33,16 @@ export async function GET(req: Request) {
       .order('sequence', { ascending: true })
 
     if (beatsError) {
-      console.error('❌ Error fetching beats:', beatsError)
+      console.error('Error fetching beats:', beatsError)
       return NextResponse.json({ error: 'Failed to fetch beats' }, { status: 500 })
     }
-
-    console.log(
-      '✅ Timeline API - found beats:',
-      beats?.length,
-      beats?.map((b: any) => b.logline?.slice(0, 30))
-    )
 
     // If a specific beat is selected, get character snapshots
     let snapshots: any[] = []
     if (beatId) {
       const { data: snapshotData, error: snapshotError } = await supabase
         .from('character_state_snapshots')
-        .select(
-          `
-                    *,
-                    characters (id, name)
-                `
-        )
+        .select(`*, characters (id, name)`)
         .eq('beat_id', beatId)
 
       if (snapshotError) {
@@ -62,10 +60,7 @@ export async function GET(req: Request) {
       }
     }
 
-    return NextResponse.json({
-      beats: beats || [],
-      snapshots,
-    })
+    return NextResponse.json({ beats: beats || [], snapshots })
   } catch (error) {
     console.error('Timeline API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { ReplicateClient } from '@/infrastructure/ai/replicate'
+import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/lib/api-utils'
 
-export async function POST(req: Request) {
-  try {
-    const { prompt } = await req.json()
+export const POST = withRateLimit(
+  withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
+    const { prompt } = await request.json()
 
     if (!prompt) {
       return NextResponse.json({ error: 'Prompt is required' }, { status: 400 })
@@ -18,8 +19,6 @@ export async function POST(req: Request) {
     const textureUrl = await client.generateTexture(prompt)
 
     return NextResponse.json({ url: textureUrl })
-  } catch (error) {
-    console.error('Texture generation failed:', error)
-    return NextResponse.json({ error: 'Failed to generate texture' }, { status: 500 })
-  }
-}
+  }),
+  { maxRequests: 20, windowMs: 60000 }
+)

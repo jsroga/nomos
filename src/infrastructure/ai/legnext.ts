@@ -34,37 +34,6 @@ export async function submitImagineTask(prompt: string, apiKey: string): Promise
   return data.job_id
 }
 
-export async function submitUpscaleTask(
-  jobId: string,
-  imageNo: number,
-  apiKey: string
-): Promise<string> {
-  const response = await fetch('https://api.legnext.ai/api/v1/upscale', {
-    method: 'POST',
-    headers: {
-      'x-api-key': apiKey,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      jobId: jobId,
-      imageNo: imageNo,
-      type: 0, // 0 = Subtle, 1 = Creative
-    }),
-  })
-
-  const data = await response.json()
-
-  if (!response.ok) {
-    throw new Error(`LegNext upscale failed: ${response.status} - ${JSON.stringify(data)}`)
-  }
-
-  if (!data.job_id) {
-    throw new Error(`LegNext upscale failed: No job_id returned - ${JSON.stringify(data)}`)
-  }
-
-  return data.job_id
-}
-
 export async function pollLegNextTask(
   jobId: string,
   apiKey: string,
@@ -98,10 +67,4 @@ export async function pollLegNextTask(
   }
 
   throw new Error('LegNext task timed out')
-}
-
-export function getConfig() {
-  if (typeof window === 'undefined') return { apiKey: '' }
-  const stored = localStorage.getItem('ai-config-legnext')
-  return stored ? JSON.parse(stored) : { apiKey: '' }
 }

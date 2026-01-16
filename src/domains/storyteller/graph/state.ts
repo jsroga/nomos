@@ -1,5 +1,5 @@
 import { BaseMessage } from '@langchain/core/messages'
-import { EpisodePremise } from '../schemas/agent-schemas'
+import { EpisodePremise, StoryPlan } from '../schemas/agent-schemas'
 import { BeatType, BeatStatus, Phase, PlanStatus, Verdict } from '../enums'
 
 export interface BeatCard {
@@ -67,6 +67,11 @@ export interface CharacterState {
   actualMotivation: string // What's really driving them
   knowledgeState: string[] // List of things they know
 
+  role?: string
+  description?: string
+  archetype?: string
+  traits?: string[]
+
   // Numeric metrics (all 0-100)
   metrics: CharacterMetrics
 
@@ -127,7 +132,7 @@ export interface WritersRoomState {
   maxIterationsPerPhase: number
 
   // Content
-  seriesBible: Record<string, any>
+  seriesBible: StoryPlan
   masterPrompt?: string // The user's master instructions for the series
   episodePrompt?: string // Specific instructions for this episode
   episodePremise?: EpisodePremise

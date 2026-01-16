@@ -92,29 +92,30 @@ export class MoodboardGenerationService {
   }
 
   /**
-   * Start polling for task status
+   * Start adaptive polling for task status
    */
   private startPolling(runState: MoodboardGenRunState, opId: string, onComplete?: () => void) {
     // Clear any existing polling for this run to avoid duplicates
     if (this.pollingIntervals.has(runState.runId)) {
-      clearInterval(this.pollingIntervals.get(runState.runId)!)
+      clearTimeout(this.pollingIntervals.get(runState.runId)!)
     }
 
     console.log(`📡 Starting moodboard status polling for run: ${runState.runId}`)
 
-    const pollInterval = setInterval(async () => {
+    let consecutiveErrors = 0
+    let lastStatus = ''
+
+    const poll = async () => {
       try {
-        console.log(`📡 Polling moodboard status: ${runState.runId}`)
         const statusResponse = await fetch(
           `/api/storyteller/moodboard/status?runId=${runState.runId}`
         )
         const statusData = await statusResponse.json()
-        console.log('📡 Moodboard status response:', statusData.status)
 
         if (statusResponse.status === 404) {
           const elapsed = Date.now() - new Date(runState.startedAt).getTime()
           if (elapsed < 30000) {
-            console.warn(`Moodboard run not found yet (elapsed ${elapsed}ms), retrying...`)
+            this.scheduleNextPoll(runState.runId, poll, 2000)
             return
           }
           console.warn('Moodboard generation run not found after grace period, clearing state')
@@ -122,30 +123,47 @@ export class MoodboardGenerationService {
           return
         }
 
-        // Update operation with current status
+        consecutiveErrors = 0
+        const statusChanged = statusData.status !== lastStatus
+        lastStatus = statusData.status
+
         useGlobalStatusStore.getState().updateOperation(opId, {
           details: `Status: ${statusData.status}`,
         })
 
-        // Check if completed
         if (statusData.status === 'COMPLETED') {
           console.log('✅ Moodboard generation completed:', statusData.output)
           await this.handleCompletion(runState, statusData.output, opId, onComplete)
           return
         }
 
-        // Check if failed
         if (!ACTIVE_TASK_STATUSES.includes(statusData.status)) {
           console.error('❌ Moodboard generation failed:', statusData.error || statusData.status)
           this.clearRunState(runState, opId)
           return
         }
+
+        // Adaptive polling: faster when status changes, slower otherwise
+        const nextInterval = statusChanged ? 2000 : POLLING_INTERVALS.SLOW
+        this.scheduleNextPoll(runState.runId, poll, nextInterval)
       } catch (error) {
         console.error('Status polling error:', error)
+        consecutiveErrors++
+        const backoffInterval = Math.min(consecutiveErrors * 3000, 30000)
+        this.scheduleNextPoll(runState.runId, poll, backoffInterval)
       }
-    }, POLLING_INTERVALS.DEFAULT) // Poll every 5 seconds
+    }
 
-    this.pollingIntervals.set(runState.runId, pollInterval)
+    poll()
+  }
+
+  private scheduleNextPoll(runId: string, pollFn: () => Promise<void>, interval: number) {
+    const existingTimeout = this.pollingIntervals.get(runId)
+    if (existingTimeout) {
+      clearTimeout(existingTimeout)
+    }
+    const timeoutId = setTimeout(pollFn, interval)
+    this.pollingIntervals.set(runId, timeoutId)
   }
 
   /**
@@ -189,10 +207,10 @@ export class MoodboardGenerationService {
    * Clear run state and stop polling
    */
   private clearRunState(runState: MoodboardGenRunState, opId: string) {
-    // Stop polling
-    const interval = this.pollingIntervals.get(runState.runId)
-    if (interval) {
-      clearInterval(interval)
+    // Stop polling (now uses timeouts instead of intervals)
+    const timeout = this.pollingIntervals.get(runState.runId)
+    if (timeout) {
+      clearTimeout(timeout)
       this.pollingIntervals.delete(runState.runId)
     }
 

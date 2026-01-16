@@ -7,6 +7,7 @@ import { runConsistencyCheck } from '../agents/consistency-agent'
 import { applyCascadingFixes } from '../consistency/cascade-editor'
 import { getUndoManager } from '../consistency/undo-manager'
 import { StoryContext, ConsistencyCheckResult } from '../consistency/types'
+import { WorldRule, StoryPlan, EpisodePremise } from '../schemas/agent-schemas'
 
 // ============================================
 // ACTION EXECUTOR - Commits actions to state
@@ -363,11 +364,17 @@ export class ActionExecutor {
 
       case 'ADD_WORLD_RULE': {
         const currentRules = state.seriesBible?.worldRules || []
+        const newRule: WorldRule = {
+          category: 'Physics', // Default category
+          rule: action.payload.rule,
+          consequence: 'The world ceases to make sense.',
+          exceptions: null,
+        }
         return {
           ...state,
           seriesBible: {
             ...state.seriesBible,
-            worldRules: [...currentRules, action.payload.rule],
+            worldRules: [...currentRules, newRule],
           },
         }
       }
@@ -396,12 +403,12 @@ export class ActionExecutor {
       }
 
       default:
-        console.warn('Unknown action type:', (action as any).type)
+        console.warn('Unknown or unhandled action type:', (action as AgentAction).type)
         return state
     }
   }
 
-  private captureRelevantState(state: WritersRoomState, action: AgentAction): any {
+  private captureRelevantState(state: WritersRoomState, action: AgentAction): Partial<WritersRoomState> {
     // Capture only the relevant part of state for efficient undo
     switch (action.type) {
       case 'CREATE_BEAT':
@@ -843,38 +850,55 @@ export function formatActionForDisplay(
     // Bible Operations - Core
     case 'UPDATE_SERIES_BIBLE': {
       // Check what's in the payload to give a better description
-      const payload = action.payload as any
-      const storyPlan = payload?.storyPlan || payload
+      const { storyPlan, factions, worldRules, keyCharacters } = action.payload
 
-      if (storyPlan?.soundtracks?.length) {
-        const count = storyPlan.soundtracks.length
+      // storyPlan is a Partial<StoryPlan>, which HAS soundtracks
+      if (storyPlan?.soundtracks && storyPlan.soundtracks.length > 0) {
         return {
           title: isPending ? 'Add Soundtracks' : 'Soundtracks Added',
-          description: `${count} track${count !== 1 ? 's' : ''}`,
+          description: `${storyPlan.soundtracks.length} track${storyPlan.soundtracks.length !== 1 ? 's' : ''}`,
           icon: isPending ? '🎵' : '✅',
         }
       }
-      if (storyPlan?.factions?.length) {
-        const count = storyPlan.factions.length
+      if (factions && factions.length > 0) {
         return {
           title: isPending ? 'Add Factions' : 'Factions Added',
-          description: `${count} faction${count !== 1 ? 's' : ''}`,
+          description: `${factions.length} faction${factions.length !== 1 ? 's' : ''}`,
           icon: isPending ? '🏛️' : '✅',
         }
       }
-      if (storyPlan?.worldRules?.length) {
-        const count = storyPlan.worldRules.length
+      if (storyPlan?.factions && storyPlan.factions.length > 0) {
+        return {
+          title: isPending ? 'Add Factions' : 'Factions Added',
+          description: `${storyPlan.factions.length} faction${storyPlan.factions.length !== 1 ? 's' : ''}`,
+          icon: isPending ? '🏛️' : '✅',
+        }
+      }
+      if (worldRules && worldRules.length > 0) {
         return {
           title: isPending ? 'Add World Rules' : 'World Rules Added',
-          description: `${count} rule${count !== 1 ? 's' : ''}`,
+          description: `${worldRules.length} rule${worldRules.length !== 1 ? 's' : ''}`,
           icon: isPending ? '⚖️' : '✅',
         }
       }
-      if (storyPlan?.keyCharacters?.length) {
-        const count = storyPlan.keyCharacters.length
+      if (storyPlan?.worldRules && storyPlan.worldRules.length > 0) {
+        return {
+          title: isPending ? 'Add World Rules' : 'World Rules Added',
+          description: `${storyPlan.worldRules.length} rule${storyPlan.worldRules.length !== 1 ? 's' : ''}`,
+          icon: isPending ? '⚖️' : '✅',
+        }
+      }
+      if (keyCharacters && keyCharacters.length > 0) {
         return {
           title: isPending ? 'Add Characters' : 'Characters Added',
-          description: `${count} character${count !== 1 ? 's' : ''}`,
+          description: `${keyCharacters.length} character${keyCharacters.length !== 1 ? 's' : ''}`,
+          icon: isPending ? '👥' : '✅',
+        }
+      }
+      if (storyPlan?.keyCharacters && storyPlan.keyCharacters.length > 0) {
+        return {
+          title: isPending ? 'Add Characters' : 'Characters Added',
+          description: `${storyPlan.keyCharacters.length} character${storyPlan.keyCharacters.length !== 1 ? 's' : ''}`,
           icon: isPending ? '👥' : '✅',
         }
       }
@@ -893,7 +917,7 @@ export function formatActionForDisplay(
 
     // Bible Operations - Sections
     case 'UPDATE_SOUNDTRACKS': {
-      const count = (action.payload as any).soundtracks?.length || 0
+      const count = action.payload.soundtracks.length
       return {
         title: isPending ? 'Add Soundtracks' : 'Soundtracks Added',
         description: `${count} track${count !== 1 ? 's' : ''}`,
@@ -901,7 +925,7 @@ export function formatActionForDisplay(
       }
     }
     case 'UPDATE_WORLD_RULES': {
-      const count = (action.payload as any).rules?.length || 0
+      const count = action.payload.rules.length
       return {
         title: isPending ? 'Add World Rules' : 'World Rules Added',
         description: `${count} rule${count !== 1 ? 's' : ''}`,
@@ -909,7 +933,7 @@ export function formatActionForDisplay(
       }
     }
     case 'UPDATE_FACTIONS': {
-      const count = (action.payload as any).factions?.length || 0
+      const count = action.payload.factions.length
       return {
         title: isPending ? 'Add Factions' : 'Factions Added',
         description: `${count} faction${count !== 1 ? 's' : ''}`,
@@ -929,7 +953,7 @@ export function formatActionForDisplay(
         icon: isPending ? '🌍' : '✅',
       }
     case 'UPDATE_PLOT_TWISTS': {
-      const count = (action.payload as any).plotTwists?.length || 0
+      const count = action.payload.plotTwists.length
       return {
         title: isPending ? 'Add Plot Twists' : 'Plot Twists Added',
         description: `${count} twist${count !== 1 ? 's' : ''}`,
@@ -937,7 +961,7 @@ export function formatActionForDisplay(
       }
     }
     case 'UPDATE_KEY_CHARACTERS': {
-      const count = (action.payload as any).keyCharacters?.length || 0
+      const count = action.payload.keyCharacters.length
       return {
         title: isPending ? 'Add Key Characters' : 'Key Characters Added',
         description: `${count} character${count !== 1 ? 's' : ''}`,
@@ -945,7 +969,7 @@ export function formatActionForDisplay(
       }
     }
     case 'UPDATE_EPISODE_ROADMAP': {
-      const count = (action.payload as any).sequences?.length || 0
+      const count = action.payload.sequences.length
       return {
         title: isPending ? 'Update Episode Roadmap' : 'Episode Roadmap Updated',
         description: `${count} sequence${count !== 1 ? 's' : ''}`,
@@ -961,7 +985,7 @@ export function formatActionForDisplay(
     case 'UPDATE_EPISODE_PREMISE':
       return {
         title: isPending ? 'Update Episode Premise' : 'Episode Premise Updated',
-        description: (action.payload as any).premise?.title || 'Premise',
+        description: action.payload.premise.title || 'Premise',
         icon: isPending ? '🎬' : '✅',
       }
     case 'UPDATE_MOOD_SOUNDTRACK':
@@ -996,7 +1020,7 @@ export function formatActionForDisplay(
     default:
       return {
         title: isPending ? 'Pending Action' : 'Action Committed',
-        description: (action as any).type,
+        description: (action as AgentAction).type,
         icon: isPending ? '⏳' : '✅',
       }
   }

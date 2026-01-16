@@ -15,7 +15,7 @@ export interface PendingUpscale {
 
 export interface PendingGeneration {
   newUrl: string
-  newBase64: string
+  newBase64?: string // Deprecated: use newUrl instead, kept for backwards compatibility
   originalUrl?: string // undefined for first tile
   isFirstTile: boolean
   timestamp: number
@@ -23,7 +23,7 @@ export interface PendingGeneration {
 
 export interface PendingFidelity {
   newUrl: string
-  newBase64: string
+  newBase64?: string // Deprecated: use newUrl instead, kept for backwards compatibility
   originalUrl: string
   timestamp: number
 }
@@ -684,23 +684,11 @@ export const useWorldStore = create<WorldState>((set, get) => ({
     if (!pending) return
 
     try {
-      // Save the new image
-      const filename = `${x}_${y}_${Date.now()}.png`
-      const response = await fetch('/api/save-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId: currentProject.id,
-          filename,
-          imageData: pending.newBase64,
-        }),
-      })
+      // Use the Vercel Blob URL directly instead of re-saving base64
+      // The image is already stored in Vercel Blob (pending.newUrl)
+      const imageUrl = pending.newUrl
 
-      if (!response.ok) {
-        throw new Error('Failed to save generated image')
-      }
-
-      // Upsert tile in database
+      // Upsert tile in database with the Blob URL
       const supabase = (await import('@/infrastructure/storage/supabaseClient')).getSupabaseClient()
       const { data: tile } = await supabase
         .from('tiles')
@@ -710,7 +698,7 @@ export const useWorldStore = create<WorldState>((set, get) => ({
             x,
             y,
             tile_prompt: '', // Will be updated by service if needed
-            image_filename: filename,
+            image_filename: imageUrl, // Store the full Blob URL
           },
           { onConflict: 'project_id,x,y' }
         )
@@ -721,7 +709,7 @@ export const useWorldStore = create<WorldState>((set, get) => ({
       set(state => ({
         tiles: {
           ...state.tiles,
-          [tileKey]: tile || { ...state.tiles[tileKey], image_filename: filename },
+          [tileKey]: tile || { ...state.tiles[tileKey], image_filename: imageUrl },
         },
         pendingGenerations: (() => {
           const newPending = { ...state.pendingGenerations }
@@ -764,26 +752,14 @@ export const useWorldStore = create<WorldState>((set, get) => ({
 
     try {
       // Save the enhanced image
-      const filename = `${x}_${y}_${Date.now()}.png`
-      const response = await fetch('/api/save-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId: currentProject.id,
-          filename,
-          imageData: pending.newBase64,
-        }),
-      })
+      // Use the Vercel Blob URL directly instead of re-saving base64
+      const imageUrl = pending.newUrl
 
-      if (!response.ok) {
-        throw new Error('Failed to save enhanced image')
-      }
-
-      // Update tile in database
+      // Update tile in database with the Blob URL
       const supabase = (await import('@/infrastructure/storage/supabaseClient')).getSupabaseClient()
       await supabase
         .from('tiles')
-        .update({ image_filename: filename })
+        .update({ image_filename: imageUrl })
         .eq('project_id', currentProject.id)
         .eq('x', x)
         .eq('y', y)
@@ -794,7 +770,7 @@ export const useWorldStore = create<WorldState>((set, get) => ({
           ...state.tiles,
           [tileKey]: {
             ...state.tiles[tileKey],
-            image_filename: filename,
+            image_filename: imageUrl,
           },
         },
         pendingFidelity: (() => {

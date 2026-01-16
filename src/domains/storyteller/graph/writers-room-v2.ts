@@ -16,7 +16,18 @@
 
 import { StateGraph, END, START } from '@langchain/langgraph'
 import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres'
-import { WritersRoomState } from './state'
+import {
+  WritersRoomState,
+  CharacterState,
+  BeatCard,
+  Setup,
+  PlanItem,
+  Task,
+  CompletedTask,
+} from './state'
+import { EpisodePremise } from '../schemas/agent-schemas'
+import { Verdict } from '../enums'
+import { BaseMessage } from '@langchain/core/messages'
 import { routerAgent } from '../agents/router'
 import { writerAgentV2 } from '../agents/writer-v2'
 import { plotArchitectAgentV2 } from '../agents/plot-architect-v2'
@@ -112,43 +123,43 @@ export async function getWritersRoomGraphV2() {
       currentPhase: { value: (x: string, y?: string) => y ?? x, default: () => 'premise' },
       phaseIterations: { value: (x: number, y?: number) => y ?? x, default: () => 0 },
       maxIterationsPerPhase: { value: (x: number, y?: number) => y ?? x, default: () => 15 },
-      seriesBible: { value: (x: any, y?: any) => y ?? x, default: () => ({}) },
+      seriesBible: { value: (x: Record<string, any>, y?: Record<string, any>) => y ?? x, default: () => ({}) },
       masterPrompt: { value: (x?: string, y?: string) => y ?? x },
       episodePrompt: { value: (x?: string, y?: string) => y ?? x },
-      episodePremise: { value: (x?: any, y?: any) => y ?? x },
-      characters: { value: (x: any[], y?: any[]) => y ?? x, default: () => [] },
-      activeCast: { value: (x?: any[], y?: any[]) => y ?? x },
-      beatBoard: { value: (x: any[], y?: any[]) => y ?? x, default: () => [] },
-      currentBeat: { value: (x?: any, y?: any) => y ?? x },
-      unresolvedSetups: { value: (x: any[], y?: any[]) => y ?? x, default: () => [] },
-      rejectedBeats: { value: (x: any[], y?: any[]) => y ?? x, default: () => [] },
+      episodePremise: { value: (x?: EpisodePremise, y?: EpisodePremise) => y ?? x },
+      characters: { value: (x: CharacterState[], y?: CharacterState[]) => y ?? x, default: () => [] },
+      activeCast: { value: (x?: string[], y?: string[]) => y ?? x },
+      beatBoard: { value: (x: BeatCard[], y?: BeatCard[]) => y ?? x, default: () => [] },
+      currentBeat: { value: (x?: BeatCard, y?: BeatCard) => y ?? x },
+      unresolvedSetups: { value: (x: Setup[], y?: Setup[]) => y ?? x, default: () => [] },
+      rejectedBeats: { value: (x: BeatCard[], y?: BeatCard[]) => y ?? x, default: () => [] },
       script: { value: (x?: string, y?: string) => y ?? x },
       scriptVersion: { value: (x?: number, y?: number) => y ?? x },
-      messages: { value: (x: any[], y?: any[]) => (y ?? []).concat(x ?? []), default: () => [] },
+      messages: { value: (x: BaseMessage[], y?: BaseMessage[]) => (y ?? []).concat(x ?? []), default: () => [] },
       awaitingUserInput: { value: (x: boolean, y?: boolean) => y ?? x, default: () => false },
       lastAction: { value: (x?: string, y?: string) => y ?? x },
       shouldTerminate: { value: (x: boolean, y?: boolean) => y ?? x, default: () => false },
       beatChallengeCount: { value: (x: number, y?: number) => y ?? x, default: () => 0 },
-      lastDevilVerdict: { value: (x?: any, y?: any) => y ?? x },
-      reflectionNotes: { value: (x?: any[], y?: any[]) => y ?? x },
+      lastDevilVerdict: { value: (x?: Verdict, y?: Verdict) => y ?? x },
+      reflectionNotes: { value: (x?: string[], y?: string[]) => y ?? x },
       minConfidenceThreshold: { value: (x: number, y?: number) => y ?? x, default: () => 0.7 },
       lastAgentConfidence: { value: (x?: number, y?: number) => y ?? x },
-      lastScriptVerdict: { value: (x?: any, y?: any) => y ?? x },
+      lastScriptVerdict: { value: (x?: Verdict, y?: Verdict) => y ?? x },
       scriptRevisionCount: { value: (x: number, y?: number) => y ?? x, default: () => 0 },
-      scriptFeedback: { value: (x?: any[], y?: any[]) => y ?? x },
-      plan: { value: (x: any[], y?: any[]) => y ?? x, default: () => [] },
-      deepMemory: { value: (x: any, y?: any) => ({ ...x, ...y }), default: () => ({}) },
-      memory: { value: (x: any, y?: any) => ({ ...x, ...y }), default: () => ({}) },
+      scriptFeedback: { value: (x?: string[], y?: string[]) => y ?? x },
+      plan: { value: (x: PlanItem[], y?: PlanItem[]) => y ?? x, default: () => [] },
+      deepMemory: { value: (x: Record<string, any>, y?: Record<string, any>) => ({ ...x, ...y }), default: () => ({}) },
+      memory: { value: (x: Record<string, any>, y?: Record<string, any>) => ({ ...x, ...y }), default: () => ({}) },
       plannerThinking: { value: (x: string, y?: string) => y ?? x, default: () => '' },
       // V2: Handoff system
       activeAgent: { value: (x?: string, y?: string) => y ?? x },
       previousAgent: { value: (x?: string, y?: string) => y ?? x },
       handoffReason: { value: (x?: string, y?: string) => y ?? x },
-      taskQueue: { value: (x: any[], y?: any[]) => y ?? x, default: () => [] },
-      completedTasks: { value: (x: any[], y?: any[]) => y ?? x, default: () => [] },
-      loadedSkills: { value: (x: any[], y?: any[]) => y ?? x, default: () => [] },
-      availableSkills: { value: (x: any[], y?: any[]) => y ?? x, default: () => [] },
-    } as any,
+      taskQueue: { value: (x: Task[], y?: Task[]) => y ?? x, default: () => [] },
+      completedTasks: { value: (x: CompletedTask[], y?: CompletedTask[]) => y ?? x, default: () => [] },
+      loadedSkills: { value: (x: string[], y?: string[]) => y ?? x, default: () => [] },
+      availableSkills: { value: (x: string[], y?: string[]) => y ?? x, default: () => [] },
+    },
   })
 
   // Add nodes for router and specialists

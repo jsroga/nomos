@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { textureService } from '@/domains/interior-designer/ai/TextureService'
+import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/lib/api-utils'
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json()
+export const POST = withRateLimit(
+  withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
+    const body = await request.json()
     const { prompt, apiKey, style, useSemanticSearch, width, height } = body
 
     if (!prompt) {
@@ -24,11 +25,6 @@ export async function POST(req: NextRequest) {
     )
 
     return NextResponse.json({ imageUrl })
-  } catch (error: any) {
-    console.error('Error generating texture:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to generate texture' },
-      { status: 500 }
-    )
-  }
-}
+  }),
+  { maxRequests: 20, windowMs: 60000 }
+)

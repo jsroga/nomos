@@ -297,6 +297,28 @@ function checkDangerousActions(
 class HITLMiddleware {
   private pendingInterrupt: HITLInterrupt | null = null
   private checkpoints: Map<string, HITLCheckpoint> = new Map()
+  private checkpointTimestamps: Map<string, number> = new Map()
+  private static readonly CHECKPOINT_TTL_MS = 30 * 60 * 1000 // 30 minutes
+
+  constructor() {
+    // Periodically clean up expired checkpoints to prevent memory leaks
+    if (typeof setInterval !== 'undefined') {
+      setInterval(() => this.cleanupExpiredCheckpoints(), 5 * 60 * 1000) // Every 5 minutes
+    }
+  }
+
+  /**
+   * Clean up checkpoints older than TTL
+   */
+  private cleanupExpiredCheckpoints(): void {
+    const now = Date.now()
+    for (const [sessionId, timestamp] of this.checkpointTimestamps) {
+      if (now - timestamp > HITLMiddleware.CHECKPOINT_TTL_MS) {
+        this.checkpoints.delete(sessionId)
+        this.checkpointTimestamps.delete(sessionId)
+      }
+    }
+  }
 
   /**
    * Check if we should interrupt before agent execution
@@ -352,6 +374,7 @@ class HITLMiddleware {
       interrupt,
       canResume: true,
     })
+    this.checkpointTimestamps.set(sessionId, Date.now())
   }
 
   /**
@@ -366,6 +389,7 @@ class HITLMiddleware {
    */
   clearCheckpoint(sessionId: string): void {
     this.checkpoints.delete(sessionId)
+    this.checkpointTimestamps.delete(sessionId)
   }
 
   /**

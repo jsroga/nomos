@@ -3,11 +3,29 @@
 import { use, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useGameEntities } from '@/hooks/useGameEntities'
-import { 
-  Users, MapPin, Gamepad2, Shield, Package, Target,
-  Sparkles, Clock, TrendingUp, ArrowRight, Grid3x3, 
-  FileText, Layers, Search, BookOpen, Tv, Map, Home,
-  Brush, Layout, Pencil, Activity
+import {
+  Users,
+  MapPin,
+  Gamepad2,
+  Shield,
+  Package,
+  Target,
+  Sparkles,
+  Clock,
+  TrendingUp,
+  ArrowRight,
+  Grid3x3,
+  FileText,
+  Layers,
+  Search,
+  BookOpen,
+  Tv,
+  Map,
+  Home,
+  Brush,
+  Layout,
+  Pencil,
+  Activity,
 } from 'lucide-react'
 import { EntityPicker } from './EntityPicker'
 
@@ -104,9 +122,10 @@ export function GameHubDashboard({ projectId }: GameHubDashboardProps) {
 
   // Filter entities for search
   const filteredEntities = searchQuery
-    ? entities.filter(e => 
-        e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        e.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    ? entities.filter(
+        e =>
+          e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          e.description?.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : []
 
@@ -121,9 +140,7 @@ export function GameHubDashboard({ projectId }: GameHubDashboardProps) {
                 <Layers className="w-8 h-8 text-purple-400" />
                 Game Development Hub
               </h1>
-              <p className="text-gray-400 mt-1">
-                Your Swiss Army knife for game creation
-              </p>
+              <p className="text-gray-400 mt-1">Your Swiss Army knife for game creation</p>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">Project ID:</span>
@@ -136,13 +153,43 @@ export function GameHubDashboard({ projectId }: GameHubDashboardProps) {
           {/* Global Stats */}
           <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
             {[
-              { icon: <Users className="w-4 h-4" />, label: 'Characters', count: stats.characters, color: 'text-blue-400' },
-              { icon: <MapPin className="w-4 h-4" />, label: 'Locations', count: stats.locations, color: 'text-green-400' },
-              { icon: <Gamepad2 className="w-4 h-4" />, label: 'Mechanics', count: stats.mechanics, color: 'text-purple-400' },
-              { icon: <Shield className="w-4 h-4" />, label: 'Factions', count: stats.factions, color: 'text-red-400' },
-              { icon: <Package className="w-4 h-4" />, label: 'Items', count: stats.items, color: 'text-yellow-400' },
-              { icon: <Target className="w-4 h-4" />, label: 'Quests', count: stats.quests, color: 'text-orange-400' },
-            ].map((stat) => (
+              {
+                icon: <Users className="w-4 h-4" />,
+                label: 'Characters',
+                count: stats.characters,
+                color: 'text-blue-400',
+              },
+              {
+                icon: <MapPin className="w-4 h-4" />,
+                label: 'Locations',
+                count: stats.locations,
+                color: 'text-green-400',
+              },
+              {
+                icon: <Gamepad2 className="w-4 h-4" />,
+                label: 'Mechanics',
+                count: stats.mechanics,
+                color: 'text-purple-400',
+              },
+              {
+                icon: <Shield className="w-4 h-4" />,
+                label: 'Factions',
+                count: stats.factions,
+                color: 'text-red-400',
+              },
+              {
+                icon: <Package className="w-4 h-4" />,
+                label: 'Items',
+                count: stats.items,
+                color: 'text-yellow-400',
+              },
+              {
+                icon: <Target className="w-4 h-4" />,
+                label: 'Quests',
+                count: stats.quests,
+                color: 'text-orange-400',
+              },
+            ].map(stat => (
               <div
                 key={stat.label}
                 className="bg-gray-800/30 border border-gray-700/50 rounded-lg p-4"
@@ -167,25 +214,27 @@ export function GameHubDashboard({ projectId }: GameHubDashboardProps) {
                 Your Toolbox
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {domains.map((domain) => (
+                {domains.map(domain => (
                   <Link
                     key={domain.id}
                     href={domain.href}
                     className="group relative bg-gray-800/40 border border-gray-700/50 rounded-xl p-6 hover:bg-gray-800/60 hover:border-gray-600 transition-all overflow-hidden"
                   >
                     {/* Gradient overlay */}
-                    <div className={`absolute inset-0 bg-gradient-to-br ${domain.color} opacity-0 group-hover:opacity-5 transition-opacity`} />
-                    
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-br ${domain.color} opacity-0 group-hover:opacity-5 transition-opacity`}
+                    />
+
                     <div className="relative">
                       <div className="flex items-start justify-between mb-3">
-                        <div className={`p-3 rounded-lg bg-gradient-to-br ${domain.color} text-white`}>
+                        <div
+                          className={`p-3 rounded-lg bg-gradient-to-br ${domain.color} text-white`}
+                        >
                           {domain.icon}
                         </div>
                         <ArrowRight className="w-5 h-5 text-gray-600 group-hover:text-gray-400 group-hover:translate-x-1 transition-all" />
                       </div>
-                      <h3 className="text-lg font-semibold text-gray-100 mb-1">
-                        {domain.name}
-                      </h3>
+                      <h3 className="text-lg font-semibold text-gray-100 mb-1">{domain.name}</h3>
                       <p className="text-sm text-gray-400 mb-3 line-clamp-2">
                         {domain.description}
                       </p>
@@ -204,7 +253,7 @@ export function GameHubDashboard({ projectId }: GameHubDashboardProps) {
               </h2>
               <EntityPicker
                 projectId={projectId}
-                onSelectEntity={(entity) => {
+                onSelectEntity={entity => {
                   // Navigate to the entity's source domain
                   const domainMap: Record<string, string> = {
                     storyteller: `/app/${projectId}/storyteller`,
@@ -228,15 +277,13 @@ export function GameHubDashboard({ projectId }: GameHubDashboardProps) {
                 <Clock className="w-5 h-5 text-purple-400" />
                 Recent Activity
               </h2>
-              {loading && (
-                <p className="text-sm text-gray-500">Loading...</p>
-              )}
+              {loading && <p className="text-sm text-gray-500">Loading...</p>}
               {!loading && recentActivity.length === 0 && (
                 <p className="text-sm text-gray-500">No activity yet. Start creating!</p>
               )}
               {!loading && recentActivity.length > 0 && (
                 <div className="space-y-3">
-                  {recentActivity.map((entity) => (
+                  {recentActivity.map(entity => (
                     <div
                       key={entity.id}
                       className="flex items-start gap-3 p-3 rounded-lg bg-gray-900/50 hover:bg-gray-900/70 transition-colors"
@@ -250,9 +297,7 @@ export function GameHubDashboard({ projectId }: GameHubDashboardProps) {
                             {entity.entityType}
                           </span>
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {entity.sourceDomain}
-                        </div>
+                        <div className="text-xs text-gray-500">{entity.sourceDomain}</div>
                       </div>
                       <Activity className="w-4 h-4 text-purple-400 flex-shrink-0" />
                     </div>
@@ -320,4 +365,3 @@ export function GameHubDashboard({ projectId }: GameHubDashboardProps) {
     </div>
   )
 }
-

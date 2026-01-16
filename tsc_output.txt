@@ -1,0 +1,29 @@
+src/app/api/generate-3d/route.ts(5,1): error TS1185: Merge conflict marker encountered.
+src/app/api/generate-3d/route.ts(7,1): error TS1185: Merge conflict marker encountered.
+src/app/api/generate-3d/route.ts(8,1): error TS1185: Merge conflict marker encountered.
+src/app/api/interior-designer/text-to-3d/route.ts(54,1): error TS1185: Merge conflict marker encountered.
+src/app/api/interior-designer/text-to-3d/route.ts(56,1): error TS1185: Merge conflict marker encountered.
+src/app/api/interior-designer/text-to-3d/route.ts(57,1): error TS1185: Merge conflict marker encountered.
+src/app/api/storyteller/actions/route.ts(150,1): error TS1185: Merge conflict marker encountered.
+src/app/api/storyteller/actions/route.ts(155,1): error TS1185: Merge conflict marker encountered.
+src/app/api/storyteller/actions/route.ts(162,1): error TS1185: Merge conflict marker encountered.
+src/app/api/storyteller/chat/stream/route.ts(20,1): error TS1185: Merge conflict marker encountered.
+src/app/api/storyteller/chat/stream/route.ts(23,1): error TS1185: Merge conflict marker encountered.
+src/app/api/storyteller/chat/stream/route.ts(24,1): error TS1185: Merge conflict marker encountered.
+src/hooks/useCrossDomainSuggestions.ts(39,30): error TS1005: '>' expected.
+src/hooks/useCrossDomainSuggestions.ts(39,39): error TS1005: ',' expected.
+src/hooks/useCrossDomainSuggestions.ts(39,50): error TS1005: ':' expected.
+src/hooks/useCrossDomainSuggestions.ts(40,9): error TS1005: ',' expected.
+src/lib/admin-users.ts(50,13): error TS1005: '>' expected.
+src/lib/admin-users.ts(50,22): error TS1005: ')' expected.
+src/lib/admin-users.ts(51,15): error TS1127: Invalid character.
+src/lib/admin-users.ts(51,16): error TS1136: Property assignment expected.
+src/lib/admin-users.ts(51,17): error TS1161: Unterminated regular expression literal.
+src/lib/admin-users.ts(52,21): error TS1161: Unterminated regular expression literal.
+src/lib/admin-users.ts(53,8): error TS1161: Unterminated regular expression literal.
+src/lib/admin-users.ts(54,5): error TS1128: Declaration or statement expected.
+src/lib/admin-users.ts(56,1): error TS1128: Declaration or statement expected.
+src/lib/analytics/posthog.ts(32,24): error TS1005: '>' expected.
+src/lib/analytics/posthog.ts(32,30): error TS1005: ';' expected.
+src/lib/analytics/posthog.ts(32,42): error TS1109: Expression expected.
+src/lib/analytics/posthog.ts(32,58): error TS1161: Unterminated regular expression literal.

@@ -122,7 +122,10 @@ export const Toolbar: React.FC = () => {
         <div className="flex flex-col items-center gap-3">
           <ToolButton
             icon={
-              <MousePointer2 size={18} className={mode === 'SELECT' ? 'text-indigo-400' : 'text-zinc-500'} />
+              <MousePointer2
+                size={18}
+                className={mode === 'SELECT' ? 'text-indigo-400' : 'text-zinc-500'}
+              />
             }
             label="Select (V)"
             isActive={mode === 'SELECT'}
@@ -130,7 +133,12 @@ export const Toolbar: React.FC = () => {
           />
 
           <ToolButton
-            icon={<BrickWall size={18} className={mode === 'WALL' ? 'text-indigo-400' : 'text-zinc-500'} />}
+            icon={
+              <BrickWall
+                size={18}
+                className={mode === 'WALL' ? 'text-indigo-400' : 'text-zinc-500'}
+              />
+            }
             label="Draw Walls (W)"
             isActive={mode === 'WALL'}
             onClick={() => setMode('WALL')}
@@ -141,7 +149,9 @@ export const Toolbar: React.FC = () => {
               <Square
                 size={18}
                 className={
-                  mode === 'SURFACE' && activeSurfaceType === 'grass' ? 'text-indigo-400' : 'text-zinc-500'
+                  mode === 'SURFACE' && activeSurfaceType === 'grass'
+                    ? 'text-indigo-400'
+                    : 'text-zinc-500'
                 }
               />
             }
@@ -158,7 +168,9 @@ export const Toolbar: React.FC = () => {
               <GitCommit
                 size={18}
                 className={
-                  mode === 'SURFACE' && activeSurfaceType === 'road' ? 'text-indigo-400' : 'text-zinc-500'
+                  mode === 'SURFACE' && activeSurfaceType === 'road'
+                    ? 'text-indigo-400'
+                    : 'text-zinc-500'
                 }
               />
             }
@@ -172,14 +184,21 @@ export const Toolbar: React.FC = () => {
           />
 
           <ToolButton
-            icon={<Box size={18} className={mode === 'OBJECT' ? 'text-indigo-400' : 'text-zinc-500'} />}
+            icon={
+              <Box size={18} className={mode === 'OBJECT' ? 'text-indigo-400' : 'text-zinc-500'} />
+            }
             label="Place Objects (O)"
             isActive={mode === 'OBJECT'}
             onClick={() => setMode('OBJECT')}
           />
 
           <ToolButton
-            icon={<Sparkles size={18} className={mode === 'SCATTER' ? 'text-indigo-400' : 'text-zinc-500'} />}
+            icon={
+              <Sparkles
+                size={18}
+                className={mode === 'SCATTER' ? 'text-indigo-400' : 'text-zinc-500'}
+              />
+            }
             label="Scatter Tool (S)"
             isActive={mode === 'SCATTER'}
             onClick={() => setMode('SCATTER')}
@@ -189,7 +208,12 @@ export const Toolbar: React.FC = () => {
         <div className="w-8 h-px bg-border/50 my-2" />
 
         <ToolButton
-          icon={<Mountain size={18} className={mode === 'TERRAIN' ? 'text-indigo-400' : 'text-zinc-500'} />}
+          icon={
+            <Mountain
+              size={18}
+              className={mode === 'TERRAIN' ? 'text-indigo-400' : 'text-zinc-500'}
+            />
+          }
           label="Terrain & Water (T)"
           isActive={mode === 'TERRAIN'}
           onClick={() => setMode('TERRAIN')}

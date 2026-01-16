@@ -1,13 +1,15 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { projects } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'
 import { tasks } from '@trigger.dev/sdk/v3'
-import type { generatePortrait } from '@/trigger/generate-portrait' // Import type for type-safety if possible, or just string
+import type { generatePortrait } from '@/trigger/generate-portrait'
+import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/lib/api-utils'
+import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json()
+export const POST = withRateLimit(
+  withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
+    const body = await request.json()
     const { prompt, projectId, characterId, apiKey: clientApiKey } = body
 
     if (!prompt) {
@@ -18,12 +20,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'projectId is required' }, { status: 400 })
     }
 
-    // characterId is optional - use temp ID for new characters
+    // Verify project access
+    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+    }
+
     const effectiveCharacterId = characterId || `temp-${Date.now()}`
 
-    // Get API key from request body (client-side config) or environment variable as fallback
     const apiKey = clientApiKey || process.env.LEGNEXT_API_KEY
-
     if (!apiKey) {
       return NextResponse.json(
         {
@@ -38,7 +42,6 @@ export async function POST(req: Request) {
     let styleReferenceUrls: string[] = []
     try {
       const project = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1)
-
       if (project && project.length > 0) {
         styleReferenceUrls = (project[0].styleReferenceUrls as any) || []
       }
@@ -46,7 +49,6 @@ export async function POST(req: Request) {
       console.error('Failed to fetch project style references:', error)
     }
 
-    // Trigger the background task
     const handle = await tasks.trigger<typeof generatePortrait>('generate-portrait', {
       prompt,
       projectId,
@@ -61,14 +63,6 @@ export async function POST(req: Request) {
       characterId: effectiveCharacterId,
       status: 'queued',
     })
-  } catch (error) {
-    console.error('Error triggering portrait generation:', error)
-    return NextResponse.json(
-      {
-        error: 'Failed to trigger generation',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 }
-    )
-  }
-}
+  }),
+  { maxRequests: 10, windowMs: 60000 }
+)

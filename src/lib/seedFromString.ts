@@ -27,3 +27,4 @@ export function seedFromString(str: string): number {
 export function combinedSeed(...strings: string[]): number {
   return seedFromString(strings.filter(Boolean).join('|'))
 }
+

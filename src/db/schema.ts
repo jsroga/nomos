@@ -25,24 +25,24 @@ export const gameEntities = pgTable('game_entities', {
     .notNull()
     .references(() => projects.id, { onDelete: 'cascade' }),
   userId: uuid('user_id').notNull(),
-  
+
   // Core entity data
   entityType: text('entity_type').notNull(), // 'character' | 'location' | 'mechanic' | 'faction' | 'item' | 'quest'
   name: text('name').notNull(),
   description: text('description'),
-  
+
   // Domain tracking
   sourceDomain: text('source_domain').notNull(), // 'storyteller' | 'loop-creator' | 'interior-designer' | 'world-building'
   sourceEntityId: uuid('source_entity_id'), // ID in the source domain's table
   usedInDomains: text('used_in_domains').array().default([]), // ['storyteller', 'loop-creator']
-  
+
   // Rich metadata from source domain
   metadata: jsonb('metadata').default({}), // Domain-specific data (character stats, location coordinates, etc.)
-  
+
   // Search and display
   tags: text('tags').array().default([]),
   imageUrl: text('image_url'),
-  
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
@@ -53,17 +53,17 @@ export const entityRelationships = pgTable('entity_relationships', {
   projectId: uuid('project_id')
     .notNull()
     .references(() => projects.id, { onDelete: 'cascade' }),
-  
+
   fromEntityId: uuid('from_entity_id')
     .notNull()
     .references(() => gameEntities.id, { onDelete: 'cascade' }),
   toEntityId: uuid('to_entity_id')
     .notNull()
     .references(() => gameEntities.id, { onDelete: 'cascade' }),
-  
+
   relationshipType: text('relationship_type').notNull(), // 'uses' | 'located_in' | 'conflicts_with' | 'allies_with' | 'owns'
   metadata: jsonb('metadata').default({}), // Additional relationship context
-  
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
@@ -336,7 +336,178 @@ export const marketAnalysisRisingCompetitors = pgTable('market_analysis_rising_c
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
+// =============================================================================
+// Relations for Drizzle Query Builder (enables eager loading with `with:` clause)
+// =============================================================================
+
+import { relations } from 'drizzle-orm'
+
+// Game Loop relations
+export const gameLoopsRelations = relations(gameLoops, ({ many }) => ({
+  marketAnalyses: many(marketAnalyses),
+}))
+
+// Market Analysis relations (main table)
+export const marketAnalysesRelations = relations(marketAnalyses, ({ one, many }) => ({
+  gameLoop: one(gameLoops, {
+    fields: [marketAnalyses.gameLoopId],
+    references: [gameLoops.id],
+  }),
+  referenceScores: one(marketAnalysisReferenceScores, {
+    fields: [marketAnalyses.id],
+    references: [marketAnalysisReferenceScores.marketAnalysisId],
+  }),
+  marketSize: one(marketAnalysisMarketSize, {
+    fields: [marketAnalyses.id],
+    references: [marketAnalysisMarketSize.marketAnalysisId],
+  }),
+  audienceFit: one(marketAnalysisAudienceFit, {
+    fields: [marketAnalyses.id],
+    references: [marketAnalysisAudienceFit.marketAnalysisId],
+  }),
+  primaryArchetype: one(marketAnalysisPrimaryArchetype, {
+    fields: [marketAnalyses.id],
+    references: [marketAnalysisPrimaryArchetype.marketAnalysisId],
+  }),
+  momentum: one(marketAnalysisMomentum, {
+    fields: [marketAnalyses.id],
+    references: [marketAnalysisMomentum.marketAnalysisId],
+  }),
+  competitors: many(marketAnalysisCompetitors),
+  trends: many(marketAnalysisTrends),
+  patterns: many(marketAnalysisPatterns),
+}))
+
+// Market Analysis sub-table relations
+export const marketAnalysisReferenceScoresRelations = relations(
+  marketAnalysisReferenceScores,
+  ({ one }) => ({
+    analysis: one(marketAnalyses, {
+      fields: [marketAnalysisReferenceScores.marketAnalysisId],
+      references: [marketAnalyses.id],
+    }),
+  })
+)
+
+export const marketAnalysisMarketSizeRelations = relations(marketAnalysisMarketSize, ({ one }) => ({
+  analysis: one(marketAnalyses, {
+    fields: [marketAnalysisMarketSize.marketAnalysisId],
+    references: [marketAnalyses.id],
+  }),
+}))
+
+export const marketAnalysisAudienceFitRelations = relations(
+  marketAnalysisAudienceFit,
+  ({ one }) => ({
+    analysis: one(marketAnalyses, {
+      fields: [marketAnalysisAudienceFit.marketAnalysisId],
+      references: [marketAnalyses.id],
+    }),
+  })
+)
+
+export const marketAnalysisCompetitorsRelations = relations(
+  marketAnalysisCompetitors,
+  ({ one }) => ({
+    analysis: one(marketAnalyses, {
+      fields: [marketAnalysisCompetitors.marketAnalysisId],
+      references: [marketAnalyses.id],
+    }),
+  })
+)
+
+export const marketAnalysisTrendsRelations = relations(marketAnalysisTrends, ({ one }) => ({
+  analysis: one(marketAnalyses, {
+    fields: [marketAnalysisTrends.marketAnalysisId],
+    references: [marketAnalyses.id],
+  }),
+}))
+
+export const marketAnalysisPatternsRelations = relations(marketAnalysisPatterns, ({ one }) => ({
+  analysis: one(marketAnalyses, {
+    fields: [marketAnalysisPatterns.marketAnalysisId],
+    references: [marketAnalyses.id],
+  }),
+}))
+
+export const marketAnalysisPrimaryArchetypeRelations = relations(
+  marketAnalysisPrimaryArchetype,
+  ({ one }) => ({
+    analysis: one(marketAnalyses, {
+      fields: [marketAnalysisPrimaryArchetype.marketAnalysisId],
+      references: [marketAnalyses.id],
+    }),
+  })
+)
+
+export const marketAnalysisMomentumRelations = relations(
+  marketAnalysisMomentum,
+  ({ one, many }) => ({
+    analysis: one(marketAnalyses, {
+      fields: [marketAnalysisMomentum.marketAnalysisId],
+      references: [marketAnalyses.id],
+    }),
+    genreMomentum: many(marketAnalysisGenreMomentum),
+    socialBuzz: many(marketAnalysisSocialBuzz),
+    risingCompetitors: many(marketAnalysisRisingCompetitors),
+  })
+)
+
+export const marketAnalysisGenreMomentumRelations = relations(
+  marketAnalysisGenreMomentum,
+  ({ one }) => ({
+    momentum: one(marketAnalysisMomentum, {
+      fields: [marketAnalysisGenreMomentum.momentumId],
+      references: [marketAnalysisMomentum.id],
+    }),
+  })
+)
+
+export const marketAnalysisSocialBuzzRelations = relations(marketAnalysisSocialBuzz, ({ one }) => ({
+  momentum: one(marketAnalysisMomentum, {
+    fields: [marketAnalysisSocialBuzz.momentumId],
+    references: [marketAnalysisMomentum.id],
+  }),
+}))
+
+export const marketAnalysisRisingCompetitorsRelations = relations(
+  marketAnalysisRisingCompetitors,
+  ({ one }) => ({
+    momentum: one(marketAnalysisMomentum, {
+      fields: [marketAnalysisRisingCompetitors.momentumId],
+      references: [marketAnalysisMomentum.id],
+    }),
+  })
+)
+
+// Game Entities relations
+export const gameEntitiesRelations = relations(gameEntities, ({ one }) => ({
+  project: one(projects, {
+    fields: [gameEntities.projectId],
+    references: [projects.id],
+  }),
+}))
+
+// Entity Relationships relations
+export const entityRelationshipsRelations = relations(entityRelationships, ({ one }) => ({
+  project: one(projects, {
+    fields: [entityRelationships.projectId],
+    references: [projects.id],
+  }),
+  fromEntity: one(gameEntities, {
+    fields: [entityRelationships.fromEntityId],
+    references: [gameEntities.id],
+  }),
+  toEntity: one(gameEntities, {
+    fields: [entityRelationships.toEntityId],
+    references: [gameEntities.id],
+  }),
+}))
+
+// =============================================================================
 // Type exports for use in application
+// =============================================================================
+
 export type Project = typeof projects.$inferSelect
 export type NewProject = typeof projects.$inferInsert
 

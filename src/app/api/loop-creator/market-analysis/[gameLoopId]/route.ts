@@ -27,98 +27,74 @@ interface RouteParams {
 
 /**
  * GET - Retrieve saved market analysis for a game loop
+ * Uses eager loading to fetch all related data in a single query
  */
 export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
     const { gameLoopId } = await params
 
-    // Verify game loop exists
-    const [gameLoop] = await db
-      .select()
-      .from(gameLoops)
-      .where(eq(gameLoops.id, gameLoopId))
-      .limit(1)
-
-    if (!gameLoop) {
-      return NextResponse.json({ error: 'Game loop not found' }, { status: 404 })
-    }
-
-    // Get the latest market analysis
-    const [analysis] = await db
-      .select()
-      .from(marketAnalyses)
-      .where(eq(marketAnalyses.gameLoopId, gameLoopId))
-      .orderBy(marketAnalyses.createdAt)
-      .limit(1)
+    // Use Drizzle query builder with eager loading (with: clause)
+    // This replaces 7 separate queries with 1 query using JOINs
+    const analysis = await db.query.marketAnalyses.findFirst({
+      where: eq(marketAnalyses.gameLoopId, gameLoopId),
+      orderBy: marketAnalyses.createdAt,
+      with: {
+        referenceScores: true,
+        marketSize: true,
+        audienceFit: true,
+        competitors: true,
+        trends: true,
+        patterns: true,
+      },
+    })
 
     if (!analysis) {
+      // Check if game loop exists
+      const [gameLoop] = await db
+        .select()
+        .from(gameLoops)
+        .where(eq(gameLoops.id, gameLoopId))
+        .limit(1)
+
+      if (!gameLoop) {
+        return NextResponse.json({ error: 'Game loop not found' }, { status: 404 })
+      }
+
       return NextResponse.json({ exists: false, analysis: null })
     }
 
-    // Fetch all related data in parallel
-    const [referenceScores, marketSize, audienceFit, competitors, trends, patterns] =
-      await Promise.all([
-        db
-          .select()
-          .from(marketAnalysisReferenceScores)
-          .where(eq(marketAnalysisReferenceScores.marketAnalysisId, analysis.id))
-          .limit(1),
-        db
-          .select()
-          .from(marketAnalysisMarketSize)
-          .where(eq(marketAnalysisMarketSize.marketAnalysisId, analysis.id))
-          .limit(1),
-        db
-          .select()
-          .from(marketAnalysisAudienceFit)
-          .where(eq(marketAnalysisAudienceFit.marketAnalysisId, analysis.id))
-          .limit(1),
-        db
-          .select()
-          .from(marketAnalysisCompetitors)
-          .where(eq(marketAnalysisCompetitors.marketAnalysisId, analysis.id)),
-        db
-          .select()
-          .from(marketAnalysisTrends)
-          .where(eq(marketAnalysisTrends.marketAnalysisId, analysis.id)),
-        db
-          .select()
-          .from(marketAnalysisPatterns)
-          .where(eq(marketAnalysisPatterns.marketAnalysisId, analysis.id)),
-      ])
-
-    // Reconstruct the report
+    // Reconstruct the report from eagerly loaded data
     const report: MarketAnalysisReport = {
-      referenceScores: referenceScores[0]
+      referenceScores: analysis.referenceScores
         ? {
-            discoElysium: referenceScores[0].discoElysiumScore,
-            vampireSurvivors: referenceScores[0].vampireSurvivorsScore,
-            counterStrike: referenceScores[0].counterStrikeScore,
+            discoElysium: analysis.referenceScores.discoElysiumScore,
+            vampireSurvivors: analysis.referenceScores.vampireSurvivorsScore,
+            counterStrike: analysis.referenceScores.counterStrikeScore,
           }
         : { discoElysium: 0, vampireSurvivors: 0, counterStrike: 0 },
 
-      marketSize: marketSize[0]
+      marketSize: analysis.marketSize
         ? {
-            tam: marketSize[0].tam,
-            sam: marketSize[0].sam,
-            relevantSegment: marketSize[0].relevantSegment,
-            growthRate: marketSize[0].growthRate,
-            confidence: Number(marketSize[0].confidence),
-            sources: marketSize[0].sources || [],
+            tam: analysis.marketSize.tam,
+            sam: analysis.marketSize.sam,
+            relevantSegment: analysis.marketSize.relevantSegment,
+            growthRate: analysis.marketSize.growthRate,
+            confidence: Number(analysis.marketSize.confidence),
+            sources: analysis.marketSize.sources || [],
           }
         : { tam: '', sam: '', relevantSegment: '', growthRate: '', confidence: 0, sources: [] },
 
-      audienceFit: audienceFit[0]
+      audienceFit: analysis.audienceFit
         ? {
-            targetDemographic: audienceFit[0].targetDemographic,
-            fitScore: audienceFit[0].fitScore,
-            strengths: audienceFit[0].strengths || [],
-            concerns: audienceFit[0].concerns || [],
-            recommendations: audienceFit[0].recommendations || [],
+            targetDemographic: analysis.audienceFit.targetDemographic,
+            fitScore: analysis.audienceFit.fitScore,
+            strengths: analysis.audienceFit.strengths || [],
+            concerns: analysis.audienceFit.concerns || [],
+            recommendations: analysis.audienceFit.recommendations || [],
           }
         : { targetDemographic: '', fitScore: 0, strengths: [], concerns: [], recommendations: [] },
 
-      competitors: competitors.map(c => ({
+      competitors: (analysis.competitors || []).map(c => ({
         name: c.name,
         genre: c.genre,
         platform: c.platforms || [],
@@ -129,7 +105,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         marketPosition: c.marketPosition || '',
       })),
 
-      trends: trends.map(t => ({
+      trends: (analysis.trends || []).map(t => ({
         trend: t.trendName,
         direction: t.direction as 'rising' | 'stable' | 'declining',
         relevance: t.relevance,
@@ -137,7 +113,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         timeframe: t.timeframe || '',
       })),
 
-      patterns: patterns.map(p => ({
+      patterns: (analysis.patterns || []).map(p => ({
         patternName: p.patternName,
         matchScore: p.matchScore,
         description: p.description,

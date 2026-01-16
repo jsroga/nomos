@@ -1,22 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { gameLoops, projects } from '@/db/schema'
-import { eq, and, desc } from 'drizzle-orm'
-import { requireAuth } from '@/lib/auth'
-
-async function verifyProjectAccess(projectId: string, userId: string) {
-  const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
-  if (!project || project.userId !== userId) {
-    return false
-  }
-  return true
-}
-
-async function verifyLoopAccess(loopId: string, userId: string) {
-  const [loop] = await db.select().from(gameLoops).where(eq(gameLoops.id, loopId))
-  if (!loop) return false
-  return verifyProjectAccess(loop.projectId, userId)
-}
+import { eq, desc } from 'drizzle-orm'
+import { requireAuth, checkRateLimit } from '@/lib/api-utils'
+import {
+  verifyProjectAccess,
+  verifyGameLoopAccess,
+} from '@/domains/storyteller/lib/access-verification'
 
 /**
  * GET - Fetch game loops
@@ -38,19 +28,17 @@ export async function GET(req: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     if (loopId) {
-      // Check access
-      if (!(await verifyLoopAccess(loopId, session.user.id))) {
+      // Single JOIN query for access check
+      const { hasAccess } = await verifyGameLoopAccess(loopId, session.user.id)
+      if (!hasAccess) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
       }
 
       // Fetch single loop
-      const [loop] = await db
-        .select()
-        .from(gameLoops)
-        .where(eq(gameLoops.id, loopId))
+      const [loop] = await db.select().from(gameLoops).where(eq(gameLoops.id, loopId))
       return NextResponse.json(loop || null)
     } else {
-      // Check access
+      // Check project access
       if (!(await verifyProjectAccess(projectId!, session.user.id))) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
       }
@@ -80,14 +68,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Rate limit: 10 loop creations per minute
+    const { allowed } = checkRateLimit(`loop-create:${session.user.id}`, {
+      maxRequests: 10,
+      windowMs: 60000,
+    })
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please wait before creating more loops.' },
+        { status: 429 }
+      )
+    }
+
     const body = await req.json()
     const { projectId, name, nodes, edges, metadata, analysis } = body
 
     if (!projectId || !name) {
-      return NextResponse.json(
-        { error: 'Project ID and name are required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Project ID and name are required' }, { status: 400 })
     }
 
     if (!(await verifyProjectAccess(projectId, session.user.id))) {
@@ -108,29 +105,32 @@ export async function POST(req: NextRequest) {
       .returning()
 
     console.log(`✅ Game loop created: ${name} (${newLoop.id})`)
-    
+
     // Create game entity for cross-domain visibility
     let entityId: string | null = null
     try {
-      const entityResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/entities`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId,
-          userId: session.user.id,
-          entityType: 'mechanic',
-          name,
-          description: metadata?.description || `Game loop: ${name}`,
-          sourceDomain: 'loop-creator',
-          sourceEntityId: newLoop.id,
-          metadata: {
-            loopType: metadata?.type,
-            ...metadata,
-          },
-          tags: [metadata?.type || 'game-loop'].filter(Boolean),
-        }),
-      })
-      
+      const entityResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/entities`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId,
+            userId: session.user.id,
+            entityType: 'mechanic',
+            name,
+            description: metadata?.description || `Game loop: ${name}`,
+            sourceDomain: 'loop-creator',
+            sourceEntityId: newLoop.id,
+            metadata: {
+              loopType: metadata?.type,
+              ...metadata,
+            },
+            tags: [metadata?.type || 'game-loop'].filter(Boolean),
+          }),
+        }
+      )
+
       if (entityResponse.ok) {
         const { entity } = await entityResponse.json()
         entityId = entity?.id
@@ -192,7 +192,9 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Loop ID is required' }, { status: 400 })
     }
 
-    if (!(await verifyLoopAccess(id, session.user.id))) {
+    // Single JOIN query for access check
+    const { hasAccess } = await verifyGameLoopAccess(id, session.user.id)
+    if (!hasAccess) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
@@ -235,7 +237,9 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!(await verifyLoopAccess(id, session.user.id))) {
+    // Single JOIN query for access check
+    const { hasAccess } = await verifyGameLoopAccess(id, session.user.id)
+    if (!hasAccess) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
@@ -247,5 +251,3 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete loop' }, { status: 500 })
   }
 }
-
-

@@ -16,6 +16,9 @@ import { beats } from '@/domains/storyteller/db/schema'
 import { eq, asc } from 'drizzle-orm'
 import { runWithModelConfig, ModelConfig } from '@/domains/storyteller/config/model-context'
 import { StreamCallback, StreamProgress } from '@/domains/storyteller/guardrails/types'
+import { requireAuth } from '@/lib/api-utils'
+import { WritersRoomState, CharacterState, BeatCard } from '@/domains/storyteller/graph/state'
+import { BaseMessage } from '@langchain/core/messages'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120 // 120 second timeout for longer discussions
@@ -30,6 +33,15 @@ if (!langsmithConfig.enabled) {
 }
 
 export async function POST(req: Request) {
+  // Require authentication for chat streaming
+  const { session, error: authError } = await requireAuth()
+  if (authError || !session) {
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized', message: 'Authentication required' }),
+      { status: 401, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
+
   try {
     const body = await req.json()
     const {
@@ -48,7 +60,7 @@ export async function POST(req: Request) {
     } = body
 
     // Map history to LangChain messages
-    const mappedHistory = (history || []).map((m: any) => {
+    const mappedHistory = (history || []).map((m: { role: string; content: string; name?: string }) => {
       if (m.role === 'user') return new HumanMessage({ content: m.content, name: m.name })
       return new AIMessage({ content: m.content, name: m.name })
     })
@@ -67,7 +79,7 @@ export async function POST(req: Request) {
     }
 
     // Fetch existing beats for the episode
-    let existingBeats: any[] = []
+    let existingBeats: BeatCard[] = []
     if (episodeId) {
       try {
         const dbBeats = await db
@@ -80,10 +92,10 @@ export async function POST(req: Request) {
           episodeId: b.episodeId,
           sequence: b.sequence,
           logline: b.logline,
-          beatType: b.beatType,
-          status: b.status,
+          beatType: (b.beatType as any), // Cast to specific enum if possible
+          status: (b.status as any),
           charactersInvolved: b.charactersInvolved || [],
-          emotionalShifts: b.emotionalShifts || {},
+          emotionalShifts: (b.emotionalShifts as any) || {},
         }))
         console.log(`Loaded ${existingBeats.length} existing beats for episode ${episodeId}`)
       } catch (err) {
@@ -183,7 +195,10 @@ export async function POST(req: Request) {
 
               // Create initial state - use phase from request or default to premise
               // Include stream callback for token-level streaming
-              const initialState = {
+              const initialState: Partial<WritersRoomState> & {
+                _streamCallback?: StreamCallback
+                _useProgressiveGeneration?: boolean
+              } = {
                 projectId: projectId || 'default',
                 episodeId: episodeId,
                 userEmail: userEmail, // For Bible lock permission checks
@@ -202,7 +217,6 @@ export async function POST(req: Request) {
                 beatBoard: existingBeats, // Use existing beats from database
                 unresolvedSetups: [],
                 rejectedBeats: [],
-                currentIteration: 0,
                 phaseIterations: 0,
                 maxIterationsPerPhase: 15, // Allow full agent discussions
                 shouldTerminate: false,
@@ -305,8 +319,8 @@ export async function POST(req: Request) {
  */
 async function streamWithNodes(
   graph: typeof writersRoomGraph,
-  initialState: any,
-  config: any,
+  initialState: Partial<WritersRoomState>,
+  config: Record<string, any>,
   safeEnqueue: (data: string) => void,
   isClosed: () => boolean
 ) {
@@ -326,7 +340,7 @@ async function streamWithNodes(
 
     for (const [nodeName, nodeOutput] of Object.entries(chunk)) {
       if (nodeOutput && typeof nodeOutput === 'object' && 'messages' in nodeOutput) {
-        const messages = (nodeOutput as any).messages || []
+        const messages: BaseMessage[] = (nodeOutput as any).messages || []
 
         for (const msg of messages) {
           messageCount++
@@ -428,8 +442,8 @@ async function streamWithNodes(
  */
 async function streamWithEvents(
   graph: typeof writersRoomGraph,
-  initialState: any,
-  config: any,
+  initialState: Partial<WritersRoomState>,
+  config: Record<string, any>,
   safeEnqueue: (data: string) => void,
   isClosed: () => boolean
 ) {

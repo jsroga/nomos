@@ -283,20 +283,21 @@ Context: ${context}`
         }
       }
 
-      // Step 2: Retrieve for all expanded queries
-      const allResults: SearchResult[] = []
+      // Step 2: Retrieve for all expanded queries IN PARALLEL
       const fetchLimit = useReranking ? limit * 2 : limit // Fetch more if reranking
+      const limitedQueries = queries.slice(0, 3) // Limit to 3 expanded queries
 
-      for (const q of queries.slice(0, 3)) {
-        // Limit to 3 expanded queries
-        const searchResults = await this.searchEngine.search(
+      const searchPromises = limitedQueries.map(q =>
+        this.searchEngine.search(
           projectId,
           q,
           documentType ? { documentTypes: [documentType] } : undefined,
           { topK: fetchLimit }
         )
-        allResults.push(...searchResults)
-      }
+      )
+
+      const searchResultsArrays = await Promise.all(searchPromises)
+      const allResults: SearchResult[] = searchResultsArrays.flat()
 
       // Deduplicate by ID
       const uniqueResults = this.deduplicateResults(allResults)

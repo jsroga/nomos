@@ -37,7 +37,7 @@ export function EntityPicker({
 }: EntityPickerProps) {
   const [search, setSearch] = useState('')
   const [isOpen, setIsOpen] = useState(false)
-  
+
   const { entities, loading } = useGameEntities({
     projectId,
     entityType: filterType,
@@ -59,7 +59,7 @@ export function EntityPicker({
         <input
           type="text"
           value={search}
-          onChange={(e) => {
+          onChange={e => {
             setSearch(e.target.value)
             setIsOpen(true)
           }}
@@ -73,31 +73,26 @@ export function EntityPicker({
       {isOpen && (
         <>
           {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setIsOpen(false)}
-          />
-          
+          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+
           {/* Results */}
           <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-20 max-h-80 overflow-y-auto">
             {loading && (
-              <div className="p-4 text-center text-gray-400 text-sm">
-                Loading entities...
-              </div>
+              <div className="p-4 text-center text-gray-400 text-sm">Loading entities...</div>
             )}
-            
+
             {!loading && entities.length === 0 && (
               <div className="p-4 text-center text-gray-400 text-sm">
                 {search ? 'No entities found' : 'No entities in this project yet'}
               </div>
             )}
-            
+
             {!loading && entities.length > 0 && (
               <div className="divide-y divide-gray-800">
-                {entities.map((entity) => {
+                {entities.map(entity => {
                   const Icon = ENTITY_ICONS[entity.entityType]
                   const colorClass = ENTITY_COLORS[entity.entityType]
-                  
+
                   return (
                     <button
                       key={entity.id}
@@ -105,27 +100,25 @@ export function EntityPicker({
                       className="w-full p-3 hover:bg-gray-800/50 transition-colors text-left flex items-start gap-3"
                     >
                       {/* Icon */}
-                      <div className={`flex-shrink-0 w-8 h-8 rounded-lg border flex items-center justify-center ${colorClass}`}>
+                      <div
+                        className={`flex-shrink-0 w-8 h-8 rounded-lg border flex items-center justify-center ${colorClass}`}
+                      >
                         <Icon className="w-4 h-4" />
                       </div>
-                      
+
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-gray-100 truncate">
-                            {entity.name}
-                          </span>
+                          <span className="font-medium text-gray-100 truncate">{entity.name}</span>
                           <span className="text-xs text-gray-500 capitalize">
                             {entity.entityType}
                           </span>
                         </div>
-                        
+
                         {entity.description && (
-                          <p className="text-sm text-gray-400 line-clamp-2">
-                            {entity.description}
-                          </p>
+                          <p className="text-sm text-gray-400 line-clamp-2">{entity.description}</p>
                         )}
-                        
+
                         {/* Domain badges */}
                         <div className="flex items-center gap-1 mt-2 flex-wrap">
                           <span className="text-xs px-2 py-0.5 bg-gray-800 rounded text-gray-400">
@@ -138,7 +131,7 @@ export function EntityPicker({
                           )}
                         </div>
                       </div>
-                      
+
                       {/* Image */}
                       {entity.imageUrl && (
                         <img
@@ -189,19 +182,17 @@ export function EntitySelectorButton({
       {isOpen && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-2xl w-full">
-            <h3 className="text-lg font-semibold text-gray-100 mb-4">
-              Select Entity
-            </h3>
-            
+            <h3 className="text-lg font-semibold text-gray-100 mb-4">Select Entity</h3>
+
             <EntityPicker
               projectId={projectId}
-              onSelectEntity={(entity) => {
+              onSelectEntity={entity => {
                 onSelectEntity(entity)
                 setIsOpen(false)
               }}
               filterType={filterType}
             />
-            
+
             <button
               onClick={() => setIsOpen(false)}
               className="mt-4 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded transition-colors"
@@ -214,4 +205,3 @@ export function EntitySelectorButton({
     </>
   )
 }
-

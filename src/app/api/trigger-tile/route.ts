@@ -1,33 +1,21 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { tasks } from '@trigger.dev/sdk/v3'
 import type { generateTileTask } from '@/trigger/generate-tile'
-import { createClient } from '@supabase/supabase-js'
+import {
+  withAuth,
+  withRateLimit,
+  verifyProjectAccess,
+  type AuthenticatedRequest,
+} from '@/lib/api-utils'
 
 export const dynamic = 'force-dynamic'
 
-// Helper to fetch project style references
-async function fetchProjectStyleRefs(projectId: string): Promise<string[]> {
-  try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-
-    const { data, error } = await supabase
-      .from('projects')
-      .select('style_reference_urls')
-      .eq('id', projectId)
-      .single()
-
-    if (error || !data) return []
-    return (data.style_reference_urls as string[]) || []
-  } catch {
-    return []
-  }
-}
-
-export async function POST(request: Request) {
-  try {
+/**
+ * POST /api/trigger-tile
+ * Trigger tile generation task
+ */
+export const POST = withRateLimit(
+  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
     const payload = await request.json()
 
     // Validate required fields
@@ -50,14 +38,28 @@ export async function POST(request: Request) {
       )
     }
 
+    // Verify project access via RLS
+    const hasAccess = await verifyProjectAccess(supabase, payload.projectId)
+    if (!hasAccess) {
+      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+    }
+
     // Determine if this is a first tile (no neighbors) or follow-up tile
     const isFirstTile = payload.isFirstTile ?? true
 
-    // For first tile: fetch style references if not provided
-    // For follow-up tiles: style refs not needed (context image provides style)
-    const styleReferenceUrls = isFirstTile
-      ? payload.styleReferenceUrls || (await fetchProjectStyleRefs(payload.projectId))
-      : undefined
+    // Fetch style references using authenticated client
+    let styleReferenceUrls: string[] | undefined
+    if (isFirstTile && !payload.styleReferenceUrls) {
+      const { data } = await supabase
+        .from('projects')
+        .select('style_reference_urls')
+        .eq('id', payload.projectId)
+        .single()
+
+      styleReferenceUrls = data?.style_reference_urls || []
+    } else {
+      styleReferenceUrls = isFirstTile ? payload.styleReferenceUrls : undefined
+    }
 
     // Trigger the tile generation task
     const handle = await tasks.trigger<typeof generateTileTask>(
@@ -85,11 +87,6 @@ export async function POST(request: Request) {
       runId: handle.id,
       publicAccessToken: handle.publicAccessToken,
     })
-  } catch (error: any) {
-    console.error('Failed to trigger tile generation:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to trigger tile generation' },
-      { status: 500 }
-    )
-  }
-}
+  }),
+  { maxRequests: 20, windowMs: 60000 } // 20 tile generations per minute
+)

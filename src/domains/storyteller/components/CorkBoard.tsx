@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, memo, useCallback } from 'react'
 import { BeatCard } from './BeatCard'
 import { useParams } from 'next/navigation'
 import { Plus, Image as ImageIcon, Loader2, Sparkles, Film } from 'lucide-react'
@@ -23,7 +23,8 @@ interface CorkBoardProps {
   projectId?: string
 }
 
-export const CorkBoard: React.FC<CorkBoardProps> = ({
+// Memoize the entire CorkBoard to prevent re-renders from parent state changes
+export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
   beats: initialBeats,
   episodeId,
   onAddMessage,
@@ -32,7 +33,7 @@ export const CorkBoard: React.FC<CorkBoardProps> = ({
   isGeneratingCombined,
   onGenerateCombined,
   projectId: propProjectId,
-}) => {
+}) {
   const [beats, setBeats] = useState<any[]>(initialBeats)
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [isGeneratingBeats, setIsGeneratingBeats] = useState(false)
@@ -297,4 +298,4 @@ export const CorkBoard: React.FC<CorkBoardProps> = ({
       />
     </div>
   )
-}
+})

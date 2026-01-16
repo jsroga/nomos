@@ -1,6 +1,6 @@
 /**
  * Entity Data Resolver
- * 
+ *
  * Resolves full entity data when user clicks on @mentions.
  * Handles navigation to entity's source domain.
  */
@@ -16,7 +16,7 @@ export async function resolveEntity(entityId: string): Promise<GameEntity | null
     if (!response.ok) {
       throw new Error('Failed to fetch entity')
     }
-    
+
     const data = await response.json()
     return data.entity
   } catch (error) {
@@ -35,7 +35,7 @@ export function navigateToEntity(entity: GameEntity, projectId: string): void {
     'interior-designer': `/app/${projectId}/interior-design`,
     'world-building': `/app/${projectId}/world-gen`,
   }
-  
+
   const route = domainRoutes[entity.sourceDomain]
   if (route) {
     window.location.href = route
@@ -54,7 +54,7 @@ export function getEntitySourceLabel(sourceDomain: string): string {
     'interior-designer': 'Interior Designer',
     'world-building': 'World Builder',
   }
-  
+
   return labels[sourceDomain] || sourceDomain
 }
 
@@ -70,7 +70,7 @@ export function getEntityTypeColor(entityType: string): string {
     item: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
     quest: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
   }
-  
+
   return colors[entityType] || 'bg-gray-500/10 text-gray-400 border-gray-500/20'
 }
 
@@ -91,7 +91,9 @@ export function formatEntityDisplay(entity: GameEntity): {
 } {
   return {
     title: entity.name,
-    subtitle: entity.description || `${entity.entityType} from ${getEntitySourceLabel(entity.sourceDomain)}`,
+    subtitle:
+      entity.description ||
+      `${entity.entityType} from ${getEntitySourceLabel(entity.sourceDomain)}`,
     badges: [
       {
         label: entity.entityType,
@@ -101,10 +103,14 @@ export function formatEntityDisplay(entity: GameEntity): {
         label: getEntitySourceLabel(entity.sourceDomain),
         variant: 'outline',
       },
-      ...(isMultiDomainEntity(entity) ? [{
-        label: `${entity.usedInDomains.length} domains`,
-        variant: 'default' as const,
-      }] : []),
+      ...(isMultiDomainEntity(entity)
+        ? [
+            {
+              label: `${entity.usedInDomains.length} domains`,
+              variant: 'default' as const,
+            },
+          ]
+        : []),
     ],
   }
 }

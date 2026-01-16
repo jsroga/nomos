@@ -77,7 +77,9 @@ const LayerItem: React.FC<LayerItemProps> = ({
         </div>
       )}
 
-      <span className="text-[10px] font-mono font-bold uppercase tracking-widest flex-1 truncate">{name}</span>
+      <span className="text-[10px] font-mono font-bold uppercase tracking-widest flex-1 truncate">
+        {name}
+      </span>
 
       <Button
         variant="ghost"

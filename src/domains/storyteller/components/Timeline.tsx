@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, memo, useCallback } from 'react'
 import { ChevronLeft, ChevronRight, Play, Pause, ChevronUp, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -40,13 +40,44 @@ const BEAT_COLORS: Record<string, string> = {
   default: 'bg-muted-foreground',
 }
 
-export const Timeline: React.FC<TimelineProps> = ({
+// Memoized beat item component to prevent unnecessary re-renders
+const BeatItem = memo(function BeatItem({
+  beat,
+  isSelected,
+  isHovered,
+  onSelect,
+  onHover,
+}: {
+  beat: Beat
+  isSelected: boolean
+  isHovered: boolean
+  onSelect: (id: string) => void
+  onHover: (id: string | null) => void
+}) {
+  return (
+    <button
+      className={`relative flex-shrink-0 w-8 h-8 rounded-full transition-all duration-200 ${
+        BEAT_COLORS[beat.beatType] || BEAT_COLORS.default
+      } ${isSelected ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-110' : ''} ${
+        isHovered ? 'scale-105' : ''
+      }`}
+      onClick={() => onSelect(beat.id)}
+      onMouseEnter={() => onHover(beat.id)}
+      onMouseLeave={() => onHover(null)}
+      title={beat.logline}
+    >
+      <span className="text-[10px] font-bold text-white">{beat.sequence}</span>
+    </button>
+  )
+})
+
+export const Timeline: React.FC<TimelineProps> = memo(function Timeline({
   episodeId,
   beats,
   onBeatSelect,
   selectedBeatId,
   pendingQuestions,
-}) => {
+}) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [snapshots, setSnapshots] = useState<CharacterSnapshot[]>([])
@@ -270,4 +301,4 @@ export const Timeline: React.FC<TimelineProps> = ({
       </div>
     </div>
   )
-}
+})

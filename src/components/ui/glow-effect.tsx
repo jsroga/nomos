@@ -32,7 +32,6 @@ export function GlowEffect({
     background: `conic-gradient(from 0deg at 50% 50%, ${colors.join(', ')})`,
   }
 
-
   return (
     <div
       className={cn('pointer-events-none absolute inset-0 -z-10 h-full w-full', className)}

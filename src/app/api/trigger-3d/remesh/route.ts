@@ -1,11 +1,12 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { tasks } from '@trigger.dev/sdk/v3'
 import type { remesh3DModelTask } from '@/trigger/remesh-3d-model'
+import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/lib/api-utils'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(request: Request) {
-  try {
+export const POST = withRateLimit(
+  withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
     const payload = await request.json()
 
     if (!payload.assetId || !payload.meshyTaskId || !payload.apiKey) {
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
     }
 
     const handle = await tasks.trigger<typeof remesh3DModelTask>('remesh-3d-model', payload, {
-      ttl: '30m', // Match maxDuration
+      ttl: '30m',
     })
 
     return NextResponse.json({
@@ -24,8 +25,6 @@ export async function POST(request: Request) {
       runId: handle.id,
       publicAccessToken: handle.publicAccessToken,
     })
-  } catch (error: any) {
-    console.error('Failed to trigger 3D remesh:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-}
+  }),
+  { maxRequests: 5, windowMs: 60000 }
+)

@@ -683,7 +683,9 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
         try {
           const savedMeshy = localStorage.getItem(LocalStorageKeys.AI_CONFIG_MESHY)
           if (savedMeshy) apiKey = JSON.parse(savedMeshy).apiKey || ''
-        } catch (err) { }
+        } catch (err) {
+          console.warn('[RetextureControls] Failed to read Meshy API key from localStorage:', err)
+        }
 
         // Get actual project ID for style reference lookup
         const currentProject = useWorldStore.getState().currentProject

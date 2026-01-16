@@ -1,19 +1,16 @@
 'use client'
 
-import { ApiReference } from '@scalar/nextjs-api-reference'
+import { ApiReferenceReact } from '@scalar/api-reference-react'
+
+import '@scalar/api-reference-react/style.css'
 
 export default function DocsPage() {
   return (
-    <div className="min-h-screen bg-[#0f0f0f]">
-      <ApiReference
-        configuration={{
-          spec: {
-            url: '/openapi.json',
-          },
-          theme: 'dark',
-          layout: 'modern',
-        }}
-      />
-    </div>
+    <ApiReferenceReact
+      configuration={{
+        _integration: 'nextjs',
+        url: '/openapi.json',
+      }}
+    />
   )
 }

@@ -1,11 +1,15 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { runs } from '@trigger.dev/sdk/v3'
+import { requireAuth } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   let runId: string | null = null
   try {
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const { searchParams } = new URL(request.url)
     runId = searchParams.get('runId')
 
@@ -13,7 +17,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Missing runId parameter' }, { status: 400 })
     }
 
-    // Retrieve run status using Trigger.dev SDK v3
     const run = await runs.retrieve(runId)
 
     if (!run) {
@@ -34,7 +37,6 @@ export async function GET(request: Request) {
   } catch (error: any) {
     console.error('Failed to get moodboard generation status:', error)
 
-    // Handle specific Trigger.dev errors
     if (error.message?.includes('not found') || error.status === 404) {
       console.warn(`Run ID not found: ${runId}`)
       return NextResponse.json({ error: 'Run not found' }, { status: 404 })
