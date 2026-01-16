@@ -1,6 +1,6 @@
 /**
  * Generic Mention System Types
- *
+ * 
  * Extensible types for @ mention functionality across all chat implementations.
  * Supports three categories: Entities, Agents, and Sections.
  */
@@ -43,48 +43,20 @@ export interface MentionProvider {
 export interface ProjectContext {
   projectId: string
   // Storyteller-specific
-  characters?: Array<{
-    id: string
-    name: string
-    role?: string
-    description?: string
-    [key: string]: unknown
-  }>
+  characters?: Array<{ id: string; name: string; role?: string; description?: string; [key: string]: unknown }>
   episodes?: Array<{ id: string; title?: string; number?: number; [key: string]: unknown }>
   beats?: Array<{ id: string; logline?: string; sequence?: number; [key: string]: unknown }>
   factions?: Array<{ id: string; name: string; ideology?: string; [key: string]: unknown }>
   seriesBible?: {
-    worldRules?: Array<{
-      category: string
-      rule: string
-      consequence?: string
-      [key: string]: unknown
-    }>
+    worldRules?: Array<{ category: string; rule: string; consequence?: string; [key: string]: unknown }>
     inspirations?: { books?: Array<unknown>; movies?: Array<unknown>; games?: Array<unknown> }
-    soundtracks?: Array<{
-      title: string
-      artist: string
-      youtubeUrl?: string
-      [key: string]: unknown
-    }>
+    soundtracks?: Array<{ title: string; artist: string; youtubeUrl?: string; [key: string]: unknown }>
     plotTwists?: string[]
     [key: string]: unknown
   }
   // Loop Creator-specific
-  mechanics?: Array<{
-    id: string
-    name: string
-    type?: string
-    description?: string
-    [key: string]: unknown
-  }>
-  loops?: Array<{
-    id: string
-    name: string
-    type?: string
-    description?: string
-    [key: string]: unknown
-  }>
+  mechanics?: Array<{ id: string; name: string; type?: string; description?: string; [key: string]: unknown }>
+  loops?: Array<{ id: string; name: string; type?: string; description?: string; [key: string]: unknown }>
   connections?: Array<{ id: string; source: string; target: string; [key: string]: unknown }>
   balanceAnalysis?: unknown
   gameContext?: {

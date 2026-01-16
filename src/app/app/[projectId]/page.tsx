@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation'
+import { GameHubDashboard } from '@/components/GameHubDashboard'
 
 export default async function ProjectRootPage({
   params,
@@ -6,5 +6,6 @@ export default async function ProjectRootPage({
   params: Promise<{ projectId: string }>
 }) {
   const { projectId } = await params
-  redirect(`/${projectId}/storyteller?bible=open`)
+  
+  return <GameHubDashboard projectId={projectId} />
 }

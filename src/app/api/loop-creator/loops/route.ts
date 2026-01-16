@@ -44,7 +44,10 @@ export async function GET(req: NextRequest) {
       }
 
       // Fetch single loop
-      const [loop] = await db.select().from(gameLoops).where(eq(gameLoops.id, loopId))
+      const [loop] = await db
+        .select()
+        .from(gameLoops)
+        .where(eq(gameLoops.id, loopId))
       return NextResponse.json(loop || null)
     } else {
       // Check access
@@ -81,7 +84,10 @@ export async function POST(req: NextRequest) {
     const { projectId, name, nodes, edges, metadata, analysis } = body
 
     if (!projectId || !name) {
-      return NextResponse.json({ error: 'Project ID and name are required' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Project ID and name are required' },
+        { status: 400 }
+      )
     }
 
     if (!(await verifyProjectAccess(projectId, session.user.id))) {
@@ -102,7 +108,66 @@ export async function POST(req: NextRequest) {
       .returning()
 
     console.log(`✅ Game loop created: ${name} (${newLoop.id})`)
-    return NextResponse.json(newLoop)
+    
+    // Create game entity for cross-domain visibility
+    let entityId: string | null = null
+    try {
+      const entityResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/entities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId,
+          userId: session.user.id,
+          entityType: 'mechanic',
+          name,
+          description: metadata?.description || `Game loop: ${name}`,
+          sourceDomain: 'loop-creator',
+          sourceEntityId: newLoop.id,
+          metadata: {
+            loopType: metadata?.type,
+            ...metadata,
+          },
+          tags: [metadata?.type || 'game-loop'].filter(Boolean),
+        }),
+      })
+      
+      if (entityResponse.ok) {
+        const { entity } = await entityResponse.json()
+        entityId = entity?.id
+      }
+    } catch (error) {
+      console.error('[Loop API] Failed to create game entity:', error)
+    }
+
+    // Generate cross-domain suggestions
+    const suggestions = [
+      {
+        id: `loop-to-story-${newLoop.id}`,
+        type: 'cross_domain',
+        title: `Write a story featuring ${name}`,
+        description: 'Create narrative scenarios that showcase this mechanic',
+        targetDomain: 'storyteller',
+        targetRoute: `/app/${projectId}/storyteller`,
+        autoMessage: `Write a scene that demonstrates the @${name} mechanic in action. Make it feel exciting and impactful.`,
+        priority: 5,
+        entityId: entityId || newLoop.id,
+      },
+      {
+        id: `loop-to-level-${newLoop.id}`,
+        type: 'cross_domain',
+        title: `Design a level for ${name}`,
+        description: 'Create environments that leverage this mechanic',
+        targetDomain: 'interior-designer',
+        targetRoute: `/app/${projectId}/interior-design`,
+        priority: 4,
+        entityId: entityId || newLoop.id,
+      },
+    ]
+
+    return NextResponse.json({
+      ...newLoop,
+      _suggestions: suggestions,
+    })
   } catch (error) {
     console.error('Failed to create game loop:', error)
     return NextResponse.json({ error: 'Failed to create loop' }, { status: 500 })
@@ -182,3 +247,5 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete loop' }, { status: 500 })
   }
 }
+
+
