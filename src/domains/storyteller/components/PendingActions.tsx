@@ -93,7 +93,11 @@ export const PendingActions: React.FC<PendingActionsProps> = ({
               .slice(-5)
               .reverse()
               .map((entry, index) => (
-                <ActionItem key={`${entry.id}-${index}`} entry={entry} onUndo={() => onUndoAction?.(entry.id)} />
+                <ActionItem
+                  key={`${entry.id}-${index}`}
+                  entry={entry}
+                  onUndo={() => onUndoAction?.(entry.id)}
+                />
               ))}
           </div>
         </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { Button } from '@/components/ui/button'
@@ -38,13 +38,8 @@ export const DesignManager: React.FC = () => {
   const [newSceneName, setNewSceneName] = useState('New Scene')
   const [editingDesignId, setEditingDesignId] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (currentProject?.id && isOpen) {
-      fetchDesigns()
-    }
-  }, [currentProject?.id, isOpen])
-
-  const fetchDesigns = async () => {
+  // Define fetchDesigns BEFORE using it in useEffect
+  const fetchDesigns = useCallback(async () => {
     if (!currentProject?.id) return
 
     try {
@@ -54,7 +49,13 @@ export const DesignManager: React.FC = () => {
     } catch (error) {
       console.error('Failed to fetch designs:', error)
     }
-  }
+  }, [currentProject?.id])
+
+  useEffect(() => {
+    if (currentProject?.id && isOpen) {
+      fetchDesigns()
+    }
+  }, [currentProject?.id, isOpen, fetchDesigns])
 
   const handleLoad = async (designId: string) => {
     if (hasUnsavedChanges && currentProject?.id) {
@@ -151,10 +152,11 @@ export const DesignManager: React.FC = () => {
                 designs.map(design => (
                   <div
                     key={design.id}
-                    className={`p-3 rounded border mb-2 flex items-center justify-between group ${design.id === currentDesignId
-                      ? 'border-primary bg-accent'
-                      : 'border-border hover:bg-accent/50'
-                      }`}
+                    className={`p-3 rounded border mb-2 flex items-center justify-between group ${
+                      design.id === currentDesignId
+                        ? 'border-primary bg-accent'
+                        : 'border-border hover:bg-accent/50'
+                    }`}
                   >
                     <button onClick={() => handleLoad(design.id)} className="flex-1 text-left">
                       <div className="font-medium text-sm">{design.name}</div>
@@ -202,15 +204,17 @@ export const DesignManager: React.FC = () => {
           <DialogHeader>
             <DialogTitle>{editingDesignId ? 'Rename Scene' : 'New Scene'}</DialogTitle>
             <DialogDescription>
-              {editingDesignId ? 'Enter a new name for the scene.' : 'Enter a name for your new scene.'}
+              {editingDesignId
+                ? 'Enter a new name for the scene.'
+                : 'Enter a name for your new scene.'}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Input
               value={newSceneName}
-              onChange={(e) => setNewSceneName(e.target.value)}
+              onChange={e => setNewSceneName(e.target.value)}
               placeholder="Scene name"
-              onKeyDown={(e) => {
+              onKeyDown={e => {
                 if (e.key === 'Enter') handleSaveScene()
               }}
               autoFocus
@@ -220,9 +224,7 @@ export const DesignManager: React.FC = () => {
             <Button variant="outline" onClick={() => setIsNameDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSaveScene}>
-              {editingDesignId ? 'Save' : 'Create'}
-            </Button>
+            <Button onClick={handleSaveScene}>{editingDesignId ? 'Save' : 'Create'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

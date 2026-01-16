@@ -32,19 +32,8 @@ export const PHASE_ALLOWED_AGENTS: Record<Phase, string[]> = {
     'search_series_bible',
     'planner',
   ],
-  cardlock: [
-    'devilsAdvocate',
-    'writer',
-    'scriptEditor',
-    'search_series_bible',
-    'planner',
-  ],
-  writing: [
-    'writer',
-    'scriptEditor',
-    'search_series_bible',
-    'planner',
-  ],
+  cardlock: ['devilsAdvocate', 'writer', 'scriptEditor', 'search_series_bible', 'planner'],
+  writing: ['writer', 'scriptEditor', 'search_series_bible', 'planner'],
   complete: [
     'search_series_bible', // Only lookup allowed
   ],
@@ -53,8 +42,11 @@ export const PHASE_ALLOWED_AGENTS: Record<Phase, string[]> = {
 /**
  * Conditions that must be met to advance from one phase to the next.
  */
-export const PHASE_TRANSITION_CONDITIONS: Record<string, (state: WritersRoomState) => { canAdvance: boolean; reason: string }> = {
-  'premise -> breaking': (state) => {
+export const PHASE_TRANSITION_CONDITIONS: Record<
+  string,
+  (state: WritersRoomState) => { canAdvance: boolean; reason: string }
+> = {
+  'premise -> breaking': state => {
     const bible = state.seriesBible || {}
     const storyPlan = bible.storyPlan || bible
 
@@ -75,17 +67,22 @@ export const PHASE_TRANSITION_CONDITIONS: Record<string, (state: WritersRoomStat
     return { canAdvance: true, reason: 'Premise complete - ready for beat breaking' }
   },
 
-  'breaking -> cardlock': (state) => {
-    const approvedBeats = state.beatBoard.filter(b => b.status === 'approved' || b.status === 'locked')
+  'breaking -> cardlock': state => {
+    const approvedBeats = state.beatBoard.filter(
+      b => b.status === 'approved' || b.status === 'locked'
+    )
 
     if (approvedBeats.length < 3) {
-      return { canAdvance: false, reason: `Need at least 3 approved beats (have ${approvedBeats.length})` }
+      return {
+        canAdvance: false,
+        reason: `Need at least 3 approved beats (have ${approvedBeats.length})`,
+      }
     }
 
     return { canAdvance: true, reason: 'Enough beats approved - ready to lock cards' }
   },
 
-  'cardlock -> writing': (state) => {
+  'cardlock -> writing': state => {
     const lockedBeats = state.beatBoard.filter(b => b.status === 'locked')
     const totalBeats = state.beatBoard.length
 
@@ -94,15 +91,20 @@ export const PHASE_TRANSITION_CONDITIONS: Record<string, (state: WritersRoomStat
     }
 
     // Allow if at least 50% of beats are locked, or all approved beats are locked
-    const approvedOrLocked = state.beatBoard.filter(b => b.status === 'approved' || b.status === 'locked')
+    const approvedOrLocked = state.beatBoard.filter(
+      b => b.status === 'approved' || b.status === 'locked'
+    )
     if (lockedBeats.length < approvedOrLocked.length) {
-      return { canAdvance: false, reason: `Lock all approved beats before writing (${lockedBeats.length}/${approvedOrLocked.length} locked)` }
+      return {
+        canAdvance: false,
+        reason: `Lock all approved beats before writing (${lockedBeats.length}/${approvedOrLocked.length} locked)`,
+      }
     }
 
     return { canAdvance: true, reason: 'Beat board locked - ready to write script' }
   },
 
-  'writing -> complete': (state) => {
+  'writing -> complete': state => {
     const hasScript = state.script && state.script.trim().length > 100
     const scriptApproved = state.lastScriptVerdict === 'PASS'
 
@@ -129,17 +131,17 @@ export function isAgentAllowedInPhase(agentName: string, phase: Phase | string):
   const allowedAgents = PHASE_ALLOWED_AGENTS[phase as Phase] || []
   // Map tool names to agent names for lookup
   const toolToAgent: Record<string, string> = {
-    'delegate_to_plot_architect': 'plotArchitect',
-    'delegate_to_character_psychology': 'characterPsychology',
-    'delegate_to_consequence_tracker': 'consequenceTracker',
-    'delegate_to_devils_advocate': 'devilsAdvocate',
-    'delegate_to_writer': 'writer',
-    'delegate_to_premise_architect': 'premiseArchitect',
-    'delegate_to_episode_premise_architect': 'episodePremiseArchitect',
-    'delegate_to_magic_agent': 'magicAgent',
-    'delegate_to_script_editor': 'scriptEditor',
-    'delegate_to_planner': 'planner',
-    'search_series_bible': 'search_series_bible',
+    delegate_to_plot_architect: 'plotArchitect',
+    delegate_to_character_psychology: 'characterPsychology',
+    delegate_to_consequence_tracker: 'consequenceTracker',
+    delegate_to_devils_advocate: 'devilsAdvocate',
+    delegate_to_writer: 'writer',
+    delegate_to_premise_architect: 'premiseArchitect',
+    delegate_to_episode_premise_architect: 'episodePremiseArchitect',
+    delegate_to_magic_agent: 'magicAgent',
+    delegate_to_script_editor: 'scriptEditor',
+    delegate_to_planner: 'planner',
+    search_series_bible: 'search_series_bible',
   }
 
   const resolvedAgent = toolToAgent[agentName] || agentName
@@ -160,11 +162,11 @@ export function getPhaseGuidance(state: WritersRoomState): string {
   const phase = state.currentPhase
 
   const phaseDescriptions: Record<Phase, string> = {
-    premise: `📋 **PREMISE PHASE**: Build your world bible - define world rules, factions, and characters. Use the Premise Architect to create your foundation.`,
-    breaking: `🎬 **BREAKING PHASE**: Create story beats using the Plot Architect. Challenge them with Devil's Advocate. Build your episode structure.`,
-    cardlock: `🔒 **CARD LOCK PHASE**: Review and finalize beats. Lock the beat board when ready. Start writing scenes.`,
-    writing: `✍️ **WRITING PHASE**: Transform beats into screenplay. The Script Editor will review your work.`,
-    complete: `✅ **COMPLETE**: Episode finished! Start a new episode or export your work.`,
+    premise: '📋 **PREMISE PHASE**: Build your world bible - define world rules, factions, and characters. Use the Premise Architect to create your foundation.',
+    breaking: '🎬 **BREAKING PHASE**: Create story beats using the Plot Architect. Challenge them with Devil\'s Advocate. Build your episode structure.',
+    cardlock: '🔒 **CARD LOCK PHASE**: Review and finalize beats. Lock the beat board when ready. Start writing scenes.',
+    writing: '✍️ **WRITING PHASE**: Transform beats into screenplay. The Script Editor will review your work.',
+    complete: '✅ **COMPLETE**: Episode finished! Start a new episode or export your work.',
   }
 
   return phaseDescriptions[phase] || ''
@@ -173,13 +175,17 @@ export function getPhaseGuidance(state: WritersRoomState): string {
 import { SUPERVISOR_SYSTEM_PROMPT } from '../prompts/agents/supervisor'
 import { loadPromptCached } from '../prompts/hub-loader'
 
-
 export const supervisorAgent = async (
   state: WritersRoomState
 ): Promise<Partial<WritersRoomState>> => {
   // Create model inside function to use request-scoped config
   const model = getModel('showrunner')
-  const supervisorModel = model.bindTools(supervisorTools, { parallel_tool_calls: false })
+
+  // FORCE tool usage - supervisor MUST delegate, never answer directly
+  const supervisorModel = model.bindTools(supervisorTools, {
+    parallel_tool_calls: false,
+    tool_choice: 'required', // Forces the model to ALWAYS use a tool
+  })
 
   console.log(
     'Supervisor evaluating... (phase:',
@@ -198,8 +204,11 @@ export const supervisorAgent = async (
   const contextXml = buildAgentContext(state, 'general')
 
   // Context Fix: Ensure last user message is always present
-  const lastMessage = state.messages[state.messages.length - 1];
-  const lastHumanMessage = state.messages.slice().reverse().find(m => m._getType() === 'human');
+  const lastMessage = state.messages[state.messages.length - 1]
+  const lastHumanMessage = state.messages
+    .slice()
+    .reverse()
+    .find(m => m._getType() === 'human')
 
   // Build phase context
   const phaseGuidance = getPhaseGuidance(state)
@@ -232,22 +241,24 @@ export const supervisorAgent = async (
   // --- PLAN CONTEXT ---
   let planContext = ''
   if (state.plan && state.plan.length > 0) {
-    const pending = state.plan.filter(p => p.status === 'pending');
-    const inProgress = state.plan.filter(p => p.status === 'in_progress');
-    const completed = state.plan.filter(p => p.status === 'complete');
+    const pending = state.plan.filter(p => p.status === 'pending')
+    const inProgress = state.plan.filter(p => p.status === 'in_progress')
+    const completed = state.plan.filter(p => p.status === 'complete')
 
     planContext = `
 ## CURRENT ACTION PLAN
 Completed: ${completed.length} | Pending: ${pending.length}
 
 ** NEXT PENDING TASKS(Prioritize These):**
-  ${pending.slice(0, 3).map(p => `- [${p.id}] ${p.description} -> Delegate to ${p.assignedAgent}`).join('\n')}
+  ${pending
+    .slice(0, 3)
+    .map(p => `- [${p.id}] ${p.description} -> Delegate to ${p.assignedAgent}`)
+    .join('\n')}
 
 ** Note:** If you see tasks with the same logic that can be done in parallel, you can call multiple tools.
 `
   }
   // --------------------
-
 
   // --- EPISODE CONTEXT ---
   let episodeContext = ''
@@ -275,64 +286,70 @@ ${planContext}
 
   // Load prompt from Hub
   const loadedPrompt = await loadPromptCached('supervisor')
-  const promptMessages = (loadedPrompt.prompt as any).promptMessages || (loadedPrompt.prompt as any).messages || []
-  const systemMessage = promptMessages.find((m: any) => m.lc_id?.[3] === 'SystemMessagePromptTemplate' || m._type === 'system')
-  const systemTemplate = systemMessage?.prompt?.template || systemMessage?.template || SUPERVISOR_SYSTEM_PROMPT
+  const promptMessages =
+    (loadedPrompt.prompt as any).promptMessages || (loadedPrompt.prompt as any).messages || []
+  const systemMessage = promptMessages.find(
+    (m: any) => m.lc_id?.[3] === 'SystemMessagePromptTemplate' || m._type === 'system'
+  )
+  const systemTemplate =
+    systemMessage?.prompt?.template || systemMessage?.template || SUPERVISOR_SYSTEM_PROMPT
 
   // Combine all system content into a single SystemMessage (required for Claude)
-  const combinedSystemContent = [
-    systemTemplate,
-    contextXml,
-    phaseContext,
-  ].join('\n\n---\n\n')
+  const combinedSystemContent = [systemTemplate, contextXml, phaseContext].join('\n\n---\n\n')
 
   // Filter out any SystemMessages from conversation history (Claude doesn't allow them mid-conversation)
-  const conversationMessages = state.messages
-    .slice(-10)
-    .filter(m => m._getType() !== 'system')
+  const conversationMessages = state.messages.slice(-10).filter(m => m._getType() !== 'system')
 
   // Validation: LangChain/OpenAI strict rule:
   // 1. AIMessages with tool_calls must be followed by matching ToolMessages
   // 2. ToolMessages must have a preceding AIMessage with matching tool_calls
 
   // Step 1: Identify all tool_call IDs from AIMessages in the conversation
-  const allToolCallIds = new Set<string>();
+  const allToolCallIds = new Set<string>()
   conversationMessages.forEach(m => {
     if (m._getType() === 'ai' && (m as any).tool_calls?.length > 0) {
-      const toolCalls = (m as any).tool_calls as any[];
-      toolCalls.forEach(tc => allToolCallIds.add(tc.id));
+      const toolCalls = (m as any).tool_calls as any[]
+      toolCalls.forEach(tc => allToolCallIds.add(tc.id))
     }
-  });
+  })
 
   // Step 2: Identify all tool_call_ids from ToolMessages
   const allToolResponseIds = new Set(
-    state.messages
-      .filter(m => m._getType() === 'tool')
-      .map(m => (m as any).tool_call_id)
-  );
+    state.messages.filter(m => m._getType() === 'tool').map(m => (m as any).tool_call_id)
+  )
 
   // Step 3: Clean the conversation slice - handle both directions
+  // ALSO filter out any forced-* tool_calls from previous sessions
   const cleanMessages = conversationMessages
     // First, filter out orphan ToolMessages (no matching AIMessage with tool_calls)
-    .filter((m) => {
+    .filter(m => {
       if (m._getType() === 'tool') {
-        const toolCallId = (m as any).tool_call_id;
+        const toolCallId = (m as any).tool_call_id
         if (!allToolCallIds.has(toolCallId)) {
-          console.warn(`⚠️ Supervisor: Removing orphan ToolMessage (no matching tool_call): ${toolCallId}`);
-          return false;
+          // Silently remove old orphan tool messages
+          return false
         }
       }
-      return true;
+      return true
     })
     // Then, clean AIMessages with dangling tool_calls
-    .map((m) => {
+    .map(m => {
       if (m._getType() === 'ai' && (m as any).tool_calls?.length > 0) {
-        const toolCalls = (m as any).tool_calls as any[];
-        // Keep only calls that have a matching response anywhere in the state
-        const validToolCalls = toolCalls.filter(tc => allToolResponseIds.has(tc.id));
+        const toolCalls = (m as any).tool_calls as any[]
+        // Keep only calls that have a matching response AND are not old forced calls
+        const validToolCalls = toolCalls.filter(tc => {
+          // Filter out old forced tool_calls from previous sessions
+          if (tc.id?.startsWith('forced-')) {
+            return false
+          }
+          return allToolResponseIds.has(tc.id)
+        })
 
         if (validToolCalls.length !== toolCalls.length) {
-          console.warn(`⚠️ Supervisor: Stripping ${toolCalls.length - validToolCalls.length} dangling tool_calls.`);
+          const stripped = toolCalls.length - validToolCalls.length
+          if (stripped > 0) {
+            console.warn(`⚠️ Supervisor: Stripping ${stripped} dangling tool_calls.`)
+          }
 
           // If NO calls are valid, remove tool_calls entirely
           if (validToolCalls.length === 0) {
@@ -340,12 +357,12 @@ ${planContext}
             const newMsg = new AIMessage({
               content: m.content || 'Processing...',
               name: (m as any).name,
-            });
+            })
             // CRITICAL: Force remove from additional_kwargs as well
             if (newMsg.additional_kwargs) {
-              delete (newMsg.additional_kwargs as any).tool_calls;
+              delete (newMsg.additional_kwargs as any).tool_calls
             }
-            return newMsg;
+            return newMsg
           }
 
           // Otherwise, keep only the valid ones
@@ -353,28 +370,27 @@ ${planContext}
             content: m.content,
             name: (m as any).name,
             tool_calls: validToolCalls,
-          });
+          })
           // Sync additional_kwargs
           if (validMsg.additional_kwargs) {
-            (validMsg.additional_kwargs as any).tool_calls = validToolCalls;
+            ;(validMsg.additional_kwargs as any).tool_calls = validToolCalls
           }
-          return validMsg;
+          return validMsg
         }
       }
-      return m;
-    });
+      return m
+    })
 
-  const messages = [
-    new SystemMessage(combinedSystemContent),
-    ...cleanMessages,
-  ];
+  const messages = [new SystemMessage(combinedSystemContent), ...cleanMessages]
 
   // If the last message in the slice isn't the user's command (due to system logs stuffing context),
   // forcefully append it to ensure the LLM sees the command.
   if (lastHumanMessage && !messages.includes(lastHumanMessage as any)) {
     if (lastMessage !== lastHumanMessage) {
-      console.log("Supervisor: Re-injecting user command into context.");
-      messages.push(new HumanMessage({ content: `(User's last command: "${lastHumanMessage.content}")` }));
+      console.log('Supervisor: Re-injecting user command into context.')
+      messages.push(
+        new HumanMessage({ content: `(User's last command: "${lastHumanMessage.content}")` })
+      )
     }
   }
 
@@ -385,39 +401,118 @@ ${planContext}
     // Comprehensive Bible section keywords - matches detectTargetSection in premise-architect
     const bibleSectionKeywords = [
       // Soundtracks
-      'soundtrack', 'music', 'songs', 'tracks', 'playlist', 'theme music',
+      'soundtrack',
+      'music',
+      'songs',
+      'tracks',
+      'playlist',
+      'theme music',
       // World Rules
-      'world rules', 'laws', 'rules of the world', 'magic system', 'laws of',
+      'world rules',
+      'laws',
+      'rules of the world',
+      'magic system',
+      'laws of',
       // Factions
-      'factions', 'faction', 'power groups', 'organizations', 'groups',
+      'factions',
+      'faction',
+      'power groups',
+      'organizations',
+      'groups',
       // Inspirations
-      'inspirations', 'inspiration', 'references', 'influences', 'books', 'movies', 'games',
+      'inspirations',
+      'inspiration',
+      'references',
+      'influences',
+      'books',
+      'movies',
+      'games',
       // World Description
-      'world description', 'atmosphere', 'setting', 'describe the world',
+      'world description',
+      'atmosphere',
+      'setting',
+      'describe the world',
       // Key Characters
-      'key characters', 'protagonist', 'antagonist', 'main character', 'characters',
+      'key characters',
+      'protagonist',
+      'antagonist',
+      'main character',
+      'characters',
       // Plot Twists
-      'plot twists', 'twists', 'twist', 'surprise',
+      'plot twists',
+      'twists',
+      'twist',
+      'surprise',
       // Episode Roadmap
-      'episode roadmap', 'season arc', 'episode breakdown', 'roadmap', 'season structure',
+      'episode roadmap',
+      'season arc',
+      'episode breakdown',
+      'roadmap',
+      'season structure',
       // Generic Bible updates
-      'world bible', 'series bible', 'bible'
+      'world bible',
+      'series bible',
+      'bible',
     ]
 
     const requestsBibleUpdate = bibleSectionKeywords.some(kw => userContent.includes(kw))
 
+    // Note: Removed forced delegation - caused tool_call errors
+    // Now relying on tool_choice: 'required' and improved prompts
+
+    // BIBLE LOCK ENFORCEMENT: Check if Bible is locked before allowing Bible updates
+    // If locked, only admin can edit - block the request and guide user to beats/episodes
     if (requestsBibleUpdate && state.currentPhase === 'premise') {
-      console.log('Supervisor: Detected Bible section request -> Forcing delegation to PremiseArchitect')
+      // Check if Bible is locked - we get this from state.seriesBible?.isLocked
+      const isBibleLocked = state.seriesBible?.isLocked === true
+      const userEmail = state.userEmail?.toLowerCase() || ''
+
+      // Check if user is admin (central user)
+      const centralUsers = (process.env.NEXT_PUBLIC_CENTRAL_USERS || 'jacek.sroga.itc@gmail.com')
+        .split(',')
+        .map(e => e.trim().toLowerCase())
+      const isAdmin = centralUsers.includes(userEmail)
+
+      if (isBibleLocked && !isAdmin) {
+        console.log('Supervisor: Bible is LOCKED - blocking edit request')
+
+        const lockedMessage = new AIMessage({
+          content: `🔒 **World Bible is Locked**
+
+The Series Bible has been locked by an administrator. While locked, you can:
+
+- 📝 **Work on Episodes** - Create and edit episode premises
+- 🎬 **Break Stories** - Create and manage story beats  
+- 👥 **Develop Characters** - Work on character arcs within episodes
+- 📖 **View Bible** - Read the world rules and lore (read-only)
+
+💡 *To unlock the Bible, contact your admin or ask them to unlock it from the Bible panel.*
+
+What would you like to work on instead?`,
+          name: 'Showrunner',
+        })
+
+        return {
+          messages: [lockedMessage],
+          awaitingUserInput: true,
+        }
+      }
+
+      console.log(
+        'Supervisor: Detected Bible section request -> Forcing delegation to PremiseArchitect'
+      )
 
       // Create a forced tool call response
       const delegationMessage = new AIMessage({
         content: 'Delegating to Premise Architect for World Bible update.',
         name: 'Showrunner',
-        tool_calls: [{
-          id: `forced-${Date.now()}`,
-          name: 'delegate_to_premise_architect',
-          args: {}
-        }]
+        tool_calls: [
+          {
+            id: `forced-${Date.now()}`,
+            name: 'delegate_to_premise_architect',
+            args: {},
+          },
+        ],
       })
 
       return {
@@ -431,15 +526,16 @@ ${planContext}
 
     // Interaction Fix: If NO tool calls, we assume the agent is talking to the user.
     // Therefore, we must pause for user input.
-    let awaitingUserInput = false;
-    let phaseUpdate: Partial<WritersRoomState> = {};
+    let awaitingUserInput = false
+    let phaseUpdate: Partial<WritersRoomState> = {}
 
     if (!response.tool_calls || response.tool_calls.length === 0) {
-      console.log("Supervisor: No tool calls -> Pausing for user input.");
-      awaitingUserInput = true;
+      console.log('Supervisor: No tool calls -> Pausing for user input.')
+      awaitingUserInput = true
 
       // Format JSON content as readable message if the model returned JSON
-      let content = typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+      let content =
+        typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
 
       // Try to parse and extract message if it's JSON
       try {
@@ -459,21 +555,29 @@ ${planContext}
       const isAllowed = isAgentAllowedInPhase(toolName, state.currentPhase)
 
       // CIRCUIT BREAKER: Check if we are looping (delegating to same agent repeatedly)
-      const lastAction = state.lastAction
-      const lastMessage = state.messages[state.messages.length - 1] as AIMessage
-      const lastToolCall = lastMessage?.tool_calls?.[0]?.name
+      // Only trigger if we've called the SAME tool 3+ times without a user message in between
+      const recentMessages = state.messages.slice(-10)
+      const lastUserMsgIndex = recentMessages.findIndex(
+        (m, i, arr) =>
+          m._getType() === 'human' &&
+          i === arr.length - 1 - [...arr].reverse().findIndex(x => x._getType() === 'human')
+      )
 
-      // If we just called this tool, and we are calling it again immediately...
-      // We need to be careful. The graph cycle is Supervisor -> Tool -> Supervisor.
-      // So "lastAction" might be the tool execution.
-      // Let's check if the previous message from Supervisor (2 steps back) was the same tool call.
+      // Count how many times this tool was called AFTER the last user message
+      let consecutiveSameToolCalls = 0
+      for (let i = recentMessages.length - 1; i >= 0; i--) {
+        const msg = recentMessages[i]
+        if (msg._getType() === 'human') break // Stop at user message
+        if (msg._getType() === 'ai' && (msg as AIMessage).tool_calls?.[0]?.name === toolName) {
+          consecutiveSameToolCalls++
+        }
+      }
 
-      const previousSupervisorMsg = state.messages[state.messages.length - 3] as AIMessage
-      const previousToolCall = previousSupervisorMsg?.tool_calls?.[0]?.name
-
-      if (previousToolCall === toolName && !awaitingUserInput) {
-        console.warn(`Supervisor: CIRCUIT BREAKER - Detected potential loop with ${toolName}`)
-        // Force a pause
+      // Only trigger circuit breaker if we've called the same tool 3+ times
+      if (consecutiveSameToolCalls >= 3) {
+        console.warn(
+          `Supervisor: CIRCUIT BREAKER - Called ${toolName} ${consecutiveSameToolCalls} times consecutively`
+        )
         response.content = `I notice we might be going in circles with ${toolName}. Let's pause and review.`
         response.tool_calls = undefined
         awaitingUserInput = true
@@ -488,15 +592,21 @@ ${planContext}
         response.content = warningContent
       } else if (!response.content) {
         // STREAMING FIX: If tool calls exist but content is empty, inject a message so the UI shows something.
-        const toolNames = response.tool_calls.map(tc => tc.name).join(', ');
-        response.content = `Delegating to ${toolNames}...`;
+        const toolNames = response.tool_calls.map(tc => tc.name).join(', ')
+        response.content = `Delegating to ${toolNames}...`
       }
 
       // Check for automatic phase transitions based on user commands
       const userCommand = lastHumanMessage?.content?.toString().toLowerCase() || ''
 
       // Auto-advance phase commands
-      if (userCommand.includes('start breaking') || userCommand.includes('move to breaking') || userCommand.includes('break into beats') || userCommand.includes('create beats') || (userCommand.includes('beats') && state.currentPhase === 'premise')) {
+      if (
+        userCommand.includes('start breaking') ||
+        userCommand.includes('move to breaking') ||
+        userCommand.includes('break into beats') ||
+        userCommand.includes('create beats') ||
+        (userCommand.includes('beats') && state.currentPhase === 'premise')
+      ) {
         const check = PHASE_TRANSITION_CONDITIONS['premise -> breaking']?.(state)
         if (check?.canAdvance && state.currentPhase === 'premise') {
           console.log('Auto-advancing to breaking phase based on user intent')
@@ -508,7 +618,10 @@ ${planContext}
           console.log('Auto-advancing to cardlock phase')
           phaseUpdate = { currentPhase: 'cardlock' as Phase }
         }
-      } else if (userCommand.includes('go to writing') || userCommand.includes('write the script')) {
+      } else if (
+        userCommand.includes('go to writing') ||
+        userCommand.includes('write the script')
+      ) {
         const check = PHASE_TRANSITION_CONDITIONS['cardlock -> writing']?.(state)
         if (check?.canAdvance && state.currentPhase === 'cardlock') {
           console.log('Auto-advancing to writing phase')
@@ -535,4 +648,3 @@ ${planContext}
     }
   }
 }
-

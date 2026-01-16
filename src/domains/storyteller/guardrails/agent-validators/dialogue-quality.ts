@@ -1,6 +1,6 @@
 /**
  * Dialogue Quality Validator
- * 
+ *
  * Validates dialogue for authenticity, avoiding exposition dumps
  * and ensuring natural speech patterns.
  */
@@ -43,7 +43,7 @@ const DIALOGUE_ANTIPATTERNS = {
     severity: 'warning' as const,
     suggestion: 'Show information through action or conflict instead',
   },
-  
+
   onTheNose: {
     patterns: [
       /i (feel|am feeling) (so )?(happy|sad|angry|scared|excited)/i,
@@ -55,11 +55,11 @@ const DIALOGUE_ANTIPATTERNS = {
     severity: 'warning' as const,
     suggestion: 'Show emotions through behavior, subtext, or physical reactions',
   },
-  
+
   tooFormal: {
     patterns: [
       /i cannot|i am unable/i,
-      /do not|will not|should not/i,  // Should use contractions
+      /do not|will not|should not/i, // Should use contractions
       /i would like to|i wish to/i,
       /it is my (belief|opinion) that/i,
     ],
@@ -69,7 +69,7 @@ const DIALOGUE_ANTIPATTERNS = {
     severity: 'info' as const,
     suggestion: 'Use contractions (can\'t, don\'t, won\'t) for more natural speech',
   },
-  
+
   speechifyning: {
     // Dialogue lines over 50 words
     isLongLine: true,
@@ -78,7 +78,7 @@ const DIALOGUE_ANTIPATTERNS = {
     severity: 'warning' as const,
     suggestion: 'Break into shorter exchanges or interrupt with action/reaction',
   },
-  
+
   genericGreetings: {
     patterns: [
       /^(hi|hello|hey),?\s*(how are you|nice to see you|good to see you)/i,
@@ -88,7 +88,7 @@ const DIALOGUE_ANTIPATTERNS = {
     severity: 'info' as const,
     suggestion: 'Start scenes in the middle of action, skip pleasantries',
   },
-  
+
   nameOveruse: {
     // Character names used in dialogue more than once per exchange
     checkNameOveruse: true,
@@ -104,7 +104,7 @@ const DIALOGUE_ANTIPATTERNS = {
 
 function extractDialogue(content: string): DialogueLine[] {
   const lines: DialogueLine[] = []
-  
+
   // Match standard screenplay format: CHARACTER\n"Dialogue" or CHARACTER: "Dialogue"
   const screenplayPattern = /^([A-Z][A-Z\s]+)(?:\s*\([^)]*\))?\s*\n(["']?)(.+?)\2(?:\n|$)/gm
   let match
@@ -115,7 +115,7 @@ function extractDialogue(content: string): DialogueLine[] {
       lineNumber: content.substring(0, match.index).split('\n').length,
     })
   }
-  
+
   // Match quoted dialogue
   const quotedPattern = /"([^"]+)"/g
   while ((match = quotedPattern.exec(content)) !== null) {
@@ -128,7 +128,7 @@ function extractDialogue(content: string): DialogueLine[] {
       })
     }
   }
-  
+
   return lines
 }
 
@@ -138,7 +138,7 @@ function extractDialogue(content: string): DialogueLine[] {
 
 function checkAntipatterns(lines: DialogueLine[]): DialogueIssue[] {
   const issues: DialogueIssue[] = []
-  
+
   for (const line of lines) {
     // Check each antipattern type
     for (const [type, config] of Object.entries(DIALOGUE_ANTIPATTERNS)) {
@@ -152,11 +152,11 @@ function checkAntipatterns(lines: DialogueLine[]): DialogueIssue[] {
               line,
               suggestion: config.suggestion,
             })
-            break  // Only report once per type per line
+            break // Only report once per type per line
           }
         }
       }
-      
+
       // Long line check
       if ('isLongLine' in config && config.isLongLine) {
         const wordCount = line.text.split(/\s+/).length
@@ -171,16 +171,16 @@ function checkAntipatterns(lines: DialogueLine[]): DialogueIssue[] {
       }
     }
   }
-  
+
   return issues
 }
 
 function checkNameOveruse(lines: DialogueLine[]): DialogueIssue[] {
   const issues: DialogueIssue[] = []
-  
+
   // Collect all speaker names
   const speakers = new Set(lines.map(l => l.speaker).filter(Boolean))
-  
+
   // Check if names appear too often in dialogue text
   for (const line of lines) {
     let nameCount = 0
@@ -189,7 +189,7 @@ function checkNameOveruse(lines: DialogueLine[]): DialogueIssue[] {
       const matches = line.text.match(regex)
       if (matches) nameCount += matches.length
     }
-    
+
     if (nameCount > 1) {
       issues.push({
         type: 'nameOveruse',
@@ -199,45 +199,62 @@ function checkNameOveruse(lines: DialogueLine[]): DialogueIssue[] {
       })
     }
   }
-  
+
   return issues
 }
 
 function checkContractionUsage(lines: DialogueLine[]): DialogueIssue[] {
   const issues: DialogueIssue[] = []
-  
+
   // Count formal vs contracted forms across all dialogue
   let formalCount = 0
   let totalDialogueWords = 0
-  
+
   const formalForms = [
-    'cannot', 'will not', 'do not', 'does not', 'did not',
-    'would not', 'could not', 'should not', 'have not', 'has not',
-    'is not', 'are not', 'was not', 'were not',
-    'i am', 'you are', 'he is', 'she is', 'it is', 'we are', 'they are',
+    'cannot',
+    'will not',
+    'do not',
+    'does not',
+    'did not',
+    'would not',
+    'could not',
+    'should not',
+    'have not',
+    'has not',
+    'is not',
+    'are not',
+    'was not',
+    'were not',
+    'i am',
+    'you are',
+    'he is',
+    'she is',
+    'it is',
+    'we are',
+    'they are',
   ]
-  
+
   for (const line of lines) {
     totalDialogueWords += line.text.split(/\s+/).length
-    
+
     for (const form of formalForms) {
       const regex = new RegExp(`\\b${form}\\b`, 'gi')
       const matches = line.text.match(regex)
       if (matches) formalCount += matches.length
     }
   }
-  
+
   // Flag if more than 30% of potentially contracted words are formal
   const contractionRatio = formalCount / Math.max(totalDialogueWords / 10, 1)
   if (contractionRatio > 0.3 && lines.length > 3) {
     issues.push({
       type: 'tooFormal',
       severity: 'info',
-      line: lines[0],  // Just reference first line
+      line: lines[0], // Just reference first line
       suggestion: 'Consider using more contractions for natural dialogue',
     })
   }
-  
+
   return issues
 }
 
@@ -247,32 +264,34 @@ function checkContractionUsage(lines: DialogueLine[]): DialogueIssue[] {
 
 export class DialogueQualityValidator implements Validator<Partial<WritersRoomState>> {
   name = 'DialogueQuality'
-  
+
   async validate(output: Partial<WritersRoomState>): Promise<ValidationResult> {
     const guardIssues: GuardrailIssue[] = []
-    
+
     // Extract content from last message
     const messages = output.messages || []
     const lastMessage = messages[messages.length - 1]
-    const content = lastMessage 
-      ? (typeof lastMessage.content === 'string' ? lastMessage.content : '')
+    const content = lastMessage
+      ? typeof lastMessage.content === 'string'
+        ? lastMessage.content
+        : ''
       : ''
-    
+
     // Extract dialogue
     const dialogueLines = extractDialogue(content)
-    
+
     // Skip if no dialogue found
     if (dialogueLines.length === 0) {
       return { isValid: true, issues: [] }
     }
-    
+
     // Run all checks
     const dialogueIssues: DialogueIssue[] = [
       ...checkAntipatterns(dialogueLines),
       ...checkNameOveruse(dialogueLines),
       ...checkContractionUsage(dialogueLines),
     ]
-    
+
     // Convert to GuardrailIssue format
     for (const issue of dialogueIssues) {
       guardIssues.push({
@@ -286,7 +305,7 @@ export class DialogueQualityValidator implements Validator<Partial<WritersRoomSt
         },
       })
     }
-    
+
     // Dialogue issues are warnings, don't block
     return {
       isValid: true,
@@ -301,4 +320,3 @@ export class DialogueQualityValidator implements Validator<Partial<WritersRoomSt
 export function createDialogueQualityValidator(): DialogueQualityValidator {
   return new DialogueQualityValidator()
 }
-

@@ -116,7 +116,15 @@ async function testRunStateStructure() {
 async function testStatusHandling() {
   console.log('\n=== Testing Status Handling ===')
 
-  const ACTIVE_STATUSES = ['QUEUED', 'EXECUTING', 'WAITING', 'PENDING', 'DEQUEUED', 'DELAYED', 'PENDING_VERSION']
+  const ACTIVE_STATUSES = [
+    'QUEUED',
+    'EXECUTING',
+    'WAITING',
+    'PENDING',
+    'DEQUEUED',
+    'DELAYED',
+    'PENDING_VERSION',
+  ]
   const TERMINAL_STATUSES = ['COMPLETED', 'FAILED', 'CANCELLED', 'TIMED_OUT']
 
   // Test active statuses
@@ -184,4 +192,3 @@ async function runTests() {
 }
 
 runTests()
-

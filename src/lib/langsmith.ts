@@ -49,16 +49,3 @@ export function logLangSmithStatus(): void {
   }
   console.log('==============================')
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

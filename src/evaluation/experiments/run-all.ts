@@ -1,8 +1,8 @@
 /**
  * Run All Experiments
- * 
+ *
  * Executes all evaluation experiments in sequence.
- * 
+ *
  * Usage: npm run eval:all
  */
 
@@ -75,7 +75,7 @@ export async function runAllExperiments() {
   console.log('=====================================')
 
   const totalDuration = results.reduce((sum, r) => sum + r.duration, 0)
-  const successCount = results.filter((r) => r.success).length
+  const successCount = results.filter(r => r.success).length
 
   console.log(`Total: ${successCount}/${results.length} experiments succeeded`)
   console.log(`Total Duration: ${(totalDuration / 1000).toFixed(1)}s`)
@@ -94,16 +94,15 @@ export async function runAllExperiments() {
   console.log('🔗 View detailed results at: https://smith.langchain.com')
 
   // Return overall success
-  return results.every((r) => r.success)
+  return results.every(r => r.success)
 }
 
 // Run if executed directly
 if (require.main === module) {
   runAllExperiments()
-    .then((success) => process.exit(success ? 0 : 1))
-    .catch((err) => {
+    .then(success => process.exit(success ? 0 : 1))
+    .catch(err => {
       console.error('Fatal error:', err)
       process.exit(1)
     })
 }
-

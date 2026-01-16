@@ -20,7 +20,7 @@ async function verifyBeatAccess(beatId: string, userId: string) {
 }
 
 export async function PATCH(req: Request, props: { params: Promise<{ beatId: string }> }) {
-  const params = await props.params;
+  const params = await props.params
   try {
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -43,7 +43,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ beatId: str
 }
 
 export async function DELETE(req: Request, props: { params: Promise<{ beatId: string }> }) {
-  const params = await props.params;
+  const params = await props.params
   try {
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

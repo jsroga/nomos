@@ -15,8 +15,6 @@ interface CorkBoardProps {
   episodeId?: string
   onAddMessage?: (message: Message) => void
 
-
-
   // Combined Storyboard (Gemini)
   storyboardUrl?: string | null
   isGeneratingCombined?: boolean
@@ -33,7 +31,7 @@ export const CorkBoard: React.FC<CorkBoardProps> = ({
   storyboardUrl,
   isGeneratingCombined,
   onGenerateCombined,
-  projectId: propProjectId
+  projectId: propProjectId,
 }) => {
   const [beats, setBeats] = useState<any[]>(initialBeats)
   const [draggedId, setDraggedId] = useState<string | null>(null)
@@ -146,34 +144,33 @@ export const CorkBoard: React.FC<CorkBoardProps> = ({
       onAddMessage({
         sender: 'VisualDirector',
         content: `**Storyboard Generation Started**\n\nI'm creating visual storyboards for ${beats.length} beats...\n\n*Generating...*`,
-        type: 'ai'
+        type: 'ai',
       })
     }
     try {
-      let generatedCount = 0;
+      let generatedCount = 0
       for (const beat of beats) {
         await beatImageService.generateImageForBeat(projectId, beat, (id, updates) => {
-          setBeats(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b))
+          setBeats(prev => prev.map(b => (b.id === id ? { ...b, ...updates } : b)))
         })
-        generatedCount++;
+        generatedCount++
       }
     } catch (e) {
-      console.error("Storyboard generation failed", e)
+      console.error('Storyboard generation failed', e)
     } finally {
       setIsGeneratingBeats(false)
     }
   }
 
   const getUrl = (url: string | null) => {
-    if (!url) return '';
-    if (url.startsWith('http') || url.startsWith('/')) return url;
-    if (url.startsWith('projects/')) return `/${url}`;
-    return `/projects/${projectId}/${url}`;
+    if (!url) return ''
+    if (url.startsWith('http') || url.startsWith('/')) return url
+    if (url.startsWith('projects/')) return `/${url}`
+    return `/projects/${projectId}/${url}`
   }
 
   return (
     <div className="space-y-4 pb-20">
-
       <div className="grid grid-cols-1 gap-4 mb-6">
         {/* SECTION 2: COMBINED STORYBOARD (Gemini) */}
         <div className="bg-card border border-border rounded-lg p-4 shadow-sm flex flex-col">
@@ -183,9 +180,7 @@ export const CorkBoard: React.FC<CorkBoardProps> = ({
                 <ImageIcon className="w-4 h-4 text-blue-500" />
                 Combined Storyboard
               </h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                Gemini Visual Summary
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Gemini Visual Summary</p>
             </div>
             {onGenerateCombined && (
               <Button
@@ -195,7 +190,11 @@ export const CorkBoard: React.FC<CorkBoardProps> = ({
                 disabled={isGeneratingCombined || beats.length === 0}
                 className="gap-2"
               >
-                {isGeneratingCombined ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                {isGeneratingCombined ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Sparkles className="w-3 h-3" />
+                )}
                 {isGeneratingCombined ? 'Planning...' : storyboardUrl ? 'Regenerate' : 'Generate'}
               </Button>
             )}
@@ -208,8 +207,15 @@ export const CorkBoard: React.FC<CorkBoardProps> = ({
                 <p className="text-xs text-muted-foreground">Synthesizing Scenes...</p>
               </div>
             ) : storyboardUrl ? (
-              <div onClick={() => setExpandedBeatId('storyboard_view')} className="cursor-zoom-in w-full h-full">
-                <img src={getUrl(storyboardUrl)} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Combined Storyboard" />
+              <div
+                onClick={() => setExpandedBeatId('storyboard_view')}
+                className="cursor-zoom-in w-full h-full"
+              >
+                <img
+                  src={getUrl(storyboardUrl)}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  alt="Combined Storyboard"
+                />
               </div>
             ) : (
               <div className="text-center text-muted-foreground text-xs p-4">
@@ -231,15 +237,20 @@ export const CorkBoard: React.FC<CorkBoardProps> = ({
         hasPrev={false}
       />
 
-
       <div className="flex justify-between items-center px-1">
-        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Beat Board</h3>
+        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+          Beat Board
+        </h3>
         <button
           onClick={handleGenerateBeats}
           disabled={isGeneratingBeats || beats.length === 0}
           className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-md text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isGeneratingBeats ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />}
+          {isGeneratingBeats ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <ImageIcon size={14} />
+          )}
           {isGeneratingBeats ? 'Generating Storyboard...' : 'Generate Storyboard'}
         </button>
       </div>
@@ -284,6 +295,6 @@ export const CorkBoard: React.FC<CorkBoardProps> = ({
         hasNext={expandedBeatIndex < beats.length - 1}
         hasPrev={expandedBeatIndex > 0}
       />
-    </div >
+    </div>
   )
 }

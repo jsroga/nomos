@@ -1,15 +1,15 @@
 /**
  * Model Context using AsyncLocalStorage
- * 
+ *
  * Provides request-scoped model configuration for server-side agents.
  * This allows the frontend Settings UI to control which LLM provider
  * is used without modifying any agent code.
- * 
+ *
  * Usage:
  * - API routes call runWithModelConfig() to set the context
  * - getModel() reads from this context automatically
  * - Adding new providers only requires updating model-config.ts
- * 
+ *
  * Note: This module is isomorphic - it works on both client and server.
  * On the client, the context functions are no-ops since model selection
  * happens server-side.
@@ -37,7 +37,7 @@ function getStorage(): AsyncLocalStorageType<ModelConfig> | null {
   if (typeof window !== 'undefined') {
     return null
   }
-  
+
   if (!modelConfigStorage) {
     try {
       // Dynamic import to avoid bundling async_hooks for client
@@ -49,7 +49,7 @@ function getStorage(): AsyncLocalStorageType<ModelConfig> | null {
       return null
     }
   }
-  
+
   return modelConfigStorage
 }
 
@@ -112,15 +112,3 @@ export function getContextAnthropicKey(): string | undefined {
 export function getContextGeminiKey(): string | undefined {
   return getModelConfig()?.geminiApiKey
 }
-
-
-
-
-
-
-
-
-
-
-
-

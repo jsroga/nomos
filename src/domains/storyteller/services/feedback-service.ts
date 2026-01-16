@@ -1,6 +1,6 @@
 /**
  * Feedback Service
- * 
+ *
  * Collects and processes user feedback on agent outputs.
  * Automatically:
  * - Stores feedback in RAG for future reference
@@ -21,20 +21,20 @@ export type FeedbackCategory = 'hallucination' | 'inconsistency' | 'quality' | '
 
 export interface UserFeedback {
   id: string
-  runId: string  // LangSmith run ID for tracing
+  runId: string // LangSmith run ID for tracing
   projectId: string
   episodeId?: string
-  
+
   type: FeedbackType
   category: FeedbackCategory
-  
+
   originalOutput: string
   correctedOutput?: string
   userComment?: string
-  
+
   agentName?: string
   messageIndex?: number
-  
+
   timestamp: Date
   processed: boolean
 }
@@ -61,7 +61,7 @@ export interface FeedbackPattern {
 
 // TODO: Replace with proper DB table
 const feedbackStore = new Map<string, UserFeedback>()
-const feedbackByProject = new Map<string, string[]>()  // projectId -> feedbackIds
+const feedbackByProject = new Map<string, string[]>() // projectId -> feedbackIds
 
 // ============================================
 // FEEDBACK SERVICE
@@ -98,25 +98,27 @@ export class FeedbackService {
       timestamp: new Date(),
       processed: false,
     }
-    
+
     // Store feedback
     feedbackStore.set(feedback.id, feedback)
-    
+
     // Index by project
     const projectFeedback = feedbackByProject.get(params.projectId) || []
     projectFeedback.push(feedback.id)
     feedbackByProject.set(params.projectId, projectFeedback)
-    
+
     // Process feedback asynchronously
     this.processFeedback(feedback).catch(err => {
       console.error('[Feedback] Processing failed:', err)
     })
-    
-    console.log(`[Feedback] Submitted: ${feedback.type} for ${feedback.agentName || 'unknown'} (${feedback.category})`)
-    
+
+    console.log(
+      `[Feedback] Submitted: ${feedback.type} for ${feedback.agentName || 'unknown'} (${feedback.category})`
+    )
+
     return feedback
   }
-  
+
   /**
    * Process feedback - store in RAG, update datasets
    */
@@ -124,37 +126,36 @@ export class FeedbackService {
     try {
       // 1. Store in RAG for future reference
       await this.storeInRAG(feedback)
-      
+
       // 2. Update LangSmith dataset (if correction)
       if (feedback.type === 'correction' && feedback.correctedOutput) {
         await this.addToEvaluationDataset(feedback)
       }
-      
+
       // 3. Update patterns
       await this.updatePatterns(feedback)
-      
+
       // Mark as processed
       feedback.processed = true
       feedbackStore.set(feedback.id, feedback)
-      
     } catch (error) {
       console.error('[Feedback] Processing error:', error)
     }
   }
-  
+
   /**
    * Store feedback in RAG for future agent reference
    */
   private async storeInRAG(feedback: UserFeedback): Promise<void> {
     const content = this.formatFeedbackForRAG(feedback)
-    
+
     await ragService.storeUserFeedback(
       feedback.projectId,
       content,
       `Agent: ${feedback.agentName || 'unknown'}, Category: ${feedback.category}`
     )
   }
-  
+
   /**
    * Format feedback for RAG storage
    */
@@ -164,13 +165,15 @@ export class FeedbackService {
       `Category: ${feedback.category}`,
       feedback.agentName ? `Agent: ${feedback.agentName}` : '',
       `Original Output: "${feedback.originalOutput.slice(0, 500)}${feedback.originalOutput.length > 500 ? '...' : ''}"`,
-      feedback.correctedOutput ? `Correction: "${feedback.correctedOutput.slice(0, 500)}${feedback.correctedOutput.length > 500 ? '...' : ''}"` : '',
+      feedback.correctedOutput
+        ? `Correction: "${feedback.correctedOutput.slice(0, 500)}${feedback.correctedOutput.length > 500 ? '...' : ''}"`
+        : '',
       feedback.userComment ? `User Comment: ${feedback.userComment}` : '',
     ].filter(Boolean)
-    
+
     return parts.join('\n')
   }
-  
+
   /**
    * Add correction to LangSmith evaluation dataset
    */
@@ -181,7 +184,7 @@ export class FeedbackService {
     console.log(`  Project: ${feedback.projectId}`)
     console.log(`  Agent: ${feedback.agentName}`)
     console.log(`  Category: ${feedback.category}`)
-    
+
     // TODO: Implement LangSmith dataset update
     // const client = new Client({ apiKey: process.env.LANGCHAIN_API_KEY })
     // await client.createExample({
@@ -190,7 +193,7 @@ export class FeedbackService {
     //   outputs: { correctedOutput: feedback.correctedOutput },
     // })
   }
-  
+
   /**
    * Update pattern tracking
    */
@@ -199,7 +202,7 @@ export class FeedbackService {
     // This would be more sophisticated in production
     console.log(`[Feedback] Pattern tracked: ${feedback.category} from ${feedback.agentName}`)
   }
-  
+
   /**
    * Get feedback for a project
    */
@@ -207,13 +210,13 @@ export class FeedbackService {
     const ids = feedbackByProject.get(projectId) || []
     return ids.map(id => feedbackStore.get(id)).filter(Boolean) as UserFeedback[]
   }
-  
+
   /**
    * Get feedback stats for a project
    */
   async getProjectStats(projectId: string): Promise<FeedbackStats> {
     const feedback = await this.getProjectFeedback(projectId)
-    
+
     const stats: FeedbackStats = {
       totalFeedback: feedback.length,
       thumbsUp: feedback.filter(f => f.type === 'thumbs_up').length,
@@ -228,11 +231,11 @@ export class FeedbackService {
       },
       byAgent: {},
     }
-    
+
     for (const f of feedback) {
       // By category
       stats.byCategory[f.category]++
-      
+
       // By agent
       const agentName = f.agentName || 'unknown'
       if (!stats.byAgent[agentName]) {
@@ -244,18 +247,18 @@ export class FeedbackService {
         stats.byAgent[agentName].negative++
       }
     }
-    
+
     return stats
   }
-  
+
   /**
    * Get patterns from feedback for prompt improvement
    */
   async getPatterns(projectId?: string): Promise<FeedbackPattern[]> {
-    const feedback = projectId 
+    const feedback = projectId
       ? await this.getProjectFeedback(projectId)
       : Array.from(feedbackStore.values())
-    
+
     // Group negative feedback by category
     const negativeByCategory: Record<FeedbackCategory, UserFeedback[]> = {
       hallucination: [],
@@ -264,32 +267,35 @@ export class FeedbackService {
       slop: [],
       other: [],
     }
-    
+
     for (const f of feedback) {
       if (f.type !== 'thumbs_up') {
         negativeByCategory[f.category].push(f)
       }
     }
-    
+
     // Build patterns
     const patterns: FeedbackPattern[] = []
-    
+
     for (const [category, items] of Object.entries(negativeByCategory)) {
-      if (items.length >= 2) {  // Only report if pattern occurs multiple times
+      if (items.length >= 2) {
+        // Only report if pattern occurs multiple times
         patterns.push({
           category: category as FeedbackCategory,
           count: items.length,
-          examples: items.slice(0, 3).map(f => 
-            f.originalOutput.slice(0, 100) + (f.originalOutput.length > 100 ? '...' : '')
-          ),
+          examples: items
+            .slice(0, 3)
+            .map(
+              f => f.originalOutput.slice(0, 100) + (f.originalOutput.length > 100 ? '...' : '')
+            ),
           suggestedFix: this.getSuggestedFix(category as FeedbackCategory),
         })
       }
     }
-    
+
     return patterns.sort((a, b) => b.count - a.count)
   }
-  
+
   /**
    * Get suggested fix for a category
    */
@@ -301,20 +307,20 @@ export class FeedbackService {
       slop: 'Lower anti-slop threshold, add more slop patterns to detection',
       other: 'Review specific examples for common themes',
     }
-    
+
     return fixes[category]
   }
-  
+
   /**
    * Get satisfaction rate for a project or overall
    */
   async getSatisfactionRate(projectId?: string): Promise<number> {
-    const feedback = projectId 
+    const feedback = projectId
       ? await this.getProjectFeedback(projectId)
       : Array.from(feedbackStore.values())
-    
+
     if (feedback.length === 0) return 0
-    
+
     const positive = feedback.filter(f => f.type === 'thumbs_up').length
     return positive / feedback.length
   }
@@ -325,4 +331,3 @@ export class FeedbackService {
 // ============================================
 
 export const feedbackService = new FeedbackService()
-

@@ -1,9 +1,9 @@
 /**
  * Push Prompts to LangSmith Hub
- * 
+ *
  * Script to upload local prompts to LangSmith Hub for version control
  * and collaborative editing.
- * 
+ *
  * Usage: npm run prompts:push
  */
 
@@ -39,17 +39,17 @@ import { VISUAL_MOMENT_PROMPT } from './agents/visual-moment'
 const FULL_PROMPTS: Record<keyof typeof PROMPT_IDS, { system: string; human: string }> = {
   supervisor: {
     system: `${SUPERVISOR_SYSTEM_PROMPT}\n\n---\n\n${SUPERVISOR_REASONING}`,
-    human: `{input}`,
+    human: '{input}',
   },
 
   plotArchitect: {
     system: `${PLOT_ARCHITECT_STRUCTURED_PROMPT}\n\n---\n\n${PLOT_ARCHITECT_REASONING}`,
-    human: `{input}`,
+    human: '{input}',
   },
 
   writer: {
     system: `${WRITER_STRUCTURED_PROMPT}\n\n---\n\n${WRITER_REASONING}`,
-    human: `{input}`,
+    human: '{input}',
   },
 
   premiseArchitect: {
@@ -63,52 +63,52 @@ const FULL_PROMPTS: Record<keyof typeof PROMPT_IDS, { system: string; human: str
 - Series bible management
 
 ${PREMISE_ARCHITECT_REASONING}`,
-    human: `{input}`,
+    human: '{input}',
   },
 
   characterPsychology: {
     system: `${CHARACTER_PSYCHOLOGY_PROMPT}\n\n---\n\n${CHARACTER_PSYCHOLOGY_REASONING}`,
-    human: `{input}`,
+    human: '{input}',
   },
 
   devilsAdvocate: {
     system: `${DEVILS_ADVOCATE_PROMPT}\n\n---\n\n${DEVILS_ADVOCATE_REASONING}`,
-    human: `{input}`,
+    human: '{input}',
   },
 
   scriptEditor: {
     system: SCRIPT_EDITOR_PROMPT,
-    human: `{input}`,
+    human: '{input}',
   },
 
   consequenceTracker: {
     system: CONSEQUENCE_TRACKER_PROMPT,
-    human: `{input}`,
+    human: '{input}',
   },
 
   episodePremiseArchitect: {
     system: EPISODE_PREMISE_PROMPT,
-    human: `{input}`,
+    human: '{input}',
   },
 
   planner: {
     system: PLANNER_SYSTEM_PROMPT,
-    human: `{input}`,
+    human: '{input}',
   },
 
   magicAgent: {
     system: MAGIC_AGENT_PROMPT,
-    human: `{input}`,
+    human: '{input}',
   },
 
   worldSimulator: {
     system: WORLD_SIMULATOR_PROMPT,
-    human: `{input}`,
+    human: '{input}',
   },
 
   visualMoment: {
     system: VISUAL_MOMENT_PROMPT,
-    human: `{input}`,
+    human: '{input}',
   },
 
   // Section-Specific Prompts
@@ -132,7 +132,7 @@ Respond with:
   }],
   "confidence": 0.9
 }`,
-    human: `{input}`,
+    human: '{input}',
   },
 
   sectionWorldRules: {
@@ -158,7 +158,7 @@ Respond with:
   }],
   "confidence": 0.9
 }`,
-    human: `{input}`,
+    human: '{input}',
   },
 
   sectionFactions: {
@@ -184,7 +184,7 @@ Respond with:
   }],
   "confidence": 0.9
 }`,
-    human: `{input}`,
+    human: '{input}',
   },
 
   sectionInspirations: {
@@ -215,7 +215,7 @@ Respond with:
   }],
   "confidence": 0.9
 }`,
-    human: `{input}`,
+    human: '{input}',
   },
 
   sectionPlotTwists: {
@@ -237,7 +237,7 @@ Respond with:
   }],
   "confidence": 0.9
 }`,
-    human: `{input}`,
+    human: '{input}',
   },
 
   sectionEpisodeRoadmap: {
@@ -300,7 +300,7 @@ Respond with:
   }],
   "confidence": 0.9
 }`,
-    human: `{input}`,
+    human: '{input}',
   },
 
   sectionKeyCharacters: {
@@ -325,7 +325,7 @@ Respond with:
   }],
   "confidence": 0.9
 }`,
-    human: `{input}`,
+    human: '{input}',
   },
 
   sectionSoundtracks: {
@@ -353,7 +353,7 @@ You MUST respond with this EXACT JSON structure:
 }
 
 RESPOND WITH ONLY THIS JSON. NO OTHER TEXT.`,
-    human: `{input}`,
+    human: '{input}',
   },
 }
 
@@ -378,7 +378,7 @@ async function pushPrompt(
 ): Promise<void> {
   const config = getPromptConfig()
   const { environment = 'dev', tags = [], makePublic = false, dryRun = false } = options
-  
+
   const promptDef = FULL_PROMPTS[promptId]
   if (!promptDef) {
     console.warn(`⚠️ No definition found for prompt: ${promptId}`)
@@ -386,62 +386,66 @@ async function pushPrompt(
   }
 
   const repoName = PROMPT_IDS[promptId]
-  
+
   // Format as ChatPromptTemplate manifest
   const manifest = {
     lc: 1,
-    type: "constructor",
-    id: ["langchain", "prompts", "chat", "ChatPromptTemplate"],
+    type: 'constructor',
+    id: ['langchain', 'prompts', 'chat', 'ChatPromptTemplate'],
     kwargs: {
       messages: [
         {
           lc: 1,
-          type: "constructor", 
-          id: ["langchain", "prompts", "chat", "SystemMessagePromptTemplate"],
+          type: 'constructor',
+          id: ['langchain', 'prompts', 'chat', 'SystemMessagePromptTemplate'],
           kwargs: {
             prompt: {
               lc: 1,
-              type: "constructor",
-              id: ["langchain", "prompts", "prompt", "PromptTemplate"],
+              type: 'constructor',
+              id: ['langchain', 'prompts', 'prompt', 'PromptTemplate'],
               kwargs: {
                 template: promptDef.system,
-                input_variables: promptDef.system.includes('{context}') ? ["context"] : (promptDef.system.includes('{unresolvedSetups}') ? ["unresolvedSetups"] : []),
-                template_format: "f-string"
-              }
-            }
-          }
+                input_variables: promptDef.system.includes('{context}')
+                  ? ['context']
+                  : promptDef.system.includes('{unresolvedSetups}')
+                    ? ['unresolvedSetups']
+                    : [],
+                template_format: 'f-string',
+              },
+            },
+          },
         },
         {
           lc: 1,
-          type: "constructor",
-          id: ["langchain", "prompts", "chat", "HumanMessagePromptTemplate"],
+          type: 'constructor',
+          id: ['langchain', 'prompts', 'chat', 'HumanMessagePromptTemplate'],
           kwargs: {
             prompt: {
               lc: 1,
-              type: "constructor",
-              id: ["langchain", "prompts", "prompt", "PromptTemplate"],
+              type: 'constructor',
+              id: ['langchain', 'prompts', 'prompt', 'PromptTemplate'],
               kwargs: {
                 template: promptDef.human,
-                input_variables: ["input"],
-                template_format: "f-string"
-              }
-            }
-          }
-        }
+                input_variables: ['input'],
+                template_format: 'f-string',
+              },
+            },
+          },
+        },
       ],
-      input_variables: promptDef.system.includes('{context}') ? ["context", "input"] : ["input"]
-    }
+      input_variables: promptDef.system.includes('{context}') ? ['context', 'input'] : ['input'],
+    },
   }
-  
+
   console.log(`📤 ${dryRun ? '[DRY RUN] ' : ''}Pushing: ${repoName}`)
   console.log(`   Environment: ${environment}`)
   console.log(`   Tags: ${[environment, ...tags].join(', ')}`)
-  
+
   if (dryRun) {
     console.log('   [Skipped - dry run]')
     return
   }
-  
+
   try {
     // Use the LangSmith client's pushPrompt method
     await client.pushPrompt(repoName, {
@@ -450,20 +454,20 @@ async function pushPrompt(
       tags: [environment, ...tags],
       description: `Storyteller ${promptId} prompt`,
     })
-    console.log(`   ✅ Pushed successfully`)
+    console.log('   ✅ Pushed successfully')
   } catch (error: any) {
     // If repo doesn't exist, try creating it first
     if (error.message?.includes('not found') || error.status === 404) {
-      console.log(`   Creating new prompt repo...`)
+      console.log('   Creating new prompt repo...')
       await client.pushPrompt(repoName, {
         object: manifest,
         isPublic: makePublic,
         tags: [environment, ...tags],
         description: `Storyteller ${promptId} prompt`,
       })
-      console.log(`   ✅ Created and pushed successfully`)
+      console.log('   ✅ Created and pushed successfully')
     } else {
-      console.error(`   ❌ Failed:`, error.message || error)
+      console.error('   ❌ Failed:', error.message || error)
       throw error
     }
   }
@@ -475,16 +479,16 @@ async function pushPrompt(
 async function pushAllPrompts(options: PushOptions = {}): Promise<void> {
   console.log('\n🚀 Pushing all prompts to LangSmith Hub')
   console.log('==========================================\n')
-  
+
   const client = new Client({
     apiKey: process.env.LANGCHAIN_API_KEY,
   })
-  
+
   const promptIds = Object.keys(PROMPT_IDS) as Array<keyof typeof PROMPT_IDS>
-  
+
   let success = 0
   let failed = 0
-  
+
   for (const promptId of promptIds) {
     try {
       await pushPrompt(client, promptId, options)
@@ -493,7 +497,7 @@ async function pushAllPrompts(options: PushOptions = {}): Promise<void> {
       failed++
     }
   }
-  
+
   console.log('\n==========================================')
   console.log(`✅ Pushed: ${success}/${promptIds.length}`)
   if (failed > 0) {
@@ -507,7 +511,7 @@ async function pushAllPrompts(options: PushOptions = {}): Promise<void> {
 
 async function main() {
   const args = process.argv.slice(2)
-  
+
   // Parse arguments
   const options: PushOptions = {
     environment: 'dev',
@@ -515,7 +519,7 @@ async function main() {
     makePublic: false,
     dryRun: false,
   }
-  
+
   for (const arg of args) {
     if (arg === '--production') options.environment = 'production'
     if (arg === '--staging') options.environment = 'staging'
@@ -524,20 +528,20 @@ async function main() {
     if (arg === '--dry-run') options.dryRun = true
     if (arg.startsWith('--tag=')) options.tags!.push(arg.split('=')[1])
   }
-  
+
   // Check for API key
   if (!process.env.LANGCHAIN_API_KEY) {
     console.error('❌ LANGCHAIN_API_KEY environment variable is required')
     process.exit(1)
   }
-  
+
   const client = new Client({
     apiKey: process.env.LANGCHAIN_API_KEY,
   })
-  
+
   // Check for specific prompt
   const specificPrompt = args.find(a => !a.startsWith('--')) as keyof typeof PROMPT_IDS | undefined
-  
+
   if (specificPrompt && specificPrompt in PROMPT_IDS) {
     await pushPrompt(client, specificPrompt, options)
   } else {

@@ -9,12 +9,22 @@ export async function POST(request: Request) {
     const { tileId, projectId, gridImageUrl, variantIndex } = await request.json()
 
     if (!tileId || !projectId || !gridImageUrl || !variantIndex) {
-      return NextResponse.json({ error: 'Missing: tileId, projectId, gridImageUrl, variantIndex' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Missing: tileId, projectId, gridImageUrl, variantIndex' },
+        { status: 400 }
+      )
     }
 
-    const handle = await tasks.trigger<typeof selectMjVariantTask>('select-mj-variant', {
-      tileId, projectId, gridImageUrl, variantIndex
-    }, { ttl: '5m' })
+    const handle = await tasks.trigger<typeof selectMjVariantTask>(
+      'select-mj-variant',
+      {
+        tileId,
+        projectId,
+        gridImageUrl,
+        variantIndex,
+      },
+      { ttl: '5m' }
+    )
 
     return NextResponse.json({ success: true, runId: handle.id })
   } catch (error: any) {

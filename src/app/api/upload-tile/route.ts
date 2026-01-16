@@ -39,16 +39,20 @@ export async function POST(request: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
 
-    const { data, error } = await supabase.from('tiles').upsert(
-      {
-        project_id: projectId,
-        x,
-        y,
-        tile_prompt: prompt || `Uploaded tile at (${x}, ${y})`,
-        image_filename: filename,
-      },
-      { onConflict: 'project_id,x,y' }
-    ).select().single()
+    const { data, error } = await supabase
+      .from('tiles')
+      .upsert(
+        {
+          project_id: projectId,
+          x,
+          y,
+          tile_prompt: prompt || `Uploaded tile at (${x}, ${y})`,
+          image_filename: filename,
+        },
+        { onConflict: 'project_id,x,y' }
+      )
+      .select()
+      .single()
 
     if (error) {
       console.error('Database error:', error)
@@ -67,4 +71,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
-

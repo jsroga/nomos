@@ -102,7 +102,9 @@ export const FloorTool: React.FC = () => {
                 new Float32Array([
                   ...points.flat(),
                   ...(currentPoint ? [currentPoint.x, currentPoint.y + 0.1, currentPoint.z] : []),
-                  ...(currentPoint && points.length > 0 ? [points[0][0], points[0][1] + 0.1, points[0][2]] : []) // Line back to start
+                  ...(currentPoint && points.length > 0
+                    ? [points[0][0], points[0][1] + 0.1, points[0][2]]
+                    : []), // Line back to start
                 ])
               }
               itemSize={3}

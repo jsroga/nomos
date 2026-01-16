@@ -106,7 +106,7 @@ export const TransformManager: React.FC = () => {
               // Surfaces are group-based, so we update the group transform
               // Position is usually [0,0,0] relative to parent, but if we move it, we update it?
               // Usually surface geometry handles position. Let's focus on rotation for now.
-              // Actually, if we translate, we might want to move points? 
+              // Actually, if we translate, we might want to move points?
               // No, that's complex. Let's start with just rotation as requested.
               rotation: [target.rotation.x, target.rotation.y, target.rotation.z],
             })

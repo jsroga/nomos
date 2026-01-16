@@ -1,6 +1,6 @@
 /**
  * Interior Designer Prompts
- * 
+ *
  * Centralized prompts for the interior designer module.
  */
 
@@ -15,12 +15,16 @@ export type TextureStyle = 'painterly' | 'realistic' | 'sketch' | 'decay' | 'met
  * Used to enhance base prompts with style-specific keywords
  */
 export const TEXTURE_STYLES: Record<TextureStyle, string> = {
-    painterly: 'oil painting style, impasto brushwork, expressive texture, disco elysium nuance, artistic, detailed',
-    realistic: 'photorealistic, 8k, raw photo, highly detailed texture, pbr material',
-    sketch: 'architectural sketch style, blueprint aesthetics, white lines on blue, hand drawn, technical drawing',
-    decay: 'post-apocalyptic, worn, grime, cracked, dirty, weathered, ruins aesthetic',
-    metallic: 'brushed metal, chrome, steel, industrial, reflective surface, high polish, sci-fi material',
-    organic: 'natural moss, overgrown, lush vegetation, living texture, nature reclaiming, earthy, verdant'
+  painterly:
+    'oil painting style, impasto brushwork, expressive texture, disco elysium nuance, artistic, detailed',
+  realistic: 'photorealistic, 8k, raw photo, highly detailed texture, pbr material',
+  sketch:
+    'architectural sketch style, blueprint aesthetics, white lines on blue, hand drawn, technical drawing',
+  decay: 'post-apocalyptic, worn, grime, cracked, dirty, weathered, ruins aesthetic',
+  metallic:
+    'brushed metal, chrome, steel, industrial, reflective surface, high polish, sci-fi material',
+  organic:
+    'natural moss, overgrown, lush vegetation, living texture, nature reclaiming, earthy, verdant',
 }
 
 // ============================================================================
@@ -41,6 +45,6 @@ Rewrite the user's raw prompt into a detailed Stable Diffusion prompt.
  * Build a complete texture prompt with style modifiers
  */
 export function buildTexturePrompt(basePrompt: string, style: TextureStyle): string {
-    const styleModifiers = TEXTURE_STYLES[style]
-    return `${basePrompt}, ${styleModifiers}`
+  const styleModifiers = TEXTURE_STYLES[style]
+  return `${basePrompt}, ${styleModifiers}`
 }

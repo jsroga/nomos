@@ -1,20 +1,17 @@
 /**
  * Loop Creator Chat API
- * 
+ *
  * Streaming endpoint for game loop design conversations.
  * Uses Server-Sent Events for real-time updates.
  */
 
 import { NextRequest } from 'next/server'
-import { 
-  getLoopCreatorGraph, 
-  streamLoopCreator, 
-  StreamEvent 
+import {
+  getLoopCreatorGraph,
+  streamLoopCreator,
+  StreamEvent,
 } from '@/domains/loop-creator/graph/loop-graph'
-import { 
-  createInitialLoopState, 
-  LoopCreatorState 
-} from '@/domains/loop-creator/graph/state'
+import { createInitialLoopState, LoopCreatorState } from '@/domains/loop-creator/graph/state'
 import { HumanMessage } from '@langchain/core/messages'
 
 export const maxDuration = 120 // 2 minutes max
@@ -51,10 +48,10 @@ export async function POST(req: NextRequest) {
     const { message, projectId, threadId, context, modelConfig } = body
 
     if (!message || !projectId) {
-      return new Response(
-        JSON.stringify({ error: 'message and projectId are required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      )
+      return new Response(JSON.stringify({ error: 'message and projectId are required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
 
     // Create SSE stream
@@ -86,18 +83,66 @@ export async function POST(req: NextRequest) {
           // Create initial state or continue from thread
           let initialState: LoopCreatorState
 
+          // Helper to convert canvas nodes to mechanics format
+          const convertCanvasToMechanics = (nodes: any[], edges: any[]) => {
+            const mechanics = (nodes || [])
+              .filter((n: any) => n.type !== 'group')
+              .map((n: any) => ({
+                id: n.id,
+                name: n.label || n.data?.label || n.id,
+                type: (n.data?.nodeType || 'core') as any,
+                description: n.data?.description || n.description || '',
+                inputs: [],
+                outputs: [],
+                balanceFactors: { effort: 5, reward: 5, frequency: 5 },
+              }))
+
+            const connections = (edges || []).map((e: any) => ({
+              id: e.id,
+              source: e.source,
+              target: e.target,
+              type: 'triggers' as any,
+              label: e.label || '',
+            }))
+
+            return { mechanics, connections }
+          }
+
           if (threadId) {
             // Continue existing conversation - add new human message
             const graph = await getLoopCreatorGraph()
             const existingState = await graph.getState({ configurable: { thread_id: threadId } })
-            
+
             if (existingState.values) {
+              // IMPORTANT: Always update with current canvas state
+              const { mechanics, connections } = convertCanvasToMechanics(
+                context?.nodes || [],
+                context?.edges || []
+              )
+
               initialState = {
-                ...existingState.values as LoopCreatorState,
+                ...(existingState.values as LoopCreatorState),
                 messages: [
                   ...(existingState.values as LoopCreatorState).messages,
                   new HumanMessage(message),
                 ],
+                // Update with current canvas state
+                mechanics:
+                  mechanics.length > 0
+                    ? mechanics
+                    : (existingState.values as LoopCreatorState).mechanics,
+                connections:
+                  connections.length > 0
+                    ? connections
+                    : (existingState.values as LoopCreatorState).connections,
+                // Update game context if provided
+                gameGenre:
+                  context?.gameGenre || (existingState.values as LoopCreatorState).gameGenre,
+                gamePlatform:
+                  context?.gamePlatform || (existingState.values as LoopCreatorState).gamePlatform,
+                gameDescription:
+                  context?.gameDescription ||
+                  (existingState.values as LoopCreatorState).gameDescription,
                 pendingQuestions: [], // Clear pending questions
                 pendingActions: [], // Clear pending actions
               }
@@ -117,6 +162,14 @@ export async function POST(req: NextRequest) {
               existingEdges: context?.edges,
             })
           }
+
+          // Debug: Log what canvas context we received
+          console.log(
+            `[LoopAPI] Canvas context: ${context?.nodes?.length || 0} nodes, ${context?.edges?.length || 0} edges`
+          )
+          console.log(
+            `[LoopAPI] State mechanics: ${initialState.mechanics.length}, connections: ${initialState.connections.length}`
+          )
 
           // Add model config if provided
           if (modelConfig) {
@@ -140,14 +193,10 @@ export async function POST(req: NextRequest) {
             },
           }
 
-          const finalState = await streamLoopCreator(
-            initialState,
-            config,
-            (event: StreamEvent) => {
-              if (isClosed) return
-              safeEnqueue(event)
-            }
-          )
+          const finalState = await streamLoopCreator(initialState, config, (event: StreamEvent) => {
+            if (isClosed) return
+            safeEnqueue(event)
+          })
 
           // Emit final state summary
           safeEnqueue({
@@ -167,7 +216,6 @@ export async function POST(req: NextRequest) {
             threadId: threadId || initialState.sessionId,
             timestamp: Date.now(),
           })
-
         } catch (error) {
           console.error('[LoopAPI] Stream error:', error)
           safeEnqueue({
@@ -185,11 +233,10 @@ export async function POST(req: NextRequest) {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-transform',
-        'Connection': 'keep-alive',
+        Connection: 'keep-alive',
         'X-Accel-Buffering': 'no',
       },
     })
-
   } catch (error) {
     console.error('[LoopAPI] Error:', error)
     return new Response(
@@ -204,12 +251,11 @@ export async function POST(req: NextRequest) {
  */
 export async function GET() {
   return new Response(
-    JSON.stringify({ 
-      status: 'ok', 
+    JSON.stringify({
+      status: 'ok',
       service: 'loop-creator',
       timestamp: Date.now(),
     }),
     { headers: { 'Content-Type': 'application/json' } }
   )
 }
-

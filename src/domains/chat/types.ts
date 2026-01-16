@@ -1,67 +1,134 @@
-import { ReactNode } from 'react';
+import { ReactNode } from 'react'
+import { ConsistencyCheckResult } from '@/domains/storyteller/consistency/types'
 
 // Message types
 export interface Message {
-    sender?: string;
-    name?: string;
-    content: string;
-    type?: 'human' | 'ai' | 'system';
-    actions?: AgentAction[];
-    questions?: AgentQuestion[];
-    thinking?: string;
-    confidence?: number;
-    id?: string;
-    timestamp?: Date;
+  sender?: string
+  name?: string
+  content: string
+  type?: 'human' | 'ai' | 'system' | 'consistency_check'
+  actions?: AgentAction[]
+  questions?: AgentQuestion[]
+  thinking?: string
+  confidence?: number
+  id?: string
+  timestamp?: Date
+  consistencyResult?: ConsistencyCheckResult
 }
 
 // Agent Configuration
 export interface AgentConfig {
-    color: string;
-    bgColor: string;
-    icon: ReactNode;
+  color: string
+  bgColor?: string // Optional for minimalist designs
+  icon: ReactNode
 }
 
-export type AgentConfigMap = Record<string, AgentConfig>;
+export type AgentConfigMap = Record<string, AgentConfig>
+
+// Action status for approval flow
+export type ActionStatus = 'pending' | 'executing' | 'committed' | 'rejected'
 
 // Action & Question types (mirrored from storyteller for now, but made generic)
 export interface AgentAction {
-    type: string;
-    payload: any;
-    reasoning?: string;
+  type: string
+  payload: any
+  reasoning?: string
+  status?: ActionStatus // Track approval state
+  id?: string // Stable identifier
 }
 
 export interface AgentQuestion {
-    id: string;
-    question: string;
-    options?: string[];
-    urgency?: 'blocking' | 'normal';
-    context?: string;
+  id: string
+  question: string
+  options?: string[]
+  urgency?: 'blocking' | 'normal'
+  context?: string
 }
 
 // Stream Event Types
 export type StreamEventType =
-    | 'start'
-    | 'token'
-    | 'section_start'
-    | 'section_complete'
-    | 'node_start'
-    | 'node_complete'
-    | 'message'
-    | 'action'
-    | 'questions'
-    | 'awaiting_input'
-    | 'done'
-    | 'terminated'
-    | 'error';
+  | 'start'
+  | 'token'
+  | 'section_start'
+  | 'section_complete'
+  | 'node_start'
+  | 'node_complete'
+  | 'message'
+  | 'action'
+  | 'questions'
+  | 'consistency_check'
+  | 'awaiting_input'
+  | 'done'
+  | 'terminated'
+  | 'error'
 
 export interface StreamEvent {
-    type: StreamEventType;
-    [key: string]: any;
+  type: StreamEventType
+  [key: string]: any
 }
 
 export interface QuestionSession {
-    id: string;
-    question: AgentQuestion;
-    status: 'pending' | 'answered' | 'skipped';
-    answer?: string | string[];
+  id: string
+  question: AgentQuestion
+  status: 'pending' | 'answered' | 'skipped'
+  answer?: string | string[]
+}
+
+// ============================================
+// Thinking Messages Configuration
+// ============================================
+
+/** A single threshold-based thinking message */
+export interface ThinkingMessageStep {
+  /** Minimum seconds for this message to show */
+  minSeconds: number
+  /** Message to display */
+  message: string
+}
+
+/** Configuration for thinking messages (with agent and without) */
+export interface ThinkingMessagesConfig {
+  /** Ordered list of messages when an agent is identified */
+  withAgent: ThinkingMessageStep[]
+  /** Ordered list of messages when no agent is identified (fallback) */
+  fallback: ThinkingMessageStep[]
+  /** Message shown when processing is complete */
+  completeMessage: string
+}
+
+/** Default thinking messages - can be overridden per-module */
+export const DEFAULT_THINKING_MESSAGES: ThinkingMessagesConfig = {
+  withAgent: [
+    { minSeconds: 0, message: 'Analyzing your request...' },
+    { minSeconds: 3, message: 'Thinking deeply...' },
+    { minSeconds: 8, message: 'Crafting response...' },
+    { minSeconds: 15, message: 'This is complex, brewing wisdom... ☕' },
+    { minSeconds: 30, message: 'Creating something amazing... 🎨' },
+    { minSeconds: 60, message: 'Deep work in progress... 🧠' },
+  ],
+  fallback: [
+    { minSeconds: 0, message: 'Processing...' },
+    { minSeconds: 15, message: '☕ Complex request detected. Grab a coffee while I work...' },
+    { minSeconds: 30, message: '🧠 Deep thinking... This one\'s a masterpiece in the making!' },
+  ],
+  completeMessage: '✨ Complete',
+}
+
+/** Helper to get the appropriate message for the current thinking time */
+export function getThinkingMessage(
+  config: ThinkingMessagesConfig,
+  thinkingTime: number,
+  hasAgent: boolean
+): string {
+  const steps = hasAgent ? config.withAgent : config.fallback
+  // Find the highest threshold that's still <= thinkingTime
+  let message = steps[0]?.message || 'Processing...'
+  for (const step of steps) {
+    if (thinkingTime >= step.minSeconds) {
+      message = step.message
+    } else {
+      break
+    }
+  }
+  return message
 }

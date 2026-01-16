@@ -13,7 +13,10 @@ export class ThreeDService {
     let apiKey = ''
 
     if (typeof window !== 'undefined') {
-      const configKey = provider === 'hyper3d' ? LocalStorageKeys.AI_CONFIG_HYPER3D : LocalStorageKeys.AI_CONFIG_MESHY
+      const configKey =
+        provider === 'hyper3d'
+          ? LocalStorageKeys.AI_CONFIG_HYPER3D
+          : LocalStorageKeys.AI_CONFIG_MESHY
       const savedConfig = localStorage.getItem(configKey)
       if (savedConfig) {
         const config = JSON.parse(savedConfig)

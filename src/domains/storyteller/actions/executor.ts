@@ -2,7 +2,11 @@ import { v4 as uuidv4 } from 'uuid'
 import { AgentAction, ActionHistoryEntry, ActionHistory } from './types'
 import { WritersRoomState, BeatCard, Setup, Phase } from '../graph/state'
 import { BeatType, BeatStatus, ActionStatus } from '../enums'
-
+import { analyzeChangeRisk, shouldRunConsistencyCheck } from '../consistency/risk-analyzer'
+import { runConsistencyCheck } from '../agents/consistency-agent'
+import { applyCascadingFixes } from '../consistency/cascade-editor'
+import { getUndoManager } from '../consistency/undo-manager'
+import { StoryContext, ConsistencyCheckResult } from '../consistency/types'
 
 // ============================================
 // ACTION EXECUTOR - Commits actions to state
@@ -20,8 +24,13 @@ export class ActionExecutor {
   async execute(
     state: WritersRoomState,
     action: AgentAction,
-    agentName: string
-  ): Promise<{ state: WritersRoomState; entry: ActionHistoryEntry }> {
+    agentName: string,
+    options?: { skipConsistencyCheck?: boolean; projectId?: string; episodeId?: string }
+  ): Promise<{
+    state: WritersRoomState
+    entry: ActionHistoryEntry
+    consistencyResult?: ConsistencyCheckResult
+  }> {
     // Create history entry
     const entry: ActionHistoryEntry = {
       id: uuidv4(),
@@ -40,7 +49,63 @@ export class ActionExecutor {
     this.history.entries.push(entry)
     this.history.currentIndex = this.history.entries.length - 1
 
-    return { state: newState, entry }
+    // ============================================
+    // CONSISTENCY CHECKING (if enabled)
+    // ============================================
+    let consistencyResult: ConsistencyCheckResult | undefined
+
+    if (!options?.skipConsistencyCheck && options?.projectId) {
+      try {
+        // 1. Analyze risk
+        const context: StoryContext = {
+          projectId: options.projectId,
+          episodeId: options.episodeId,
+          characters: newState.characters,
+          beats: newState.beatBoard,
+          seriesBible: newState.seriesBible,
+          worldRules: newState.seriesBible?.worldRules || [],
+        }
+
+        const risk = analyzeChangeRisk(action, context)
+
+        console.log('[Action Executor] Risk analysis:', risk)
+
+        // 2. Run consistency check if needed
+        if (shouldRunConsistencyCheck(risk, context)) {
+          console.log('[Action Executor] Running consistency check...')
+
+          consistencyResult = await runConsistencyCheck(context, action)
+
+          // 3. Auto-apply fixes if any were found
+          if (consistencyResult.fixes.length > 0) {
+            console.log(
+              '[Action Executor] Applying',
+              consistencyResult.fixes.length,
+              'consistency fixes'
+            )
+
+            const cascadeResult = await applyCascadingFixes(
+              consistencyResult.fixes,
+              options.projectId,
+              options.episodeId
+            )
+
+            // 4. Record for undo
+            const undoManager = getUndoManager()
+            undoManager.recordConsistencyFix(consistencyResult.fixes, cascadeResult.results)
+
+            console.log('[Action Executor] Consistency fixes applied:', cascadeResult.totalAffected)
+          } else {
+            console.log('[Action Executor] No inconsistencies detected')
+          }
+        }
+      } catch (error) {
+        console.error('[Action Executor] Consistency check failed:', error)
+        // Don't fail the action if consistency check fails
+      }
+    }
+
+    return { state: newState, entry, consistencyResult }
   }
 
   /**
@@ -202,7 +267,7 @@ export class ActionExecutor {
             moralAlignment: 70,
             transformation: 0,
           },
-          metricsHistory: []
+          metricsHistory: [],
         }
         return {
           ...state,
@@ -225,15 +290,15 @@ export class ActionExecutor {
         return {
           ...state,
           characters: state.characters.map(char => {
-            if (char.characterId !== characterId) return char;
-            const currentStress = char.metrics?.arousal ?? 50; // Map stress to arousal
-            const newStress = Math.max(0, Math.min(100, currentStress + delta));
+            if (char.characterId !== characterId) return char
+            const currentStress = char.metrics?.arousal ?? 50 // Map stress to arousal
+            const newStress = Math.max(0, Math.min(100, currentStress + delta))
             return {
               ...char,
               metrics: {
                 ...char.metrics,
-                arousal: newStress
-              }
+                arousal: newStress,
+              },
             }
           }),
         }
@@ -285,14 +350,6 @@ export class ActionExecutor {
             ...state.seriesBible,
             ...action.payload,
           },
-        }
-      }
-
-      case 'UPDATE_EPISODE_PREMISE': {
-        return {
-          ...state,
-          episodePremise: action.payload.premise,
-          episodeId: action.payload.episodeId || state.episodeId,
         }
       }
 
@@ -368,9 +425,6 @@ export class ActionExecutor {
       case 'UPDATE_SERIES_BIBLE':
       case 'ADD_WORLD_RULE':
         return { seriesBible: { ...state.seriesBible } }
-
-      case 'UPDATE_EPISODE_PREMISE':
-        return { episodePremise: state.episodePremise ? { ...state.episodePremise } : undefined }
 
       case 'UPDATE_EPISODE_PREMISE':
         return { episodePremise: state.episodePremise ? { ...state.episodePremise } : undefined }
@@ -472,8 +526,14 @@ export function queueForApproval(
  */
 export async function approveAction(
   approvalId: string,
-  state: WritersRoomState
-): Promise<{ success: boolean; newState?: WritersRoomState; error?: string }> {
+  state: WritersRoomState,
+  options?: { projectId?: string; episodeId?: string }
+): Promise<{
+  success: boolean
+  newState?: WritersRoomState
+  error?: string
+  consistencyResult?: ConsistencyCheckResult
+}> {
   const approval = pendingApprovals.find(a => a.id === approvalId)
 
   if (!approval) {
@@ -485,15 +545,16 @@ export async function approveAction(
   }
 
   try {
-    const { state: newState } = await actionExecutor.execute(
+    const { state: newState, consistencyResult } = await actionExecutor.execute(
       state,
       approval.action,
-      approval.agentName
+      approval.agentName,
+      options
     )
 
     approval.status = 'approved'
 
-    return { success: true, newState }
+    return { success: true, newState, consistencyResult }
   } catch (error) {
     return {
       success: false,
@@ -588,9 +649,15 @@ export interface BatchApprovalResult {
 
 export async function batchApproveActions(
   approvalIds: string[],
-  state: WritersRoomState
-): Promise<{ result: BatchApprovalResult; newState: WritersRoomState }> {
+  state: WritersRoomState,
+  options?: { projectId?: string; episodeId?: string }
+): Promise<{
+  result: BatchApprovalResult
+  newState: WritersRoomState
+  consistencyResults: ConsistencyCheckResult[]
+}> {
   let currentState = state
+  const consistencyResults: ConsistencyCheckResult[] = []
   const result: BatchApprovalResult = {
     approved: [],
     rejected: [],
@@ -598,17 +665,21 @@ export async function batchApproveActions(
   }
 
   for (const id of approvalIds) {
-    const approvalResult = await approveAction(id, currentState)
+    const approvalResult = await approveAction(id, currentState, options)
 
     if (approvalResult.success && approvalResult.newState) {
       result.approved.push(id)
       currentState = approvalResult.newState
+
+      if (approvalResult.consistencyResult) {
+        consistencyResults.push(approvalResult.consistencyResult)
+      }
     } else {
       result.failed.push({ id, error: approvalResult.error || 'Unknown error' })
     }
   }
 
-  return { result, newState: currentState }
+  return { result, newState: currentState, consistencyResults }
 }
 
 export function batchRejectActions(approvalIds: string[], reason?: string): BatchApprovalResult {
@@ -673,83 +744,260 @@ export function getApprovalStats(): {
 }
 
 // Helper to format action for display
-export function formatActionForDisplay(action: AgentAction): {
+// status: 'pending' = awaiting approval, 'committed' = already approved
+export function formatActionForDisplay(
+  action: AgentAction,
+  status: 'pending' | 'committed' = 'pending'
+): {
   title: string
   description: string
   icon: string
 } {
+  const isPending = status === 'pending'
+
   switch (action.type) {
+    // Beat Operations
     case 'CREATE_BEAT':
       return {
-        title: 'Beat Created',
+        title: isPending ? 'Create Beat' : 'Beat Created',
         description: `"${action.payload.logline}"`,
-        icon: '📝',
+        icon: isPending ? '📝' : '✅',
       }
     case 'UPDATE_BEAT':
       return {
-        title: 'Beat Updated',
-        description: 'Beat modified',
-        icon: '✏️',
+        title: isPending ? 'Update Beat' : 'Beat Updated',
+        description: 'Beat modification',
+        icon: isPending ? '✏️' : '✅',
       }
     case 'DELETE_BEAT':
       return {
-        title: 'Beat Deleted',
-        description: 'Beat removed from board',
-        icon: '🗑️',
+        title: isPending ? 'Delete Beat' : 'Beat Deleted',
+        description: 'Remove beat from board',
+        icon: isPending ? '🗑️' : '✅',
+      }
+    case 'REORDER_BEATS':
+      return {
+        title: isPending ? 'Reorder Beats' : 'Beats Reordered',
+        description: 'Change beat sequence',
+        icon: isPending ? '🔀' : '✅',
       }
     case 'LOCK_BEAT_BOARD':
       return {
-        title: 'Beat Board Locked',
+        title: isPending ? 'Lock Beat Board' : 'Beat Board Locked',
         description: 'Ready for writing phase',
-        icon: '🔒',
+        icon: isPending ? '🔒' : '✅',
       }
+
+    // Character Operations
     case 'CREATE_CHARACTER':
       return {
-        title: 'Character Created',
+        title: isPending ? 'Create Character' : 'Character Created',
         description: `${action.payload.name} (${action.payload.role})`,
-        icon: '👤',
+        icon: isPending ? '👤' : '✅',
       }
     case 'UPDATE_CHARACTER':
       return {
-        title: 'Character Updated',
-        description: 'Character profile modified',
-        icon: '👤',
+        title: isPending ? 'Update Character' : 'Character Updated',
+        description: 'Character profile modification',
+        icon: isPending ? '👤' : '✅',
+      }
+    case 'UPDATE_CHARACTER_METRICS':
+      return {
+        title: isPending ? 'Update Metrics' : 'Metrics Updated',
+        description: 'Emotional state change',
+        icon: isPending ? '📊' : '✅',
       }
     case 'UPDATE_STRESS_LEVEL':
       return {
-        title: 'Stress Level Changed',
+        title: isPending ? 'Change Stress Level' : 'Stress Level Changed',
         description: `${action.payload.delta > 0 ? '+' : ''}${action.payload.delta}`,
         icon: action.payload.delta > 0 ? '📈' : '📉',
       }
+    case 'ADD_KNOWLEDGE':
+      return {
+        title: isPending ? 'Add Knowledge' : 'Knowledge Added',
+        description: action.payload.knowledge?.slice(0, 50) + '...' || 'New knowledge',
+        icon: isPending ? '💡' : '✅',
+      }
+
+    // Script Operations
     case 'UPDATE_SCRIPT':
       return {
-        title: 'Script Updated',
-        description: 'New content added',
-        icon: '📜',
+        title: isPending ? 'Update Script' : 'Script Updated',
+        description: 'New content',
+        icon: isPending ? '📜' : '✅',
       }
-    case 'UPDATE_SERIES_BIBLE':
+    case 'INSERT_SCRIPT_SECTION':
       return {
-        title: 'Series Bible Updated',
-        description: 'Story rules updated',
-        icon: '📖',
+        title: isPending ? 'Add Script Section' : 'Script Section Added',
+        description: 'New scene',
+        icon: isPending ? '📜' : '✅',
       }
+    case 'REVISE_SCRIPT_SECTION':
+      return {
+        title: isPending ? 'Revise Script' : 'Script Revised',
+        description: 'Section rewrite',
+        icon: isPending ? '✍️' : '✅',
+      }
+
+    // Bible Operations - Core
+    case 'UPDATE_SERIES_BIBLE': {
+      // Check what's in the payload to give a better description
+      const payload = action.payload as any
+      const storyPlan = payload?.storyPlan || payload
+
+      if (storyPlan?.soundtracks?.length) {
+        const count = storyPlan.soundtracks.length
+        return {
+          title: isPending ? 'Add Soundtracks' : 'Soundtracks Added',
+          description: `${count} track${count !== 1 ? 's' : ''}`,
+          icon: isPending ? '🎵' : '✅',
+        }
+      }
+      if (storyPlan?.factions?.length) {
+        const count = storyPlan.factions.length
+        return {
+          title: isPending ? 'Add Factions' : 'Factions Added',
+          description: `${count} faction${count !== 1 ? 's' : ''}`,
+          icon: isPending ? '🏛️' : '✅',
+        }
+      }
+      if (storyPlan?.worldRules?.length) {
+        const count = storyPlan.worldRules.length
+        return {
+          title: isPending ? 'Add World Rules' : 'World Rules Added',
+          description: `${count} rule${count !== 1 ? 's' : ''}`,
+          icon: isPending ? '⚖️' : '✅',
+        }
+      }
+      if (storyPlan?.keyCharacters?.length) {
+        const count = storyPlan.keyCharacters.length
+        return {
+          title: isPending ? 'Add Characters' : 'Characters Added',
+          description: `${count} character${count !== 1 ? 's' : ''}`,
+          icon: isPending ? '👥' : '✅',
+        }
+      }
+      return {
+        title: isPending ? 'Update Series Bible' : 'Series Bible Updated',
+        description: 'Story configuration',
+        icon: isPending ? '📖' : '✅',
+      }
+    }
+    case 'ADD_WORLD_RULE':
+      return {
+        title: isPending ? 'Add World Rule' : 'World Rule Added',
+        description: action.payload.rule?.slice(0, 50) + '...' || 'New rule',
+        icon: isPending ? '⚖️' : '✅',
+      }
+
+    // Bible Operations - Sections
+    case 'UPDATE_SOUNDTRACKS': {
+      const count = (action.payload as any).soundtracks?.length || 0
+      return {
+        title: isPending ? 'Add Soundtracks' : 'Soundtracks Added',
+        description: `${count} track${count !== 1 ? 's' : ''}`,
+        icon: isPending ? '🎵' : '✅',
+      }
+    }
+    case 'UPDATE_WORLD_RULES': {
+      const count = (action.payload as any).rules?.length || 0
+      return {
+        title: isPending ? 'Add World Rules' : 'World Rules Added',
+        description: `${count} rule${count !== 1 ? 's' : ''}`,
+        icon: isPending ? '⚖️' : '✅',
+      }
+    }
+    case 'UPDATE_FACTIONS': {
+      const count = (action.payload as any).factions?.length || 0
+      return {
+        title: isPending ? 'Add Factions' : 'Factions Added',
+        description: `${count} faction${count !== 1 ? 's' : ''}`,
+        icon: isPending ? '🏛️' : '✅',
+      }
+    }
+    case 'UPDATE_INSPIRATIONS':
+      return {
+        title: isPending ? 'Add Inspirations' : 'Inspirations Added',
+        description: 'Reference materials',
+        icon: isPending ? '💡' : '✅',
+      }
+    case 'UPDATE_WORLD_DESCRIPTION':
+      return {
+        title: isPending ? 'Update World Description' : 'World Description Updated',
+        description: 'Atmosphere and setting',
+        icon: isPending ? '🌍' : '✅',
+      }
+    case 'UPDATE_PLOT_TWISTS': {
+      const count = (action.payload as any).plotTwists?.length || 0
+      return {
+        title: isPending ? 'Add Plot Twists' : 'Plot Twists Added',
+        description: `${count} twist${count !== 1 ? 's' : ''}`,
+        icon: isPending ? '🔄' : '✅',
+      }
+    }
+    case 'UPDATE_KEY_CHARACTERS': {
+      const count = (action.payload as any).keyCharacters?.length || 0
+      return {
+        title: isPending ? 'Add Key Characters' : 'Key Characters Added',
+        description: `${count} character${count !== 1 ? 's' : ''}`,
+        icon: isPending ? '👥' : '✅',
+      }
+    }
+    case 'UPDATE_EPISODE_ROADMAP': {
+      const count = (action.payload as any).sequences?.length || 0
+      return {
+        title: isPending ? 'Update Episode Roadmap' : 'Episode Roadmap Updated',
+        description: `${count} sequence${count !== 1 ? 's' : ''}`,
+        icon: isPending ? '🗺️' : '✅',
+      }
+    }
+    case 'UPDATE_ROADMAP_SUMMARY':
+      return {
+        title: isPending ? 'Update Roadmap Summary' : 'Roadmap Summary Updated',
+        description: 'Executive summary',
+        icon: isPending ? '📋' : '✅',
+      }
+    case 'UPDATE_EPISODE_PREMISE':
+      return {
+        title: isPending ? 'Update Episode Premise' : 'Episode Premise Updated',
+        description: (action.payload as any).premise?.title || 'Premise',
+        icon: isPending ? '🎬' : '✅',
+      }
+    case 'UPDATE_MOOD_SOUNDTRACK':
+      return {
+        title: isPending ? 'Update Mood Soundtrack' : 'Mood Soundtrack Updated',
+        description: 'Audio atmosphere',
+        icon: isPending ? '🎶' : '✅',
+      }
+
+    // Tracking Operations
     case 'ADD_SETUP':
       return {
-        title: 'Setup Tracked',
-        description: action.payload.description,
-        icon: '🎯',
+        title: isPending ? 'Track Setup' : 'Setup Tracked',
+        description: action.payload.description || 'New setup',
+        icon: isPending ? '🎯' : '✅',
       }
     case 'RESOLVE_SETUP':
       return {
-        title: 'Setup Resolved',
-        description: 'Payoff delivered',
-        icon: '✅',
+        title: isPending ? 'Resolve Setup' : 'Setup Resolved',
+        description: 'Payoff',
+        icon: isPending ? '🎯' : '✅',
       }
+
+    // Generation
+    case 'GENERATE_POSTER':
+      return {
+        title: isPending ? 'Generate Poster' : 'Poster Generated',
+        description: 'Episode artwork',
+        icon: isPending ? '🖼️' : '✅',
+      }
+
     default:
       return {
-        title: 'Action Committed',
+        title: isPending ? 'Pending Action' : 'Action Committed',
         description: (action as any).type,
-        icon: '⚡',
+        icon: isPending ? '⏳' : '✅',
       }
   }
 }

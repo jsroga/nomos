@@ -45,15 +45,20 @@ export async function POST(request: Request) {
     }
 
     // Fetch project style references if not provided
-    const styleReferenceUrls = payload.styleReferenceUrls || await fetchProjectStyleRefs(payload.projectId)
+    const styleReferenceUrls =
+      payload.styleReferenceUrls || (await fetchProjectStyleRefs(payload.projectId))
 
-    const handle = await tasks.trigger<typeof enhanceFidelityTask>('enhance-fidelity', {
-      ...payload,
-      creativity: payload.creativity || 0.3,
-      styleReferenceUrls,
-    }, {
-      ttl: '10m',
-    })
+    const handle = await tasks.trigger<typeof enhanceFidelityTask>(
+      'enhance-fidelity',
+      {
+        ...payload,
+        creativity: payload.creativity || 0.3,
+        styleReferenceUrls,
+      },
+      {
+        ttl: '10m',
+      }
+    )
 
     return NextResponse.json({
       success: true,
@@ -68,16 +73,3 @@ export async function POST(request: Request) {
     )
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

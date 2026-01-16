@@ -49,11 +49,13 @@ export function useGlobalErrorListener() {
       if (event.message?.includes('hmr') || event.message?.includes('HMR')) {
         return
       }
-      
+
       useErrorStore.getState().addError({
         message: event.message || 'Unknown error',
         stack: event.error?.stack,
-        source: event.filename ? `${event.filename}:${event.lineno}:${event.colno}` : 'Window Error',
+        source: event.filename
+          ? `${event.filename}:${event.lineno}:${event.colno}`
+          : 'Window Error',
       })
     }
 
@@ -71,13 +73,13 @@ export function useGlobalErrorListener() {
     console.error = (...args: unknown[]) => {
       // Call original first
       originalConsoleError.apply(console, args)
-      
+
       // Skip our own error boundary logs to avoid loops
       const firstArg = String(args[0] || '')
       if (firstArg.includes('ErrorBoundary caught')) {
         return
       }
-      
+
       // Format the error message
       const message = args
         .map(arg => {
@@ -92,7 +94,7 @@ export function useGlobalErrorListener() {
           return String(arg)
         })
         .join(' ')
-      
+
       // Get stack trace from Error object if present, or create one
       let stack: string | undefined
       const errorArg = args.find(arg => arg instanceof Error) as Error | undefined
@@ -103,7 +105,7 @@ export function useGlobalErrorListener() {
         const stackError = new Error()
         stack = stackError.stack?.split('\n').slice(2).join('\n') // Remove Error and console.error lines
       }
-      
+
       useErrorStore.getState().addError({
         message: message || 'Console error',
         stack,
@@ -125,6 +127,6 @@ export function useGlobalErrorListener() {
 // Wrapper component that includes global error listener
 export function ErrorBoundary({ children, fallback }: Props) {
   useGlobalErrorListener()
-  
+
   return <ErrorBoundaryClass fallback={fallback}>{children}</ErrorBoundaryClass>
 }

@@ -100,11 +100,13 @@ export const MjVariantPicker: React.FC<MjVariantPickerProps> = ({
                     ${selecting !== null && selecting !== index ? 'opacity-50' : ''}
                   `}
                 >
-                  <div className={`
+                  <div
+                    className={`
                     absolute inset-0 flex items-center justify-center
                     opacity-0 group-hover:opacity-100 transition-opacity
                     ${selecting === index ? 'opacity-100' : ''}
-                  `}>
+                  `}
+                  >
                     {selecting === index ? (
                       <div className="bg-primary text-primary-foreground px-3 py-2 rounded-md flex items-center gap-2">
                         <Loader2 className="animate-spin" size={16} />
@@ -141,4 +143,3 @@ export const MjVariantPicker: React.FC<MjVariantPickerProps> = ({
     </div>
   )
 }
-

@@ -1,6 +1,6 @@
 /**
  * Citation Accuracy Evaluator
- * 
+ *
  * Verifies that citations in generated content:
  * 1. Actually exist (not fabricated)
  * 2. Support the claims being made
@@ -37,7 +37,7 @@ interface CitationValidation {
  */
 function extractCitations(text: string): Citation[] {
   const citations: Citation[] = []
-  
+
   // Pattern 1: [Source: X] or [Source X]
   const sourcePattern = /\[source[:\s]+([^\]]+)\]/gi
   let match
@@ -49,9 +49,10 @@ function extractCitations(text: string): Citation[] {
       claim: context,
     })
   }
-  
+
   // Pattern 2: "According to X" or "As mentioned in X"
-  const accordingPattern = /(?:according to|as (?:mentioned|noted|stated) in|from the)\s+(.+?)(?:,|\.|:)/gi
+  const accordingPattern =
+    /(?:according to|as (?:mentioned|noted|stated) in|from the)\s+(.+?)(?:,|\.|:)/gi
   while ((match = accordingPattern.exec(text)) !== null) {
     const context = getContextAround(text, match.index, 200)
     citations.push({
@@ -60,7 +61,7 @@ function extractCitations(text: string): Citation[] {
       claim: context,
     })
   }
-  
+
   // Pattern 3: "Episode X" or "Ep. X" references
   const episodePattern = /(?:episode|ep\.?)\s*(\d+)/gi
   while ((match = episodePattern.exec(text)) !== null) {
@@ -71,7 +72,7 @@ function extractCitations(text: string): Citation[] {
       claim: context,
     })
   }
-  
+
   // Pattern 4: "In the series bible" or "According to the bible"
   const biblePattern = /(?:in the|from the|according to the)\s*(?:series\s*)?bible/gi
   while ((match = biblePattern.exec(text)) !== null) {
@@ -82,7 +83,7 @@ function extractCitations(text: string): Citation[] {
       claim: context,
     })
   }
-  
+
   return citations
 }
 
@@ -107,25 +108,25 @@ function validateCitationHeuristic(citation: Citation, fullText: string): Citati
   const sourcePatterns = {
     episode: /^episode\s*\d+$/i,
     bible: /^(?:series\s*)?bible$/i,
-    character: /^\w+(?:\s+\w+)?$/,  // Character names
-    generic: /.+/,  // Anything
+    character: /^\w+(?:\s+\w+)?$/, // Character names
+    generic: /.+/, // Anything
   }
-  
+
   let exists = true
   let supportsClain = true
   let confidence = 0.7
   let issue: string | undefined
-  
+
   // Check for suspicious patterns indicating fabrication
   const SUSPICIOUS_PATTERNS = [
-    /chapter\s*\d+\.\d+/i,  // Over-specific chapter numbers
-    /page\s*\d{3,}/i,  // Large page numbers
-    /section\s*[A-Z]\d{2,}/i,  // Corporate-style section numbers
-    /reference\s*#?\d{5,}/i,  // Long reference numbers
-    /\d{4}-\d{2}-\d{2}/,  // Dates (likely hallucinated)
-    /https?:\/\/[^\s]+/,  // URLs (often fabricated)
+    /chapter\s*\d+\.\d+/i, // Over-specific chapter numbers
+    /page\s*\d{3,}/i, // Large page numbers
+    /section\s*[A-Z]\d{2,}/i, // Corporate-style section numbers
+    /reference\s*#?\d{5,}/i, // Long reference numbers
+    /\d{4}-\d{2}-\d{2}/, // Dates (likely hallucinated)
+    /https?:\/\/[^\s]+/, // URLs (often fabricated)
   ]
-  
+
   for (const pattern of SUSPICIOUS_PATTERNS) {
     if (pattern.test(citation.source)) {
       exists = false
@@ -134,7 +135,7 @@ function validateCitationHeuristic(citation: Citation, fullText: string): Citati
       break
     }
   }
-  
+
   // Check if claim seems supported (very basic heuristic)
   // Look for conditional language that might indicate uncertainty
   const UNCERTAINTY_MARKERS = [
@@ -144,7 +145,7 @@ function validateCitationHeuristic(citation: Citation, fullText: string): Citati
     /it's\s+unclear/i,
     /not\s+(?:entirely\s+)?sure/i,
   ]
-  
+
   for (const pattern of UNCERTAINTY_MARKERS) {
     if (pattern.test(citation.claim)) {
       supportsClain = false
@@ -153,7 +154,7 @@ function validateCitationHeuristic(citation: Citation, fullText: string): Citati
       break
     }
   }
-  
+
   return {
     citation,
     exists,
@@ -212,32 +213,31 @@ async function validateCitationLLM(
       modelName: 'gpt-4o-mini',
       temperature: 0,
     })
-    
-    const prompt = CITATION_JUDGE_PROMPT
-      .replace('{text}', fullText.slice(0, 3000))
+
+    const prompt = CITATION_JUDGE_PROMPT.replace('{text}', fullText.slice(0, 3000))
       .replace('{source}', citation.source)
       .replace('{context}', citation.claim)
-    
+
     const response = await model.invoke(prompt)
-    const responseText = typeof response.content === 'string' 
-      ? response.content 
-      : JSON.stringify(response.content)
-    
+    const responseText =
+      typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+
     const jsonMatch = responseText.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
       throw new Error('No JSON in response')
     }
-    
+
     const parsed = JSON.parse(jsonMatch[0])
-    
+
     return {
       citation,
       exists: parsed.sourceExists,
       supportsClain: parsed.supportsClaim,
       confidence: parsed.overallScore / 100,
-      issue: parsed.fabricationRisk === 'high' 
-        ? `High fabrication risk: ${parsed.fabricationSignals?.join(', ')}` 
-        : undefined,
+      issue:
+        parsed.fabricationRisk === 'high'
+          ? `High fabrication risk: ${parsed.fabricationSignals?.join(', ')}`
+          : undefined,
     }
   } catch (error) {
     return validateCitationHeuristic(citation, fullText)
@@ -253,40 +253,38 @@ async function validateCitationLLM(
  */
 export const citationAccuracyHeuristic: CustomEvaluator = {
   name: 'citation-accuracy-heuristic',
-  
+
   evaluate: async ({ output }: EvaluatorInput): Promise<EvaluatorResult> => {
-    const text = typeof output === 'string' 
-      ? output 
-      : (output as any).response || JSON.stringify(output)
-    
+    const text =
+      typeof output === 'string' ? output : (output as any).response || JSON.stringify(output)
+
     const citations = extractCitations(text)
-    
+
     if (citations.length === 0) {
       return {
-        score: 1,  // No citations = nothing to validate
+        score: 1, // No citations = nothing to validate
         reasoning: 'No citations found in output',
         metadata: { citationCount: 0 },
       }
     }
-    
+
     const validations = citations.map(c => validateCitationHeuristic(c, text))
-    
+
     // Calculate scores
     const existsScore = validations.filter(v => v.exists).length / validations.length
     const supportsScore = validations.filter(v => v.supportsClain).length / validations.length
     const avgConfidence = validations.reduce((sum, v) => sum + v.confidence, 0) / validations.length
-    
-    const overallScore = (existsScore * 0.4 + supportsScore * 0.4 + avgConfidence * 0.2)
-    
-    const issues = validations
-      .filter(v => v.issue)
-      .map(v => v.issue!)
-    
+
+    const overallScore = existsScore * 0.4 + supportsScore * 0.4 + avgConfidence * 0.2
+
+    const issues = validations.filter(v => v.issue).map(v => v.issue!)
+
     return {
       score: overallScore,
-      reasoning: issues.length > 0 
-        ? `Citation issues: ${issues.slice(0, 2).join('; ')}`
-        : `${citations.length} citations validated (${(overallScore * 100).toFixed(0)}% accuracy)`,
+      reasoning:
+        issues.length > 0
+          ? `Citation issues: ${issues.slice(0, 2).join('; ')}`
+          : `${citations.length} citations validated (${(overallScore * 100).toFixed(0)}% accuracy)`,
       metadata: {
         citationCount: citations.length,
         validations,
@@ -302,14 +300,13 @@ export const citationAccuracyHeuristic: CustomEvaluator = {
  */
 export const citationAccuracyEvaluator: CustomEvaluator = {
   name: 'citation-accuracy',
-  
+
   evaluate: async ({ output }: EvaluatorInput): Promise<EvaluatorResult> => {
-    const text = typeof output === 'string' 
-      ? output 
-      : (output as any).response || JSON.stringify(output)
-    
+    const text =
+      typeof output === 'string' ? output : (output as any).response || JSON.stringify(output)
+
     const citations = extractCitations(text)
-    
+
     if (citations.length === 0) {
       return {
         score: 1,
@@ -317,29 +314,28 @@ export const citationAccuracyEvaluator: CustomEvaluator = {
         metadata: { citationCount: 0 },
       }
     }
-    
+
     // Validate citations (limit to 5 for performance)
     const citationsToValidate = citations.slice(0, 5)
     const validations = await Promise.all(
       citationsToValidate.map(c => validateCitationLLM(c, text))
     )
-    
+
     // Calculate scores
     const existsScore = validations.filter(v => v.exists).length / validations.length
     const supportsScore = validations.filter(v => v.supportsClain).length / validations.length
     const avgConfidence = validations.reduce((sum, v) => sum + v.confidence, 0) / validations.length
-    
-    const overallScore = (existsScore * 0.4 + supportsScore * 0.4 + avgConfidence * 0.2)
-    
-    const issues = validations
-      .filter(v => v.issue)
-      .map(v => v.issue!)
-    
+
+    const overallScore = existsScore * 0.4 + supportsScore * 0.4 + avgConfidence * 0.2
+
+    const issues = validations.filter(v => v.issue).map(v => v.issue!)
+
     return {
       score: overallScore,
-      reasoning: issues.length > 0 
-        ? `Citation issues: ${issues.slice(0, 2).join('; ')}`
-        : `${citations.length} citations validated (${(overallScore * 100).toFixed(0)}% accuracy)`,
+      reasoning:
+        issues.length > 0
+          ? `Citation issues: ${issues.slice(0, 2).join('; ')}`
+          : `${citations.length} citations validated (${(overallScore * 100).toFixed(0)}% accuracy)`,
       metadata: {
         citationCount: citations.length,
         validatedCount: citationsToValidate.length,
@@ -356,4 +352,3 @@ export const citationAccuracyEvaluator: CustomEvaluator = {
 // ============================================
 
 export { extractCitations, validateCitationHeuristic }
-

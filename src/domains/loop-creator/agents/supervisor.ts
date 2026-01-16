@@ -1,6 +1,6 @@
 /**
  * Loop Creator Supervisor Agent
- * 
+ *
  * Orchestrates the game loop design workflow by:
  * - Understanding user intent
  * - Routing to appropriate specialists
@@ -10,7 +10,13 @@
 
 import { ChatOpenAI } from '@langchain/openai'
 import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages'
-import { LoopCreatorState, NextAgent, LoopCreatorPhase, LoopAgentQuestion, LoopAgentActionType } from '../graph/state'
+import {
+  LoopCreatorState,
+  NextAgent,
+  LoopCreatorPhase,
+  LoopAgentQuestion,
+  LoopAgentActionType,
+} from '../graph/state'
 import { v4 as uuidv4 } from 'uuid'
 
 const SUPERVISOR_SYSTEM_PROMPT = `You are a Game Loop Design Supervisor - an expert orchestrator for designing compelling gameplay loops.
@@ -29,6 +35,15 @@ You coordinate a team of specialists to help users design game mechanics and loo
 3. **Synthesize**: Combine specialist outputs into coherent responses
 4. **Manage Flow**: Progress through design phases appropriately
 5. **Ask Questions**: When context is missing, ask the user
+
+## Loop Timeframe Defaults
+By default, create ALL loop timeframes (micro, core, session, meta) unless the user specifically asks for fewer.
+- **Micro** (seconds): Single interactions
+- **Core** (minutes): Primary gameplay moment  
+- **Session** (30min-1hr): Within a play session
+- **Meta** (days/weeks): Long-term progression
+
+DO NOT ask the user about timeframes - just create all of them. Users can always ask you to focus on specific ones later.
 
 ## Workflow Phases
 - **initial**: Gathering basic game concept info
@@ -136,7 +151,7 @@ function buildStateContext(state: LoopCreatorState): string {
   if (state.gameDescription) parts.push(`Description: ${state.gameDescription}`)
 
   // Show current canvas state
-  parts.push(`\n=== CURRENT CANVAS ===`)
+  parts.push('\n=== CURRENT CANVAS ===')
   parts.push(`Mechanics/Nodes: ${state.mechanics.length}`)
   if (state.mechanics.length > 0) {
     state.mechanics.forEach(m => {
@@ -144,7 +159,7 @@ function buildStateContext(state: LoopCreatorState): string {
       parts.push(`  • ${m.name} (${m.type})${desc}`)
     })
   } else {
-    parts.push(`  (No nodes on canvas yet)`)
+    parts.push('  (No nodes on canvas yet)')
   }
 
   parts.push(`\nConnections: ${state.connections.length}`)
@@ -191,7 +206,15 @@ function parseResponse(content: string): SupervisorResponse {
     try {
       const parsed = JSON.parse(jsonMatch[0])
       // Validate nextAgent - if invalid, default to END to prevent loops
-      const validAgents = ['supervisor', 'loop_planner', 'mechanics_designer', 'balance_analyst', 'progression_architect', 'market_analyst', 'END']
+      const validAgents = [
+        'supervisor',
+        'loop_planner',
+        'mechanics_designer',
+        'balance_analyst',
+        'progression_architect',
+        'market_analyst',
+        'END',
+      ]
       if (!validAgents.includes(parsed.nextAgent)) {
         parsed.nextAgent = 'END'
       }
@@ -217,23 +240,24 @@ function parseResponse(content: string): SupervisorResponse {
 /**
  * Main supervisor agent function
  */
-export async function supervisorAgent(
-  state: LoopCreatorState
-): Promise<Partial<LoopCreatorState>> {
+export async function supervisorAgent(state: LoopCreatorState): Promise<Partial<LoopCreatorState>> {
   const model = new ChatOpenAI({
     modelName: state.modelConfig?.model || 'gpt-4o',
     temperature: state.modelConfig?.temperature ?? 0.3,
   })
 
   // Check if we're returning from a specialist - if so, we should synthesize and END
-  const specialists = ['loop_planner', 'mechanics_designer', 'balance_analyst', 'progression_architect', 'market_analyst']
+  const specialists = [
+    'loop_planner',
+    'mechanics_designer',
+    'balance_analyst',
+    'progression_architect',
+    'market_analyst',
+  ]
   const comingFromSpecialist = state.lastAgent && specialists.includes(state.lastAgent)
 
   // Build system prompt with context
-  let systemPrompt = SUPERVISOR_SYSTEM_PROMPT.replace(
-    '{{STATE_CONTEXT}}',
-    buildStateContext(state)
-  )
+  let systemPrompt = SUPERVISOR_SYSTEM_PROMPT.replace('{{STATE_CONTEXT}}', buildStateContext(state))
 
   // Add instruction if coming from specialist
   if (comingFromSpecialist) {
@@ -255,9 +279,8 @@ DO NOT route to another specialist unless the user explicitly asks for more.`
 
   // Call the model
   const response = await model.invoke(messages)
-  const content = typeof response.content === 'string'
-    ? response.content
-    : JSON.stringify(response.content)
+  const content =
+    typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
 
   const parsed = parseResponse(content)
 
@@ -275,19 +298,20 @@ DO NOT route to another specialist unless the user explicitly asks for more.`
   }
   // RULE 2: If supervisor provided a message but routing to self, end
   else if (parsed.message && (nextAgent === 'supervisor' || !nextAgent)) {
-    console.log(`[Supervisor] Has message but routing to self - forcing END`)
+    console.log('[Supervisor] Has message but routing to self - forcing END')
     nextAgent = 'END'
   }
 
   // Extract game references from conversation (like "Disco Elysium", "Fallout 2", etc.)
   const lastUserMessage = [...state.messages].reverse().find(m => m._getType() === 'human')
-  let referenceGames = [...(state.referenceGames || [])]
+  const referenceGames = [...(state.referenceGames || [])]
   let gameDescription = state.gameDescription
 
   if (lastUserMessage) {
-    const msgContent = typeof lastUserMessage.content === 'string'
-      ? lastUserMessage.content
-      : JSON.stringify(lastUserMessage.content)
+    const msgContent =
+      typeof lastUserMessage.content === 'string'
+        ? lastUserMessage.content
+        : JSON.stringify(lastUserMessage.content)
 
     // Common game references - extract from message
     const gamePatterns = [
@@ -330,12 +354,18 @@ DO NOT route to another specialist unless the user explicitly asks for more.`
     }
   }
 
+  // Default to ALL timeframes - removes friction, users can refine later
+  let selectedTimeframes: ('micro' | 'core' | 'session' | 'meta')[] = 
+    state.selectedTimeframes?.length ? state.selectedTimeframes : ['micro', 'core', 'session', 'meta']
+
   // Build result
   const result: Partial<LoopCreatorState> = {
     nextAgent: nextAgent as NextAgent,
     currentPhase: parsed.nextPhase,
-    referenceGames: referenceGames.length > (state.referenceGames?.length || 0) ? referenceGames : undefined,
+    referenceGames:
+      referenceGames.length > (state.referenceGames?.length || 0) ? referenceGames : undefined,
     gameDescription: gameDescription !== state.gameDescription ? gameDescription : undefined,
+    selectedTimeframes: selectedTimeframes.length > 0 ? selectedTimeframes : undefined,
   }
 
   // Add message if provided
@@ -360,7 +390,10 @@ DO NOT route to another specialist unless the user explicitly asks for more.`
 
   // Add actions if provided (for canvas modifications)
   if (parsed.actions && parsed.actions.length > 0) {
-    console.log(`[Supervisor] Emitting ${parsed.actions.length} actions:`, parsed.actions.map(a => a.type))
+    console.log(
+      `[Supervisor] Emitting ${parsed.actions.length} actions:`,
+      parsed.actions.map(a => a.type)
+    )
     result.pendingActions = parsed.actions.map(action => ({
       type: action.type as LoopAgentActionType,
       payload: action.payload,

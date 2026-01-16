@@ -6,7 +6,10 @@ import { WorldCanvas } from '@/domains/world-building-toolkit/components/Canvas/
 import { RepaintToolbar } from '@/domains/world-building-toolkit/components/RepaintToolbar'
 import { SelectModeToolbar } from '@/domains/world-building-toolkit/components/SelectModeToolbar'
 import { WorldGenToolbar } from '@/domains/world-building-toolkit/components/WorldGenToolbar'
-import { TileReviewDialog, TileReviewType } from '@/domains/world-building-toolkit/components/TileReviewDialog'
+import {
+  TileReviewDialog,
+  TileReviewType,
+} from '@/domains/world-building-toolkit/components/TileReviewDialog'
 import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
 
 interface ReviewQueueItem {
@@ -18,7 +21,10 @@ interface ReviewQueueItem {
   type: TileReviewType
 }
 
+import { TOUR_STEP_IDS } from '@/lib/tour-constants'
+
 export default function WorldBuildingPage() {
+  // ...
   // Load project from URL
   useProjectFromUrl()
 
@@ -43,7 +49,7 @@ export default function WorldBuildingPage() {
       tileX: item.tileX,
       tileY: item.tileY,
       newUrl,
-      originalUrl
+      originalUrl,
     })
 
     setReviewQueue(prev => [...prev, { ...item, id, newUrl, originalUrl }])
@@ -70,7 +76,7 @@ export default function WorldBuildingPage() {
         tileY,
         newUrl: upscaledUrl,
         originalUrl,
-        type: 'upscale'
+        type: 'upscale',
       })
     }
 
@@ -87,7 +93,7 @@ export default function WorldBuildingPage() {
         tileY,
         newUrl,
         originalUrl,
-        type: 'generation'
+        type: 'generation',
       })
     }
 
@@ -104,7 +110,7 @@ export default function WorldBuildingPage() {
         tileY,
         newUrl,
         originalUrl,
-        type: 'fidelity'
+        type: 'fidelity',
       })
     }
 
@@ -114,17 +120,25 @@ export default function WorldBuildingPage() {
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-black text-zinc-200 font-sans selection:bg-indigo-500/30">
-      <Sidebar />
+      <div id={TOUR_STEP_IDS.WORLD_GEN_NAV}>
+        <Sidebar />
+      </div>
 
       {/* Toolbar (Left) */}
-      <div className="w-16 border-r border-zinc-900 bg-zinc-950 z-10 relative">
+      <div className="w-16 border-r border-border/50 bg-background/60 backdrop-blur-xl z-10 relative">
         <WorldGenToolbar />
       </div>
 
       <div className="flex-1 relative">
-        <WorldCanvas />
-        <RepaintToolbar />
-        <SelectModeToolbar />
+        <div id={TOUR_STEP_IDS.WORLDGEN_CANVAS} className="w-full h-full">
+          <WorldCanvas />
+        </div>
+        <div id={TOUR_STEP_IDS.WORLDGEN_REPAINT}>
+          <RepaintToolbar />
+        </div>
+        <div id={TOUR_STEP_IDS.GENERATION_TRIGGER}>
+          <SelectModeToolbar />
+        </div>
       </div>
 
       {/* Unified Review Dialog with Queue */}

@@ -37,13 +37,40 @@ Description: {{DESCRIPTION}}
 ## Existing Mechanics
 {{MECHANICS}}
 
+## MANDATORY PSYCHOLOGICAL ORDER
+Every loop MUST follow this exact psychological sequence (based on dopamine/motivation science):
+
+**1. CHALLENGE (Seek/Stimulus)** → **2. ACTION (Dopamine/Response)** → **3. FEEDBACK (Experience/Reward)**
+
+This is NON-NEGOTIABLE. The brain's reward system requires this order:
+- CHALLENGE: Creates anticipation, triggers seeking behavior (dopamine rises)
+- ACTION: Player engages, dopamine peaks during the action itself
+- FEEDBACK: Result/reward, satisfaction, loop closure
+
+### Rules for Psychological Order:
+1. Every loop output MUST show nodes in this sequence: Challenge → Action → Feedback
+2. You can have MULTIPLE challenges before actions (e.g., Challenge1 → Challenge2 → Action → Feedback)
+3. You can have MULTIPLE actions (e.g., Challenge → Action1 → Action2 → Feedback)
+4. But the ORDER must always be: all Challenges FIRST, then all Actions, then Feedback
+5. If a loop has more than 5-6 nodes, SPLIT it into 2 separate loops (e.g., Core Loop + Session Loop)
+
+### Loop Timeframe Grouping:
+- **Micro Loop** (1-10 seconds): Single interaction cycle
+- **Core Loop** (10-60 seconds): Primary gameplay moment
+- **Session Loop** (5-30 minutes): Within a play session
+- **Meta Loop** (hours/days): Between sessions, progression
+
+## REQUESTED TIMEFRAMES
+The user has selected these specific timeframes to create: {{SELECTED_TIMEFRAMES}}
+Create ONLY loops for the selected timeframes. Do NOT create loops for timeframes not listed above.
+
 ## Guidelines
 1. **Core Loop First**: Always establish the core moment-to-moment loop
 2. **Layer Appropriately**: Build session and meta loops on top
 3. **Player Experience**: Focus on what the player feels
-4. **Time Awareness**: Consider how long each loop cycle takes (Moment, Action, Mission, or Session)
+4. **Time Awareness**: Consider how long each loop cycle takes
 5. **Satisfaction Peaks**: Identify when players feel most satisfied
-6. **Pattern Sequence**: Ensure every loop structure can be broken down into: **Challenge ➔ Action ➔ Feedback ➔ Reward**.
+6. **Psychological Integrity**: NEVER break the Challenge → Action → Feedback order
 
 ## INNOVATION MANDATE
 Design loop structures that could DEFINE a new genre, not just iterate on existing ones.
@@ -88,48 +115,56 @@ AVOID:
 
 ## CRITICAL: Response Format
 You MUST respond with valid JSON and NOTHING ELSE. No explanation text before or after.
-The JSON must include at least 3 loops (core, session, meta).
+
+Each loop MUST contain nodes that follow the psychological order: Challenge → Action → Feedback.
+Group loops by timeframe (micro/core/session/meta).
 
 REQUIRED JSON FORMAT:
 {
-  "analysis": "Your analysis of the current state and what's needed",
+  "analysis": "Your analysis including how the psychological flow works in this design",
   "loops": [
     {
       "id": "unique-id-1",
       "name": "Specific Loop Name (not generic)",
       "type": "core",
+      "timeframe": "micro|core|session|meta",
       "description": "Detailed description of what this loop involves",
-      "mechanics": [],
-      "duration": { "min": 1, "max": 5, "typical": 3 },
-      "playerExperience": "What the player feels",
-      "satisfactionPeak": "When satisfaction is highest"
-    },
-    {
-      "id": "unique-id-2", 
-      "name": "Session Loop Name",
-      "type": "session",
-      "description": "Detailed description",
-      "mechanics": [],
-      "duration": { "min": 10, "max": 30, "typical": 20 },
-      "playerExperience": "What the player feels",
-      "satisfactionPeak": "When satisfaction peaks"
-    },
-    {
-      "id": "unique-id-3",
-      "name": "Meta Loop Name", 
-      "type": "meta",
-      "description": "Detailed description",
-      "mechanics": [],
-      "duration": { "min": 60, "max": 180, "typical": 120 },
-      "playerExperience": "What the player feels",
-      "satisfactionPeak": "When satisfaction peaks"
+      "nodes": [
+        { "name": "Node Name", "psychPhase": "challenge", "description": "What happens" },
+        { "name": "Node Name", "psychPhase": "action", "description": "What player does" },
+        { "name": "Node Name", "psychPhase": "feedback", "description": "Result/reward" }
+      ],
+      "duration": { "min": 1, "max": 5, "typical": 3, "unit": "seconds|minutes" },
+      "playerExperience": "What the player feels at each phase",
+      "satisfactionPeak": "When satisfaction is highest (usually at feedback)"
     }
   ],
   "recommendations": ["Specific recommendation 1", "Specific recommendation 2"],
-  "message": "Summary for the user explaining what was created"
+  "message": "Summary explaining the psychological flow of each loop"
 }
 
-REMEMBER: Output ONLY the JSON object. No text before. No text after. Just the JSON.`
+### EXAMPLE - Disco Elysium Style:
+{
+  "loops": [
+    {
+      "id": "dialogue-loop",
+      "name": "Dialogue Skill Check",
+      "type": "core",
+      "timeframe": "micro",
+      "nodes": [
+        { "name": "Conversation Choice", "psychPhase": "challenge", "description": "NPC presents dilemma, player sees skill check odds" },
+        { "name": "Commit to Response", "psychPhase": "action", "description": "Player selects dialogue option, dice roll animation" },
+        { "name": "Consequence Reveal", "psychPhase": "feedback", "description": "Success/failure shown, NPC reacts, world state changes" }
+      ],
+      "duration": { "min": 10, "max": 60, "typical": 30, "unit": "seconds" }
+    }
+  ]
+}
+
+REMEMBER: 
+- Output ONLY the JSON object. No text before or after.
+- EVERY loop must have nodes in order: challenge(s) → action(s) → feedback
+- If you need more than 6 nodes, SPLIT into separate loops`
 
 /**
  * Build context for the agent
@@ -145,12 +180,18 @@ function buildContext(state: LoopCreatorState): string {
     description += `\nReference Games: ${state.referenceGames.join(', ')}`
   }
 
+  // Get selected timeframes or default to all
+  const timeframes = state.selectedTimeframes?.length > 0
+    ? state.selectedTimeframes.join(', ')
+    : 'micro, core, session, meta (all)'
+
   return LOOP_PLANNER_SYSTEM_PROMPT
     .replace('{{GENRE}}', state.gameGenre || 'Not specified')
     .replace('{{PLATFORM}}', state.gamePlatform || 'Not specified')
     .replace('{{AUDIENCE}}', state.targetAudience || 'Not specified')
     .replace('{{DESCRIPTION}}', description)
     .replace('{{MECHANICS}}', mechanicsList)
+    .replace('{{SELECTED_TIMEFRAMES}}', timeframes)
 }
 
 /**
@@ -182,6 +223,8 @@ function parseResponse(content: string): LoopPlannerResponse {
         duration: l.duration || { min: 1, max: 10, typical: 5 },
         playerExperience: l.playerExperience || '',
         satisfactionPeak: l.satisfactionPeak || '',
+        nodes: l.nodes || [], // Preserve psychological phase nodes
+        timeframe: l.timeframe || l.type, // Preserve timeframe
       }))
 
       console.log(`[LoopPlanner] Parsed ${loops.length} loops:`, loops.map((l: GameLoop) => l.name))
@@ -288,50 +331,176 @@ export async function loopPlannerAgent(
 
   console.log(`[LoopPlanner] Created ${parsed.loops.length} loops`)
 
-  // Convert loops to canvas node actions so they appear as suggestions
+  // Convert loops to canvas node actions with psychological ordering
+  // SMART LAYOUT: Groups arranged HORIZONTALLY by timeframe (left to right)
+  // Nodes within groups arranged VERTICALLY (top to bottom: challenge → action → feedback)
   const nodeActions: LoopAgentAction[] = []
-  let yOffset = 100
-
-  for (const loop of parsed.loops) {
-    // Create a group node for the loop
+  
+  // Layout constants - GENEROUS SPACING for readability
+  const GROUP_WIDTH = 420
+  const GROUP_GAP = 150
+  const NODE_WIDTH = 320
+  const NODE_HEIGHT = 220
+  const NODE_GAP_Y = 80
+  const GROUP_PADDING = 80
+  const GROUP_HEADER_HEIGHT = 80
+  
+  // Map psychological phases to node types
+  const phaseToNodeType: Record<string, string> = {
+    'challenge': 'challenge',
+    'action': 'action', 
+    'feedback': 'reward',  // feedback maps to reward visually
+  }
+  
+  // Timeframe order for horizontal positioning (left to right)
+  const timeframeOrder = ['micro', 'core', 'session', 'meta', 'progression']
+  
+  // Sort loops by timeframe
+  const sortedLoops = [...parsed.loops].sort((a, b) => {
+    const aTimeframe = a.timeframe || a.type
+    const bTimeframe = b.timeframe || b.type
+    return timeframeOrder.indexOf(aTimeframe) - timeframeOrder.indexOf(bTimeframe)
+  })
+  
+  // Track group positions for inter-group edges
+  const groupPositions: Record<string, { x: number; y: number; width: number; height: number }> = {}
+  
+  // Process each loop and create GROUPS HORIZONTALLY
+  let currentGroupX = 50
+  
+  for (const loop of sortedLoops) {
+    const loopNodes = loop.nodes || []
+    const timeframe = loop.timeframe || loop.type
+    const durationUnit = (loop.duration as { unit?: string })?.unit || 'seconds'
+    
+    // Sort nodes by psychological order
+    const phaseOrder = ['challenge', 'action', 'feedback']
+    const sortedNodes = [...loopNodes].sort((a: any, b: any) => {
+      const aIdx = phaseOrder.indexOf(a.psychPhase || 'action')
+      const bIdx = phaseOrder.indexOf(b.psychPhase || 'action')
+      return aIdx - bIdx
+    })
+    
+    // Calculate group height based on number of nodes
+    const nodeCount = Math.max(sortedNodes.length, 1)
+    const groupHeight = GROUP_HEADER_HEIGHT + GROUP_PADDING * 2 + nodeCount * NODE_HEIGHT + (nodeCount - 1) * NODE_GAP_Y
+    
+    // Create a group/container node
+    const groupId = `group-${loop.id}`
+    groupPositions[loop.id] = { x: currentGroupX, y: 50, width: GROUP_WIDTH, height: groupHeight }
+    
     nodeActions.push({
       type: 'ADD_NODE',
       payload: {
-        id: loop.id,
-        label: loop.name,
-        description: loop.description,
-        nodeType: loop.type === 'core' ? 'challenge' : loop.type === 'session' ? 'action' : 'reward',
-        position: { x: 200, y: yOffset },
+        id: groupId,
+        label: `${loop.name}`,
+        description: `${loop.description}\n\n⏱️ ${loop.duration?.typical || '?'} ${durationUnit}`,
+        nodeType: 'group',
+        position: { x: currentGroupX, y: 50 },
+        timeframe,
         loopData: {
           type: loop.type,
+          timeframe,
           duration: loop.duration,
           playerExperience: loop.playerExperience,
           satisfactionPeak: loop.satisfactionPeak,
         },
       },
-      confidence: 0.8,
-      reasoning: `${loop.type} loop: ${loop.playerExperience}`,
+      confidence: 0.85,
+      reasoning: `${timeframe.toUpperCase()} LOOP: ${loop.name}`,
     })
-    yOffset += 150
+    
+    // Create nodes VERTICALLY within the group
+    const nodeIds: string[] = []
+    const nodeCenterX = currentGroupX + GROUP_WIDTH / 2 - NODE_WIDTH / 2
+    let nodeY = 50 + GROUP_HEADER_HEIGHT + GROUP_PADDING
+    
+    for (const node of sortedNodes) {
+      const nodeId = `${loop.id}-${node.name?.replace(/\s+/g, '-').toLowerCase() || uuidv4()}`
+      const psychPhase = node.psychPhase || 'action'
+      const nodeType = phaseToNodeType[psychPhase] || 'action'
+      
+      nodeActions.push({
+        type: 'ADD_NODE',
+        payload: {
+          id: nodeId,
+          label: node.name,
+          description: node.description,
+          nodeType,
+          position: { x: nodeCenterX, y: nodeY },
+          parentId: groupId,
+          psychPhase,
+          timeframe,
+        },
+        confidence: 0.85,
+        reasoning: `${psychPhase.toUpperCase()}: ${node.description?.slice(0, 40) || node.name}`,
+      })
+      
+      nodeIds.push(nodeId)
+      nodeY += NODE_HEIGHT + NODE_GAP_Y
+    }
+    
+    // Create VERTICAL edges connecting nodes (challenge → action → feedback)
+    for (let i = 0; i < nodeIds.length - 1; i++) {
+      const sourcePhase = sortedNodes[i]?.psychPhase || 'challenge'
+      const targetPhase = sortedNodes[i + 1]?.psychPhase || 'action'
+      
+      nodeActions.push({
+        type: 'ADD_EDGE',
+        payload: {
+          id: `edge-${nodeIds[i]}-${nodeIds[i + 1]}`,
+          source: nodeIds[i],
+          target: nodeIds[i + 1],
+          label: '', // Clean look - no label for vertical flow
+          sourceHandle: 'bottom',
+          targetHandle: 'top',
+        },
+        confidence: 0.9,
+        reasoning: `${sourcePhase} → ${targetPhase}`,
+      })
+    }
+    
+    // Loop closure edge (feedback → challenge, wrapping around)
+    if (nodeIds.length >= 2) {
+      nodeActions.push({
+        type: 'ADD_EDGE',
+        payload: {
+          id: `edge-loop-${nodeIds[nodeIds.length - 1]}-${nodeIds[0]}`,
+          source: nodeIds[nodeIds.length - 1],
+          target: nodeIds[0],
+          label: '↺',
+          style: 'dashed',
+          sourceHandle: 'right-out',
+          targetHandle: 'right-in',
+        },
+        confidence: 0.8,
+        reasoning: 'Loop closure: feeds back to start',
+      })
+    }
+    
+    // Move to next group position (horizontal)
+    currentGroupX += GROUP_WIDTH + GROUP_GAP
   }
-
-  // Also create connections between loops (core -> session -> meta)
-  const loopTypes = ['core', 'session', 'progression', 'meta']
-  const sortedLoops = [...parsed.loops].sort((a, b) =>
-    loopTypes.indexOf(a.type) - loopTypes.indexOf(b.type)
-  )
-
+  
+  // Connect groups HORIZONTALLY (micro → core → session → meta)
   for (let i = 0; i < sortedLoops.length - 1; i++) {
+    const sourceLoop = sortedLoops[i]
+    const targetLoop = sortedLoops[i + 1]
+    const sourceTimeframe = sourceLoop.timeframe || sourceLoop.type
+    const targetTimeframe = targetLoop.timeframe || targetLoop.type
+    
     nodeActions.push({
       type: 'ADD_EDGE',
       payload: {
-        id: `edge-${sortedLoops[i].id}-${sortedLoops[i + 1].id}`,
-        source: sortedLoops[i].id,
-        target: sortedLoops[i + 1].id,
-        label: 'feeds into',
+        id: `edge-group-${sourceLoop.id}-${targetLoop.id}`,
+        source: `group-${sourceLoop.id}`,
+        target: `group-${targetLoop.id}`,
+        label: '→', // Clean arrow
+        style: 'thick',
+        animated: true,
       },
       confidence: 0.8,
-      reasoning: `${sortedLoops[i].type} loop feeds into ${sortedLoops[i + 1].type} loop`,
+      reasoning: `${sourceTimeframe} feeds into ${targetTimeframe}`,
     })
   }
 

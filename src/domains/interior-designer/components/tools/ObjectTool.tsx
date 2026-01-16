@@ -30,9 +30,9 @@ export const ObjectTool: React.FC = () => {
     // Find the first intersection that is visible and NOT the ghost object or cursor helpers
     // We can assume surfaces are meshes.
     const groundHit = intersects.find(hit => {
-      // Simple heuristic: ignore if it's the ghost object (which might be in the scene?) 
+      // Simple heuristic: ignore if it's the ghost object (which might be in the scene?)
       // Our ghost object is inside <group> in this component.
-      // It's safer to rely on the fact that the ghost is likely transparent or transient? 
+      // It's safer to rely on the fact that the ghost is likely transparent or transient?
       // Actually, raycaster can hit the ghost if we aren't careful.
       // But since the Ghost is in THIS component, and this component is a child of the scene...
       // We probably get self-intersection.

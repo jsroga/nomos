@@ -1,6 +1,6 @@
 /**
  * World Simulator Agent Prompt
- * 
+ *
  * Simulates faction reactions to events based on world rules.
  */
 

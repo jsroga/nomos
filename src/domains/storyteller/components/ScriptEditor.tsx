@@ -33,7 +33,7 @@ export const ScriptEditor: React.FC<ScriptEditorProps> = ({
     if (editorRef.current) {
       const currentText = editorRef.current.innerText
       // Only update if content changed externally (not from user typing)
-      // Relaxed check: Allow update if content is longer (AI added text) 
+      // Relaxed check: Allow update if content is longer (AI added text)
       // or if we haven't initialized yet.
       if (
         !isInitializedRef.current ||

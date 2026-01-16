@@ -18,12 +18,7 @@ import {
   TrendingUp,
   Edit2,
 } from 'lucide-react'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useConfirmDialog } from '@/components/ui/confirm-dialog'
 
 // Character metrics based on Affective Circumplex + Self-Determination Theory
@@ -74,88 +69,88 @@ const METRIC_CONFIG: {
   highLabel: string
   isValence?: boolean // Special handling for -100 to +100 scale
 }[] = [
-    {
-      key: 'valence',
-      label: 'Mood',
-      icon: Heart,
-      color: 'text-pink-400',
-      lowLabel: 'Negative',
-      highLabel: 'Positive',
-      isValence: true,
-    },
-    {
-      key: 'arousal',
-      label: 'Energy',
-      icon: Zap,
-      color: 'text-yellow-400',
-      lowLabel: 'Calm',
-      highLabel: 'Activated',
-    },
-    {
-      key: 'autonomy',
-      label: 'Freedom',
-      icon: Compass,
-      color: 'text-blue-400',
-      lowLabel: 'Constrained',
-      highLabel: 'Free',
-    },
-    {
-      key: 'competence',
-      label: 'Confidence',
-      icon: Target,
-      color: 'text-green-400',
-      lowLabel: 'Doubt',
-      highLabel: 'Capable',
-    },
-    {
-      key: 'relatedness',
-      label: 'Connection',
-      icon: Users,
-      color: 'text-cyan-400',
-      lowLabel: 'Isolated',
-      highLabel: 'Connected',
-    },
-    {
-      key: 'cognitiveClarity',
-      label: 'Clarity',
-      icon: Brain,
-      color: 'text-purple-400',
-      lowLabel: 'Confused',
-      highLabel: 'Sharp',
-    },
-    {
-      key: 'perceivedStakes',
-      label: 'Tension',
-      icon: Flame,
-      color: 'text-orange-400',
-      lowLabel: 'Low',
-      highLabel: 'Critical',
-    },
-    {
-      key: 'socialSafety',
-      label: 'Security',
-      icon: ShieldCheck,
-      color: 'text-teal-400',
-      lowLabel: 'Threatened',
-      highLabel: 'Safe',
-    },
-    {
-      key: 'moralAlignment',
-      label: 'Integrity',
-      icon: Scale,
-      color: 'text-indigo-400',
-      lowLabel: 'Compromised',
-      highLabel: 'Aligned',
-    },
-    {
-      key: 'transformation',
-      label: 'Arc Progress',
-      icon: TrendingUp,
-      color: 'text-emerald-400',
-      lowLabel: 'Start',
-      highLabel: 'Complete',
-    },
-  ]
+  {
+    key: 'valence',
+    label: 'Mood',
+    icon: Heart,
+    color: 'text-pink-400',
+    lowLabel: 'Negative',
+    highLabel: 'Positive',
+    isValence: true,
+  },
+  {
+    key: 'arousal',
+    label: 'Energy',
+    icon: Zap,
+    color: 'text-yellow-400',
+    lowLabel: 'Calm',
+    highLabel: 'Activated',
+  },
+  {
+    key: 'autonomy',
+    label: 'Freedom',
+    icon: Compass,
+    color: 'text-blue-400',
+    lowLabel: 'Constrained',
+    highLabel: 'Free',
+  },
+  {
+    key: 'competence',
+    label: 'Confidence',
+    icon: Target,
+    color: 'text-green-400',
+    lowLabel: 'Doubt',
+    highLabel: 'Capable',
+  },
+  {
+    key: 'relatedness',
+    label: 'Connection',
+    icon: Users,
+    color: 'text-cyan-400',
+    lowLabel: 'Isolated',
+    highLabel: 'Connected',
+  },
+  {
+    key: 'cognitiveClarity',
+    label: 'Clarity',
+    icon: Brain,
+    color: 'text-purple-400',
+    lowLabel: 'Confused',
+    highLabel: 'Sharp',
+  },
+  {
+    key: 'perceivedStakes',
+    label: 'Tension',
+    icon: Flame,
+    color: 'text-orange-400',
+    lowLabel: 'Low',
+    highLabel: 'Critical',
+  },
+  {
+    key: 'socialSafety',
+    label: 'Security',
+    icon: ShieldCheck,
+    color: 'text-teal-400',
+    lowLabel: 'Threatened',
+    highLabel: 'Safe',
+  },
+  {
+    key: 'moralAlignment',
+    label: 'Integrity',
+    icon: Scale,
+    color: 'text-indigo-400',
+    lowLabel: 'Compromised',
+    highLabel: 'Aligned',
+  },
+  {
+    key: 'transformation',
+    label: 'Arc Progress',
+    icon: TrendingUp,
+    color: 'text-emerald-400',
+    lowLabel: 'Start',
+    highLabel: 'Complete',
+  },
+]
 
 interface CharacterPanelProps {
   characters: Character[]
@@ -252,7 +247,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
               character={getCharacterWithSnapshot(char)}
               onUpdate={onUpdate}
               onDelete={onDelete}
-              onEdit={(character) => setEditingCharacter(character)}
+              onEdit={character => setEditingCharacter(character)}
             />
           ))}
           {characters.length === 0 && (
@@ -279,32 +274,36 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
         <CharacterCreationDialog
           isOpen={!!editingCharacter}
           onClose={() => setEditingCharacter(null)}
-          onCreate={() => { }} // Not used in edit mode
+          onCreate={() => {}} // Not used in edit mode
           onUpdate={(id, updates) => {
             if (onUpdate) onUpdate(id, updates)
             setEditingCharacter(null)
           }}
           projectId={projectId}
           mode="edit"
-          initialData={editingCharacter ? {
-            id: editingCharacter.id,
-            name: editingCharacter.name,
-            role: editingCharacter.role,
-            gender: editingCharacter.gender,
-            mbti: editingCharacter.mbti,
-            description: editingCharacter.characterPrompt,
-            portraitUrl: (editingCharacter as any).portraitUrl,
-            // Map metrics from character state
-            valence: (editingCharacter as any).valence,
-            arousal: (editingCharacter as any).arousal,
-            autonomy: (editingCharacter as any).autonomy,
-            competence: (editingCharacter as any).competence,
-            relatedness: (editingCharacter as any).relatedness,
-            cognitiveClarity: (editingCharacter as any).cognitiveClarity,
-            perceivedStakes: (editingCharacter as any).perceivedStakes,
-            socialSafety: (editingCharacter as any).socialSafety,
-            moralAlignment: (editingCharacter as any).moralAlignment,
-          } : undefined}
+          initialData={
+            editingCharacter
+              ? {
+                  id: editingCharacter.id,
+                  name: editingCharacter.name,
+                  role: editingCharacter.role,
+                  gender: editingCharacter.gender,
+                  mbti: editingCharacter.mbti,
+                  description: editingCharacter.characterPrompt,
+                  portraitUrl: (editingCharacter as any).portraitUrl,
+                  // Map metrics from character state
+                  valence: (editingCharacter as any).valence,
+                  arousal: (editingCharacter as any).arousal,
+                  autonomy: (editingCharacter as any).autonomy,
+                  competence: (editingCharacter as any).competence,
+                  relatedness: (editingCharacter as any).relatedness,
+                  cognitiveClarity: (editingCharacter as any).cognitiveClarity,
+                  perceivedStakes: (editingCharacter as any).perceivedStakes,
+                  socialSafety: (editingCharacter as any).socialSafety,
+                  moralAlignment: (editingCharacter as any).moralAlignment,
+                }
+              : undefined
+          }
         />
       </div>
     </TooltipProvider>
@@ -359,7 +358,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onUpdate, onDe
               size="sm"
               variant="ghost"
               className="h-6 w-6 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
-              onClick={(e) => {
+              onClick={e => {
                 e.stopPropagation()
                 onEdit(character)
               }}
@@ -372,7 +371,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onUpdate, onDe
               size="sm"
               variant="ghost"
               className="h-6 w-6 p-0 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-              onClick={(e) => {
+              onClick={e => {
                 e.stopPropagation()
                 handleDelete()
               }}
@@ -390,7 +389,6 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onUpdate, onDe
 
       {isExpanded && (
         <div className="space-y-3 pt-2 border-t border-border/50">
-
           {/* Character Metrics Grid */}
           <div className="space-y-2">
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-2">
@@ -409,9 +407,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onUpdate, onDe
                 : value
 
               // Display value (show actual value for clarity)
-              const displayValue = isValenceMetric
-                ? `${value > 0 ? '+' : ''}${value}`
-                : `${value}%`
+              const displayValue = isValenceMetric ? `${value > 0 ? '+' : ''}${value}` : `${value}%`
 
               const Icon = metric.icon
 
@@ -500,8 +496,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onUpdate, onDe
             </div>
           </div>
         </div>
-      )
-      }
-    </div >
+      )}
+    </div>
   )
 }

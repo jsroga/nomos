@@ -1,6 +1,6 @@
 /**
  * Storyteller Golden Dataset
- * 
+ *
  * Test cases for evaluating the storyteller agent's behavior.
  * Derived from e2e/test-cases.ts with enhanced structure for LangSmith.
  */
@@ -24,7 +24,7 @@ const examples: StorytellerExample[] = [
   {
     id: 'del-01',
     input: {
-      message: "let's start working on this episode",
+      message: 'let\'s start working on this episode',
       phase: 'premise',
     },
     expected: {
@@ -168,7 +168,7 @@ const examples: StorytellerExample[] = [
   {
     id: 'ph-01',
     input: {
-      message: "let's move to the writing phase",
+      message: 'let\'s move to the writing phase',
       phase: 'structure',
     },
     expected: {
@@ -302,4 +302,3 @@ export const STORYTELLER_DATASET: DatasetConfig = {
 }
 
 export { examples as STORYTELLER_EXAMPLES }
-

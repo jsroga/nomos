@@ -23,18 +23,23 @@ export const characterPsychologyAgent = async (
 
   // Load prompt from Hub
   const loadedPrompt = await loadPromptCached('characterPsychology')
-  const promptMessages = (loadedPrompt.prompt as any).promptMessages || (loadedPrompt.prompt as any).messages || []
-  const systemMessage = promptMessages.find((m: any) => m.lc_id?.[3] === 'SystemMessagePromptTemplate' || m._type === 'system')
-  const systemTemplate = systemMessage?.prompt?.template || systemMessage?.template || CHARACTER_PSYCHOLOGY_PROMPT
+  const promptMessages =
+    (loadedPrompt.prompt as any).promptMessages || (loadedPrompt.prompt as any).messages || []
+  const systemMessage = promptMessages.find(
+    (m: any) => m.lc_id?.[3] === 'SystemMessagePromptTemplate' || m._type === 'system'
+  )
+  const systemTemplate =
+    systemMessage?.prompt?.template || systemMessage?.template || CHARACTER_PSYCHOLOGY_PROMPT
 
   // Combine system content into single message (required for Claude)
-  const combinedSystem = [context.systemPrompt, context.stateContext, systemTemplate].join('\n\n---\n\n')
-  const conversationMessages = getSafeMessageHistory(state.messages, 5).filter(m => m._getType() !== 'system')
+  const combinedSystem = [context.systemPrompt, context.stateContext, systemTemplate].join(
+    '\n\n---\n\n'
+  )
+  const conversationMessages = getSafeMessageHistory(state.messages, 5).filter(
+    m => m._getType() !== 'system'
+  )
 
-  const messages = [
-    new SystemMessage(combinedSystem),
-    ...conversationMessages,
-  ]
+  const messages = [new SystemMessage(combinedSystem), ...conversationMessages]
 
   try {
     const response = await model.invoke(messages)
@@ -71,9 +76,9 @@ export const characterPsychologyAgent = async (
       name: 'CharacterPsychology',
     })
 
-      // Attach actions for UI
-      ; (namedMessage as any).actions = actions
-      ; (namedMessage as any).decision = decision || lastAction
+    // Attach actions for UI
+    ;(namedMessage as any).actions = actions
+    ;(namedMessage as any).decision = decision || lastAction
 
     // Apply safe actions directly to state
     let updatedCharacters = [...state.characters]
@@ -186,7 +191,7 @@ export const characterPsychologyAgent = async (
       lastAction,
       characters:
         updatedCharacters.length !== state.characters.length ||
-          JSON.stringify(updatedCharacters) !== JSON.stringify(state.characters)
+        JSON.stringify(updatedCharacters) !== JSON.stringify(state.characters)
           ? updatedCharacters
           : undefined,
     }

@@ -1,6 +1,6 @@
 /**
  * Loop Creator Golden Dataset
- * 
+ *
  * Test cases for evaluating the game loop creator agent's behavior.
  */
 
@@ -225,4 +225,3 @@ export const LOOP_CREATOR_DATASET: DatasetConfig = {
 }
 
 export { examples as LOOP_CREATOR_EXAMPLES }
-

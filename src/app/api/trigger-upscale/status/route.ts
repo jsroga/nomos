@@ -38,10 +38,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Run not found' }, { status: 404 })
     }
 
-    return NextResponse.json(
-      { error: error.message || 'Failed to get status' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: error.message || 'Failed to get status' }, { status: 500 })
   }
 }
-

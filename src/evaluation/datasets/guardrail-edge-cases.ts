@@ -1,6 +1,6 @@
 /**
  * Guardrail Edge Cases Dataset
- * 
+ *
  * Test cases specifically designed to test guardrail behavior:
  * - Input validation
  * - Output safety
@@ -298,4 +298,3 @@ export const GUARDRAIL_EDGE_CASES_DATASET: DatasetConfig = {
 }
 
 export { examples as GUARDRAIL_EXAMPLES }
-

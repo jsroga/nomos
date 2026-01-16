@@ -10,18 +10,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Development Mock User
     if (process.env.NODE_ENV === 'development') {
-        console.log("AuthProvider: Dev mode detected, mocking user 'jsroga'")
-        setUser({
-            id: 'dev-mock-user-id',
-            email: 'jsroga@example.com',
-            user_metadata: {
-                user_name: 'jsroga',
-                full_name: 'Jacek Sroga (Dev)'
-            },
-            aud: 'authenticated',
-            role: 'authenticated'
-        })
-        return
+      console.log('AuthProvider: Dev mode detected, mocking user \'jsroga\'')
+      setUser({
+        id: 'dev-mock-user-id',
+        email: 'jsroga@example.com',
+        user_metadata: {
+          user_name: 'jsroga',
+          full_name: 'Jacek Sroga (Dev)',
+        },
+        aud: 'authenticated',
+        role: 'authenticated',
+      })
+      return
     }
 
     const supabase = createClientComponentClient()

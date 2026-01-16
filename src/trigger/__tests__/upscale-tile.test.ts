@@ -85,7 +85,11 @@ async function testProviderConfigs() {
     provider: 'stability' as const,
     providerConfig: { apiKey: 'stability-key', upscaleMode: 'creative' as const },
   }
-  if (!['conservative', 'creative'].includes(stabilityConfig.providerConfig.upscaleMode || 'conservative')) {
+  if (
+    !['conservative', 'creative'].includes(
+      stabilityConfig.providerConfig.upscaleMode || 'conservative'
+    )
+  ) {
     throw new Error('Stability upscaleMode must be conservative or creative')
   }
   console.log('✓ Stability config valid')
@@ -138,4 +142,3 @@ async function runTests() {
 }
 
 runTests()
-

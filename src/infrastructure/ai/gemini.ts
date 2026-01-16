@@ -7,7 +7,7 @@ export class GeminiAIModel implements AIModel {
   id = 'gemini'
   name = 'Nano Banana Pro (Gemini 3)'
   description =
-    "Uses Google's state-of-the-art Gemini 3 Pro Image model for high-fidelity generation."
+    'Uses Google\'s state-of-the-art Gemini 3 Pro Image model for high-fidelity generation.'
 
   validateConfig(config: AIModelConfig): boolean {
     return !!config.apiKey

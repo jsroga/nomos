@@ -10,7 +10,7 @@ if (!supabaseUrl || !supabaseServiceKey) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: { autoRefreshToken: false, persistSession: false }
+  auth: { autoRefreshToken: false, persistSession: false },
 })
 
 const targetEmail = 'jacek.sroga.itc@gmail.com'
@@ -18,14 +18,14 @@ const targetEmail = 'jacek.sroga.itc@gmail.com'
 async function migrate() {
   // 1. Find user by email
   const { data: users, error: userError } = await supabase.auth.admin.listUsers()
-  
+
   if (userError) {
     console.error('Error fetching users:', userError)
     process.exit(1)
   }
 
   const targetUser = users.users.find(u => u.email === targetEmail)
-  
+
   if (!targetUser) {
     console.error(`User with email ${targetEmail} not found`)
     process.exit(1)
@@ -48,7 +48,7 @@ async function migrate() {
   for (const project of projects) {
     if (!project.user_id) {
       console.log(`Updating project "${project.name}" (${project.id})...`)
-      
+
       const { error: updateError } = await supabase
         .from('projects')
         .update({ user_id: targetUser.id })
@@ -65,13 +65,11 @@ async function migrate() {
   }
 
   // 3. Update all assets without user_id
-  const { data: assets, error: assetsError } = await supabase
-    .from('assets')
-    .select('id, user_id')
+  const { data: assets, error: assetsError } = await supabase.from('assets').select('id, user_id')
 
   if (!assetsError && assets) {
     console.log(`\nFound ${assets.length} assets`)
-    
+
     for (const asset of assets) {
       if (!asset.user_id) {
         const { error: updateError } = await supabase
@@ -92,4 +90,3 @@ async function migrate() {
 }
 
 migrate()
-

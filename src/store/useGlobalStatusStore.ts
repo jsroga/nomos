@@ -1,7 +1,16 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export type OperationType = 'world-gen' | '3d-gen' | '3d-remesh' | 'story-agent' | 'portrait-gen' | 'retexture' | 'text-to-3d' | 'upload'
+export type OperationType =
+  | 'world-gen'
+  | '3d-gen'
+  | '3d-remesh'
+  | 'story-agent'
+  | 'portrait-gen'
+  | 'retexture'
+  | 'text-to-3d'
+  | 'upload'
+  | 'material-gen'
 
 export interface AsyncOperation {
   id: string
@@ -49,7 +58,9 @@ export const useGlobalStatusStore = create<GlobalStatusState>()(
 
       updateOperation: (id, updates) =>
         set(state => {
-          const newOperations = state.operations.map(op => (op.id === id ? { ...op, ...updates } : op))
+          const newOperations = state.operations.map(op =>
+            op.id === id ? { ...op, ...updates } : op
+          )
           console.log('🔄 [GlobalStatusStore] updateOperation:', newOperations)
           return { operations: newOperations }
         }),
@@ -61,7 +72,7 @@ export const useGlobalStatusStore = create<GlobalStatusState>()(
       name: 'global-status-storage',
       partialize: state => ({
         isExpanded: state.isExpanded,
-        operations: state.operations // Persist operations for page refresh
+        operations: state.operations, // Persist operations for page refresh
       }),
     }
   )
@@ -74,4 +85,3 @@ if (typeof window !== 'undefined') {
     console.log('🔄 [GlobalStatusStore] Initial state:', initialState.operations)
   }, 0)
 }
-

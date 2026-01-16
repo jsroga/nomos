@@ -1,6 +1,8 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { cn } from '@/lib/utils'
+import { TOUR_STEP_IDS } from '@/lib/tour-constants'
 import { useSearchParams, useRouter, useParams } from 'next/navigation'
 import { CorkBoard } from '@/domains/storyteller/components/CorkBoard'
 import { CharacterPanel } from '@/domains/storyteller/components/CharacterPanel'
@@ -12,58 +14,83 @@ import {
   ChatInterface,
   ChatInput,
   SmartQuickActions,
-  createQuickActions
+  createQuickActions,
 } from '@/domains/chat/components'
 import { useChatStream } from '@/domains/chat/hooks/useChatStream'
 import { Message, AgentConfigMap } from '@/domains/chat/types'
+import {
+  getStorytellerMentionProviders,
+  buildStorytellerProjectContext,
+} from '@/domains/storyteller/mentions/providers'
 // Import action UI components to pass to ChatInterface
-import { ActionCommitted } from '@/domains/storyteller/components/ActionToast'
+import {
+  ActionCommitted,
+  ActionToastContainer,
+  ActionSuggestion,
+} from '@/domains/storyteller/components/ActionToast'
 import QuestionCard from '@/domains/storyteller/components/QuestionCard'
-import { Bot, User, Sparkles, Brain, Lightbulb, Scale, Eye, Pen } from 'lucide-react'
+import { ActionApprovalModal } from '@/domains/storyteller/components/ActionApprovalModal'
+import { Bot, User, Sparkles, Brain, Lightbulb, Scale, Eye, Pen, Loader2 } from 'lucide-react'
 
 // Define Storyteller Agent Config - Minimalist
 const STORYTELLER_AGENT_CONFIG: AgentConfigMap = {
   Showrunner: {
     color: 'text-blue-400',
+    bgColor: 'bg-blue-500/10 border-blue-500/30',
     icon: <Brain className="w-4 h-4" />,
   },
   PlotArchitect: {
     color: 'text-blue-400/80',
+    bgColor: 'bg-blue-400/10 border-blue-400/20',
     icon: <Lightbulb className="w-4 h-4" />,
   },
   CharacterPsychology: {
     color: 'text-purple-400/80',
+    bgColor: 'bg-purple-500/10 border-purple-500/30',
     icon: <Brain className="w-4 h-4" />,
   },
   ConsequenceTracker: {
     color: 'text-green-400/80',
+    bgColor: 'bg-green-500/10 border-green-500/30',
     icon: <Bot className="w-4 h-4" />,
   },
   DevilsAdvocate: {
     color: 'text-red-400/80',
+    bgColor: 'bg-red-500/10 border-red-500/30',
     icon: <Scale className="w-4 h-4" />,
   },
   VisualMoment: {
     color: 'text-cyan-400/80',
+    bgColor: 'bg-cyan-500/10 border-cyan-500/30',
     icon: <Eye className="w-4 h-4" />,
   },
   Writer: {
     color: 'text-orange-400/80',
+    bgColor: 'bg-orange-500/10 border-orange-500/30',
     icon: <Pen className="w-4 h-4" />,
   },
   User: {
     color: 'text-primary',
+    bgColor: 'bg-primary/5 border-primary/20',
     icon: <User className="w-4 h-4" />,
+  },
+  // Fallback for agents not explicitly defined
+  _fallback: {
+    color: 'text-muted-foreground',
+    bgColor: 'bg-muted/10 border-border/20',
+    icon: <Bot className="w-3.5 h-3.5" />,
   },
 }
 
-import { StreamingContent, StreamingSection } from '@/domains/storyteller/components/StreamingContent'
+import {
+  StreamingContent,
+  StreamingSection,
+} from '@/domains/storyteller/components/StreamingContent'
 import { EpisodeManager } from '@/domains/storyteller/components/EpisodeManager'
 import { MasterPromptEditor } from '@/domains/storyteller/components/MasterPromptEditor'
 import { ScriptEditor } from '@/domains/storyteller/components/ScriptEditor'
 import { Timeline } from '@/domains/storyteller/components/Timeline'
 import { PendingActions } from '@/domains/storyteller/components/PendingActions'
-import { ActionToastContainer } from '@/domains/storyteller/components/ActionToast'
 import { StoryPlanBoard } from '@/domains/storyteller/components/StoryPlanBoard'
 import { WorldBiblePanel } from '@/domains/storyteller/components/WorldBiblePanel'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
@@ -91,11 +118,7 @@ import {
   Palette,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  DomainSidebar,
-  SidebarSection,
-  SidebarEmptyState,
-} from '@/components/ui/domain-sidebar'
+import { DomainSidebar, SidebarSection, SidebarEmptyState } from '@/components/ui/domain-sidebar'
 import { regenerateText } from '@/domains/storyteller/services/script-operations'
 import { StoryPlan, StorySequence } from '@/domains/storyteller/schemas/agent-schemas'
 
@@ -103,7 +126,6 @@ import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
 import { useConfirmDialog } from '@/components/ui/confirm-dialog'
 import { LocalStorageKeys } from '@/constants/localStorage'
 import { moodboardGenerationService } from '@/domains/storyteller/services/MoodboardGenerationService'
-import { TOUR_STEP_IDS } from '@/lib/tour-constants'
 
 const MAX_ROUNDS = 15 // Hard stop after this many rounds
 
@@ -129,7 +151,10 @@ function getModelConfigFromStorage() {
   }
 
   return {
-    provider: (provider === 'anthropic' || provider === 'openai' || provider === 'gemini') ? provider : 'openai' as const,
+    provider:
+      provider === 'anthropic' || provider === 'openai' || provider === 'gemini'
+        ? provider
+        : ('openai' as const),
     anthropicApiKey: anthropicApiKey || undefined,
     geminiApiKey: geminiApiKey || undefined,
     geminiModelId: geminiModelId,
@@ -147,6 +172,14 @@ interface Beat {
 }
 
 export default function StorytellerPage() {
+  // DEBUG: Track component mount/unmount
+  useEffect(() => {
+    console.log('🔵 [DEBUG] StorytellerPage MOUNTED')
+    return () => {
+      console.log('🔴 [DEBUG] StorytellerPage UNMOUNTED')
+    }
+  }, [])
+
   // Load project from URL
   useProjectFromUrl()
   const searchParams = useSearchParams()
@@ -186,7 +219,7 @@ export default function StorytellerPage() {
     }
   }, [episodeParam])
 
-  // Note: We no longer auto-redirect to bible=open. 
+  // Note: We no longer auto-redirect to bible=open.
   // The component will naturally show Bible as a fallback when no episode is selected.
   // This prevents the flash where Bible shows then gets replaced by episode.
 
@@ -239,7 +272,9 @@ export default function StorytellerPage() {
   // -- RESTORED STATE for Legacy UI compatibility --
   const [input, setInput] = useState('')
   const [pendingQuestions, setPendingQuestions] = useState<QuestionSession[]>([])
-  const [answeredQuestions, setAnsweredQuestions] = useState<{ question: string; answer: string }[]>([])
+  const [answeredQuestions, setAnsweredQuestions] = useState<
+    { question: string; answer: string }[]
+  >([])
   const [actionHistory, setActionHistory] = useState<ActionHistoryEntry[]>([])
   const [showToasts, setShowToasts] = useState<ActionHistoryEntry[]>([])
   const [generatingSection, setGeneratingSection] = useState<string | null>(null)
@@ -248,8 +283,8 @@ export default function StorytellerPage() {
   const pendingActionsRef = useRef<number>(0)
 
   // Polyfills
-  const useEnhancedStreaming = true;
-  const useStreaming = true;
+  const useEnhancedStreaming = true
+  const useStreaming = true
 
   const addOperation = useGlobalStatusStore(state => state.addOperation)
   const removeOperation = useGlobalStatusStore(state => state.removeOperation)
@@ -274,7 +309,7 @@ export default function StorytellerPage() {
           beatType: b.beat_type || b.beatType || 'default',
           status: b.status || 'proposed',
           content: b.content || null,
-          imagePrompt: b.image_prompt || b.imagePrompt || null
+          imagePrompt: b.image_prompt || b.imagePrompt || null,
         }))
         setBeats(mappedBeats)
       }
@@ -318,29 +353,58 @@ export default function StorytellerPage() {
           ) {
             if (data.result.seriesBible) {
               const bible = data.result.seriesBible
+              console.log(
+                '📚 [executeAction] Bible updated, applying to state:',
+                Object.keys(bible)
+              )
+
               setStoryDecisions(prev => ({
                 ...prev,
                 ...(bible.userDecisions || {}),
               }))
 
-              if (bible.storyPlan) {
-                setStoryPlan(bible.storyPlan)
-              } else {
-                setStoryPlan(prev => ({
-                  ...prev,
-                  ...bible
-                }))
-              }
+              // Update storyPlan with all relevant fields from bible
+              // Bible can have: storyPlan (nested), or fields at top level (soundtracks, worldRules, etc.)
+              setStoryPlan(prev => {
+                const updated = { ...prev }
 
-              if (currentProject) {
-                useWorldStore.getState().setCurrentProject({
-                  ...currentProject,
-                  series_bible: bible.storyPlan || {
-                    ...(currentProject.series_bible as any),
-                    ...bible
+                // If bible has storyPlan nested, merge it
+                if (bible.storyPlan) {
+                  Object.assign(updated, bible.storyPlan)
+                }
+
+                // Also merge top-level fields that belong to storyPlan
+                const planFields = [
+                  'soundtracks',
+                  'worldRules',
+                  'factions',
+                  'keyCharacters',
+                  'plotTwists',
+                  'inspirations',
+                  'worldDescription',
+                  'genre',
+                  'tone',
+                  'sequences',
+                  'seasonStructure',
+                ]
+                for (const field of planFields) {
+                  if (bible[field] !== undefined) {
+                    ; (updated as any)[field] = bible[field]
                   }
-                })
-              }
+                }
+
+                console.log(
+                  '📚 [executeAction] StoryPlan updated fields:',
+                  planFields.filter(f => bible[f] !== undefined)
+                )
+
+                return updated
+              })
+              // Note: We intentionally don't call setCurrentProject here
+              // The data is already saved to DB via the API call, and local state
+              // (storyPlan, storyDecisions) is already updated above.
+              // Calling setCurrentProject would trigger cascading useEffects that
+              // could reset chat state.
             }
           } else if (data.result?.type === 'script_updated') {
             if (data.result.script) {
@@ -350,11 +414,14 @@ export default function StorytellerPage() {
             }
           } else if (data.result?.type === 'episode_updated') {
             if (data.result.storyPlan) {
-              setStoryPlan(prev => ({
-                ...prev,
-                ...data.result.storyPlan,
-                premise: data.result.storyPlan.premise || (prev as any)?.premise
-              }) as any)
+              setStoryPlan(
+                prev =>
+                  ({
+                    ...prev,
+                    ...data.result.storyPlan,
+                    premise: data.result.storyPlan.premise || (prev as any)?.premise,
+                  }) as any
+              )
             }
           }
         }
@@ -380,30 +447,49 @@ export default function StorytellerPage() {
     isTokenStreaming,
     isAwaitingInput,
     setIsAwaitingInput,
-    abortControllerRef
+    abortControllerRef,
+    updateActionStatus,
+    wasStreamingOnLoad,
+    dismissInterruptedWarning,
   } = useChatStream({
-    initialMessages: [{
-      sender: 'Showrunner',
-      content: 'Welcome to the Writers Room! Select an episode to begin, then tell me about the story you want to create.',
-      type: 'ai',
-    }],
-    onAction: async (action) => {
-      await executeAction(action as any);
+    // Use project + episode as persist key
+    persistKey: currentProject?.id
+      ? `storyteller-${currentProject.id}-${currentEpisodeId || 'global'}`
+      : undefined,
+    initialMessages: [
+      {
+        sender: 'Showrunner',
+        content:
+          'Welcome to the Writers Room! Select an episode to begin, then tell me about the story you want to create.',
+        type: 'ai',
+      },
+    ],
+    onAction: async action => {
+      // Actions are now rendered inline via ActionComponent using the ID from AgentLog
+      // No need to store separately - just let them pass through
+      console.log('[Action received]', action.type)
     },
-    onQuestion: (questionSession) => {
+    onQuestion: questionSession => {
       setPendingQuestions(prev => {
-        const existingQuestionTexts = new Set(prev.map(p => p.question.question.toLowerCase().trim()));
+        const existingQuestionTexts = new Set(
+          prev.map(p => p.question.question.toLowerCase().trim())
+        )
         if (!existingQuestionTexts.has(questionSession.question.question.toLowerCase().trim())) {
-          return [...prev, {
-            ...questionSession,
-            machineState: 'pending',
-            createdAt: new Date()
-          } as any];
+          return [
+            ...prev,
+            {
+              ...questionSession,
+              machineState: 'pending',
+              createdAt: new Date(),
+            } as any,
+          ]
         }
-        return prev;
-      });
+        return prev
+      })
     },
-    onStreamingUpdate: (data) => {
+    onStreamingUpdate: data => {
+      // DEBUG: Log streaming updates
+      console.log('📡 [DEBUG] Streaming update:', data.type)
       if (data.type === 'start') {
         useGlobalStatusStore.getState().addOperation({
           id: 'story-session',
@@ -411,325 +497,475 @@ export default function StorytellerPage() {
           label: 'Story Session',
           details: 'Writers Room',
           status: 'in-progress',
-        });
+        })
       } else if (data.type === 'node_start' || (data.type === 'message' && data.node)) {
         useGlobalStatusStore.getState().updateOperation('story-session', {
           details: data.node || data.message?.node,
-        });
+        })
       } else if (data.type === 'done' || data.type === 'terminated' || data.type === 'error') {
-        useGlobalStatusStore.getState().removeOperation('story-session');
+        useGlobalStatusStore.getState().removeOperation('story-session')
       }
-    }
-  });
+    },
+  })
 
   // Derived state
-  const showThinking = !!thinkingAgent;
-  const roundCount = 0; // Placeholder
+  const showThinking = !!thinkingAgent
+  const roundCount = 0 // Placeholder
 
-  const handleSendMessage = useCallback(async (e?: React.FormEvent, msgOverride?: string) => {
-    e?.preventDefault();
-    const content = msgOverride || input;
+  // Action approval modal state
+  const [approvalModalOpen, setApprovalModalOpen] = useState(false)
+  const [approvalModalAction, setApprovalModalAction] = useState<{
+    action: AgentAction
+    agentName: string
+    messageIndex: number
+    actionIndex: number
+  } | null>(null)
 
-    if (!content.trim()) return;
+  // Memoized ActionComponent to prevent re-renders on every streaming token
+  const MemoizedActionComponent = useMemo(() => {
+    return React.memo(function ActionComponentInner({
+      action,
+      agentName,
+      messageIndex,
+      actionIndex,
+    }: {
+      action: AgentAction
+      agentName: string
+      messageIndex: number
+      actionIndex: number
+    }) {
+      const status = action.status || 'pending'
 
-    setInput('');
-    setMessages(prev => [...prev, { sender: 'User', content, type: 'human' }]);
+      const handleOpenApprovalModal = () => {
+        setApprovalModalAction({ action, agentName, messageIndex, actionIndex })
+        setApprovalModalOpen(true)
+      }
 
-    let effectivePhase = currentPhase
-    if (isWorldBibleOpen) {
-      effectivePhase = 'world_building'
-    } else if (activeTab === 'script') {
-      effectivePhase = 'writing'
-    } else if (activeTab === 'board') {
-      effectivePhase = 'breaking'
-    } else if (activeTab === 'plan') {
-      effectivePhase = 'premise'
-    }
+      const handleReject = () => {
+        updateActionStatus(messageIndex, actionIndex, 'rejected')
+      }
 
-    await sendMessage('/api/storyteller/chat/stream', {
-      message: content,
-      projectId: currentProject?.id,
-      threadId: currentEpisodeId || 'general',
-      episodeId: currentEpisodeId,
-      currentPhase: effectivePhase,
-      seriesBible: {
-        ...((currentProject?.series_bible as any) || {}),
-        masterPrompt: currentProject?.project_prompt || '',
-        userDecisions: storyDecisions,
-      },
-      characters: characters.map(c => ({
-        characterId: c.id,
-        name: c.name,
-        currentGoals: c.psychology?.goals || [],
-        fears: c.psychology?.fears || [],
-        selfDelusion: c.psychology?.selfDelusion || '',
-        actualMotivation: c.psychology?.actualMotivation || '',
-        transformationProgress: c.transformation || 0,
-        knowledgeState: [],
-        stressLevel: c.stress || 30,
-      })),
-      modelConfig: getModelConfigFromStorage(),
-      streamMode: useEnhancedStreaming ? 'events' : 'nodes',
-    });
-  }, [input, currentProject, currentEpisodeId, currentPhase, storyDecisions, characters, sendMessage, isWorldBibleOpen, activeTab, useEnhancedStreaming]);
+      const handleAccept = async () => {
+        updateActionStatus(messageIndex, actionIndex, 'executing')
+        try {
+          await executeAction(action as any)
+          updateActionStatus(messageIndex, actionIndex, 'committed')
+        } catch (e) {
+          console.error(`Failed to accept action:`, e)
+          updateActionStatus(messageIndex, actionIndex, 'pending')
+        }
+      }
 
-  const lastResumedProjectId = useRef<string | null>(null);
+      if (status === 'committed') {
+        return (
+          <ActionCommitted
+            entry={{
+              id: `${messageIndex}-${actionIndex}`,
+              action,
+              agentName,
+              timestamp: new Date(),
+              status: ActionStatus.COMMITTED,
+            }}
+            compact
+          />
+        )
+      }
+      if (status === 'rejected') {
+        return (
+          <div className="text-[10px] text-red-400/60 uppercase tracking-widest px-2 italic">
+            Discarded
+          </div>
+        )
+      }
+      return (
+        <ActionSuggestion
+          action={action}
+          agentName={agentName}
+          onAccept={handleAccept}
+          onReview={handleOpenApprovalModal}
+          onReject={handleReject}
+          isProcessing={status === 'executing'}
+        />
+      )
+    })
+  }, [updateActionStatus, executeAction, setActionHistory])
+
+  const handleApproveAllActions = useCallback(
+    async (messageIndex: number) => {
+      const msg = messages[messageIndex]
+      if (!msg || !msg.actions) return
+
+      // Execute all pending actions
+      for (let i = 0; i < msg.actions.length; i++) {
+        const action = msg.actions[i]
+        if (action.status !== 'committed' && action.status !== 'rejected') {
+          updateActionStatus(messageIndex, i, 'executing')
+          try {
+            await executeAction(action as any)
+            updateActionStatus(messageIndex, i, 'committed')
+          } catch (e) {
+            console.error(`Failed to approve all: action ${i} failed`, e)
+            updateActionStatus(messageIndex, i, 'pending')
+            // Stop if one fails to be safe? Or continue?
+            // Let's continue for now.
+          }
+        }
+      }
+    },
+    [messages, updateActionStatus, executeAction]
+  )
+
+  const handleSendMessage = useCallback(
+    async (e?: React.FormEvent, msgOverride?: string) => {
+      e?.preventDefault()
+      const content = msgOverride || input
+
+      if (!content.trim()) return
+
+      // Guard against sending while already sending (prevents race conditions with quick actions)
+      if (isSending) {
+        console.warn('[Storyteller] Blocked send - already processing a message')
+        return
+      }
+
+      setInput('')
+      setMessages(prev => [...prev, { sender: 'User', content, type: 'human' }])
+
+      let effectivePhase = currentPhase
+      if (isWorldBibleOpen) {
+        effectivePhase = 'world_building'
+      } else if (activeTab === 'script') {
+        effectivePhase = 'writing'
+      } else if (activeTab === 'board') {
+        effectivePhase = 'breaking'
+      } else if (activeTab === 'plan') {
+        effectivePhase = 'premise'
+      }
+
+      await sendMessage('/api/storyteller/chat/stream', {
+        message: content,
+        messages: messages.map(m => ({
+          role: m.type === 'human' || m.sender === 'User' ? 'user' : 'assistant',
+          content: m.content,
+          name: m.sender,
+        })),
+        projectId: currentProject?.id,
+        threadId: currentEpisodeId || 'general',
+        episodeId: currentEpisodeId,
+        currentPhase: effectivePhase,
+        seriesBible: {
+          ...((currentProject?.series_bible as any) || {}),
+          masterPrompt: currentProject?.project_prompt || '',
+          userDecisions: storyDecisions,
+        },
+        characters: characters.map(c => ({
+          characterId: c.id,
+          name: c.name,
+          currentGoals: c.psychology?.goals || [],
+          fears: c.psychology?.fears || [],
+          selfDelusion: c.psychology?.selfDelusion || '',
+          actualMotivation: c.psychology?.actualMotivation || '',
+          transformationProgress: c.transformation || 0,
+          knowledgeState: [],
+          stressLevel: c.stress || 30,
+        })),
+        modelConfig: getModelConfigFromStorage(),
+        streamMode: useEnhancedStreaming ? 'events' : 'nodes',
+      })
+    },
+    [
+      input,
+      messages,
+      currentProject,
+      currentEpisodeId,
+      currentPhase,
+      storyDecisions,
+      characters,
+      sendMessage,
+      isWorldBibleOpen,
+      activeTab,
+      useEnhancedStreaming,
+      isSending,
+    ]
+  )
+
+  const lastResumedProjectId = useRef<string | null>(null)
 
   // Resume pending poster generations on mount
   useEffect(() => {
     // Only run if we have a project ID and haven't resumed for this project yet
     if (currentProject?.id && lastResumedProjectId.current !== currentProject.id) {
-      lastResumedProjectId.current = currentProject.id;
+      lastResumedProjectId.current = currentProject.id
 
-      posterGenerationService.resumePendingGenerations(currentProject.id, async (url, episodeId, type) => {
-        if (episodeId === currentEpisodeId) {
-          if (type === 'poster') {
-            setIsGeneratingPoster(false);
-            setStoryPlan(prev => prev ? ({ ...prev, posterUrl: url } as any) : null);
-          } else {
-            // type === 'storyboard' or undefined (legacy) will be treated as storyboard (Gemini)
-            setIsGeneratingStoryboard(false);
-            setStoryPlan(prev => prev ? ({ ...prev, storyboardUrl: url } as any) : null);
+      posterGenerationService.resumePendingGenerations(
+        currentProject.id,
+        async (url, episodeId, type) => {
+          if (episodeId === currentEpisodeId) {
+            if (type === 'poster') {
+              setIsGeneratingPoster(false)
+              setStoryPlan(prev => (prev ? ({ ...prev, posterUrl: url } as any) : null))
+            } else {
+              // type === 'storyboard' or undefined (legacy) will be treated as storyboard (Gemini)
+              setIsGeneratingStoryboard(false)
+              setStoryPlan(prev => (prev ? ({ ...prev, storyboardUrl: url } as any) : null))
+            }
+          }
+
+          // Also persist to DB to ensure it's saved even if not currently viewing the episode
+          try {
+            const payload = type === 'poster' ? { posterUrl: url } : { storyboardUrl: url }
+            await fetch(`/api/storyteller/episodes/${episodeId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            })
+          } catch (e) {
+            console.error('Failed to save resumed generation:', e)
           }
         }
-
-        // Also persist to DB to ensure it's saved even if not currently viewing the episode
-        try {
-          const payload = type === 'poster' ? { posterUrl: url } : { storyboardUrl: url };
-          await fetch(`/api/storyteller/episodes/${episodeId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-        } catch (e) {
-          console.error("Failed to save resumed generation:", e);
-        }
-      })
+      )
     }
   }, [currentProject?.id, currentEpisodeId])
 
   // Storyboard Trigger (Gemini)
-  const handleStoryboardTrigger = useCallback(async (eventOrEpisodeId?: Event | string | React.MouseEvent) => {
-    let episodeId: string | undefined;
+  const handleStoryboardTrigger = useCallback(
+    async (eventOrEpisodeId?: Event | string | React.MouseEvent) => {
+      let episodeId: string | undefined
 
-    if (typeof eventOrEpisodeId === 'string') {
-      episodeId = eventOrEpisodeId;
-    } else if (eventOrEpisodeId && 'detail' in eventOrEpisodeId && (eventOrEpisodeId as unknown as CustomEvent).detail?.episodeId) {
-      episodeId = (eventOrEpisodeId as unknown as CustomEvent).detail.episodeId;
-    } else {
-      episodeId = currentEpisodeId || undefined;
-    }
+      if (typeof eventOrEpisodeId === 'string') {
+        episodeId = eventOrEpisodeId
+      } else if (
+        eventOrEpisodeId &&
+        'detail' in eventOrEpisodeId &&
+        (eventOrEpisodeId as unknown as CustomEvent).detail?.episodeId
+      ) {
+        episodeId = (eventOrEpisodeId as unknown as CustomEvent).detail.episodeId
+      } else {
+        episodeId = currentEpisodeId || undefined
+      }
 
-    if (!episodeId || !currentProject?.id) return;
+      if (!episodeId || !currentProject?.id) return
 
-    if (isGeneratingStoryboard) return;
+      if (isGeneratingStoryboard) return
 
-    setIsGeneratingStoryboard(true);
+      setIsGeneratingStoryboard(true)
 
-    const config = getModelConfigFromStorage();
-    if (!config.geminiApiKey) {
-      alert("Gemini API Key missing!");
-      setIsGeneratingStoryboard(false);
-      return;
-    }
+      const config = getModelConfigFromStorage()
+      if (!config.geminiApiKey) {
+        alert('Gemini API Key missing!')
+        setIsGeneratingStoryboard(false)
+        return
+      }
 
-    try {
-      const premise = (storyPlan as any)?.premise || storyPlan;
-      const prompt = `A visual storyboard for an episode titled "${premise?.title || 'Unknown'}".`;
+      try {
+        const premise = (storyPlan as any)?.premise || storyPlan
+        const prompt = `A visual storyboard for an episode titled "${premise?.title || 'Unknown'}".`
 
-      const beatsPayload = beats.map((b: Beat) => ({
-        logline: b.logline,
-        visualHook: b.content,
-        imagePrompt: b.imagePrompt
-      }));
+        const beatsPayload = beats.map((b: Beat) => ({
+          logline: b.logline,
+          visualHook: b.content,
+          imagePrompt: b.imagePrompt,
+        }))
 
-      await posterGenerationService.generateStoryboard(
-        currentProject.id,
-        episodeId,
-        prompt,
-        beatsPayload,
-        { apiKey: config.geminiApiKey },
-        async (url) => {
-          setIsGeneratingStoryboard(false);
-          setStoryPlan(prev => prev ? ({ ...prev, storyboardUrl: url } as any) : null);
+        await posterGenerationService.generateStoryboard(
+          currentProject.id,
+          episodeId,
+          prompt,
+          beatsPayload,
+          { apiKey: config.geminiApiKey },
+          async url => {
+            setIsGeneratingStoryboard(false)
+            setStoryPlan(prev => (prev ? ({ ...prev, storyboardUrl: url } as any) : null))
 
-          if (episodeId) {
-            try {
-              await fetch(`/api/storyteller/episodes/${episodeId}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ storyboardUrl: url })
-              });
-            } catch (e) {
-              console.error("Failed to save storyboard URL:", e);
+            if (episodeId) {
+              try {
+                await fetch(`/api/storyteller/episodes/${episodeId}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ storyboardUrl: url }),
+                })
+              } catch (e) {
+                console.error('Failed to save storyboard URL:', e)
+              }
             }
           }
-        }
-      );
-    } catch (error) {
-      console.error('Storyboard generation failed', error);
-      setIsGeneratingStoryboard(false);
-    }
-  }, [currentProject?.id, currentEpisodeId, isGeneratingStoryboard, beats, storyPlan]);
+        )
+      } catch (error) {
+        console.error('Storyboard generation failed', error)
+        setIsGeneratingStoryboard(false)
+      }
+    },
+    [currentProject?.id, currentEpisodeId, isGeneratingStoryboard, beats, storyPlan]
+  )
 
   // Poster Trigger (Midjourney via Comet)
-  const handlePosterTrigger = useCallback(async (eventOrEpisodeId?: Event | string | React.MouseEvent) => {
-    let episodeId: string | undefined;
+  const handlePosterTrigger = useCallback(
+    async (eventOrEpisodeId?: Event | string | React.MouseEvent) => {
+      let episodeId: string | undefined
 
-    if (typeof eventOrEpisodeId === 'string') {
-      episodeId = eventOrEpisodeId;
-    } else if (eventOrEpisodeId && 'detail' in eventOrEpisodeId && (eventOrEpisodeId as unknown as CustomEvent).detail?.episodeId) {
-      episodeId = (eventOrEpisodeId as unknown as CustomEvent).detail.episodeId;
-    } else {
-      episodeId = currentEpisodeId || undefined;
-    }
-
-    if (!episodeId || !currentProject?.id) return;
-
-    if (isGeneratingPoster) return;
-
-    setIsGeneratingPoster(true);
-
-    // Retrieve LegNext API key from local storage
-    let apiKey = ''
-    try {
-      if (typeof window !== 'undefined') {
-        const stored = localStorage.getItem('ai-config-legnext')
-        if (stored) {
-          const parsed = JSON.parse(stored)
-          apiKey = parsed.apiKey || ''
-        }
+      if (typeof eventOrEpisodeId === 'string') {
+        episodeId = eventOrEpisodeId
+      } else if (
+        eventOrEpisodeId &&
+        'detail' in eventOrEpisodeId &&
+        (eventOrEpisodeId as unknown as CustomEvent).detail?.episodeId
+      ) {
+        episodeId = (eventOrEpisodeId as unknown as CustomEvent).detail.episodeId
+      } else {
+        episodeId = currentEpisodeId || undefined
       }
-    } catch (e) {
-      console.warn('Failed to parse LegNext config', e)
-    }
 
-    const config = getModelConfigFromStorage();
+      if (!episodeId || !currentProject?.id) return
 
-    try {
-      const premise = (storyPlan as any)?.premise || storyPlan;
-      const prompt = `Title: ${premise?.title || 'Unknown'}. Theme: ${premise?.thematicFocus || 'Cinematic'}. ${premise?.protagonistHook || ''}`;
+      if (isGeneratingPoster) return
 
-      // Log action start
-      setActionHistory(prev => [
-        {
-          id: `poster-${Date.now()}`,
-          action: { type: 'GENERATE_POSTER', payload: { episodeId, prompt } },
-          agentName: 'PosterAgent',
-          status: ActionStatus.COMMITTED,
-          timestamp: new Date()
-        },
-        ...prev
-      ])
+      setIsGeneratingPoster(true)
 
-      await posterGenerationService.generatePoster(
-        currentProject.id,
-        episodeId,
-        prompt,
-        { apiKey },
-        async (url) => {
-          setIsGeneratingPoster(false);
-          setStoryPlan(prev => prev ? ({ ...prev, posterUrl: url } as any) : null);
-
-          if (episodeId) {
-            try {
-              await fetch(`/api/storyteller/episodes/${episodeId}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ posterUrl: url })
-              });
-            } catch (e) {
-              console.error("Failed to save poster URL:", e);
-            }
+      // Retrieve LegNext API key from local storage
+      let apiKey = ''
+      try {
+        if (typeof window !== 'undefined') {
+          const stored = localStorage.getItem('ai-config-legnext')
+          if (stored) {
+            const parsed = JSON.parse(stored)
+            apiKey = parsed.apiKey || ''
           }
-
-          // Log completion
-          setActionHistory(prev => [
-            {
-              id: `poster-complete-${Date.now()}`,
-              action: { type: 'GENERATE_POSTER', payload: { episodeId, prompt } },
-              agentName: 'PosterAgent',
-              status: ActionStatus.COMMITTED,
-              timestamp: new Date()
-            },
-            ...prev
-          ])
         }
-      );
-    } catch (error) {
-      console.error('Poster generation failed', error);
-      setIsGeneratingPoster(false);
-      alert("Poster generation failed. Please check the API key configuration or try again.");
+      } catch (e) {
+        console.warn('Failed to parse LegNext config', e)
+      }
 
-      // Log failure
-      setActionHistory(prev => [
-        {
-          id: `poster-fail-${Date.now()}`,
-          action: { type: 'GENERATE_POSTER', payload: { episodeId, prompt: "Failed" } },
-          agentName: 'PosterAgent',
-          status: ActionStatus.UNDONE,
-          timestamp: new Date()
-        },
-        ...prev
-      ])
-    }
-  }, [currentProject?.id, currentEpisodeId, isGeneratingPoster, storyPlan]);
+      const config = getModelConfigFromStorage()
+
+      try {
+        const premise = (storyPlan as any)?.premise || storyPlan
+        const prompt = `Title: ${premise?.title || 'Unknown'}. Theme: ${premise?.thematicFocus || 'Cinematic'}. ${premise?.protagonistHook || ''}`
+
+        // Log action start
+        setActionHistory(prev => [
+          {
+            id: `poster-${Date.now()}`,
+            action: { type: 'GENERATE_POSTER', payload: { episodeId, prompt } },
+            agentName: 'PosterAgent',
+            status: ActionStatus.COMMITTED,
+            timestamp: new Date(),
+          },
+          ...prev,
+        ])
+
+        await posterGenerationService.generatePoster(
+          currentProject.id,
+          episodeId,
+          prompt,
+          { apiKey },
+          async url => {
+            setIsGeneratingPoster(false)
+            setStoryPlan(prev => (prev ? ({ ...prev, posterUrl: url } as any) : null))
+
+            if (episodeId) {
+              try {
+                await fetch(`/api/storyteller/episodes/${episodeId}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ posterUrl: url }),
+                })
+              } catch (e) {
+                console.error('Failed to save poster URL:', e)
+              }
+            }
+
+            // Log completion
+            setActionHistory(prev => [
+              {
+                id: `poster-complete-${Date.now()}`,
+                action: { type: 'GENERATE_POSTER', payload: { episodeId, prompt } },
+                agentName: 'PosterAgent',
+                status: ActionStatus.COMMITTED,
+                timestamp: new Date(),
+              },
+              ...prev,
+            ])
+          }
+        )
+      } catch (error) {
+        console.error('Poster generation failed', error)
+        setIsGeneratingPoster(false)
+        alert('Poster generation failed. Please check the API key configuration or try again.')
+
+        // Log failure
+        setActionHistory(prev => [
+          {
+            id: `poster-fail-${Date.now()}`,
+            action: { type: 'GENERATE_POSTER', payload: { episodeId, prompt: 'Failed' } },
+            agentName: 'PosterAgent',
+            status: ActionStatus.UNDONE,
+            timestamp: new Date(),
+          },
+          ...prev,
+        ])
+      }
+    },
+    [currentProject?.id, currentEpisodeId, isGeneratingPoster, storyPlan]
+  )
 
   // Moodboard Generation Trigger
-  const handleMoodboardTrigger = useCallback(async (event?: Event) => {
-    const detail = (event as CustomEvent)?.detail;
-    const projectId = detail?.projectId || currentProject?.id;
+  const handleMoodboardTrigger = useCallback(
+    async (event?: Event) => {
+      const detail = (event as CustomEvent)?.detail
+      const projectId = detail?.projectId || currentProject?.id
 
-    if (!projectId) return;
+      if (!projectId) return
 
-    const config = getModelConfigFromStorage()
-    // Call the moodboard generation service
-    await moodboardGenerationService.generate(projectId, [], undefined, config, async () => {
-      // Refetch project data when generation completes
-      try {
-        const response = await fetch(`/api/storyteller/projects/${projectId}`);
-        if (response.ok) {
-          const data = await response.json();
-          const bible = data.seriesBible || data.series_bible;
-          if (bible?.moodImages) {
-            setStoryPlan(prev => prev ? { ...prev, moodImages: bible.moodImages } : prev);
-            // Also update the store
-            if (currentProject) {
-              useWorldStore.getState().setCurrentProject({
-                ...currentProject,
-                series_bible: { ...(currentProject.series_bible as any || {}), moodImages: bible.moodImages }
-              });
+      const config = getModelConfigFromStorage()
+      // Call the moodboard generation service
+      await moodboardGenerationService.generate(projectId, [], undefined, config, async () => {
+        // Refetch project data when generation completes
+        try {
+          const response = await fetch(`/api/storyteller/projects/${projectId}`)
+          if (response.ok) {
+            const data = await response.json()
+            const bible = data.seriesBible || data.series_bible
+            if (bible?.moodImages) {
+              setStoryPlan(prev => (prev ? { ...prev, moodImages: bible.moodImages } : prev))
+              // Also update the store
+              if (currentProject) {
+                useWorldStore.getState().setCurrentProject({
+                  ...currentProject,
+                  series_bible: {
+                    ...((currentProject.series_bible as any) || {}),
+                    moodImages: bible.moodImages,
+                  },
+                })
+              }
             }
           }
+        } catch (error) {
+          console.error('Failed to refetch moodboard data:', error)
         }
-      } catch (error) {
-        console.error('Failed to refetch moodboard data:', error);
-      }
-    });
-  }, [currentProject]);
+      })
+    },
+    [currentProject]
+  )
 
   // Listeners
   useEffect(() => {
-    const onStoryboard = (e: Event) => handleStoryboardTrigger(e);
-    const onPoster = (e: Event) => handlePosterTrigger(e);
-    const onMoodboard = (e: Event) => handleMoodboardTrigger(e);
+    const onStoryboard = (e: Event) => handleStoryboardTrigger(e)
+    const onPoster = (e: Event) => handlePosterTrigger(e)
+    const onMoodboard = (e: Event) => handleMoodboardTrigger(e)
 
-    window.addEventListener('trigger-storyboard-generation', onStoryboard);
-    window.addEventListener('generate-episode-poster', onPoster);
-    window.addEventListener('trigger-moodboard-generation', onMoodboard);
+    window.addEventListener('trigger-storyboard-generation', onStoryboard)
+    window.addEventListener('generate-episode-poster', onPoster)
+    window.addEventListener('trigger-moodboard-generation', onMoodboard)
 
     return () => {
-      window.removeEventListener('trigger-storyboard-generation', onStoryboard);
-      window.removeEventListener('generate-episode-poster', onPoster);
-      window.removeEventListener('trigger-moodboard-generation', onMoodboard);
+      window.removeEventListener('trigger-storyboard-generation', onStoryboard)
+      window.removeEventListener('generate-episode-poster', onPoster)
+      window.removeEventListener('trigger-moodboard-generation', onMoodboard)
     }
-  }, [handleStoryboardTrigger, handlePosterTrigger, handleMoodboardTrigger]);
-
-
+  }, [handleStoryboardTrigger, handlePosterTrigger, handleMoodboardTrigger])
 
   // Update StoryPlanBoard to pass isGeneratingPoster
   // ... (Wait, I need to check where StoryPlanBoard is rendered to pass the prop)
-
 
   // Update primary moodboard background
   const updatePrimaryMoodboard = useCallback(() => {
@@ -803,7 +1039,7 @@ export default function StorytellerPage() {
             const data = await response.json()
             const bible = data.seriesBible || data.series_bible
             if (bible?.moodImages) {
-              setStoryPlan(prev => prev ? { ...prev, moodImages: bible.moodImages } : prev)
+              setStoryPlan(prev => (prev ? { ...prev, moodImages: bible.moodImages } : prev))
             }
           }
         } catch (error) {
@@ -841,8 +1077,8 @@ export default function StorytellerPage() {
   // Fetch story plan for selected episode OR load project bible
   useEffect(() => {
     // Stability Check: If we already have the right data for the current context, skip
-    const isEpisodeContext = !!currentEpisodeId;
-    const isGlobalContext = !currentEpisodeId && !!currentProject?.series_bible;
+    const isEpisodeContext = !!currentEpisodeId
+    const isGlobalContext = !currentEpisodeId && !!currentProject?.series_bible
 
     // Skip if no context at all
     if (!currentEpisodeId && !currentProject?.series_bible) {
@@ -854,7 +1090,7 @@ export default function StorytellerPage() {
     console.log('🔍 [Debug] Plan Effect Triggered:', {
       episodeId: currentEpisodeId,
       projectId: currentProject?.id,
-      hasBible: !!currentProject?.series_bible
+      hasBible: !!currentProject?.series_bible,
     })
 
     if (currentEpisodeId) {
@@ -865,19 +1101,23 @@ export default function StorytellerPage() {
         .then(data => {
           console.log('📥 [Debug] Plan API Received:', data)
           // Fix TS errors by handling potentially loose types on currentProject
-          const projectAny = currentProject as any;
-          const hasProjectData = projectAny?.seriesBible || projectAny?.series_bible || projectAny?.storyPlan || projectAny?.story_plan;
+          const projectAny = currentProject as any
+          const hasProjectData =
+            projectAny?.seriesBible ||
+            projectAny?.series_bible ||
+            projectAny?.storyPlan ||
+            projectAny?.story_plan
 
           if (data.storyPlan || hasProjectData) {
             console.log('✅ [Debug] Setting storyPlan for Episode with Merged Context')
 
-            // MERGE STRATEGY: 
+            // MERGE STRATEGY:
             // 1. Series Bible (Global Truths: Factions, Rules, World Desc)
             // 2. Season Plan (Global Arc: Sequences, Summary)
             // 3. Episode Specifics (Overrides if any)
 
-            const bible = (projectAny?.seriesBible || projectAny?.series_bible || {})
-            const seasonPlan = (projectAny?.storyPlan || projectAny?.story_plan || {})
+            const bible = projectAny?.seriesBible || projectAny?.series_bible || {}
+            const seasonPlan = projectAny?.storyPlan || projectAny?.story_plan || {}
             const episodePlan = (data.storyPlan || {}) as any
 
             const newPlan = {
@@ -891,7 +1131,7 @@ export default function StorytellerPage() {
               moodImages: episodePlan.moodImages || bible.moodImages || [],
               imagePrompts: episodePlan.imagePrompts || bible.imagePrompts || {},
               // Ensure we keep the project info
-              projectId: currentProject?.id
+              projectId: currentProject?.id,
             }
 
             setStoryPlan(newPlan)
@@ -1063,18 +1303,17 @@ export default function StorytellerPage() {
       setCurrentPhase('breaking')
       setActiveTab('board')
 
-      setMessages(prev => [
-        ...prev,
-        {
-          sender: 'System',
-          content: '✅ Story plan approved! Now breaking into individual beats...',
-          type: 'ai',
-        },
-      ])
+      // Trigger beat generation after approval
+      setTimeout(() => {
+        handleSendMessage(
+          undefined,
+          'Based on this premise, generate 5-7 detailed story beats for the episode. Break the story into key plot points with clear causality.'
+        )
+      }, 500)
     } catch (error) {
       console.error('Failed to save plan:', error)
     }
-  }, [storyPlan, currentProject?.id, currentEpisodeId])
+  }, [storyPlan, currentProject?.id, currentEpisodeId, handleSendMessage])
 
   const handleUpdateSequence = useCallback(
     async (sequenceId: number, updates: Partial<StorySequence>) => {
@@ -1111,11 +1350,50 @@ export default function StorytellerPage() {
     [storyPlan, currentEpisodeId]
   )
 
+  const handleDraftFirstEpisode = useCallback(async () => {
+    if (!currentProject?.id || isSending) return
+
+    try {
+      setIsSending(true)
+      // 1. Create the episode
+      const res = await fetch('/api/storyteller/episodes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: currentProject.id,
+          title: 'Episode 1: The Beginning',
+          sequence: 1,
+        }),
+      })
+      const newEpisode = await res.json()
+
+      if (newEpisode?.id) {
+        // 2. Select it (Update URL and state)
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('episodeId', newEpisode.id)
+        router.push(`?${params.toString()}`)
+        setCurrentEpisodeId(newEpisode.id)
+
+        // Use a small timeout to ensure the state update is processed
+        setTimeout(() => {
+          handleSendMessage(
+            undefined,
+            'Let\'s draft the first episode. Start by generating a compelling premise for \'Episode 1: The Beginning\'.'
+          )
+        }, 100)
+      }
+    } catch (error) {
+      console.error('Failed to draft first episode:', error)
+      setIsSending(false)
+    }
+  }, [currentProject?.id, isSending, handleSendMessage, searchParams, router])
+
   // Phase Navigation Handlers
   const PHASE_ORDER = ['premise', 'breaking', 'writing', 'complete']
 
   // Confirmation dialog for going back in phases (will clear current phase data)
-  const { confirm: confirmPhaseBack, ConfirmDialogComponent: PhaseBackConfirmDialog } = useConfirmDialog()
+  const { confirm: confirmPhaseBack, ConfirmDialogComponent: PhaseBackConfirmDialog } =
+    useConfirmDialog()
 
   const handlePreviousPhase = useCallback(async () => {
     const idx = PHASE_ORDER.indexOf(currentPhase)
@@ -1125,7 +1403,7 @@ export default function StorytellerPage() {
         premise: 'Premise',
         breaking: 'Story Beats',
         writing: 'Script',
-        complete: 'Complete'
+        complete: 'Complete',
       }
 
       const confirmed = await confirmPhaseBack({
@@ -1133,7 +1411,7 @@ export default function StorytellerPage() {
         description: `Going back will erase all data from the current "${phaseNames[currentPhase]}" phase. This action cannot be undone.`,
         confirmLabel: 'Go Back',
         cancelLabel: 'Stay Here',
-        variant: 'destructive'
+        variant: 'destructive',
       })
 
       if (!confirmed) return
@@ -1165,16 +1443,44 @@ export default function StorytellerPage() {
   // Track pending action executions to ensure cleanup waits for them - actually hook handles async actions if we await them in onAction!
   // But our executeAction is async. The hook awaits onAction. So we are good!
 
+  // --- MENTIONS SYSTEM ---
+  const mentionProviders = React.useMemo(() => getStorytellerMentionProviders(), [])
 
-  // --- MENTIONS DATA ---
+  const projectContextForMentions = React.useMemo(
+    () =>
+      buildStorytellerProjectContext({
+        projectId: currentProject?.id || '',
+        characters,
+        episodes: [], // Episode list not maintained in this component
+        beats: beats,
+        seriesBible: {
+          ...storyPlan,
+          worldRules: storyPlan?.worldRules || [],
+          inspirations: storyPlan?.inspirations,
+          soundtracks: storyPlan?.soundtracks || [],
+          plotTwists: storyPlan?.plotTwists || [],
+          factions: storyPlan?.factions || [],
+        },
+      }),
+    [currentProject?.id, characters, beats, storyPlan]
+  )
+
+  // Legacy mentions for backwards compatibility
   const mentionItems: any[] = [
     ...characters.map(c => ({ id: c.id, name: c.name, type: 'character' as const })),
-    ...(storyPlan?.worldRules || []).map((r: any, idx: number) => ({ id: `rule-${idx}`, name: r.rule, type: 'world_rule' as const })),
-    ...(storyPlan?.factions || []).map((f: any, idx: number) => ({ id: `faction-${idx}`, name: f.name, type: 'faction' as const })),
+    ...(storyPlan?.worldRules || []).map((r: any, idx: number) => ({
+      id: `rule-${idx}`,
+      name: r.rule,
+      type: 'world_rule' as const,
+    })),
+    ...(storyPlan?.factions || []).map((f: any, idx: number) => ({
+      id: `faction-${idx}`,
+      name: f.name,
+      type: 'faction' as const,
+    })),
   ]
 
   // Stop streaming handler removed (handled by hook)
-
 
   // Use ref for currentEpisodeId to avoid stale closure
   // Helper functions and actions removed (already defined above)
@@ -1269,8 +1575,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           console.error('Failed to continue after answer:', error)
         }
       }
-
-      setThinkingAgent(null)
+      // Note: thinkingAgent is managed by useChatStream and will reset when stream completes
     },
     [
       currentProject,
@@ -1288,18 +1593,19 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
   // Listener for manual agent triggers from UI components
   useEffect(() => {
     const handleTrigger = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
+      const detail = (e as CustomEvent).detail
       if (detail?.type === 'generate_episode_premise') {
         const userMsg: Message = {
           sender: 'User',
-          content: "Please generate an episode premise using the Ozymandias framework.",
-          type: 'human'
+          content: 'Please generate an episode premise using the Ozymandias framework.',
+          type: 'human',
         }
         setMessages(prev => [...prev, userMsg])
         setIsSending(true)
 
         const payload = {
-          message: "Please generate an episode premise using the Ozymandias framework. Delegate to the Episode Premise Architect.",
+          message:
+            'Please generate an episode premise using the Ozymandias framework. Delegate to the Episode Premise Architect.',
           projectId: currentProject?.id,
           threadId: currentEpisodeId || 'general',
           episodeId: currentEpisodeId,
@@ -1321,20 +1627,25 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
           signal: abortControllerRef.current.signal,
-        }).then(res => processStream(res, abortControllerRef.current!.signal))
-          .catch(err => console.error("Trigger error:", err))
+        })
+          .then(res => processStream(res, abortControllerRef.current!.signal))
+          .catch(err => console.error('Trigger error:', err))
       } else if (detail?.type === 'generate_episode_premise_section') {
-        const sectionName = detail.section;
-        setGeneratingSection(sectionName);
-        const readableSection = sectionName === 'protagonistHook' ? 'Protagonist Hook' :
-          sectionName === 'fatalFlaw' ? 'Fatal Flaw' :
-            sectionName === 'inevitableConsequence' ? 'Inevitable Consequence' :
-              sectionName;
+        const sectionName = detail.section
+        setGeneratingSection(sectionName)
+        const readableSection =
+          sectionName === 'protagonistHook'
+            ? 'Protagonist Hook'
+            : sectionName === 'fatalFlaw'
+              ? 'Fatal Flaw'
+              : sectionName === 'inevitableConsequence'
+                ? 'Inevitable Consequence'
+                : sectionName
 
         const userMsg: Message = {
           sender: 'User',
           content: `Please regenerate only the ${readableSection} of the episode premise.`,
-          type: 'human'
+          type: 'human',
         }
         setMessages(prev => [...prev, userMsg])
         setIsSending(true)
@@ -1362,19 +1673,21 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
           signal: abortControllerRef.current.signal,
-        }).then(res => processStream(res, abortControllerRef.current!.signal))
-          .catch(err => console.error("Trigger error:", err))
+        })
+          .then(res => processStream(res, abortControllerRef.current!.signal))
+          .catch(err => console.error('Trigger error:', err))
       } else if (detail?.type === 'generate_roadmap') {
         const userMsg: Message = {
           sender: 'User',
-          content: "Please generate a detailed episode roadmap for the season.",
-          type: 'human'
+          content: 'Please generate a detailed episode roadmap for the season.',
+          type: 'human',
         }
         setMessages(prev => [...prev, userMsg])
         setIsSending(true)
 
         const payload = {
-          message: "Generate a detailed episode roadmap for the season. Create distinct episodes with titles, summaries, key factions involved, and consequences. Delegate to the Story Architect.",
+          message:
+            'Generate a detailed episode roadmap for the season. Create distinct episodes with titles, summaries, key factions involved, and consequences. Delegate to the Story Architect.',
           projectId: currentProject?.id,
           threadId: 'general',
           episodeId: null,
@@ -1396,26 +1709,27 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
           signal: abortControllerRef.current.signal,
-        }).then(res => processStream(res, abortControllerRef.current!.signal))
-          .catch(err => console.error("Trigger error:", err))
+        })
+          .then(res => processStream(res, abortControllerRef.current!.signal))
+          .catch(err => console.error('Trigger error:', err))
       }
     }
     const handleUpdateEpisodePremise = async (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      if (!detail) return;
+      const detail = (e as CustomEvent).detail
+      if (!detail) return
 
       // 1. Optimistic Update
       setStoryPlan(prev => {
-        if (!prev) return { premise: detail } as any;
+        if (!prev) return { premise: detail } as any
         return {
           ...prev,
-          premise: { ...(prev as any).premise, ...detail }
-        } as any;
-      });
+          premise: { ...(prev as any).premise, ...detail },
+        } as any
+      })
 
       // 2. Update Title
       if (detail.title) {
-        setCurrentEpisodeTitle(detail.title);
+        setCurrentEpisodeTitle(detail.title)
       }
 
       // 3. Persist
@@ -1426,11 +1740,11 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               premise: detail,
-              title: detail.title
-            })
-          });
+              title: detail.title,
+            }),
+          })
         } catch (err) {
-          console.error("Failed to persist premise update:", err);
+          console.error('Failed to persist premise update:', err)
         }
       }
     }
@@ -1444,7 +1758,6 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
     }
   }, [currentProject?.id, currentEpisodeId, characters])
 
-
   const handleQuestionSkip = useCallback(
     (questionId: string) => {
       setPendingQuestions(prev => prev.filter(q => q.id !== questionId))
@@ -1457,7 +1770,6 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
 
   // Legacy processStream removed (handled by hook)
 
-
   const handleUpdateGlobalBible = async (updates: Partial<StoryPlan>) => {
     if (!currentProject?.id) return
 
@@ -1468,10 +1780,10 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
     // 1. Update Store immediately
     useWorldStore.getState().setCurrentProject({
       ...currentProject,
-      series_bible: newBible
+      series_bible: newBible,
     })
 
-    // If we are NOT in an episode context, also update the local storyPlan state 
+    // If we are NOT in an episode context, also update the local storyPlan state
     // to keep the UI consistent if it's relying on it.
     if (!currentEpisodeId) {
       setStoryPlan(newBible)
@@ -1482,16 +1794,19 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
       await fetch(`/api/storyteller/projects/${currentProject.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ series_bible: newBible })
+        body: JSON.stringify({ series_bible: newBible }),
       })
     } catch (e) {
-      console.error("Failed to save global bible:", e)
+      console.error('Failed to save global bible:', e)
     }
   }
 
   const handleUpdateBible = async (updates: Partial<StoryPlan>) => {
     // 1. Optimistic Update
-    const newBible = { ...(storyPlan || (currentProject?.series_bible as any) || {}), ...updates } as StoryPlan
+    const newBible = {
+      ...(storyPlan || (currentProject?.series_bible as any) || {}),
+      ...updates,
+    } as StoryPlan
 
     setStoryPlan(prev => {
       if (!prev) return newBible
@@ -1504,17 +1819,17 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
     // Update local store immediately for responsiveness
     useWorldStore.getState().setCurrentProject({
       ...currentProject,
-      series_bible: newBible
+      series_bible: newBible,
     })
 
     try {
       await fetch(`/api/storyteller/projects/${currentProject.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ series_bible: newBible })
+        body: JSON.stringify({ series_bible: newBible }),
       })
     } catch (e) {
-      console.error("Failed to save bible:", e)
+      console.error('Failed to save bible:', e)
       // Optionally revert? For now we trust optimistic update.
     }
   }
@@ -1524,58 +1839,98 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
     setShowToasts(prev => prev.filter(e => e.id !== entryId))
   }
 
-
-
   return (
     <div className="flex flex-col h-full bg-background text-foreground overflow-hidden font-sans">
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar: Navigation & Context */}
-        <DomainSidebar header="Storyteller" storageKey="storyteller">
+        <DomainSidebar
+          header={
+            <div className="flex items-center gap-3 group cursor-default">
+              <h1 className="font-bold text-xl tracking-tight text-white/90">Storyteller</h1>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const params = new URLSearchParams(searchParams.toString())
+                  if (isWorldBibleOpen) {
+                    params.delete('bible')
+                  } else {
+                    params.set('bible', 'open')
+                  }
+                  router.push(`?${params.toString()}`)
+                }}
+                disabled={isSending}
+                className={cn(
+                  'h-8 px-3 gap-2 transition-colors',
+                  isWorldBibleOpen
+                    ? 'border-amber-500 text-amber-500 bg-amber-500/10'
+                    : 'border-muted-foreground/30 text-muted-foreground hover:bg-muted/50 hover:border-muted-foreground/50',
+                  isSending && 'opacity-50 cursor-not-allowed'
+                )}
+                title={
+                  isSending
+                    ? 'Bible unavailable while agents are working'
+                    : isWorldBibleOpen
+                      ? 'Close World Bible'
+                      : 'Open World Bible'
+                }
+              >
+                <BookOpen className="w-4 h-4" />
+                <span className="text-xs">Bible</span>
+              </Button>
+            </div>
+          }
+          storageKey="storyteller"
+        >
           {currentProject ? (
             <div className="space-y-6">
               {/* 1. Project Master Prompt */}
-              <SidebarSection icon={<Scroll size={12} />}>
-                <MasterPromptEditor
-                  scope="Project"
-                  initialPrompt={currentProject.project_prompt || ''}
-                  onSave={async (prompt) => {
-                    try {
-                      await fetch(`/api/storyteller/projects/${currentProject.id}`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ project_prompt: prompt }),
-                      })
-                    } catch (err) {
-                      console.error('Failed to save master prompt:', err)
-                    }
-                  }}
-                />
-              </SidebarSection>
+              <div id={TOUR_STEP_IDS.STORYTELLER_BIBLE}>
+                <SidebarSection icon={<Scroll size={12} />}>
+                  <MasterPromptEditor
+                    scope="Project"
+                    initialPrompt={currentProject.project_prompt || ''}
+                    onSave={async prompt => {
+                      try {
+                        await fetch(`/api/storyteller/projects/${currentProject.id}`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ project_prompt: prompt }),
+                        })
+                      } catch (err) {
+                        console.error('Failed to save master prompt:', err)
+                      }
+                    }}
+                  />
+                </SidebarSection>
+              </div>
 
               {/* 2. Episode Manager - disabled while agents working */}
-              <SidebarSection separator icon={<Film size={12} />}>
-                <div className={isSending ? 'opacity-50 pointer-events-none' : ''}>
-                  <EpisodeManager
-                    projectId={currentProject.id}
-                    currentEpisodeId={currentEpisodeId}
-                    onEpisodeChange={(id) => {
-                      const params = new URLSearchParams(searchParams.toString())
-                      params.set('episodeId', id)
-                      params.delete('bible') // Implicitly close bible if opening episode
-                      router.push(`?${params.toString()}`)
-                    }}
-                    onEpisodeTitleChange={setCurrentEpisodeTitle}
-                    isWorldBibleOpen={isWorldBibleOpen || !currentEpisodeId}
-                  />
-                  {isSending && (
-                    <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                      <AlertCircle size={12} />
-                      Can&apos;t change episode while agents are working
-                    </div>
-                  )}
-                </div>
-              </SidebarSection>
+              {/* 2. Episode Manager - disabled while agents working */}
+              <div id={TOUR_STEP_IDS.STORYTELLER_EPISODES}>
+                <SidebarSection separator icon={<Film size={12} />}>
+                  <div className={isSending ? 'opacity-50 pointer-events-none' : ''}>
+                    <EpisodeManager
+                      projectId={currentProject.id}
+                      currentEpisodeId={currentEpisodeId}
+                      onEpisodeChange={id => {
+                        const params = new URLSearchParams(searchParams.toString())
+                        params.set('episodeId', id)
+                        params.delete('bible') // Implicitly close bible if opening episode
+                        router.push(`?${params.toString()}`)
+                      }}
+                      onEpisodeTitleChange={setCurrentEpisodeTitle}
+                    />
+                    {isSending && (
+                      <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                        <AlertCircle size={12} />
+                        Can&apos;t change episode while agents are working
+                      </div>
+                    )}
+                  </div>
+                </SidebarSection>
+              </div>
 
               {/* 3. Episode Prompt (if episode selected) */}
               {currentEpisodeId && (
@@ -1589,17 +1944,19 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
               )}
 
               {/* 4. Cast/Characters (last) */}
-              <SidebarSection separator>
-                <CharacterPanel
-                  characters={characters}
-                  onUpdate={handleUpdateCharacter}
-                  onCreate={handleCreateCharacter}
-                  onDelete={handleDeleteCharacter}
-                  projectId={currentProject.id}
-                  selectedBeatId={selectedBeatId}
-                  episodeId={currentEpisodeId}
-                />
-              </SidebarSection>
+              <div id={TOUR_STEP_IDS.STORYTELLER_CHARACTERS}>
+                <SidebarSection separator>
+                  <CharacterPanel
+                    characters={characters}
+                    onUpdate={handleUpdateCharacter}
+                    onCreate={handleCreateCharacter}
+                    onDelete={handleDeleteCharacter}
+                    projectId={currentProject.id}
+                    selectedBeatId={selectedBeatId}
+                    episodeId={currentEpisodeId}
+                  />
+                </SidebarSection>
+              </div>
             </div>
           ) : (
             <SidebarEmptyState
@@ -1619,7 +1976,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 className="absolute inset-0 bg-cover bg-center"
                 style={{
                   backgroundImage: `url(${primaryMoodboardUrl})`,
-                  opacity: 0.35
+                  opacity: 0.35,
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/70 to-black" />
@@ -1627,21 +1984,24 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           )}
           {isWorldBibleOpen ? (
             <div className="flex-1 overflow-hidden px-6 pb-6 z-10 relative animate-in fade-in zoom-in-95 duration-200">
-              <WorldBiblePanel storyPlan={(currentProject?.series_bible as StoryPlan) || {
-                title: currentProject?.name || 'Untitled',
-                genre: 'Unknown',
-                tone: 'Unknown',
-                centralQuestion: 'Unknown',
-                themes: [],
-                worldRules: [],
-                factions: [],
-                keyCharacters: characters,
-                protagonist: null,
-                antagonist: null
-              }}
+              <WorldBiblePanel
+                storyPlan={
+                  storyPlan || {
+                    title: currentProject?.name || 'Untitled',
+                    genre: 'Unknown',
+                    tone: 'Unknown',
+                    centralQuestion: 'Unknown',
+                    themes: [],
+                    worldRules: [],
+                    factions: [],
+                    keyCharacters: characters,
+                    protagonist: null,
+                    antagonist: null,
+                  }
+                }
                 projectId={currentProject?.id || ''}
                 onUpdate={handleUpdateGlobalBible}
-                onSendMessage={(msg) => handleSendMessage(undefined, msg)}
+                onSendMessage={msg => handleSendMessage(undefined, msg)}
                 isReadOnly={isSending}
                 onConvertToCast={handleCreateCharacter}
                 onClose={() => {
@@ -1666,7 +2026,11 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                       onClick={handlePreviousPhase}
                       disabled={!canGoBack || isSending}
                       className="p-1 rounded-md border border-border hover:bg-muted/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      title={canGoBack ? "Go back (will erase current phase data)" : "Already at first phase"}
+                      title={
+                        canGoBack
+                          ? 'Go back (will erase current phase data)'
+                          : 'Already at first phase'
+                      }
                     >
                       <ChevronLeft size={12} />
                     </button>
@@ -1675,24 +2039,24 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                     <div className="flex items-center">
                       <span
                         className={`text-[10px] px-1.5 py-0.5 rounded-l-full border transition-colors select-none ${currentPhase === 'premise'
-                          ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
-                          : 'bg-muted/30 text-muted-foreground border-border'
+                            ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+                            : 'bg-muted/30 text-muted-foreground border-border'
                           }`}
                       >
                         PREMISE
                       </span>
                       <span
                         className={`text-[10px] px-1.5 py-0.5 border-y border-l transition-colors select-none ${currentPhase === 'breaking'
-                          ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-                          : 'bg-muted/30 text-muted-foreground border-border'
+                            ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                            : 'bg-muted/30 text-muted-foreground border-border'
                           }`}
                       >
                         BREAK
                       </span>
                       <span
                         className={`text-[10px] px-1.5 py-0.5 rounded-r-full border transition-colors select-none ${currentPhase === 'writing'
-                          ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                          : 'bg-muted/30 text-muted-foreground border-border'
+                            ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                            : 'bg-muted/30 text-muted-foreground border-border'
                           }`}
                       >
                         WRITE
@@ -1705,33 +2069,42 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 <div className="flex items-center gap-0.5 bg-muted/50 rounded-lg p-0.5 shrink-0">
                   {/* Plan tab - always available */}
                   <button
-                    onClick={() => setActiveTab('plan')}
+                    onClick={() => {
+                      if (isWorldBibleOpen && !currentEpisodeId) return
+                      setActiveTab('plan')
+                    }}
                     className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-colors ${activeTab === 'plan'
-                      ? 'bg-background shadow-sm text-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
-                      }`}
+                        ? 'bg-background shadow-sm text-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                      } ${isWorldBibleOpen && !currentEpisodeId ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <Map size={12} />
                     Plan
                   </button>
                   {/* Beats tab */}
                   <button
-                    onClick={() => setActiveTab('board')}
+                    onClick={() => {
+                      if (isWorldBibleOpen && !currentEpisodeId) return
+                      setActiveTab('board')
+                    }}
                     className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-colors ${activeTab === 'board'
-                      ? 'bg-background shadow-sm text-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
-                      }`}
+                        ? 'bg-background shadow-sm text-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                      } ${isWorldBibleOpen && !currentEpisodeId ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <Layout size={12} />
                     Beats
                   </button>
                   {/* Script tab */}
                   <button
-                    onClick={() => setActiveTab('script')}
+                    onClick={() => {
+                      if (isWorldBibleOpen && !currentEpisodeId) return
+                      setActiveTab('script')
+                    }}
                     className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-colors ${activeTab === 'script'
-                      ? 'bg-background shadow-sm text-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
-                      }`}
+                        ? 'bg-background shadow-sm text-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                      } ${isWorldBibleOpen && !currentEpisodeId ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <FileText size={12} />
                     Script
@@ -1744,7 +2117,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                   <StoryPlanBoard
                     storyPlan={storyPlan}
                     globalBible={currentProject?.series_bible}
-                    onApprove={() => setIsPlanApproved(true)}
+                    onApprove={handleApprovePlan}
                     isGenerating={isSending}
                     isGeneratingPoster={isGeneratingPoster}
                     isGeneratingStoryboard={isGeneratingStoryboard}
@@ -1760,12 +2133,11 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                       <CorkBoard
                         beats={beats}
                         episodeId={currentEpisodeId || undefined}
-                        onAddMessage={(msg) => setMessages(prev => [...prev, msg as any])}
+                        onAddMessage={msg => setMessages(prev => [...prev, msg as any])}
                         // Combined Storyboard Props
                         storyboardUrl={(storyPlan as any)?.storyboardUrl}
                         isGeneratingCombined={isGeneratingStoryboard}
                         onGenerateCombined={handleStoryboardTrigger}
-
                         projectId={currentProject?.id || (params?.projectId as string) || 'unknown'}
                       />
                     </div>
@@ -1791,21 +2163,23 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 {activeTab === 'bible' && (
                   <div className="flex-1 overflow-y-auto w-full h-full p-6">
                     <WorldBiblePanel
-                      storyPlan={storyPlan || {
-                        title: currentProject?.name || 'Untitled',
-                        genre: 'Unknown',
-                        tone: 'Unknown',
-                        centralQuestion: 'Unknown',
-                        themes: [],
-                        worldRules: [],
-                        factions: [],
-                        keyCharacters: characters,
-                        protagonist: null,
-                        antagonist: null
-                      }}
+                      storyPlan={
+                        storyPlan || {
+                          title: currentProject?.name || 'Untitled',
+                          genre: 'Unknown',
+                          tone: 'Unknown',
+                          centralQuestion: 'Unknown',
+                          themes: [],
+                          worldRules: [],
+                          factions: [],
+                          keyCharacters: characters,
+                          protagonist: null,
+                          antagonist: null,
+                        }
+                      }
                       projectId={currentProject?.id || ''}
                       onUpdate={handleUpdateBible}
-                      onSendMessage={(msg) => handleSendMessage(undefined, msg)}
+                      onSendMessage={msg => handleSendMessage(undefined, msg)}
                       isReadOnly={isSending}
                       onConvertToCast={handleCreateCharacter}
                     />
@@ -1813,33 +2187,117 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 )}
               </div>
             </>
-          ) : (
-            /* No episode selected - show World Bible as fallback */
+          ) : isWorldBibleOpen ? (
+            /* No episode selected but Bible is open - show World Bible */
             <div className="flex-1 overflow-hidden px-6 pb-6 z-10 relative">
-              <WorldBiblePanel storyPlan={(currentProject?.series_bible as StoryPlan) || {
-                title: currentProject?.name || 'Untitled',
-                genre: 'Unknown',
-                tone: 'Unknown',
-                centralQuestion: 'Unknown',
-                themes: [],
-                worldRules: [],
-                factions: [],
-                keyCharacters: characters,
-                protagonist: null,
-                antagonist: null
-              }}
+              <WorldBiblePanel
+                storyPlan={
+                  storyPlan || {
+                    title: currentProject?.name || 'Untitled',
+                    genre: 'Unknown',
+                    tone: 'Unknown',
+                    centralQuestion: 'Unknown',
+                    themes: [],
+                    worldRules: [],
+                    factions: [],
+                    keyCharacters: characters,
+                    protagonist: null,
+                    antagonist: null,
+                  }
+                }
                 projectId={currentProject?.id || ''}
                 onUpdate={handleUpdateGlobalBible}
-                onSendMessage={(msg) => handleSendMessage(undefined, msg)}
+                onSendMessage={msg => handleSendMessage(undefined, msg)}
                 isReadOnly={isSending}
                 onConvertToCast={handleCreateCharacter}
               />
+            </div>
+          ) : (
+            /* No episode selected and Bible closed - Show create episode prompt */
+            <div className="flex-1 overflow-hidden flex items-center justify-center p-12 z-10 relative">
+              <div className="max-w-2xl w-full text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
+                <div className="space-y-3">
+                  <div className="flex justify-center">
+                    <div className="p-6 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border-2 border-primary/30 shadow-xl">
+                      <Film className="w-12 h-12 text-primary" />
+                    </div>
+                  </div>
+                  <h2 className="text-3xl font-bold text-foreground">
+                    Ready to Create Your First Episode?
+                  </h2>
+                  <p className="text-muted-foreground text-lg leading-relaxed">
+                    Use the Episode Manager in the left sidebar to create a new episode, or open the{' '}
+                    <span className="text-amber-500 font-semibold">World Bible</span> to establish
+                    your series foundation.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+                  <Button
+                    id={TOUR_STEP_IDS.STORYTELLER_AI_DRAFT}
+                    size="lg"
+                    variant="default"
+                    onClick={handleDraftFirstEpisode}
+                    disabled={isSending}
+                    className="gap-2 text-base px-8 shadow-lg shadow-indigo-500/20 bg-indigo-600 hover:bg-indigo-700 border-none"
+                  >
+                    {isSending ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-5 h-5" />
+                    )}
+                    AI Draft First Episode
+                  </Button>
+
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => {
+                      // Focus on episode manager (scroll sidebar if needed)
+                      document.getElementById(TOUR_STEP_IDS.STORYTELLER_EPISODES)?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                      })
+                    }}
+                    className="gap-2 text-base px-8 shadow-sm"
+                  >
+                    <Film className="w-5 h-5" />
+                    Manual Create
+                  </Button>
+
+                  <Button
+                    size="lg"
+                    variant="ghost"
+                    onClick={() => {
+                      const params = new URLSearchParams(searchParams.toString())
+                      params.set('bible', 'open')
+                      router.push(`?${params.toString()}`)
+                    }}
+                    className="gap-2 text-base px-8 border border-border hover:bg-accent/50"
+                  >
+                    <BookOpen className="w-5 h-5" />
+                    Open World Bible
+                  </Button>
+                </div>
+
+                <div className="pt-8 text-xs text-muted-foreground/60 max-w-md mx-auto">
+                  <div className="flex items-start gap-2 text-left">
+                    <Sparkles className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-500/50" />
+                    <p>
+                      <strong className="text-foreground/80">Tip:</strong> Start with the World
+                      Bible to define your series rules, factions, and themes. Then create episodes
+                      to bring your story to life.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
 
         {/* Right Sidebar: Writers Room */}
         <DomainSidebar
+          header={null}
           position="right"
           storageKey="writers-room"
           defaultWidth={384}
@@ -1847,54 +2305,48 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
         >
           <div className="flex flex-col h-full">
             <ChatInterface
-              title="Writers Room"
               isActivityPanelOpen={isActivityPanelOpen}
               onActivityToggle={() => setIsActivityPanelOpen(!isActivityPanelOpen)}
               messages={messages}
               agentConfig={STORYTELLER_AGENT_CONFIG}
               mentions={mentionItems}
-              onSendMessage={(msg) => sendMessage('/api/storyteller/chat/stream', {
-                message: msg,
-                projectId: currentProject?.id,
-                threadId: currentEpisodeId || 'general',
-                episodeId: currentEpisodeId,
-                currentPhase: currentPhase,
-                seriesBible: {
-                  ...((currentProject?.series_bible as any) || {}),
-                  masterPrompt: currentProject?.project_prompt || '',
-                  userDecisions: storyDecisions,
-                },
-                characters: characters.map(c => ({
-                  characterId: c.id,
-                  name: c.name,
-                  currentGoals: c.psychology?.goals || [],
-                  fears: c.psychology?.fears || [],
-                  selfDelusion: c.psychology?.selfDelusion || '',
-                  actualMotivation: c.psychology?.actualMotivation || '',
-                  transformationProgress: c.transformation || 0,
-                  knowledgeState: [],
-                  stressLevel: c.stress || 30,
-                })),
-                modelConfig: getModelConfigFromStorage(),
-                streamMode: 'events',
-              })}
+              mentionProviders={mentionProviders}
+              projectContext={projectContextForMentions}
+              thinkingAgent={thinkingAgent}
+              onSendMessage={msg =>
+                sendMessage('/api/storyteller/chat/stream', {
+                  message: msg,
+                  projectId: currentProject?.id,
+                  threadId: currentEpisodeId || 'general',
+                  episodeId: currentEpisodeId,
+                  currentPhase: currentPhase,
+                  seriesBible: {
+                    ...((currentProject?.series_bible as any) || {}),
+                    masterPrompt: currentProject?.project_prompt || '',
+                    userDecisions: storyDecisions,
+                  },
+                  characters: characters.map(c => ({
+                    characterId: c.id,
+                    name: c.name,
+                    currentGoals: c.psychology?.goals || [],
+                    fears: c.psychology?.fears || [],
+                    selfDelusion: c.psychology?.selfDelusion || '',
+                    actualMotivation: c.psychology?.actualMotivation || '',
+                    transformationProgress: c.transformation || 0,
+                    knowledgeState: [],
+                    stressLevel: c.stress || 30,
+                  })),
+                  modelConfig: getModelConfigFromStorage(),
+                  streamMode: 'events',
+                })
+              }
               onStopStream={handleStopStream}
-              onQuestionAnswer={handleQuestionAnswer}
-              onQuestionSkip={handleQuestionSkip}
+              onQuestionAnswer={(id, answer) => handleQuestionAnswer(id, answer)}
+              onQuestionSkip={id => handleQuestionSkip(id)}
+              onApproveAllActions={handleApproveAllActions}
               isSending={isSending}
               showThinking={showThinking}
-              ActionComponent={({ action, agentName, id }) => (
-                <ActionCommitted
-                  entry={{
-                    id,
-                    agentName,
-                    action,
-                    timestamp: new Date(),
-                    status: ActionStatus.COMMITTED
-                  }}
-                  compact={true}
-                />
-              )}
+              ActionComponent={MemoizedActionComponent}
               QuestionComponent={({ question, onAnswer, onSkip }) => (
                 <QuestionCard
                   question={question as unknown as AgentQuestion}
@@ -1903,32 +2355,60 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 />
               )}
             >
-              {/* Streaming Tokens Injection */}
-              {isTokenStreaming && streamingTokens && (
+              {/* Streaming Tokens Injection - ONLY when Activity ON */}
+              {/* NOTE: When Activity OFF, AgentLog's bottom indicator handles the "Processing..." status */}
+              {isActivityPanelOpen && isTokenStreaming && streamingTokens && (
                 <div className="mb-4 ml-8 animate-in fade-in duration-300">
-                  <div className="flex items-center gap-2 mb-1 text-primary">
-                    <div className="p-1 rounded bg-primary/10 border-primary/30">
-                      <Sparkles className="w-4 h-4" />
+                  {/* Activity ON: Developer terminal view */}
+                  <div className="rounded-lg overflow-hidden border border-zinc-700/50 shadow-xl">
+                    {/* Terminal header */}
+                    <div className="flex items-center gap-2 px-3 py-2 bg-zinc-900 border-b border-zinc-700/50">
+                      <div className="flex gap-1.5">
+                        <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                        <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                        <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                      </div>
+                      <span className="text-[10px] text-zinc-500 font-mono ml-2">
+                        {thinkingAgent === 'RunnableSequence'
+                          ? 'agent'
+                          : thinkingAgent || 'writers-room'}{' '}
+                        — streaming
+                      </span>
+                      <span className="ml-auto flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                        <span className="text-[9px] text-cyan-400 font-mono uppercase tracking-wider">
+                          LIVE
+                        </span>
+                      </span>
                     </div>
-                    <span className="font-bold text-xs uppercase tracking-wider">
-                      {thinkingAgent || 'Writers Room'}
-                    </span>
-                  </div>
-                  <div className="p-3 rounded-lg border bg-primary/5 border-primary/20 text-foreground/90 font-mono text-sm leading-relaxed whitespace-pre-wrap shadow-sm">
-                    {streamingTokens}
-                    <span className="inline-block w-1.5 h-4 ml-1 bg-primary animate-pulse align-middle" />
+                    {/* Terminal body */}
+                    <div className="bg-zinc-950 p-3 max-h-[250px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
+                      <pre className="m-0 text-[11px] font-mono leading-relaxed whitespace-pre-wrap break-words text-emerald-400/90">
+                        {streamingTokens}
+                        <span className="inline-block w-2 h-4 ml-0.5 bg-emerald-400 animate-pulse align-middle" />
+                      </pre>
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* Streaming Sections Injection */}
-              {streamingSections.length > 0 && (
+              {/* Streaming Sections Injection - Only show when Activity ON */}
+              {isActivityPanelOpen && streamingSections.length > 0 && (
                 <div className="mb-4 ml-8 space-y-2">
-                  {streamingSections.map((section) => (
-                    <div key={section.key} className="flex items-center gap-2 text-sm p-2 rounded bg-muted/30 border border-muted">
-                      {section.status === 'streaming' && <div className="w-3 h-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />}
-                      {section.status === 'complete' && <Check className="w-3 h-3 text-green-500" />}
-                      <span className="font-medium text-muted-foreground">Generating {section.name}...</span>
+                  {streamingSections.map(section => (
+                    <div
+                      key={section.id}
+                      className="flex items-center gap-2 text-sm p-2 rounded bg-muted/30 border border-muted"
+                    >
+                      {section.status === 'in_progress' && (
+                        <div className="w-3 h-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                      )}
+                      {section.status === 'completed' && (
+                        <Check className="w-3 h-3 text-green-500" />
+                      )}
+                      <span className="font-medium text-muted-foreground">
+                        Generating {section.label}...
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -1938,11 +2418,13 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
               {!isSending && !isTokenStreaming && (
                 <div className="mt-4 border-t border-border/10 pt-4 px-4 pb-2">
                   <div className="flex items-center gap-2 mb-1.5 px-1">
-                    <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">Suggested</span>
+                    <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">
+                      Suggested
+                    </span>
                   </div>
                   <SmartQuickActions
                     currentPhase={currentPhase as any}
-                    onSendMessage={(msg) => handleSendMessage(undefined, msg)}
+                    onSendMessage={msg => handleSendMessage(undefined, msg)}
                   />
                 </div>
               )}
@@ -1952,10 +2434,55 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
       </div>
 
       {/* Action Toasts */}
-      < ActionToastContainer entries={showToasts} onDismiss={handleDismissToast} />
+      <ActionToastContainer entries={showToasts} onDismiss={handleDismissToast} />
+
+      {/* Action Approval Modal (Full-Screen Diff Viewer) */}
+      {approvalModalAction && (
+        <ActionApprovalModal
+          isOpen={approvalModalOpen}
+          onClose={() => {
+            setApprovalModalOpen(false)
+            setApprovalModalAction(null)
+          }}
+          action={approvalModalAction.action}
+          agentName={approvalModalAction.agentName}
+          onApprove={async () => {
+            const { messageIndex, actionIndex, action } = approvalModalAction
+            updateActionStatus(messageIndex, actionIndex, 'executing')
+            try {
+              await executeAction(action as any)
+              updateActionStatus(messageIndex, actionIndex, 'committed')
+              setActionHistory(prev => [
+                {
+                  id: `${messageIndex}-${actionIndex}`,
+                  action,
+                  agentName: approvalModalAction.agentName,
+                  status: ActionStatus.COMMITTED,
+                  timestamp: new Date(),
+                },
+                ...prev,
+              ])
+              setApprovalModalOpen(false)
+              setApprovalModalAction(null)
+            } catch (e) {
+              console.error('Approval failed', e)
+              updateActionStatus(messageIndex, actionIndex, 'pending')
+            }
+          }}
+          onReject={() => {
+            updateActionStatus(
+              approvalModalAction.messageIndex,
+              approvalModalAction.actionIndex,
+              'rejected'
+            )
+            setApprovalModalOpen(false)
+            setApprovalModalAction(null)
+          }}
+        />
+      )}
 
       {/* Timeline at Bottom */}
-      < Timeline
+      <Timeline
         episodeId={currentEpisodeId}
         beats={beats}
         onBeatSelect={setSelectedBeatId}
@@ -1965,6 +2492,6 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
 
       {/* Phase Back Confirmation Dialog */}
       {PhaseBackConfirmDialog}
-    </div >
+    </div>
   )
 }

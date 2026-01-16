@@ -23,6 +23,33 @@ import { CameraController } from './CameraController'
 import { KeybindingManager } from './KeybindingManager'
 import { GlobalWaterPlane, TerrainBrushPreview } from './terrain'
 import { TerrainTool } from './tools/TerrainTool'
+import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
+
+// Dynamic Sun Light component that uses sunAngle from store
+const SunLight: React.FC = () => {
+  const sunAngle = useInteriorStore(state => state.terrainSettings.sunAngle)
+
+  // Convert angle to position on a circle at Y=20
+  const radians = (sunAngle * Math.PI) / 180
+  const distance = 20
+  const x = Math.cos(radians) * distance
+  const z = Math.sin(radians) * distance
+
+  return (
+    <directionalLight
+      position={[x, 20, z]}
+      intensity={1.8}
+      castShadow
+      shadow-mapSize={[4096, 4096]}
+      shadow-camera-left={-40}
+      shadow-camera-right={40}
+      shadow-camera-top={40}
+      shadow-camera-bottom={-40}
+      shadow-camera-far={100}
+      shadow-bias={-0.0001}
+    />
+  )
+}
 
 export const InteriorCanvas: React.FC = () => {
   return (
@@ -39,18 +66,11 @@ export const InteriorCanvas: React.FC = () => {
         onUpdate={c => c.lookAt(0, 0, 0)}
       />
 
-      <ambientLight intensity={0.4} />
-      <directionalLight
-        position={[10, 20, 10]}
-        intensity={1.2}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
-      />
+      <ambientLight intensity={0.3} />
+      <SunLight />
 
       {/* Fill light for atmosphere */}
-      <pointLight position={[-10, 10, -10]} intensity={0.5} color="#ffffff" />
-
-
+      <pointLight position={[-10, 10, -10]} intensity={0.4} color="#ffffff" />
 
       <OrbitControls
         makeDefault
@@ -58,9 +78,9 @@ export const InteriorCanvas: React.FC = () => {
         enableZoom={true}
         minZoom={10}
         maxZoom={100}
-      // Lock polar angle for true isometric feel if desired, but freedom is nice too
-      // minPolarAngle={Math.PI / 4}
-      // maxPolarAngle={Math.PI / 3}
+        // Lock polar angle for true isometric feel if desired, but freedom is nice too
+        // minPolarAngle={Math.PI / 4}
+        // maxPolarAngle={Math.PI / 3}
       />
 
       <WallManager />
@@ -78,6 +98,7 @@ export const InteriorCanvas: React.FC = () => {
       {/* Terrain Tool - operates on surfaces directly, no separate terrain mesh */}
       <TerrainBrushPreview />
       <TerrainTool />
+      <GlobalWaterPlane />
 
       <Exporter />
       <RetextureExporter />

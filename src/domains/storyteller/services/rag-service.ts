@@ -1,6 +1,6 @@
 /**
  * RAG Service - Enhanced with Voyage AI and Hybrid Search
- * 
+ *
  * Production-grade retrieval-augmented generation service featuring:
  * - Voyage AI embeddings (voyage-3) for superior retrieval
  * - Hybrid search combining vector + keyword matching
@@ -12,38 +12,32 @@ import { db } from '@/lib/db'
 import { documentEmbeddings } from '../db/schema'
 import { desc, sql, and } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
-import { 
-  getVoyageEmbeddings, 
-  VoyageEmbeddings 
+import {
+  getVoyageEmbeddings,
+  VoyageEmbeddings,
 } from '@/infrastructure/ai/embeddings/voyage-embeddings'
-import { 
-  getHybridSearchEngine, 
+import {
+  getHybridSearchEngine,
   HybridSearchEngine,
-  SearchResult 
+  SearchResult,
 } from '@/infrastructure/ai/rag/hybrid-search'
-import { 
-  getSemanticChunker, 
+import {
+  getSemanticChunker,
   SemanticChunker,
-  DocumentChunk 
+  DocumentChunk,
 } from '@/infrastructure/ai/rag/semantic-chunker'
-import {
-  getQueryExpander,
-  QueryExpander,
-} from '@/infrastructure/ai/rag/query-expander'
-import {
-  getReranker,
-  Reranker,
-} from '@/infrastructure/ai/rag/reranker'
+import { getQueryExpander, QueryExpander } from '@/infrastructure/ai/rag/query-expander'
+import { getReranker, Reranker } from '@/infrastructure/ai/rag/reranker'
 import { STORYTELLER_CONFIG } from '../config/storyteller-config'
 
 // Document types for categorized retrieval
 export type DocumentType =
-  | 'beat_decision'    // Past beat creation/rejection with reasoning
-  | 'character_arc'    // Character development history
-  | 'world_rule'       // Series bible world rules
-  | 'episode_summary'  // Episode summaries
-  | 'user_feedback'    // User corrections/preferences
-  | 'agent_reasoning'  // Agent thought processes
+  | 'beat_decision' // Past beat creation/rejection with reasoning
+  | 'character_arc' // Character development history
+  | 'world_rule' // Series bible world rules
+  | 'episode_summary' // Episode summaries
+  | 'user_feedback' // User corrections/preferences
+  | 'agent_reasoning' // Agent thought processes
 
 export interface RagResult {
   id: string
@@ -55,8 +49,8 @@ export interface RagResult {
 
 export interface CitationInfo {
   id: string
-  marker: string        // [1], [2], etc.
-  source: string        // Document type
+  marker: string // [1], [2], etc.
+  source: string // Document type
   chunkId: string
   confidence: number
 }
@@ -67,7 +61,7 @@ export interface IngestOptions {
   characterId?: string
   beatId?: string
   agentName?: string
-  chunkDocument?: boolean  // Whether to chunk the document
+  chunkDocument?: boolean // Whether to chunk the document
 }
 
 // Simple in-memory cache for semantic queries
@@ -95,7 +89,7 @@ export class RagService {
     this.embeddings = getVoyageEmbeddings()
     this.searchEngine = getHybridSearchEngine()
     this.chunker = getSemanticChunker()
-    this.queryExpander = getQueryExpander({ useLLM: false })  // Fast heuristic by default
+    this.queryExpander = getQueryExpander({ useLLM: false }) // Fast heuristic by default
     this.reranker = getReranker()
   }
 
@@ -131,7 +125,7 @@ export class RagService {
    */
   private async ingestWithChunking(projectId: string, content: string, options: IngestOptions) {
     const documentId = uuidv4()
-    
+
     // Chunk the document
     const chunks = this.chunker.chunkDocument(content, {
       documentId,
@@ -254,14 +248,14 @@ Context: ${context}`
   /**
    * Retrieve with hybrid search (vector + keyword)
    * Returns results with citation information
-   * 
+   *
    * Enhanced with:
    * - Query expansion (optional) - breaks complex queries into sub-queries
    * - Re-ranking (optional) - improves result ordering
    */
   async retrieve(
-    projectId: string, 
-    query: string, 
+    projectId: string,
+    query: string,
     options: RetrieveOptions = {}
   ): Promise<RagResult[]> {
     const {
@@ -291,9 +285,10 @@ Context: ${context}`
 
       // Step 2: Retrieve for all expanded queries
       const allResults: SearchResult[] = []
-      const fetchLimit = useReranking ? limit * 2 : limit  // Fetch more if reranking
+      const fetchLimit = useReranking ? limit * 2 : limit // Fetch more if reranking
 
-      for (const q of queries.slice(0, 3)) {  // Limit to 3 expanded queries
+      for (const q of queries.slice(0, 3)) {
+        // Limit to 3 expanded queries
         const searchResults = await this.searchEngine.search(
           projectId,
           q,
@@ -337,16 +332,15 @@ Context: ${context}`
    */
   private deduplicateResults(results: SearchResult[]): SearchResult[] {
     const byId = new Map<string, SearchResult>()
-    
+
     for (const result of results) {
       const existing = byId.get(result.id)
       if (!existing || result.combinedScore > existing.combinedScore) {
         byId.set(result.id, result)
       }
     }
-    
-    return Array.from(byId.values())
-      .sort((a, b) => b.combinedScore - a.combinedScore)
+
+    return Array.from(byId.values()).sort((a, b) => b.combinedScore - a.combinedScore)
   }
 
   /**
@@ -494,16 +488,18 @@ Context: ${context}`
 
     const formatWithCitations = (results: RagResult[]): string => {
       if (results.length === 0) return ''
-      
-      return results.map(r => {
-        if (r.citation) {
-          r.citation.marker = `[${citationIndex}]`
-          allCitations.push(r.citation)
-          citationIndex++
-          return `${r.citation.marker} ${r.content}`
-        }
-        return r.content
-      }).join('\n---\n')
+
+      return results
+        .map(r => {
+          if (r.citation) {
+            r.citation.marker = `[${citationIndex}]`
+            allCitations.push(r.citation)
+            citationIndex++
+            return `${r.citation.marker} ${r.content}`
+          }
+          return r.content
+        })
+        .join('\n---\n')
     }
 
     return {

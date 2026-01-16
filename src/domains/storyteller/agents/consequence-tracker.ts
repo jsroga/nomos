@@ -18,15 +18,18 @@ export const consequenceTrackerAgent = async (state: WritersRoomState) => {
 
   // Load prompt from Hub
   const loadedPrompt = await loadPromptCached('consequenceTracker')
-  const promptMessages = (loadedPrompt.prompt as any).promptMessages || (loadedPrompt.prompt as any).messages || []
-  const systemMessageFromPrompt = promptMessages.find((m: any) => m.lc_id?.[3] === 'SystemMessagePromptTemplate' || m._type === 'system')
-  const systemTemplate = systemMessageFromPrompt?.prompt?.template || systemMessageFromPrompt?.template || CONSEQUENCE_TRACKER_PROMPT
+  const promptMessages =
+    (loadedPrompt.prompt as any).promptMessages || (loadedPrompt.prompt as any).messages || []
+  const systemMessageFromPrompt = promptMessages.find(
+    (m: any) => m.lc_id?.[3] === 'SystemMessagePromptTemplate' || m._type === 'system'
+  )
+  const systemTemplate =
+    systemMessageFromPrompt?.prompt?.template ||
+    systemMessageFromPrompt?.template ||
+    CONSEQUENCE_TRACKER_PROMPT
 
   const systemMessage = new SystemMessage(
-    systemTemplate.replace(
-      '{unresolvedSetups}',
-      JSON.stringify(unresolvedSetups || [], null, 2)
-    )
+    systemTemplate.replace('{unresolvedSetups}', JSON.stringify(unresolvedSetups || [], null, 2))
   )
 
   try {
@@ -60,7 +63,7 @@ export const consequenceTrackerAgent = async (state: WritersRoomState) => {
       name: 'ConsequenceTracker',
     })
 
-      ; (namedMessage as any).actions = actions
+    ;(namedMessage as any).actions = actions
 
     return {
       messages: [namedMessage],

@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
 
-import { ChevronLeft, ChevronRight, GripVertical } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 
 const DEFAULT_WIDTH = 320
 const MIN_WIDTH = 280
@@ -114,27 +114,23 @@ export const DomainSidebar: React.FC<DomainSidebarProps> = ({
     <div
       ref={sidebarRef}
       className={cn(
-        'h-full bg-card flex flex-col relative shrink-0',
-        position === 'left' ? 'border-r border-border' : 'border-l border-border',
+        'h-full bg-background/60 backdrop-blur-xl flex flex-col relative shrink-0',
+        position === 'left' ? 'border-r border-border/50' : 'border-l border-border/50',
         isResizing && 'select-none',
         className
       )}
       style={{ width }}
     >
       {/* Header */}
-      <div className="p-4 border-b border-border shrink-0">
-        {typeof header === 'string' ? (
-          <h1 className="font-bold text-xl">{header}</h1>
-        ) : (
-          header
-        )}
-      </div>
+      {header && (
+        <div className="p-4 border-b border-border shrink-0">
+          {typeof header === 'string' ? <h1 className="font-bold text-xl">{header}</h1> : header}
+        </div>
+      )}
 
       {/* Content */}
       {rawContent ? (
-        <div className="flex-1 flex flex-col overflow-hidden p-4">
-          {children}
-        </div>
+        <div className="flex-1 flex flex-col overflow-hidden">{children}</div>
       ) : (
         <ScrollArea className="flex-1">
           <div className="p-4">{children}</div>
@@ -184,7 +180,7 @@ export const SidebarSection: React.FC<SidebarSectionProps> = ({
   collapsible = false,
   defaultOpen = true,
   onToggle,
-  rightContent
+  rightContent,
 }) => {
   const [isOpen, setIsOpen] = React.useState(defaultOpen)
 
@@ -210,9 +206,9 @@ export const SidebarSection: React.FC<SidebarSectionProps> = ({
           {collapsible ? (
             <button
               onClick={handleToggle}
-              className="text-xs font-mono font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5 hover:text-foreground transition-colors w-full text-left"
+              className="text-xs font-mono font-bold text-indigo-400/90 uppercase tracking-widest flex items-center gap-1.5 hover:text-indigo-400 transition-colors w-full text-left"
             >
-              <div className={cn("transition-transform duration-200", isOpen ? "rotate-90" : "")}>
+              <div className={cn('transition-transform duration-200', isOpen ? 'rotate-90' : '')}>
                 <ChevronRight size={12} />
               </div>
               {icon}
@@ -220,7 +216,7 @@ export const SidebarSection: React.FC<SidebarSectionProps> = ({
               {rightContent}
             </button>
           ) : (
-            <h3 className="text-xs font-mono font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5 flex-1">
+            <h3 className="text-xs font-mono font-bold text-indigo-400/90 uppercase tracking-widest flex items-center gap-1.5 flex-1">
               {icon}
               {title}
               {rightContent && <div className="ml-auto">{rightContent}</div>}
@@ -229,7 +225,7 @@ export const SidebarSection: React.FC<SidebarSectionProps> = ({
         </div>
       )}
       {(!collapsible || isOpen) && (
-        <div className={cn(collapsible && "animate-in slide-in-from-top-1 fade-in duration-200")}>
+        <div className={cn(collapsible && 'animate-in slide-in-from-top-1 fade-in duration-200')}>
           {children}
         </div>
       )}
@@ -253,12 +249,7 @@ export const SidebarSettingsBox: React.FC<SidebarSettingsBoxProps> = ({
   icon,
 }) => {
   return (
-    <div
-      className={cn(
-        'bg-[#191919] p-4 rounded-lg border border-border space-y-3',
-        className
-      )}
-    >
+    <div className={cn('bg-[#191919] p-4 rounded-lg border border-border space-y-3', className)}>
       {title && (
         <div className="flex items-center gap-2">
           {icon}
@@ -271,9 +262,17 @@ export const SidebarSettingsBox: React.FC<SidebarSettingsBoxProps> = ({
 }
 
 // NEW: Standardized Header for Main Panel Title (e.g. "World Gen")
-export const SidebarHeader: React.FC<React.PropsWithChildren<{ className?: string }>> = ({ children, className }) => {
+export const SidebarHeader: React.FC<React.PropsWithChildren<{ className?: string }>> = ({
+  children,
+  className,
+}) => {
   return (
-    <h2 className={cn('text-sm font-mono font-bold uppercase tracking-widest text-muted-foreground', className)}>
+    <h2
+      className={cn(
+        'text-sm font-mono font-bold uppercase tracking-widest text-muted-foreground',
+        className
+      )}
+    >
       {children}
     </h2>
   )
@@ -294,7 +293,7 @@ export const SidebarLabel: React.FC<SidebarLabelProps> = ({
   htmlFor,
   hint,
   className,
-  variant = 'small' // Defaulting to small now for consistency
+  variant = 'small', // Defaulting to small now for consistency
 }) => {
   return (
     <div className={cn('space-y-1', className)}>
@@ -303,7 +302,7 @@ export const SidebarLabel: React.FC<SidebarLabelProps> = ({
         // UPGRADED STYLE: Using inline-flex so icons appear next to text
         className={cn(
           'inline-flex items-center gap-1 font-mono font-medium text-muted-foreground',
-          variant === 'small' ? 'text-[10px] uppercase tracking-wide' : 'text-sm',
+          variant === 'small' ? 'text-[10px] uppercase tracking-wide' : 'text-sm'
         )}
       >
         {children}
@@ -314,39 +313,36 @@ export const SidebarLabel: React.FC<SidebarLabelProps> = ({
 }
 
 // Standardized textarea for sidebar use
-interface SidebarTextareaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+interface SidebarTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string
   hint?: string
 }
 
-export const SidebarTextarea = React.forwardRef<
-  HTMLTextAreaElement,
-  SidebarTextareaProps
->(({ label, hint, className, ...props }, ref) => {
-  return (
-    <div className="space-y-2">
-      {label && <SidebarLabel hint={hint}>{label}</SidebarLabel>}
-      <textarea
-        ref={ref}
-        className={cn(
-          'w-full bg-background/50 border-2 border-border/60 rounded-md p-3 text-sm font-mono resize-none',
-          'hover:border-border transition-colors',
-          'focus:border-primary focus:ring-1 focus:ring-primary/30 focus:outline-none',
-          'placeholder:text-muted-foreground/60',
-          'disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/30 disabled:border-border/30',
-          className
-        )}
-        {...props}
-      />
-    </div>
-  )
-})
+export const SidebarTextarea = React.forwardRef<HTMLTextAreaElement, SidebarTextareaProps>(
+  ({ label, hint, className, ...props }, ref) => {
+    return (
+      <div className="space-y-2">
+        {label && <SidebarLabel hint={hint}>{label}</SidebarLabel>}
+        <textarea
+          ref={ref}
+          className={cn(
+            'w-full bg-background/50 border-2 border-border/60 rounded-md p-3 text-sm font-mono resize-none',
+            'hover:border-border transition-colors',
+            'focus:border-primary focus:ring-1 focus:ring-primary/30 focus:outline-none',
+            'placeholder:text-muted-foreground/60',
+            'disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/30 disabled:border-border/30',
+            className
+          )}
+          {...props}
+        />
+      </div>
+    )
+  }
+)
 SidebarTextarea.displayName = 'SidebarTextarea'
 
 // Standardized input for sidebar use
-interface SidebarInputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {
+interface SidebarInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string
   hint?: string
 }
@@ -398,7 +394,9 @@ export const SidebarSliderRow: React.FC<SidebarSliderRowProps> = ({
   return (
     <div className="space-y-2">
       <div className="flex justify-between text-sm">
-        <span className="font-medium font-mono text-[10px] uppercase tracking-wide text-muted-foreground">{label}</span>
+        <span className="font-medium font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+          {label}
+        </span>
         <span className="text-muted-foreground font-mono text-xs">{displayValue}</span>
       </div>
       <Slider
@@ -406,7 +404,7 @@ export const SidebarSliderRow: React.FC<SidebarSliderRowProps> = ({
         max={max}
         step={step}
         value={[value]}
-        onValueChange={(vals) => onChange(vals[0])}
+        onValueChange={vals => onChange(vals[0])}
         className="w-full"
       />
     </div>
@@ -428,8 +426,10 @@ export const SidebarToggleRow: React.FC<SidebarToggleRowProps> = ({
   className,
 }) => {
   return (
-    <div className={cn("flex items-center justify-between", className)}>
-      <span className="font-medium font-mono text-[10px] uppercase tracking-wide text-muted-foreground">{label}</span>
+    <div className={cn('flex items-center justify-between', className)}>
+      <span className="font-medium font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </span>
       <Switch checked={checked} onCheckedChange={onChange} />
     </div>
   )

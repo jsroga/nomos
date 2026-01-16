@@ -1,9 +1,7 @@
-import { WritersRoomState } from '../graph/state';
-import { AgentActionValidated, WorldRule, Faction } from '../schemas/agent-schemas';
-import { v4 as uuidv4 } from 'uuid';
-import { BeatStatus, BeatType } from '../enums';
-
-
+import { WritersRoomState } from '../graph/state'
+import { AgentActionValidated, WorldRule, Faction } from '../schemas/agent-schemas'
+import { v4 as uuidv4 } from 'uuid'
+import { BeatStatus, BeatType } from '../enums'
 
 // =================================================================
 // SMART MERGE HELPERS
@@ -17,25 +15,26 @@ function smartMergeWorldRules(
   incoming: WorldRule[],
   mode: 'replace' | 'merge' | 'smart'
 ): WorldRule[] {
-  if (mode === 'replace') return incoming;
-  if (mode === 'merge') return [...existing, ...incoming];
+  if (mode === 'replace') return incoming
+  if (mode === 'merge') return [...existing, ...incoming]
 
   // Smart mode: match by rule text, update if found, add if not
-  const result = [...existing];
+  const result = [...existing]
   for (const newRule of incoming) {
-    const existingIndex = result.findIndex(r =>
-      r.rule.toLowerCase() === newRule.rule.toLowerCase() ||
-      r.category === newRule.category && r.rule.includes(newRule.rule.substring(0, 20))
-    );
+    const existingIndex = result.findIndex(
+      r =>
+        r.rule.toLowerCase() === newRule.rule.toLowerCase() ||
+        (r.category === newRule.category && r.rule.includes(newRule.rule.substring(0, 20)))
+    )
     if (existingIndex >= 0) {
       // Update existing rule
-      result[existingIndex] = { ...result[existingIndex], ...newRule };
+      result[existingIndex] = { ...result[existingIndex], ...newRule }
     } else {
       // Add new rule
-      result.push(newRule);
+      result.push(newRule)
     }
   }
-  return result;
+  return result
 }
 
 /**
@@ -46,56 +45,71 @@ function smartMergeFactions(
   incoming: Faction[],
   mode: 'replace' | 'merge' | 'smart'
 ): Faction[] {
-  if (mode === 'replace') return incoming;
-  if (mode === 'merge') return [...existing, ...incoming];
+  if (mode === 'replace') return incoming
+  if (mode === 'merge') return [...existing, ...incoming]
 
   // Smart mode: match by id or name
-  const result = [...existing];
+  const result = [...existing]
   for (const newFaction of incoming) {
-    const existingIndex = result.findIndex(f =>
-      f.id === newFaction.id ||
-      f.name.toLowerCase() === newFaction.name.toLowerCase()
-    );
+    const existingIndex = result.findIndex(
+      f => f.id === newFaction.id || f.name.toLowerCase() === newFaction.name.toLowerCase()
+    )
     if (existingIndex >= 0) {
       // Update existing faction, merge arrays
       result[existingIndex] = {
         ...result[existingIndex],
         ...newFaction,
         goals: [...new Set([...(result[existingIndex].goals || []), ...(newFaction.goals || [])])],
-        rivals: newFaction.rivals || result[existingIndex].rivals
-      };
+        rivals: newFaction.rivals || result[existingIndex].rivals,
+      }
     } else {
       // Add new faction with generated id if missing
-      result.push({ ...newFaction, id: newFaction.id || uuidv4() });
+      result.push({ ...newFaction, id: newFaction.id || uuidv4() })
     }
   }
-  return result;
+  return result
 }
 
 /**
  * Smart merge for key characters - matches by name
  */
 function smartMergeKeyCharacters(
-  existing: Array<{ name: string; role: string; archetype: string; motivation: string; factionId?: string | null }>,
-  incoming: Array<{ name: string; role: string; archetype: string; motivation: string; factionId?: string | null }>,
+  existing: Array<{
+    name: string
+    role: string
+    archetype: string
+    motivation: string
+    factionId?: string | null
+  }>,
+  incoming: Array<{
+    name: string
+    role: string
+    archetype: string
+    motivation: string
+    factionId?: string | null
+  }>,
   mode: 'replace' | 'merge' | 'smart'
-): Array<{ name: string; role: string; archetype: string; motivation: string; factionId?: string | null }> {
-  if (mode === 'replace') return incoming;
-  if (mode === 'merge') return [...existing, ...incoming];
+): Array<{
+  name: string
+  role: string
+  archetype: string
+  motivation: string
+  factionId?: string | null
+}> {
+  if (mode === 'replace') return incoming
+  if (mode === 'merge') return [...existing, ...incoming]
 
   // Smart mode: match by name
-  const result = [...existing];
+  const result = [...existing]
   for (const newChar of incoming) {
-    const existingIndex = result.findIndex(c =>
-      c.name.toLowerCase() === newChar.name.toLowerCase()
-    );
+    const existingIndex = result.findIndex(c => c.name.toLowerCase() === newChar.name.toLowerCase())
     if (existingIndex >= 0) {
-      result[existingIndex] = { ...result[existingIndex], ...newChar };
+      result[existingIndex] = { ...result[existingIndex], ...newChar }
     } else {
-      result.push(newChar);
+      result.push(newChar)
     }
   }
-  return result;
+  return result
 }
 
 /**
@@ -106,8 +120,8 @@ function mergeStringArrays(
   incoming: string[],
   mode: 'replace' | 'merge' | null | undefined
 ): string[] {
-  if (mode === 'replace' || !mode) return incoming;
-  return [...new Set([...(existing || []), ...incoming])];
+  if (mode === 'replace' || !mode) return incoming
+  return [...new Set([...(existing || []), ...incoming])]
 }
 
 /**
@@ -117,12 +131,12 @@ export function reduceAgentActions(
   state: WritersRoomState,
   actions: AgentActionValidated[]
 ): Partial<WritersRoomState> {
-  if (!actions || actions.length === 0) return {};
+  if (!actions || actions.length === 0) return {}
 
-  let updates: Partial<WritersRoomState> = {};
+  const updates: Partial<WritersRoomState> = {}
 
   // Helper to get current state (merging updates as we go)
-  const getCurrentState = () => ({ ...state, ...updates });
+  const getCurrentState = () => ({ ...state, ...updates })
 
   for (const action of actions) {
     switch (action.type) {
@@ -130,68 +144,67 @@ export function reduceAgentActions(
       // SERIES BIBLE ACTIONS
       // =================================================================
       case 'UPDATE_SERIES_BIBLE': {
-        const currentBible = getCurrentState().seriesBible || {};
+        const currentBible = getCurrentState().seriesBible || {}
         updates.seriesBible = {
           ...currentBible,
           ...action.payload,
           // Merge arrays if they exist
-          themes: [
-            ...(currentBible.themes || []),
-            ...(action.payload.themes || [])
-          ].filter((v, i, a) => a.indexOf(v) === i), // Unique
+          themes: [...(currentBible.themes || []), ...(action.payload.themes || [])].filter(
+            (v, i, a) => a.indexOf(v) === i
+          ), // Unique
           worldRules: [
             ...(currentBible.worldRules || []),
-            ...(action.payload.worldRules || [])
+            ...(action.payload.worldRules || []),
           ].filter((v, i, a) => a.indexOf(v) === i),
-        };
-        break;
+        }
+        break
       }
 
       case 'SET_GENRE_AND_TONE': {
-        const currentBible = getCurrentState().seriesBible || {};
+        const currentBible = getCurrentState().seriesBible || {}
         updates.seriesBible = {
           ...currentBible,
           genre: action.payload.genre,
           tone: action.payload.tone,
-          styleReference: action.payload.styleReference || currentBible.styleReference
-        };
-        break;
+          styleReference: action.payload.styleReference || currentBible.styleReference,
+        }
+        break
       }
 
       case 'ADD_THEME': {
-        const currentBible = getCurrentState().seriesBible || {};
-        const themes = currentBible.themes || [];
+        const currentBible = getCurrentState().seriesBible || {}
+        const themes = currentBible.themes || []
         if (!themes.includes(action.payload.theme)) {
           updates.seriesBible = {
             ...currentBible,
-            themes: [...themes, action.payload.theme]
-          };
+            themes: [...themes, action.payload.theme],
+          }
         }
-        break;
+        break
       }
 
       case 'REMOVE_THEME': {
-        const currentBible = getCurrentState().seriesBible || {};
-        const themes = currentBible.themes || [];
+        const currentBible = getCurrentState().seriesBible || {}
+        const themes = currentBible.themes || []
         updates.seriesBible = {
           ...currentBible,
-          themes: themes.filter((t: string) => t !== action.payload.theme)
-        };
-        break;
+          themes: themes.filter((t: string) => t !== action.payload.theme),
+        }
+        break
       }
 
       case 'CREATE_LOCATION': {
-        const currentBible = getCurrentState().seriesBible || {};
-        const locations = currentBible.locations || [];
+        const currentBible = getCurrentState().seriesBible || {}
+        const locations = currentBible.locations || []
         const newLocation = {
           id: uuidv4(),
-          ...action.payload
-        };
+          ...action.payload,
+        }
         updates.seriesBible = {
           ...currentBible,
-          locations: [...locations, newLocation]
-        };
-        break;
+          locations: [...locations, newLocation],
+        }
+        break
       }
 
       // =================================================================
@@ -199,186 +212,214 @@ export function reduceAgentActions(
       // =================================================================
 
       case 'UPDATE_WORLD_RULES': {
-        const currentBible = getCurrentState().seriesBible || {};
-        const storyPlan = currentBible.storyPlan || {};
-        const existingRules = storyPlan.worldRules || currentBible.worldRules || [];
-        const mergedRules = smartMergeWorldRules(existingRules, action.payload.rules, action.payload.mergeMode);
+        const currentBible = getCurrentState().seriesBible || {}
+        const storyPlan = currentBible.storyPlan || {}
+        const existingRules = storyPlan.worldRules || currentBible.worldRules || []
+        const mergedRules = smartMergeWorldRules(
+          existingRules,
+          action.payload.rules,
+          action.payload.mergeMode
+        )
 
         updates.seriesBible = {
           ...currentBible,
           worldRules: mergedRules,
           storyPlan: {
             ...storyPlan,
-            worldRules: mergedRules
-          }
-        };
-        break;
+            worldRules: mergedRules,
+          },
+        }
+        break
       }
 
       case 'UPDATE_FACTIONS': {
-        const currentBible = getCurrentState().seriesBible || {};
-        const storyPlan = currentBible.storyPlan || {};
-        const existingFactions = storyPlan.factions || currentBible.factions || [];
-        const mergedFactions = smartMergeFactions(existingFactions, action.payload.factions, action.payload.mergeMode);
+        const currentBible = getCurrentState().seriesBible || {}
+        const storyPlan = currentBible.storyPlan || {}
+        const existingFactions = storyPlan.factions || currentBible.factions || []
+        const mergedFactions = smartMergeFactions(
+          existingFactions,
+          action.payload.factions,
+          action.payload.mergeMode
+        )
 
         updates.seriesBible = {
           ...currentBible,
           factions: mergedFactions,
           storyPlan: {
             ...storyPlan,
-            factions: mergedFactions
-          }
-        };
-        break;
+            factions: mergedFactions,
+          },
+        }
+        break
       }
 
       case 'UPDATE_INSPIRATIONS': {
-        const currentBible = getCurrentState().seriesBible || {};
-        const storyPlan = currentBible.storyPlan || {};
-        const currentInspirations = storyPlan.inspirations || currentBible.inspirations || { books: [], movies: [], games: [] };
-        const mode = action.payload.mergeMode;
+        const currentBible = getCurrentState().seriesBible || {}
+        const storyPlan = currentBible.storyPlan || {}
+        const currentInspirations = storyPlan.inspirations ||
+          currentBible.inspirations || { books: [], movies: [], games: [] }
+        const mode = action.payload.mergeMode
 
         // Helper to merge inspiration arrays (handles both string and object formats)
         const mergeInspirationArray = (existing: any[], incoming: any[] | undefined): any[] => {
-          if (!incoming) return existing || [];
-          if (mode === 'replace') return incoming;
+          if (!incoming) return existing || []
+          if (mode === 'replace') return incoming
           // Merge: add new items
-          const existingTitles = new Set((existing || []).map((item: any) =>
-            typeof item === 'string' ? item : item.title
-          ));
+          const existingTitles = new Set(
+            (existing || []).map((item: any) => (typeof item === 'string' ? item : item.title))
+          )
           const newItems = incoming.filter((item: any) => {
-            const title = typeof item === 'string' ? item : item.title;
-            return !existingTitles.has(title);
-          });
-          return [...(existing || []), ...newItems];
-        };
+            const title = typeof item === 'string' ? item : item.title
+            return !existingTitles.has(title)
+          })
+          return [...(existing || []), ...newItems]
+        }
 
         const mergedInspirations = {
-          books: mergeInspirationArray(currentInspirations.books, action.payload.inspirations.books),
-          movies: mergeInspirationArray(currentInspirations.movies, action.payload.inspirations.movies),
-          games: mergeInspirationArray(currentInspirations.games, action.payload.inspirations.games)
-        };
+          books: mergeInspirationArray(
+            currentInspirations.books,
+            action.payload.inspirations.books
+          ),
+          movies: mergeInspirationArray(
+            currentInspirations.movies,
+            action.payload.inspirations.movies
+          ),
+          games: mergeInspirationArray(
+            currentInspirations.games,
+            action.payload.inspirations.games
+          ),
+        }
 
         updates.seriesBible = {
           ...currentBible,
           inspirations: mergedInspirations,
           storyPlan: {
             ...storyPlan,
-            inspirations: mergedInspirations
-          }
-        };
-        break;
+            inspirations: mergedInspirations,
+          },
+        }
+        break
       }
 
       case 'UPDATE_WORLD_DESCRIPTION': {
-        const currentBible = getCurrentState().seriesBible || {};
-        const storyPlan = currentBible.storyPlan || {};
+        const currentBible = getCurrentState().seriesBible || {}
+        const storyPlan = currentBible.storyPlan || {}
 
         updates.seriesBible = {
           ...currentBible,
           worldDescription: action.payload.description,
           storyPlan: {
             ...storyPlan,
-            worldDescription: action.payload.description
-          }
-        };
-        break;
+            worldDescription: action.payload.description,
+          },
+        }
+        break
       }
 
       case 'UPDATE_MOOD_SOUNDTRACK': {
-        const currentBible = getCurrentState().seriesBible || {};
-        const storyPlan = currentBible.storyPlan || {};
+        const currentBible = getCurrentState().seriesBible || {}
+        const storyPlan = currentBible.storyPlan || {}
 
         updates.seriesBible = {
           ...currentBible,
           moodSoundtrack: action.payload.moodSoundtrack,
           storyPlan: {
             ...storyPlan,
-            moodSoundtrack: action.payload.moodSoundtrack
-          }
-        };
-        break;
+            moodSoundtrack: action.payload.moodSoundtrack,
+          },
+        }
+        break
       }
 
       case 'UPDATE_SOUNDTRACKS': {
-        const currentBible = getCurrentState().seriesBible || {};
-        const storyPlan = currentBible.storyPlan || {};
-        const existingSoundtracks = storyPlan.soundtracks || [];
-        const mode = action.payload.mergeMode;
+        const currentBible = getCurrentState().seriesBible || {}
+        const storyPlan = currentBible.storyPlan || {}
+        const existingSoundtracks = storyPlan.soundtracks || []
+        const mode = action.payload.mergeMode
 
-        let mergedSoundtracks;
+        let mergedSoundtracks
         if (mode === 'merge') {
-          const existingUrls = new Set(existingSoundtracks.map((s: any) => s.youtubeUrl));
-          const newTracks = action.payload.soundtracks.filter((s: any) => !existingUrls.has(s.youtubeUrl));
-          mergedSoundtracks = [...existingSoundtracks, ...newTracks];
+          const existingUrls = new Set(existingSoundtracks.map((s: any) => s.youtubeUrl))
+          const newTracks = action.payload.soundtracks.filter(
+            (s: any) => !existingUrls.has(s.youtubeUrl)
+          )
+          mergedSoundtracks = [...existingSoundtracks, ...newTracks]
         } else {
-          mergedSoundtracks = action.payload.soundtracks;
+          mergedSoundtracks = action.payload.soundtracks
         }
 
         updates.seriesBible = {
           ...currentBible,
           storyPlan: {
             ...storyPlan,
-            soundtracks: mergedSoundtracks
-          }
-        };
-        break;
+            soundtracks: mergedSoundtracks,
+          },
+        }
+        break
       }
 
       case 'UPDATE_PLOT_TWISTS': {
-        const currentBible = getCurrentState().seriesBible || {};
-        const storyPlan = currentBible.storyPlan || {};
-        const existingTwists = storyPlan.plotTwists || [];
-        const mergedTwists = mergeStringArrays(existingTwists, action.payload.plotTwists, action.payload.mergeMode);
+        const currentBible = getCurrentState().seriesBible || {}
+        const storyPlan = currentBible.storyPlan || {}
+        const existingTwists = storyPlan.plotTwists || []
+        const mergedTwists = mergeStringArrays(
+          existingTwists,
+          action.payload.plotTwists,
+          action.payload.mergeMode
+        )
 
         updates.seriesBible = {
           ...currentBible,
           storyPlan: {
             ...storyPlan,
-            plotTwists: mergedTwists
-          }
-        };
-        break;
+            plotTwists: mergedTwists,
+          },
+        }
+        break
       }
 
       case 'UPDATE_KEY_CHARACTERS': {
-        const currentBible = getCurrentState().seriesBible || {};
-        const storyPlan = currentBible.storyPlan || {};
-        const existingChars = storyPlan.keyCharacters || currentBible.keyCharacters || [];
-        const mergedChars = smartMergeKeyCharacters(existingChars, action.payload.keyCharacters, action.payload.mergeMode);
+        const currentBible = getCurrentState().seriesBible || {}
+        const storyPlan = currentBible.storyPlan || {}
+        const existingChars = storyPlan.keyCharacters || currentBible.keyCharacters || []
+        const mergedChars = smartMergeKeyCharacters(
+          existingChars,
+          action.payload.keyCharacters,
+          action.payload.mergeMode
+        )
 
         updates.seriesBible = {
           ...currentBible,
           keyCharacters: mergedChars,
           storyPlan: {
             ...storyPlan,
-            keyCharacters: mergedChars
-          }
-        };
-        break;
+            keyCharacters: mergedChars,
+          },
+        }
+        break
       }
 
       case 'UPDATE_EPISODE_ROADMAP': {
-        const currentBible = getCurrentState().seriesBible || {};
-        const storyPlan = currentBible.storyPlan || {};
-        const existingSequences = storyPlan.sequences || [];
-        const mode = action.payload.mergeMode;
+        const currentBible = getCurrentState().seriesBible || {}
+        const storyPlan = currentBible.storyPlan || {}
+        const existingSequences = storyPlan.sequences || []
+        const mode = action.payload.mergeMode
 
-        let mergedSequences;
+        let mergedSequences
         if (mode === 'merge') {
           // Merge by id, update existing or append new
-          mergedSequences = [...existingSequences];
+          mergedSequences = [...existingSequences]
           for (const newSeq of action.payload.sequences) {
-            const existingIndex = mergedSequences.findIndex(s => s.id === newSeq.id);
+            const existingIndex = mergedSequences.findIndex(s => s.id === newSeq.id)
             if (existingIndex >= 0) {
-              mergedSequences[existingIndex] = { ...mergedSequences[existingIndex], ...newSeq };
+              mergedSequences[existingIndex] = { ...mergedSequences[existingIndex], ...newSeq }
             } else {
-              mergedSequences.push(newSeq);
+              mergedSequences.push(newSeq)
             }
           }
         } else {
           // Replace
-          mergedSequences = action.payload.sequences;
+          mergedSequences = action.payload.sequences
         }
 
         updates.seriesBible = {
@@ -387,31 +428,33 @@ export function reduceAgentActions(
             ...storyPlan,
             sequences: mergedSequences,
             // Also update executiveSummary if provided
-            ...(action.payload.executiveSummary !== undefined ? { executiveSummary: action.payload.executiveSummary } : {})
-          }
-        };
-        break;
+            ...(action.payload.executiveSummary !== undefined
+              ? { executiveSummary: action.payload.executiveSummary }
+              : {}),
+          },
+        }
+        break
       }
 
       case 'UPDATE_ROADMAP_SUMMARY': {
-        const currentBible = getCurrentState().seriesBible || {};
-        const storyPlan = currentBible.storyPlan || {};
+        const currentBible = getCurrentState().seriesBible || {}
+        const storyPlan = currentBible.storyPlan || {}
 
         updates.seriesBible = {
           ...currentBible,
           storyPlan: {
             ...storyPlan,
-            executiveSummary: action.payload.executiveSummary
-          }
-        };
-        break;
+            executiveSummary: action.payload.executiveSummary,
+          },
+        }
+        break
       }
 
       // =================================================================
       // CHARACTER ACTIONS
       // =================================================================
       case 'CREATE_CHARACTER': {
-        const currentCharacters = getCurrentState().characters || [];
+        const currentCharacters = getCurrentState().characters || []
         const newCharacter = {
           characterId: uuidv4(),
           name: action.payload.name,
@@ -420,53 +463,67 @@ export function reduceAgentActions(
           archetype: action.payload.archetype,
           currentGoals: [],
           fears: [],
-          metrics: { // Default metrics
-            valence: 0, arousal: 50, autonomy: 50, competence: 50,
-            relatedness: 50, cognitiveClarity: 70, perceivedStakes: 30,
-            socialSafety: 60, moralAlignment: 50, transformation: 0
-          }
-        };
+          metrics: {
+            // Default metrics
+            valence: 0,
+            arousal: 50,
+            autonomy: 50,
+            competence: 50,
+            relatedness: 50,
+            cognitiveClarity: 70,
+            perceivedStakes: 30,
+            socialSafety: 60,
+            moralAlignment: 50,
+            transformation: 0,
+          },
+        }
         // @ts-ignore - partial match to CharacterState
-        updates.characters = [...currentCharacters, newCharacter];
-        break;
+        updates.characters = [...currentCharacters, newCharacter]
+        break
       }
 
       case 'UPDATE_CHARACTER_PROFILE': {
-        const currentCharacters = getCurrentState().characters || [];
+        const currentCharacters = getCurrentState().characters || []
         updates.characters = currentCharacters.map(char => {
-          if (char.characterId === action.payload.characterId || char.name === action.payload.characterId) {
+          if (
+            char.characterId === action.payload.characterId ||
+            char.name === action.payload.characterId
+          ) {
             return {
               ...char,
               description: action.payload.updates.description || char.description,
               // simplistic trait merge
-              traits: [...(char.traits || []), ...(action.payload.updates.traits || [])]
-            };
+              traits: [...(char.traits || []), ...(action.payload.updates.traits || [])],
+            }
           }
-          return char;
-        });
-        break;
+          return char
+        })
+        break
       }
 
       case 'SET_CHARACTER_GOAL': {
-        const currentCharacters = getCurrentState().characters || [];
+        const currentCharacters = getCurrentState().characters || []
         updates.characters = currentCharacters.map(char => {
-          if (char.characterId === action.payload.characterId || char.name === action.payload.characterId) {
+          if (
+            char.characterId === action.payload.characterId ||
+            char.name === action.payload.characterId
+          ) {
             return {
               ...char,
-              currentGoals: [...(char.currentGoals || []), action.payload.goal]
-            };
+              currentGoals: [...(char.currentGoals || []), action.payload.goal],
+            }
           }
-          return char;
-        });
-        break;
+          return char
+        })
+        break
       }
 
       // =================================================================
       // BEAT BOARD ACTIONS
       // =================================================================
       case 'CREATE_BEAT': {
-        const currentBeats = getCurrentState().beatBoard || [];
-        const payload = action.payload as any; // Use any to access optional BeatCard properties
+        const currentBeats = getCurrentState().beatBoard || []
+        const payload = action.payload as any // Use any to access optional BeatCard properties
         const newBeat = {
           id: uuidv4(),
           episodeId: state.episodeId || 'EP_01',
@@ -483,91 +540,87 @@ export function reduceAgentActions(
           content: payload.content,
           imageUrl: payload.imageUrl,
           imagePrompt: payload.imagePrompt,
-        };
-        updates.beatBoard = [...currentBeats, newBeat];
+        }
+        updates.beatBoard = [...currentBeats, newBeat]
         // Automatically set this as the current beat for review
-        updates.currentBeat = newBeat;
-        break;
+        updates.currentBeat = newBeat
+        break
       }
-
 
       case 'UPDATE_BEAT_CONTENT':
       case 'UPDATE_BEAT': {
-        const payload = action.type === 'UPDATE_BEAT_CONTENT'
-          ? { beatId: action.payload.beatId, updates: action.payload }
-          : action.payload;
+        const payload =
+          action.type === 'UPDATE_BEAT_CONTENT'
+            ? { beatId: action.payload.beatId, updates: action.payload }
+            : action.payload
 
-        const currentBeats = getCurrentState().beatBoard || [];
-        updates.beatBoard = currentBeats.map((beat) => {
+        const currentBeats = getCurrentState().beatBoard || []
+        updates.beatBoard = currentBeats.map(beat => {
           if (beat.id === payload.beatId) {
             return {
               ...beat,
               ...payload.updates,
-            } as typeof beat;
+            } as typeof beat
           }
-          return beat;
-        });
-        break;
+          return beat
+        })
+        break
       }
 
-
       case 'DELETE_BEAT': {
-        const currentBeats = getCurrentState().beatBoard || [];
-        updates.beatBoard = currentBeats.filter(
-          (b) => b.id !== action.payload.beatId
-        );
-        break;
+        const currentBeats = getCurrentState().beatBoard || []
+        updates.beatBoard = currentBeats.filter(b => b.id !== action.payload.beatId)
+        break
       }
 
       case 'REORDER_BEAT': {
-        const currentBeats = [...(getCurrentState().beatBoard || [])];
-        const beatIndex = currentBeats.findIndex(b => b.id === action.payload.beatId);
+        const currentBeats = [...(getCurrentState().beatBoard || [])]
+        const beatIndex = currentBeats.findIndex(b => b.id === action.payload.beatId)
         if (beatIndex > -1) {
-          const [beat] = currentBeats.splice(beatIndex, 1);
-          currentBeats.splice(action.payload.newIndex, 0, beat);
+          const [beat] = currentBeats.splice(beatIndex, 1)
+          currentBeats.splice(action.payload.newIndex, 0, beat)
           // Re-assign sequence numbers
           updates.beatBoard = currentBeats.map((b, idx) => ({
             ...b,
-            sequence: idx + 1
-          }));
+            sequence: idx + 1,
+          }))
         }
-        break;
+        break
       }
-
-
 
       // =================================================================
       // SCRIPT ACTIONS
       // =================================================================
       case 'UPDATE_SCRIPT_CONTENT': {
-        const currentScript = getCurrentState().script || "";
+        const currentScript = getCurrentState().script || ''
         if (action.payload.append) {
-          updates.script = currentScript + "\n\n" + action.payload.content;
+          updates.script = currentScript + '\n\n' + action.payload.content
         } else {
-          updates.script = action.payload.content;
+          updates.script = action.payload.content
         }
-        break;
+        break
       }
 
       case 'CREATE_SCENE': {
-        const currentScript = getCurrentState().script || "";
-        const sceneText = `\n\n${action.payload.heading.toUpperCase()}\n\n${action.payload.action || ''}`;
-        updates.script = currentScript + sceneText;
-        break;
+        const currentScript = getCurrentState().script || ''
+        const sceneText = `\n\n${action.payload.heading.toUpperCase()}\n\n${action.payload.action || ''}`
+        updates.script = currentScript + sceneText
+        break
       }
 
       case 'UPDATE_DIALOGUE': {
-        // This implies parsing the script to find the scene/line. 
+        // This implies parsing the script to find the scene/line.
         // For MVP, we might just append a note or handle it via string replacement if we had better structured script state.
         // Current implementation: Append as correction
-        const currentScript = getCurrentState().script || "";
+        const currentScript = getCurrentState().script || ''
         // Very naive append
-        updates.script = currentScript + `\n\n[REVISION: ${action.payload.characterName}: ${action.payload.newDialogue}]`;
-        break;
+        updates.script =
+          currentScript +
+          `\n\n[REVISION: ${action.payload.characterName}: ${action.payload.newDialogue}]`
+        break
       }
     }
   }
 
-  return updates;
+  return updates
 }
-

@@ -29,7 +29,7 @@ const CONTEXT_ICONS: Record<ContextItem['type'], React.ReactNode> = {
   document: <Globe className="w-3 h-3" />,
 }
 
-// Colors for different context types  
+// Colors for different context types
 const CONTEXT_COLORS: Record<ContextItem['type'], string> = {
   character: 'bg-purple-500/10 border-purple-500/30 text-purple-400 hover:bg-purple-500/20',
   world_rule: 'bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20',
@@ -54,7 +54,7 @@ export const ContextChips: React.FC<ContextChipsProps> = ({
           {label}
         </span>
       )}
-      {items.map((item) => (
+      {items.map(item => (
         <ContextChip key={item.id} item={item} compact={compact} />
       ))}
     </div>
@@ -81,7 +81,7 @@ const ContextChip: React.FC<{ item: ContextItem; compact?: boolean }> = ({ item,
       <span className="font-medium truncate max-w-[100px]">{item.name}</span>
       {item.onRemove && (
         <button
-          onClick={(e) => {
+          onClick={e => {
             e.stopPropagation()
             item.onRemove?.()
           }}
@@ -95,11 +95,14 @@ const ContextChip: React.FC<{ item: ContextItem; compact?: boolean }> = ({ item,
 }
 
 // Helper to extract context items from message content
-export const extractContextFromMessage = (content: string, availableContext: {
-  characters?: Array<{ id: string; name: string }>
-  worldRules?: Array<{ id: string; name: string }>
-  factions?: Array<{ id: string; name: string }>
-}): ContextItem[] => {
+export const extractContextFromMessage = (
+  content: string,
+  availableContext: {
+    characters?: Array<{ id: string; name: string }>
+    worldRules?: Array<{ id: string; name: string }>
+    factions?: Array<{ id: string; name: string }>
+  }
+): ContextItem[] => {
   const items: ContextItem[] = []
   const contentLower = content.toLowerCase()
 
@@ -192,4 +195,3 @@ export const ContextBar: React.FC<ContextBarProps> = ({
 }
 
 export default ContextChips
-

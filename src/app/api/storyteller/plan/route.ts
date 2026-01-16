@@ -32,11 +32,18 @@ export async function GET(req: NextRequest) {
 
       return NextResponse.json({
         storyPlan: {
-          ...(episode.storyPlan as any || {}),
+          ...((episode.storyPlan as any) || {}),
           title: episode.title, // Ensure DB title is authoritative
-          posterUrl: episode.posterUrl || (episode.storyPlan as any)?.posterUrl || (episode.storyPlan as any)?.poster_url,
-          posterPrompt: episode.posterPrompt || (episode.storyPlan as any)?.posterPrompt || (episode.storyPlan as any)?.poster_prompt,
-          storyboardUrl: (episode.storyPlan as any)?.storyboardUrl || (episode.storyPlan as any)?.storyboard_url,
+          posterUrl:
+            episode.posterUrl ||
+            (episode.storyPlan as any)?.posterUrl ||
+            (episode.storyPlan as any)?.poster_url,
+          posterPrompt:
+            episode.posterPrompt ||
+            (episode.storyPlan as any)?.posterPrompt ||
+            (episode.storyPlan as any)?.poster_prompt,
+          storyboardUrl:
+            (episode.storyPlan as any)?.storyboardUrl || (episode.storyPlan as any)?.storyboard_url,
           projectId: projectId,
         },
         planApproved: episode.planApproved,
@@ -113,19 +120,20 @@ export async function POST(req: NextRequest) {
       })
     } else if (projectId) {
       // Save to project (series-level) - NEW table
-      await db.insert(storyPlans)
+      await db
+        .insert(storyPlans)
         .values({
           projectId: projectId,
           content: storyPlan,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .onConflictDoUpdate({
           target: storyPlans.projectId,
-          set: { content: storyPlan, updatedAt: new Date() }
+          set: { content: storyPlan, updatedAt: new Date() },
         })
 
       return NextResponse.json({
-        success: true
+        success: true,
       })
     } else {
       return NextResponse.json({ error: 'Episode ID or Project ID is required' }, { status: 400 })
@@ -201,15 +209,16 @@ export async function PATCH(req: NextRequest) {
         })
         .where(eq(episodes.id, episodeId))
     } else if (projectId) {
-      await db.insert(storyPlans)
+      await db
+        .insert(storyPlans)
         .values({
           projectId: projectId,
           content: updatedPlan,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .onConflictDoUpdate({
           target: storyPlans.projectId,
-          set: { content: updatedPlan, updatedAt: new Date() }
+          set: { content: updatedPlan, updatedAt: new Date() },
         })
     }
 

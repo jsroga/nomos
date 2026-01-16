@@ -86,11 +86,40 @@ nextjs-portal {
 }
 
 /* Force liquidGL canvas to background */
-canvas[data-engine="liquidGL"],
+canvas[data-engine='liquidGL'],
 canvas.liquidGL-canvas {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
   z-index: 0 !important;
   pointer-events: none !important;
+}
+
+/* Divine Shimmer Animation */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%) skewX(-12deg);
+  }
+
+  50% {
+    transform: translateX(100%) skewX(-12deg);
+  }
+
+  100% {
+    transform: translateX(100%) skewX(-12deg);
+  }
+}
+
+@keyframes glitch-line {
+  0% {
+    transform: translateY(-100%);
+  }
+
+  100% {
+    transform: translateY(1000%);
+  }
+}
+
+.animate-glitch-line {
+  animation: glitch-line 0.5s linear infinite;
 }

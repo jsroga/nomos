@@ -1,6 +1,6 @@
 /**
  * Magic Agent Prompt
- * 
+ *
  * The chaos gremlin that injects absurdity.
  */
 

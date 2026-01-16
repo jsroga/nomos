@@ -1,8 +1,8 @@
 /**
  * Storyteller Experiment Runner
- * 
+ *
  * Runs evaluation experiments on the storyteller agent using LangSmith.
- * 
+ *
  * Usage: npm run eval:storyteller
  */
 
@@ -96,7 +96,10 @@ async function storytellerTarget(input: Record<string, unknown>): Promise<Record
 function wrapEvaluator(evaluator: CustomEvaluator) {
   return {
     evaluatorName: evaluator.name,
-    evaluator: async (run: Run, example?: { inputs: Record<string, unknown>; outputs?: Record<string, unknown> }) => {
+    evaluator: async (
+      run: Run,
+      example?: { inputs: Record<string, unknown>; outputs?: Record<string, unknown> }
+    ) => {
       const evalInput: EvaluatorInput = {
         input: example?.inputs || run.inputs || {},
         output: run.outputs || {},
@@ -110,7 +113,7 @@ function wrapEvaluator(evaluator: CustomEvaluator) {
         score: result.score,
         comment: result.reasoning,
       }
-    }
+    },
   }
 }
 
@@ -204,11 +207,13 @@ export async function runStorytellerExperiment() {
           const mockRun = { outputs: output, inputs: example.input } as Run
           const mockExample = { inputs: example.input, outputs: example.expected }
           const evalResult = await evalWrapper.evaluator(mockRun, mockExample)
-          const score = typeof evalResult.score === 'number' ? evalResult.score : (evalResult.score ? 1 : 0)
+          const score =
+            typeof evalResult.score === 'number' ? evalResult.score : evalResult.score ? 1 : 0
           scores[evalResult.key] = score
         }
 
-        const avgScore = Object.values(scores).reduce((a, b) => a + b, 0) / Object.values(scores).length
+        const avgScore =
+          Object.values(scores).reduce((a, b) => a + b, 0) / Object.values(scores).length
         const passed = avgScore >= 0.5
 
         results.push({
@@ -225,7 +230,7 @@ export async function runStorytellerExperiment() {
       console.log('📊 Summary')
       console.log('============================================')
 
-      const passedCount = results.filter((r) => r.passed).length
+      const passedCount = results.filter(r => r.passed).length
       console.log(`Passed: ${passedCount}/${results.length}`)
 
       // Aggregate scores by evaluator
@@ -256,9 +261,8 @@ export async function runStorytellerExperiment() {
 if (require.main === module) {
   runStorytellerExperiment()
     .then(() => process.exit(0))
-    .catch((err) => {
+    .catch(err => {
       console.error('Fatal error:', err)
       process.exit(1)
     })
 }
-

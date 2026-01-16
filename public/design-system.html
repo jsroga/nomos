@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design System | Tilemap</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'Menlo', 'Monaco', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #09090b;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+        
+        /* Code block styling */
+        .code-block {
+            background: #18181b;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+        
+        /* Copy button */
+        .copy-btn {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .code-wrapper:hover .copy-btn {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="text-zinc-100 min-h-screen">
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-zinc-950/80 backdrop-blur-xl border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center font-bold text-sm">DS</div>
+                <span class="font-bold text-lg">Design System</span>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-zinc-500 bg-zinc-800 px-2 py-1 rounded-lg">v1.0</span>
+            </div>
+            <div class="flex items-center gap-6 text-sm">
+                <a href="#typography" class="text-zinc-400 hover:text-white transition-colors">Typography</a>
+                <a href="#colors" class="text-zinc-400 hover:text-white transition-colors">Colors</a>
+                <a href="#spacing" class="text-zinc-400 hover:text-white transition-colors">Spacing</a>
+                <a href="#components" class="text-zinc-400 hover:text-white transition-colors">Components</a>
+                <a href="#patterns" class="text-zinc-400 hover:text-white transition-colors">Patterns</a>
+                <a href="#dos-donts" class="text-zinc-400 hover:text-white transition-colors">Do's & Don'ts</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <header class="pt-32 pb-16 px-6">
+        <div class="max-w-7xl mx-auto">
+            <h1 class="text-5xl font-bold mb-4">Tilemap Design System</h1>
+            <p class="text-xl text-zinc-400 max-w-2xl">
+                A comprehensive guide to UI components, typography, colors, and patterns used across the Tilemap application.
+            </p>
+            <div class="mt-8 flex gap-4">
+                <a href="#typography" class="bg-indigo-500 hover:bg-indigo-400 text-white px-6 py-3 rounded-xl font-bold text-sm transition-all">
+                    Get Started
+                </a>
+                <a href="https://github.com" class="bg-white/5 hover:bg-white/10 border border-white/10 text-white px-6 py-3 rounded-xl font-bold text-sm transition-all">
+                    View Source
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 pb-24">
+        
+        <!-- ================================================================== -->
+        <!-- TYPOGRAPHY SECTION -->
+        <!-- ================================================================== -->
+        <section id="typography" class="py-16 border-t border-white/5">
+            <div class="mb-12">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-lg">Foundation</span>
+                <h2 class="text-3xl font-bold mt-4 mb-2">Typography</h2>
+                <p class="text-zinc-400 max-w-2xl">
+                    Our type scale is designed for clarity and hierarchy. Use semantic names instead of arbitrary pixel values.
+                </p>
+            </div>
+
+            <!-- Font Family -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    Font Families
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-white/5 border border-white/10 rounded-2xl p-6">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Primary</p>
+                        <p class="text-2xl font-medium mb-2">Inter</p>
+                        <p class="text-zinc-400 text-sm">Used for all body text, headings, and UI elements.</p>
+                        <p class="text-zinc-500 text-xs mt-4 font-mono">font-family: 'Inter', system-ui, sans-serif;</p>
+                    </div>
+                    <div class="bg-white/5 border border-white/10 rounded-2xl p-6">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Monospace</p>
+                        <p class="text-2xl font-mono font-medium mb-2">JetBrains Mono</p>
+                        <p class="text-zinc-400 text-sm">Used for code, labels, and technical content.</p>
+                        <p class="text-zinc-500 text-xs mt-4 font-mono">font-family: 'JetBrains Mono', monospace;</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Type Scale -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    Type Scale
+                </h3>
+                <div class="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-white/5">
+                            <tr class="text-left text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                                <th class="px-6 py-4">Name</th>
+                                <th class="px-6 py-4">Size</th>
+                                <th class="px-6 py-4">Class</th>
+                                <th class="px-6 py-4">Example</th>
+                                <th class="px-6 py-4">Usage</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            <tr>
+                                <td class="px-6 py-4 font-mono text-sm text-indigo-400">Micro</td>
+                                <td class="px-6 py-4 text-zinc-500 text-sm">9px</td>
+                                <td class="px-6 py-4"><code class="bg-zinc-800 px-2 py-1 rounded text-xs font-mono">text-[9px]</code></td>
+                                <td class="px-6 py-4"><span class="text-[9px]">TIMESTAMPS, METADATA</span></td>
+                                <td class="px-6 py-4 text-zinc-500 text-sm">Timestamps, tiny labels</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 font-mono text-sm text-indigo-400">Caption</td>
+                                <td class="px-6 py-4 text-zinc-500 text-sm">10px</td>
+                                <td class="px-6 py-4"><code class="bg-zinc-800 px-2 py-1 rounded text-xs font-mono">text-[10px]</code></td>
+                                <td class="px-6 py-4"><span class="text-[10px] font-bold uppercase tracking-widest">SECTION LABELS</span></td>
+                                <td class="px-6 py-4 text-zinc-500 text-sm">Labels, hints, captions</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 font-mono text-sm text-indigo-400">Small</td>
+                                <td class="px-6 py-4 text-zinc-500 text-sm">11px</td>
+                                <td class="px-6 py-4"><code class="bg-zinc-800 px-2 py-1 rounded text-xs font-mono">text-[11px]</code></td>
+                                <td class="px-6 py-4"><span class="text-[11px]">Small body text and descriptions</span></td>
+                                <td class="px-6 py-4 text-zinc-500 text-sm">Descriptions, secondary text</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 font-mono text-sm text-indigo-400">Base</td>
+                                <td class="px-6 py-4 text-zinc-500 text-sm">12px</td>
+                                <td class="px-6 py-4"><code class="bg-zinc-800 px-2 py-1 rounded text-xs font-mono">text-xs</code></td>
+                                <td class="px-6 py-4"><span class="text-xs">Standard body text</span></td>
+                                <td class="px-6 py-4 text-zinc-500 text-sm">Body text, inputs</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 font-mono text-sm text-indigo-400">Medium</td>
+                                <td class="px-6 py-4 text-zinc-500 text-sm">14px</td>
+                                <td class="px-6 py-4"><code class="bg-zinc-800 px-2 py-1 rounded text-xs font-mono">text-sm</code></td>
+                                <td class="px-6 py-4"><span class="text-sm">Emphasized body text</span></td>
+                                <td class="px-6 py-4 text-zinc-500 text-sm">Important content</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 font-mono text-sm text-indigo-400">Large</td>
+                                <td class="px-6 py-4 text-zinc-500 text-sm">16px</td>
+                                <td class="px-6 py-4"><code class="bg-zinc-800 px-2 py-1 rounded text-xs font-mono">text-base</code></td>
+                                <td class="px-6 py-4"><span class="text-base">Headings and titles</span></td>
+                                <td class="px-6 py-4 text-zinc-500 text-sm">Dialog titles, section heads</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Label Pattern -->
+            <div>
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    Standard Label Pattern
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-white/5 border border-white/10 rounded-2xl p-6">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-4">Live Example</p>
+                        <div class="space-y-4">
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400">SECTION HEADER</p>
+                            <p class="text-[10px] font-bold uppercase tracking-tighter text-zinc-500">COMPACT LABEL</p>
+                            <p class="text-[9px] font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-lg inline-block">STATUS BADGE</p>
+                        </div>
+                    </div>
+                    <div class="code-wrapper relative">
+                        <button class="copy-btn absolute top-4 right-4 bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest" onclick="copyCode(this)">Copy</button>
+                        <pre class="code-block text-zinc-300"><code>&lt;!-- Section Header --&gt;
+&lt;p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400"&gt;
+  SECTION HEADER
+&lt;/p&gt;
+
+&lt;!-- Compact Label --&gt;
+&lt;p class="text-[10px] font-bold uppercase tracking-tighter text-zinc-500"&gt;
+  COMPACT LABEL
+&lt;/p&gt;
+
+&lt;!-- Status Badge --&gt;
+&lt;span class="text-[9px] font-bold uppercase tracking-widest 
+  text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-lg"&gt;
+  STATUS
+&lt;/span&gt;</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================== -->
+        <!-- COLORS SECTION -->
+        <!-- ================================================================== -->
+        <section id="colors" class="py-16 border-t border-white/5">
+            <div class="mb-12">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-lg">Foundation</span>
+                <h2 class="text-3xl font-bold mt-4 mb-2">Colors</h2>
+                <p class="text-zinc-400 max-w-2xl">
+                    Our color system is built on zinc neutrals with indigo as the primary accent. Use semantic names for consistency.
+                </p>
+            </div>
+
+            <!-- Surface Colors -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    Surfaces
+                </h3>
+                <div class="grid grid-cols-5 gap-4">
+                    <div class="text-center">
+                        <div class="w-full aspect-square bg-zinc-950 rounded-2xl border border-white/10 mb-3"></div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Background</p>
+                        <p class="text-xs font-mono text-zinc-500 mt-1">bg-zinc-950</p>
+                        <p class="text-[10px] font-mono text-zinc-600">#09090b</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-full aspect-square bg-zinc-900 rounded-2xl border border-white/10 mb-3"></div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Card</p>
+                        <p class="text-xs font-mono text-zinc-500 mt-1">bg-zinc-900</p>
+                        <p class="text-[10px] font-mono text-zinc-600">#18181b</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-full aspect-square bg-white/5 rounded-2xl border border-white/10 mb-3"></div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Subtle</p>
+                        <p class="text-xs font-mono text-zinc-500 mt-1">bg-white/5</p>
+                        <p class="text-[10px] font-mono text-zinc-600">5% white</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-full aspect-square bg-white/10 rounded-2xl border border-white/10 mb-3"></div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Elevated</p>
+                        <p class="text-xs font-mono text-zinc-500 mt-1">bg-white/10</p>
+                        <p class="text-[10px] font-mono text-zinc-600">10% white</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-full aspect-square bg-zinc-800 rounded-2xl border border-white/10 mb-3"></div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Muted</p>
+                        <p class="text-xs font-mono text-zinc-500 mt-1">bg-zinc-800</p>
+                        <p class="text-[10px] font-mono text-zinc-600">#27272a</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Border Colors -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    Borders
+                </h3>
+                <div class="grid grid-cols-4 gap-4">
+                    <div class="bg-zinc-900 border border-white/5 rounded-2xl p-6 text-center">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">Subtle</p>
+                        <p class="text-xs font-mono text-zinc-500">border-white/5</p>
+                    </div>
+                    <div class="bg-zinc-900 border border-white/10 rounded-2xl p-6 text-center">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">Default</p>
+                        <p class="text-xs font-mono text-zinc-500">border-white/10</p>
+                    </div>
+                    <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 text-center">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">Visible</p>
+                        <p class="text-xs font-mono text-zinc-500">border-zinc-700</p>
+                    </div>
+                    <div class="bg-zinc-900 border border-indigo-500/50 rounded-2xl p-6 text-center">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">Focus</p>
+                        <p class="text-xs font-mono text-zinc-500">border-indigo-500/50</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accent Colors -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    Accent (Indigo)
+                </h3>
+                <div class="grid grid-cols-6 gap-4">
+                    <div class="text-center">
+                        <div class="w-full aspect-square bg-indigo-500/10 rounded-2xl border border-white/10 mb-3"></div>
+                        <p class="text-xs font-mono text-zinc-500">indigo-500/10</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-full aspect-square bg-indigo-500/20 rounded-2xl border border-white/10 mb-3"></div>
+                        <p class="text-xs font-mono text-zinc-500">indigo-500/20</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-full aspect-square bg-indigo-600 rounded-2xl border border-white/10 mb-3"></div>
+                        <p class="text-xs font-mono text-zinc-500">indigo-600</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-full aspect-square bg-indigo-500 rounded-2xl border border-white/10 mb-3"></div>
+                        <p class="text-xs font-mono text-zinc-500">indigo-500</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-full aspect-square bg-indigo-400 rounded-2xl border border-white/10 mb-3"></div>
+                        <p class="text-xs font-mono text-zinc-500">indigo-400</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-full aspect-square bg-indigo-300 rounded-2xl border border-white/10 mb-3"></div>
+                        <p class="text-xs font-mono text-zinc-500">indigo-300</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- State Colors -->
+            <div>
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    State Colors
+                </h3>
+                <div class="grid grid-cols-4 gap-4">
+                    <div class="text-center">
+                        <div class="w-full aspect-video bg-green-500/10 border border-green-500/20 rounded-2xl mb-3 flex items-center justify-center">
+                            <span class="text-green-400 text-sm font-medium">Success</span>
+                        </div>
+                        <p class="text-xs font-mono text-zinc-500">green-400 / green-500/10</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-full aspect-video bg-yellow-500/10 border border-yellow-500/20 rounded-2xl mb-3 flex items-center justify-center">
+                            <span class="text-yellow-400 text-sm font-medium">Warning</span>
+                        </div>
+                        <p class="text-xs font-mono text-zinc-500">yellow-400 / yellow-500/10</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-full aspect-video bg-red-500/10 border border-red-500/20 rounded-2xl mb-3 flex items-center justify-center">
+                            <span class="text-red-400 text-sm font-medium">Error</span>
+                        </div>
+                        <p class="text-xs font-mono text-zinc-500">red-400 / red-500/10</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-full aspect-video bg-blue-500/10 border border-blue-500/20 rounded-2xl mb-3 flex items-center justify-center">
+                            <span class="text-blue-400 text-sm font-medium">Info</span>
+                        </div>
+                        <p class="text-xs font-mono text-zinc-500">blue-400 / blue-500/10</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================== -->
+        <!-- SPACING SECTION -->
+        <!-- ================================================================== -->
+        <section id="spacing" class="py-16 border-t border-white/5">
+            <div class="mb-12">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-lg">Foundation</span>
+                <h2 class="text-3xl font-bold mt-4 mb-2">Spacing & Radius</h2>
+                <p class="text-zinc-400 max-w-2xl">
+                    Consistent spacing and border radius values create visual harmony across the interface.
+                </p>
+            </div>
+
+            <!-- Spacing Scale -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    Spacing Scale
+                </h3>
+                <div class="bg-white/5 border border-white/10 rounded-2xl p-6">
+                    <div class="flex items-end gap-4">
+                        <div class="text-center">
+                            <div class="w-1 h-1 bg-indigo-500 rounded-full mx-auto mb-2"></div>
+                            <p class="text-[10px] font-mono text-zinc-500">0.5</p>
+                            <p class="text-[9px] text-zinc-600">2px</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-1 h-2 bg-indigo-500 rounded-full mx-auto mb-2"></div>
+                            <p class="text-[10px] font-mono text-zinc-500">1</p>
+                            <p class="text-[9px] text-zinc-600">4px</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-2 h-2 bg-indigo-500 rounded-full mx-auto mb-2"></div>
+                            <p class="text-[10px] font-mono text-zinc-500">1.5</p>
+                            <p class="text-[9px] text-zinc-600">6px</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-2 h-4 bg-indigo-500 rounded mx-auto mb-2"></div>
+                            <p class="text-[10px] font-mono text-zinc-500">2</p>
+                            <p class="text-[9px] text-zinc-600">8px</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-3 h-6 bg-indigo-500 rounded mx-auto mb-2"></div>
+                            <p class="text-[10px] font-mono text-zinc-500">3</p>
+                            <p class="text-[9px] text-zinc-600">12px</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-4 h-8 bg-indigo-500 rounded mx-auto mb-2"></div>
+                            <p class="text-[10px] font-mono text-zinc-500">4</p>
+                            <p class="text-[9px] text-zinc-600">16px</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-6 h-12 bg-indigo-500 rounded mx-auto mb-2"></div>
+                            <p class="text-[10px] font-mono text-zinc-500">6</p>
+                            <p class="text-[9px] text-zinc-600">24px</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-8 h-16 bg-indigo-500 rounded mx-auto mb-2"></div>
+                            <p class="text-[10px] font-mono text-zinc-500">8</p>
+                            <p class="text-[9px] text-zinc-600">32px</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Border Radius -->
+            <div>
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    Border Radius
+                </h3>
+                <div class="grid grid-cols-5 gap-6">
+                    <div class="text-center">
+                        <div class="w-full aspect-square bg-white/5 border border-white/10 rounded mb-4"></div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Small</p>
+                        <p class="text-xs font-mono text-zinc-500 mt-1">rounded</p>
+                        <p class="text-[10px] text-zinc-600">4px</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-full aspect-square bg-white/5 border border-white/10 rounded-md mb-4"></div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Medium</p>
+                        <p class="text-xs font-mono text-zinc-500 mt-1">rounded-md</p>
+                        <p class="text-[10px] text-zinc-600">6px</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-full aspect-square bg-white/5 border border-white/10 rounded-lg mb-4"></div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Large</p>
+                        <p class="text-xs font-mono text-zinc-500 mt-1">rounded-lg</p>
+                        <p class="text-[10px] text-zinc-600">8px</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-full aspect-square bg-white/5 border border-white/10 rounded-xl mb-4"></div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400">X-Large</p>
+                        <p class="text-xs font-mono text-zinc-500 mt-1">rounded-xl</p>
+                        <p class="text-[10px] text-zinc-600">12px</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-full aspect-square bg-white/5 border border-white/10 rounded-2xl mb-4"></div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400">2X-Large</p>
+                        <p class="text-xs font-mono text-zinc-500 mt-1">rounded-2xl</p>
+                        <p class="text-[10px] text-zinc-600">16px</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================== -->
+        <!-- COMPONENTS SECTION -->
+        <!-- ================================================================== -->
+        <section id="components" class="py-16 border-t border-white/5">
+            <div class="mb-12">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-lg">Components</span>
+                <h2 class="text-3xl font-bold mt-4 mb-2">Sidebar Components</h2>
+                <p class="text-zinc-400 max-w-2xl">
+                    Reusable components from <code class="bg-zinc-800 px-2 py-0.5 rounded text-xs">src/components/ui/domain-sidebar.tsx</code>
+                </p>
+            </div>
+
+            <!-- SidebarSection -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    SidebarSection
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-zinc-900 border border-white/10 rounded-2xl p-6">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-4">Live Example</p>
+                        
+                        <!-- Simulated SidebarSection -->
+                        <div class="space-y-2 py-4 border-t border-white/10">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-xs font-mono font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                                    Section Title
+                                </h3>
+                            </div>
+                            <div class="bg-white/5 rounded-lg p-4 text-sm text-zinc-400">
+                                Section content goes here
+                            </div>
+                        </div>
+                    </div>
+                    <div class="code-wrapper relative">
+                        <button class="copy-btn absolute top-4 right-4 bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest" onclick="copyCode(this)">Copy</button>
+                        <pre class="code-block text-zinc-300"><code>import { SidebarSection } from '@/components/ui/domain-sidebar'
+
+&lt;SidebarSection
+  title="Section Title"
+  icon={&lt;Settings size={12} /&gt;}
+  separator
+&gt;
+  {/* Section content */}
+&lt;/SidebarSection&gt;</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SidebarLabel -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    SidebarLabel
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-zinc-900 border border-white/10 rounded-2xl p-6">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-4">Live Example</p>
+                        <div class="space-y-4">
+                            <div class="space-y-1">
+                                <label class="inline-flex items-center gap-1 font-mono font-medium text-muted-foreground text-[10px] uppercase tracking-wide text-zinc-400">
+                                    Field Label
+                                </label>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="inline-flex items-center gap-1 font-mono font-medium text-muted-foreground text-[10px] uppercase tracking-wide text-zinc-400">
+                                    With Hint
+                                </label>
+                                <p class="text-xs text-zinc-500">This is a helpful hint</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="code-wrapper relative">
+                        <button class="copy-btn absolute top-4 right-4 bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest" onclick="copyCode(this)">Copy</button>
+                        <pre class="code-block text-zinc-300"><code>import { SidebarLabel } from '@/components/ui/domain-sidebar'
+
+&lt;SidebarLabel&gt;Field Label&lt;/SidebarLabel&gt;
+
+&lt;SidebarLabel hint="This is a helpful hint"&gt;
+  With Hint
+&lt;/SidebarLabel&gt;</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SidebarSliderRow -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    SidebarSliderRow
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-zinc-900 border border-white/10 rounded-2xl p-6">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-4">Live Example</p>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="font-medium font-mono text-[10px] uppercase tracking-wide text-zinc-400">Brush Size</span>
+                                <span class="text-zinc-500 font-mono text-xs">25</span>
+                            </div>
+                            <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                <div class="h-full w-1/4 bg-indigo-500 rounded-full"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="code-wrapper relative">
+                        <button class="copy-btn absolute top-4 right-4 bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest" onclick="copyCode(this)">Copy</button>
+                        <pre class="code-block text-zinc-300"><code>import { SidebarSliderRow } from '@/components/ui/domain-sidebar'
+
+&lt;SidebarSliderRow
+  label="Brush Size"
+  value={25}
+  min={1}
+  max={100}
+  step={1}
+  onChange={(v) => setBrushSize(v)}
+  formatValue={(v) => `${v}px`}
+/&gt;</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SidebarToggleRow -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    SidebarToggleRow
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-zinc-900 border border-white/10 rounded-2xl p-6">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-4">Live Example</p>
+                        <div class="flex items-center justify-between">
+                            <span class="font-medium font-mono text-[10px] uppercase tracking-wide text-zinc-400">Enable Feature</span>
+                            <button class="w-11 h-6 bg-indigo-500 rounded-full p-1 flex items-center justify-end">
+                                <div class="w-4 h-4 bg-white rounded-full shadow"></div>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="code-wrapper relative">
+                        <button class="copy-btn absolute top-4 right-4 bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest" onclick="copyCode(this)">Copy</button>
+                        <pre class="code-block text-zinc-300"><code>import { SidebarToggleRow } from '@/components/ui/domain-sidebar'
+
+&lt;SidebarToggleRow
+  label="Enable Feature"
+  checked={isEnabled}
+  onChange={(checked) => setIsEnabled(checked)}
+/&gt;</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SidebarInput -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    SidebarInput
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-zinc-900 border border-white/10 rounded-2xl p-6">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-4">Live Example</p>
+                        <div class="space-y-2">
+                            <div class="space-y-1">
+                                <label class="inline-flex items-center gap-1 font-mono font-medium text-[10px] uppercase tracking-wide text-zinc-400">
+                                    Project Name
+                                </label>
+                            </div>
+                            <input
+                                class="w-full bg-zinc-800/50 border-2 border-zinc-700/60 rounded-md px-3 py-2 text-sm font-mono hover:border-zinc-600 transition-colors focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 focus:outline-none placeholder:text-zinc-600"
+                                placeholder="Enter project name..."
+                                value="My Awesome Project"
+                            />
+                        </div>
+                    </div>
+                    <div class="code-wrapper relative">
+                        <button class="copy-btn absolute top-4 right-4 bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest" onclick="copyCode(this)">Copy</button>
+                        <pre class="code-block text-zinc-300"><code>import { SidebarInput } from '@/components/ui/domain-sidebar'
+
+&lt;SidebarInput
+  label="Project Name"
+  placeholder="Enter project name..."
+  value={name}
+  onChange={(e) => setName(e.target.value)}
+/&gt;</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SidebarEmptyState -->
+            <div>
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    SidebarEmptyState
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-zinc-900 border border-white/10 rounded-2xl p-6">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-4">Live Example</p>
+                        <div class="text-center text-zinc-500 mt-10 flex flex-col items-center gap-3">
+                            <div class="w-12 h-12 rounded-full bg-zinc-800/30 flex items-center justify-center">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                            </div>
+                            <p>No items yet</p>
+                        </div>
+                    </div>
+                    <div class="code-wrapper relative">
+                        <button class="copy-btn absolute top-4 right-4 bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest" onclick="copyCode(this)">Copy</button>
+                        <pre class="code-block text-zinc-300"><code>import { SidebarEmptyState } from '@/components/ui/domain-sidebar'
+
+&lt;SidebarEmptyState
+  icon={&lt;Inbox size={24} /&gt;}
+  message="No items yet"
+/&gt;</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================== -->
+        <!-- PATTERNS SECTION -->
+        <!-- ================================================================== -->
+        <section id="patterns" class="py-16 border-t border-white/5">
+            <div class="mb-12">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-lg">Patterns</span>
+                <h2 class="text-3xl font-bold mt-4 mb-2">Common Patterns</h2>
+                <p class="text-zinc-400 max-w-2xl">
+                    Frequently used UI patterns that appear across multiple domains. Copy and adapt these snippets.
+                </p>
+            </div>
+
+            <!-- Panel Card -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    Panel Card
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-zinc-900 border border-white/10 rounded-2xl p-6">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-4">Live Example</p>
+                        <div class="bg-white/5 border border-white/10 rounded-2xl p-4">
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">Panel Title</p>
+                            <p class="text-sm text-zinc-300">Panel content with consistent styling across the app.</p>
+                        </div>
+                    </div>
+                    <div class="code-wrapper relative">
+                        <button class="copy-btn absolute top-4 right-4 bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest" onclick="copyCode(this)">Copy</button>
+                        <pre class="code-block text-zinc-300"><code>&lt;div class="bg-white/5 border border-white/10 rounded-2xl p-4"&gt;
+  &lt;p class="text-[10px] font-bold uppercase 
+     tracking-widest text-zinc-400 mb-2"&gt;
+    Panel Title
+  &lt;/p&gt;
+  &lt;p class="text-sm text-zinc-300"&gt;
+    Panel content...
+  &lt;/p&gt;
+&lt;/div&gt;</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Badges -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    Status Badges
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-zinc-900 border border-white/10 rounded-2xl p-6">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-4">Live Example</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="text-[9px] font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-lg">Default</span>
+                            <span class="text-[9px] font-bold uppercase tracking-widest text-green-400 bg-green-500/10 px-2 py-0.5 rounded-lg">Success</span>
+                            <span class="text-[9px] font-bold uppercase tracking-widest text-yellow-400 bg-yellow-500/10 px-2 py-0.5 rounded-lg">Warning</span>
+                            <span class="text-[9px] font-bold uppercase tracking-widest text-red-400 bg-red-500/10 px-2 py-0.5 rounded-lg">Error</span>
+                            <span class="text-[9px] font-bold uppercase tracking-widest text-zinc-400 bg-zinc-500/10 px-2 py-0.5 rounded-lg">Neutral</span>
+                        </div>
+                    </div>
+                    <div class="code-wrapper relative">
+                        <button class="copy-btn absolute top-4 right-4 bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest" onclick="copyCode(this)">Copy</button>
+                        <pre class="code-block text-zinc-300"><code>&lt;!-- Status Badge Pattern --&gt;
+&lt;span class="text-[9px] font-bold uppercase tracking-widest
+  text-{color}-400 bg-{color}-500/10 px-2 py-0.5 rounded-lg"&gt;
+  STATUS
+&lt;/span&gt;
+
+&lt;!-- Color variants: indigo, green, yellow, red, zinc --&gt;</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    Action Buttons
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-zinc-900 border border-white/10 rounded-2xl p-6">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-4">Live Example</p>
+                        <div class="flex flex-wrap gap-3">
+                            <button class="bg-indigo-500 hover:bg-indigo-400 text-white px-4 py-2 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-indigo-500/20">
+                                Primary
+                            </button>
+                            <button class="bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 px-4 py-2 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all">
+                                Secondary
+                            </button>
+                            <button class="hover:bg-white/5 text-zinc-400 hover:text-zinc-200 px-4 py-2 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all">
+                                Ghost
+                            </button>
+                            <button class="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 px-4 py-2 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all">
+                                Destructive
+                            </button>
+                        </div>
+                    </div>
+                    <div class="code-wrapper relative">
+                        <button class="copy-btn absolute top-4 right-4 bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest" onclick="copyCode(this)">Copy</button>
+                        <pre class="code-block text-zinc-300"><code>&lt;!-- Primary --&gt;
+&lt;button class="bg-indigo-500 hover:bg-indigo-400 text-white 
+  px-4 py-2 rounded-xl font-bold text-[10px] uppercase 
+  tracking-widest shadow-lg shadow-indigo-500/20"&gt;
+  Primary
+&lt;/button&gt;
+
+&lt;!-- Secondary --&gt;
+&lt;button class="bg-white/5 hover:bg-white/10 border 
+  border-white/10 text-zinc-300 px-4 py-2 rounded-xl 
+  font-bold text-[10px] uppercase tracking-widest"&gt;
+  Secondary
+&lt;/button&gt;
+
+&lt;!-- Ghost --&gt;
+&lt;button class="hover:bg-white/5 text-zinc-400 
+  hover:text-zinc-200 px-4 py-2 rounded-xl font-bold 
+  text-[10px] uppercase tracking-widest"&gt;
+  Ghost
+&lt;/button&gt;
+
+&lt;!-- Destructive --&gt;
+&lt;button class="bg-red-500/10 hover:bg-red-500/20 
+  border border-red-500/20 text-red-400 px-4 py-2 
+  rounded-xl font-bold text-[10px] uppercase tracking-widest"&gt;
+  Destructive
+&lt;/button&gt;</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input with Action -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    Input with Action Button
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-zinc-900 border border-white/10 rounded-2xl p-6">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-4">Live Example</p>
+                        <div class="relative group">
+                            <input
+                                placeholder="Describe object..."
+                                class="w-full pr-10 bg-white/5 border border-white/10 rounded-xl focus:ring-indigo-500/30 focus:border-indigo-500/50 transition-all text-[11px] h-10 px-4"
+                            />
+                            <div class="absolute right-1.5 top-1/2 -translate-y-1/2">
+                                <button class="h-7 w-7 rounded-lg transition-all bg-indigo-500 hover:bg-indigo-400 text-white shadow-lg flex items-center justify-center">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="code-wrapper relative">
+                        <button class="copy-btn absolute top-4 right-4 bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest" onclick="copyCode(this)">Copy</button>
+                        <pre class="code-block text-zinc-300"><code>&lt;div class="relative group"&gt;
+  &lt;Input
+    placeholder="Describe object..."
+    className="pr-10 bg-white/5 border-white/10 rounded-xl 
+      focus:ring-indigo-500/30 focus:border-indigo-500/50 
+      text-[11px] h-10"
+  /&gt;
+  &lt;div class="absolute right-1.5 top-1/2 -translate-y-1/2"&gt;
+    &lt;Button
+      size="icon"
+      className="h-7 w-7 rounded-lg bg-indigo-500 
+        hover:bg-indigo-400"
+    &gt;
+      &lt;Wand2 className="h-3.5 w-3.5" /&gt;
+    &lt;/Button&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Indicator -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    Progress Indicator
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-zinc-900 border border-white/10 rounded-2xl p-6">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-4">Live Example</p>
+                        <div class="space-y-3 p-4 bg-indigo-500/5 border border-indigo-500/10 rounded-2xl">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <svg class="w-3 h-3 text-indigo-400 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                    <span class="text-[10px] uppercase font-bold tracking-widest text-indigo-300">
+                                        Generating mesh... 45%
+                                    </span>
+                                </div>
+                                <button class="h-6 w-6 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all flex items-center justify-center">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+                            <div class="space-y-1.5">
+                                <div class="h-1 bg-white/5 rounded-full overflow-hidden">
+                                    <div class="h-full w-[45%] bg-indigo-500 rounded-full transition-all"></div>
+                                </div>
+                                <div class="flex justify-between text-[9px] text-zinc-500 font-mono">
+                                    <span>45%</span>
+                                    <span>AI PROCESSING...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="code-wrapper relative">
+                        <button class="copy-btn absolute top-4 right-4 bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest" onclick="copyCode(this)">Copy</button>
+                        <pre class="code-block text-zinc-300"><code>&lt;div class="space-y-3 p-4 bg-indigo-500/5 
+  border border-indigo-500/10 rounded-2xl"&gt;
+  &lt;div class="flex items-center justify-between"&gt;
+    &lt;div class="flex items-center gap-2"&gt;
+      &lt;Loader2 className="w-3 h-3 text-indigo-400 
+        animate-spin" /&gt;
+      &lt;span class="text-[10px] uppercase font-bold 
+        tracking-widest text-indigo-300"&gt;
+        Generating mesh... {progress}%
+      &lt;/span&gt;
+    &lt;/div&gt;
+    &lt;Button variant="ghost" size="icon" 
+      className="h-6 w-6 hover:text-red-400"&gt;
+      &lt;X size={12} /&gt;
+    &lt;/Button&gt;
+  &lt;/div&gt;
+  
+  &lt;Progress value={progress} className="h-1 bg-white/5" /&gt;
+&lt;/div&gt;</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Collapsible Presets -->
+            <div>
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    Collapsible Dropdown
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-zinc-900 border border-white/10 rounded-2xl p-6">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-4">Live Example</p>
+                        <div class="relative">
+                            <button class="w-full flex items-center justify-between py-2.5 px-4 rounded-xl bg-white/3 border border-white/5 text-[10px] uppercase font-bold tracking-widest text-zinc-500 hover:text-zinc-300 hover:bg-white/5 transition-all">
+                                <span>Quick Presets</span>
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                            <div class="mt-2 p-3 rounded-2xl bg-zinc-900/90 border border-white/10 shadow-2xl">
+                                <div class="flex flex-wrap gap-2">
+                                    <button class="text-[9px] px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 hover:border-indigo-500/50 hover:bg-indigo-500/10 hover:text-indigo-300 transition-all font-bold uppercase tracking-tighter">
+                                        Lush grass
+                                    </button>
+                                    <button class="text-[9px] px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 hover:border-indigo-500/50 hover:bg-indigo-500/10 hover:text-indigo-300 transition-all font-bold uppercase tracking-tighter">
+                                        Wild meadow
+                                    </button>
+                                    <button class="text-[9px] px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 hover:border-indigo-500/50 hover:bg-indigo-500/10 hover:text-indigo-300 transition-all font-bold uppercase tracking-tighter">
+                                        Desert sand
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="code-wrapper relative">
+                        <button class="copy-btn absolute top-4 right-4 bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest" onclick="copyCode(this)">Copy</button>
+                        <pre class="code-block text-zinc-300"><code>&lt;div class="relative"&gt;
+  &lt;button onClick={() => setShowPresets(!showPresets)}
+    class="w-full flex items-center justify-between 
+      py-2.5 px-4 rounded-xl bg-white/3 border border-white/5 
+      text-[10px] uppercase font-bold tracking-widest 
+      text-zinc-500 hover:text-zinc-300"&gt;
+    &lt;span&gt;Quick Presets&lt;/span&gt;
+    &lt;ChevronDown size={14} className={cn(
+      "transition-transform", showPresets && "rotate-180"
+    )} /&gt;
+  &lt;/button&gt;
+  
+  {showPresets && (
+    &lt;div class="mt-2 p-3 rounded-2xl bg-zinc-900/90 
+      border border-white/10 shadow-2xl"&gt;
+      &lt;div class="flex flex-wrap gap-2"&gt;
+        {presets.map(p =&gt; (
+          &lt;button key={p}
+            class="text-[9px] px-3 py-1.5 rounded-lg 
+              bg-white/5 border border-white/5 
+              hover:border-indigo-500/50 
+              hover:bg-indigo-500/10 hover:text-indigo-300 
+              font-bold uppercase tracking-tighter"&gt;
+            {p}
+          &lt;/button&gt;
+        ))}
+      &lt;/div&gt;
+    &lt;/div&gt;
+  )}
+&lt;/div&gt;</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================== -->
+        <!-- DO'S AND DON'TS SECTION -->
+        <!-- ================================================================== -->
+        <section id="dos-donts" class="py-16 border-t border-white/5">
+            <div class="mb-12">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-lg">Best Practices</span>
+                <h2 class="text-3xl font-bold mt-4 mb-2">Do's & Don'ts</h2>
+                <p class="text-zinc-400 max-w-2xl">
+                    Learn from common mistakes. Follow these guidelines to maintain consistency across the codebase.
+                </p>
+            </div>
+
+            <!-- Typography Do's & Don'ts -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    Typography
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <!-- DO -->
+                    <div class="bg-green-500/10 border-4 border-green-500/30 p-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span class="text-sm font-mono font-black uppercase tracking-widest text-green-400">DO</span>
+                        </div>
+                        <div class="code-block">
+<code class="text-green-300">// Use semantic class names
+&lt;p className="text-[10px] font-bold 
+  uppercase tracking-widest"&gt;
+  LABEL TEXT
+&lt;/p&gt;
+
+// Use established font sizes
+text-[9px]  // Micro
+text-[10px] // Caption
+text-[11px] // Small
+text-xs     // Base</code>
+                        </div>
+                        <p class="text-xs text-green-300 mt-4 font-mono">Use consistent font sizes from the type scale.</p>
+                    </div>
+
+                    <!-- DON'T -->
+                    <div class="bg-red-500/10 border-4 border-red-500/30 p-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            <span class="text-sm font-mono font-black uppercase tracking-widest text-red-400">DON'T</span>
+                        </div>
+                        <div class="code-block">
+<code class="text-red-300">// Don't use random sizes
+&lt;p className="text-[13px]"&gt;
+  Random size
+&lt;/p&gt;
+
+// Don't mix weights inconsistently
+&lt;p className="font-semibold"&gt;Some text&lt;/p&gt;
+&lt;p className="font-bold"&gt;Other text&lt;/p&gt;
+&lt;p className="font-extrabold"&gt;More text&lt;/p&gt;</code>
+                        </div>
+                        <p class="text-xs text-red-300 mt-4 font-mono">Avoid arbitrary font sizes and inconsistent weights.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Spacing Do's & Don'ts -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    Spacing & Borders
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <!-- DO -->
+                    <div class="bg-green-500/10 border-4 border-green-500/30 p-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span class="text-sm font-mono font-black uppercase tracking-widest text-green-400">DO</span>
+                        </div>
+                        <div class="code-block">
+<code class="text-green-300">// Use consistent border-radius
+&lt;div className="rounded-lg"&gt;     // 8px
+&lt;div className="rounded-xl"&gt;     // 12px
+&lt;div className="rounded-2xl"&gt;    // 16px
+
+// Use spacing scale
+&lt;div className="p-4 gap-3 space-y-4"&gt;
+  {/* content */}
+&lt;/div&gt;</code>
+                        </div>
+                        <p class="text-xs text-green-300 mt-4 font-mono">Stick to defined radius and spacing tokens.</p>
+                    </div>
+
+                    <!-- DON'T -->
+                    <div class="bg-red-500/10 border-4 border-red-500/30 p-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            <span class="text-sm font-mono font-black uppercase tracking-widest text-red-400">DON'T</span>
+                        </div>
+                        <div class="code-block">
+<code class="text-red-300">// Don't use arbitrary values
+&lt;div className="rounded-[13px]"&gt;
+&lt;div className="p-[17px] gap-[5px]"&gt;
+
+// Don't mix radius styles
+&lt;div className="rounded-lg"&gt;
+  &lt;div className="rounded-full"&gt;
+    &lt;button className="rounded-md"&gt;</code>
+                        </div>
+                        <p class="text-xs text-red-300 mt-4 font-mono">Avoid arbitrary spacing values and mixing radius styles.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Color Usage Do's & Don'ts -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    Color Usage
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <!-- DO -->
+                    <div class="bg-green-500/10 border-4 border-green-500/30 p-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span class="text-sm font-mono font-black uppercase tracking-widest text-green-400">DO</span>
+                        </div>
+                        <div class="code-block">
+<code class="text-green-300">// Use semantic color combinations
+&lt;div className="bg-white/5 border border-white/10"&gt;
+  &lt;span className="text-zinc-300"&gt;Content&lt;/span&gt;
+&lt;/div&gt;
+
+// Use state colors consistently
+&lt;div className="bg-green-500/10 border border-green-500/20"&gt;
+  &lt;span className="text-green-400"&gt;Success&lt;/span&gt;
+&lt;/div&gt;</code>
+                        </div>
+                        <p class="text-xs text-green-300 mt-4 font-mono">Match background, border, and text colors from same family.</p>
+                    </div>
+
+                    <!-- DON'T -->
+                    <div class="bg-red-500/10 border-4 border-red-500/30 p-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            <span class="text-sm font-mono font-black uppercase tracking-widest text-red-400">DON'T</span>
+                        </div>
+                        <div class="code-block">
+<code class="text-red-300">// Don't mix color families
+&lt;div className="bg-blue-500/10 border border-green-500/20"&gt;
+  &lt;span className="text-yellow-400"&gt;Mixed colors&lt;/span&gt;
+&lt;/div&gt;
+
+// Don't use too many opacities
+bg-white/3, bg-white/7, bg-white/13...</code>
+                        </div>
+                        <p class="text-xs text-red-300 mt-4 font-mono">Avoid mixing unrelated color families. Stick to /5 and /10 for backgrounds.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Component Composition Do's & Don'ts -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    Component Composition
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <!-- DO -->
+                    <div class="bg-green-500/10 border-4 border-green-500/30 p-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span class="text-sm font-mono font-black uppercase tracking-widest text-green-400">DO</span>
+                        </div>
+                        <div class="code-block">
+<code class="text-green-300">// Use existing components
+import { SidebarSection } from '@/components/ui/domain-sidebar'
+
+&lt;SidebarSection title="Settings" icon={&lt;Settings /&gt;}&gt;
+  &lt;SidebarSliderRow 
+    label="Size"
+    value={size}
+    onChange={setSize}
+  /&gt;
+&lt;/SidebarSection&gt;</code>
+                        </div>
+                        <p class="text-xs text-green-300 mt-4 font-mono">Reuse existing components instead of recreating them.</p>
+                    </div>
+
+                    <!-- DON'T -->
+                    <div class="bg-red-500/10 border-4 border-red-500/30 p-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            <span class="text-sm font-mono font-black uppercase tracking-widest text-red-400">DON'T</span>
+                        </div>
+                        <div class="code-block">
+<code class="text-red-300">// Don't recreate components
+&lt;div className="space-y-2 py-4 border-t"&gt;
+  &lt;h3 className="text-xs font-mono font-bold"&gt;
+    Settings
+  &lt;/h3&gt;
+  &lt;div className="space-y-2"&gt;
+    &lt;div className="flex justify-between"&gt;
+      &lt;span&gt;Size&lt;/span&gt;
+      &lt;span&gt;{size}&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;Slider value={size} onChange={setSize} /&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code>
+                        </div>
+                        <p class="text-xs text-red-300 mt-4 font-mono">Don't rebuild what already exists. Check domain-sidebar.tsx first.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Layout Do's & Don'ts -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    Layout & Structure
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <!-- DO -->
+                    <div class="bg-green-500/10 border-4 border-green-500/30 p-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span class="text-sm font-mono font-black uppercase tracking-widest text-green-400">DO</span>
+                        </div>
+                        <div class="code-block">
+<code class="text-green-300">// Use consistent spacing between sections
+&lt;div className="space-y-8"&gt;
+  &lt;Section /&gt;
+  &lt;Section /&gt;
+&lt;/div&gt;
+
+// Group related controls
+&lt;div className="space-y-4"&gt;
+  &lt;SidebarLabel&gt;Dimensions&lt;/SidebarLabel&gt;
+  &lt;SidebarSliderRow label="Width" /&gt;
+  &lt;SidebarSliderRow label="Height" /&gt;
+&lt;/div&gt;</code>
+                        </div>
+                        <p class="text-xs text-green-300 mt-4 font-mono">Use space-y for vertical rhythm and group related items.</p>
+                    </div>
+
+                    <!-- DON'T -->
+                    <div class="bg-red-500/10 border-4 border-red-500/30 p-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            <span class="text-sm font-mono font-black uppercase tracking-widest text-red-400">DON'T</span>
+                        </div>
+                        <div class="code-block">
+<code class="text-red-300">// Don't use arbitrary margins
+&lt;div className="mt-[23px] mb-[17px]"&gt;
+  &lt;Section /&gt;
+&lt;/div&gt;
+
+// Don't scatter related controls
+&lt;div&gt;
+  &lt;SidebarSliderRow label="Width" /&gt;
+  &lt;SomeOtherControl /&gt;
+  &lt;SidebarSliderRow label="Height" /&gt;
+&lt;/div&gt;</code>
+                        </div>
+                        <p class="text-xs text-red-300 mt-4 font-mono">Avoid arbitrary spacing and poor grouping of related controls.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive States Do's & Don'ts -->
+            <div class="mb-12">
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    Interactive States
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <!-- DO -->
+                    <div class="bg-green-500/10 border-4 border-green-500/30 p-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span class="text-sm font-mono font-black uppercase tracking-widest text-green-400">DO</span>
+                        </div>
+                        <div class="code-block">
+<code class="text-green-300">// Provide clear loading states
+{isGenerating && (
+  &lt;div className="bg-indigo-500/5 border border-indigo-500/10 p-4"&gt;
+    &lt;Loader2 className="animate-spin" /&gt;
+    &lt;span&gt;Generating... {progress}%&lt;/span&gt;
+    &lt;Progress value={progress} /&gt;
+  &lt;/div&gt;
+)}
+
+// Disable during operations
+&lt;Button disabled={isLoading}&gt;Generate&lt;/Button&gt;</code>
+                        </div>
+                        <p class="text-xs text-green-300 mt-4 font-mono">Show progress and disable controls during async operations.</p>
+                    </div>
+
+                    <!-- DON'T -->
+                    <div class="bg-red-500/10 border-4 border-red-500/30 p-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            <span class="text-sm font-mono font-black uppercase tracking-widest text-red-400">DON'T</span>
+                        </div>
+                        <div class="code-block">
+<code class="text-red-300">// Don't show only a spinner
+{isGenerating && (
+  &lt;Loader2 className="animate-spin" /&gt;
+)}
+
+// Don't allow actions during loading
+&lt;Button onClick={generate}&gt;
+  {isLoading ? 'Loading...' : 'Generate'}
+&lt;/Button&gt;
+// ^ Still clickable!</code>
+                        </div>
+                        <p class="text-xs text-red-300 mt-4 font-mono">Never hide progress or allow duplicate operations.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pattern Consistency Do's & Don'ts -->
+            <div>
+                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                    Pattern Consistency
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <!-- DO -->
+                    <div class="bg-green-500/10 border-4 border-green-500/30 p-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span class="text-sm font-mono font-black uppercase tracking-widest text-green-400">DO</span>
+                        </div>
+                        <div class="code-block">
+<code class="text-green-300">// Follow established patterns
+&lt;span className="text-[9px] font-bold uppercase 
+  tracking-widest text-indigo-400 bg-indigo-500/10 
+  px-2 py-0.5 rounded-lg"&gt;
+  STATUS
+&lt;/span&gt;
+
+// Consistent button style
+&lt;Button className="h-10 rounded-xl 
+  bg-indigo-500 text-white font-bold 
+  uppercase tracking-widest text-[10px]"&gt;
+  ACTION
+&lt;/Button&gt;</code>
+                        </div>
+                        <p class="text-xs text-green-300 mt-4 font-mono">Copy exact patterns from existing components.</p>
+                    </div>
+
+                    <!-- DON'T -->
+                    <div class="bg-red-500/10 border-4 border-red-500/30 p-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            <span class="text-sm font-mono font-black uppercase tracking-widest text-red-400">DON'T</span>
+                        </div>
+                        <div class="code-block">
+<code class="text-red-300">// Don't create variations
+&lt;span className="text-xs italic text-blue-300 
+  bg-blue-400/15 px-3 py-1 rounded-md"&gt;
+  status
+&lt;/span&gt;
+
+// Don't mix styles on same component type
+&lt;Button className="rounded-lg"&gt;Button 1&lt;/Button&gt;
+&lt;Button className="rounded-full"&gt;Button 2&lt;/Button&gt;
+&lt;Button className="rounded-sm"&gt;Button 3&lt;/Button&gt;</code>
+                        </div>
+                        <p class="text-xs text-red-300 mt-4 font-mono">Don't create style variations. One pattern per component type.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/5 py-12">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <p class="text-zinc-500 text-sm">
+                Tilemap Design System v1.0 &middot; 
+                <a href="https://github.com" class="text-indigo-400 hover:text-indigo-300">Source</a> &middot;
+                Built with Tailwind CSS
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Copy code functionality
+        function copyCode(button) {
+            const codeBlock = button.parentElement.querySelector('code');
+            const text = codeBlock.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = button.innerText;
+                button.innerText = 'Copied!';
+                button.classList.add('bg-green-600');
+                setTimeout(() => {
+                    button.innerText = originalText;
+                    button.classList.remove('bg-green-600');
+                }, 2000);
+            });
+        }
+
+        // Smooth scroll for navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Highlight current section in nav
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll('nav a');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (scrollY >= sectionTop - 200) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('text-white');
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.classList.add('text-white');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
+

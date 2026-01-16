@@ -17,7 +17,6 @@ interface StoryPlanBoardProps {
   generatingSection?: string | null
 }
 
-
 export const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
   storyPlan,
   globalBible,
@@ -52,17 +51,20 @@ export const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
 
   // Bridge: Cast storyPlan to EpisodePremise if it fits, or pass null
   // Ensure title is passed down even if it's on the root object
-  const rawPremise = (storyPlan as any)?.premise || storyPlan;
-  const episodePremise = rawPremise ? {
-    ...rawPremise,
-    title: rawPremise.title || (storyPlan as any)?.title
-  } : null;
+  const rawPremise = (storyPlan as any)?.premise || storyPlan
+  const episodePremise = rawPremise
+    ? {
+        ...rawPremise,
+        title: rawPremise.title || (storyPlan as any)?.title,
+      }
+    : null
 
   // Check if plan is complete (has all required sections)
-  const isPlanComplete = episodePremise && 
-    episodePremise.protagonistHook && 
-    episodePremise.fatalFlaw && 
-    episodePremise.stakes && 
+  const isPlanComplete =
+    episodePremise &&
+    episodePremise.protagonistHook &&
+    episodePremise.fatalFlaw &&
+    episodePremise.stakes &&
     episodePremise.inevitableConsequence
 
   return (
@@ -75,35 +77,53 @@ export const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
         storyboardUrl={(storyPlan as any)?.storyboardUrl}
         posterPrompt={(storyPlan as any)?.posterPrompt}
         projectId={projectId}
-        onUpdate={(updated) => {
+        onUpdate={updated => {
           // Handle updates - likely need a prop for this or dispatch event
-          console.log("Update premise:", updated)
-          window.dispatchEvent(new CustomEvent('update_episode_premise', {
-            detail: updated
-          }))
+          console.log('Update premise:', updated)
+          window.dispatchEvent(
+            new CustomEvent('update_episode_premise', {
+              detail: updated,
+            })
+          )
         }}
-        onGenerate={() => window.dispatchEvent(new CustomEvent('trigger-agent-action', {
-          detail: { type: 'generate_episode_premise' }
-        }))}
-        onGeneratePoster={() => window.dispatchEvent(new CustomEvent('generate-episode-poster', {
-          detail: { episodeId: (storyPlan as any)?.id }
-        }))}
-        onGenerateStoryboard={() => window.dispatchEvent(new CustomEvent('trigger-storyboard-generation', {
-          detail: { episodeId: (storyPlan as any)?.id }
-        }))}
-        onGenerateSection={(section) => window.dispatchEvent(new CustomEvent('trigger-agent-action', {
-          detail: { type: 'generate_episode_premise_section', section }
-        }))}
+        onGenerate={() =>
+          window.dispatchEvent(
+            new CustomEvent('trigger-agent-action', {
+              detail: { type: 'generate_episode_premise' },
+            })
+          )
+        }
+        onGeneratePoster={() =>
+          window.dispatchEvent(
+            new CustomEvent('generate-episode-poster', {
+              detail: { episodeId: (storyPlan as any)?.id },
+            })
+          )
+        }
+        onGenerateStoryboard={() =>
+          window.dispatchEvent(
+            new CustomEvent('trigger-storyboard-generation', {
+              detail: { episodeId: (storyPlan as any)?.id },
+            })
+          )
+        }
+        onGenerateSection={section =>
+          window.dispatchEvent(
+            new CustomEvent('trigger-agent-action', {
+              detail: { type: 'generate_episode_premise_section', section },
+            })
+          )
+        }
         isGenerating={isGenerating}
         generatingSection={generatingSection}
         isGeneratingPoster={isGeneratingPoster}
         isGeneratingStoryboard={isGeneratingStoryboard}
       />
-      
+
       {/* Plan Ready Button - Only show when premise is complete */}
       {isPlanComplete && (
         <div className="p-4 border-t bg-background/95 backdrop-blur">
-          <Button 
+          <Button
             onClick={onApprove}
             className="w-full gap-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white shadow-lg shadow-emerald-500/25"
             size="lg"
@@ -116,6 +136,3 @@ export const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
     </div>
   )
 }
-
-
-

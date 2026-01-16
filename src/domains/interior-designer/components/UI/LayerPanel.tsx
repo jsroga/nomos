@@ -1,381 +1,559 @@
 'use client'
 
-import React, { useState } from 'react'
-import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore' // Ensure import is there
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import React from 'react'
+import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
 import {
-    ChevronDown,
-    ChevronRight,
-    Layers,
-    Square,
-    Box,
-    Trash2,
-    Eye,
-    EyeOff,
-    Mountain,
-    Droplets,
+  Layers,
+  Square,
+  Trash2,
+  Eye,
+  EyeOff,
+  GitCommit,
+  BrickWall,
+  Box,
+  Mountain,
+  Droplets,
+  ChevronDown,
+  Map,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { SidebarSection, SidebarHeader } from '@/components/ui/domain-sidebar'
-
-
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { SidebarHeader, SidebarSection } from '@/components/ui/domain-sidebar'
 
 interface LayerItemProps {
-    id: string
-    name: string
-    isSelected: boolean
-    onSelect: () => void
-    onShiftSelect?: () => void
-    onDelete: () => void
+  id: string
+  name: string
+  icon?: React.ReactNode
+  isSelected: boolean
+  onSelect: () => void
+  onShiftSelect?: () => void
+  onDelete: () => void
 }
 
 const LayerItem: React.FC<LayerItemProps> = ({
-    id,
-    name,
-    isSelected,
-    onSelect,
-    onShiftSelect,
-    onDelete,
+  name,
+  icon,
+  isSelected,
+  onSelect,
+  onShiftSelect,
+  onDelete,
 }) => {
-    const handleClick = (e: React.MouseEvent) => {
-        if (e.shiftKey && onShiftSelect) {
-            onShiftSelect()
-        } else {
-            onSelect()
-        }
+  const handleClick = (e: React.MouseEvent) => {
+    if (e.shiftKey && onShiftSelect) {
+      onShiftSelect()
+    } else {
+      onSelect()
     }
+  }
 
-    return (
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-2.5 px-3 py-1.5 mx-2 my-0.5 rounded-2xl cursor-pointer group transition-all duration-300 border',
+        isSelected
+          ? 'bg-indigo-600 border-indigo-600 text-white shadow-[0_0_15px_rgba(79,70,229,0.3)]'
+          : 'bg-white/3 border-transparent text-zinc-500 hover:text-zinc-300 hover:bg-white/5 hover:border-white/5'
+      )}
+      onClick={handleClick}
+    >
+      <div
+        className={cn(
+          'w-1 h-3 rounded-full transition-all duration-300',
+          isSelected
+            ? 'bg-white scale-100 shadow-[0_0_8px_white]'
+            : 'bg-zinc-800 scale-50 group-hover:scale-100 group-hover:bg-zinc-600'
+        )}
+      />
+
+      {icon && (
         <div
-            className={cn(
-                'flex items-center gap-3 px-3 py-2 mx-2 rounded-md cursor-pointer group transition-colors duration-200',
-                isSelected ? 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 shadow-sm' : 'hover:bg-zinc-900 text-zinc-400 hover:text-zinc-200 border border-transparent hover:border-zinc-800'
-            )}
-            onClick={handleClick}
+          className={cn(
+            'transition-transform duration-300',
+            !isSelected && 'group-hover:scale-110'
+          )}
         >
-            <span className="text-xs font-medium flex-1 truncate">{name}</span>
-            <Button
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={e => {
-                    e.stopPropagation()
-                    onDelete()
-                }}
-            >
-                <Trash2 size={12} />
-            </Button>
+          {icon}
         </div>
-    )
+      )}
 
-}
+      <span className="text-[10px] font-mono font-bold uppercase tracking-widest flex-1 truncate">{name}</span>
 
-// Static layer item for terrain mode (non-deletable)
-const StaticLayerItem: React.FC<{ name: string; icon?: React.ReactNode }> = ({ name, icon }) => {
-    return (
-        <div className="flex items-center gap-2 px-3 py-1.5 mx-2 rounded text-muted-foreground">
-            {icon}
-            <span className="text-xs font-medium flex-1 truncate">{name}</span>
-        </div>
-    )
+      <Button
+        variant="ghost"
+        size="icon"
+        className={cn(
+          'h-6 w-6 transition-all duration-300',
+          isSelected
+            ? 'text-zinc-600 hover:text-red-600 hover:bg-red-500/10'
+            : 'opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 hover:bg-white/5'
+        )}
+        onClick={e => {
+          e.stopPropagation()
+          onDelete()
+        }}
+      >
+        <Trash2 size={12} />
+      </Button>
+    </div>
+  )
 }
 
 export const LayerPanel: React.FC = () => {
-    const mode = useInteriorStore(state => state.mode)
-    const surfaces = useInteriorStore(state => state.surfaces)
-    const walls = useInteriorStore(state => state.walls)
-    const floors = useInteriorStore(state => state.floors)
-    const objects = useInteriorStore(state => state.objects)
-    const selectedId = useInteriorStore(state => state.selectedId)
-    const multiSelectedIds = useInteriorStore(state => state.multiSelectedIds)
-    const setSelected = useInteriorStore(state => state.setSelected)
-    const toggleMultiSelect = useInteriorStore(state => state.toggleMultiSelect)
-    const removeSurface = useInteriorStore(state => state.removeSurface)
-    const removeWall = useInteriorStore(state => state.removeWall)
-    const removeFloor = useInteriorStore(state => state.removeFloor)
-    const removeObject = useInteriorStore(state => state.removeObject)
-    const terrainSettings = useInteriorStore(state => state.terrainSettings)
+  const mode = useInteriorStore(state => state.mode)
+  const walls = useInteriorStore(state => state.walls)
+  const floors = useInteriorStore(state => state.floors)
+  const surfaces = useInteriorStore(state => state.surfaces)
+  const objects = useInteriorStore(state => state.objects)
+  const selectedId = useInteriorStore(state => state.selectedId)
+  const multiSelectedIds = useInteriorStore(state => state.multiSelectedIds)
 
+  const setSelected = useInteriorStore(state => state.setSelected)
+  const toggleMultiSelect = useInteriorStore(state => state.toggleMultiSelect)
+  const removeWall = useInteriorStore(state => state.removeWall)
+  const removeFloor = useInteriorStore(state => state.removeFloor)
+  const removeSurface = useInteriorStore(state => state.removeSurface)
+  const removeObject = useInteriorStore(state => state.removeObject)
 
-    // Group surfaces by type
-    const terrain = surfaces.filter(s => ['grass', 'mars', 'sand', 'dirt', 'rock'].includes(s.type) && !s.isPath)
-    const roads = surfaces.filter(s => (['road', 'pavement'].includes(s.type) || s.isPath) && !s.isVertical)
-    const water = surfaces.filter(s => s.type === 'water')
-    const wallSurfaces = surfaces.filter(s => s.isVertical) // Combined walls
+  // Derived groups
+  const terrain = surfaces.filter(s => ['grass', 'dirt', 'sand', 'rock', 'mars'].includes(s.type))
+  const water = surfaces.filter(s => s.type === 'water')
+  const roads = surfaces.filter(s => s.type === 'road' || s.isPath)
+  const wallSurfaces = surfaces.filter(s => s.type === 'wall')
 
-
-    // Render terrain mode scene graph
-    if (mode === 'TERRAIN') {
-        return (
-            <div className="h-full flex flex-col bg-transparent">
-                <div className="px-4 pt-4 pb-2 flex items-center gap-1.5">
-                    <Layers size={12} className="text-muted-foreground" />
-                    <SidebarHeader>Scene Graph</SidebarHeader>
-                </div>
-                <ScrollArea className="flex-1">
-                    {/* Environment Mesh Section */}
-                    <SidebarSection
-                        title="Environment Mesh"
-                        icon={<Mountain size={14} className="text-emerald-500" />}
-                        collapsible
-                        rightContent={<span className="text-xs font-mono text-muted-foreground">2</span>}
-                    >
-                        <StaticLayerItem
-                            name="Global Water Plane"
-                            icon={<Droplets size={12} className="text-cyan-500" />}
-                        />
-                    </SidebarSection>
-
-                    {/* Roads & Paths (still editable) */}
-                    <SidebarSection
-                        title="Roads & Paths"
-                        icon={<Square size={14} className="text-slate-500" />}
-                        collapsible
-                        rightContent={<span className="text-xs font-mono text-muted-foreground">{roads.length}</span>}
-                        separator
-                    >
-                        {roads.map((s, i) => (
-                            <LayerItem
-                                key={s.id}
-                                id={s.id}
-                                name={`${s.type.charAt(0).toUpperCase() + s.type.slice(1)} ${i + 1}`}
-                                isSelected={selectedId === s.id || multiSelectedIds.includes(s.id)}
-                                onSelect={() => setSelected(s.id)}
-                                onShiftSelect={() => toggleMultiSelect(s.id)}
-                                onDelete={() => removeSurface(s.id)}
-                            />
-                        ))}
-                    </SidebarSection>
-
-                    {/* Walls (Combined wall surfaces + individual walls) */}
-                    <SidebarSection
-                        title="Walls"
-                        icon={<Square size={14} className="text-amber-600" />}
-                        collapsible
-                        rightContent={<span className="text-xs font-mono text-muted-foreground">{wallSurfaces.length + walls.length}</span>}
-                        separator
-                    >
-                        {wallSurfaces.map((s, i) => (
-                            <LayerItem
-                                key={s.id}
-                                id={s.id}
-                                name={`Combined Wall ${i + 1}`}
-                                isSelected={selectedId === s.id || multiSelectedIds.includes(s.id)}
-                                onSelect={() => setSelected(s.id)}
-                                onShiftSelect={() => toggleMultiSelect(s.id)}
-                                onDelete={() => removeSurface(s.id)}
-                            />
-                        ))}
-                        {walls.map((wall, i) => (
-                            <LayerItem
-                                key={wall.id}
-                                id={wall.id}
-                                name={`Wall Segment ${i + 1}`}
-                                isSelected={selectedId === wall.id || multiSelectedIds.includes(wall.id)}
-                                onSelect={() => setSelected(wall.id)}
-                                onShiftSelect={() => toggleMultiSelect(wall.id)}
-                                onDelete={() => removeWall(wall.id)}
-                            />
-                        ))}
-                    </SidebarSection>
-
-
-
-                    {/* Floors (walls are now in their own section) */}
-                    <SidebarSection
-                        title="Floors"
-                        icon={<Square size={14} className="text-orange-500" />}
-                        collapsible
-                        rightContent={<span className="text-xs font-mono text-muted-foreground">{floors.length}</span>}
-                        separator
-                    >
-                        {floors.map((floor, i) => (
-                            <LayerItem
-                                key={floor.id}
-                                id={floor.id}
-                                name={`Floor ${i + 1}`}
-                                isSelected={selectedId === floor.id || multiSelectedIds.includes(floor.id)}
-                                onSelect={() => setSelected(floor.id)}
-                                onShiftSelect={() => toggleMultiSelect(floor.id)}
-                                onDelete={() => removeFloor(floor.id)}
-                            />
-                        ))}
-                    </SidebarSection>
-
-
-                    {/* Objects */}
-                    <SidebarSection
-                        title="Objects"
-                        icon={<Box size={14} className="text-amber-400" />}
-                        collapsible
-                        rightContent={<span className="text-xs font-mono text-muted-foreground">{objects.length}</span>}
-                        separator
-                    >
-                        {objects.map((obj, i) => (
-                            <LayerItem
-                                key={obj.id}
-                                id={obj.id}
-                                name={`${obj.modelUrl.charAt(0).toUpperCase() + obj.modelUrl.slice(1)} ${i + 1}`}
-                                isSelected={selectedId === obj.id || multiSelectedIds.includes(obj.id)}
-                                onSelect={() => setSelected(obj.id)}
-                                onShiftSelect={() => toggleMultiSelect(obj.id)}
-                                onDelete={() => removeObject(obj.id)}
-                            />
-                        ))}
-                    </SidebarSection>
-                </ScrollArea>
-            </div>
-        )
-    }
-
+  if (mode === 'TERRAIN') {
     return (
-        <div className="h-full flex flex-col bg-transparent">
-            <div className="px-4 pt-4 pb-2 flex items-center gap-1.5">
-                <Layers size={12} className="text-muted-foreground" />
-                <SidebarHeader>Scene Graph</SidebarHeader>
-            </div>
-            <ScrollArea className="flex-1">
-                {/* Terrain Group */}
-                <SidebarSection
-                    title="Terrain"
-                    icon={<Square size={14} className="text-emerald-500" />}
-                    collapsible
-                    rightContent={<span className="text-xs font-mono text-muted-foreground">{terrain.length}</span>}
-                >
-                    {terrain.map((s, i) => (
-                        <LayerItem
-                            key={s.id}
-                            id={s.id}
-                            name={`${s.type.charAt(0).toUpperCase() + s.type.slice(1)} ${i + 1}`}
-                            isSelected={selectedId === s.id || multiSelectedIds.includes(s.id)}
-                            onSelect={() => setSelected(s.id)}
-                            onShiftSelect={() => toggleMultiSelect(s.id)}
-                            onDelete={() => removeSurface(s.id)}
-                        />
-                    ))}
-                </SidebarSection>
-
-                {/* Water Group */}
-                <SidebarSection
-                    title="Water"
-                    icon={<Square size={14} className="text-cyan-500" />}
-                    collapsible
-                    rightContent={<span className="text-xs font-mono text-muted-foreground">{water.length}</span>}
-                    separator
-                >
-                    {water.map((s, i) => (
-                        <LayerItem
-                            key={s.id}
-                            id={s.id}
-                            name={`Water Body ${i + 1}`}
-                            isSelected={selectedId === s.id || multiSelectedIds.includes(s.id)}
-                            onSelect={() => setSelected(s.id)}
-                            onShiftSelect={() => toggleMultiSelect(s.id)}
-                            onDelete={() => removeSurface(s.id)}
-                        />
-                    ))}
-                </SidebarSection>
-
-                {/* Roads Group */}
-                <SidebarSection
-                    title="Roads & Paths"
-                    icon={<Square size={14} className="text-slate-500" />}
-                    collapsible
-                    rightContent={<span className="text-xs font-mono text-muted-foreground">{roads.length}</span>}
-                    separator
-                >
-                    {roads.map((s, i) => (
-                        <LayerItem
-                            key={s.id}
-                            id={s.id}
-                            name={`${s.type.charAt(0).toUpperCase() + s.type.slice(1)} ${i + 1}`}
-                            isSelected={selectedId === s.id || multiSelectedIds.includes(s.id)}
-                            onSelect={() => setSelected(s.id)}
-                            onShiftSelect={() => toggleMultiSelect(s.id)}
-                            onDelete={() => removeSurface(s.id)}
-                        />
-                    ))}
-                </SidebarSection>
-
-                {/* Walls (Combined wall surfaces + individual walls) */}
-                <SidebarSection
-                    title="Walls"
-                    icon={<Square size={14} className="text-amber-600" />}
-                    collapsible
-                    rightContent={<span className="text-xs font-mono text-muted-foreground">{wallSurfaces.length + walls.length}</span>}
-                    separator
-                >
-                    {wallSurfaces.map((s, i) => (
-                        <LayerItem
-                            key={s.id}
-                            id={s.id}
-                            name={`Combined Wall ${i + 1}`}
-                            isSelected={selectedId === s.id || multiSelectedIds.includes(s.id)}
-                            onSelect={() => setSelected(s.id)}
-                            onShiftSelect={() => toggleMultiSelect(s.id)}
-                            onDelete={() => removeSurface(s.id)}
-                        />
-                    ))}
-                    {walls.map((wall, i) => (
-                        <LayerItem
-                            key={wall.id}
-                            id={wall.id}
-                            name={`Wall Segment ${i + 1}`}
-                            isSelected={selectedId === wall.id || multiSelectedIds.includes(wall.id)}
-                            onSelect={() => setSelected(wall.id)}
-                            onShiftSelect={() => toggleMultiSelect(wall.id)}
-                            onDelete={() => removeWall(wall.id)}
-                        />
-                    ))}
-                </SidebarSection>
-
-
-
-                {/* Structures Group (Floors only - walls are now in their own section) */}
-                <SidebarSection
-                    title="Floors"
-                    icon={<Square size={14} className="text-orange-500" />}
-                    collapsible
-                    rightContent={<span className="text-xs font-mono text-muted-foreground">{floors.length}</span>}
-                    separator
-                >
-                    {floors.map((floor, i) => (
-                        <LayerItem
-                            key={floor.id}
-                            id={floor.id}
-                            name={`Floor ${i + 1}`}
-                            isSelected={selectedId === floor.id || multiSelectedIds.includes(floor.id)}
-                            onSelect={() => setSelected(floor.id)}
-                            onShiftSelect={() => toggleMultiSelect(floor.id)}
-                            onDelete={() => removeFloor(floor.id)}
-                        />
-                    ))}
-                </SidebarSection>
-
-
-                {/* Objects Group */}
-                <SidebarSection
-                    title="Objects"
-                    icon={<Box size={14} className="text-amber-400" />}
-                    collapsible
-                    rightContent={<span className="text-xs font-mono text-muted-foreground">{objects.length}</span>}
-                    separator
-                >
-                    {objects.map((obj, i) => (
-                        <LayerItem
-                            key={obj.id}
-                            id={obj.id}
-                            name={`${obj.modelUrl.charAt(0).toUpperCase() + obj.modelUrl.slice(1)} ${i + 1}`}
-                            isSelected={selectedId === obj.id || multiSelectedIds.includes(obj.id)}
-                            onSelect={() => setSelected(obj.id)}
-                            onShiftSelect={() => toggleMultiSelect(obj.id)}
-                            onDelete={() => removeObject(obj.id)}
-                        />
-                    ))}
-                </SidebarSection>
-            </ScrollArea>
+      <div className="h-full flex flex-col bg-transparent">
+        <div className="px-5 pt-6 pb-2 flex items-center gap-2 border-b border-white/5 mb-2">
+          <Layers size={14} className="text-indigo-400/80" />
+          <SidebarHeader className="text-zinc-100 font-mono font-bold uppercase text-[10px] tracking-widest">
+            Scene Explorer
+          </SidebarHeader>
         </div>
-    )
-}
 
+        <ScrollArea className="flex-1">
+          {/* Terrain Foundation */}
+          <SidebarSection
+            title="Environment"
+            icon={<Mountain size={12} className="text-zinc-500" />}
+            collapsible
+            rightContent={
+              <span className="text-[10px] font-bold text-zinc-600">
+                {terrain.length + water.length}
+              </span>
+            }
+          >
+            <div className="space-y-2 pt-1.5">
+              {terrain.map(s => (
+                <LayerItem
+                  key={s.id}
+                  id={s.id}
+                  icon={
+                    <Square
+                      size={12}
+                      className={cn(
+                        selectedId === s.id ? 'text-indigo-600' : 'text-emerald-500/60'
+                      )}
+                    />
+                  }
+                  name={`${s.type} foundation`}
+                  isSelected={selectedId === s.id || multiSelectedIds.includes(s.id)}
+                  onSelect={() => setSelected(s.id)}
+                  onShiftSelect={() => toggleMultiSelect(s.id)}
+                  onDelete={() => removeSurface(s.id)}
+                />
+              ))}
+              {water.map((s, i) => (
+                <LayerItem
+                  key={s.id}
+                  id={s.id}
+                  icon={
+                    <Droplets
+                      size={12}
+                      className={cn(selectedId === s.id ? 'text-indigo-600' : 'text-cyan-500/60')}
+                    />
+                  }
+                  name={`Water Body ${i + 1}`}
+                  isSelected={selectedId === s.id || multiSelectedIds.includes(s.id)}
+                  onSelect={() => setSelected(s.id)}
+                  onShiftSelect={() => toggleMultiSelect(s.id)}
+                  onDelete={() => removeSurface(s.id)}
+                />
+              ))}
+            </div>
+          </SidebarSection>
+
+          {/* Infrastructure (Roads/Paths) */}
+          <SidebarSection
+            title="Infrastructure"
+            icon={<GitCommit size={12} className="text-zinc-500" />}
+            collapsible
+            rightContent={
+              <span className="text-[10px] font-bold text-zinc-600">{roads.length}</span>
+            }
+            separator
+          >
+            <div className="space-y-2 pt-1.5">
+              {roads.map((s, i) => (
+                <LayerItem
+                  key={s.id}
+                  id={s.id}
+                  icon={
+                    <GitCommit
+                      size={12}
+                      className={cn(selectedId === s.id ? 'text-indigo-600' : 'text-zinc-600')}
+                    />
+                  }
+                  name={s.isPath ? `Curve ${i + 1}` : `Road ${i + 1}`}
+                  isSelected={selectedId === s.id || multiSelectedIds.includes(s.id)}
+                  onSelect={() => setSelected(s.id)}
+                  onShiftSelect={() => toggleMultiSelect(s.id)}
+                  onDelete={() => removeSurface(s.id)}
+                />
+              ))}
+            </div>
+          </SidebarSection>
+
+          {/* Envelope (Walls) */}
+          <SidebarSection
+            title="Envelope"
+            icon={<BrickWall size={12} className="text-zinc-500" />}
+            collapsible
+            rightContent={
+              <span className="text-[10px] font-bold text-zinc-600">
+                {walls.length + wallSurfaces.length}
+              </span>
+            }
+            separator
+          >
+            <div className="space-y-2 pt-1.5">
+              {wallSurfaces.map((s, i) => (
+                <LayerItem
+                  key={s.id}
+                  id={s.id}
+                  icon={
+                    <BrickWall
+                      size={12}
+                      className={cn(selectedId === s.id ? 'text-indigo-600' : 'text-zinc-600')}
+                    />
+                  }
+                  name={`PBR Wall ${i + 1}`}
+                  isSelected={selectedId === s.id || multiSelectedIds.includes(s.id)}
+                  onSelect={() => setSelected(s.id)}
+                  onShiftSelect={() => toggleMultiSelect(s.id)}
+                  onDelete={() => removeSurface(s.id)}
+                />
+              ))}
+              {walls.map((wall, i) => (
+                <LayerItem
+                  key={wall.id}
+                  id={wall.id}
+                  icon={
+                    <BrickWall
+                      size={12}
+                      className={cn(selectedId === wall.id ? 'text-indigo-600' : 'text-zinc-600')}
+                    />
+                  }
+                  name={`Draft Wall ${i + 1}`}
+                  isSelected={selectedId === wall.id || multiSelectedIds.includes(wall.id)}
+                  onSelect={() => setSelected(wall.id)}
+                  onShiftSelect={() => toggleMultiSelect(wall.id)}
+                  onDelete={() => removeWall(wall.id)}
+                />
+              ))}
+            </div>
+          </SidebarSection>
+
+          {/* Floors */}
+          <SidebarSection
+            title="Surfaces"
+            icon={<Square size={12} className="text-zinc-500" />}
+            collapsible
+            rightContent={
+              <span className="text-[10px] font-bold text-zinc-600">{floors.length}</span>
+            }
+            separator
+          >
+            <div className="space-y-2 pt-1.5">
+              {floors.map((floor, i) => (
+                <LayerItem
+                  key={floor.id}
+                  id={floor.id}
+                  icon={
+                    <Square
+                      size={12}
+                      className={cn(selectedId === floor.id ? 'text-indigo-600' : 'text-zinc-600')}
+                    />
+                  }
+                  name={`Floor ${i + 1}`}
+                  isSelected={selectedId === floor.id || multiSelectedIds.includes(floor.id)}
+                  onSelect={() => setSelected(floor.id)}
+                  onShiftSelect={() => toggleMultiSelect(floor.id)}
+                  onDelete={() => removeFloor(floor.id)}
+                />
+              ))}
+            </div>
+          </SidebarSection>
+
+          {/* Objects */}
+          <SidebarSection
+            title="Assets"
+            icon={<Box size={12} className="text-zinc-500" />}
+            collapsible
+            rightContent={
+              <span className="text-[10px] font-bold text-zinc-600">{objects.length}</span>
+            }
+            separator
+          >
+            <div className="space-y-2 pt-1.5">
+              {objects.map((obj, i) => (
+                <LayerItem
+                  key={obj.id}
+                  id={obj.id}
+                  icon={
+                    <Box
+                      size={12}
+                      className={cn(selectedId === obj.id ? 'text-indigo-600' : 'text-zinc-600')}
+                    />
+                  }
+                  name={obj.modelUrl.split('/').pop()?.replace('.glb', '') || `Asset ${i + 1}`}
+                  isSelected={selectedId === obj.id || multiSelectedIds.includes(obj.id)}
+                  onSelect={() => setSelected(obj.id)}
+                  onShiftSelect={() => toggleMultiSelect(obj.id)}
+                  onDelete={() => removeObject(obj.id)}
+                />
+              ))}
+            </div>
+          </SidebarSection>
+        </ScrollArea>
+      </div>
+    )
+  }
+
+  // Default Scene Graph View
+  return (
+    <div className="h-full flex flex-col bg-transparent">
+      <div className="px-5 pt-6 pb-2 flex items-center gap-2 border-b border-border/50 mb-2">
+        <Layers size={12} className="text-indigo-400/90" />
+        <SidebarHeader className="text-indigo-400/90 font-mono font-bold uppercase text-xs tracking-widest">
+          Scene Explorer
+        </SidebarHeader>
+      </div>
+      <ScrollArea className="flex-1">
+        {/* Terrain Group */}
+        <SidebarSection
+          title="Terrain"
+          icon={<Mountain size={12} className="text-zinc-500" />}
+          collapsible
+          rightContent={
+            <span className="text-[10px] font-bold text-zinc-600">{terrain.length}</span>
+          }
+        >
+          <div className="space-y-2 pt-1.5">
+            {terrain.map((s, i) => (
+              <LayerItem
+                key={s.id}
+                id={s.id}
+                icon={
+                  <Square
+                    size={12}
+                    className={cn(selectedId === s.id ? 'text-indigo-600' : 'text-zinc-600')}
+                    style={{
+                      color:
+                        selectedId === s.id
+                          ? undefined
+                          : s.type === 'grass'
+                            ? '#22c55e'
+                            : s.type === 'mars'
+                              ? '#ef4444'
+                              : s.type === 'sand'
+                                ? '#eab308'
+                                : s.type === 'rock'
+                                  ? '#71717a'
+                                  : undefined,
+                    }}
+                  />
+                }
+                name={`${s.type} foundation`}
+                isSelected={selectedId === s.id || multiSelectedIds.includes(s.id)}
+                onSelect={() => setSelected(s.id)}
+                onShiftSelect={() => toggleMultiSelect(s.id)}
+                onDelete={() => removeSurface(s.id)}
+              />
+            ))}
+          </div>
+        </SidebarSection>
+
+        {/* Water Group */}
+        <SidebarSection
+          title="Hydrology"
+          icon={<Droplets size={12} className="text-zinc-500" />}
+          collapsible
+          rightContent={<span className="text-[10px] font-bold text-zinc-600">{water.length}</span>}
+          separator
+        >
+          <div className="space-y-2 pt-1.5">
+            {water.map((s, i) => (
+              <LayerItem
+                key={s.id}
+                id={s.id}
+                icon={
+                  <Droplets
+                    size={12}
+                    className={cn(selectedId === s.id ? 'text-indigo-600' : 'text-cyan-500/60')}
+                  />
+                }
+                name={`Hydrology ${i + 1}`}
+                isSelected={selectedId === s.id || multiSelectedIds.includes(s.id)}
+                onSelect={() => setSelected(s.id)}
+                onShiftSelect={() => toggleMultiSelect(s.id)}
+                onDelete={() => removeSurface(s.id)}
+              />
+            ))}
+          </div>
+        </SidebarSection>
+
+        {/* Infrastructure Group */}
+        <SidebarSection
+          title="Infrastructure"
+          icon={<GitCommit size={12} className="text-zinc-500" />}
+          collapsible
+          rightContent={<span className="text-[10px] font-bold text-zinc-600">{roads.length}</span>}
+          separator
+        >
+          <div className="space-y-2 pt-1.5">
+            {roads.map((s, i) => (
+              <LayerItem
+                key={s.id}
+                id={s.id}
+                icon={
+                  <GitCommit
+                    size={12}
+                    className={cn(selectedId === s.id ? 'text-indigo-600' : 'text-zinc-600')}
+                  />
+                }
+                name={s.isPath ? `Curve ${i + 1}` : `Road ${i + 1}`}
+                isSelected={selectedId === s.id || multiSelectedIds.includes(s.id)}
+                onSelect={() => setSelected(s.id)}
+                onShiftSelect={() => toggleMultiSelect(s.id)}
+                onDelete={() => removeSurface(s.id)}
+              />
+            ))}
+          </div>
+        </SidebarSection>
+
+        {/* Envelope Group */}
+        <SidebarSection
+          title="Envelope"
+          icon={<BrickWall size={12} className="text-zinc-500" />}
+          collapsible
+          rightContent={
+            <span className="text-[10px] font-bold text-zinc-600">
+              {walls.length + wallSurfaces.length}
+            </span>
+          }
+          separator
+        >
+          <div className="space-y-2 pt-1.5">
+            {wallSurfaces.map((s, i) => (
+              <LayerItem
+                key={s.id}
+                id={s.id}
+                icon={
+                  <BrickWall
+                    size={12}
+                    className={cn(selectedId === s.id ? 'text-indigo-600' : 'text-zinc-600')}
+                  />
+                }
+                name={`PBR Wall ${i + 1}`}
+                isSelected={selectedId === s.id || multiSelectedIds.includes(s.id)}
+                onSelect={() => setSelected(s.id)}
+                onShiftSelect={() => toggleMultiSelect(s.id)}
+                onDelete={() => removeSurface(s.id)}
+              />
+            ))}
+            {walls.map((wall, i) => (
+              <LayerItem
+                key={wall.id}
+                id={wall.id}
+                icon={
+                  <BrickWall
+                    size={12}
+                    className={cn(selectedId === wall.id ? 'text-indigo-600' : 'text-zinc-600')}
+                  />
+                }
+                name={`Draft Wall ${i + 1}`}
+                isSelected={selectedId === wall.id || multiSelectedIds.includes(wall.id)}
+                onSelect={() => setSelected(wall.id)}
+                onShiftSelect={() => toggleMultiSelect(wall.id)}
+                onDelete={() => removeWall(wall.id)}
+              />
+            ))}
+          </div>
+        </SidebarSection>
+
+        {/* Floors Group */}
+        <SidebarSection
+          title="Surfaces"
+          icon={<Square size={12} className="text-zinc-500" />}
+          collapsible
+          rightContent={
+            <span className="text-[10px] font-bold text-zinc-600">{floors.length}</span>
+          }
+          separator
+        >
+          <div className="space-y-2 pt-1.5">
+            {floors.map((floor, i) => (
+              <LayerItem
+                key={floor.id}
+                id={floor.id}
+                icon={
+                  <Square
+                    size={12}
+                    className={cn(selectedId === floor.id ? 'text-indigo-600' : 'text-zinc-600')}
+                  />
+                }
+                name={`Floor ${i + 1}`}
+                isSelected={selectedId === floor.id || multiSelectedIds.includes(floor.id)}
+                onSelect={() => setSelected(floor.id)}
+                onShiftSelect={() => toggleMultiSelect(floor.id)}
+                onDelete={() => removeFloor(floor.id)}
+              />
+            ))}
+          </div>
+        </SidebarSection>
+
+        {/* Assets Group */}
+        <SidebarSection
+          title="Assets"
+          icon={<Box size={12} className="text-zinc-500" />}
+          collapsible
+          rightContent={
+            <span className="text-[10px] font-bold text-zinc-600">{objects.length}</span>
+          }
+          separator
+        >
+          <div className="space-y-2 pt-1.5">
+            {objects.map((obj, i) => (
+              <LayerItem
+                key={obj.id}
+                id={obj.id}
+                icon={
+                  <Box
+                    size={12}
+                    className={cn(selectedId === obj.id ? 'text-indigo-600' : 'text-zinc-600')}
+                  />
+                }
+                name={obj.modelUrl.split('/').pop()?.replace('.glb', '') || `Asset ${i + 1}`}
+                isSelected={selectedId === obj.id || multiSelectedIds.includes(obj.id)}
+                onSelect={() => setSelected(obj.id)}
+                onShiftSelect={() => toggleMultiSelect(obj.id)}
+                onDelete={() => removeObject(obj.id)}
+              />
+            ))}
+          </div>
+        </SidebarSection>
+      </ScrollArea>
+    </div>
+  )
+}

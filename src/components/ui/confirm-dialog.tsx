@@ -52,11 +52,7 @@ export function ConfirmDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isLoading}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
             {cancelLabel}
           </Button>
           <Button
@@ -93,7 +89,7 @@ export function useConfirmDialog() {
   })
 
   const confirm = React.useCallback((options: UseConfirmOptions): Promise<boolean> => {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       setState({
         open: true,
         options,
@@ -102,18 +98,21 @@ export function useConfirmDialog() {
     })
   }, [])
 
-  const handleOpenChange = React.useCallback((open: boolean) => {
-    if (!open && state.resolve) {
-      state.resolve(false)
-    }
-    setState((prev) => ({ ...prev, open, resolve: open ? prev.resolve : null }))
-  }, [state.resolve])
+  const handleOpenChange = React.useCallback(
+    (open: boolean) => {
+      if (!open && state.resolve) {
+        state.resolve(false)
+      }
+      setState(prev => ({ ...prev, open, resolve: open ? prev.resolve : null }))
+    },
+    [state]
+  )
 
   const handleConfirm = React.useCallback(() => {
     if (state.resolve) {
       state.resolve(true)
     }
-  }, [state.resolve])
+  }, [state])
 
   const ConfirmDialogComponent = React.useMemo(() => {
     if (!state.options) return null
@@ -133,14 +132,3 @@ export function useConfirmDialog() {
 
   return { confirm, ConfirmDialogComponent }
 }
-
-
-
-
-
-
-
-
-
-
-

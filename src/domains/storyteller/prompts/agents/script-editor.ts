@@ -1,6 +1,6 @@
 /**
  * Script Editor Agent Prompt
- * 
+ *
  * Evaluates script quality following the Evaluator-Optimizer pattern.
  */
 

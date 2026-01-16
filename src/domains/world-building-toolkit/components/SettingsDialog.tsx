@@ -13,7 +13,7 @@ import {
   ScanLine,
   Check,
   Wrench,
-  Sparkles
+  Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
@@ -51,11 +51,15 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
   const [skipGeminiPreUpscale, setSkipGeminiPreUpscale] = useState(false)
 
   // Storyteller AI Settings
-  const [storytellerProvider, setStorytellerProvider] = useState<'openai' | 'anthropic' | 'gemini'>('openai')
+  const [storytellerProvider, setStorytellerProvider] = useState<'openai' | 'anthropic' | 'gemini'>(
+    'openai'
+  )
   const [anthropicApiKey, setAnthropicApiKey] = useState<string>('')
 
   // Storyteller Image Settings
-  const [moodboardProvider, setMoodboardProvider] = useState<'nanobanana' | 'midjourney'>('midjourney')
+  const [moodboardProvider, setMoodboardProvider] = useState<'nanobanana' | 'midjourney'>(
+    'midjourney'
+  )
   const [nanoBananaModelId, setNanoBananaModelId] = useState<string>('flux-pro')
 
   // Fidelity Enhancement Settings
@@ -106,7 +110,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
 
       // Load Fidelity prompt
       const savedFidelityPrompt = localStorage.getItem(LocalStorageKeys.FIDELITY_PROMPT)
-      setDefaultFidelityPrompt(savedFidelityPrompt || 'Enhance with fine artistic details, crisp textures, and vibrant colors while maintaining the original composition.')
+      setDefaultFidelityPrompt(
+        savedFidelityPrompt ||
+          'Enhance with fine artistic details, crisp textures, and vibrant colors while maintaining the original composition.'
+      )
 
       // Load Storyteller settings
       const savedProvider = localStorage.getItem(LocalStorageKeys.PREFERRED_MODEL_PROVIDER)
@@ -122,7 +129,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
       }
       const savedNanoBananaModel = localStorage.getItem('NANO_BANANA_MODEL_ID')
       if (savedNanoBananaModel) setNanoBananaModelId(savedNanoBananaModel)
-
 
       // Load project settings if projectId provided
       if (projectId) {
@@ -185,19 +191,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
   }
 
   // Connection status indicator component
-  const ConnectionStatus = ({
-    isConnected,
-    label,
-  }: {
-    isConnected: boolean
-    label: string
-  }) => (
+  const ConnectionStatus = ({ isConnected, label }: { isConnected: boolean; label: string }) => (
     <div className="flex items-center gap-2 text-xs bg-muted/30 p-2 rounded border border-border w-fit">
       <div
         className={
-          isConnected
-            ? 'w-2 h-2 bg-green-500 rounded-full'
-            : 'w-2 h-2 bg-red-500 rounded-full'
+          isConnected ? 'w-2 h-2 bg-green-500 rounded-full' : 'w-2 h-2 bg-red-500 rounded-full'
         }
       />
       <span className="text-muted-foreground">
@@ -296,7 +294,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                         </div>
 
                         <div>
-                          <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">Primary Model</label>
+                          <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">
+                            Primary Model
+                          </label>
                           <select
                             value={activeId}
                             onChange={e => handleModelChange(e.target.value)}
@@ -315,7 +315,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
 
                         {activeId === 'custom' && (
                           <div>
-                            <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">Base URL</label>
+                            <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">
+                              Base URL
+                            </label>
                             <input
                               type="text"
                               value={config.baseUrl || ''}
@@ -328,7 +330,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
 
                         {activeId === 'gemini' && (
                           <div>
-                            <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">Model ID</label>
+                            <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">
+                              Model ID
+                            </label>
                             <input
                               type="text"
                               value={config.params?.modelId || 'imagen-3.0-generate-001'}
@@ -337,7 +341,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                               className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md py-2 px-3 text-xs text-zinc-300 font-mono focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-all placeholder:text-zinc-600"
                             />
                             <p className="text-xs text-muted-foreground mt-1.5">
-                              Try <code>imagen-3.0-generate-001</code> or <code>gemini-1.5-pro</code>
+                              Try <code>imagen-3.0-generate-001</code> or{' '}
+                              <code>gemini-1.5-pro</code>
                             </p>
                           </div>
                         )}
@@ -452,8 +457,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                         </div>
                       )}
 
-
-
                       {/* Card: API Connections Summary */}
                       <div className="p-4 rounded-lg bg-card border border-border space-y-4">
                         <div className="flex items-center gap-2 mb-2">
@@ -472,35 +475,63 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                         <div className="grid grid-cols-2 gap-4">
                           {/* Image Generation */}
                           <div className="space-y-2">
-                            <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">Image Generation</h5>
-                            <ConnectionStatus isConnected={!!geminiConfig.apiKey} label="Gemini / Nano Banana" />
-                            <ConnectionStatus isConnected={!!legnextConfig.apiKey} label="Midjourney (LegNext AI)" />
+                            <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
+                              Image Generation
+                            </h5>
+                            <ConnectionStatus
+                              isConnected={!!geminiConfig.apiKey}
+                              label="Gemini / Nano Banana"
+                            />
+                            <ConnectionStatus
+                              isConnected={!!legnextConfig.apiKey}
+                              label="Midjourney (LegNext AI)"
+                            />
                           </div>
 
                           {/* Upscaling */}
                           <div className="space-y-2">
-                            <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">Upscaling</h5>
-                            <ConnectionStatus isConnected={!!upscale4kConfig.apiKey} label="Stability AI" />
-                            <ConnectionStatus isConnected={!!replicateConfig.apiKey} label="Replicate" />
+                            <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
+                              Upscaling
+                            </h5>
+                            <ConnectionStatus
+                              isConnected={!!upscale4kConfig.apiKey}
+                              label="Stability AI"
+                            />
+                            <ConnectionStatus
+                              isConnected={!!replicateConfig.apiKey}
+                              label="Replicate"
+                            />
                           </div>
 
                           {/* 3D Generation */}
                           <div className="space-y-2">
-                            <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">3D Generation</h5>
-                            <ConnectionStatus isConnected={!!hyper3dConfig.apiKey} label="Hyper3D" />
+                            <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
+                              3D Generation
+                            </h5>
+                            <ConnectionStatus
+                              isConnected={!!hyper3dConfig.apiKey}
+                              label="Hyper3D"
+                            />
                             <ConnectionStatus isConnected={!!meshyConfig.apiKey} label="Meshy" />
                           </div>
 
                           {/* Tools & AI */}
                           <div className="space-y-2">
-                            <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">Tools & AI</h5>
+                            <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
+                              Tools & AI
+                            </h5>
                             <ConnectionStatus isConnected={!!openaiConfig.apiKey} label="OpenAI" />
-                            <ConnectionStatus isConnected={!!anthropicApiKey} label="Anthropic (Claude)" />
-                            <ConnectionStatus isConnected={!!falConfig.apiKey} label="Fal.ai (Smart Select)" />
+                            <ConnectionStatus
+                              isConnected={!!anthropicApiKey}
+                              label="Anthropic (Claude)"
+                            />
+                            <ConnectionStatus
+                              isConnected={!!falConfig.apiKey}
+                              label="Fal.ai (Smart Select)"
+                            />
                           </div>
                         </div>
                       </div>
-
                     </div>
                   </div>
                 </div>
@@ -545,12 +576,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           <button
                             type="button"
                             onClick={() => setSkipGeminiPreUpscale(!skipGeminiPreUpscale)}
-                            className={`relative w - 11 h - 6 rounded - full transition - colors ${!skipGeminiPreUpscale ? 'bg-primary' : 'bg-muted-foreground/30'
-                              } `}
+                            className={`relative w - 11 h - 6 rounded - full transition - colors ${
+                              !skipGeminiPreUpscale ? 'bg-primary' : 'bg-muted-foreground/30'
+                            } `}
                           >
                             <span
-                              className={`absolute top - 0.5 left - 0.5 w - 5 h - 5 bg - white rounded - full shadow transition - transform ${!skipGeminiPreUpscale ? 'translate-x-5' : 'translate-x-0'
-                                } `}
+                              className={`absolute top - 0.5 left - 0.5 w - 5 h - 5 bg - white rounded - full shadow transition - transform ${
+                                !skipGeminiPreUpscale ? 'translate-x-5' : 'translate-x-0'
+                              } `}
                             />
                           </button>
                         </div>
@@ -559,7 +592,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           <div className="bg-muted/30 p-4 rounded-md space-y-4 border border-border">
                             <h4 className="text-sm font-semibold">Stability AI Configuration</h4>
                             <div>
-                              <label className="block text-sm font-medium mb-1.5">Upscale Mode</label>
+                              <label className="block text-sm font-medium mb-1.5">
+                                Upscale Mode
+                              </label>
                               <select
                                 value={(upscale4kConfig as any).upscaleMode || 'conservative'}
                                 onChange={e =>
@@ -583,10 +618,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           <div className="bg-muted/30 p-4 rounded-md space-y-4 border border-border">
                             <h4 className="text-sm font-semibold">Replicate Configuration</h4>
                             <div>
-                              <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">Model ID</label>
+                              <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">
+                                Model ID
+                              </label>
                               <input
                                 type="text"
-                                value={replicateConfig.model || 'recraft-ai/recraft-creative-upscale'}
+                                value={
+                                  replicateConfig.model || 'recraft-ai/recraft-creative-upscale'
+                                }
                                 onChange={e =>
                                   setReplicateConfig({ ...replicateConfig, model: e.target.value })
                                 }
@@ -601,22 +640,32 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           <div className="bg-muted/30 p-4 rounded-md space-y-4 border border-border">
                             <div className="flex justify-between items-center">
                               <h4 className="text-sm font-semibold">Midjourney Configuration</h4>
-                              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => setActiveTab('apikeys')}>
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="h-auto p-0 text-xs"
+                                onClick={() => setActiveTab('apikeys')}
+                              >
                                 Configure API Key
                               </Button>
                             </div>
 
                             <div>
-                              <label className="block text-sm font-medium mb-1.5">Additional Parameters</label>
+                              <label className="block text-sm font-medium mb-1.5">
+                                Additional Parameters
+                              </label>
                               <input
                                 type="text"
                                 value={legnextConfig.parameters || ''}
-                                onChange={e => setLegnextConfig({ ...legnextConfig, parameters: e.target.value })}
+                                onChange={e =>
+                                  setLegnextConfig({ ...legnextConfig, parameters: e.target.value })
+                                }
                                 placeholder="--style raw --stylize 100 --cref https://..."
                                 className="w-full p-2 rounded-md border border-input bg-background text-sm font-mono"
                               />
                               <p className="text-xs text-muted-foreground mt-1.5">
-                                Appended to the upscale prompt. Supports standard Discord parameters.
+                                Appended to the upscale prompt. Supports standard Discord
+                                parameters.
                               </p>
                             </div>
                           </div>
@@ -639,7 +688,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                         <h4 className="font-semibold text-sm">Smart Select (SAM-3)</h4>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Configure Fal.ai SAM-3 segmentation parameters. API Key is set in the API Keys tab.
+                        Configure Fal.ai SAM-3 segmentation parameters. API Key is set in the API
+                        Keys tab.
                       </p>
 
                       <div className="space-y-3">
@@ -652,10 +702,17 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           </div>
                           <button
                             type="button"
-                            onClick={() => setFalConfig({ ...falConfig, returnMultipleMasks: !falConfig.returnMultipleMasks })}
+                            onClick={() =>
+                              setFalConfig({
+                                ...falConfig,
+                                returnMultipleMasks: !falConfig.returnMultipleMasks,
+                              })
+                            }
                             className={`relative w - 11 h - 6 rounded - full transition - colors ${falConfig.returnMultipleMasks ? 'bg-primary' : 'bg-muted-foreground/30'} `}
                           >
-                            <span className={`absolute top - 0.5 left - 0.5 w - 5 h - 5 bg - white rounded - full shadow transition - transform ${falConfig.returnMultipleMasks ? 'translate-x-5' : 'translate-x-0'} `} />
+                            <span
+                              className={`absolute top - 0.5 left - 0.5 w - 5 h - 5 bg - white rounded - full shadow transition - transform ${falConfig.returnMultipleMasks ? 'translate-x-5' : 'translate-x-0'} `}
+                            />
                           </button>
                         </div>
 
@@ -668,10 +725,17 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           </div>
                           <button
                             type="button"
-                            onClick={() => setFalConfig({ ...falConfig, includeScores: !(falConfig.includeScores !== false) })}
+                            onClick={() =>
+                              setFalConfig({
+                                ...falConfig,
+                                includeScores: !(falConfig.includeScores !== false),
+                              })
+                            }
                             className={`relative w - 11 h - 6 rounded - full transition - colors ${falConfig.includeScores !== false ? 'bg-primary' : 'bg-muted-foreground/30'} `}
                           >
-                            <span className={`absolute top - 0.5 left - 0.5 w - 5 h - 5 bg - white rounded - full shadow transition - transform ${falConfig.includeScores !== false ? 'translate-x-5' : 'translate-x-0'} `} />
+                            <span
+                              className={`absolute top - 0.5 left - 0.5 w - 5 h - 5 bg - white rounded - full shadow transition - transform ${falConfig.includeScores !== false ? 'translate-x-5' : 'translate-x-0'} `}
+                            />
                           </button>
                         </div>
 
@@ -684,10 +748,17 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           </div>
                           <button
                             type="button"
-                            onClick={() => setFalConfig({ ...falConfig, includeBoxes: !(falConfig.includeBoxes !== false) })}
+                            onClick={() =>
+                              setFalConfig({
+                                ...falConfig,
+                                includeBoxes: !(falConfig.includeBoxes !== false),
+                              })
+                            }
                             className={`relative w - 11 h - 6 rounded - full transition - colors ${falConfig.includeBoxes !== false ? 'bg-primary' : 'bg-muted-foreground/30'} `}
                           >
-                            <span className={`absolute top - 0.5 left - 0.5 w - 5 h - 5 bg - white rounded - full shadow transition - transform ${falConfig.includeBoxes !== false ? 'translate-x-5' : 'translate-x-0'} `} />
+                            <span
+                              className={`absolute top - 0.5 left - 0.5 w - 5 h - 5 bg - white rounded - full shadow transition - transform ${falConfig.includeBoxes !== false ? 'translate-x-5' : 'translate-x-0'} `}
+                            />
                           </button>
                         </div>
                       </div>
@@ -702,7 +773,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                   <div>
                     <h3 className="text-lg font-medium mb-4">Writers Room AI Settings</h3>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Configure the AI model used by the Storyteller agents (Showrunner, Plot Architect, etc.)
+                      Configure the AI model used by the Storyteller agents (Showrunner, Plot
+                      Architect, etc.)
                     </p>
                     <div className="mb-6">
                       <ConnectionStatus
@@ -713,7 +785,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                               ? !!geminiConfig.apiKey
                               : !!anthropicApiKey
                         }
-                        label={storytellerProvider === 'openai' ? 'OpenAI' : storytellerProvider === 'gemini' ? 'Gemini' : 'Anthropic'}
+                        label={
+                          storytellerProvider === 'openai'
+                            ? 'OpenAI'
+                            : storytellerProvider === 'gemini'
+                              ? 'Gemini'
+                              : 'Anthropic'
+                        }
                       />
                     </div>
 
@@ -736,7 +814,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           >
                             <div className="font-medium">GPT-5.1</div>
                             <div className="text-xs text-muted-foreground">The smartest model</div>
-                            {selectedModel?.id === 'gpt-5.1' && <Check className="w-4 h-4 text-primary" />}
+                            {selectedModel?.id === 'gpt-5.1' && (
+                              <Check className="w-4 h-4 text-primary" />
+                            )}
                           </button>
                           <button
                             onClick={() => setStorytellerProvider('anthropic')}
@@ -786,7 +866,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                             )}
                           >
                             <div className="font-medium">Midjourney</div>
-                            <div className="text-xs text-muted-foreground mt-1">Professional quality images</div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Professional quality images
+                            </div>
                           </button>
                           <button
                             onClick={() => setMoodboardProvider('nanobanana')}
@@ -798,14 +880,21 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                             )}
                           >
                             <div className="font-medium">Nano Banana</div>
-                            <div className="text-xs text-muted-foreground mt-1">Fast Flux generation</div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Fast Flux generation
+                            </div>
                           </button>
                         </div>
                         {moodboardProvider === 'nanobanana' && (
                           <div className="space-y-3 pt-2">
-                            <ConnectionStatus isConnected={!!geminiConfig.apiKey} label="Nano Banana (via Gemini key)" />
+                            <ConnectionStatus
+                              isConnected={!!geminiConfig.apiKey}
+                              label="Nano Banana (via Gemini key)"
+                            />
                             <div>
-                              <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">Model ID</label>
+                              <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">
+                                Model ID
+                              </label>
                               <input
                                 type="text"
                                 value={nanoBananaModelId}
@@ -821,7 +910,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                         )}
                         {moodboardProvider === 'midjourney' && (
                           <div className="space-y-2 pt-2">
-                            <ConnectionStatus isConnected={!!legnextConfig.apiKey} label="Midjourney (LegNext AI)" />
+                            <ConnectionStatus
+                              isConnected={!!legnextConfig.apiKey}
+                              label="Midjourney (LegNext AI)"
+                            />
                             <p className="text-xs text-muted-foreground">
                               Uses your configured LegNext API key (see API Keys tab).
                             </p>
@@ -839,7 +931,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                   <div>
                     <h3 className="text-lg font-medium mb-4">Centralized API Keys</h3>
                     <p className="text-sm text-muted-foreground mb-6">
-                      Manage your API keys for all services here. Keys are stored locally in your browser.
+                      Manage your API keys for all services here. Keys are stored locally in your
+                      browser.
                     </p>
 
                     <div className="space-y-6">
@@ -852,15 +945,26 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                         <div className="space-y-4">
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                              <label className="text-sm font-medium">Gemini / Nano Banana (Imagen)</label>
-                              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => window.open('https://aistudio.google.com/app/apikey', '_blank')}>
+                              <label className="text-sm font-medium">
+                                Gemini / Nano Banana (Imagen)
+                              </label>
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="h-auto p-0 text-xs"
+                                onClick={() =>
+                                  window.open('https://aistudio.google.com/app/apikey', '_blank')
+                                }
+                              >
                                 Get Key
                               </Button>
                             </div>
                             <input
                               type="password"
                               value={geminiConfig.apiKey || ''}
-                              onChange={e => setGeminiConfig({ ...geminiConfig, apiKey: e.target.value })}
+                              onChange={e =>
+                                setGeminiConfig({ ...geminiConfig, apiKey: e.target.value })
+                              }
                               placeholder="AIza..."
                               className="w-full p-2 rounded-md border border-input bg-background text-sm"
                             />
@@ -868,14 +972,21 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
                               <label className="text-sm font-medium">LegNext AI (Midjourney)</label>
-                              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => window.open('https://legnext.ai', '_blank')}>
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="h-auto p-0 text-xs"
+                                onClick={() => window.open('https://legnext.ai', '_blank')}
+                              >
                                 Get Key
                               </Button>
                             </div>
                             <input
                               type="password"
                               value={legnextConfig.apiKey || ''}
-                              onChange={e => setLegnextConfig({ ...legnextConfig, apiKey: e.target.value })}
+                              onChange={e =>
+                                setLegnextConfig({ ...legnextConfig, apiKey: e.target.value })
+                              }
                               placeholder="Enter LegNext API Key"
                               className="w-full p-2 rounded-md border border-input bg-background text-sm"
                             />
@@ -893,14 +1004,26 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
                               <label className="text-sm font-medium">Stability AI</label>
-                              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => window.open('https://platform.stability.ai/account/keys', '_blank')}>
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="h-auto p-0 text-xs"
+                                onClick={() =>
+                                  window.open(
+                                    'https://platform.stability.ai/account/keys',
+                                    '_blank'
+                                  )
+                                }
+                              >
                                 Get Key
                               </Button>
                             </div>
                             <input
                               type="password"
                               value={upscale4kConfig.apiKey || ''}
-                              onChange={e => setUpscale4kConfig({ ...upscale4kConfig, apiKey: e.target.value })}
+                              onChange={e =>
+                                setUpscale4kConfig({ ...upscale4kConfig, apiKey: e.target.value })
+                              }
                               placeholder="sk-..."
                               className="w-full p-2 rounded-md border border-input bg-background text-sm"
                             />
@@ -908,14 +1031,23 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
                               <label className="text-sm font-medium">Replicate</label>
-                              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => window.open('https://replicate.com/account/api-tokens', '_blank')}>
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="h-auto p-0 text-xs"
+                                onClick={() =>
+                                  window.open('https://replicate.com/account/api-tokens', '_blank')
+                                }
+                              >
                                 Get Key
                               </Button>
                             </div>
                             <input
                               type="password"
                               value={replicateConfig.apiKey || ''}
-                              onChange={e => setReplicateConfig({ ...replicateConfig, apiKey: e.target.value })}
+                              onChange={e =>
+                                setReplicateConfig({ ...replicateConfig, apiKey: e.target.value })
+                              }
                               placeholder="r8_..."
                               className="w-full p-2 rounded-md border border-input bg-background text-sm"
                             />
@@ -933,14 +1065,21 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
                               <label className="text-sm font-medium">Hyper3D</label>
-                              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => window.open('https://www.hyper3d.ai', '_blank')}>
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="h-auto p-0 text-xs"
+                                onClick={() => window.open('https://www.hyper3d.ai', '_blank')}
+                              >
                                 Get Key
                               </Button>
                             </div>
                             <input
                               type="password"
                               value={hyper3dConfig.apiKey || ''}
-                              onChange={e => setHyper3dConfig({ ...hyper3dConfig, apiKey: e.target.value })}
+                              onChange={e =>
+                                setHyper3dConfig({ ...hyper3dConfig, apiKey: e.target.value })
+                              }
                               placeholder="Enter Hyper3D API Key"
                               className="w-full p-2 rounded-md border border-input bg-background text-sm"
                             />
@@ -948,14 +1087,21 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
                               <label className="text-sm font-medium">Meshy</label>
-                              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => window.open('https://meshy.ai', '_blank')}>
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="h-auto p-0 text-xs"
+                                onClick={() => window.open('https://meshy.ai', '_blank')}
+                              >
                                 Get Key
                               </Button>
                             </div>
                             <input
                               type="password"
                               value={meshyConfig.apiKey || ''}
-                              onChange={e => setMeshyConfig({ ...meshyConfig, apiKey: e.target.value })}
+                              onChange={e =>
+                                setMeshyConfig({ ...meshyConfig, apiKey: e.target.value })
+                              }
                               placeholder="Enter Meshy API Key"
                               className="w-full p-2 rounded-md border border-input bg-background text-sm"
                             />
@@ -973,14 +1119,23 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
                               <label className="text-sm font-medium">OpenAI</label>
-                              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => window.open('https://platform.openai.com/api-keys', '_blank')}>
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="h-auto p-0 text-xs"
+                                onClick={() =>
+                                  window.open('https://platform.openai.com/api-keys', '_blank')
+                                }
+                              >
                                 Get Key
                               </Button>
                             </div>
                             <input
                               type="password"
                               value={openaiConfig.apiKey || ''}
-                              onChange={e => setOpenaiConfig({ ...openaiConfig, apiKey: e.target.value })}
+                              onChange={e =>
+                                setOpenaiConfig({ ...openaiConfig, apiKey: e.target.value })
+                              }
                               placeholder="sk-..."
                               className="w-full p-2 rounded-md border border-input bg-background text-sm"
                             />
@@ -988,7 +1143,17 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
                               <label className="text-sm font-medium">Anthropic (Claude)</label>
-                              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => window.open('https://console.anthropic.com/settings/keys', '_blank')}>
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="h-auto p-0 text-xs"
+                                onClick={() =>
+                                  window.open(
+                                    'https://console.anthropic.com/settings/keys',
+                                    '_blank'
+                                  )
+                                }
+                              >
                                 Get Key
                               </Button>
                             </div>
@@ -1003,7 +1168,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
                               <label className="text-sm font-medium">Fal.ai (Smart Select)</label>
-                              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => window.open('https://fal.ai/dashboard/keys', '_blank')}>
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="h-auto p-0 text-xs"
+                                onClick={() =>
+                                  window.open('https://fal.ai/dashboard/keys', '_blank')
+                                }
+                              >
                                 Get Key
                               </Button>
                             </div>
@@ -1134,8 +1306,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
             <Button onClick={handleSave}>Save Changes</Button>
           </div>
         </div>
-      </div >
-    </div >,
+      </div>
+    </div>,
     document.body
   )
 }

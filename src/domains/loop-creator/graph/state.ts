@@ -1,6 +1,6 @@
 /**
  * Loop Creator State
- * 
+ *
  * State definition for the game loop creator multi-agent system.
  * Based on LangChain/LangGraph 2025 patterns.
  */
@@ -15,15 +15,15 @@ export interface MechanicNode {
   name: string
   type: 'core' | 'secondary' | 'meta' | 'progression' | 'reward'
   description: string
-  inputs: string[]           // What triggers this mechanic
-  outputs: string[]          // What this mechanic produces
+  inputs: string[] // What triggers this mechanic
+  outputs: string[] // What this mechanic produces
   balanceFactors: {
-    effort: number           // 1-10 effort required
-    reward: number           // 1-10 reward value
-    frequency: number        // How often it occurs (per session)
+    effort: number // 1-10 effort required
+    reward: number // 1-10 reward value
+    frequency: number // How often it occurs (per session)
   }
-  examples?: string[]        // Reference examples from other games
-  citations?: string[]       // RAG citations for grounding
+  examples?: string[] // Reference examples from other games
+  citations?: string[] // RAG citations for grounding
 }
 
 /**
@@ -31,36 +31,45 @@ export interface MechanicNode {
  */
 export interface MechanicEdge {
   id: string
-  source: string             // Source mechanic ID
-  target: string             // Target mechanic ID
+  source: string // Source mechanic ID
+  target: string // Target mechanic ID
   type: 'triggers' | 'enables' | 'requires' | 'conflicts' | 'enhances'
   label?: string
-  weight?: number            // Strength of connection (1-10)
+  weight?: number // Strength of connection (1-10)
 }
 
 /**
  * A game loop (collection of mechanics forming a cycle)
  */
+export interface GameLoopNode {
+  name: string
+  psychPhase: 'challenge' | 'action' | 'feedback'
+  description: string
+}
+
 export interface GameLoop {
   id: string
   name: string
   type: 'core' | 'session' | 'progression' | 'meta' | 'social'
+  timeframe?: 'micro' | 'core' | 'session' | 'meta' // Duration category
   description: string
-  mechanics: string[]        // IDs of mechanics in this loop
+  mechanics: string[] // IDs of mechanics in this loop
+  nodes?: GameLoopNode[] // Psychological phase nodes (challenge -> action -> feedback)
   duration: {
-    min: number              // Minimum minutes per cycle
-    max: number              // Maximum minutes per cycle
-    typical: number          // Typical minutes
+    min: number // Minimum minutes per cycle
+    max: number // Maximum minutes per cycle
+    typical: number // Typical minutes
+    unit?: 'seconds' | 'minutes'
   }
-  playerExperience: string   // What the player feels
-  satisfactionPeak: string   // When satisfaction is highest
+  playerExperience: string // What the player feels
+  satisfactionPeak: string // When satisfaction is highest
 }
 
 /**
  * Balance analysis
  */
 export interface BalanceAnalysis {
-  overallScore: number       // 1-10 balance score
+  overallScore: number // 1-10 balance score
   issues: BalanceIssue[]
   recommendations: string[]
 }
@@ -87,7 +96,7 @@ export interface ProgressionSystem {
 export interface ProgressionMilestone {
   id: string
   name: string
-  requiredEffort: number     // Estimated hours to reach
+  requiredEffort: number // Estimated hours to reach
   unlocksFeatures: string[]
   rewardType: string
   playerMotivation: string
@@ -115,6 +124,7 @@ export type NextAgent =
   | 'mechanics_designer'
   | 'balance_analyst'
   | 'progression_architect'
+  | 'market_analyst'
   | 'END'
 
 /**
@@ -132,6 +142,16 @@ export type LoopAgentActionType =
   | 'ADD_PROGRESSION_SYSTEM'
   | 'UPDATE_PROGRESSION_SYSTEM'
   | 'ASK_USER_QUESTION'
+  // Canvas modification actions
+  | 'ADD_NODE'
+  | 'REMOVE_NODE'
+  | 'REMOVE_ALL_NODES'
+  | 'MODIFY_NODE'
+  | 'ADD_EDGE'
+  | 'REMOVE_EDGE'
+  | 'MODIFY_EDGE'
+  // UI notification actions
+  | 'MARKET_ANALYSIS_COMPLETE'
 
 export interface LoopAgentAction {
   type: LoopAgentActionType
@@ -155,50 +175,81 @@ export interface LoopCreatorState {
   // Session info
   projectId: string
   sessionId: string
-  
+
   // Conversation
   messages: BaseMessage[]
-  
+
   // Current phase and routing
   currentPhase: LoopCreatorPhase
   nextAgent: NextAgent
+  lastAgent: NextAgent | null // Track who just executed
   roundCount: number
-  
+
   // Game context
   gameGenre: string
   gamePlatform: string
   targetAudience: string
   gameDescription: string
   referenceGames: string[]
-  
+  selectedTimeframes: ('micro' | 'core' | 'session' | 'meta')[] // User-selected loop timeframes
+
   // Design artifacts
   mechanics: MechanicNode[]
   connections: MechanicEdge[]
   loops: GameLoop[]
   progressionSystems: ProgressionSystem[]
-  
+
   // Analysis
   balanceAnalysis: BalanceAnalysis | null
-  
+  marketAnalysis?: any // Market analysis report from market_analyst
+
   // Agent coordination
   pendingActions: LoopAgentAction[]
   pendingQuestions: LoopAgentQuestion[]
   userAnswers: Record<string, string | string[]>
-  
+
   // RAG context
   ragContext?: {
     gamePatterns: string[]
     similarGames: string[]
     citations: any[]
   }
-  
+
   // Error handling
   errors: string[]
-  
+
   // Model config (optional override)
   modelConfig?: {
     model: string
     temperature: number
+  }
+
+  // Concept alignment evaluation (auto-eval)
+  conceptEvaluation?: {
+    overallAlignment: number
+    conceptMatch: {
+      score: number
+      reasoning: string
+      matchedElements: string[]
+      missingElements: string[]
+    }
+    genreAccuracy: {
+      score: number
+      detectedGenre: string
+      expectedGenre: string
+      reasoning: string
+    }
+    mechanicsRelevance: Array<{
+      mechanicName: string
+      relevanceScore: number
+      reasoning: string
+    }>
+    suggestions: Array<{
+      type: 'add' | 'modify' | 'remove'
+      description: string
+      priority: 'high' | 'medium' | 'low'
+    }>
+    summary: string
   }
 }
 
@@ -213,26 +264,54 @@ export function createInitialLoopState(
     gamePlatform?: string
     targetAudience?: string
     gameDescription?: string
-    existingNodes?: MechanicNode[]
-    existingEdges?: MechanicEdge[]
+    existingNodes?: any[] // Canvas nodes from frontend
+    existingEdges?: any[] // Canvas edges from frontend
   }
 ): LoopCreatorState {
   const { HumanMessage } = require('@langchain/core/messages')
-  
+
+  // Convert canvas nodes to mechanics format
+  const mechanics: MechanicNode[] = (context?.existingNodes || [])
+    .filter(n => n.type !== 'group') // Exclude group nodes
+    .map(n => ({
+      id: n.id,
+      name: n.label || n.data?.label || n.id,
+      type: (n.data?.nodeType || n.type || 'core') as MechanicNode['type'],
+      description: n.data?.description || n.description || '',
+      inputs: [],
+      outputs: [],
+      balanceFactors: {
+        effort: 5,
+        reward: 5,
+        frequency: 5,
+      },
+    }))
+
+  // Convert canvas edges to connections format
+  const connections: MechanicEdge[] = (context?.existingEdges || []).map(e => ({
+    id: e.id,
+    source: e.source,
+    target: e.target,
+    type: 'triggers' as MechanicEdge['type'],
+    label: e.label || '',
+  }))
+
   return {
     projectId,
     sessionId: `loop-${Date.now()}`,
     messages: [new HumanMessage(message)],
     currentPhase: 'initial',
     nextAgent: 'supervisor',
+    lastAgent: null,
     roundCount: 0,
     gameGenre: context?.gameGenre || '',
     gamePlatform: context?.gamePlatform || '',
     targetAudience: context?.targetAudience || '',
     gameDescription: context?.gameDescription || '',
     referenceGames: [],
-    mechanics: context?.existingNodes || [],
-    connections: context?.existingEdges || [],
+    selectedTimeframes: [], // User-selected loop timeframes (micro, core, session, meta)
+    mechanics,
+    connections,
     loops: [],
     progressionSystems: [],
     balanceAnalysis: null,
@@ -304,18 +383,36 @@ export const loopCreatorChannels = {
   // Simple overwrites for the rest
   projectId: { reducer: (_, incoming: string) => incoming, default: () => '' },
   sessionId: { reducer: (_, incoming: string) => incoming, default: () => '' },
-  currentPhase: { reducer: (_, incoming: LoopCreatorPhase) => incoming, default: () => 'initial' as LoopCreatorPhase },
-  nextAgent: { reducer: (_, incoming: NextAgent) => incoming, default: () => 'supervisor' as NextAgent },
+  currentPhase: {
+    reducer: (_, incoming: LoopCreatorPhase) => incoming,
+    default: () => 'initial' as LoopCreatorPhase,
+  },
+  nextAgent: {
+    reducer: (_, incoming: NextAgent) => incoming,
+    default: () => 'supervisor' as NextAgent,
+  },
+  lastAgent: {
+    reducer: (_, incoming: NextAgent | null) => incoming,
+    default: () => null as NextAgent | null,
+  },
   roundCount: { reducer: (_, incoming: number) => incoming, default: () => 0 },
   gameGenre: { reducer: (_, incoming: string) => incoming, default: () => '' },
   gamePlatform: { reducer: (_, incoming: string) => incoming, default: () => '' },
   targetAudience: { reducer: (_, incoming: string) => incoming, default: () => '' },
   gameDescription: { reducer: (_, incoming: string) => incoming, default: () => '' },
   referenceGames: { reducer: (_, incoming: string[]) => incoming, default: () => [] },
-  progressionSystems: { reducer: (_, incoming: ProgressionSystem[]) => incoming, default: () => [] },
-  balanceAnalysis: { reducer: (_, incoming: BalanceAnalysis | null) => incoming, default: () => null },
-  userAnswers: { reducer: (_, incoming: Record<string, string | string[]>) => incoming, default: () => ({}) },
+  progressionSystems: {
+    reducer: (_, incoming: ProgressionSystem[]) => incoming,
+    default: () => [],
+  },
+  balanceAnalysis: {
+    reducer: (_, incoming: BalanceAnalysis | null) => incoming,
+    default: () => null,
+  },
+  userAnswers: {
+    reducer: (_, incoming: Record<string, string | string[]>) => incoming,
+    default: () => ({}),
+  },
   ragContext: { reducer: (_, incoming: any) => incoming, default: () => undefined },
   modelConfig: { reducer: (_, incoming: any) => incoming, default: () => undefined },
 }
-

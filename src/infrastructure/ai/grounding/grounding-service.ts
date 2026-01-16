@@ -1,6 +1,6 @@
 /**
  * Grounding Service
- * 
+ *
  * Tracks citations and verifies that AI responses are grounded in retrieved documents.
  * Provides:
  * - Citation session management
@@ -90,7 +90,7 @@ export class GroundingService {
       claimsAnalysis: [],
       groundingScore: 0,
     }
-    
+
     groundingSessions.set(sessionId, context)
     return context
   }
@@ -131,12 +131,9 @@ export class GroundingService {
   /**
    * Analyze a response for grounding
    */
-  analyzeGrounding(
-    sessionId: string,
-    response: string
-  ): GroundingAnalysisResult {
+  analyzeGrounding(sessionId: string, response: string): GroundingAnalysisResult {
     const context = groundingSessions.get(sessionId)
-    
+
     if (!context) {
       return {
         groundedClaims: [],
@@ -151,7 +148,7 @@ export class GroundingService {
     const citationPattern = /\[(\d+)\]/g
     const usedMarkers = new Set<string>()
     let match
-    
+
     while ((match = citationPattern.exec(response)) !== null) {
       usedMarkers.add(`[${match[1]}]`)
     }
@@ -159,7 +156,7 @@ export class GroundingService {
     // Find which chunks were cited
     const citationsUsed: CitationInfo[] = []
     const citationsAvailable: CitationInfo[] = []
-    
+
     for (const [chunkId, chunk] of context.retrievedChunks) {
       const citationInfo: CitationInfo = {
         id: chunkId,
@@ -168,9 +165,9 @@ export class GroundingService {
         chunkId: chunkId,
         confidence: chunk.confidence,
       }
-      
+
       citationsAvailable.push(citationInfo)
-      
+
       if (usedMarkers.has(chunk.citationMarker)) {
         citationsUsed.push(citationInfo)
         context.usedCitations.add(chunkId)
@@ -178,11 +175,7 @@ export class GroundingService {
     }
 
     // Analyze claims (simple heuristic-based approach)
-    const { groundedClaims, ungroundedClaims } = this.analyzeClaims(
-      response,
-      context,
-      usedMarkers
-    )
+    const { groundedClaims, ungroundedClaims } = this.analyzeClaims(response, context, usedMarkers)
 
     // Calculate grounding score
     const groundingScore = this.calculateGroundingScore(
@@ -240,7 +233,7 @@ export class GroundingService {
 
     for (const sentence of sentences) {
       const trimmed = sentence.trim()
-      
+
       // Skip if it's clearly a proposal, not a factual claim
       if (proposalPatterns.some(p => p.test(trimmed))) {
         continue
@@ -248,14 +241,14 @@ export class GroundingService {
 
       // Check if it looks like a factual claim
       const isFactualClaim = factualPatterns.some(p => p.test(trimmed))
-      
+
       if (!isFactualClaim) {
         continue
       }
 
       // Check if claim has citation
-      const hasCitation = usedMarkers.size > 0 && 
-        Array.from(usedMarkers).some(marker => trimmed.includes(marker))
+      const hasCitation =
+        usedMarkers.size > 0 && Array.from(usedMarkers).some(marker => trimmed.includes(marker))
 
       if (hasCitation) {
         const citations = Array.from(usedMarkers).filter(m => trimmed.includes(m))
@@ -263,7 +256,7 @@ export class GroundingService {
       } else {
         // Check if claim content matches retrieved chunks
         const contentMatch = this.checkContentMatch(trimmed, context)
-        
+
         if (contentMatch.isMatch) {
           groundedClaims.push({ claim: trimmed, citations: contentMatch.matchingMarkers })
         } else {
@@ -288,7 +281,7 @@ export class GroundingService {
 
     for (const [_, chunk] of context.retrievedChunks) {
       const chunkLower = chunk.content.toLowerCase()
-      
+
       // Count word overlap
       const matchCount = claimWords.filter(word => chunkLower.includes(word)).length
       const overlapRatio = matchCount / claimWords.length
@@ -323,9 +316,7 @@ export class GroundingService {
     const claimScore = totalClaims > 0 ? groundedCount / totalClaims : 1.0
 
     // Bonus for using available citations
-    const citationBonus = citationsAvailable > 0 
-      ? (citationsUsed / citationsAvailable) * 0.2 
-      : 0
+    const citationBonus = citationsAvailable > 0 ? (citationsUsed / citationsAvailable) * 0.2 : 0
 
     return Math.min(1.0, claimScore + citationBonus)
   }
@@ -351,10 +342,10 @@ export class GroundingService {
    */
   createGroundingSummary(result: GroundingAnalysisResult): string {
     const parts: string[] = []
-    
+
     parts.push(`Grounding Score: ${Math.round(result.groundingScore * 100)}%`)
     parts.push(`Citations Used: ${result.citationsUsed.length}/${result.citationsAvailable.length}`)
-    
+
     if (result.ungroundedClaims.length > 0) {
       parts.push(`\n⚠️ Ungrounded Claims (${result.ungroundedClaims.length}):`)
       result.ungroundedClaims.slice(0, 3).forEach(claim => {
@@ -364,7 +355,7 @@ export class GroundingService {
         parts.push(`  ... and ${result.ungroundedClaims.length - 3} more`)
       }
     }
-    
+
     return parts.join('\n')
   }
 }
@@ -378,4 +369,3 @@ export function getGroundingService(): GroundingService {
   }
   return groundingServiceInstance
 }
-

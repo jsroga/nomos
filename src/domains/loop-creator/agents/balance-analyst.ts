@@ -1,6 +1,6 @@
 /**
  * Balance Analyst Agent
- * 
+ *
  * Evaluates game loop balance by:
  * - Analyzing effort/reward ratios
  * - Identifying dead ends and grind spots
@@ -10,12 +10,12 @@
 
 import { ChatOpenAI } from '@langchain/openai'
 import { AIMessage, SystemMessage } from '@langchain/core/messages'
-import { 
-  LoopCreatorState, 
+import {
+  LoopCreatorState,
   BalanceAnalysis,
   BalanceIssue,
   LoopAgentAction,
-  NextAgent 
+  NextAgent,
 } from '../graph/state'
 
 const BALANCE_ANALYST_SYSTEM_PROMPT = `You are a Game Balance Analyst - an expert in analyzing and optimizing game loop balance.
@@ -82,21 +82,27 @@ Respond with JSON:
  * Build context for the agent
  */
 function buildContext(state: LoopCreatorState): string {
-  const mechanicsList = state.mechanics.length > 0
-    ? state.mechanics.map(m => {
-        const bf = m.balanceFactors
-        return `- ${m.name} (${m.type}): Effort=${bf.effort}, Reward=${bf.reward}, Freq=${bf.frequency}`
-      }).join('\n')
-    : 'No mechanics to analyze'
-  
-  const loopsList = state.loops.length > 0
-    ? state.loops.map(l => 
-        `- ${l.name} (${l.type}): ${l.mechanics.length} mechanics, ${l.duration.typical}min cycle`
-      ).join('\n')
-    : 'No loops defined'
-  
-  return BALANCE_ANALYST_SYSTEM_PROMPT
-    .replace('{{GENRE}}', state.gameGenre || 'Not specified')
+  const mechanicsList =
+    state.mechanics.length > 0
+      ? state.mechanics
+          .map(m => {
+            const bf = m.balanceFactors || { effort: 5, reward: 5, frequency: 5 }
+            return `- ${m.name} (${m.type}): Effort=${bf.effort ?? 5}, Reward=${bf.reward ?? 5}, Freq=${bf.frequency ?? 5}`
+          })
+          .join('\n')
+      : 'No mechanics to analyze'
+
+  const loopsList =
+    state.loops.length > 0
+      ? state.loops
+          .map(
+            l =>
+              `- ${l.name} (${l.type}): ${l.mechanics.length} mechanics, ${l.duration.typical}min cycle`
+          )
+          .join('\n')
+      : 'No loops defined'
+
+  return BALANCE_ANALYST_SYSTEM_PROMPT.replace('{{GENRE}}', state.gameGenre || 'Not specified')
     .replace('{{PLATFORM}}', state.gamePlatform || 'Not specified')
     .replace('{{AUDIENCE}}', state.targetAudience || 'Not specified')
     .replace('{{DESCRIPTION}}', state.gameDescription || 'Not specified')
@@ -137,7 +143,7 @@ function parseResponse(content: string): BalanceAnalystResponse {
       // Fall through
     }
   }
-  
+
   return {
     analysis: content,
     overallScore: 5,
@@ -165,56 +171,56 @@ export async function balanceAnalystAgent(
       ],
     }
   }
-  
+
   const model = new ChatOpenAI({
     modelName: state.modelConfig?.model || 'gpt-4o',
     temperature: state.modelConfig?.temperature ?? 0.3,
   })
-  
+
   // Get the task
   const lastHumanMsg = [...state.messages].reverse().find(m => m._getType() === 'human')
-  const task = lastHumanMsg 
-    ? (typeof lastHumanMsg.content === 'string' ? lastHumanMsg.content : 'Analyze balance')
+  const task = lastHumanMsg
+    ? typeof lastHumanMsg.content === 'string'
+      ? lastHumanMsg.content
+      : 'Analyze balance'
     : 'Analyze the current game loop design for balance issues'
-  
+
   const systemPrompt = buildContext(state).replace('{{TASK}}', task)
-  
-  const messages = [
-    new SystemMessage(systemPrompt),
-    ...state.messages.slice(-5),
-  ]
-  
+
+  const messages = [new SystemMessage(systemPrompt), ...state.messages.slice(-5)]
+
   const response = await model.invoke(messages)
-  const content = typeof response.content === 'string' 
-    ? response.content 
-    : JSON.stringify(response.content)
-  
+  const content =
+    typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+
   const parsed = parseResponse(content)
-  
+
   console.log(`[BalanceAnalyst] Score: ${parsed.overallScore}/10, Issues: ${parsed.issues.length}`)
-  
+
   // Create balance analysis
   const balanceAnalysis: BalanceAnalysis = {
     overallScore: parsed.overallScore,
     issues: parsed.issues,
     recommendations: parsed.recommendations,
   }
-  
+
   // Create action for the analysis
-  const actions: LoopAgentAction[] = [{
-    type: 'SET_BALANCE_ANALYSIS',
-    payload: balanceAnalysis,
-    confidence: 0.9,
-    reasoning: parsed.analysis,
-  }]
-  
+  const actions: LoopAgentAction[] = [
+    {
+      type: 'SET_BALANCE_ANALYSIS',
+      payload: balanceAnalysis,
+      confidence: 0.9,
+      reasoning: parsed.analysis,
+    },
+  ]
+
   // Build user message
   let userMessage = parsed.message || `Balance Analysis Complete: ${parsed.overallScore}/10`
-  
+
   if (parsed.issues.length > 0) {
     const critical = parsed.issues.filter(i => i.severity === 'critical')
     const warnings = parsed.issues.filter(i => i.severity === 'warning')
-    
+
     if (critical.length > 0) {
       userMessage += `\n\n🚨 **Critical Issues (${critical.length})**:\n`
       critical.forEach(i => {
@@ -222,7 +228,7 @@ export async function balanceAnalystAgent(
         if (i.suggestedFix) userMessage += `  → Fix: ${i.suggestedFix}\n`
       })
     }
-    
+
     if (warnings.length > 0) {
       userMessage += `\n\n⚠️ **Warnings (${warnings.length})**:\n`
       warnings.forEach(i => {
@@ -230,7 +236,7 @@ export async function balanceAnalystAgent(
       })
     }
   }
-  
+
   return {
     balanceAnalysis,
     pendingActions: actions,
@@ -243,4 +249,3 @@ export async function balanceAnalystAgent(
     ],
   }
 }
-

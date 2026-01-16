@@ -39,7 +39,10 @@ export const selectMjVariantTask = task({
       4: { left: hw, top: hh },
     }
 
-    const cropped = await img.extract({ ...crops[variantIndex], width: hw, height: hh }).png().toBuffer()
+    const cropped = await img
+      .extract({ ...crops[variantIndex], width: hw, height: hh })
+      .png()
+      .toBuffer()
 
     await metadata.set('progress', 70)
     await metadata.set('stage', 'saving')

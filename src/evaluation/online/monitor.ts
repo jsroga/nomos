@@ -1,6 +1,6 @@
 /**
  * Online Evaluation Monitor
- * 
+ *
  * Monitors production traces and evaluates a subset in near real-time.
  * Useful for:
  * - Detecting quality degradation
@@ -227,7 +227,9 @@ export class OnlineEvaluationMonitor {
           }
 
           this.metrics.alertCount++
-          console.log(`⚠️  Alert: ${evaluator.name} score ${result.score} < ${this.config.alertThreshold}`)
+          console.log(
+            `⚠️  Alert: ${evaluator.name} score ${result.score} < ${this.config.alertThreshold}`
+          )
 
           if (this.config.onAlert) {
             this.config.onAlert(alert)
@@ -251,7 +253,9 @@ export class OnlineEvaluationMonitor {
         this.metrics.runsEvaluated
     }
 
-    console.log(`   Run ${run.id.slice(0, 8)}: avg score ${(Object.values(scores).reduce((a, b) => a + b, 0) / Object.values(scores).length * 100).toFixed(1)}%`)
+    console.log(
+      `   Run ${run.id.slice(0, 8)}: avg score ${((Object.values(scores).reduce((a, b) => a + b, 0) / Object.values(scores).length) * 100).toFixed(1)}%`
+    )
   }
 
   /**
@@ -320,7 +324,7 @@ export async function startMonitoring() {
     pollIntervalMs: 30000, // 30 seconds for demo
     sampleRate: 0.5, // 50% for demo
     alertThreshold: 0.5,
-    onAlert: (alert) => {
+    onAlert: alert => {
       console.log('')
       console.log('🚨 ALERT')
       console.log(`   Run: ${alert.runId}`)
@@ -357,4 +361,3 @@ export async function startMonitoring() {
 if (require.main === module) {
   startMonitoring()
 }
-

@@ -156,11 +156,13 @@ export class SelectModeService {
     // fal.ai and most APIs struggle with images > 4096px or > 5MB
     const MAX_DIMENSION = 2048
     let effectiveScale = scale
-    
+
     if (rawWidth > MAX_DIMENSION || rawHeight > MAX_DIMENSION) {
       const downscaleFactor = Math.max(rawWidth, rawHeight) / MAX_DIMENSION
-      console.log(`[SelectModeService] Canvas too large (${rawWidth}x${rawHeight}), downscaling by ${downscaleFactor.toFixed(2)}x`)
-      
+      console.log(
+        `[SelectModeService] Canvas too large (${rawWidth}x${rawHeight}), downscaling by ${downscaleFactor.toFixed(2)}x`
+      )
+
       effectiveScale = scale / downscaleFactor
       rawWidth = Math.round(worldBounds.width * effectiveScale)
       rawHeight = Math.round(worldBounds.height * effectiveScale)
@@ -190,7 +192,7 @@ export class SelectModeService {
       width: alignedWidth,
       height: alignedHeight,
     }
-    
+
     // Calculate effective tile size at this scale
     const effectiveTileSize = Math.round(this.TILE_SIZE * finalScale)
 
@@ -217,7 +219,7 @@ export class SelectModeService {
     console.log('[SelectModeService] Canvas created:', {
       width: canvas.width,
       height: canvas.height,
-      pixelBounds
+      pixelBounds,
     })
 
     const imagePromises: Promise<void>[] = []
@@ -238,19 +240,26 @@ export class SelectModeService {
               const drawY = Math.round(ty * effectiveTileSize - pixelBounds.y)
 
               console.log(`[SelectModeService] Drawing tile ${tileKey}:`, {
-                tx, ty,
+                tx,
+                ty,
                 effectiveTileSize,
                 drawX,
                 drawY,
-                imageSize: { w: img.width, h: img.height }
+                imageSize: { w: img.width, h: img.height },
               })
 
               // Draw the FULL source image scaled to effective tile size
               // This ensures proper scaling regardless of the actual image resolution
               ctx.drawImage(
                 img,
-                0, 0, img.width, img.height, // Source: full image
-                drawX, drawY, effectiveTileSize, effectiveTileSize // Dest: scaled to effective size
+                0,
+                0,
+                img.width,
+                img.height, // Source: full image
+                drawX,
+                drawY,
+                effectiveTileSize,
+                effectiveTileSize // Dest: scaled to effective size
               )
             })
             .catch(err => {
@@ -278,43 +287,45 @@ export class SelectModeService {
     // DEBUG: Sample pixels at multiple points to verify canvas content
     // Gray [128,128,128,255] = no tile loaded, Black [0,0,0,0] = transparency issue
     const samples = [
-      { name: "topLeft", x: 10, y: 10 },
-      { name: "topRight", x: canvas.width - 10, y: 10 },
-      { name: "center", x: Math.floor(canvas.width / 2), y: Math.floor(canvas.height / 2) },
-      { name: "bottomLeft", x: 10, y: canvas.height - 10 },
-      { name: "bottomRight", x: canvas.width - 10, y: canvas.height - 10 },
+      { name: 'topLeft', x: 10, y: 10 },
+      { name: 'topRight', x: canvas.width - 10, y: 10 },
+      { name: 'center', x: Math.floor(canvas.width / 2), y: Math.floor(canvas.height / 2) },
+      { name: 'bottomLeft', x: 10, y: canvas.height - 10 },
+      { name: 'bottomRight', x: canvas.width - 10, y: canvas.height - 10 },
     ]
     const pixelSamples: Record<string, number[]> = {}
     samples.forEach(s => {
       const pixel = ctx.getImageData(s.x, s.y, 1, 1).data
       pixelSamples[s.name] = Array.from(pixel)
     })
-    console.log("[DEBUG] Canvas pixel samples:", pixelSamples)
+    console.log('[DEBUG] Canvas pixel samples:', pixelSamples)
 
-    const base64Image = canvas.toDataURL('image/png');
+    const base64Image = canvas.toDataURL('image/png')
 
     // DEBUG: Store image in window for easy console access
     // To view: type window.__DEBUG_CONTEXT_IMAGE__ in console, right-click result, open in new tab
     ;(window as any).__DEBUG_CONTEXT_IMAGE__ = base64Image
-    console.log("[DEBUG] Context image stored at window.__DEBUG_CONTEXT_IMAGE__")
-    console.log("[DEBUG] To view: paste window.__DEBUG_CONTEXT_IMAGE__ in console, right-click the URL")
-    
+    console.log('[DEBUG] Context image stored at window.__DEBUG_CONTEXT_IMAGE__')
+    console.log(
+      '[DEBUG] To view: paste window.__DEBUG_CONTEXT_IMAGE__ in console, right-click the URL'
+    )
+
     // Verify the base64 output is properly formed
     const expectedPrefix = 'data:image/png;base64,'
     const isValidPrefix = base64Image.startsWith(expectedPrefix)
     const base64Data = base64Image.slice(expectedPrefix.length)
     const isValidBase64Length = base64Data.length > 0 && base64Data.length % 4 === 0
-    
+
     console.log('[SelectModeService] Base64 validation:', {
       totalLength: base64Image.length,
       base64DataLength: base64Data.length,
       isValidPrefix,
       isValidBase64Length,
-      estimatedSizeMB: (base64Data.length * 0.75 / 1024 / 1024).toFixed(2),
+      estimatedSizeMB: ((base64Data.length * 0.75) / 1024 / 1024).toFixed(2),
       // Check for truncation by looking at end of base64
       ending: base64Image.slice(-20),
     })
-    
+
     if (!isValidPrefix || !isValidBase64Length) {
       console.error('[SelectModeService] WARNING: Base64 may be malformed!')
     }

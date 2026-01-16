@@ -1,6 +1,6 @@
 /**
  * Routing Validity Validator
- * 
+ *
  * Validates that the supervisor routes requests to phase-appropriate agents
  * and follows proper delegation patterns.
  */
@@ -24,7 +24,7 @@ interface AgentCapability {
   name: string
   phases: ProjectPhase[]
   capabilities: string[]
-  exclusions?: string[]  // Things this agent should NOT handle
+  exclusions?: string[] // Things this agent should NOT handle
 }
 
 // ============================================
@@ -36,8 +36,14 @@ const AGENT_CAPABILITIES: AgentCapability[] = [
     name: 'PremiseArchitect',
     phases: ['premise', 'outline'],
     capabilities: [
-      'world-building', 'character creation', 'series rules',
-      'setting', 'tone', 'genre', 'themes', 'premise',
+      'world-building',
+      'character creation',
+      'series rules',
+      'setting',
+      'tone',
+      'genre',
+      'themes',
+      'premise',
     ],
     exclusions: ['dialogue', 'scene writing', 'beat writing'],
   },
@@ -45,8 +51,13 @@ const AGENT_CAPABILITIES: AgentCapability[] = [
     name: 'PlotArchitect',
     phases: ['outline', 'script'],
     capabilities: [
-      'story structure', 'episode arc', 'beat sequence',
-      'plot points', 'act breaks', 'conflict', 'stakes',
+      'story structure',
+      'episode arc',
+      'beat sequence',
+      'plot points',
+      'act breaks',
+      'conflict',
+      'stakes',
     ],
     exclusions: ['character backstory', 'world rules'],
   },
@@ -54,8 +65,12 @@ const AGENT_CAPABILITIES: AgentCapability[] = [
     name: 'Writer',
     phases: ['script'],
     capabilities: [
-      'dialogue', 'scene writing', 'script', 'screenplay',
-      'action lines', 'descriptions',
+      'dialogue',
+      'scene writing',
+      'script',
+      'screenplay',
+      'action lines',
+      'descriptions',
     ],
     exclusions: ['plot restructuring', 'character creation'],
   },
@@ -63,8 +78,13 @@ const AGENT_CAPABILITIES: AgentCapability[] = [
     name: 'CharacterPsychology',
     phases: ['premise', 'outline', 'script'],
     capabilities: [
-      'character motivation', 'psychology', 'voice', 'backstory',
-      'character arc', 'relationships', 'personality',
+      'character motivation',
+      'psychology',
+      'voice',
+      'backstory',
+      'character arc',
+      'relationships',
+      'personality',
     ],
     exclusions: ['plot structure', 'world-building'],
   },
@@ -72,27 +92,25 @@ const AGENT_CAPABILITIES: AgentCapability[] = [
     name: 'DevilsAdvocate',
     phases: ['premise', 'outline', 'script'],
     capabilities: [
-      'review', 'critique', 'feedback', 'plot holes',
-      'consistency check', 'quality review',
+      'review',
+      'critique',
+      'feedback',
+      'plot holes',
+      'consistency check',
+      'quality review',
     ],
     exclusions: ['content creation', 'writing'],
   },
   {
     name: 'ConsequenceTracker',
     phases: ['outline', 'script'],
-    capabilities: [
-      'continuity', 'consequences', 'ripple effects',
-      'timeline', 'consistency',
-    ],
+    capabilities: ['continuity', 'consequences', 'ripple effects', 'timeline', 'consistency'],
     exclusions: ['creation', 'writing'],
   },
   {
     name: 'ScriptEditor',
     phases: ['script'],
-    capabilities: [
-      'script polish', 'editing', 'formatting',
-      'dialogue polish', 'tightening',
-    ],
+    capabilities: ['script polish', 'editing', 'formatting', 'dialogue polish', 'tightening'],
     exclusions: ['plot changes', 'character changes'],
   },
 ]
@@ -102,11 +120,11 @@ const REQUEST_TYPE_KEYWORDS: Record<string, string[]> = {
   'world-building': ['world', 'setting', 'universe', 'rules', 'magic system', 'technology'],
   'character creation': ['create character', 'new character', 'character named', 'introduce'],
   'story structure': ['plot', 'structure', 'arc', 'episode', 'season', 'beats', 'outline'],
-  'dialogue': ['dialogue', 'conversation', 'say', 'speak', 'talk'],
+  dialogue: ['dialogue', 'conversation', 'say', 'speak', 'talk'],
   'scene writing': ['write scene', 'scene where', 'scene with', 'script'],
-  'review': ['review', 'critique', 'feedback', 'check', 'evaluate', 'assess'],
+  review: ['review', 'critique', 'feedback', 'check', 'evaluate', 'assess'],
   'character motivation': ['motivation', 'why would', 'character arc', 'psychology'],
-  'continuity': ['continuity', 'timeline', 'consequence', 'effect', 'remember'],
+  continuity: ['continuity', 'timeline', 'consequence', 'effect', 'remember'],
 }
 
 // ============================================
@@ -117,36 +135,37 @@ function detectRoutingDecision(content: string): RoutingDecision | null {
   // Pattern: "Delegating to X" or "Routing to X"
   const delegatePattern = /(?:delegating|routing|forwarding|sending)\s+to\s+(\w+)/i
   const match = content.match(delegatePattern)
-  
+
   if (match) {
     return {
       targetAgent: match[1],
     }
   }
-  
+
   // Pattern: Agent name mentioned as action
-  const agentMentionPattern = /(?:ask|consult|use|invoke)\s+(\w+Architect|\w+Psychology|Writer|DevilsAdvocate|ConsequenceTracker|ScriptEditor)/i
+  const agentMentionPattern =
+    /(?:ask|consult|use|invoke)\s+(\w+Architect|\w+Psychology|Writer|DevilsAdvocate|ConsequenceTracker|ScriptEditor)/i
   const agentMatch = content.match(agentMentionPattern)
-  
+
   if (agentMatch) {
     return {
       targetAgent: agentMatch[1],
     }
   }
-  
+
   return null
 }
 
 function detectRequestType(content: string): string[] {
   const types: string[] = []
   const contentLower = content.toLowerCase()
-  
+
   for (const [type, keywords] of Object.entries(REQUEST_TYPE_KEYWORDS)) {
     if (keywords.some(kw => contentLower.includes(kw))) {
       types.push(type)
     }
   }
-  
+
   return types
 }
 
@@ -167,51 +186,47 @@ function validateRouting(
   phase: ProjectPhase
 ): { isValid: boolean; issues: string[] } {
   const issues: string[] = []
-  
+
   // Find the target agent's capabilities
   const agentConfig = AGENT_CAPABILITIES.find(
     a => a.name.toLowerCase() === decision.targetAgent.toLowerCase()
   )
-  
+
   if (!agentConfig) {
     issues.push(`Unknown agent: ${decision.targetAgent}`)
     return { isValid: false, issues }
   }
-  
+
   // Check phase compatibility
   if (phase !== 'unknown' && !agentConfig.phases.includes(phase)) {
     issues.push(
       `${decision.targetAgent} is not appropriate for ${phase} phase. ` +
-      `Use during: ${agentConfig.phases.join(', ')}`
+        `Use during: ${agentConfig.phases.join(', ')}`
     )
   }
-  
+
   // Check capability match
-  const hasCapability = requestTypes.some(type =>
-    agentConfig.capabilities.includes(type)
-  )
-  
+  const hasCapability = requestTypes.some(type => agentConfig.capabilities.includes(type))
+
   if (requestTypes.length > 0 && !hasCapability) {
     issues.push(
       `${decision.targetAgent} may not be best for ${requestTypes.join(', ')}. ` +
-      `Agent handles: ${agentConfig.capabilities.slice(0, 3).join(', ')}`
+        `Agent handles: ${agentConfig.capabilities.slice(0, 3).join(', ')}`
     )
   }
-  
+
   // Check exclusions
   if (agentConfig.exclusions) {
-    const hasExclusion = requestTypes.some(type =>
-      agentConfig.exclusions!.includes(type)
-    )
-    
+    const hasExclusion = requestTypes.some(type => agentConfig.exclusions!.includes(type))
+
     if (hasExclusion) {
       issues.push(
         `${decision.targetAgent} should not handle ${requestTypes.join(', ')}. ` +
-        `These are excluded from this agent's scope.`
+          'These are excluded from this agent\'s scope.'
       )
     }
   }
-  
+
   return {
     isValid: issues.length === 0,
     issues,
@@ -224,42 +239,46 @@ function validateRouting(
 
 export class RoutingValidityValidator implements Validator<Partial<WritersRoomState>> {
   name = 'RoutingValidity'
-  
+
   async validate(output: Partial<WritersRoomState>): Promise<ValidationResult> {
     const guardIssues: GuardrailIssue[] = []
-    
+
     // Extract content from last message
     const messages = output.messages || []
     const lastMessage = messages[messages.length - 1]
-    const content = lastMessage 
-      ? (typeof lastMessage.content === 'string' ? lastMessage.content : '')
+    const content = lastMessage
+      ? typeof lastMessage.content === 'string'
+        ? lastMessage.content
+        : ''
       : ''
-    
+
     // Detect routing decision
     const routingDecision = detectRoutingDecision(content)
-    
+
     if (!routingDecision) {
       // No routing detected, skip validation
       return { isValid: true, issues: [] }
     }
-    
+
     // Detect request types from user input
-    const userMessages = messages.filter(m => 
-      (m as any)._getType?.() === 'human' || (m as any).constructor?.name === 'HumanMessage'
+    const userMessages = messages.filter(
+      m => (m as any)._getType?.() === 'human' || (m as any).constructor?.name === 'HumanMessage'
     )
     const lastUserMessage = userMessages[userMessages.length - 1]
     const userContent = lastUserMessage
-      ? (typeof lastUserMessage.content === 'string' ? lastUserMessage.content : '')
+      ? typeof lastUserMessage.content === 'string'
+        ? lastUserMessage.content
+        : ''
       : ''
-    
+
     const requestTypes = detectRequestType(userContent)
-    
+
     // Detect current phase
     const phase = detectPhase(output)
-    
+
     // Validate routing
     const validation = validateRouting(routingDecision, requestTypes, phase)
-    
+
     // Convert to GuardrailIssue format
     for (const issue of validation.issues) {
       guardIssues.push({
@@ -273,7 +292,7 @@ export class RoutingValidityValidator implements Validator<Partial<WritersRoomSt
         },
       })
     }
-    
+
     // Routing issues are warnings, don't block
     return {
       isValid: true,
@@ -300,12 +319,11 @@ export function getRecommendedAgent(
     const inPhase = phase === 'unknown' || agent.phases.includes(phase)
     const hasCapability = agent.capabilities.includes(requestType)
     const notExcluded = !agent.exclusions?.includes(requestType)
-    
+
     if (inPhase && hasCapability && notExcluded) {
       return agent.name
     }
   }
-  
+
   return null
 }
-

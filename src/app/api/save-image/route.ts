@@ -16,8 +16,8 @@ export async function POST(request: Request) {
     }
 
     if (!imageData) {
-      console.error('[save-image] Missing imageData, received:', { 
-        projectId, 
+      console.error('[save-image] Missing imageData, received:', {
+        projectId,
         filename,
         bodyKeys: Object.keys(body),
         imageDataType: typeof imageData,
@@ -25,11 +25,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing imageData' }, { status: 400 })
     }
 
-    console.log('[save-image] Saving image:', { 
-      projectId, 
-      filename, 
+    console.log('[save-image] Saving image:', {
+      projectId,
+      filename,
       imageDataLength: imageData.length,
-      imageDataPreview: imageData.substring(0, 50) + '...'
+      imageDataPreview: imageData.substring(0, 50) + '...',
     })
 
     const projectDir = path.join(process.cwd(), 'public', 'projects', projectId)
@@ -43,14 +43,14 @@ export async function POST(request: Request) {
 
     // Remove data:image/png;base64, prefix if present
     const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '')
-    
+
     if (!base64Data || base64Data.length === 0) {
       console.error('[save-image] Empty base64 data after processing')
       return NextResponse.json({ error: 'Empty image data' }, { status: 400 })
     }
 
     const buffer = Buffer.from(base64Data, 'base64')
-    
+
     if (buffer.length === 0) {
       console.error('[save-image] Empty buffer after base64 decode')
       return NextResponse.json({ error: 'Invalid base64 data' }, { status: 400 })
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
 
     console.log('[save-image] Writing file:', { filePath, bufferSize: buffer.length })
     fs.writeFileSync(filePath, buffer)
-    
+
     // Verify file was written
     if (!fs.existsSync(filePath)) {
       console.error('[save-image] File not found after write:', filePath)
@@ -68,7 +68,11 @@ export async function POST(request: Request) {
     const stats = fs.statSync(filePath)
     console.log('[save-image] File saved successfully:', { filePath, size: stats.size })
 
-    return NextResponse.json({ success: true, path: `/projects/${projectId}/${filename}`, size: stats.size })
+    return NextResponse.json({
+      success: true,
+      path: `/projects/${projectId}/${filename}`,
+      size: stats.size,
+    })
   } catch (error: any) {
     console.error('[save-image] Error:', error)
     return NextResponse.json({ error: error.message || 'Failed to save image' }, { status: 500 })

@@ -30,10 +30,7 @@ export const expandSceneTool = new DynamicStructuredTool({
       .string()
       .optional()
       .describe('Text that comes before the selection for context'),
-    afterContext: z
-      .string()
-      .optional()
-      .describe('Text that comes after the selection for context'),
+    afterContext: z.string().optional().describe('Text that comes after the selection for context'),
   }),
   func: async ({ selection, beforeContext, afterContext }) => {
     console.log('[Tool] expand_scene called')
@@ -77,7 +74,7 @@ export const improveDialogueTool = new DynamicStructuredTool({
       .string()
       .optional()
       .describe(
-        "Notes about the character's voice (e.g., 'speaks in short sentences', 'uses technical jargon')"
+        'Notes about the character\'s voice (e.g., \'speaks in short sentences\', \'uses technical jargon\')'
       ),
   }),
   func: async ({ selection, characterName, voiceNotes }) => {
@@ -95,7 +92,7 @@ export const improveDialogueTool = new DynamicStructuredTool({
 export const addVisualHookTool = new DynamicStructuredTool({
   name: 'add_visual_hook',
   description:
-    "Add a strong visual hook to open a scene. Creates an iconic, memorable first image that draws the audience in. Use when scenes lack a compelling opening.",
+    'Add a strong visual hook to open a scene. Creates an iconic, memorable first image that draws the audience in. Use when scenes lack a compelling opening.',
   schema: z.object({
     selection: z.string().describe('The scene text to add a visual hook to'),
   }),
@@ -119,9 +116,7 @@ export const shiftToneTool = new DynamicStructuredTool({
     selection: z.string().describe('The script text to adjust'),
     targetTone: z
       .string()
-      .describe(
-        "The target tone (e.g., 'darker', 'comedic', 'tense', 'melancholic', 'hopeful')"
-      ),
+      .describe('The target tone (e.g., \'darker\', \'comedic\', \'tense\', \'melancholic\', \'hopeful\')'),
   }),
   func: async ({ selection, targetTone }) => {
     console.log('[Tool] shift_tone called, target:', targetTone)
@@ -172,14 +167,3 @@ export const scriptEditTools = [
   shiftToneTool,
   regenerateTextTool,
 ]
-
-
-
-
-
-
-
-
-
-
-

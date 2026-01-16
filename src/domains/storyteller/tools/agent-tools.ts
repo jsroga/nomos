@@ -14,6 +14,16 @@ import { createRagTool } from './rag-tools'
 import { plannerAgent } from '../agents/planner'
 import { episodePremiseArchitectAgent } from '../agents/episode-premise-architect'
 
+// New Tool Imports
+import { createBeatManagementTool, createBeatListTool } from './beat-management-tools'
+import { createContinuityCheckerTool, createQuickConsistencyTool } from './continuity-tools'
+import {
+  createRelationshipAnalyzerTool,
+  createRelationshipSuggestionTool,
+} from './character-relationship-tools'
+import { createResearchTool, createFactCheckTool } from './research-tools'
+import { createVisualConceptTool, createBeatToStoryboardTool } from './visual-concept-tools'
+
 // Define schemas for tool inputs
 const AgentInputSchema = z.object({
   instruction: z.string().describe('The specific instruction or task for the agent to perform.'),
@@ -46,7 +56,7 @@ function createAgentTool(
       // The actual execution will happen in the graph nodes routed by the tool name.
       // But to satisfy the interface, we return the instruction, which the node can use.
 
-      return `Delegating to ${name} with instruction: ${instruction}`;
+      return `Delegating to ${name} with instruction: ${instruction}`
     },
   })
 }
@@ -118,7 +128,18 @@ export const plannerTool = createAgentTool(
 // But `bindTools` needs actual tools.
 // Workaround: Export a factory function for the full toolset.
 
+/**
+ * Get all supervisor tools with state-dependent tools injected.
+ *
+ * Tools are organized into categories:
+ * 1. Agent Delegation Tools - Route to specialized agents
+ * 2. Direct Action Tools - Perform immediate operations
+ * 3. Analysis Tools - Read-only analysis and checks
+ * 4. Research Tools - External knowledge gathering
+ */
 export const getSupervisorTools = (state: WritersRoomState) => [
+  // === AGENT DELEGATION TOOLS ===
+  // Route complex tasks to specialized agents
   plotArchitectTool,
   characterPsychologyTool,
   consequenceTrackerTool,
@@ -129,7 +150,59 @@ export const getSupervisorTools = (state: WritersRoomState) => [
   magicAgentTool,
   scriptEditorTool,
   plannerTool,
-  createRagTool(state)
+
+  // === DIRECT ACTION TOOLS (NEW) ===
+  // Perform immediate CRUD operations without full agent deliberation
+  createBeatManagementTool(state), // Create/update/delete/move beats
+  createBeatListTool(state), // Quick beat board overview
+
+  // === ANALYSIS TOOLS (NEW) ===
+  // Read-only analysis and consistency checks
+  createContinuityCheckerTool(state), // Check plot holes, world rules, setups/payoffs
+  createQuickConsistencyTool(state), // Fast single-statement consistency check
+  createRelationshipAnalyzerTool(state), // Character relationship matrix
+  createRelationshipSuggestionTool(state), // Suggest relationship dynamics
+
+  // === RESEARCH TOOLS (NEW) ===
+  // External knowledge and reference material
+  createRagTool(state), // Search project knowledge base
+  createResearchTool(state), // Web research for authentic storytelling
+  createFactCheckTool(state), // Quick fact verification
+
+  // === VISUAL TOOLS (NEW) ===
+  // Visual concept generation
+  createVisualConceptTool(state), // Generate visual concepts for moments
+  createBeatToStoryboardTool(state), // Convert beats to storyboard panels
+]
+
+/**
+ * Get only the new direct-action and analysis tools.
+ * Useful for agents that need utilities but not delegation capabilities.
+ */
+export const getUtilityTools = (state: WritersRoomState) => [
+  createBeatManagementTool(state),
+  createBeatListTool(state),
+  createContinuityCheckerTool(state),
+  createQuickConsistencyTool(state),
+  createRelationshipAnalyzerTool(state),
+  createRagTool(state),
+]
+
+/**
+ * Get research-focused tools only.
+ */
+export const getResearchTools = (state: WritersRoomState) => [
+  createResearchTool(state),
+  createFactCheckTool(state),
+  createRagTool(state),
+]
+
+/**
+ * Get visual/storyboard tools only.
+ */
+export const getVisualTools = (state: WritersRoomState) => [
+  createVisualConceptTool(state),
+  createBeatToStoryboardTool(state),
 ]
 
 // Legacy export for backward compat (without state-dependent tools)
@@ -144,5 +217,5 @@ export const supervisorTools = [
   magicAgentTool,
   scriptEditorTool,
   plannerTool,
-  // RAG tool not included here as it needs state injection at runtime
+  // State-dependent tools not included here - use getSupervisorTools(state) instead
 ]

@@ -46,12 +46,7 @@ import {
   Trash2,
   RotateCcw,
 } from 'lucide-react'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import toast from 'react-hot-toast'
 import LiquidGlass from 'liquid-glass-react'
 
@@ -73,7 +68,9 @@ export const Sidebar: React.FC = () => {
   // Load master prompt from localStorage when project changes
   useEffect(() => {
     if (typeof window !== 'undefined' && currentProject?.id) {
-      const savedPrompt = localStorage.getItem(`${LocalStorageKeys.MASTER_PROMPT}-${currentProject.id}`)
+      const savedPrompt = localStorage.getItem(
+        `${LocalStorageKeys.MASTER_PROMPT}-${currentProject.id}`
+      )
       setMasterPrompt(savedPrompt || defaultMasterPrompt)
     }
   }, [currentProject?.id])
@@ -226,11 +223,11 @@ export const Sidebar: React.FC = () => {
         console.log('[Sidebar] Data URL created:', {
           length: dataUrl?.length,
           prefix: dataUrl?.substring(0, 50),
-          isValid: dataUrl?.startsWith('data:image/')
+          isValid: dataUrl?.startsWith('data:image/'),
         })
         resolve(dataUrl)
       }
-      reader.onerror = (e) => {
+      reader.onerror = e => {
         console.error('[Sidebar] FileReader error:', e)
         reject(new Error('FileReader error'))
       }
@@ -298,15 +295,19 @@ export const Sidebar: React.FC = () => {
     try {
       // Check if there are any neighbors (for follow-up vs first tile)
       const hasNeighbors = [
-        tiles[`${x},${y - 1}`], tiles[`${x},${y + 1}`],
-        tiles[`${x - 1},${y}`], tiles[`${x + 1},${y}`]
+        tiles[`${x},${y - 1}`],
+        tiles[`${x},${y + 1}`],
+        tiles[`${x - 1},${y}`],
+        tiles[`${x + 1},${y}`],
       ].some(Boolean)
 
       // Build prompt: only use master prompt for first tile
       // For follow-up tiles, use tile description only (better edge matching)
       // Fallback to master prompt if no tile description provided
       const effectiveTilePrompt = tilePrompt.trim() || masterPrompt
-      const fullPrompt = hasNeighbors ? effectiveTilePrompt : `${tilePrompt}, ${masterPrompt}`.replace(/^, /, '')
+      const fullPrompt = hasNeighbors
+        ? effectiveTilePrompt
+        : `${tilePrompt}, ${masterPrompt}`.replace(/^, /, '')
 
       // Optional: Show debug info for context assembly (still works locally)
       // Load neighbor images as data URLs for debug display
@@ -484,7 +485,9 @@ export const Sidebar: React.FC = () => {
                     <Info size={12} className="text-muted-foreground/60 cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent side="right">
-                    <p className="max-w-[200px]">Define the overall art style that will be applied to all generated tiles</p>
+                    <p className="max-w-[200px]">
+                      Define the overall art style that will be applied to all generated tiles
+                    </p>
                   </TooltipContent>
                 </Tooltip>
 
@@ -516,11 +519,9 @@ export const Sidebar: React.FC = () => {
               value={masterPrompt}
               onChange={e => handleMasterPromptChange(e.target.value)}
               placeholder="Define the overall art style and aesthetic..."
-              className="w-full h-24 bg-zinc-900/50 border border-zinc-800 rounded-md py-2 px-3 text-xs text-zinc-300 font-mono resize-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-all placeholder:text-zinc-600"
+              className="w-full h-24 bg-zinc-900/30 border border-zinc-800 rounded-md py-2 px-3 text-xs text-zinc-300 font-mono resize-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-all placeholder:text-zinc-600 shadow-inner"
             />
           </SidebarSection>
-
-
 
           {/* Generation Group */}
           <SidebarSection separator title="Generation" icon={<ImagePlus size={12} />}>
@@ -563,7 +564,7 @@ export const Sidebar: React.FC = () => {
                 value={tilePrompt}
                 onChange={e => setTilePrompt(e.target.value)}
                 placeholder="e.g., church, forest, river..."
-                className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md py-2 px-3 text-xs text-zinc-300 font-mono focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-all placeholder:text-zinc-600"
+                className="w-full bg-zinc-900/30 border border-zinc-800 rounded-md py-2 px-3 text-xs text-zinc-300 font-mono focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-all placeholder:text-zinc-600 shadow-inner"
               />
             </div>
 
@@ -581,7 +582,8 @@ export const Sidebar: React.FC = () => {
                     variant="ghost"
                     onClick={handleGenerate}
                     disabled={
-                      !!generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] || isUploading
+                      !!generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] ||
+                      isUploading
                     }
                     className="flex-1 gap-2 bg-primary/20 text-primary border border-primary hover:bg-primary hover:text-white font-mono"
                   >
@@ -603,7 +605,8 @@ export const Sidebar: React.FC = () => {
                         variant="outline"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={
-                          !!generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] || isUploading
+                          !!generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] ||
+                          isUploading
                         }
                         size="icon"
                       >
@@ -635,7 +638,9 @@ export const Sidebar: React.FC = () => {
                               }
                             }
                           }}
-                          disabled={!!generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`]}
+                          disabled={
+                            !!generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`]
+                          }
                           size="icon"
                           className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
                         >
@@ -669,7 +674,9 @@ export const Sidebar: React.FC = () => {
 
                 {generationDebugInfo.assembledContext && (
                   <div className="mb-2">
-                    <p className="text-[10px] text-muted-foreground mb-1">Inline Data (Assembled)</p>
+                    <p className="text-[10px] text-muted-foreground mb-1">
+                      Inline Data (Assembled)
+                    </p>
                     <img
                       src={generationDebugInfo.assembledContext}
                       className="w-full h-auto border border-border rounded"
@@ -764,11 +771,14 @@ export const Sidebar: React.FC = () => {
                   if (selectedTile) {
                     const fullTile = tiles[`${selectedTile.x},${selectedTile.y}`]
                     if (fullTile) {
-                      toast.promise(upscaleService.upscale(fullTile, upscaleCreativity, styleReferenceUrls), {
-                        loading: 'Upscaling...',
-                        success: 'Tile queued for upscaling!',
-                        error: 'Upscale failed',
-                      })
+                      toast.promise(
+                        upscaleService.upscale(fullTile, upscaleCreativity, styleReferenceUrls),
+                        {
+                          loading: 'Upscaling...',
+                          success: 'Tile queued for upscaling!',
+                          error: 'Upscale failed',
+                        }
+                      )
                     }
                   }
                 }}
@@ -800,11 +810,19 @@ export const Sidebar: React.FC = () => {
                   if (selectedTile) {
                     const fullTile = tiles[`${selectedTile.x},${selectedTile.y}`]
                     if (fullTile) {
-                      toast.promise(fidelityService.enhance(fullTile, fidelityPrompt, fidelityCreativity, styleReferenceUrls), {
-                        loading: 'Enhancing fidelity...',
-                        success: 'Tile queued for fidelity enhancement!',
-                        error: err => `Enhancement failed: ${err.message}`,
-                      })
+                      toast.promise(
+                        fidelityService.enhance(
+                          fullTile,
+                          fidelityPrompt,
+                          fidelityCreativity,
+                          styleReferenceUrls
+                        ),
+                        {
+                          loading: 'Enhancing fidelity...',
+                          success: 'Tile queued for fidelity enhancement!',
+                          error: err => `Enhancement failed: ${err.message}`,
+                        }
+                      )
                     }
                   }
                 }}
@@ -839,7 +857,7 @@ export const Sidebar: React.FC = () => {
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono text-muted-foreground">{assets.length}</span>
                 <button
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation()
                     setShowAllAssetMasks(!showAllAssetMasks)
                   }}
@@ -884,7 +902,9 @@ export const Sidebar: React.FC = () => {
           <div className="flex items-center justify-between w-full pl-2">
             <SidebarHeader>World Gen</SidebarHeader>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase tracking-wider font-medium font-mono text-zinc-500">Auto</span>
+              <span className="text-[10px] uppercase tracking-wider font-medium font-mono text-zinc-500">
+                Auto
+              </span>
               <Switch
                 checked={autoApprove}
                 onCheckedChange={handleAutoApproveChange}

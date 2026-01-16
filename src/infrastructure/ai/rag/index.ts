@@ -1,6 +1,6 @@
 /**
  * RAG Module
- * 
+ *
  * Exports RAG pipeline components.
  */
 
@@ -11,7 +11,7 @@ export {
   type ChunkConfig,
   DEFAULT_CONFIG as CHUNKER_DEFAULT_CONFIG,
   DOCUMENT_TYPE_CONFIGS,
-} from './semantic-chunker';
+} from './semantic-chunker'
 
 export {
   HybridSearchEngine,
@@ -19,7 +19,7 @@ export {
   type SearchResult,
   type HybridSearchConfig,
   HYBRID_SEARCH_DEFAULT_CONFIG,
-} from './hybrid-search';
+} from './hybrid-search'
 
 export {
   QueryExpander,
@@ -29,7 +29,7 @@ export {
   type QueryExpansion,
   type QueryExpanderConfig,
   type ExpansionStrategy,
-} from './query-expander';
+} from './query-expander'
 
 export {
   Reranker,
@@ -39,5 +39,4 @@ export {
   type RerankerConfig,
   type RerankerProvider,
   type RerankResult,
-} from './reranker';
-
+} from './reranker'

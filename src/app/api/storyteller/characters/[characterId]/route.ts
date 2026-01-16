@@ -15,7 +15,7 @@ async function verifyCharacterAccess(characterId: string, userId: string) {
 }
 
 export async function PATCH(req: Request, props: { params: Promise<{ characterId: string }> }) {
-  const params = await props.params;
+  const params = await props.params
   try {
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

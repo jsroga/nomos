@@ -2,7 +2,7 @@ import { AIModel, AIModelConfig, TileContext } from './types'
 
 /**
  * Midjourney AI Model via LegNext AI
- * 
+ *
  * Note: Actual generation happens in the Trigger.dev task (generate-tile.ts).
  * This model is used for UI configuration and validation only.
  */
@@ -25,8 +25,7 @@ export class MidjourneyAIModel implements AIModel {
 
     throw new Error(
       'Midjourney generation should be triggered via Trigger.dev task. ' +
-      'Direct generation is not supported in the browser.'
+        'Direct generation is not supported in the browser.'
     )
   }
 }
-

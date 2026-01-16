@@ -16,7 +16,7 @@ export interface PendingUpscale {
 export interface PendingGeneration {
   newUrl: string
   newBase64: string
-  originalUrl?: string  // undefined for first tile
+  originalUrl?: string // undefined for first tile
   isFirstTile: boolean
   timestamp: number
 }
@@ -208,7 +208,7 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   user: null,
   currentProject: null,
   projects: [],
-  setCurrentProject: (project) => set({ currentProject: project }),
+  setCurrentProject: project => set({ currentProject: project }),
   tiles: {},
   viewport: { x: 0, y: 0, scale: 1 },
   selectedTile: null,
@@ -324,10 +324,7 @@ export const useWorldStore = create<WorldState>((set, get) => ({
 
   deleteProject: async (projectId: string) => {
     const supabase = getSupabaseClient()
-    const { error } = await supabase
-      .from('projects')
-      .delete()
-      .eq('id', projectId)
+    const { error } = await supabase.from('projects').delete().eq('id', projectId)
 
     if (error) {
       console.error('Error deleting project:', error)
@@ -336,7 +333,7 @@ export const useWorldStore = create<WorldState>((set, get) => ({
 
     set(state => ({
       projects: state.projects.filter(p => p.id !== projectId),
-      currentProject: state.currentProject?.id === projectId ? null : state.currentProject
+      currentProject: state.currentProject?.id === projectId ? null : state.currentProject,
     }))
   },
 
@@ -607,8 +604,8 @@ export const useWorldStore = create<WorldState>((set, get) => ({
     set(state => ({
       pendingUpscales: {
         ...state.pendingUpscales,
-        [`${x},${y}`]: { upscaledUrl, originalUrl, timestamp: Date.now() }
-      }
+        [`${x},${y}`]: { upscaledUrl, originalUrl, timestamp: Date.now() },
+      },
     })),
 
   acceptUpscale: async (x, y) => {
@@ -628,8 +625,8 @@ export const useWorldStore = create<WorldState>((set, get) => ({
           projectId: currentProject.id,
           x,
           y,
-          upscaledUrl: pending.upscaledUrl
-        })
+          upscaledUrl: pending.upscaledUrl,
+        }),
       })
 
       if (!response.ok) {
@@ -644,14 +641,14 @@ export const useWorldStore = create<WorldState>((set, get) => ({
           ...state.tiles,
           [tileKey]: {
             ...state.tiles[tileKey],
-            image_filename: filename
-          }
+            image_filename: filename,
+          },
         },
         pendingUpscales: (() => {
           const newPending = { ...state.pendingUpscales }
           delete newPending[tileKey]
           return newPending
-        })()
+        })(),
       }))
     } catch (error) {
       console.error('Error accepting upscale:', error)
@@ -674,8 +671,8 @@ export const useWorldStore = create<WorldState>((set, get) => ({
     set(state => ({
       pendingGenerations: {
         ...state.pendingGenerations,
-        [`${x},${y}`]: { ...data, timestamp: Date.now() }
-      }
+        [`${x},${y}`]: { ...data, timestamp: Date.now() },
+      },
     })),
 
   acceptGeneration: async (x, y) => {
@@ -707,13 +704,16 @@ export const useWorldStore = create<WorldState>((set, get) => ({
       const supabase = (await import('@/infrastructure/storage/supabaseClient')).getSupabaseClient()
       const { data: tile } = await supabase
         .from('tiles')
-        .upsert({
-          project_id: currentProject.id,
-          x,
-          y,
-          tile_prompt: '',  // Will be updated by service if needed
-          image_filename: filename,
-        }, { onConflict: 'project_id,x,y' })
+        .upsert(
+          {
+            project_id: currentProject.id,
+            x,
+            y,
+            tile_prompt: '', // Will be updated by service if needed
+            image_filename: filename,
+          },
+          { onConflict: 'project_id,x,y' }
+        )
         .select()
         .single()
 
@@ -721,13 +721,13 @@ export const useWorldStore = create<WorldState>((set, get) => ({
       set(state => ({
         tiles: {
           ...state.tiles,
-          [tileKey]: tile || { ...state.tiles[tileKey], image_filename: filename }
+          [tileKey]: tile || { ...state.tiles[tileKey], image_filename: filename },
         },
         pendingGenerations: (() => {
           const newPending = { ...state.pendingGenerations }
           delete newPending[tileKey]
           return newPending
-        })()
+        })(),
       }))
     } catch (error) {
       console.error('Error accepting generation:', error)
@@ -750,8 +750,8 @@ export const useWorldStore = create<WorldState>((set, get) => ({
     set(state => ({
       pendingFidelity: {
         ...state.pendingFidelity,
-        [`${x},${y}`]: { ...data, timestamp: Date.now() }
-      }
+        [`${x},${y}`]: { ...data, timestamp: Date.now() },
+      },
     })),
 
   acceptFidelity: async (x, y) => {
@@ -794,14 +794,14 @@ export const useWorldStore = create<WorldState>((set, get) => ({
           ...state.tiles,
           [tileKey]: {
             ...state.tiles[tileKey],
-            image_filename: filename
-          }
+            image_filename: filename,
+          },
         },
         pendingFidelity: (() => {
           const newPending = { ...state.pendingFidelity }
           delete newPending[tileKey]
           return newPending
-        })()
+        })(),
       }))
     } catch (error) {
       console.error('Error accepting fidelity:', error)

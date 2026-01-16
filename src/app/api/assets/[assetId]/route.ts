@@ -17,11 +17,8 @@ async function verifyAssetAccess(assetId: string, userId: string) {
 }
 
 // GET asset by ID
-export async function GET(
-  request: Request,
-  props: { params: Promise<{ assetId: string }> }
-) {
-  const params = await props.params;
+export async function GET(request: Request, props: { params: Promise<{ assetId: string }> }) {
+  const params = await props.params
   try {
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -32,13 +29,10 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    const [data] = await db
-      .select()
-      .from(assets)
-      .where(eq(assets.id, assetId))
+    const [data] = await db.select().from(assets).where(eq(assets.id, assetId))
 
     if (!data) {
-      return NextResponse.json({ error: "Asset not found" }, { status: 404 })
+      return NextResponse.json({ error: 'Asset not found' }, { status: 404 })
     }
 
     return NextResponse.json(data)
@@ -48,11 +42,8 @@ export async function GET(
 }
 
 // PATCH to update asset (metadata, model_filename, etc.)
-export async function PATCH(
-  request: Request,
-  props: { params: Promise<{ assetId: string }> }
-) {
-  const params = await props.params;
+export async function PATCH(request: Request, props: { params: Promise<{ assetId: string }> }) {
+  const params = await props.params
   try {
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -67,10 +58,7 @@ export async function PATCH(
 
     // If updating metadata, merge with existing
     if (body.metadata) {
-      const [existing] = await db
-        .select()
-        .from(assets)
-        .where(eq(assets.id, assetId))
+      const [existing] = await db.select().from(assets).where(eq(assets.id, assetId))
 
       body.metadata = {
         ...((existing?.metadata as any) || {}),
@@ -78,11 +66,7 @@ export async function PATCH(
       }
     }
 
-    const [data] = await db
-      .update(assets)
-      .set(body)
-      .where(eq(assets.id, assetId))
-      .returning()
+    const [data] = await db.update(assets).set(body).where(eq(assets.id, assetId)).returning()
 
     return NextResponse.json(data)
   } catch (error: any) {
@@ -91,11 +75,8 @@ export async function PATCH(
 }
 
 // DELETE asset
-export async function DELETE(
-  request: Request,
-  props: { params: Promise<{ assetId: string }> }
-) {
-  const params = await props.params;
+export async function DELETE(request: Request, props: { params: Promise<{ assetId: string }> }) {
+  const params = await props.params
   try {
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -106,13 +87,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    await db
-      .delete(assets)
-      .where(eq(assets.id, assetId))
+    await db.delete(assets).where(eq(assets.id, assetId))
 
     return NextResponse.json({ success: true })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
-

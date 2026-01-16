@@ -1,6 +1,6 @@
 /**
  * Storyteller Domain Enums
- * 
+ *
  * Consolidated enum definitions for type-safe string literals throughout the storyteller module.
  */
 
@@ -9,15 +9,15 @@
 // ============================================
 
 export enum BeatType {
-    SETUP = 'setup',
-    COMPLICATION = 'complication',
-    REVELATION = 'revelation',
-    DECISION = 'decision',
-    CONSEQUENCE = 'consequence',
-    // Extended types for more granular beat categorization
-    CONFLICT_ESCALATION = 'conflict_escalation',
-    FACTION_MOVE = 'faction_move',
-    WORLD_EVENT = 'world_event',
+  SETUP = 'setup',
+  COMPLICATION = 'complication',
+  REVELATION = 'revelation',
+  DECISION = 'decision',
+  CONSEQUENCE = 'consequence',
+  // Extended types for more granular beat categorization
+  CONFLICT_ESCALATION = 'conflict_escalation',
+  FACTION_MOVE = 'faction_move',
+  WORLD_EVENT = 'world_event',
 }
 
 // ============================================
@@ -25,23 +25,23 @@ export enum BeatType {
 // ============================================
 
 export enum BeatStatus {
-    PROPOSED = 'proposed',
-    CHALLENGED = 'challenged',
-    APPROVED = 'approved',
-    REJECTED = 'rejected',
-    LOCKED = 'locked',
+  PROPOSED = 'proposed',
+  CHALLENGED = 'challenged',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  LOCKED = 'locked',
 }
 
 // ============================================
-// Phase - Writers room workflow phases  
+// Phase - Writers room workflow phases
 // ============================================
 
 export enum Phase {
-    PREMISE = 'premise',
-    BREAKING = 'breaking',
-    CARDLOCK = 'cardlock',
-    WRITING = 'writing',
-    COMPLETE = 'complete',
+  PREMISE = 'premise',
+  BREAKING = 'breaking',
+  CARDLOCK = 'cardlock',
+  WRITING = 'writing',
+  COMPLETE = 'complete',
 }
 
 // ============================================
@@ -49,10 +49,10 @@ export enum Phase {
 // ============================================
 
 export enum PlanStatus {
-    PENDING = 'pending',
-    IN_PROGRESS = 'in_progress',
-    COMPLETE = 'complete',
-    FAILED = 'failed',
+  PENDING = 'pending',
+  IN_PROGRESS = 'in_progress',
+  COMPLETE = 'complete',
+  FAILED = 'failed',
 }
 
 // ============================================
@@ -60,10 +60,10 @@ export enum PlanStatus {
 // ============================================
 
 export enum QuestionType {
-    SINGLE_CHOICE = 'single_choice',
-    MULTIPLE_CHOICE = 'multiple_choice',
-    FREE_TEXT = 'free_text',
-    CONFIRMATION = 'confirmation',
+  SINGLE_CHOICE = 'single_choice',
+  MULTIPLE_CHOICE = 'multiple_choice',
+  FREE_TEXT = 'free_text',
+  CONFIRMATION = 'confirmation',
 }
 
 // ============================================
@@ -71,9 +71,9 @@ export enum QuestionType {
 // ============================================
 
 export enum QuestionUrgency {
-    BLOCKING = 'blocking',
-    IMPORTANT = 'important',
-    OPTIONAL = 'optional',
+  BLOCKING = 'blocking',
+  IMPORTANT = 'important',
+  OPTIONAL = 'optional',
 }
 
 // ============================================
@@ -81,10 +81,10 @@ export enum QuestionUrgency {
 // ============================================
 
 export enum QuestionStatus {
-    PENDING = 'pending',
-    ANSWERED = 'answered',
-    SKIPPED = 'skipped',
-    TIMEOUT = 'timeout',
+  PENDING = 'pending',
+  ANSWERED = 'answered',
+  SKIPPED = 'skipped',
+  TIMEOUT = 'timeout',
 }
 
 // ============================================
@@ -92,9 +92,9 @@ export enum QuestionStatus {
 // ============================================
 
 export enum ActionStatus {
-    COMMITTED = 'committed',
-    UNDONE = 'undone',
-    REDONE = 'redone',
+  COMMITTED = 'committed',
+  UNDONE = 'undone',
+  REDONE = 'redone',
 }
 
 // ============================================
@@ -102,9 +102,9 @@ export enum ActionStatus {
 // ============================================
 
 export enum MergeMode {
-    REPLACE = 'replace',
-    MERGE = 'merge',
-    SMART = 'smart',
+  REPLACE = 'replace',
+  MERGE = 'merge',
+  SMART = 'smart',
 }
 
 // ============================================
@@ -112,9 +112,9 @@ export enum MergeMode {
 // ============================================
 
 export enum Verdict {
-    PASS = 'PASS',
-    CHALLENGE = 'CHALLENGE',
-    REVISE = 'REVISE',
+  PASS = 'PASS',
+  CHALLENGE = 'CHALLENGE',
+  REVISE = 'REVISE',
 }
 
 // ============================================
@@ -122,16 +122,16 @@ export enum Verdict {
 // ============================================
 
 export enum AgentRole {
-    SUPERVISOR = 'supervisor',
-    PLANNER = 'planner',
-    PREMISE_ARCHITECT = 'premise_architect',
-    PLOT_ARCHITECT = 'plot_architect',
-    WRITER = 'writer',
-    SCRIPT_EDITOR = 'script_editor',
-    DEVILS_ADVOCATE = 'devils_advocate',
-    CHARACTER_PSYCHOLOGY = 'character_psychology',
-    CONSEQUENCE_TRACKER = 'consequence_tracker',
-    WORLD_SIMULATOR = 'world_simulator',
-    VISUAL_MOMENT = 'visual_moment',
-    MAGIC_AGENT = 'magic_agent',
+  SUPERVISOR = 'supervisor',
+  PLANNER = 'planner',
+  PREMISE_ARCHITECT = 'premise_architect',
+  PLOT_ARCHITECT = 'plot_architect',
+  WRITER = 'writer',
+  SCRIPT_EDITOR = 'script_editor',
+  DEVILS_ADVOCATE = 'devils_advocate',
+  CHARACTER_PSYCHOLOGY = 'character_psychology',
+  CONSEQUENCE_TRACKER = 'consequence_tracker',
+  WORLD_SIMULATOR = 'world_simulator',
+  VISUAL_MOMENT = 'visual_moment',
+  MAGIC_AGENT = 'magic_agent',
 }

@@ -42,10 +42,10 @@ export default function ProjectSelectionPage() {
     snapshot: bgElement,
     refraction: 0.064,
     bevelWidth: 0.042,
-    bevelDepth: 2.00,
-    intensity: 0.00,
-    frost: 1.00,
-    specular: true
+    bevelDepth: 2.0,
+    intensity: 0.0,
+    frost: 1.0,
+    specular: true,
   }
 
   // Live Texture Bridge
@@ -68,7 +68,9 @@ export default function ProjectSelectionPage() {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       if (!session) {
         router.push('/login')
         return
@@ -140,16 +142,19 @@ export default function ProjectSelectionPage() {
       <div className="relative z-10 w-full min-h-screen p-4 md:p-8 flex items-center justify-center">
         {/* Main Content Container */}
         <div className="w-full max-w-6xl flex flex-col md:flex-row gap-6 md:h-[80vh]">
-
           {/* LEFT: Project List (Glass Panel) */}
           <div className="w-full md:w-1/3 flex flex-col bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
             <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
               <div className="flex items-center gap-3">
-                <h1 className="text-xl font-bold tracking-tight text-white/90">
-                  Projects
-                </h1>
+                <h1 className="text-xl font-bold tracking-tight text-white/90">Projects</h1>
               </div>
-              <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout" className="hover:bg-white/10 text-white/70">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLogout}
+                title="Logout"
+                className="hover:bg-white/10 text-white/70"
+              >
                 <LogOut size={18} />
               </Button>
             </div>
@@ -166,7 +171,9 @@ export default function ProjectSelectionPage() {
                       <FolderOpen size={20} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold truncate text-white/90 group-hover:text-white transition-colors">{project.name}</h3>
+                      <h3 className="font-semibold truncate text-white/90 group-hover:text-white transition-colors">
+                        {project.name}
+                      </h3>
                       <p className="text-xs text-white/50 truncate">
                         {new Date(project.created_at).toLocaleDateString()}
                       </p>
@@ -175,7 +182,7 @@ export default function ProjectSelectionPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={(e) => handleDeleteProject(e, project.id)}
+                    onClick={e => handleDeleteProject(e, project.id)}
                     className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-white/40 hover:text-red-400 hover:bg-red-400/10"
                   >
                     <Trash2 size={14} />
@@ -212,7 +219,11 @@ export default function ProjectSelectionPage() {
                 <div className="max-w-md w-full space-y-8">
                   <div className="space-y-4 flex flex-col items-center relative group">
                     <div className="relative">
-                      <img src="/logo.svg" alt="Logo" className="h-[240px] w-[240px] brightness-0 invert mb-4 opacity-80 relative z-10" />
+                      <img
+                        src="/logo.svg"
+                        alt="Logo"
+                        className="h-[240px] w-[240px] brightness-0 invert mb-4 opacity-80 relative z-10"
+                      />
                     </div>
                     <h2 className="text-4xl md:text-5xl font-black tracking-tighter text-white drop-shadow-lg font-syne">
                       Create Potential
@@ -237,7 +248,7 @@ export default function ProjectSelectionPage() {
                           type="text"
                           placeholder="Name your world..."
                           value={newProjectName}
-                          onChange={(e) => setNewProjectName(e.target.value)}
+                          onChange={e => setNewProjectName(e.target.value)}
                           className="w-full px-6 py-4 bg-black border border-white/20 rounded-xl focus:outline-none focus:border-white/50 focus:bg-black text-xl placeholder:text-white/30 transition-all duration-300 text-white text-center relative z-10"
                         />
                       </div>
@@ -273,7 +284,6 @@ export default function ProjectSelectionPage() {
               </div>
             </Liquid>
           </div>
-
         </div>
       </div>
       {ConfirmDialogComponent}

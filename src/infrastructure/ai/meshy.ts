@@ -35,7 +35,7 @@ export class MeshyClient {
 
     const { result: taskId } = await response.json()
     this.currentTaskId = taskId
-    log('info', `Image-to-3D task created`, { taskId })
+    log('info', 'Image-to-3D task created', { taskId })
 
     // Step 2: Poll for completion
     return this.pollTask(taskId)
@@ -94,7 +94,7 @@ export class MeshyClient {
       text_style_prompt: prompt,
       ai_model: aiModel,
       enable_original_uv: false,
-      enable_pbr: true
+      enable_pbr: true,
     }
 
     // Add style reference image if provided (from project settings)
@@ -110,7 +110,7 @@ export class MeshyClient {
       styleImageUrl: styleImageUrl || 'none',
       modelUrlLength: modelUrlOrBase64.length,
       isDataUri: modelUrlOrBase64.startsWith('data:'),
-      isHttpUrl: modelUrlOrBase64.startsWith('http')
+      isHttpUrl: modelUrlOrBase64.startsWith('http'),
     })
 
     const response = await fetch(textureBaseUrl, {
@@ -129,13 +129,13 @@ export class MeshyClient {
       log('error', 'Retexture API error', {
         statusCode: response.status,
         statusText: response.statusText,
-        errorResponse: errorText
+        errorResponse: errorText,
       })
 
       try {
         const json = JSON.parse(errorText)
         message = json.message || message
-      } catch { }
+      } catch {}
       throw new Error(`Meshy Retexture Start Failed: ${message}`)
     }
 

@@ -1,6 +1,6 @@
 /**
  * Agent Prompts Index
- * 
+ *
  * All agent-related prompts.
  */
 

@@ -1,7 +1,11 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import { put } from '@vercel/blob'
-import { GENERATION_PROMPTS, MASK_CONFIG, getGenerationCreativityPrompt } from '@/lib/server/prompts'
+import {
+  GENERATION_PROMPTS,
+  MASK_CONFIG,
+  getGenerationCreativityPrompt,
+} from '@/lib/server/prompts'
 
 export const generateTileTask = task({
   id: 'generate-tile',
@@ -20,12 +24,22 @@ export const generateTileTask = task({
     styleReferenceUrls?: string[]
     contextImageBase64?: string
   }) => {
-    const { projectId, x, y, prompt, aiProvider, aiConfig, isFirstTile = true, styleReferenceUrls, contextImageBase64 } = payload
+    const {
+      projectId,
+      x,
+      y,
+      prompt,
+      aiProvider,
+      aiConfig,
+      isFirstTile = true,
+      styleReferenceUrls,
+      contextImageBase64,
+    } = payload
 
     logger.info(`Generating tile at ${x},${y} for project ${projectId}`, {
       isFirstTile,
       hasContext: !!contextImageBase64,
-      hasStyleRefs: !!styleReferenceUrls?.length
+      hasStyleRefs: !!styleReferenceUrls?.length,
     })
 
     // Initialize progress metadata
@@ -43,19 +57,43 @@ export const generateTileTask = task({
     switch (aiProvider) {
       case 'gemini':
       case 'nano-banana': {
-        generatedImageBase64 = await generateWithGemini(prompt, aiConfig as any, isFirstTile, styleReferenceUrls, contextImageBase64)
+        generatedImageBase64 = await generateWithGemini(
+          prompt,
+          aiConfig as any,
+          isFirstTile,
+          styleReferenceUrls,
+          contextImageBase64
+        )
         break
       }
       case 'openai': {
-        generatedImageBase64 = await generateWithOpenAI(prompt, aiConfig as any, isFirstTile, styleReferenceUrls, contextImageBase64)
+        generatedImageBase64 = await generateWithOpenAI(
+          prompt,
+          aiConfig as any,
+          isFirstTile,
+          styleReferenceUrls,
+          contextImageBase64
+        )
         break
       }
       case 'stability': {
-        generatedImageBase64 = await generateWithStability(prompt, aiConfig as any, isFirstTile, styleReferenceUrls, contextImageBase64)
+        generatedImageBase64 = await generateWithStability(
+          prompt,
+          aiConfig as any,
+          isFirstTile,
+          styleReferenceUrls,
+          contextImageBase64
+        )
         break
       }
       case 'midjourney': {
-        generatedImageBase64 = await generateWithLegNext(prompt, aiConfig as any, isFirstTile, styleReferenceUrls, contextImageBase64)
+        generatedImageBase64 = await generateWithLegNext(
+          prompt,
+          aiConfig as any,
+          isFirstTile,
+          styleReferenceUrls,
+          contextImageBase64
+        )
         break
       }
       default:
@@ -126,7 +164,7 @@ export const generateTileTask = task({
       newBase64: base64Data, // Still include for acceptGeneration to save locally
       originalUrl,
       isFirstTile: !originalUrl,
-      pendingReview: true
+      pendingReview: true,
     }
   },
 })
@@ -264,7 +302,8 @@ async function cropCenterFromBase64(
     const sharp = await import('sharp')
     const inputBuffer = Buffer.from(base64Data, 'base64')
 
-    const croppedBuffer = await sharp.default(inputBuffer)
+    const croppedBuffer = await sharp
+      .default(inputBuffer)
       .extract({ left: x, top: y, width, height })
       .png()
       .toBuffer()
@@ -344,7 +383,10 @@ async function generateWithOpenAI(
     const maskBlob = new Blob([maskBuffer], { type: 'image/png' })
     formData.append('mask', maskBlob, 'mask.png')
 
-    formData.append('prompt', `Fill seamlessly: ${prompt}. Match surrounding style, continuous edges, isometric perspective.`)
+    formData.append(
+      'prompt',
+      `Fill seamlessly: ${prompt}. Match surrounding style, continuous edges, isometric perspective.`
+    )
     formData.append('n', '1')
     formData.append('size', '1024x1024')
     formData.append('response_format', 'b64_json')
@@ -385,32 +427,41 @@ async function createEditMask(
     const sharp = await import('sharp')
 
     // Create white image
-    const whiteBuffer = await sharp.default({
-      create: {
-        width: size,
-        height: size,
-        channels: 4,
-        background: { r: 255, g: 255, b: 255, alpha: 1 }
-      }
-    }).png().toBuffer()
+    const whiteBuffer = await sharp
+      .default({
+        create: {
+          width: size,
+          height: size,
+          channels: 4,
+          background: { r: 255, g: 255, b: 255, alpha: 1 },
+        },
+      })
+      .png()
+      .toBuffer()
 
     // Create transparent center overlay
-    const transparentCenter = await sharp.default({
-      create: {
-        width,
-        height,
-        channels: 4,
-        background: { r: 0, g: 0, b: 0, alpha: 0 }
-      }
-    }).png().toBuffer()
+    const transparentCenter = await sharp
+      .default({
+        create: {
+          width,
+          height,
+          channels: 4,
+          background: { r: 0, g: 0, b: 0, alpha: 0 },
+        },
+      })
+      .png()
+      .toBuffer()
 
     // Composite: white base with transparent center
-    const maskBuffer = await sharp.default(whiteBuffer)
-      .composite([{
-        input: transparentCenter,
-        left: x,
-        top: y,
-      }])
+    const maskBuffer = await sharp
+      .default(whiteBuffer)
+      .composite([
+        {
+          input: transparentCenter,
+          left: x,
+          top: y,
+        },
+      ])
       .png()
       .toBuffer()
 
@@ -451,15 +502,18 @@ async function generateWithStability(
       steps: 30,
     }
 
-    const response = await fetch('https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.apiKey}`,
-        Accept: 'application/json',
-      },
-      body: JSON.stringify(payload),
-    })
+    const response = await fetch(
+      'https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${config.apiKey}`,
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
+      }
+    )
 
     if (!response.ok) {
       const errorText = await response.text()
@@ -492,21 +546,27 @@ async function generateWithStability(
     const maskBlob = new Blob([maskBuffer], { type: 'image/png' })
     formData.append('mask_image', maskBlob, 'mask.png')
 
-    formData.append('text_prompts[0][text]', `Fill seamlessly: ${prompt}. Match surrounding style and edges perfectly, isometric perspective.`)
+    formData.append(
+      'text_prompts[0][text]',
+      `Fill seamlessly: ${prompt}. Match surrounding style and edges perfectly, isometric perspective.`
+    )
     formData.append('text_prompts[0][weight]', '1')
     formData.append('cfg_scale', '7')
     formData.append('samples', '1')
     formData.append('steps', '30')
     formData.append('mask_source', 'MASK_IMAGE_BLACK')
 
-    const response = await fetch('https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/image-to-image/masking', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${config.apiKey}`,
-        Accept: 'application/json',
-      },
-      body: formData,
-    })
+    const response = await fetch(
+      'https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/image-to-image/masking',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${config.apiKey}`,
+          Accept: 'application/json',
+        },
+        body: formData,
+      }
+    )
 
     if (!response.ok) {
       const errorText = await response.text()
@@ -536,32 +596,41 @@ async function createInpaintMask(
     const sharp = await import('sharp')
 
     // Create white image (keep area)
-    const whiteBuffer = await sharp.default({
-      create: {
-        width: size,
-        height: size,
-        channels: 3,
-        background: { r: 255, g: 255, b: 255 }
-      }
-    }).png().toBuffer()
+    const whiteBuffer = await sharp
+      .default({
+        create: {
+          width: size,
+          height: size,
+          channels: 3,
+          background: { r: 255, g: 255, b: 255 },
+        },
+      })
+      .png()
+      .toBuffer()
 
     // Create black center (inpaint area)
-    const blackCenter = await sharp.default({
-      create: {
-        width,
-        height,
-        channels: 3,
-        background: { r: 0, g: 0, b: 0 }
-      }
-    }).png().toBuffer()
+    const blackCenter = await sharp
+      .default({
+        create: {
+          width,
+          height,
+          channels: 3,
+          background: { r: 0, g: 0, b: 0 },
+        },
+      })
+      .png()
+      .toBuffer()
 
     // Composite: white base with black center
-    const maskBuffer = await sharp.default(whiteBuffer)
-      .composite([{
-        input: blackCenter,
-        left: x,
-        top: y,
-      }])
+    const maskBuffer = await sharp
+      .default(whiteBuffer)
+      .composite([
+        {
+          input: blackCenter,
+          left: x,
+          top: y,
+        },
+      ])
       .png()
       .toBuffer()
 
@@ -571,7 +640,6 @@ async function createInpaintMask(
     throw new Error('Failed to create inpaint mask')
   }
 }
-
 
 // Server-side style analysis using sharp (replaces client-side Canvas version)
 interface StyleInfo {
@@ -616,7 +684,8 @@ function getCreativityPrompt(creativity: number): string {
   const level = Math.round(creativity * 100)
   let hint: string
   if (creativity <= 0.2) {
-    hint = 'VERY CONSERVATIVE - propagate existing patterns from edges exactly. Do not add new elements.'
+    hint =
+      'VERY CONSERVATIVE - propagate existing patterns from edges exactly. Do not add new elements.'
   } else if (creativity <= 0.4) {
     hint = 'CONSERVATIVE - closely match surrounding style and patterns. Minimal interpretation.'
   } else if (creativity <= 0.6) {
@@ -676,7 +745,7 @@ async function pollLegNextTask(
 
       if (status === 'completed') {
         logger.info('LegNext task completed successfully', {
-          imageUrl: data.output?.image_url
+          imageUrl: data.output?.image_url,
         })
         await metadata.set('progress', progressOffset + 65)
         return data
@@ -734,14 +803,17 @@ async function generateWithLegNext(
     await metadata.set('stage', 'creating_blank_canvas')
 
     const sharp = await import('sharp')
-    const blankCanvas = await sharp.default({
-      create: {
-        width: 1024,
-        height: 1024,
-        channels: 4,
-        background: { r: 240, g: 240, b: 240, alpha: 1 }
-      }
-    }).png().toBuffer()
+    const blankCanvas = await sharp
+      .default({
+        create: {
+          width: 1024,
+          height: 1024,
+          channels: 4,
+          background: { r: 240, g: 240, b: 240, alpha: 1 },
+        },
+      })
+      .png()
+      .toBuffer()
 
     const blankBase64 = blankCanvas.toString('base64')
     const tempFilename = `generate_temp_${uuidv4()}.png`
@@ -803,8 +875,8 @@ async function generateWithLegNext(
           width: maskConfig.width,
           height: maskConfig.height,
           points: maskConfig.points,
-        }
-      ]
+        },
+      ],
     },
     remixPrompt,
   }
@@ -822,7 +894,9 @@ async function generateWithLegNext(
 
   if (!uploadPaintResponse.ok) {
     const errorText = await uploadPaintResponse.text()
-    throw new Error(`LegNext upload_paint submission failed: ${uploadPaintResponse.status} - ${errorText}`)
+    throw new Error(
+      `LegNext upload_paint submission failed: ${uploadPaintResponse.status} - ${errorText}`
+    )
   }
 
   const uploadPaintData = await uploadPaintResponse.json()
@@ -850,7 +924,7 @@ async function generateWithLegNext(
   const upscalePayload = {
     jobId: jobId,
     imageNo: 0,
-    type: 0
+    type: 0,
   }
 
   logger.info('Submitting upscale with payload', { upscalePayload })

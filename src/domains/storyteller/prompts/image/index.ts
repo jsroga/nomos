@@ -1,6 +1,6 @@
 /**
  * Storyteller Image Generation Prompts
- * 
+ *
  * Central location for all image generation prompts used in the storyteller module.
  */
 
@@ -10,7 +10,7 @@
  * Provider: Midjourney via Comet API
  */
 export const buildPortraitPrompt = (characterDescription: string, srefParam: string = '') => {
-    return `portrait of ${characterDescription}, professional headshot, high quality, detailed --ar 1:1 ${srefParam}`.trim()
+  return `portrait of ${characterDescription}, professional headshot, high quality, detailed --ar 1:1 ${srefParam}`.trim()
 }
 
 /**
@@ -19,7 +19,7 @@ export const buildPortraitPrompt = (characterDescription: string, srefParam: str
  * Provider: Midjourney via LegNext API
  */
 export const buildPosterPrompt = (episodeDescription: string, srefParam: string = '') => {
-    return `movie poster for ${episodeDescription}, cinematic lighting, high resolution, detailed, textless --ar 2:3 ${srefParam}`.trim()
+  return `movie poster for ${episodeDescription}, cinematic lighting, high resolution, detailed, textless --ar 2:3 ${srefParam}`.trim()
 }
 
 /**
@@ -28,23 +28,27 @@ export const buildPosterPrompt = (episodeDescription: string, srefParam: string 
  * Provider: Gemini via Nano Banana
  */
 export const enhanceEpisodePosterPrompt = (basePrompt: string) => {
-    return `${basePrompt}. Movie poster style, cinematic composition, dramatic lighting, high resolution, highly detailed, vertical aspect ratio.`
+  return `${basePrompt}. Movie poster style, cinematic composition, dramatic lighting, high resolution, highly detailed, vertical aspect ratio.`
 }
 
 /**
  * Combined Storyboard Prompt Template
  * Used by: generate-combined-storyboard.ts trigger
  * Provider: Gemini via Nano Banana
- * 
+ *
  * Creates a "Story Book Wireframe" / "Visual Script" layout image.
  */
-export const buildCombinedStoryboardPrompt = (beats: { logline: string; visualHook?: string; imagePrompt?: string }[]) => {
-    const scenesDescription = beats.map((b, i) => {
-        const desc = b.imagePrompt || b.visualHook || b.logline
-        return `[Panel ${i + 1}]: ${desc}`
-    }).join('\n')
+export const buildCombinedStoryboardPrompt = (
+  beats: { logline: string; visualHook?: string; imagePrompt?: string }[]
+) => {
+  const scenesDescription = beats
+    .map((b, i) => {
+      const desc = b.imagePrompt || b.visualHook || b.logline
+      return `[Panel ${i + 1}]: ${desc}`
+    })
+    .join('\n')
 
-    return `
+  return `
 Role: You are a technical artist creating a single "Story Book Wireframe" or "Visual Script" layout.
 Task: Create ONE large image that acts as a wireframe summary of the entire episode's visual flow.
 

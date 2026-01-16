@@ -58,22 +58,25 @@ export async function assembleContextImage(
       const img = new Image()
       img.crossOrigin = 'Anonymous'
       img.onload = () => {
-        console.log('[contextAssembler] Image loaded:', { 
-          src: src.substring(0, 50) + '...', 
-          width: img.width, 
+        console.log('[contextAssembler] Image loaded:', {
+          src: src.substring(0, 50) + '...',
+          width: img.width,
           height: img.height,
-          complete: img.complete
+          complete: img.complete,
         })
         resolve(img)
       }
-      img.onerror = (e) => {
-        console.error('[contextAssembler] Failed to load image:', { src: src.substring(0, 50) + '...', error: e })
+      img.onerror = e => {
+        console.error('[contextAssembler] Failed to load image:', {
+          src: src.substring(0, 50) + '...',
+          error: e,
+        })
         reject(e)
       }
       img.src = src
     })
   }
-  
+
   const { up, down, left, right, topLeft, topRight, bottomLeft, bottomRight } = context.neighbors
 
   // Log the neighbors we received with URL details
@@ -84,7 +87,7 @@ export async function assembleContextImage(
     if (url.startsWith('http')) return `remote: ${url.substring(0, 50)}...`
     return `unknown: ${url.substring(0, 30)}...`
   }
-  
+
   console.log('[contextAssembler] Neighbors received:', {
     up: getUrlInfo(up?.imageUrl),
     down: getUrlInfo(down?.imageUrl),
@@ -99,7 +102,10 @@ export async function assembleContextImage(
   // Helper to calculate source crop based on actual image size
   // Images can be different sizes (512, 1024, 2048 etc due to upscaling)
   // We want to take the correct PROPORTION of the edge
-  const getScaledCornerCrop = (img: HTMLImageElement, corner: 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight') => {
+  const getScaledCornerCrop = (
+    img: HTMLImageElement,
+    corner: 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight'
+  ) => {
     const imgW = img.width
     const imgH = img.height
     const ratio = CONTEXT_SIZE / TILE_SIZE // 0.5
@@ -126,8 +132,14 @@ export async function assembleContextImage(
       const src = getScaledCornerCrop(img, 'bottomRight')
       ctx.drawImage(
         img,
-        src.x, src.y, src.w, src.h, // src (bottom-right corner of neighbor)
-        0, 0, CONTEXT_SIZE, CONTEXT_SIZE // dest (top-left corner of canvas)
+        src.x,
+        src.y,
+        src.w,
+        src.h, // src (bottom-right corner of neighbor)
+        0,
+        0,
+        CONTEXT_SIZE,
+        CONTEXT_SIZE // dest (top-left corner of canvas)
       )
     } catch (e) {
       console.error('Failed to load topLeft neighbor', e)
@@ -141,8 +153,14 @@ export async function assembleContextImage(
       const src = getScaledCornerCrop(img, 'bottomLeft')
       ctx.drawImage(
         img,
-        src.x, src.y, src.w, src.h, // src (bottom-left corner of neighbor)
-        TARGET_X + TILE_SIZE, 0, CONTEXT_SIZE, CONTEXT_SIZE // dest (top-right corner of canvas)
+        src.x,
+        src.y,
+        src.w,
+        src.h, // src (bottom-left corner of neighbor)
+        TARGET_X + TILE_SIZE,
+        0,
+        CONTEXT_SIZE,
+        CONTEXT_SIZE // dest (top-right corner of canvas)
       )
     } catch (e) {
       console.error('Failed to load topRight neighbor', e)
@@ -156,8 +174,14 @@ export async function assembleContextImage(
       const src = getScaledCornerCrop(img, 'topRight')
       ctx.drawImage(
         img,
-        src.x, src.y, src.w, src.h, // src (top-right corner of neighbor)
-        0, TARGET_Y + TILE_SIZE, CONTEXT_SIZE, CONTEXT_SIZE // dest (bottom-left corner of canvas)
+        src.x,
+        src.y,
+        src.w,
+        src.h, // src (top-right corner of neighbor)
+        0,
+        TARGET_Y + TILE_SIZE,
+        CONTEXT_SIZE,
+        CONTEXT_SIZE // dest (bottom-left corner of canvas)
       )
     } catch (e) {
       console.error('Failed to load bottomLeft neighbor', e)
@@ -171,8 +195,14 @@ export async function assembleContextImage(
       const src = getScaledCornerCrop(img, 'topLeft')
       ctx.drawImage(
         img,
-        src.x, src.y, src.w, src.h, // src (top-left corner of neighbor)
-        TARGET_X + TILE_SIZE, TARGET_Y + TILE_SIZE, CONTEXT_SIZE, CONTEXT_SIZE // dest (bottom-right corner of canvas)
+        src.x,
+        src.y,
+        src.w,
+        src.h, // src (top-left corner of neighbor)
+        TARGET_X + TILE_SIZE,
+        TARGET_Y + TILE_SIZE,
+        CONTEXT_SIZE,
+        CONTEXT_SIZE // dest (bottom-right corner of canvas)
       )
     } catch (e) {
       console.error('Failed to load bottomRight neighbor', e)
@@ -211,8 +241,14 @@ export async function assembleContextImage(
       // Dest: top area above target (256, 0, 512, 256)
       ctx.drawImage(
         img,
-        src.x, src.y, src.w, src.h, // src - scaled to actual image size
-        TARGET_X, 0, TILE_SIZE, CONTEXT_SIZE // dest - always 512x256
+        src.x,
+        src.y,
+        src.w,
+        src.h, // src - scaled to actual image size
+        TARGET_X,
+        0,
+        TILE_SIZE,
+        CONTEXT_SIZE // dest - always 512x256
       )
     } catch (e) {
       console.error('Failed to load up neighbor', e)
@@ -227,8 +263,14 @@ export async function assembleContextImage(
       // Dest: bottom area below target (256, 768, 512, 256)
       ctx.drawImage(
         img,
-        src.x, src.y, src.w, src.h, // src
-        TARGET_X, TARGET_Y + TILE_SIZE, TILE_SIZE, CONTEXT_SIZE // dest
+        src.x,
+        src.y,
+        src.w,
+        src.h, // src
+        TARGET_X,
+        TARGET_Y + TILE_SIZE,
+        TILE_SIZE,
+        CONTEXT_SIZE // dest
       )
     } catch (e) {
       console.error('Failed to load down neighbor', e)
@@ -243,8 +285,14 @@ export async function assembleContextImage(
       // Dest: left area left of target (0, 256, 256, 512)
       ctx.drawImage(
         img,
-        src.x, src.y, src.w, src.h, // src
-        0, TARGET_Y, CONTEXT_SIZE, TILE_SIZE // dest
+        src.x,
+        src.y,
+        src.w,
+        src.h, // src
+        0,
+        TARGET_Y,
+        CONTEXT_SIZE,
+        TILE_SIZE // dest
       )
     } catch (e) {
       console.error('Failed to load left neighbor', e)
@@ -259,8 +307,14 @@ export async function assembleContextImage(
       // Dest: right area right of target (768, 256, 256, 512)
       ctx.drawImage(
         img,
-        src.x, src.y, src.w, src.h, // src
-        TARGET_X + TILE_SIZE, TARGET_Y, CONTEXT_SIZE, TILE_SIZE // dest
+        src.x,
+        src.y,
+        src.w,
+        src.h, // src
+        TARGET_X + TILE_SIZE,
+        TARGET_Y,
+        CONTEXT_SIZE,
+        TILE_SIZE // dest
       )
     } catch (e) {
       console.error('Failed to load right neighbor', e)
@@ -276,7 +330,7 @@ export async function assembleContextImage(
     const pixel = ctx.getImageData(x, y, 1, 1).data
     return { label, x, y, rgba: Array.from(pixel) }
   }
-  
+
   console.log('[contextAssembler] Canvas verification:', {
     size: { width: canvas.width, height: canvas.height },
     pixels: [
@@ -284,9 +338,9 @@ export async function assembleContextImage(
       verifyPixel(512, 0, 'top-center'),
       verifyPixel(512, 512, 'center'),
       verifyPixel(1023, 1023, 'bottom-right'),
-    ]
+    ],
   })
-  
+
   // Check if canvas has any content (not all zeros)
   const sampleData = ctx.getImageData(0, 0, 100, 100).data
   const hasContent = sampleData.some(v => v > 0)
@@ -310,7 +364,9 @@ export async function assembleContextImage(
   const imageBlob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(b => {
       if (!b) {
-        console.error('[contextAssembler] Failed to create image blob - canvas.toBlob returned null')
+        console.error(
+          '[contextAssembler] Failed to create image blob - canvas.toBlob returned null'
+        )
         reject(new Error('Failed to create image blob'))
         return
       }
@@ -318,7 +374,7 @@ export async function assembleContextImage(
       resolve(b)
     }, 'image/png')
   })
-  
+
   const maskBlob = await new Promise<Blob>((resolve, reject) => {
     maskCanvas.toBlob(b => {
       if (!b) {

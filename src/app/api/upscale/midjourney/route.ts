@@ -23,7 +23,9 @@ async function pollForCompletion(
 
       // Log status every 10 attempts to avoid spam, or on error
       if (attempts % 5 === 0) {
-        console.log(`Polling task ${taskId}: Status=${fetchData?.result?.status}, Progress=${fetchData?.result?.progress}`)
+        console.log(
+          `Polling task ${taskId}: Status=${fetchData?.result?.status}, Progress=${fetchData?.result?.progress}`
+        )
       }
 
       // Handle both wrapped { code: 1, result: {...} } and direct { status, ... } response formats
@@ -53,7 +55,10 @@ export async function POST(req: Request) {
     const { imageUrl, imageBase64, prompt, apiKey } = body
 
     if ((!imageUrl && !imageBase64) || !apiKey) {
-      return NextResponse.json({ error: 'Missing required parameters (imageUrl/imageBase64, apiKey)' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Missing required parameters (imageUrl/imageBase64, apiKey)' },
+        { status: 400 }
+      )
     }
 
     console.log('Starting Midjourney upscale. Has Base64:', !!imageBase64, 'Has URL:', !!imageUrl)
@@ -62,7 +67,8 @@ export async function POST(req: Request) {
     // If we have base64, we pass it in "base64" field.
     // If we have imageUrl, we pass it in "prompt" (standard Midjourney behavior).
 
-    const promptText = `${imageUrl ? imageUrl + ' ' : ''}${prompt || ''} --v 6.1 --q 2 --s 250`.trim()
+    const promptText =
+      `${imageUrl ? imageUrl + ' ' : ''}${prompt || ''} --v 6.1 --q 2 --s 250`.trim()
 
     // Construct payload
     const payload: any = {

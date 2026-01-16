@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams, useRouter, usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 
 export function useProjectFromUrl() {
@@ -19,10 +19,21 @@ export function useProjectFromUrl() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Track if we've already loaded this project to prevent re-fetches
+  const loadedProjectIdRef = useRef<string | null>(null)
+
   useEffect(() => {
-    if (projectId && currentProject?.id !== projectId) {
+    // Only load if:
+    // 1. We have a projectId in URL
+    // 2. currentProject doesn't match (or doesn't exist)
+    // 3. We haven't already loaded this project in this session
+    const shouldLoad =
+      projectId && currentProject?.id !== projectId && loadedProjectIdRef.current !== projectId
+
+    if (shouldLoad) {
       setIsLoading(true)
       setError(null)
+      loadedProjectIdRef.current = projectId // Mark as loading
 
       loadProject(projectId)
         .then(() => {
@@ -31,6 +42,7 @@ export function useProjectFromUrl() {
           if (!loadedProject) {
             // Project doesn't exist - redirect to base path
             setError('Project not found')
+            loadedProjectIdRef.current = null // Reset on error
             const basePath = '/' + (pathname?.split('/')[1] || '')
             router.replace(basePath)
           }
@@ -38,6 +50,7 @@ export function useProjectFromUrl() {
         .catch(err => {
           console.error('Failed to load project:', err)
           setError('Failed to load project')
+          loadedProjectIdRef.current = null // Reset on error
           // Redirect to base path
           const basePath = '/' + (pathname?.split('/')[1] || '')
           router.replace(basePath)
@@ -46,6 +59,7 @@ export function useProjectFromUrl() {
     } else if (!projectId && currentProject) {
       // Clear project if no projectId in URL
       useWorldStore.setState({ currentProject: null, tiles: {} })
+      loadedProjectIdRef.current = null
     }
   }, [projectId, currentProject?.id, loadProject, router, pathname])
 

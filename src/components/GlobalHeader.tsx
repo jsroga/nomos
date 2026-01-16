@@ -19,8 +19,11 @@ export function GlobalHeader() {
       <div className="h-14 bg-card border-b border-border flex items-center px-4 gap-4 shrink-0 relative z-[100]">
         <div className="flex items-center gap-2">
           {/* <img src="/logo.svg" alt="Logo" className="h-6 w-auto brightness-0 invert opacity-50" /> */}
-          <span className="text-xl font-black tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent hover:to-primary/80 transition-all cursor-default" style={{ fontFamily: 'var(--font-syne)' }}>
-            Cutafonina
+          <span
+            className="text-xl font-black tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent hover:to-primary/80 transition-all cursor-default"
+            style={{ fontFamily: 'var(--font-syne)' }}
+          >
+            O KURTVITZA
           </span>
         </div>
 

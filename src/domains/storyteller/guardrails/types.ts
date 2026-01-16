@@ -1,6 +1,6 @@
 /**
  * Guardrails Type Definitions
- * 
+ *
  * Types for input/output validation, agent-specific rules,
  * and consistency checking in the Writer's Room.
  */
@@ -87,22 +87,22 @@ export interface ConsistencyCheckResult {
 export interface AgentGuardrailConfig {
   /** Maximum output tokens allowed */
   maxOutputTokens: number
-  
+
   /** Fields that must be present in output */
   requiredFields: string[]
-  
+
   /** Actions this agent is not allowed to perform */
   forbiddenActions: AgentAction['type'][]
-  
+
   /** Consistency checks to run for this agent */
   consistencyChecks: ConsistencyCheckType[]
-  
+
   /** Minimum confidence required for actions */
   minConfidenceForActions: number
-  
+
   /** Phases where this agent can operate */
   allowedPhases: Phase[]
-  
+
   /** Actions that require high confidence (0.8+) */
   highConfidenceActions: AgentAction['type'][]
 }
@@ -219,12 +219,3 @@ export interface GuardrailHooks {
   onIssue?: (issue: GuardrailIssue, context: GuardrailContext) => void
   onBlock?: (issue: GuardrailIssue, context: GuardrailContext) => void
 }
-
-
-
-
-
-
-
-
-

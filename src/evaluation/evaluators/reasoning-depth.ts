@@ -1,6 +1,6 @@
 /**
  * Reasoning Depth Evaluator
- * 
+ *
  * Evaluates the quality and depth of agent reasoning.
  * Uses LLM-as-judge to assess thought process quality.
  */
@@ -14,7 +14,7 @@ import { CustomEvaluator, EvaluatorInput, EvaluatorResult } from '../types'
 
 /**
  * Fast heuristic-based reasoning depth check
- * 
+ *
  * Checks for structural indicators of reasoning:
  * - Explicit reasoning markers
  * - Multiple considerations
@@ -23,12 +23,11 @@ import { CustomEvaluator, EvaluatorInput, EvaluatorResult } from '../types'
  */
 export const reasoningDepthHeuristic: CustomEvaluator = {
   name: 'reasoning-depth-heuristic',
-  
+
   evaluate: async ({ output }: EvaluatorInput): Promise<EvaluatorResult> => {
-    const response = typeof output === 'string' 
-      ? output 
-      : (output as any).response || JSON.stringify(output)
-    
+    const response =
+      typeof output === 'string' ? output : (output as any).response || JSON.stringify(output)
+
     if (!response || response.length < 50) {
       return {
         score: 0.5,
@@ -36,22 +35,51 @@ export const reasoningDepthHeuristic: CustomEvaluator = {
         metadata: { skipped: true },
       }
     }
-    
+
     let score = 0
     const indicators: string[] = []
-    
+
     // Check for explicit reasoning markers
     const REASONING_MARKERS = [
-      { pattern: /\b(because|since|therefore|thus|hence|so)\b/gi, name: 'causal connectors', weight: 0.1 },
-      { pattern: /\b(consider(ing)?|think(ing)?|reason(ing)?)\b/gi, name: 'deliberation verbs', weight: 0.1 },
-      { pattern: /\b(first(ly)?|second(ly)?|third(ly)?|finally|additionally|moreover|furthermore)\b/gi, name: 'enumeration', weight: 0.15 },
-      { pattern: /\b(however|but|although|while|whereas|on the other hand)\b/gi, name: 'contrast markers', weight: 0.15 },
-      { pattern: /\b(option|alternative|choice|approach|possibility)\b/gi, name: 'options considered', weight: 0.1 },
-      { pattern: /\b(trade-?off|balance|weigh(ing)?|pros? and cons?)\b/gi, name: 'trade-off analysis', weight: 0.2 },
+      {
+        pattern: /\b(because|since|therefore|thus|hence|so)\b/gi,
+        name: 'causal connectors',
+        weight: 0.1,
+      },
+      {
+        pattern: /\b(consider(ing)?|think(ing)?|reason(ing)?)\b/gi,
+        name: 'deliberation verbs',
+        weight: 0.1,
+      },
+      {
+        pattern:
+          /\b(first(ly)?|second(ly)?|third(ly)?|finally|additionally|moreover|furthermore)\b/gi,
+        name: 'enumeration',
+        weight: 0.15,
+      },
+      {
+        pattern: /\b(however|but|although|while|whereas|on the other hand)\b/gi,
+        name: 'contrast markers',
+        weight: 0.15,
+      },
+      {
+        pattern: /\b(option|alternative|choice|approach|possibility)\b/gi,
+        name: 'options considered',
+        weight: 0.1,
+      },
+      {
+        pattern: /\b(trade-?off|balance|weigh(ing)?|pros? and cons?)\b/gi,
+        name: 'trade-off analysis',
+        weight: 0.2,
+      },
       { pattern: /\b(decide|chose|select|opt|prefer)\b/gi, name: 'decision language', weight: 0.1 },
-      { pattern: /\b(best|better|optimal|ideal|recommend)\b/gi, name: 'recommendation', weight: 0.1 },
+      {
+        pattern: /\b(best|better|optimal|ideal|recommend)\b/gi,
+        name: 'recommendation',
+        weight: 0.1,
+      },
     ]
-    
+
     for (const { pattern, name, weight } of REASONING_MARKERS) {
       const matches = response.match(pattern)
       if (matches && matches.length > 0) {
@@ -59,41 +87,44 @@ export const reasoningDepthHeuristic: CustomEvaluator = {
         indicators.push(`${name} (${matches.length}x)`)
       }
     }
-    
+
     // Check for structured reasoning (numbered points, bullet points)
     const hasStructuredList = /(?:^|\n)\s*(?:\d+\.|[-•*])\s+\S/m.test(response)
     if (hasStructuredList) {
       score += 0.15
       indicators.push('structured list')
     }
-    
+
     // Check for question acknowledgment
-    const acknowledgesQuestion = /\b(you (asked|want|mentioned)|your (question|request)|regarding)\b/i.test(response)
+    const acknowledgesQuestion =
+      /\b(you (asked|want|mentioned)|your (question|request)|regarding)\b/i.test(response)
     if (acknowledgesQuestion) {
       score += 0.05
       indicators.push('acknowledges query')
     }
-    
+
     // Check for explicit uncertainty/confidence
-    const showsUncertainty = /\b(might|may|could|possibly|perhaps|uncertain|not sure|depending on)\b/i.test(response)
+    const showsUncertainty =
+      /\b(might|may|could|possibly|perhaps|uncertain|not sure|depending on)\b/i.test(response)
     if (showsUncertainty) {
       score += 0.1
       indicators.push('appropriate uncertainty')
     }
-    
+
     // Penalize very short responses with no reasoning
     if (response.length < 200 && indicators.length < 2) {
       score *= 0.5
       indicators.push('short with minimal reasoning')
     }
-    
+
     // Cap score at 1.0
     score = Math.min(1, score)
-    
-    const reasoning = indicators.length > 0
-      ? `Reasoning indicators: ${indicators.join(', ')}`
-      : 'No clear reasoning indicators found'
-    
+
+    const reasoning =
+      indicators.length > 0
+        ? `Reasoning indicators: ${indicators.join(', ')}`
+        : 'No clear reasoning indicators found'
+
     return {
       score,
       reasoning,
@@ -153,12 +184,11 @@ Respond with JSON only:
 
 export const reasoningDepthEvaluator: CustomEvaluator = {
   name: 'reasoning-depth',
-  
+
   evaluate: async ({ output }: EvaluatorInput): Promise<EvaluatorResult> => {
-    const response = typeof output === 'string' 
-      ? output 
-      : (output as any).response || JSON.stringify(output)
-    
+    const response =
+      typeof output === 'string' ? output : (output as any).response || JSON.stringify(output)
+
     if (!response || response.length < 50) {
       return {
         score: 0.5,
@@ -166,30 +196,29 @@ export const reasoningDepthEvaluator: CustomEvaluator = {
         metadata: { skipped: true },
       }
     }
-    
+
     try {
       const model = new ChatOpenAI({
         modelName: 'gpt-4o-mini',
         temperature: 0,
       })
-      
+
       const prompt = REASONING_JUDGE_PROMPT.replace('{response}', response.slice(0, 4000))
-      
+
       const result = await model.invoke(prompt)
-      const responseText = typeof result.content === 'string' 
-        ? result.content 
-        : JSON.stringify(result.content)
-      
+      const responseText =
+        typeof result.content === 'string' ? result.content : JSON.stringify(result.content)
+
       const jsonMatch = responseText.match(/\{[\s\S]*\}/)
       if (!jsonMatch) {
         throw new Error('No JSON in response')
       }
-      
+
       const parsed = JSON.parse(jsonMatch[0])
-      
+
       const strengths = parsed.strengthExamples || []
       const weaknesses = parsed.weaknessExamples || []
-      
+
       let reasoning = `Score: ${parsed.totalScore}/100.`
       if (strengths.length > 0) {
         reasoning += ` Strengths: ${strengths.slice(0, 2).join('; ')}.`
@@ -197,7 +226,7 @@ export const reasoningDepthEvaluator: CustomEvaluator = {
       if (weaknesses.length > 0) {
         reasoning += ` Gaps: ${weaknesses.slice(0, 2).join('; ')}.`
       }
-      
+
       return {
         score: parsed.totalScore / 100,
         reasoning,
@@ -219,4 +248,3 @@ export const reasoningDepthEvaluator: CustomEvaluator = {
     }
   },
 }
-

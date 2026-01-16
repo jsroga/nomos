@@ -333,7 +333,12 @@ export class RepaintService {
     // Use provided prompt or fallback
     const finalPrompt = prompt || 'High quality, detailed, seamless blend'
 
-    const resultBase64 = await nanoBanana.inpainting(base64Image, maskBase64, finalPrompt, styleReferenceUrls)
+    const resultBase64 = await nanoBanana.inpainting(
+      base64Image,
+      maskBase64,
+      finalPrompt,
+      styleReferenceUrls
+    )
 
     return {
       imageUrl: `data:image/png;base64,${resultBase64}`,

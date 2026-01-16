@@ -4,14 +4,14 @@ import { projects, seriesBibles, storyPlans } from '@/domains/storyteller/db/sch
 import { eq } from 'drizzle-orm'
 
 export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
-  const params = await props.params;
+  const params = await props.params
   try {
     const project = await db.query.projects.findFirst({
       where: eq(projects.id, params.id),
       with: {
         seriesBibleTable: true,
         storyPlanTable: true,
-      }
+      },
     })
 
     if (!project) {
@@ -25,7 +25,7 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
       storyPlan: project.storyPlanTable?.content || project.storyPlan || {},
       // Clean up relation properties
       seriesBibleTable: undefined,
-      storyPlanTable: undefined
+      storyPlanTable: undefined,
     })
   } catch (error) {
     console.error('Error fetching project:', error)
@@ -34,7 +34,7 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
 }
 
 export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
-  const params = await props.params;
+  const params = await props.params
   try {
     const body = await req.json()
     console.log('📦 Project PATCH body:', body)
@@ -47,39 +47,41 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
       updatedAt: new Date(),
     }
 
-    if (updates.style_reference_urls !== undefined) dbUpdates.styleReferenceUrls = updates.style_reference_urls
-    if (updates.styleReferenceUrls !== undefined) dbUpdates.styleReferenceUrls = updates.styleReferenceUrls
+    if (updates.style_reference_urls !== undefined)
+      dbUpdates.styleReferenceUrls = updates.style_reference_urls
+    if (updates.styleReferenceUrls !== undefined)
+      dbUpdates.styleReferenceUrls = updates.styleReferenceUrls
     if (updates.name !== undefined) dbUpdates.name = updates.name
     if (updates.description !== undefined) dbUpdates.description = updates.description
     if (updates.master_prompt !== undefined) dbUpdates.masterPrompt = updates.master_prompt
     if (updates.masterPrompt !== undefined) dbUpdates.masterPrompt = updates.masterPrompt
 
-    if (Object.keys(dbUpdates).length > 1) { // more than just updatedAt
-      await db
-        .update(projects)
-        .set(dbUpdates)
-        .where(eq(projects.id, params.id))
+    if (Object.keys(dbUpdates).length > 1) {
+      // more than just updatedAt
+      await db.update(projects).set(dbUpdates).where(eq(projects.id, params.id))
     }
 
     // 2. Update Series Bible (Upsert)
     const bibleContent = series_bible ?? seriesBible
     if (bibleContent !== undefined) {
-      await db.insert(seriesBibles)
+      await db
+        .insert(seriesBibles)
         .values({ projectId: params.id, content: bibleContent })
         .onConflictDoUpdate({
           target: seriesBibles.projectId,
-          set: { content: bibleContent, updatedAt: new Date() }
+          set: { content: bibleContent, updatedAt: new Date() },
         })
     }
 
     // 3. Update Story Plan (Upsert)
     const planContent = story_plan ?? storyPlan
     if (planContent !== undefined) {
-      await db.insert(storyPlans)
+      await db
+        .insert(storyPlans)
         .values({ projectId: params.id, content: planContent })
         .onConflictDoUpdate({
           target: storyPlans.projectId,
-          set: { content: planContent, updatedAt: new Date() }
+          set: { content: planContent, updatedAt: new Date() },
         })
     }
 

@@ -1,6 +1,6 @@
 /**
  * Consistency Evaluator
- * 
+ *
  * Evaluates whether agent outputs maintain consistency with:
  * - Series bible (characters, factions, world rules)
  * - Previous story elements
@@ -67,14 +67,14 @@ export const consistencyEvaluator: CustomEvaluator = {
         temperature: 0,
       })
 
-      const prompt = CONSISTENCY_JUDGE_PROMPT
-        .replace('{reference}', JSON.stringify(reference, null, 2))
-        .replace('{output}', JSON.stringify(output, null, 2))
+      const prompt = CONSISTENCY_JUDGE_PROMPT.replace(
+        '{reference}',
+        JSON.stringify(reference, null, 2)
+      ).replace('{output}', JSON.stringify(output, null, 2))
 
       const response = await model.invoke(prompt)
-      const content = typeof response.content === 'string'
-        ? response.content
-        : JSON.stringify(response.content)
+      const content =
+        typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
 
       const jsonMatch = content.match(/\{[\s\S]*\}/)
       if (!jsonMatch) {
@@ -123,15 +123,15 @@ export const consistencyHeuristic: CustomEvaluator = {
 
     // Extract known entities from reference
     const refStr = JSON.stringify(reference)
-    
+
     // Character names (capitalized words that appear multiple times)
     const characterPattern = /characters?["\s:]+\[([^\]]+)\]/i
     const characterMatch = refStr.match(characterPattern)
     const knownCharacters: string[] = []
-    
+
     if (characterMatch) {
       const charNames = characterMatch[1].match(/"name":\s*"([^"]+)"/g) || []
-      charNames.forEach((match) => {
+      charNames.forEach(match => {
         const name = match.replace(/"name":\s*"/, '').replace(/"$/, '')
         knownCharacters.push(name.toLowerCase())
       })
@@ -141,10 +141,10 @@ export const consistencyHeuristic: CustomEvaluator = {
     const locationPattern = /locations?["\s:]+\[([^\]]+)\]/i
     const locationMatch = refStr.match(locationPattern)
     const knownLocations: string[] = []
-    
+
     if (locationMatch) {
       const locNames = locationMatch[1].match(/"name":\s*"([^"]+)"/g) || []
-      locNames.forEach((match) => {
+      locNames.forEach(match => {
         const name = match.replace(/"name":\s*"/, '').replace(/"$/, '')
         knownLocations.push(name.toLowerCase())
       })
@@ -152,7 +152,7 @@ export const consistencyHeuristic: CustomEvaluator = {
 
     // Check for potential unknown character references
     const quotedNames = outputStr.match(/"[A-Z][a-z]+"/g) || []
-    quotedNames.forEach((name) => {
+    quotedNames.forEach(name => {
       const cleanName = name.replace(/"/g, '').toLowerCase()
       if (
         knownCharacters.length > 0 &&
@@ -185,4 +185,3 @@ export const consistencyHeuristic: CustomEvaluator = {
     }
   },
 }
-

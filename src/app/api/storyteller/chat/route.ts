@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { HumanMessage, BaseMessage } from '@langchain/core/messages'
-import { getWritersRoomGraph } from '@/domains/storyteller/graph/writers-room'
+import {
+  getWritersRoomGraph,
+  getActiveWritersRoomGraph,
+} from '@/domains/storyteller/graph/writers-room'
 import { createInitialState, CharacterState } from '@/domains/storyteller/graph/state'
 import { db } from '@/lib/db'
 import { beats } from '@/domains/storyteller/db/schema'
@@ -66,6 +69,7 @@ export async function POST(req: Request) {
       characters,
       existingBeats,
       currentPhase,
+      userEmail, // For Bible lock permission checks
     } = body
 
     // Map characters to CharacterState format
@@ -86,6 +90,7 @@ export async function POST(req: Request) {
     const initialState = createInitialState({
       projectId: projectId || 'default',
       episodeId: episodeId,
+      userEmail: userEmail, // Pass user email for permission checks
       currentPhase: currentPhase || 'breaking',
       seriesBible: seriesBible || {},
       characters: characterStates,
@@ -119,7 +124,7 @@ export async function POST(req: Request) {
     }
 
     console.log('Invoking writers room graph with LangSmith tracing...')
-    const graph = await getWritersRoomGraph()
+    const graph = await getActiveWritersRoomGraph()
     const result = await graph.invoke(initialState, config)
     console.log('Graph invocation complete')
 

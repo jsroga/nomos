@@ -58,15 +58,21 @@ const FloorMesh: React.FC<{
   )
 }
 
+const TexturedMaterial: React.FC<{ url: string; isSelected: boolean; opacity?: number }> = ({
+  url,
+  isSelected,
+  opacity = 1,
+}) => {
+  const loadedTexture = useTexture(url)
 
-const TexturedMaterial: React.FC<{ url: string; isSelected: boolean; opacity?: number }> = ({ url, isSelected, opacity = 1 }) => {
-  const texture = useTexture(url)
-
-  React.useLayoutEffect(() => {
-    texture.wrapS = texture.wrapT = THREE.RepeatWrapping
-    texture.repeat.set(0.5, 0.5)
-    texture.needsUpdate = true
-  }, [texture])
+  // Clone texture to avoid mutating hook return value
+  const texture = React.useMemo(() => {
+    const cloned = loadedTexture.clone()
+    cloned.wrapS = cloned.wrapT = THREE.RepeatWrapping
+    cloned.repeat.set(0.5, 0.5)
+    cloned.needsUpdate = true
+    return cloned
+  }, [loadedTexture])
 
   return (
     <meshStandardMaterial
@@ -78,7 +84,6 @@ const TexturedMaterial: React.FC<{ url: string; isSelected: boolean; opacity?: n
     />
   )
 }
-
 
 export const FloorManager: React.FC = () => {
   const floors = useInteriorStore(state => state.floors)
@@ -105,11 +110,9 @@ export const FloorManager: React.FC = () => {
               }}
               opacity={floorOpacity}
             />
-
           </group>
         )
       })}
     </group>
   )
 }
-

@@ -1,5 +1,9 @@
 import { HumanMessage, AIMessage } from '@langchain/core/messages'
-import { getWritersRoomGraph, writersRoomGraph } from '@/domains/storyteller/graph/writers-room'
+import {
+  getWritersRoomGraph,
+  writersRoomGraph,
+  getActiveWritersRoomGraph,
+} from '@/domains/storyteller/graph/writers-room'
 import {
   actionExecutor,
   isSafeAction,
@@ -30,6 +34,7 @@ export async function POST(req: Request) {
     const body = await req.json()
     const {
       message,
+      messages: history,
       projectId,
       threadId,
       seriesBible,
@@ -39,7 +44,14 @@ export async function POST(req: Request) {
       modelConfig,
       streamMode: requestedStreamMode,
       progressiveGeneration, // Enable progressive section-by-section bible generation
+      userEmail, // For Bible lock permission checks
     } = body
+
+    // Map history to LangChain messages
+    const mappedHistory = (history || []).map((m: any) => {
+      if (m.role === 'user') return new HumanMessage({ content: m.content, name: m.name })
+      return new AIMessage({ content: m.content, name: m.name })
+    })
 
     // Determine streaming mode - 'events' enables token-level streaming
     const streamMode: StreamMode = requestedStreamMode === 'events' ? 'events' : 'nodes'
@@ -83,178 +95,190 @@ export async function POST(req: Request) {
     let isClosed = false
 
     // Wrap stream creation in model config context so agents use the correct provider
-    const stream = runWithModelConfig(effectiveModelConfig, () => new ReadableStream({
-      async start(controller) {
-        const safeEnqueue = (data: string) => {
-          if (!isClosed) {
-            try {
-              controller.enqueue(encoder.encode(data))
-            } catch (e) {
-              console.warn('Failed to enqueue, stream may be closed')
+    const stream = runWithModelConfig(
+      effectiveModelConfig,
+      () =>
+        new ReadableStream({
+          async start(controller) {
+            const safeEnqueue = (data: string) => {
+              if (!isClosed) {
+                try {
+                  controller.enqueue(encoder.encode(data))
+                } catch (e) {
+                  console.warn('Failed to enqueue, stream may be closed')
+                }
+              }
             }
-          }
-        }
 
-        const safeClose = () => {
-          if (!isClosed) {
+            const safeClose = () => {
+              if (!isClosed) {
+                isClosed = true
+                try {
+                  controller.close()
+                } catch (e) {
+                  console.warn('Failed to close, stream may already be closed')
+                }
+              }
+            }
+
+            // Create stream callback for token-level streaming (passed to agents via state)
+            const streamCallback: StreamCallback = (progress: StreamProgress) => {
+              if (isClosed) return
+
+              // Emit different event types based on progress type
+              switch (progress.type) {
+                case 'token':
+                  safeEnqueue(
+                    `data: ${JSON.stringify({
+                      type: 'token',
+                      token: progress.token,
+                      agent: progress.agent,
+                      progress: progress.progress,
+                    })}\n\n`
+                  )
+                  break
+                case 'section_start':
+                  safeEnqueue(
+                    `data: ${JSON.stringify({
+                      type: 'section_start',
+                      section: progress.section,
+                      agent: progress.agent,
+                    })}\n\n`
+                  )
+                  break
+                case 'section_complete':
+                  safeEnqueue(
+                    `data: ${JSON.stringify({
+                      type: 'section_complete',
+                      section: progress.section,
+                      agent: progress.agent,
+                      preview:
+                        typeof progress.content === 'string'
+                          ? progress.content.substring(0, 200)
+                          : undefined,
+                    })}\n\n`
+                  )
+                  break
+                case 'thinking':
+                  safeEnqueue(
+                    `data: ${JSON.stringify({
+                      type: 'thinking',
+                      content: progress.content,
+                      agent: progress.agent,
+                    })}\n\n`
+                  )
+                  break
+              }
+            }
+
+            try {
+              // Send initial event
+              safeEnqueue(
+                `data: ${JSON.stringify({
+                  type: 'start',
+                  message: 'Writers room is assembling...',
+                  streamMode,
+                })}\n\n`
+              )
+
+              // Create initial state - use phase from request or default to premise
+              // Include stream callback for token-level streaming
+              const initialState = {
+                projectId: projectId || 'default',
+                episodeId: episodeId,
+                userEmail: userEmail, // For Bible lock permission checks
+                currentPhase: (currentPhase || 'premise') as
+                  | 'premise'
+                  | 'breaking'
+                  | 'cardlock'
+                  | 'writing'
+                  | 'complete',
+                seriesBible: seriesBible || {},
+                // Extract master prompt from bible (frontend convention) or top level
+                masterPrompt: seriesBible?.masterPrompt || body.masterPrompt,
+                episodePrompt: body.episodePrompt,
+                characters: characters || [],
+                activeCast: body.activeCast || [],
+                beatBoard: existingBeats, // Use existing beats from database
+                unresolvedSetups: [],
+                rejectedBeats: [],
+                currentIteration: 0,
+                phaseIterations: 0,
+                maxIterationsPerPhase: 15, // Allow full agent discussions
+                shouldTerminate: false,
+                awaitingUserInput: false,
+                messages: [
+                  ...mappedHistory,
+                  new HumanMessage({
+                    content: message,
+                    name: 'User',
+                  }),
+                ],
+                // Pass stream callback for token-level streaming
+                ...(streamMode === 'events' ? { _streamCallback: streamCallback } : {}),
+                // Pass progressive generation flag
+                ...(progressiveGeneration ? { _useProgressiveGeneration: true } : {}),
+              }
+
+              const config = {
+                configurable: {
+                  thread_id: threadId || `thread-${Date.now()}`,
+                },
+                recursionLimit: 50, // Allow full agent chains
+                // LangSmith tracing configuration
+                runName: `WritersRoom-${currentPhase}-${Date.now()}`,
+                tags: ['storyteller', currentPhase || 'unknown'],
+                metadata: {
+                  projectId,
+                  episodeId,
+                  phase: currentPhase,
+                  streamMode,
+                },
+              }
+
+              // Log state for debugging
+              console.log(
+                'Starting graph stream with phase:',
+                initialState.currentPhase,
+                'mode:',
+                streamMode
+              )
+              console.log(
+                'LangSmith tracing:',
+                process.env.LANGCHAIN_TRACING_V2 ? 'ENABLED' : 'DISABLED'
+              )
+
+              // Get compiled graph (V1 or V2 based on feature flag)
+              const graph = await getActiveWritersRoomGraph()
+
+              // Stream the graph execution using streamEvents for enhanced streaming
+              if (streamMode === 'events') {
+                // Use streamEvents for token-level streaming
+                await streamWithEvents(graph, initialState, config, safeEnqueue, () => isClosed)
+              } else {
+                // Use standard stream for node-level streaming
+                await streamWithNodes(graph, initialState, config, safeEnqueue, () => isClosed)
+              }
+
+              // Send completion event
+              safeEnqueue(`data: ${JSON.stringify({ type: 'done' })}\n\n`)
+              safeClose()
+            } catch (error) {
+              console.error('Streaming error:', error)
+              safeEnqueue(
+                `data: ${JSON.stringify({
+                  type: 'error',
+                  message: error instanceof Error ? error.message : 'Unknown error',
+                })}\n\n`
+              )
+              safeClose()
+            }
+          },
+          cancel() {
             isClosed = true
-            try {
-              controller.close()
-            } catch (e) {
-              console.warn('Failed to close, stream may already be closed')
-            }
-          }
-        }
-
-        // Create stream callback for token-level streaming (passed to agents via state)
-        const streamCallback: StreamCallback = (progress: StreamProgress) => {
-          if (isClosed) return
-
-          // Emit different event types based on progress type
-          switch (progress.type) {
-            case 'token':
-              safeEnqueue(
-                `data: ${JSON.stringify({
-                  type: 'token',
-                  token: progress.token,
-                  agent: progress.agent,
-                  progress: progress.progress,
-                })}\n\n`
-              )
-              break
-            case 'section_start':
-              safeEnqueue(
-                `data: ${JSON.stringify({
-                  type: 'section_start',
-                  section: progress.section,
-                  agent: progress.agent,
-                })}\n\n`
-              )
-              break
-            case 'section_complete':
-              safeEnqueue(
-                `data: ${JSON.stringify({
-                  type: 'section_complete',
-                  section: progress.section,
-                  agent: progress.agent,
-                  preview: typeof progress.content === 'string'
-                    ? progress.content.substring(0, 200)
-                    : undefined,
-                })}\n\n`
-              )
-              break
-            case 'thinking':
-              safeEnqueue(
-                `data: ${JSON.stringify({
-                  type: 'thinking',
-                  content: progress.content,
-                  agent: progress.agent,
-                })}\n\n`
-              )
-              break
-          }
-        }
-
-        try {
-          // Send initial event
-          safeEnqueue(
-            `data: ${JSON.stringify({
-              type: 'start',
-              message: 'Writers room is assembling...',
-              streamMode,
-            })}\n\n`
-          )
-
-          // Create initial state - use phase from request or default to premise
-          // Include stream callback for token-level streaming
-          const initialState = {
-            projectId: projectId || 'default',
-            episodeId: episodeId,
-            currentPhase: (currentPhase || 'premise') as
-              | 'premise'
-              | 'breaking'
-              | 'cardlock'
-              | 'writing'
-              | 'complete',
-            seriesBible: seriesBible || {},
-            // Extract master prompt from bible (frontend convention) or top level
-            masterPrompt: seriesBible?.masterPrompt || body.masterPrompt,
-            episodePrompt: body.episodePrompt,
-            characters: characters || [],
-            activeCast: body.activeCast || [],
-            beatBoard: existingBeats, // Use existing beats from database
-            unresolvedSetups: [],
-            rejectedBeats: [],
-            currentIteration: 0,
-            phaseIterations: 0,
-            maxIterationsPerPhase: 15, // Allow full agent discussions
-            shouldTerminate: false,
-            awaitingUserInput: false,
-            messages: [
-              new HumanMessage({
-                content: message,
-                name: 'User',
-              }),
-            ],
-            // Pass stream callback for token-level streaming
-            ...(streamMode === 'events' ? { _streamCallback: streamCallback } : {}),
-            // Pass progressive generation flag
-            ...(progressiveGeneration ? { _useProgressiveGeneration: true } : {}),
-          }
-
-          const config = {
-            configurable: {
-              thread_id: threadId || `thread-${Date.now()}`,
-            },
-            recursionLimit: 50, // Allow full agent chains
-            // LangSmith tracing configuration
-            runName: `WritersRoom-${currentPhase}-${Date.now()}`,
-            tags: ['storyteller', currentPhase || 'unknown'],
-            metadata: {
-              projectId,
-              episodeId,
-              phase: currentPhase,
-              streamMode,
-            },
-          }
-
-          // Log state for debugging
-          console.log('Starting graph stream with phase:', initialState.currentPhase, 'mode:', streamMode)
-          console.log(
-            'LangSmith tracing:',
-            process.env.LANGCHAIN_TRACING_V2 ? 'ENABLED' : 'DISABLED'
-          )
-
-          // Get compiled graph (compile() is async in LangGraph 1.x)
-          const graph = await getWritersRoomGraph()
-
-          // Stream the graph execution using streamEvents for enhanced streaming
-          if (streamMode === 'events') {
-            // Use streamEvents for token-level streaming
-            await streamWithEvents(graph, initialState, config, safeEnqueue, () => isClosed)
-          } else {
-            // Use standard stream for node-level streaming
-            await streamWithNodes(graph, initialState, config, safeEnqueue, () => isClosed)
-          }
-
-          // Send completion event
-          safeEnqueue(`data: ${JSON.stringify({ type: 'done' })}\n\n`)
-          safeClose()
-        } catch (error) {
-          console.error('Streaming error:', error)
-          safeEnqueue(
-            `data: ${JSON.stringify({
-              type: 'error',
-              message: error instanceof Error ? error.message : 'Unknown error',
-            })}\n\n`
-          )
-          safeClose()
-        }
-      },
-      cancel() {
-        isClosed = true
-      },
-    }))
+          },
+        })
+    )
 
     return new Response(stream, {
       headers: {
@@ -291,11 +315,12 @@ async function streamWithNodes(
   const maxMessages = 30 // Safety limit
 
   // LangGraph 1.x: stream() returns a Promise, needs await and streamMode
-  for await (const chunk of await graph.stream(initialState, { ...config, streamMode: 'updates' })) {
+  for await (const chunk of await graph.stream(initialState, {
+    ...config,
+    streamMode: 'updates',
+  })) {
     if (isClosed() || messageCount >= maxMessages) {
-      console.log(
-        `Stream limit reached (messages: ${messageCount}, actions: ${actionCount})`
-      )
+      console.log(`Stream limit reached (messages: ${messageCount}, actions: ${actionCount})`)
       break
     }
 
@@ -327,8 +352,7 @@ async function streamWithNodes(
           // Format message for UI
           const formattedMsg = {
             type: msg._getType() === 'human' ? 'human' : 'ai',
-            content:
-              typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content),
+            content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content),
             name: msg.name || nodeName,
             sender: msg.name || nodeName,
             actions,
@@ -391,9 +415,7 @@ async function streamWithNodes(
         }
         if (output.awaitingUserInput) {
           console.log('Awaiting user input')
-          safeEnqueue(
-            `data: ${JSON.stringify({ type: 'awaiting_input', reason: 'question' })}\n\n`
-          )
+          safeEnqueue(`data: ${JSON.stringify({ type: 'awaiting_input', reason: 'question' })}\n\n`)
           return
         }
       }
@@ -489,7 +511,7 @@ async function streamWithEvents(
             'episodePremiseArchitect',
             'magicAgent',
             'utility_tools',
-            'writer_tools'
+            'writer_tools',
           ])
 
           if (nodeName && VALID_NODES.has(nodeName) && output && typeof output === 'object') {

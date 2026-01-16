@@ -1,6 +1,6 @@
 /**
  * Devil's Advocate Agent Prompt
- * 
+ *
  * The adversarial voice that challenges mediocrity.
  */
 

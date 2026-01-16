@@ -14,14 +14,15 @@ export const GlobalWaterPlane: React.FC = () => {
   const mode = useInteriorStore(state => state.mode)
   const surfaces = useInteriorStore(state => state.surfaces)
 
-  const { waterSurfaceHeight, showWaterPlane, heightmap } = terrainSettings
+  const { waterSurfaceHeight, showWaterPlane, heightmap, waterColor, waterOpacity } =
+    terrainSettings
 
   // Check if there are any ground surfaces
   const groundSurfaceTypes = ['grass', 'dirt', 'sand', 'rock']
   const hasGroundSurface = surfaces.some(s => groundSurfaceTypes.includes(s.type))
 
   // Animate water slightly
-  useFrame((state) => {
+  useFrame(state => {
     if (!meshRef.current) return
     // Subtle wave animation
     const time = state.clock.getElapsedTime()
@@ -40,9 +41,9 @@ export const GlobalWaterPlane: React.FC = () => {
     >
       <planeGeometry args={[WATER_PLANE_SIZE, WATER_PLANE_SIZE, 32, 32]} />
       <meshPhysicalMaterial
-        color="#06b6d4"
+        color={waterColor}
         transparent
-        opacity={0.4}
+        opacity={waterOpacity}
         roughness={0.1}
         metalness={0.2}
         transmission={0.6}
@@ -53,4 +54,3 @@ export const GlobalWaterPlane: React.FC = () => {
     </mesh>
   )
 }
-

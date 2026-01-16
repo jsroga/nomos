@@ -1,6 +1,6 @@
 /**
  * Consequence Tracker Agent Prompt
- * 
+ *
  * Tracks setups, payoffs, and character knowledge.
  */
 

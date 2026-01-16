@@ -1,15 +1,15 @@
 /**
  * LangSmith Prompt Hub Loader
- * 
+ *
  * Centralized prompt management using LangSmith Hub.
  * Supports version control, environment tags, and fallback to local prompts.
  */
 
 import { pull } from 'langchain/hub'
 import { ChatPromptTemplate, PromptTemplate } from '@langchain/core/prompts'
-import { 
-  getPromptConfig, 
-  getPromptHubPath, 
+import {
+  getPromptConfig,
+  getPromptHubPath,
   PROMPT_IDS,
   STORYTELLER_CONFIG,
 } from '../config/storyteller-config'
@@ -110,13 +110,19 @@ Sequence tasks logically based on dependencies.
 User request: {input}`,
 
   // Section fallbacks
-  sectionWorldRules: `Generate world rules. Context: {input}`,
-  sectionFactions: `Generate factions. Context: {input}`,
-  sectionInspirations: `Generate inspirations. Context: {input}`,
-  sectionPlotTwists: `Generate plot twists. Context: {input}`,
-  sectionEpisodeRoadmap: `Generate episode roadmap. Context: {input}`,
-  sectionKeyCharacters: `Generate key characters. Context: {input}`,
-  sectionSoundtracks: `Generate soundtracks. Context: {input}`,
+  sectionWorldRules: 'Generate world rules. Context: {input}',
+  sectionWorldDescription: 'Generate world description. Context: {input}',
+  sectionFactions: 'Generate factions. Context: {input}',
+  sectionInspirations: 'Generate inspirations. Context: {input}',
+  sectionPlotTwists: 'Generate plot twists. Context: {input}',
+  sectionEpisodeRoadmap: 'Generate episode roadmap. Context: {input}',
+  sectionKeyCharacters: 'Generate key characters. Context: {input}',
+  sectionSoundtracks: 'Generate soundtracks. Context: {input}',
+
+  // Additional agents
+  magicAgent: 'You are the Magic Agent, generating creative ideas. Context: {context} Request: {input}',
+  worldSimulator: 'You are the World Simulator, simulating world events. Context: {context} Request: {input}',
+  visualMoment: 'You are the Visual Moment specialist. Context: {context} Request: {input}',
 }
 
 // ============================================
@@ -132,25 +138,38 @@ export async function loadPromptFromHub(
 ): Promise<LoadedPrompt> {
   const config = getPromptConfig()
   const env = environment || config.environment
-  
+
   // If Hub is disabled, use local
   if (!config.useHub) {
+    const localPrompt = LOCAL_PROMPTS[promptId]
+
+    if (!localPrompt) {
+      console.warn(`[Prompt Hub] Local prompt "${promptId}" not found, using generic fallback`)
+      return {
+        prompt: ChatPromptTemplate.fromTemplate(
+          'You are a helpful AI assistant. Context: {context} Request: {input}'
+        ),
+        source: 'local',
+        environment: env,
+      }
+    }
+
     return {
-      prompt: ChatPromptTemplate.fromTemplate(LOCAL_PROMPTS[promptId]),
+      prompt: ChatPromptTemplate.fromTemplate(localPrompt),
       source: 'local',
       environment: env,
     }
   }
-  
+
   try {
     const hubPath = getPromptHubPath(promptId, env)
-    
+
     if (STORYTELLER_CONFIG.debug.verboseLogging) {
       console.log(`[Prompt Hub] Loading: ${hubPath}`)
     }
-    
+
     const prompt = await pull<ChatPromptTemplate>(hubPath)
-    
+
     return {
       prompt,
       source: 'hub',
@@ -160,14 +179,27 @@ export async function loadPromptFromHub(
     // Fall back to local if Hub fails and fallback is enabled
     if (config.fallbackToLocal) {
       console.warn(`[Prompt Hub] Failed to load ${promptId} from Hub, using local fallback:`, error)
-      
+
+      const localPrompt = LOCAL_PROMPTS[promptId]
+
+      if (!localPrompt) {
+        console.warn(`[Prompt Hub] Local prompt "${promptId}" not found, using generic fallback`)
+        return {
+          prompt: ChatPromptTemplate.fromTemplate(
+            'You are a helpful AI assistant. Context: {context} Request: {input}'
+          ),
+          source: 'local',
+          environment: env,
+        }
+      }
+
       return {
-        prompt: ChatPromptTemplate.fromTemplate(LOCAL_PROMPTS[promptId]),
+        prompt: ChatPromptTemplate.fromTemplate(localPrompt),
         source: 'local',
         environment: env,
       }
     }
-    
+
     throw error
   }
 }
@@ -181,10 +213,10 @@ export async function loadPromptVersion(
 ): Promise<LoadedPrompt> {
   const config = getPromptConfig()
   const hubPath = `${config.hubOwner}/${PROMPT_IDS[promptId]}@${version}`
-  
+
   try {
     const prompt = await pull<ChatPromptTemplate>(hubPath)
-    
+
     return {
       prompt,
       source: 'hub',
@@ -194,15 +226,29 @@ export async function loadPromptVersion(
   } catch (error) {
     if (config.fallbackToLocal) {
       console.warn(`[Prompt Hub] Failed to load ${promptId}@${version}, using local:`, error)
-      
+
+      const localPrompt = LOCAL_PROMPTS[promptId]
+
+      if (!localPrompt) {
+        console.warn(`[Prompt Hub] Local prompt "${promptId}" not found, using generic fallback`)
+        return {
+          prompt: ChatPromptTemplate.fromTemplate(
+            'You are a helpful AI assistant. Context: {context} Request: {input}'
+          ),
+          source: 'local',
+          version,
+          environment: config.environment,
+        }
+      }
+
       return {
-        prompt: ChatPromptTemplate.fromTemplate(LOCAL_PROMPTS[promptId]),
+        prompt: ChatPromptTemplate.fromTemplate(localPrompt),
         source: 'local',
         version,
         environment: config.environment,
       }
     }
-    
+
     throw error
   }
 }
@@ -210,19 +256,19 @@ export async function loadPromptVersion(
 /**
  * Load all agent prompts
  */
-export async function loadAgentPrompts(
-  environment?: PromptEnvironment
-): Promise<AgentPrompts> {
+export async function loadAgentPrompts(environment?: PromptEnvironment): Promise<AgentPrompts> {
   const env = environment || getPromptConfig().environment
   const promptIds = Object.keys(PROMPT_IDS) as Array<keyof typeof PROMPT_IDS>
-  
+
   const loadedPrompts: Partial<AgentPrompts> = {}
-  
+
   // Load all prompts in parallel
-  await Promise.all(promptIds.map(async (id) => {
-    loadedPrompts[id] = await loadPromptFromHub(id, env)
-  }))
-  
+  await Promise.all(
+    promptIds.map(async id => {
+      loadedPrompts[id] = await loadPromptFromHub(id, env)
+    })
+  )
+
   return loadedPrompts as AgentPrompts
 }
 
@@ -232,7 +278,7 @@ export async function loadAgentPrompts(
 
 // Cache loaded prompts to avoid repeated Hub calls
 const promptCache = new Map<string, { prompt: LoadedPrompt; loadedAt: number }>()
-const CACHE_TTL_MS = 5 * 60 * 1000  // 5 minutes
+const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 
 /**
  * Load a prompt with caching
@@ -243,15 +289,15 @@ export async function loadPromptCached(
 ): Promise<LoadedPrompt> {
   const env = environment || getPromptConfig().environment
   const cacheKey = `${promptId}:${env}`
-  
+
   const cached = promptCache.get(cacheKey)
   if (cached && Date.now() - cached.loadedAt < CACHE_TTL_MS) {
     return cached.prompt
   }
-  
+
   const prompt = await loadPromptFromHub(promptId, env)
   promptCache.set(cacheKey, { prompt, loadedAt: Date.now() })
-  
+
   return prompt
 }
 

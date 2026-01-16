@@ -1,13 +1,11 @@
-import { LoopCreatorLayout } from "@/domains/loop-creator/components/LoopCreatorLayout";
+import { LoopCreatorLayout } from '@/domains/loop-creator/components/LoopCreatorLayout'
 
 interface PageProps {
-    params: Promise<{ projectId: string }>;
+  params: Promise<{ projectId: string }>
 }
 
 export default async function LoopCreatorPage({ params }: PageProps) {
-    const { projectId } = await params;
+  const { projectId } = await params
 
-    return (
-        <LoopCreatorLayout projectId={projectId} />
-    );
+  return <LoopCreatorLayout projectId={projectId} />
 }

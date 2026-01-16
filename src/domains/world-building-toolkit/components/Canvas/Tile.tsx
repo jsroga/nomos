@@ -68,9 +68,12 @@ export const Tile: React.FC<TileProps> = ({ x, y, size }) => {
   const handleImageError = () => {
     // Retry loading image a few times (helps if file system is slow to write)
     if (retryCount < 5) {
-      setTimeout(() => {
-        setRetryCount(prev => prev + 1)
-      }, 1000 * (retryCount + 1))
+      setTimeout(
+        () => {
+          setRetryCount(prev => prev + 1)
+        },
+        1000 * (retryCount + 1)
+      )
     }
   }
 

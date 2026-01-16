@@ -8,13 +8,13 @@ export async function POST(request: NextRequest) {
   try {
     // Parse body manually to handle large payloads
     const body = await request.text()
-    
+
     // Log raw body size for debugging
     console.log('[fal/segment] Raw body size:', {
       bytes: body.length,
       mb: (body.length / 1024 / 1024).toFixed(2),
     })
-    
+
     const { image, box, apiKey, textPrompt, samParams } = JSON.parse(body)
 
     if (!apiKey) {
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     const hasValidPrefix = image?.startsWith(expectedPrefix)
     const base64Data = hasValidPrefix ? image.slice(expectedPrefix.length) : ''
     const isValidBase64Length = base64Data.length > 0 && base64Data.length % 4 === 0
-    
+
     console.log('[fal/segment] Request validation:', {
       imageSize,
       imageSizeMB: (imageSize / 1024 / 1024).toFixed(2),
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       imagePrefix: image?.substring(0, 60),
       imageEnding: image?.slice(-30),
     })
-    
+
     if (!hasValidPrefix || !isValidBase64Length) {
       console.error('[fal/segment] WARNING: Image data may be malformed or truncated!')
     }

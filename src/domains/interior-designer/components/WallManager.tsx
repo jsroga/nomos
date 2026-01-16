@@ -47,15 +47,20 @@ const WallMesh: React.FC<{
   )
 }
 
+const TexturedMaterial: React.FC<{ url: string; isSelected: boolean; opacity?: number }> = ({
+  url,
+  isSelected,
+  opacity = 1,
+}) => {
+  const loadedTexture = useTexture(url)
 
-const TexturedMaterial: React.FC<{ url: string; isSelected: boolean; opacity?: number }> = ({ url, isSelected, opacity = 1 }) => {
-  const texture = useTexture(url)
-
-  React.useLayoutEffect(() => {
-    texture.wrapS = texture.wrapT = THREE.RepeatWrapping
-    // texture.repeat.set(1, 1)
-    texture.needsUpdate = true
-  }, [texture])
+  // Clone texture to avoid mutating hook return value
+  const texture = React.useMemo(() => {
+    const cloned = loadedTexture.clone()
+    cloned.wrapS = cloned.wrapT = THREE.RepeatWrapping
+    cloned.needsUpdate = true
+    return cloned
+  }, [loadedTexture])
 
   return (
     <meshStandardMaterial
@@ -67,7 +72,6 @@ const TexturedMaterial: React.FC<{ url: string; isSelected: boolean; opacity?: n
     />
   )
 }
-
 
 export const WallManager: React.FC = () => {
   const walls = useInteriorStore(state => state.walls)
@@ -100,11 +104,9 @@ export const WallManager: React.FC = () => {
               }}
               opacity={wallOpacity}
             />
-
           </group>
         )
       })}
     </group>
   )
 }
-

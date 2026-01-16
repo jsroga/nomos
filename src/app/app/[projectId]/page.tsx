@@ -1,6 +1,10 @@
 import { redirect } from 'next/navigation'
 
-export default async function ProjectRootPage({ params }: { params: Promise<{ projectId: string }> }) {
-    const { projectId } = await params
-    redirect(`/${projectId}/storyteller?bible=open`)
+export default async function ProjectRootPage({
+  params,
+}: {
+  params: Promise<{ projectId: string }>
+}) {
+  const { projectId } = await params
+  redirect(`/${projectId}/storyteller?bible=open`)
 }

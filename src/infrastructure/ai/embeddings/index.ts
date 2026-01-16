@@ -1,6 +1,6 @@
 /**
  * Embeddings Module
- * 
+ *
  * Exports embedding services for RAG pipeline.
  */
 
@@ -13,5 +13,4 @@ export {
   VOYAGE_MODEL,
   VOYAGE_LITE_MODEL,
   type VoyageEmbeddingConfig,
-} from './voyage-embeddings';
-
+} from './voyage-embeddings'

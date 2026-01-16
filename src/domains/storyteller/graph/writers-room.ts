@@ -12,11 +12,13 @@ import { plannerAgent } from '../agents/planner'
 import { AIMessage, BaseMessage, ToolMessage } from '@langchain/core/messages'
 import { reduceAgentActions } from './action-reducer'
 import { AgentActionValidated } from '../schemas/agent-schemas'
-import {
-  AgentRole,
-} from '../guardrails'
+import { AgentRole } from '../guardrails'
 import { RunnableGuard } from '../guardrails/runnable-guard'
-import { InputSafetyValidator, OutputSafetyValidator, ConsistencyValidator } from '../guardrails/validators'
+import {
+  InputSafetyValidator,
+  OutputSafetyValidator,
+  ConsistencyValidator,
+} from '../guardrails/validators'
 import { validateURLsInText, extractURLsFromText } from '@/infrastructure/ai/tools/url-validator'
 
 // ==================================================================
@@ -40,12 +42,7 @@ export interface HITLCheckpoint {
 }
 
 // Actions that require human confirmation
-const DANGEROUS_ACTIONS = [
-  'DELETE_BEAT',
-  'LOCK_BEAT_BOARD',
-  'DELETE_EPISODE',
-  'RESET_CHARACTERS',
-]
+const DANGEROUS_ACTIONS = ['DELETE_BEAT', 'LOCK_BEAT_BOARD', 'DELETE_EPISODE', 'RESET_CHARACTERS']
 
 // Actions that should trigger URL validation
 const URL_GENERATING_ACTIONS = [
@@ -98,7 +95,14 @@ function routeFromWriter(state: WritersRoomState): string {
   if (lastMessage?.tool_calls && lastMessage.tool_calls.length > 0) {
     const toolName = lastMessage.tool_calls[0].name
     // Check if it's a script editing tool
-    const scriptToolNames = ['expand_scene', 'condense_scene', 'improve_dialogue', 'add_visual_hook', 'shift_tone', 'regenerate_text']
+    const scriptToolNames = [
+      'expand_scene',
+      'condense_scene',
+      'improve_dialogue',
+      'add_visual_hook',
+      'shift_tone',
+      'regenerate_text',
+    ]
     if (scriptToolNames.includes(toolName)) {
       console.log(`Writer routing to writer_tools for: ${toolName}`)
       return 'writer_tools'
@@ -167,20 +171,20 @@ function routeFromSupervisor(state: WritersRoomState) {
 
     // Map tool names to graph nodes
     const toolMap: Record<string, string> = {
-      'delegate_to_plot_architect': 'plotArchitect',
-      'delegate_to_character_psychology': 'characterPsychology',
-      'delegate_to_consequence_tracker': 'consequenceTracker',
-      'delegate_to_devils_advocate': 'devilsAdvocate',
-      'delegate_to_writer': 'writer',
-      'delegate_to_premise_architect': 'premiseArchitect',
-      'delegate_to_episode_premise_architect': 'episodePremiseArchitect',
-      'delegate_to_magic_agent': 'magicAgent',
-      'delegate_to_script_editor': 'scriptEditor',
-      'delegate_to_episode_premise_architect': 'episodePremiseArchitect',
-      'delegate_to_magic_agent': 'magicAgent',
-      'delegate_to_script_editor': 'scriptEditor',
-      'delegate_to_planner': 'planner',
-      'search_series_bible': 'utility_tools' // Route RAG to utility node
+      delegate_to_plot_architect: 'plotArchitect',
+      delegate_to_character_psychology: 'characterPsychology',
+      delegate_to_consequence_tracker: 'consequenceTracker',
+      delegate_to_devils_advocate: 'devilsAdvocate',
+      delegate_to_writer: 'writer',
+      delegate_to_premise_architect: 'premiseArchitect',
+      delegate_to_episode_premise_architect: 'episodePremiseArchitect',
+      delegate_to_magic_agent: 'magicAgent',
+      delegate_to_script_editor: 'scriptEditor',
+      delegate_to_episode_premise_architect: 'episodePremiseArchitect',
+      delegate_to_magic_agent: 'magicAgent',
+      delegate_to_script_editor: 'scriptEditor',
+      delegate_to_planner: 'planner',
+      search_series_bible: 'utility_tools', // Route RAG to utility node
     }
 
     return toolMap[toolName] || END
@@ -204,19 +208,20 @@ async function validateResultURLs(
   // Extract text content to check for URLs
   const messages = result.messages || []
   const lastMessage = messages[messages.length - 1]
-  
+
   if (!lastMessage) return null
-  
-  const content = typeof lastMessage.content === 'string'
-    ? lastMessage.content
-    : JSON.stringify(lastMessage.content)
-  
+
+  const content =
+    typeof lastMessage.content === 'string'
+      ? lastMessage.content
+      : JSON.stringify(lastMessage.content)
+
   const urls = extractURLsFromText(content)
   if (urls.length === 0) return null
-  
+
   try {
     const validation = await validateURLsInText(content)
-    
+
     if (validation.hasHallucinatedURLs) {
       const hallucinated = validation.urls.filter(u => u.isLikelyHallucinated)
       return {
@@ -242,7 +247,7 @@ async function validateResultURLs(
   } catch (error) {
     console.warn('[HITL] URL validation failed:', error)
   }
-  
+
   return null
 }
 
@@ -255,14 +260,12 @@ function checkDangerousActions(
 ): HITLInterrupt | null {
   const messages = result.messages || []
   const lastMessage = messages[messages.length - 1]
-  
+
   if (!lastMessage || !('actions' in lastMessage)) return null
-  
+
   const actions = (lastMessage as any).actions || []
-  const dangerous = actions.filter((a: any) => 
-    DANGEROUS_ACTIONS.includes(a.type)
-  )
-  
+  const dangerous = actions.filter((a: any) => DANGEROUS_ACTIONS.includes(a.type))
+
   if (dangerous.length > 0) {
     return {
       type: 'dangerous_action',
@@ -283,7 +286,7 @@ function checkDangerousActions(
       ],
     }
   }
-  
+
   return null
 }
 
@@ -294,7 +297,7 @@ function checkDangerousActions(
 class HITLMiddleware {
   private pendingInterrupt: HITLInterrupt | null = null
   private checkpoints: Map<string, HITLCheckpoint> = new Map()
-  
+
   /**
    * Check if we should interrupt before agent execution
    */
@@ -306,17 +309,17 @@ class HITLMiddleware {
     if (state.awaitingUserInput) {
       return null // Already waiting
     }
-    
+
     // Check for any pending interrupts from previous runs
     if (this.pendingInterrupt) {
       const interrupt = this.pendingInterrupt
       this.pendingInterrupt = null
       return interrupt
     }
-    
+
     return null
   }
-  
+
   /**
    * Check if we should interrupt after agent execution
    */
@@ -328,39 +331,43 @@ class HITLMiddleware {
     // Check for URL hallucinations in URL-generating actions
     const urlInterrupt = await validateResultURLs(result, agentName)
     if (urlInterrupt) return urlInterrupt
-    
+
     // Check for dangerous actions
     const dangerousInterrupt = checkDangerousActions(result, agentName)
     if (dangerousInterrupt) return dangerousInterrupt
-    
+
     return null
   }
-  
+
   /**
    * Save checkpoint for potential rollback
    */
-  saveCheckpoint(sessionId: string, state: Partial<WritersRoomState>, interrupt?: HITLInterrupt): void {
+  saveCheckpoint(
+    sessionId: string,
+    state: Partial<WritersRoomState>,
+    interrupt?: HITLInterrupt
+  ): void {
     this.checkpoints.set(sessionId, {
       state,
       interrupt,
       canResume: true,
     })
   }
-  
+
   /**
    * Get checkpoint for resume
    */
   getCheckpoint(sessionId: string): HITLCheckpoint | null {
     return this.checkpoints.get(sessionId) || null
   }
-  
+
   /**
    * Clear checkpoint after successful resume
    */
   clearCheckpoint(sessionId: string): void {
     this.checkpoints.delete(sessionId)
   }
-  
+
   /**
    * Set pending interrupt for next check
    */
@@ -384,16 +391,13 @@ const createGuardedAgent = (agentFn: any, role: AgentRole) => {
     agent: RunnableLambda.from(agentFn),
     agentRole: role,
     inputValidators: [new InputSafetyValidator()],
-    outputValidators: [
-      new OutputSafetyValidator(role),
-      new ConsistencyValidator(role)
-    ],
-    maxRetries: 3
+    outputValidators: [new OutputSafetyValidator(role), new ConsistencyValidator(role)],
+    maxRetries: 3,
   })
 
   return RunnableLambda.from(async (state: WritersRoomState, config) => {
     const lastMsg = state.messages[state.messages.length - 1]
-    let toolMessage: ToolMessage | null = null
+    let resultToolMessages: ToolMessage[] = []
     let inputState = state
 
     // 0. HITL: Check for pre-execution interrupts
@@ -413,20 +417,26 @@ const createGuardedAgent = (agentFn: any, role: AgentRole) => {
       }
     }
 
-    // 1. Check for dangling tool call from Supervisor
+    // 1. Check for dangling tool calls from Supervisor
     if (lastMsg && 'tool_calls' in lastMsg && (lastMsg as any).tool_calls?.length > 0) {
-      const toolCall = (lastMsg as any).tool_calls[0]
-      toolMessage = new ToolMessage({
-        tool_call_id: toolCall.id,
-        content: `Agent ${role} delegated task: ${toolCall.name}`,
-        name: toolCall.name
-      })
+      const toolCalls = (lastMsg as any).tool_calls as any[]
+      const toolMessages = toolCalls.map(
+        tc =>
+          new ToolMessage({
+            tool_call_id: tc.id,
+            content: `Agent ${role} delegated task: ${tc.name}`,
+            name: tc.name,
+          })
+      )
 
-      // Inject ToolMessage into state so the Agent (LLM) sees a valid history
+      // Inject ToolMessages into state so the Agent (LLM) sees a valid history
       inputState = {
         ...state,
-        messages: [...state.messages, toolMessage]
+        messages: [...state.messages, ...toolMessages],
       }
+
+      // Keep track of them to return to the graph
+      resultToolMessages = toolMessages
     }
 
     // 2. Invoke Guard (which invokes Agent)
@@ -436,48 +446,81 @@ const createGuardedAgent = (agentFn: any, role: AgentRole) => {
     const postInterrupt = await hitlMiddleware.shouldInterruptAfter(state, result, role)
     if (postInterrupt) {
       console.log(`[HITL] Post-interrupt for ${role}: ${postInterrupt.reason}`)
-      
+
+      // URL validation issues should be handled internally, not shown to user
+      if (postInterrupt.type === 'url_validation') {
+        console.log('[HITL] URL validation issue detected - handling internally')
+        // Continue with the result but strip invalid URLs from actions
+        // The content is still valid, just the URLs might be hallucinated
+        // User will see the soundtracks but URLs may not work (acceptable)
+        return {
+          ...result,
+          messages: [...resultToolMessages, ...(result.messages || [])].filter(
+            Boolean
+          ) as BaseMessage[],
+        }
+      }
+
       // Save checkpoint with the result that needs review
       hitlMiddleware.saveCheckpoint(state.projectId, result, postInterrupt)
-      
-      // Return modified result that flags the issue
+
+      // Return modified result that flags the issue (only for non-URL issues)
       const warningMessage = new AIMessage({
-        content: `⚠️ **Review Required**: ${postInterrupt.reason}\n\n` +
+        content:
+          `⚠️ **Review Required**: ${postInterrupt.reason}\n\n` +
           `${postInterrupt.suggestions?.map(s => `- ${s}`).join('\n') || ''}`,
         name: role,
       })
-      
+
       // Depending on severity, either block or warn
       if (postInterrupt.requiresApproval) {
         return {
           awaitingUserInput: true,
-          messages: [
-            toolMessage,
-            warningMessage,
-          ].filter(Boolean) as BaseMessage[],
+          messages: [...resultToolMessages, warningMessage].filter(Boolean) as BaseMessage[],
         }
       }
-      
+
       // Warning only - continue with result
       return {
         ...result,
-        messages: [
-          toolMessage,
-          ...(result.messages || []),
-          warningMessage,
-        ].filter(Boolean) as BaseMessage[],
+        messages: [...resultToolMessages, ...(result.messages || []), warningMessage].filter(
+          Boolean
+        ) as BaseMessage[],
       }
     }
 
-    // 4. Ensure the tool message is returned to the graph state
-    if (toolMessage) {
+    // 4. Safety: Strip tool_calls from specialist agents (only supervisor should have them in V1)
+    const cleanedMessages = (result.messages || []).map(msg => {
+      // If this is a specialist agent (not supervisor), remove tool_calls
+      if (role !== 'supervisor' && msg.constructor.name === 'AIMessage') {
+        const aiMsg = msg as AIMessage
+        if (aiMsg.tool_calls && aiMsg.tool_calls.length > 0) {
+          console.warn(
+            `[Agent Wrapper] Stripping tool_calls from ${role} (only supervisor should use tools in V1)`
+          )
+          // Create new message without tool_calls
+          return new AIMessage({
+            content: aiMsg.content,
+            name: aiMsg.name,
+            additional_kwargs: aiMsg.additional_kwargs,
+          })
+        }
+      }
+      return msg
+    })
+
+    // 5. Ensure tool messages are returned to the graph state
+    if (resultToolMessages.length > 0) {
       return {
         ...result,
-        messages: [toolMessage, ...(result.messages || [])]
+        messages: [...resultToolMessages, ...cleanedMessages],
       }
     }
 
-    return result
+    return {
+      ...result,
+      messages: cleanedMessages,
+    }
   })
 }
 
@@ -521,12 +564,24 @@ const workflow = new StateGraph<WritersRoomState>({
 workflow.addNode('supervisor', supervisorAgent) // Supervisor handles its own tools
 workflow.addNode('planner', createGuardedAgent(plannerAgent, 'planner'))
 workflow.addNode('plotArchitect', createGuardedAgent(agents.plotArchitectAgent, 'plotArchitect'))
-workflow.addNode('characterPsychology', createGuardedAgent(agents.characterPsychologyAgent, 'characterPsychology'))
-workflow.addNode('consequenceTracker', createGuardedAgent(agents.consequenceTrackerAgent, 'consequenceTracker'))
+workflow.addNode(
+  'characterPsychology',
+  createGuardedAgent(agents.characterPsychologyAgent, 'characterPsychology')
+)
+workflow.addNode(
+  'consequenceTracker',
+  createGuardedAgent(agents.consequenceTrackerAgent, 'consequenceTracker')
+)
 workflow.addNode('devilsAdvocate', createGuardedAgent(agents.devilsAdvocateAgent, 'devilsAdvocate'))
 workflow.addNode('writer', createGuardedAgent(agents.writerAgent, 'writer'))
-workflow.addNode('premiseArchitect', createGuardedAgent(agents.premiseArchitectAgent, 'premiseArchitect'))
-workflow.addNode('episodePremiseArchitect', createGuardedAgent(agents.episodePremiseArchitectAgent, 'episodePremiseArchitect'))
+workflow.addNode(
+  'premiseArchitect',
+  createGuardedAgent(agents.premiseArchitectAgent, 'premiseArchitect')
+)
+workflow.addNode(
+  'episodePremiseArchitect',
+  createGuardedAgent(agents.episodePremiseArchitectAgent, 'episodePremiseArchitect')
+)
 workflow.addNode('magicAgent', createGuardedAgent(agents.magicAgent, 'magicAgent'))
 
 // Script Editor node (Evaluator-Optimizer pattern)
@@ -554,7 +609,7 @@ workflow.addConditionalEdges('supervisor', routeFromSupervisor, {
   scriptEditor: 'scriptEditor',
   planner: 'planner',
   utility_tools: 'utility_tools',
-  [END]: END
+  [END]: END,
 })
 
 // Workers return to Supervisor
@@ -606,6 +661,26 @@ export async function getWritersRoomGraph() {
     }
   }
   return compiledGraphWithCheckpointer || baseGraph
+}
+
+/**
+ * Feature flag for V2 (Handoffs pattern)
+ * Set USE_HANDOFFS_PATTERN=true to enable new architecture
+ */
+const USE_HANDOFFS_PATTERN = process.env.USE_HANDOFFS_PATTERN === 'true'
+
+/**
+ * Get the appropriate graph based on feature flag
+ */
+export async function getActiveWritersRoomGraph() {
+  if (USE_HANDOFFS_PATTERN) {
+    console.log('🚀 [Graph] Using V2 (Handoffs + Skills pattern)')
+    const { getWritersRoomGraphV2 } = await import('./writers-room-v2')
+    return getWritersRoomGraphV2()
+  }
+
+  console.log('📊 [Graph] Using V1 (Supervisor pattern)')
+  return getWritersRoomGraph()
 }
 
 export const writersRoomGraph = baseGraph

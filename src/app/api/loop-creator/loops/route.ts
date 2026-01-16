@@ -1,0 +1,184 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+import { gameLoops, projects } from '@/db/schema'
+import { eq, and, desc } from 'drizzle-orm'
+import { requireAuth } from '@/lib/auth'
+
+async function verifyProjectAccess(projectId: string, userId: string) {
+  const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
+  if (!project || project.userId !== userId) {
+    return false
+  }
+  return true
+}
+
+async function verifyLoopAccess(loopId: string, userId: string) {
+  const [loop] = await db.select().from(gameLoops).where(eq(gameLoops.id, loopId))
+  if (!loop) return false
+  return verifyProjectAccess(loop.projectId, userId)
+}
+
+/**
+ * GET - Fetch game loops
+ * Query params:
+ *   - projectId: Fetch all loops for a project
+ *   - loopId: Fetch a specific loop
+ */
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const projectId = searchParams.get('projectId')
+  const loopId = searchParams.get('loopId')
+
+  if (!projectId && !loopId) {
+    return NextResponse.json({ error: 'Project ID or Loop ID is required' }, { status: 400 })
+  }
+
+  try {
+    const { session } = await requireAuth()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    if (loopId) {
+      // Check access
+      if (!(await verifyLoopAccess(loopId, session.user.id))) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      }
+
+      // Fetch single loop
+      const [loop] = await db.select().from(gameLoops).where(eq(gameLoops.id, loopId))
+      return NextResponse.json(loop || null)
+    } else {
+      // Check access
+      if (!(await verifyProjectAccess(projectId!, session.user.id))) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      }
+
+      // Fetch all loops for project
+      const loops = await db
+        .select()
+        .from(gameLoops)
+        .where(eq(gameLoops.projectId, projectId!))
+        .orderBy(desc(gameLoops.updatedAt))
+      return NextResponse.json(loops)
+    }
+  } catch (error) {
+    console.error('Failed to fetch game loops:', error)
+    return NextResponse.json({ error: 'Failed to fetch loops' }, { status: 500 })
+  }
+}
+
+/**
+ * POST - Create a new game loop
+ * Body: { projectId, name, nodes?, edges?, metadata?, analysis? }
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const { session } = await requireAuth()
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await req.json()
+    const { projectId, name, nodes, edges, metadata, analysis } = body
+
+    if (!projectId || !name) {
+      return NextResponse.json({ error: 'Project ID and name are required' }, { status: 400 })
+    }
+
+    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
+
+    const [newLoop] = await db
+      .insert(gameLoops)
+      .values({
+        projectId,
+        userId: session.user.id,
+        name,
+        nodes: nodes || [],
+        edges: edges || [],
+        metadata: metadata || null,
+        analysis: analysis || null,
+      })
+      .returning()
+
+    console.log(`✅ Game loop created: ${name} (${newLoop.id})`)
+    return NextResponse.json(newLoop)
+  } catch (error) {
+    console.error('Failed to create game loop:', error)
+    return NextResponse.json({ error: 'Failed to create loop' }, { status: 500 })
+  }
+}
+
+/**
+ * PATCH - Update an existing game loop
+ * Body: { id, name?, nodes?, edges?, metadata?, analysis? }
+ */
+export async function PATCH(req: NextRequest) {
+  try {
+    const { session } = await requireAuth()
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await req.json()
+    const { id, name, nodes, edges, metadata, analysis } = body
+
+    if (!id) {
+      return NextResponse.json({ error: 'Loop ID is required' }, { status: 400 })
+    }
+
+    if (!(await verifyLoopAccess(id, session.user.id))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
+
+    const updates: Record<string, any> = { updatedAt: new Date() }
+    if (name !== undefined) updates.name = name
+    if (nodes !== undefined) updates.nodes = nodes
+    if (edges !== undefined) updates.edges = edges
+    if (metadata !== undefined) updates.metadata = metadata
+    if (analysis !== undefined) updates.analysis = analysis
+
+    const [updatedLoop] = await db
+      .update(gameLoops)
+      .set(updates)
+      .where(eq(gameLoops.id, id))
+      .returning()
+
+    console.log(`✅ Game loop updated: ${updatedLoop.name} (${id})`)
+    return NextResponse.json(updatedLoop)
+  } catch (error) {
+    console.error('Failed to update game loop:', error)
+    return NextResponse.json({ error: 'Failed to update loop' }, { status: 500 })
+  }
+}
+
+/**
+ * DELETE - Delete a game loop
+ * Query params: id
+ */
+export async function DELETE(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const id = searchParams.get('id')
+
+  if (!id) {
+    return NextResponse.json({ error: 'Loop ID is required' }, { status: 400 })
+  }
+
+  try {
+    const { session } = await requireAuth()
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!(await verifyLoopAccess(id, session.user.id))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
+
+    await db.delete(gameLoops).where(eq(gameLoops.id, id))
+    console.log(`✅ Game loop deleted: ${id}`)
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Failed to delete game loop:', error)
+    return NextResponse.json({ error: 'Failed to delete loop' }, { status: 500 })
+  }
+}

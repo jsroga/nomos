@@ -1,6 +1,6 @@
 /**
  * Visual Moment Agent Prompt
- * 
+ *
  * The cinematographer that creates iconic visual hooks.
  */
 

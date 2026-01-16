@@ -92,8 +92,6 @@ export const AssetsPanel: React.FC<AssetsPanelProps> = ({ showHelpText = true })
 
   return (
     <div className="w-full">
-
-
       <div className="w-full max-h-64 overflow-y-auto">
         {loading && assets.length === 0 ? (
           <div className="flex justify-center p-4">
@@ -110,10 +108,11 @@ export const AssetsPanel: React.FC<AssetsPanelProps> = ({ showHelpText = true })
             {assets.map(asset => (
               <div
                 key={asset.id}
-                className={`relative group aspect-square bg-muted rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${previewAssetId === asset.id
-                  ? 'border-indigo-500 ring-2 ring-indigo-500/30'
-                  : 'border-zinc-800 hover:border-indigo-500/50'
-                  }`}
+                className={`relative group aspect-square bg-muted rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
+                  previewAssetId === asset.id
+                    ? 'border-indigo-500 ring-2 ring-indigo-500/30'
+                    : 'border-zinc-800 hover:border-indigo-500/50'
+                }`}
                 onClick={() => handlePreview(asset.id)}
               >
                 <img
@@ -155,7 +154,8 @@ export const AssetsPanel: React.FC<AssetsPanelProps> = ({ showHelpText = true })
 
       {showHelpText && (
         <div className="mt-2 text-[10px] text-muted-foreground font-mono">
-          Click asset to preview • {showAllAssetMasks ? 'All masks visible' : 'Click 👁 to show all'}
+          Click asset to preview •{' '}
+          {showAllAssetMasks ? 'All masks visible' : 'Click 👁 to show all'}
         </div>
       )}
 
@@ -188,11 +188,7 @@ export const AssetsPanel: React.FC<AssetsPanelProps> = ({ showHelpText = true })
             >
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleConfirmDelete}
-              disabled={isDeleting}
-            >
+            <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
               {isDeleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

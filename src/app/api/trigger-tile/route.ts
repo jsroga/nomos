@@ -12,13 +12,13 @@ async function fetchProjectStyleRefs(projectId: string): Promise<string[]> {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
-    
+
     const { data, error } = await supabase
       .from('projects')
       .select('style_reference_urls')
       .eq('id', projectId)
       .single()
-    
+
     if (error || !data) return []
     return (data.style_reference_urls as string[]) || []
   } catch {
@@ -31,7 +31,12 @@ export async function POST(request: Request) {
     const payload = await request.json()
 
     // Validate required fields
-    if (!payload.projectId || payload.x === undefined || payload.y === undefined || !payload.prompt) {
+    if (
+      !payload.projectId ||
+      payload.x === undefined ||
+      payload.y === undefined ||
+      !payload.prompt
+    ) {
       return NextResponse.json(
         { error: 'Missing required fields: projectId, x, y, prompt' },
         { status: 400 }
@@ -51,25 +56,29 @@ export async function POST(request: Request) {
     // For first tile: fetch style references if not provided
     // For follow-up tiles: style refs not needed (context image provides style)
     const styleReferenceUrls = isFirstTile
-      ? (payload.styleReferenceUrls || await fetchProjectStyleRefs(payload.projectId))
+      ? payload.styleReferenceUrls || (await fetchProjectStyleRefs(payload.projectId))
       : undefined
 
     // Trigger the tile generation task
-    const handle = await tasks.trigger<typeof generateTileTask>('generate-tile', {
-      projectId: payload.projectId,
-      x: payload.x,
-      y: payload.y,
-      prompt: payload.prompt,
-      aiProvider: payload.aiProvider,
-      aiConfig: payload.aiConfig,
-      isFirstTile,
-      // Only pass style refs for first tile
-      ...(styleReferenceUrls ? { styleReferenceUrls } : {}),
-      // Pass context image for follow-up tiles
-      ...(payload.contextImageBase64 ? { contextImageBase64: payload.contextImageBase64 } : {}),
-    }, {
-      ttl: '10m', // Match maxDuration
-    })
+    const handle = await tasks.trigger<typeof generateTileTask>(
+      'generate-tile',
+      {
+        projectId: payload.projectId,
+        x: payload.x,
+        y: payload.y,
+        prompt: payload.prompt,
+        aiProvider: payload.aiProvider,
+        aiConfig: payload.aiConfig,
+        isFirstTile,
+        // Only pass style refs for first tile
+        ...(styleReferenceUrls ? { styleReferenceUrls } : {}),
+        // Pass context image for follow-up tiles
+        ...(payload.contextImageBase64 ? { contextImageBase64: payload.contextImageBase64 } : {}),
+      },
+      {
+        ttl: '10m', // Match maxDuration
+      }
+    )
 
     return NextResponse.json({
       success: true,

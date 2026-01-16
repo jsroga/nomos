@@ -1,6 +1,6 @@
 /**
  * Character Psychology Agent Prompt
- * 
+ *
  * Validates character motivations and tracks psychological metrics.
  */
 

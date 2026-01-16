@@ -1,9 +1,9 @@
 /**
  * Storyteller Central Configuration
- * 
+ *
  * Single source of truth for all storyteller module settings.
  * Manages prompts, guardrails, evaluation thresholds, and feature flags.
- * 
+ *
  * Configuration can be overridden via:
  * 1. Environment variables
  * 2. LangSmith Prompt Hub (for prompts)
@@ -20,9 +20,9 @@ export interface GuardrailConfig {
 }
 
 export interface AntiSlopConfig extends GuardrailConfig {
-  threshold: number  // Score below this triggers warning (0-100)
-  blockOnCritical: boolean  // Block output if score < 30
-  minContentLength: number  // Skip validation for short content
+  threshold: number // Score below this triggers warning (0-100)
+  blockOnCritical: boolean // Block output if score < 30
+  minContentLength: number // Skip validation for short content
 }
 
 export interface HallucinationConfig extends GuardrailConfig {
@@ -37,49 +37,49 @@ export interface ConsistencyConfig extends GuardrailConfig {
 }
 
 export interface EvaluationConfig {
-  passThreshold: number  // Minimum score to pass (0-1)
-  magicScoreTarget: number  // Target magic score (0-100)
-  maxRegressionDelta: number  // Max allowed score drop (0-1)
-  sampleRateForLLM: number  // Sample rate for expensive LLM evaluators
+  passThreshold: number // Minimum score to pass (0-1)
+  magicScoreTarget: number // Target magic score (0-100)
+  maxRegressionDelta: number // Max allowed score drop (0-1)
+  sampleRateForLLM: number // Sample rate for expensive LLM evaluators
 }
 
 export interface PromptConfig {
-  useHub: boolean  // Pull prompts from LangSmith Hub
-  hubOwner: string  // LangSmith Hub organization
+  useHub: boolean // Pull prompts from LangSmith Hub
+  hubOwner: string // LangSmith Hub organization
   environment: 'production' | 'staging' | 'dev'
-  fallbackToLocal: boolean  // Use local prompts if Hub fails
+  fallbackToLocal: boolean // Use local prompts if Hub fails
 }
 
 export interface StorytellerConfig {
   // Feature flags
   features: {
-    hitlEnabled: boolean  // Human-in-the-loop confirmation
+    hitlEnabled: boolean // Human-in-the-loop confirmation
     ragEnabled: boolean
     streamingEnabled: boolean
     tracingEnabled: boolean
   }
-  
+
   // Guardrail settings
   guardrails: {
     antiSlop: AntiSlopConfig
     hallucination: HallucinationConfig
     consistency: ConsistencyConfig
-    globalEnabled: boolean  // Master switch for all guardrails
+    globalEnabled: boolean // Master switch for all guardrails
   }
-  
+
   // Evaluation settings
   evaluation: EvaluationConfig
-  
+
   // Prompt management
   prompts: PromptConfig
-  
+
   // Performance settings
   performance: {
     maxConcurrentAgents: number
     timeoutMs: number
     maxRetries: number
   }
-  
+
   // Logging & debugging
   debug: {
     verboseLogging: boolean
@@ -99,25 +99,25 @@ const DEFAULT_CONFIG: StorytellerConfig = {
     streamingEnabled: true,
     tracingEnabled: process.env.LANGCHAIN_TRACING_V2 === 'true',
   },
-  
+
   guardrails: {
     globalEnabled: process.env.STORYTELLER_GUARDRAILS_ENABLED !== 'false',
-    
+
     antiSlop: {
       enabled: true,
       severity: 'warning',
-      threshold: 40,  // Score < 40 triggers warning
-      blockOnCritical: false,  // Don't block by default
+      threshold: 40, // Score < 40 triggers warning
+      blockOnCritical: false, // Don't block by default
       minContentLength: 100,
     },
-    
+
     hallucination: {
       enabled: true,
       severity: 'error',
       validateUrls: true,
       maxRetriesOnFailure: 2,
     },
-    
+
     consistency: {
       enabled: true,
       severity: 'warning',
@@ -126,27 +126,28 @@ const DEFAULT_CONFIG: StorytellerConfig = {
       checkPlotContinuity: true,
     },
   },
-  
+
   evaluation: {
     passThreshold: 0.5,
     magicScoreTarget: 60,
-    maxRegressionDelta: 0.1,  // 10% max allowed drop
-    sampleRateForLLM: 0.3,  // LLM-evaluate 30% of examples
+    maxRegressionDelta: 0.1, // 10% max allowed drop
+    sampleRateForLLM: 0.3, // LLM-evaluate 30% of examples
   },
-  
+
   prompts: {
     useHub: process.env.STORYTELLER_USE_PROMPT_HUB === 'true',
     hubOwner: process.env.LANGSMITH_HUB_OWNER || 'tilemap',
-    environment: (process.env.STORYTELLER_PROMPT_ENV as 'production' | 'staging' | 'dev') || 'production',
+    environment:
+      (process.env.STORYTELLER_PROMPT_ENV as 'production' | 'staging' | 'dev') || 'production',
     fallbackToLocal: true,
   },
-  
+
   performance: {
     maxConcurrentAgents: 4,
     timeoutMs: 60000,
     maxRetries: 3,
   },
-  
+
   debug: {
     verboseLogging: process.env.STORYTELLER_VERBOSE === 'true',
     logAgentDecisions: process.env.STORYTELLER_LOG_DECISIONS === 'true',
@@ -277,17 +278,17 @@ export const ENV_VARS = {
   // Feature flags
   STORYTELLER_HITL_ENABLED: 'Enable human-in-the-loop confirmation',
   STORYTELLER_GUARDRAILS_ENABLED: 'Enable all guardrails (master switch)',
-  
+
   // Prompt Hub
   STORYTELLER_USE_PROMPT_HUB: 'Pull prompts from LangSmith Hub',
   STORYTELLER_PROMPT_ENV: 'Prompt environment (production/staging/dev)',
   LANGSMITH_HUB_OWNER: 'LangSmith Hub organization name',
-  
+
   // Debugging
   STORYTELLER_VERBOSE: 'Enable verbose logging',
   STORYTELLER_LOG_DECISIONS: 'Log agent decisions',
   STORYTELLER_LOG_RAG: 'Log RAG queries',
-  
+
   // LangSmith
   LANGCHAIN_API_KEY: 'LangSmith API key',
   LANGCHAIN_TRACING_V2: 'Enable LangSmith tracing',
@@ -303,9 +304,9 @@ export const ENV_VARS = {
  */
 function deepMerge(target: any, source: any): any {
   if (!source) return target
-  
+
   const result = { ...target }
-  
+
   for (const key of Object.keys(source)) {
     if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
       result[key] = deepMerge(result[key] || {}, source[key])
@@ -313,7 +314,7 @@ function deepMerge(target: any, source: any): any {
       result[key] = source[key]
     }
   }
-  
+
   return result
 }
 
@@ -331,4 +332,3 @@ export const STORYTELLER_CONFIG = getStorytellerConfig()
  * Note: This is a snapshot at import time, use getStorytellerConfig() for runtime values
  */
 export default STORYTELLER_CONFIG
-

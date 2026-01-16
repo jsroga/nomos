@@ -1,6 +1,6 @@
 /**
  * Loop Creator Domain
- * 
+ *
  * Exports everything needed for game loop design.
  */
 
@@ -30,4 +30,3 @@ export {
   balanceAnalystAgent,
   progressionArchitectAgent,
 } from './agents'
-

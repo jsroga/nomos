@@ -45,7 +45,7 @@ export const generate3DModelTask = task({
     // Initialize progress metadata
     await metadata.set('progress', 0)
 
-    let meshyResult: any = null
+    const meshyResult: any = null
 
     if (provider === 'meshy') {
       logger.info('Starting Meshy API call')
@@ -97,11 +97,14 @@ export const generate3DModelTask = task({
       while (attempts < maxAttempts) {
         await new Promise(resolve => setTimeout(resolve, 15000)) // 15 seconds
 
-        const statusResponse = await fetch(`https://api.meshy.ai/openapi/v1/image-to-3d/${taskId}`, {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
-        })
+        const statusResponse = await fetch(
+          `https://api.meshy.ai/openapi/v1/image-to-3d/${taskId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+            },
+          }
+        )
 
         if (!statusResponse.ok) {
           logger.error('Status check failed:', { status: statusResponse.status })

@@ -2,7 +2,6 @@ import { BaseMessage } from '@langchain/core/messages'
 import { EpisodePremise } from '../schemas/agent-schemas'
 import { BeatType, BeatStatus, Phase, PlanStatus, Verdict } from '../enums'
 
-
 export interface BeatCard {
   id: string
   episodeId: string
@@ -116,11 +115,11 @@ export interface Setup {
 // Phase type is now imported from enums.ts
 export { Phase }
 
-
 export interface WritersRoomState {
   // Project Context
   projectId: string
   episodeId?: string
+  userEmail?: string // For permission checks (e.g., Bible lock)
 
   // Phase Management
   currentPhase: Phase
@@ -170,6 +169,45 @@ export interface WritersRoomState {
   deepMemory: Record<string, any> // Persistent cross-agent context
   memory: Record<string, any> // Agentic scratchpad (New)
   plannerThinking: string // Streamed thought process of the planner
+
+  // Handoff System (Multi-Agent V2)
+  activeAgent?: string // Current agent in control
+  previousAgent?: string // Agent who handed off
+  handoffReason?: string // Why the handoff occurred
+
+  // Task Tracking
+  taskQueue: Task[] // Pending and active tasks
+  completedTasks: CompletedTask[] // History of completed tasks
+
+  // Skills System
+  loadedSkills: string[] // IDs of currently loaded skills
+  availableSkills: string[] // IDs of all available skills
+}
+
+/**
+ * Task in the task queue
+ */
+export interface Task {
+  id: string
+  agent: string
+  description: string
+  status: 'pending' | 'active' | 'completed' | 'failed'
+  context: Record<string, any>
+  priority: 'high' | 'normal' | 'low'
+  createdAt: number
+  completedAt?: number
+  estimatedComplexity?: 'simple' | 'moderate' | 'complex'
+}
+
+/**
+ * Completed task with results
+ */
+export interface CompletedTask extends Task {
+  status: 'completed'
+  result: string
+  nextAction?: string
+  artifacts?: Record<string, any>
+  completedAt: number
 }
 
 export interface PlanItem {
@@ -181,7 +219,6 @@ export interface PlanItem {
   parallelGroupId?: string
   result?: string
 }
-
 
 // Default state factory
 export function createInitialState(overrides?: Partial<WritersRoomState>): WritersRoomState {
@@ -215,6 +252,14 @@ export function createInitialState(overrides?: Partial<WritersRoomState>): Write
     deepMemory: {},
     memory: {},
     plannerThinking: '',
+    // Handoff System defaults
+    activeAgent: undefined,
+    previousAgent: undefined,
+    handoffReason: undefined,
+    taskQueue: [],
+    completedTasks: [],
+    loadedSkills: [],
+    availableSkills: [],
     ...overrides,
   }
 }

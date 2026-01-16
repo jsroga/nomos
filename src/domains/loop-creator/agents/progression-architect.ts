@@ -1,6 +1,6 @@
 /**
  * Progression Architect Agent
- * 
+ *
  * Designs progression systems by:
  * - Creating skill/power progression curves
  * - Defining milestones and unlocks
@@ -10,12 +10,12 @@
 
 import { ChatOpenAI } from '@langchain/openai'
 import { AIMessage, SystemMessage } from '@langchain/core/messages'
-import { 
-  LoopCreatorState, 
+import {
+  LoopCreatorState,
   ProgressionSystem,
   ProgressionMilestone,
   LoopAgentAction,
-  NextAgent 
+  NextAgent,
 } from '../graph/state'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -99,22 +99,27 @@ Respond with JSON:
  * Build context for the agent
  */
 function buildContext(state: LoopCreatorState): string {
-  const mechanicsList = state.mechanics.length > 0
-    ? state.mechanics.map(m => `- ${m.name} (${m.type})`).join('\n')
-    : 'No mechanics defined'
-  
-  const loopsList = state.loops.length > 0
-    ? state.loops.map(l => `- ${l.name} (${l.type}): ${l.duration.typical}min cycle`).join('\n')
-    : 'No loops defined'
-  
-  const progressionsList = state.progressionSystems.length > 0
-    ? state.progressionSystems.map(p => 
-        `- ${p.name} (${p.type}): ${p.milestones.length} milestones, ${p.curve} curve`
-      ).join('\n')
-    : 'No progression systems yet'
-  
-  return PROGRESSION_ARCHITECT_SYSTEM_PROMPT
-    .replace('{{GENRE}}', state.gameGenre || 'Not specified')
+  const mechanicsList =
+    state.mechanics.length > 0
+      ? state.mechanics.map(m => `- ${m.name} (${m.type})`).join('\n')
+      : 'No mechanics defined'
+
+  const loopsList =
+    state.loops.length > 0
+      ? state.loops.map(l => `- ${l.name} (${l.type}): ${l.duration.typical}min cycle`).join('\n')
+      : 'No loops defined'
+
+  const progressionsList =
+    state.progressionSystems.length > 0
+      ? state.progressionSystems
+          .map(p => `- ${p.name} (${p.type}): ${p.milestones.length} milestones, ${p.curve} curve`)
+          .join('\n')
+      : 'No progression systems yet'
+
+  return PROGRESSION_ARCHITECT_SYSTEM_PROMPT.replace(
+    '{{GENRE}}',
+    state.gameGenre || 'Not specified'
+  )
     .replace('{{PLATFORM}}', state.gamePlatform || 'Not specified')
     .replace('{{AUDIENCE}}', state.targetAudience || 'Not specified')
     .replace('{{DESCRIPTION}}', state.gameDescription || 'Not specified')
@@ -161,7 +166,7 @@ function parseResponse(content: string): ProgressionArchitectResponse {
       // Fall through
     }
   }
-  
+
   return {
     analysis: content,
     progressionSystems: [],
@@ -180,29 +185,29 @@ export async function progressionArchitectAgent(
     modelName: state.modelConfig?.model || 'gpt-4o',
     temperature: state.modelConfig?.temperature ?? 0.5,
   })
-  
+
   // Get the task
   const lastHumanMsg = [...state.messages].reverse().find(m => m._getType() === 'human')
-  const task = lastHumanMsg 
-    ? (typeof lastHumanMsg.content === 'string' ? lastHumanMsg.content : 'Design progression')
+  const task = lastHumanMsg
+    ? typeof lastHumanMsg.content === 'string'
+      ? lastHumanMsg.content
+      : 'Design progression'
     : 'Design progression systems that enhance the core game loops'
-  
+
   const systemPrompt = buildContext(state).replace('{{TASK}}', task)
-  
-  const messages = [
-    new SystemMessage(systemPrompt),
-    ...state.messages.slice(-5),
-  ]
-  
+
+  const messages = [new SystemMessage(systemPrompt), ...state.messages.slice(-5)]
+
   const response = await model.invoke(messages)
-  const content = typeof response.content === 'string' 
-    ? response.content 
-    : JSON.stringify(response.content)
-  
+  const content =
+    typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+
   const parsed = parseResponse(content)
-  
-  console.log(`[ProgressionArchitect] Created ${parsed.progressionSystems.length} progression systems`)
-  
+
+  console.log(
+    `[ProgressionArchitect] Created ${parsed.progressionSystems.length} progression systems`
+  )
+
   // Create actions
   const actions: LoopAgentAction[] = parsed.progressionSystems.map(p => ({
     type: 'ADD_PROGRESSION_SYSTEM' as const,
@@ -210,10 +215,11 @@ export async function progressionArchitectAgent(
     confidence: 0.8,
     reasoning: parsed.analysis,
   }))
-  
+
   // Build user message
-  let userMessage = parsed.message || `Designed ${parsed.progressionSystems.length} progression system(s).`
-  
+  let userMessage =
+    parsed.message || `Designed ${parsed.progressionSystems.length} progression system(s).`
+
   if (parsed.progressionSystems.length > 0) {
     userMessage += '\n\n**Progression Systems:**\n'
     for (const system of parsed.progressionSystems) {
@@ -227,12 +233,9 @@ export async function progressionArchitectAgent(
       }
     }
   }
-  
+
   return {
-    progressionSystems: [
-      ...state.progressionSystems,
-      ...parsed.progressionSystems,
-    ],
+    progressionSystems: [...state.progressionSystems, ...parsed.progressionSystems],
     pendingActions: actions,
     nextAgent: 'supervisor' as NextAgent,
     messages: [
@@ -243,4 +246,3 @@ export async function progressionArchitectAgent(
     ],
   }
 }
-

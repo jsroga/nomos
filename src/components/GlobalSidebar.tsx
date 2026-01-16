@@ -41,7 +41,10 @@ export const GlobalSidebar = () => {
   return (
     <div className="w-16 h-screen bg-card border-r border-border flex flex-col items-center pt-2 pb-4 gap-4 z-50">
       <div className="mb-4">
-        <Link href="/app" className="w-10 h-10 flex items-center justify-center relative group z-50">
+        <Link
+          href="/app"
+          className="w-10 h-10 flex items-center justify-center relative group z-50"
+        >
           <GlowEffect
             colors={['#4f46e5', '#3b82f6', '#8b5cf6', '#6366f1']}
             mode="static"
@@ -98,17 +101,6 @@ export const GlobalSidebar = () => {
           className="w-10 h-10"
         >
           <Home size={20} />
-        </Button>
-      </Link>
-
-      <Link href={`/app/${projectId}/deduction-puzzle`}>
-        <Button
-          variant={isActive(`/app/${projectId}/deduction-puzzle`) ? 'default' : 'ghost'}
-          size="icon"
-          title="Deduction Puzzle"
-          className="w-10 h-10"
-        >
-          <Puzzle size={20} />
         </Button>
       </Link>
 

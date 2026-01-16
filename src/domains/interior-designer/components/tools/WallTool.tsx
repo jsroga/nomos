@@ -178,4 +178,3 @@ export const WallTool: React.FC = () => {
     </group>
   )
 }
-

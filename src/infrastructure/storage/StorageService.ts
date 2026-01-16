@@ -9,7 +9,12 @@ export class StorageService {
    * In Dev: Uses local API route to save to filesystem.
    * In Prod: Uploads to Supabase Storage bucket 'projects'.
    */
-  async saveImage(projectId: string, filename: string, data: string | Buffer, contentType?: string): Promise<string> {
+  async saveImage(
+    projectId: string,
+    filename: string,
+    data: string | Buffer,
+    contentType?: string
+  ): Promise<string> {
     // Clean filename to avoid deep nesting issues if needed, though existing structure uses folders
     const cleanFilename = filename.startsWith('/') ? filename.slice(1) : filename
 
@@ -99,7 +104,11 @@ export class StorageService {
    * Handles images, GLB models, etc.
    * Priority: Vercel Blob -> Supabase -> TmpFiles (images only for tmpfiles)
    */
-  async uploadPublicFile(filename: string, data: string | Buffer, contentType: string = 'application/octet-stream'): Promise<string | null> {
+  async uploadPublicFile(
+    filename: string,
+    data: string | Buffer,
+    contentType: string = 'application/octet-stream'
+  ): Promise<string | null> {
     try {
       // 1. Try Vercel Blob (Primary)
       if (process.env.BLOB_READ_WRITE_TOKEN) {
@@ -138,15 +147,17 @@ export class StorageService {
 
       console.warn('TmpFiles does not support non-image content types')
       return null
-
     } catch (e) {
       console.warn('Public file upload failed:', e)
       return null
     }
   }
 
-
-  private async uploadToVercelBlob(filename: string, data: string | Buffer, contentType: string = 'image/png'): Promise<string | null> {
+  private async uploadToVercelBlob(
+    filename: string,
+    data: string | Buffer,
+    contentType: string = 'image/png'
+  ): Promise<string | null> {
     try {
       let body: Buffer
       if (typeof data === 'string') {
@@ -159,7 +170,14 @@ export class StorageService {
       }
 
       console.log('[Vercel Blob] Token present?', !!process.env.BLOB_READ_WRITE_TOKEN)
-      console.log('[Vercel Blob] Uploading:', filename, 'size:', body.byteLength, 'contentType:', contentType)
+      console.log(
+        '[Vercel Blob] Uploading:',
+        filename,
+        'size:',
+        body.byteLength,
+        'contentType:',
+        contentType
+      )
 
       const blob = await put(filename, body, {
         access: 'public',
@@ -171,7 +189,7 @@ export class StorageService {
       console.log('[Vercel Blob] Upload response:', {
         url: blob.url,
         contentType: blob.contentType,
-        pathname: blob.pathname
+        pathname: blob.pathname,
       })
 
       // Wait briefly for propagation
@@ -180,7 +198,11 @@ export class StorageService {
       // Verify URL is accessible
       try {
         const headResp = await fetch(blob.url, { method: 'HEAD' })
-        console.log('[Vercel Blob] Verification HEAD request:', headResp.status, headResp.statusText)
+        console.log(
+          '[Vercel Blob] Verification HEAD request:',
+          headResp.status,
+          headResp.statusText
+        )
         if (!headResp.ok) {
           console.warn('[Vercel Blob] URL not accessible yet - falling back to Supabase')
           return null
@@ -218,7 +240,7 @@ export class StorageService {
         blob = new Blob([byteArray], { type: 'image/png' })
       } else {
         // Fix: buffer might be Node Buffer, convert to Uint8Array for Blob
-        const bufferData = Buffer.isBuffer(data) ? new Uint8Array(data) : data as any
+        const bufferData = Buffer.isBuffer(data) ? new Uint8Array(data) : (data as any)
         blob = new Blob([bufferData], { type: 'image/png' })
       }
 
@@ -227,7 +249,7 @@ export class StorageService {
       // Upload
       const response = await fetch('https://tmpfiles.org/api/v1/upload', {
         method: 'POST',
-        body: formData
+        body: formData,
       })
 
       if (!response.ok) throw new Error(`Upload failed: ${response.statusText}`)
@@ -250,14 +272,21 @@ export class StorageService {
   private getContentType(filename: string): string {
     const ext = filename.split('.').pop()?.toLowerCase()
     switch (ext) {
-      case 'glb': return 'model/gltf-binary'
-      case 'gltf': return 'model/gltf+json'
-      case 'png': return 'image/png'
+      case 'glb':
+        return 'model/gltf-binary'
+      case 'gltf':
+        return 'model/gltf+json'
+      case 'png':
+        return 'image/png'
       case 'jpg':
-      case 'jpeg': return 'image/jpeg'
-      case 'webp': return 'image/webp'
-      case 'svg': return 'image/svg+xml'
-      default: return 'application/octet-stream'
+      case 'jpeg':
+        return 'image/jpeg'
+      case 'webp':
+        return 'image/webp'
+      case 'svg':
+        return 'image/svg+xml'
+      default:
+        return 'application/octet-stream'
     }
   }
 }

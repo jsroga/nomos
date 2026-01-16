@@ -49,15 +49,11 @@ export const HoverActions: React.FC<HoverActionsProps> = ({
         label={copied ? 'Copied!' : 'Copy'}
         onClick={handleCopy}
       />
-      
+
       {onEdit && (
-        <ActionButton
-          icon={<Edit3 className="w-3 h-3" />}
-          label="Edit"
-          onClick={onEdit}
-        />
+        <ActionButton icon={<Edit3 className="w-3 h-3" />} label="Edit" onClick={onEdit} />
       )}
-      
+
       {onRegenerate && (
         <ActionButton
           icon={<RefreshCw className="w-3 h-3" />}
@@ -112,14 +108,9 @@ export const WithHoverActions: React.FC<WithHoverActionsProps> = ({
   return (
     <div className={cn('relative group', className)}>
       {children}
-      <HoverActions
-        content={content}
-        onEdit={onEdit}
-        onRegenerate={onRegenerate}
-      />
+      <HoverActions content={content} onEdit={onEdit} onRegenerate={onRegenerate} />
     </div>
   )
 }
 
 export default HoverActions
-

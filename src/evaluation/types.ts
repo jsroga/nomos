@@ -83,4 +83,3 @@ export interface LoopCreatorEvalOutput {
   loops?: Array<{ id: string; name: string }>
   balanceScore?: number
 }
-

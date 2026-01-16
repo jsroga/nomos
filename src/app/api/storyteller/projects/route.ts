@@ -100,10 +100,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const allProjects = await db
-      .select()
-      .from(projects)
-      .where(eq(projects.userId, session.user.id))
+    const allProjects = await db.select().from(projects).where(eq(projects.userId, session.user.id))
 
     return NextResponse.json(allProjects)
   } catch (error) {
@@ -111,4 +108,3 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 })
   }
 }
-

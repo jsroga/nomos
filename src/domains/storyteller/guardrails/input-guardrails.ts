@@ -1,6 +1,6 @@
 /**
  * Input Guardrails
- * 
+ *
  * Validates user messages before they reach the agent graph.
  * Includes content moderation, prompt injection detection, and length limits.
  */
@@ -186,10 +186,7 @@ function moderateContent(message: string): ContentModerationResult {
 /**
  * Check if the user's request matches the current phase
  */
-function validatePhaseRelevance(
-  message: string,
-  phase: Phase
-): GuardrailIssue[] {
+function validatePhaseRelevance(message: string, phase: Phase): GuardrailIssue[] {
   const issues: GuardrailIssue[] = []
   const lowerMessage = message.toLowerCase()
 
@@ -390,8 +387,8 @@ export function isInputSafe(message: string): boolean {
   // Quick checks only
   if (message.length > MAX_MESSAGE_LENGTH) return false
 
-  const hasInjection = INJECTION_PATTERNS.some(({ pattern, severity }) =>
-    severity === 'error' && pattern.test(message)
+  const hasInjection = INJECTION_PATTERNS.some(
+    ({ pattern, severity }) => severity === 'error' && pattern.test(message)
   )
   if (hasInjection) return false
 
@@ -419,7 +416,10 @@ export async function validateInputForAgent(
 ): Promise<InputValidationResult> {
   // Get the last user message from state
   const messages = state.messages || []
-  const lastHumanMessage = messages.slice().reverse().find(m => m._getType() === 'human')
+  const lastHumanMessage = messages
+    .slice()
+    .reverse()
+    .find(m => m._getType() === 'human')
 
   if (!lastHumanMessage) {
     return {
@@ -429,18 +429,10 @@ export async function validateInputForAgent(
     }
   }
 
-  const content = typeof lastHumanMessage.content === 'string'
-    ? lastHumanMessage.content
-    : JSON.stringify(lastHumanMessage.content)
+  const content =
+    typeof lastHumanMessage.content === 'string'
+      ? lastHumanMessage.content
+      : JSON.stringify(lastHumanMessage.content)
 
   return validateUserInput(content, state)
 }
-
-
-
-
-
-
-
-
-

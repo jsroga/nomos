@@ -5,12 +5,7 @@ import { Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { useGlobalStatusStore, OperationType } from '@/store/useGlobalStatusStore'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { LiquidGlass } from '@/components/LiquidGlass'
 
 export const AsyncStatusIndicator: React.FC = () => {
@@ -19,7 +14,17 @@ export const AsyncStatusIndicator: React.FC = () => {
   const removeOperation = useGlobalStatusStore(state => state.removeOperation)
 
   // Trigger.dev active statuses
-  const ACTIVE_STATUSES = ['PENDING', 'QUEUED', 'EXECUTING', 'WAITING', 'REATTEMPTING', 'FROZEN', 'PENDING_VERSION', 'DEQUEUED', 'DELAYED']
+  const ACTIVE_STATUSES = [
+    'PENDING',
+    'QUEUED',
+    'EXECUTING',
+    'WAITING',
+    'REATTEMPTING',
+    'FROZEN',
+    'PENDING_VERSION',
+    'DEQUEUED',
+    'DELAYED',
+  ]
 
   // Clear all stale operations manually
   const clearAllOperations = React.useCallback(() => {
@@ -42,7 +47,9 @@ export const AsyncStatusIndicator: React.FC = () => {
 
       if (stuckOps.length === 0) return
 
-      console.log(`[AsyncStatusIndicator] Found ${stuckOps.length} potentially stuck operations, checking...`)
+      console.log(
+        `[AsyncStatusIndicator] Found ${stuckOps.length} potentially stuck operations, checking...`
+      )
 
       for (const operation of stuckOps) {
         try {
@@ -53,7 +60,9 @@ export const AsyncStatusIndicator: React.FC = () => {
             await cleanup3DOperation(operation)
           } else if (operation.type === 'story-agent') {
             // Story agent operations are transient - if page reloads, they're stale
-            console.log(`[AsyncStatusIndicator] Removing stale story-agent operation ${operation.id}`)
+            console.log(
+              `[AsyncStatusIndicator] Removing stale story-agent operation ${operation.id}`
+            )
             removeOperation(operation.id)
           } else if (operation.type === 'portrait-gen') {
             await cleanupPortraitOperation(operation)
@@ -69,7 +78,7 @@ export const AsyncStatusIndicator: React.FC = () => {
     }
 
     // Cleanup helper for retexture operations
-    const cleanupRetextureOperation = async (operation: typeof operations[0]) => {
+    const cleanupRetextureOperation = async (operation: (typeof operations)[0]) => {
       let taskId: string | null = null
       try {
         const metadata = JSON.parse(operation.details || '{}')
@@ -92,7 +101,7 @@ export const AsyncStatusIndicator: React.FC = () => {
         console.warn(`[AsyncStatusIndicator] Task ${taskId} not found, marking as failed`)
         updateOperation(operation.id, {
           status: 'failed',
-          details: JSON.stringify({ taskId, error: 'Task not found', failureStatus: 'NOT_FOUND' })
+          details: JSON.stringify({ taskId, error: 'Task not found', failureStatus: 'NOT_FOUND' }),
         })
         return
       }
@@ -107,22 +116,22 @@ export const AsyncStatusIndicator: React.FC = () => {
             status: 'completed',
             details: JSON.stringify({
               taskId,
-              retexturedUrl: output.retexturedUrl
-            })
+              retexturedUrl: output.retexturedUrl,
+            }),
           })
           console.log(`[AsyncStatusIndicator] Updated ${operation.id} to completed`)
         }
       } else if (!ACTIVE_STATUSES.includes(data.status)) {
         updateOperation(operation.id, {
           status: 'failed',
-          details: JSON.stringify({ taskId, error: data.error, failureStatus: data.status })
+          details: JSON.stringify({ taskId, error: data.error, failureStatus: data.status }),
         })
         console.log(`[AsyncStatusIndicator] Updated ${operation.id} to failed (${data.status})`)
       }
     }
 
     // Cleanup helper for 3D generation/remesh operations
-    const cleanup3DOperation = async (operation: typeof operations[0]) => {
+    const cleanup3DOperation = async (operation: (typeof operations)[0]) => {
       // Extract runId from operation id (format: 3d-{assetId} or 3d-remesh-{assetId})
       // The actual runId should be stored in metadata
       let runId: string | null = null
@@ -143,7 +152,9 @@ export const AsyncStatusIndicator: React.FC = () => {
         return
       }
 
-      console.log(`[AsyncStatusIndicator] Checking 3D operation ${operation.id} with runId ${runId}`)
+      console.log(
+        `[AsyncStatusIndicator] Checking 3D operation ${operation.id} with runId ${runId}`
+      )
 
       try {
         const res = await fetch(`/api/trigger-3d/status?runId=${runId}`)
@@ -168,14 +179,14 @@ export const AsyncStatusIndicator: React.FC = () => {
           removeOperation(operation.id)
         }
       } catch (err) {
-        console.error(`[AsyncStatusIndicator] Error checking 3D operation:`, err)
+        console.error('[AsyncStatusIndicator] Error checking 3D operation:', err)
         // On error, remove stale operation
         removeOperation(operation.id)
       }
     }
 
     // Cleanup helper for portrait generation operations
-    const cleanupPortraitOperation = async (operation: typeof operations[0]) => {
+    const cleanupPortraitOperation = async (operation: (typeof operations)[0]) => {
       let taskId: string | null = null
       try {
         const metadata = JSON.parse(operation.details || '{}')
@@ -191,7 +202,9 @@ export const AsyncStatusIndicator: React.FC = () => {
         return
       }
 
-      console.log(`[AsyncStatusIndicator] Checking portrait operation ${operation.id} with taskId ${taskId}`)
+      console.log(
+        `[AsyncStatusIndicator] Checking portrait operation ${operation.id} with taskId ${taskId}`
+      )
 
       try {
         const res = await fetch(`/api/storyteller/generate-portrait/status?taskId=${taskId}`)
@@ -212,7 +225,7 @@ export const AsyncStatusIndicator: React.FC = () => {
           removeOperation(operation.id)
         }
       } catch (err) {
-        console.error(`[AsyncStatusIndicator] Error checking portrait operation:`, err)
+        console.error('[AsyncStatusIndicator] Error checking portrait operation:', err)
         removeOperation(operation.id)
       }
     }
@@ -297,25 +310,37 @@ export const AsyncStatusIndicator: React.FC = () => {
                           const metadata = JSON.parse(op.details)
                           // Show prompt if available, otherwise just generic status
                           if (metadata.prompt) {
-                            statusText = metadata.prompt.length > 40
-                              ? metadata.prompt.substring(0, 40) + '...'
-                              : metadata.prompt
+                            statusText =
+                              metadata.prompt.length > 40
+                                ? metadata.prompt.substring(0, 40) + '...'
+                                : metadata.prompt
                           }
                         } catch (e) {
                           // If JSON parsing fails, treat as plain text
-                          statusText = op.details.length > 40
-                            ? op.details.substring(0, 40) + '...'
-                            : op.details
+                          statusText =
+                            op.details.length > 40
+                              ? op.details.substring(0, 40) + '...'
+                              : op.details
                         }
                       }
 
                       return (
-                        <div key={op.id} className="text-xs py-2 px-3 rounded-lg bg-black/20 group/op border border-white/5 hover:border-white/10 transition-colors">
+                        <div
+                          key={op.id}
+                          className="text-xs py-2 px-3 rounded-lg bg-black/20 group/op border border-white/5 hover:border-white/10 transition-colors"
+                        >
                           <div className="flex items-center gap-2 mb-1">
-                            <div className={cn('w-1.5 h-1.5 rounded-full animate-pulse shadow-glow', bgColor)} />
-                            <span className={cn('font-medium flex-1 tracking-wide', textColor)}>{op.label}</span>
+                            <div
+                              className={cn(
+                                'w-1.5 h-1.5 rounded-full animate-pulse shadow-glow',
+                                bgColor
+                              )}
+                            />
+                            <span className={cn('font-medium flex-1 tracking-wide', textColor)}>
+                              {op.label}
+                            </span>
                             <button
-                              onClick={(e) => {
+                              onClick={e => {
                                 e.stopPropagation()
                                 removeOperation(op.id)
                               }}

@@ -1,6 +1,6 @@
 /**
  * Section Progress Component
- * 
+ *
  * Displays visual progress for multi-step AI operations.
  * Shows current section, completion status, and estimated time.
  */
@@ -45,15 +45,15 @@ function calculateEstimatedTime(sections: ProgressSection[]): number | null {
   const completed = sections.filter(s => s.status === 'completed' && s.startTime && s.endTime)
   const pending = sections.filter(s => s.status === 'pending')
   const inProgress = sections.filter(s => s.status === 'in_progress')
-  
+
   if (completed.length === 0 || (pending.length === 0 && inProgress.length === 0)) {
     return null
   }
-  
+
   // Average time per completed section
   const totalCompletedTime = completed.reduce((sum, s) => sum + (s.endTime! - s.startTime!), 0)
   const avgTimePerSection = totalCompletedTime / completed.length
-  
+
   // Estimated remaining = avg time * (pending + 0.5 * in_progress)
   return avgTimePerSection * (pending.length + 0.5 * inProgress.length)
 }
@@ -66,9 +66,10 @@ const SectionItem: React.FC<{
   index: number
   isLast: boolean
 }> = ({ section, index, isLast }) => {
-  const duration = section.startTime && section.endTime
-    ? formatDuration(section.endTime - section.startTime)
-    : null
+  const duration =
+    section.startTime && section.endTime
+      ? formatDuration(section.endTime - section.startTime)
+      : null
 
   return (
     <motion.div
@@ -79,68 +80,70 @@ const SectionItem: React.FC<{
     >
       {/* Connector line */}
       {!isLast && (
-        <div 
+        <div
           className={cn(
-            "absolute left-[11px] top-[22px] w-[2px] h-[calc(100%+4px)]",
+            'absolute left-[11px] top-[22px] w-[2px] h-[calc(100%+4px)]',
             section.status === 'completed' ? 'bg-emerald-500/50' : 'bg-border'
           )}
         />
       )}
-      
+
       <div className="flex items-start gap-3 py-1">
         {/* Status indicator */}
-        <div className={cn(
-          "flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center mt-0.5",
-          section.status === 'completed' && 'bg-emerald-500/20 text-emerald-500',
-          section.status === 'in_progress' && 'bg-blue-500/20 text-blue-500',
-          section.status === 'pending' && 'bg-muted text-muted-foreground',
-          section.status === 'error' && 'bg-red-500/20 text-red-500'
-        )}>
+        <div
+          className={cn(
+            'flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center mt-0.5',
+            section.status === 'completed' && 'bg-emerald-500/20 text-emerald-500',
+            section.status === 'in_progress' && 'bg-blue-500/20 text-blue-500',
+            section.status === 'pending' && 'bg-muted text-muted-foreground',
+            section.status === 'error' && 'bg-red-500/20 text-red-500'
+          )}
+        >
           {section.status === 'completed' && <Check className="w-3.5 h-3.5" />}
           {section.status === 'in_progress' && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
           {section.status === 'pending' && <span className="text-xs font-medium">{index + 1}</span>}
           {section.status === 'error' && <span className="text-xs">!</span>}
         </div>
-        
+
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className={cn(
-              "text-sm font-medium",
-              section.status === 'completed' && 'text-foreground',
-              section.status === 'in_progress' && 'text-blue-500',
-              section.status === 'pending' && 'text-muted-foreground',
-              section.status === 'error' && 'text-red-500'
-            )}>
+            <span
+              className={cn(
+                'text-sm font-medium',
+                section.status === 'completed' && 'text-foreground',
+                section.status === 'in_progress' && 'text-blue-500',
+                section.status === 'pending' && 'text-muted-foreground',
+                section.status === 'error' && 'text-red-500'
+              )}
+            >
               {section.label}
             </span>
-            
-            {duration && (
-              <span className="text-xs text-muted-foreground">
-                {duration}
-              </span>
-            )}
+
+            {duration && <span className="text-xs text-muted-foreground">{duration}</span>}
           </div>
-          
+
           {section.details && (
-            <p className="text-xs text-muted-foreground mt-0.5 truncate">
-              {section.details}
-            </p>
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">{section.details}</p>
           )}
-          
+
           {/* Sub-sections */}
           {section.subSections && section.subSections.length > 0 && (
             <div className="ml-2 mt-2 space-y-1 border-l-2 border-border/50 pl-3">
               {section.subSections.map((sub, i) => (
                 <div key={sub.id} className="flex items-center gap-2 text-xs">
                   {sub.status === 'completed' && <Check className="w-3 h-3 text-emerald-500" />}
-                  {sub.status === 'in_progress' && <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />}
+                  {sub.status === 'in_progress' && (
+                    <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />
+                  )}
                   {sub.status === 'pending' && <div className="w-3 h-3 rounded-full bg-muted" />}
-                  <span className={cn(
-                    sub.status === 'completed' && 'text-foreground',
-                    sub.status === 'in_progress' && 'text-blue-500',
-                    sub.status === 'pending' && 'text-muted-foreground'
-                  )}>
+                  <span
+                    className={cn(
+                      sub.status === 'completed' && 'text-foreground',
+                      sub.status === 'in_progress' && 'text-blue-500',
+                      sub.status === 'pending' && 'text-muted-foreground'
+                    )}
+                  >
                     {sub.label}
                   </span>
                 </div>
@@ -166,12 +169,12 @@ export const SectionProgress: React.FC<SectionProgressProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
   const [estimatedTime, setEstimatedTime] = useState<number | null>(null)
-  
+
   // Calculate completion percentage
   const completed = sections.filter(s => s.status === 'completed').length
   const total = sections.length
   const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
-  
+
   // Update estimated time
   useEffect(() => {
     if (showEstimatedTime) {
@@ -179,28 +182,28 @@ export const SectionProgress: React.FC<SectionProgressProps> = ({
       setEstimatedTime(est)
     }
   }, [sections, showEstimatedTime])
-  
+
   const hasInProgress = sections.some(s => s.status === 'in_progress')
-  
+
   return (
-    <div className={cn(
-      "rounded-lg border bg-card/50 overflow-hidden",
-      hasInProgress && "border-blue-500/30",
-      className
-    )}>
+    <div
+      className={cn(
+        'rounded-lg border bg-card/50 overflow-hidden',
+        hasInProgress && 'border-blue-500/30',
+        className
+      )}
+    >
       {/* Header */}
-      <div 
+      <div
         className={cn(
-          "flex items-center justify-between px-4 py-3 bg-muted/30",
-          collapsible && "cursor-pointer hover:bg-muted/50 transition-colors"
+          'flex items-center justify-between px-4 py-3 bg-muted/30',
+          collapsible && 'cursor-pointer hover:bg-muted/50 transition-colors'
         )}
         onClick={() => collapsible && setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-3">
-          {title && (
-            <h4 className="text-sm font-medium">{title}</h4>
-          )}
-          
+          {title && <h4 className="text-sm font-medium">{title}</h4>}
+
           {/* Progress bar */}
           <div className="flex items-center gap-2">
             <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
@@ -216,7 +219,7 @@ export const SectionProgress: React.FC<SectionProgressProps> = ({
             </span>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-3">
           {/* Estimated time */}
           {showEstimatedTime && estimatedTime !== null && hasInProgress && (
@@ -225,7 +228,7 @@ export const SectionProgress: React.FC<SectionProgressProps> = ({
               <span>~{formatDuration(estimatedTime)} left</span>
             </div>
           )}
-          
+
           {/* Collapse toggle */}
           {collapsible && (
             <button className="text-muted-foreground hover:text-foreground transition-colors">
@@ -234,7 +237,7 @@ export const SectionProgress: React.FC<SectionProgressProps> = ({
           )}
         </div>
       </div>
-      
+
       {/* Sections list */}
       <AnimatePresence>
         {isExpanded && (
@@ -267,35 +270,35 @@ export const SectionProgress: React.FC<SectionProgressProps> = ({
  */
 export function useSectionProgress(initialSections: ProgressSection[]) {
   const [sections, setSections] = useState<ProgressSection[]>(initialSections)
-  
+
   const startSection = (id: string) => {
-    setSections(prev => prev.map(s => 
-      s.id === id 
-        ? { ...s, status: 'in_progress' as const, startTime: Date.now() }
-        : s
-    ))
+    setSections(prev =>
+      prev.map(s =>
+        s.id === id ? { ...s, status: 'in_progress' as const, startTime: Date.now() } : s
+      )
+    )
   }
-  
+
   const completeSection = (id: string, details?: string) => {
-    setSections(prev => prev.map(s => 
-      s.id === id 
-        ? { ...s, status: 'completed' as const, endTime: Date.now(), details }
-        : s
-    ))
+    setSections(prev =>
+      prev.map(s =>
+        s.id === id ? { ...s, status: 'completed' as const, endTime: Date.now(), details } : s
+      )
+    )
   }
-  
+
   const errorSection = (id: string, details?: string) => {
-    setSections(prev => prev.map(s => 
-      s.id === id 
-        ? { ...s, status: 'error' as const, endTime: Date.now(), details }
-        : s
-    ))
+    setSections(prev =>
+      prev.map(s =>
+        s.id === id ? { ...s, status: 'error' as const, endTime: Date.now(), details } : s
+      )
+    )
   }
-  
+
   const resetSections = () => {
     setSections(initialSections.map(s => ({ ...s, status: 'pending' as const })))
   }
-  
+
   return {
     sections,
     startSection,
@@ -306,4 +309,3 @@ export function useSectionProgress(initialSections: ProgressSection[]) {
 }
 
 export default SectionProgress
-

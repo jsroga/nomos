@@ -1,6 +1,6 @@
 /**
  * Script Quality Evaluator
- * 
+ *
  * Evaluates the quality of generated scripts using LLM-as-judge:
  * - Dialogue quality and character voice
  * - Format compliance (screenplay format)
@@ -84,9 +84,8 @@ export const scriptQualityEvaluator: CustomEvaluator = {
       const prompt = SCRIPT_QUALITY_PROMPT.replace('{script}', outputStr.slice(0, 8000))
 
       const response = await model.invoke(prompt)
-      const content = typeof response.content === 'string'
-        ? response.content
-        : JSON.stringify(response.content)
+      const content =
+        typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
 
       const jsonMatch = content.match(/\{[\s\S]*\}/)
       if (!jsonMatch) {
@@ -164,4 +163,3 @@ export const scriptFormatEvaluator: CustomEvaluator = {
     }
   },
 }
-

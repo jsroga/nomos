@@ -121,7 +121,7 @@ export async function improveDialogue(
 export async function addVisualHook(selection: string): Promise<string> {
   return regenerateText(
     selection,
-    "Add a strong visual hook to open this scene. What's the first, most striking image we see? Make it iconic and meaningful."
+    'Add a strong visual hook to open this scene. What\'s the first, most striking image we see? Make it iconic and meaningful.'
   )
 }
 

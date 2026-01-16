@@ -1,6 +1,6 @@
 /**
  * URL Validator Tool
- * 
+ *
  * Prevents hallucinated URLs by validating:
  * - URL format and reachability
  * - Platform-specific validation (YouTube, etc.)
@@ -59,7 +59,10 @@ const PLATFORM_PATTERNS: Record<string, RegExp> = {
 /**
  * Detect if a URL is likely hallucinated based on patterns
  */
-function detectHallucinationPatterns(url: string): { isLikelyHallucinated: boolean; reason?: string } {
+function detectHallucinationPatterns(url: string): {
+  isLikelyHallucinated: boolean
+  reason?: string
+} {
   for (const { pattern, reason } of HALLUCINATION_PATTERNS) {
     if (pattern.test(url)) {
       return { isLikelyHallucinated: true, reason }
@@ -98,7 +101,7 @@ async function validateYouTubeURL(url: string): Promise<Partial<URLValidationRes
   }
 
   const apiKey = process.env.YOUTUBE_API_KEY
-  
+
   // If no API key, just validate format and check for hallucination patterns
   if (!apiKey) {
     const hallucinationCheck = detectHallucinationPatterns(url)
@@ -120,14 +123,14 @@ async function validateYouTubeURL(url: string): Promise<Partial<URLValidationRes
     }
 
     const data = await response.json()
-    
+
     if (!data.items || data.items.length === 0) {
-      return { 
-        isValid: false, 
-        isReachable: false, 
+      return {
+        isValid: false,
+        isReachable: false,
         isLikelyHallucinated: true,
         hallucinationReason: 'Video ID does not exist',
-        error: 'Video not found' 
+        error: 'Video not found',
       }
     }
 
@@ -142,10 +145,10 @@ async function validateYouTubeURL(url: string): Promise<Partial<URLValidationRes
       },
     }
   } catch (error) {
-    return { 
-      isValid: false, 
-      isReachable: false, 
-      error: error instanceof Error ? error.message : 'YouTube validation failed' 
+    return {
+      isValid: false,
+      isReachable: false,
+      error: error instanceof Error ? error.message : 'YouTube validation failed',
     }
   }
 }
@@ -176,7 +179,11 @@ async function validateURLWithHead(url: string): Promise<Partial<URLValidationRe
     return {
       isValid: true, // URL format is valid
       isReachable: false,
-      error: isAborted ? 'Request timeout' : (error instanceof Error ? error.message : 'Unknown error'),
+      error: isAborted
+        ? 'Request timeout'
+        : error instanceof Error
+          ? error.message
+          : 'Unknown error',
     }
   }
 }
@@ -203,7 +210,7 @@ export async function validateURL(
 
   // Check for hallucination patterns
   const hallucinationCheck = detectHallucinationPatterns(url)
-  
+
   if (hallucinationCheck.isLikelyHallucinated) {
     return {
       url,
@@ -263,13 +270,13 @@ export async function validateURLsInText(text: string): Promise<{
   hasHallucinatedURLs: boolean
 }> {
   const urls = extractURLsFromText(text)
-  
+
   if (urls.length === 0) {
     return { urls: [], hasInvalidURLs: false, hasHallucinatedURLs: false }
   }
 
   const results = await validateURLs(urls)
-  
+
   return {
     urls: results,
     hasInvalidURLs: results.some(r => !r.isValid),
@@ -291,26 +298,29 @@ Returns validation status, platform detection, and hallucination warnings.
 DO NOT include URLs in your response that fail validation.`,
     schema: z.object({
       url: z.string().describe('The URL to validate'),
-      skipReachabilityCheck: z.boolean().optional().default(false)
+      skipReachabilityCheck: z
+        .boolean()
+        .optional()
+        .default(false)
         .describe('Skip checking if URL is reachable (faster but less thorough)'),
     }),
     func: async ({ url, skipReachabilityCheck }) => {
       const result = await validateURL(url, { skipReachabilityCheck })
-      
+
       if (result.isLikelyHallucinated) {
         return `❌ HALLUCINATED URL DETECTED: ${url}
 Reason: ${result.hallucinationReason}
 
 DO NOT include this URL in your response. Generate content without it or ask the user for the correct URL.`
       }
-      
+
       if (!result.isValid) {
         return `❌ INVALID URL: ${url}
 Error: ${result.error}
 
 DO NOT include this URL in your response.`
       }
-      
+
       if (!result.isReachable) {
         return `⚠️ URL format valid but could not verify: ${url}
 Platform: ${result.platform || 'unknown'}
@@ -318,14 +328,14 @@ Error: ${result.error || 'Could not reach URL'}
 
 Use with caution - consider asking the user to verify.`
       }
-      
+
       let response = `✅ VALID URL: ${url}
 Platform: ${result.platform || 'generic'}`
-      
+
       if (result.metadata?.title) {
         response += `\nTitle: ${result.metadata.title}`
       }
-      
+
       return response
     },
   })
@@ -340,4 +350,3 @@ export function getURLValidatorTool() {
   }
   return urlValidatorToolInstance
 }
-

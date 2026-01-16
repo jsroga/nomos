@@ -60,30 +60,38 @@ export class TileGenerationService {
   private blobToBase64(blob: Blob): Promise<string> {
     return new Promise((resolve, reject) => {
       if (!blob || blob.size === 0) {
-        console.error('[TileGenerationService] blobToBase64 received invalid blob:', { blob, size: blob?.size })
+        console.error('[TileGenerationService] blobToBase64 received invalid blob:', {
+          blob,
+          size: blob?.size,
+        })
         reject(new Error('Invalid blob'))
         return
       }
-      
-      console.log('[TileGenerationService] Converting blob to base64:', { size: blob.size, type: blob.type })
-      
+
+      console.log('[TileGenerationService] Converting blob to base64:', {
+        size: blob.size,
+        type: blob.type,
+      })
+
       const reader = new FileReader()
       reader.onloadend = () => {
         const dataUrl = reader.result as string
         if (!dataUrl || !dataUrl.includes(',')) {
-          console.error('[TileGenerationService] Invalid data URL:', { dataUrl: dataUrl?.substring(0, 100) })
+          console.error('[TileGenerationService] Invalid data URL:', {
+            dataUrl: dataUrl?.substring(0, 100),
+          })
           reject(new Error('Invalid data URL from FileReader'))
           return
         }
         // Remove the data:image/png;base64, prefix
         const base64 = dataUrl.split(',')[1]
-        console.log('[TileGenerationService] Base64 conversion complete:', { 
+        console.log('[TileGenerationService] Base64 conversion complete:', {
           base64Length: base64?.length,
-          isValidLength: base64?.length > 0 && base64?.length % 4 === 0
+          isValidLength: base64?.length > 0 && base64?.length % 4 === 0,
         })
         resolve(base64)
       }
-      reader.onerror = (e) => {
+      reader.onerror = e => {
         console.error('[TileGenerationService] FileReader error:', e)
         reject(new Error('FileReader error'))
       }
@@ -119,7 +127,9 @@ export class TileGenerationService {
     }
 
     if (!aiConfig?.apiKey) {
-      throw new Error(`API key not found for provider: ${aiProvider}. Please configure it in Settings.`)
+      throw new Error(
+        `API key not found for provider: ${aiProvider}. Please configure it in Settings.`
+      )
     }
 
     // Track generating status
@@ -139,7 +149,7 @@ export class TileGenerationService {
 
       // Debug: log which tiles exist around the target
       console.log(`[TileGen] Target: (${x}, ${y})`)
-      console.log(`[TileGen] Checking neighbors:`, {
+      console.log('[TileGen] Checking neighbors:', {
         up: tiles[`${x},${y - 1}`]?.image_filename,
         down: tiles[`${x},${y + 1}`]?.image_filename,
         left: tiles[`${x - 1},${y}`]?.image_filename,
@@ -147,17 +157,25 @@ export class TileGenerationService {
       })
 
       // Load neighbor tiles with their images
-      const [upTile, downTile, leftTile, rightTile, topLeftTile, topRightTile, bottomLeftTile, bottomRightTile] =
-        await Promise.all([
-          this.loadTileAsDataUrl(tiles[`${x},${y - 1}`], projectId),
-          this.loadTileAsDataUrl(tiles[`${x},${y + 1}`], projectId),
-          this.loadTileAsDataUrl(tiles[`${x - 1},${y}`], projectId),
-          this.loadTileAsDataUrl(tiles[`${x + 1},${y}`], projectId),
-          this.loadTileAsDataUrl(tiles[`${x - 1},${y - 1}`], projectId),
-          this.loadTileAsDataUrl(tiles[`${x + 1},${y - 1}`], projectId),
-          this.loadTileAsDataUrl(tiles[`${x - 1},${y + 1}`], projectId),
-          this.loadTileAsDataUrl(tiles[`${x + 1},${y + 1}`], projectId),
-        ])
+      const [
+        upTile,
+        downTile,
+        leftTile,
+        rightTile,
+        topLeftTile,
+        topRightTile,
+        bottomLeftTile,
+        bottomRightTile,
+      ] = await Promise.all([
+        this.loadTileAsDataUrl(tiles[`${x},${y - 1}`], projectId),
+        this.loadTileAsDataUrl(tiles[`${x},${y + 1}`], projectId),
+        this.loadTileAsDataUrl(tiles[`${x - 1},${y}`], projectId),
+        this.loadTileAsDataUrl(tiles[`${x + 1},${y}`], projectId),
+        this.loadTileAsDataUrl(tiles[`${x - 1},${y - 1}`], projectId),
+        this.loadTileAsDataUrl(tiles[`${x + 1},${y - 1}`], projectId),
+        this.loadTileAsDataUrl(tiles[`${x - 1},${y + 1}`], projectId),
+        this.loadTileAsDataUrl(tiles[`${x + 1},${y + 1}`], projectId),
+      ])
 
       const neighbors = {
         up: upTile,
@@ -199,7 +217,9 @@ export class TileGenerationService {
       }
 
       // Trigger the tile generation task
-      console.log(`Triggering generate-tile task with provider: ${aiProvider}, isFirstTile: ${isFirstTile}`)
+      console.log(
+        `Triggering generate-tile task with provider: ${aiProvider}, isFirstTile: ${isFirstTile}`
+      )
 
       const triggerResponse = await fetch('/api/trigger-tile', {
         method: 'POST',
@@ -303,7 +323,15 @@ export class TileGenerationService {
    */
   private async handleCompletion(
     runState: TileGenRunState,
-    output: { success: boolean; filename: string; newUrl: string; newBase64: string; originalUrl?: string; isFirstTile: boolean; pendingReview?: boolean },
+    output: {
+      success: boolean
+      filename: string
+      newUrl: string
+      newBase64: string
+      originalUrl?: string
+      isFirstTile: boolean
+      pendingReview?: boolean
+    },
     opId: string
   ) {
     try {
@@ -317,7 +345,7 @@ export class TileGenerationService {
 
         // Images are now stored in Vercel Blob - use URL directly
         const newUrl = output.newUrl
-        
+
         // For original, prefer local existing tile (if any)
         const tiles = useWorldStore.getState().tiles
         const existingTile = tiles[`${runState.x},${runState.y}`]
@@ -330,16 +358,12 @@ export class TileGenerationService {
         }
 
         // Store pending generation in store
-        useWorldStore.getState().setPendingGeneration(
-          runState.x,
-          runState.y,
-          {
-            newUrl,
-            newBase64: output.newBase64, // Still keep for acceptGeneration
-            originalUrl,
-            isFirstTile: !existingTile,
-          }
-        )
+        useWorldStore.getState().setPendingGeneration(runState.x, runState.y, {
+          newUrl,
+          newBase64: output.newBase64, // Still keep for acceptGeneration
+          originalUrl,
+          isFirstTile: !existingTile,
+        })
 
         // Update global status to show review is needed
         useGlobalStatusStore.getState().updateOperation(opId, {
@@ -349,15 +373,17 @@ export class TileGenerationService {
 
         // Emit event for UI to show review dialog
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('generation-review-ready', {
-            detail: {
-              tileX: runState.x,
-              tileY: runState.y,
-              newUrl,
-              originalUrl,
-              isFirstTile: !existingTile,
-            }
-          }))
+          window.dispatchEvent(
+            new CustomEvent('generation-review-ready', {
+              detail: {
+                tileX: runState.x,
+                tileY: runState.y,
+                newUrl,
+                originalUrl,
+                isFirstTile: !existingTile,
+              },
+            })
+          )
         }
 
         this.clearRunState(runState, opId)
@@ -481,4 +507,3 @@ export class TileGenerationService {
 }
 
 export const tileGenerationService = new TileGenerationService()
-

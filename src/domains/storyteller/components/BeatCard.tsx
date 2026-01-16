@@ -149,14 +149,16 @@ export const BeatCard: React.FC<BeatCardProps> = ({
           {beat.imageUrl ? (
             <img
               src={`/projects/${projectId}/${beat.imageUrl}`}
-              alt={beat.imagePrompt || "Beat storyboard"}
+              alt={beat.imagePrompt || 'Beat storyboard'}
               className="w-full h-full object-cover transition-transform duration-500 group-hover/image:scale-105"
             />
           ) : (
             <div className="w-full h-full relative">
               <Skeleton className="w-full h-full absolute inset-0 bg-white/5" />
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-xs text-white/30 font-medium animate-pulse">Generating Scene...</span>
+                <span className="text-xs text-white/30 font-medium animate-pulse">
+                  Generating Scene...
+                </span>
               </div>
             </div>
           )}

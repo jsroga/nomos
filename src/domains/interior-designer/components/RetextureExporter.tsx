@@ -17,7 +17,7 @@ export const RetextureExporter: React.FC = () => {
     if (requestRetextureExport && selectedId) {
       let targetObject: THREE.Object3D | null = null
 
-      scene.traverse((child) => {
+      scene.traverse(child => {
         // Check both name (objects) and userData.id (surfaces)
         if (child.name === selectedId || (child.userData && child.userData.id === selectedId)) {
           targetObject = child
@@ -41,12 +41,14 @@ export const RetextureExporter: React.FC = () => {
           min: box.min.toArray(),
           max: box.max.toArray(),
           size: size.toArray(),
-          center: center.toArray()
+          center: center.toArray(),
         })
 
         // Store the original bounding box info in the operation for proper alignment
         const operationId = `retexture-${selectedId}`
-        const existingOp = useGlobalStatusStore.getState().operations.find(op => op.id === operationId)
+        const existingOp = useGlobalStatusStore
+          .getState()
+          .operations.find(op => op.id === operationId)
         if (existingOp) {
           try {
             const metadata = JSON.parse(existingOp.details || '{}')
@@ -57,9 +59,9 @@ export const RetextureExporter: React.FC = () => {
                   min: box.min.toArray(),
                   max: box.max.toArray(),
                   center: center.toArray(),
-                  size: size.toArray()
-                }
-              })
+                  size: size.toArray(),
+                },
+              }),
             })
           } catch (e) {
             console.error('Failed to update operation with bounding box:', e)
@@ -69,7 +71,7 @@ export const RetextureExporter: React.FC = () => {
         const exporter = new GLTFExporter()
         exporter.parse(
           targetObject!,
-          (gltf) => {
+          gltf => {
             // Match Exporter.tsx: binary: false returns a JSON object
             const output = JSON.stringify(gltf, null, 2)
             console.log('💾 GLTF JSON Size:', output.length)
@@ -85,13 +87,13 @@ export const RetextureExporter: React.FC = () => {
               setRequestRetextureExport(false)
             }
           },
-          (error) => {
+          error => {
             console.error('❌ An error happened during retexture export:', error)
             setRequestRetextureExport(false)
           },
           {
             binary: false, // Match Exporter.tsx
-            onlyVisible: true
+            onlyVisible: true,
           }
         )
       } else {
@@ -99,7 +101,13 @@ export const RetextureExporter: React.FC = () => {
         setRequestRetextureExport(false)
       }
     }
-  }, [requestRetextureExport, selectedId, scene, setRequestRetextureExport, setRetextureModelBase64])
+  }, [
+    requestRetextureExport,
+    selectedId,
+    scene,
+    setRequestRetextureExport,
+    setRetextureModelBase64,
+  ])
 
   return null
 }

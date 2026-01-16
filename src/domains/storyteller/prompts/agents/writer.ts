@@ -1,6 +1,6 @@
 /**
  * Writer Agent Prompt
- * 
+ *
  * The writer transforms approved beats into screenplay prose.
  */
 

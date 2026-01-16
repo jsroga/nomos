@@ -19,7 +19,11 @@ export const writerAgent = async (state: WritersRoomState): Promise<Partial<Writ
 
   // Only write in cardlock or writing phase
   // Accept 'writing', 'cardlock', or 'drafting' phases for script generation
-  if (state.currentPhase !== 'cardlock' && state.currentPhase !== 'writing' && state.currentPhase !== 'drafting') {
+  if (
+    state.currentPhase !== 'cardlock' &&
+    state.currentPhase !== 'writing' &&
+    state.currentPhase !== 'drafting'
+  ) {
     const skipMessage = new AIMessage({
       content: 'Waiting for beat board to be locked before writing.',
       name: 'Writer',
@@ -49,28 +53,30 @@ or rewrite the content directly.
 
   // Combine system content into single message (required for Claude)
   const loadedPrompt = await loadPromptCached('writer')
-  const promptMessages = (loadedPrompt.prompt as any).promptMessages || (loadedPrompt.prompt as any).messages || []
-  const systemMessage = promptMessages.find((m: any) => m.lc_id?.[3] === 'SystemMessagePromptTemplate' || m._type === 'system')
-  const systemTemplate = systemMessage?.prompt?.template || systemMessage?.template || WRITER_STRUCTURED_PROMPT
+  const promptMessages =
+    (loadedPrompt.prompt as any).promptMessages || (loadedPrompt.prompt as any).messages || []
+  const systemMessage = promptMessages.find(
+    (m: any) => m.lc_id?.[3] === 'SystemMessagePromptTemplate' || m._type === 'system'
+  )
+  const systemTemplate =
+    systemMessage?.prompt?.template || systemMessage?.template || WRITER_STRUCTURED_PROMPT
 
-  const combinedSystem = [
-    systemTemplate,
-    contextXml,
-    revisionContext,
-  ].join('\n\n---\n\n')
-  const conversationMessages = getSafeMessageHistory(state.messages, 5).filter(m => m._getType() !== 'system')
+  const combinedSystem = [systemTemplate, contextXml, revisionContext].join('\n\n---\n\n')
+  const conversationMessages = getSafeMessageHistory(state.messages, 5).filter(
+    m => m._getType() !== 'system'
+  )
 
-  const messages = [
-    new SystemMessage(combinedSystem),
-    ...conversationMessages,
-  ]
+  const messages = [new SystemMessage(combinedSystem), ...conversationMessages]
 
   try {
     const response = await model.invoke(messages)
 
     // Check if the Writer made tool calls (for editing operations)
     if (response.tool_calls && response.tool_calls.length > 0) {
-      console.log('Writer made tool calls:', response.tool_calls.map(tc => tc.name))
+      console.log(
+        'Writer made tool calls:',
+        response.tool_calls.map(tc => tc.name)
+      )
       // Return the response with tool calls - the graph will route to writer_tools node
       return {
         messages: [response],
@@ -120,8 +126,8 @@ or rewrite the content directly.
       name: 'Writer',
     })
 
-      // Attach actions and script
-      ; (namedMessage as any).actions = actions
+    // Attach actions and script
+    ;(namedMessage as any).actions = actions
 
     // Update script in state
     const newScript = state.script ? state.script + '\n\n' + scriptSection : scriptSection

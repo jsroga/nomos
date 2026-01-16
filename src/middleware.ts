@@ -18,7 +18,15 @@ export async function middleware(req: NextRequest) {
   }
 
   // Allow public routes
-  if (path === '/' || path === '/login' || path.startsWith('/auth/') || path.startsWith('/api/') || path.startsWith('/_next/') || path.startsWith('/assets/') || path.startsWith('/scripts/')) {
+  if (
+    path === '/' ||
+    path === '/login' ||
+    path.startsWith('/auth/') ||
+    path.startsWith('/api/') ||
+    path.startsWith('/_next/') ||
+    path.startsWith('/assets/') ||
+    path.startsWith('/scripts/')
+  ) {
     return res
   }
 

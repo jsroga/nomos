@@ -80,16 +80,3 @@ function testCoordinates() {
 }
 
 testCoordinates()
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -16,29 +16,20 @@ export const MazurElementsSchema = z.object({
     .string()
     .nullable()
     .describe('Specific trait revealed - be harsh, be honest about who they really are'),
-  object: z
-    .string()
-    .nullable()
-    .describe('A SPECIFIC physical object with symbolic weight'),
+  object: z.string().nullable().describe('A SPECIFIC physical object with symbolic weight'),
   coreConcept: z.string().nullable().describe('Theme reinforcement - be philosophical'),
-  attribute: z
-    .string()
-    .nullable()
-    .describe('Sensory detail - smell, taste, texture, sound'),
+  attribute: z.string().nullable().describe('Sensory detail - smell, taste, texture, sound'),
   action: z
     .string()
     .nullable()
-    .describe("ACTIVE VERB - not 'decides' but 'rips', 'slams', 'whispers'"),
+    .describe('ACTIVE VERB - not \'decides\' but \'rips\', \'slams\', \'whispers\''),
   method: z.string().nullable().describe('The HOW reveals WHO - how they do it'),
   setting: z
     .string()
     .nullable()
     .describe('Environment as metaphor - the space reflects the psyche'),
   timeframe: z.string().nullable().describe('Specific time pressure'),
-  motivation: z
-    .string()
-    .nullable()
-    .describe('The ugly truth of WHY - the real motivation'),
+  motivation: z.string().nullable().describe('The ugly truth of WHY - the real motivation'),
   tone: z.string().nullable().describe('Specific atmosphere'),
 })
 
@@ -52,7 +43,7 @@ export const WorldRuleSchema = z.object({
   category: z.enum(['Physics', 'Magic', 'Technology', 'Society', 'Politics', 'Economics']),
   rule: z.string().describe('The rule itself'),
   consequence: z.string().describe('What happens if this rule is broken or ignored'),
-  exceptions: z.string().nullable().describe('Are there exceptions?'),
+  exceptions: z.string().nullable().optional().describe('Are there exceptions?'),
 })
 
 export const FactionSchema = z.object({
@@ -61,8 +52,8 @@ export const FactionSchema = z.object({
   ideology: z.string().describe('Core belief or philosophy'),
   goals: z.array(z.string()).describe('What they want'),
   resources: z.string().describe('What power/assets they control'),
-  weaknesses: z.string().nullable(),
-  rivals: z.array(z.string()).nullable(),
+  weaknesses: z.string().nullable().optional(),
+  rivals: z.array(z.string()).nullable().optional(),
 })
 
 export type WorldRule = z.infer<typeof WorldRuleSchema>
@@ -76,7 +67,7 @@ export const BeatTypeSchema = z.enum([
   'consequence',
   'conflict_escalation',
   'faction_move',
-  'world_event'
+  'world_event',
 ])
 
 export const BeatProposalSchema = z.object({
@@ -84,18 +75,25 @@ export const BeatProposalSchema = z.object({
     .string()
     .min(10)
     .describe('2-3 sentences. Be specific. Name names. Include visceral details.'),
-  content: z.string().nullable().describe('Full paragraph expanding on the beat'),
-  beatType: BeatTypeSchema.describe('Type of beat in story structure'),
-  charactersInvolved: z.array(z.string()).describe('Character names involved'),
-  visualHook: z.string().describe('A SPECIFIC, MEMORABLE image'),
-  emotionalShifts: z
-    .array(z.object({
-      characterName: z.string(),
-      emotionalShift: z.string()
-    }))
+  content: z.string().nullable().optional().describe('Full paragraph expanding on the beat'),
+  beatType: BeatTypeSchema.nullable().optional().describe('Type of beat in story structure'),
+  charactersInvolved: z
+    .array(z.string())
     .nullable()
+    .optional()
+    .describe('Character names involved'),
+  visualHook: z.string().nullable().optional().describe('A SPECIFIC, MEMORABLE image'),
+  emotionalShifts: z
+    .array(
+      z.object({
+        characterName: z.string(),
+        emotionalShift: z.string(),
+      })
+    )
+    .nullable()
+    .optional()
     .describe('Character emotional transitions'),
-  mazurElements: MazurElementsSchema.nullable(),
+  mazurElements: MazurElementsSchema.nullable().optional(),
 })
 
 export type BeatProposal = z.infer<typeof BeatProposalSchema>
@@ -114,17 +112,33 @@ export const StoryArcSchema = z.object({
   description: z.string(),
   keyFactionsInvolved: z.array(z.string()),
   worldConsequence: z.string().describe('How the world changes after this arc'),
-  consequences: z.array(z.string()).optional().describe('Ripple effects: World, Politics, Character'),
+  consequences: z
+    .array(z.string())
+    .nullable()
+    .optional()
+    .describe('Ripple effects: World, Politics, Character'),
   // Advanced Roadmap Fields
-  logline: z.string().optional().describe('Brief 1-sentence TV Guide style summary'),
-  thematicFocus: z.string().optional().describe('The specific theme explored in this episode'),
-  mainPlotBeat: z.string().optional().describe('A-Story: The core plot advancement'),
-  bPlotBeat: z.string().optional().describe('B-Story: The character-specific subplot'),
-  keyScenes: z.array(z.string()).optional().describe('Crucial moments or set pieces'),
-  hook: z.string().optional().describe('Teaser/Cold Open: The opening grab'),
-  cliffhanger: z.string().optional().describe('The ending hook to drive to the next episode'),
-  reasoning: z.string().optional().describe('Showrunner notes: Why this episode is necessary here'),
-  actStructure: z.string().optional().describe('e.g. "3 Acts" or "Teaser + 4 Acts"'),
+  logline: z.string().nullable().optional().describe('Brief 1-sentence TV Guide style summary'),
+  thematicFocus: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('The specific theme explored in this episode'),
+  mainPlotBeat: z.string().nullable().optional().describe('A-Story: The core plot advancement'),
+  bPlotBeat: z.string().nullable().optional().describe('B-Story: The character-specific subplot'),
+  keyScenes: z.array(z.string()).nullable().optional().describe('Crucial moments or set pieces'),
+  hook: z.string().nullable().optional().describe('Teaser/Cold Open: The opening grab'),
+  cliffhanger: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('The ending hook to drive to the next episode'),
+  reasoning: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('Showrunner notes: Why this episode is necessary here'),
+  actStructure: z.string().nullable().optional().describe('e.g. "3 Acts" or "Teaser + 4 Acts"'),
 })
 
 export type StorySequence = z.infer<typeof StoryArcSchema>
@@ -146,7 +160,7 @@ export const SoundtrackTrackSchema = z.object({
   title: z.string(),
   artist: z.string(),
   youtubeUrl: z.string(),
-  mood: z.string().optional().describe('e.g. "dark, brooding", "epic, triumphant"')
+  mood: z.string().nullable().optional().describe('e.g. "dark, brooding", "epic, triumphant"'),
 })
 
 export type SoundtrackTrack = z.infer<typeof SoundtrackTrackSchema>
@@ -154,7 +168,9 @@ export type SoundtrackTrack = z.infer<typeof SoundtrackTrackSchema>
 // Inspiration item with description for tooltips
 export const InspirationItemSchema = z.object({
   title: z.string(),
-  description: z.string().describe('1-2 sentence summary of what this is and why it inspires this world')
+  description: z
+    .string()
+    .describe('1-2 sentence summary of what this is and why it inspires this world'),
 })
 
 export type InspirationItem = z.infer<typeof InspirationItemSchema>
@@ -166,58 +182,76 @@ export const StoryPlanSchema = z.object({
   centralQuestion: z.string(),
   worldRules: z.array(WorldRuleSchema),
   factions: z.array(FactionSchema),
-  keyCharacters: z.array(z.object({
-    name: z.string(),
-    role: z.string(),
-    archetype: z.string(),
-    motivation: z.string(),
-    factionId: z.string().nullable()
-  })),
-  protagonist: z.object({
-    name: z.string(),
-    want: z.string(),
-    need: z.string(),
-    flaw: z.string(),
-  }).nullable(),
-  antagonist: z.object({
-    name: z.string(),
-    motivation: z.string(),
-  }).nullable(),
-  sequences: z.array(StoryArcSchema).nullable(),
-  executiveSummary: z.string().nullable().describe('2-3 sentence pitch summarizing the entire season arc'),
+  keyCharacters: z.array(
+    z.object({
+      name: z.string(),
+      role: z.string(),
+      archetype: z.string(),
+      motivation: z.string(),
+      factionId: z.string().nullable(),
+    })
+  ),
+  protagonist: z
+    .object({
+      name: z.string(),
+      want: z.string(),
+      need: z.string(),
+      flaw: z.string(),
+    })
+    .nullable()
+    .optional(),
+  antagonist: z
+    .object({
+      name: z.string(),
+      motivation: z.string(),
+    })
+    .nullable()
+    .optional(),
+  sequences: z.array(StoryArcSchema).nullable().optional(),
+  executiveSummary: z
+    .string()
+    .nullable()
+    .describe('2-3 sentence pitch summarizing the entire season arc'),
 
   // Season Structure (New)
-  seasonStructure: SeasonStructureSchema.optional().nullable(),
+  seasonStructure: SeasonStructureSchema.nullable().optional(),
 
   // New World Premise fields
-  worldDescription: z.string().nullable(),
-  plotTwists: z.array(z.string()).nullable().describe('3 major plot twists that reshape the story'),
+  worldDescription: z.string().nullable().optional(),
+  plotTwists: z
+    .array(z.string())
+    .nullable()
+    .optional()
+    .describe('3 major plot twists that reshape the story'),
 
   // Enhanced inspirations with descriptions
-  inspirations: z.object({
-    books: z.array(InspirationItemSchema),
-    movies: z.array(InspirationItemSchema),
-    games: z.array(InspirationItemSchema)
-  }).nullable(),
+  inspirations: z
+    .object({
+      books: z.array(InspirationItemSchema),
+      movies: z.array(InspirationItemSchema),
+      games: z.array(InspirationItemSchema),
+    })
+    .nullable()
+    .optional(),
 
   // Legacy moodSoundtrack (backwards compat)
-  moodSoundtrack: z.string().nullable(),
+  moodSoundtrack: z.string().nullable().optional(),
   // New soundtracks array with YouTube links
-  soundtracks: z.array(SoundtrackTrackSchema).nullable(),
+  soundtracks: z.array(SoundtrackTrackSchema).nullable().optional(),
 
-  imagePrompts: z.record(z.string()).optional(),
+  imagePrompts: z.record(z.string()).nullable().optional(),
 
   moodImages: z.array(z.string()),
 
   themes: z.array(z.string()),
 
   // Episode Poster / Combined Storyboard
-  posterUrl: z.string().optional().nullable(),
-  posterPrompt: z.string().optional().nullable(),
+  posterUrl: z.string().nullable().optional(),
+  posterPrompt: z.string().nullable().optional(),
 
   // Wireframe / Storyboard
-  storyboardUrl: z.string().optional().nullable(),
-  storyboardPrompt: z.string().optional().nullable(),
+  storyboardUrl: z.string().nullable().optional(),
+  storyboardPrompt: z.string().nullable().optional(),
 })
 
 // ============================================
@@ -229,12 +263,12 @@ export const StoryPlanSchema = z.object({
 export const UpdateSeriesBibleActionSchema = z.object({
   type: z.literal('UPDATE_SERIES_BIBLE'),
   payload: z.object({
-    genre: z.string().nullable(),
-    tone: z.string().nullable(),
-    themes: z.array(z.string()).nullable(),
-    worldRules: z.array(WorldRuleSchema).nullable(),
-    factions: z.array(FactionSchema).nullable(),
-    storyPlan: StoryPlanSchema.nullable(),
+    genre: z.string().nullable().optional(),
+    tone: z.string().nullable().optional(),
+    themes: z.array(z.string()).nullable().optional(),
+    worldRules: z.array(WorldRuleSchema).nullable().optional(),
+    factions: z.array(FactionSchema).nullable().optional(),
+    storyPlan: StoryPlanSchema.nullable().optional(),
   }),
 })
 
@@ -244,8 +278,12 @@ export const EpisodePremiseSchema = z.object({
   logline: z.string().describe('One sentence summary of the episode'),
 
   // Ozymandias Framework fields
-  theHook: z.string().describe('Opening image/situation that immediately grabs attention and poses a question'),
-  theTurn: z.string().describe('Midpoint/key event where the flaw causes a critical error or revelation'),
+  theHook: z
+    .string()
+    .describe('Opening image/situation that immediately grabs attention and poses a question'),
+  theTurn: z
+    .string()
+    .describe('Midpoint/key event where the flaw causes a critical error or revelation'),
   theAftermath: z.string().describe('The world or character is irreversibly changed'),
 
   // Character-focused fields
@@ -260,13 +298,70 @@ export const EpisodePremiseSchema = z.object({
   charactersInvolved: z.array(z.string()).describe('Key characters in this episode'),
 })
 
+// Partial version with all fields nullable (required for OpenAI structured output)
+export const EpisodePremisePartialSchema = z.object({
+  title: z.string().nullable().optional().describe('The episode title (e.g. Ozymandias)'),
+  logline: z.string().nullable().optional().describe('One sentence summary of the episode'),
+  theHook: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('Opening image/situation that immediately grabs attention'),
+  theTurn: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('Midpoint/key event where the flaw causes a critical error'),
+  theAftermath: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('The world or character is irreversibly changed'),
+  protagonistHook: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('The protagonist-specific opening situation'),
+  fatalFlaw: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('The internal character flaw that drives the conflict'),
+  stakes: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('What is at risk (Physical/Professional/Psychological)'),
+  transformation: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('How the character/world changes by the end'),
+  inevitableConsequence: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('The irreversible outcome caused by the flaw'),
+  thematicFocus: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('The specific theme explored in this episode'),
+  charactersInvolved: z
+    .array(z.string())
+    .nullable()
+    .optional()
+    .describe('Key characters in this episode'),
+})
+
 export type EpisodePremise = z.infer<typeof EpisodePremiseSchema>
+export type EpisodePremisePartial = z.infer<typeof EpisodePremisePartialSchema>
 
 export const UpdateEpisodePremiseActionSchema = z.object({
   type: z.literal('UPDATE_EPISODE_PREMISE'),
   payload: z.object({
-    episodeId: z.string().nullable(),
-    premise: EpisodePremiseSchema.partial(),
+    episodeId: z.string().nullable().optional(),
+    premise: EpisodePremisePartialSchema,
   }),
 })
 
@@ -275,7 +370,7 @@ export const SetGenreToneActionSchema = z.object({
   payload: z.object({
     genre: z.string(),
     tone: z.string(),
-    styleReference: z.string().nullable(),
+    styleReference: z.string().nullable().optional(),
   }),
 })
 
@@ -283,7 +378,7 @@ export const AddThemeActionSchema = z.object({
   type: z.literal('ADD_THEME'),
   payload: z.object({
     theme: z.string(),
-    description: z.string().nullable(),
+    description: z.string().nullable().optional(),
   }),
 })
 
@@ -299,7 +394,7 @@ export const CreateLocationActionSchema = z.object({
   payload: z.object({
     name: z.string(),
     description: z.string(),
-    visualRef: z.string().nullable(),
+    visualRef: z.string().nullable().optional(),
   }),
 })
 
@@ -308,11 +403,11 @@ export const UpdateLocationActionSchema = z.object({
   payload: z.object({
     locationId: z.string(),
     updates: z.object({
-      name: z.string().nullable(),
-      description: z.string().nullable(),
-      visualRef: z.string().nullable(),
-      atmosphere: z.string().nullable(),
-      significance: z.string().nullable(),
+      name: z.string().nullable().optional(),
+      description: z.string().nullable().optional(),
+      visualRef: z.string().nullable().optional(),
+      atmosphere: z.string().nullable().optional(),
+      significance: z.string().nullable().optional(),
     }),
   }),
 })
@@ -322,7 +417,7 @@ export const AddLoreEntryActionSchema = z.object({
   payload: z.object({
     title: z.string(),
     content: z.string(),
-    tags: z.array(z.string()).nullable(),
+    tags: z.array(z.string()).nullable().optional(),
   }),
 })
 
@@ -331,7 +426,7 @@ export const DefineMagicSystemActionSchema = z.object({
   payload: z.object({
     name: z.string(),
     rules: z.array(z.string()),
-    costs: z.array(z.string()).nullable(),
+    costs: z.array(z.string()).nullable().optional(),
   }),
 })
 
@@ -342,8 +437,8 @@ export const CreateCharacterActionSchema = z.object({
   payload: z.object({
     name: z.string(),
     role: z.string(),
-    description: z.string().nullable(),
-    archetype: z.string().nullable(),
+    description: z.string().nullable().optional(),
+    archetype: z.string().nullable().optional(),
   }),
 })
 
@@ -352,9 +447,9 @@ export const UpdateCharacterProfileActionSchema = z.object({
   payload: z.object({
     characterId: z.string(), // or name if ID unknown
     updates: z.object({
-      description: z.string().nullable(),
-      traits: z.array(z.string()).nullable(),
-      voice: z.string().nullable(),
+      description: z.string().nullable().optional(),
+      traits: z.array(z.string()).nullable().optional(),
+      voice: z.string().nullable().optional(),
     }),
   }),
 })
@@ -374,7 +469,7 @@ export const SetCharacterGoalActionSchema = z.object({
   payload: z.object({
     characterId: z.string(),
     goal: z.string(),
-    type: z.enum(['abstract', 'concrete']).nullable(),
+    type: z.enum(['abstract', 'concrete']).nullable().optional(),
   }),
 })
 
@@ -383,7 +478,7 @@ export const AddCharacterSecretActionSchema = z.object({
   payload: z.object({
     characterId: z.string(),
     secret: z.string(),
-    stakes: z.string().nullable(),
+    stakes: z.string().nullable().optional(),
   }),
 })
 
@@ -392,7 +487,7 @@ export const UpdateCharacterArcStatusActionSchema = z.object({
   payload: z.object({
     characterId: z.string(),
     status: z.string().describe('e.g., "Resisting the Call", "Dark Night of the Soul"'),
-    progress: z.number().min(0).max(100).nullable(),
+    progress: z.number().min(0).max(100).nullable().optional(),
   }),
 })
 
@@ -409,7 +504,7 @@ export const CastCharacterActionSchema = z.object({
   payload: z.object({
     characterId: z.string(),
     actorArchetype: z.string(),
-    visualNotes: z.string().nullable(),
+    visualNotes: z.string().nullable().optional(),
   }),
 })
 
@@ -424,8 +519,8 @@ export const UpdateBeatContentActionSchema = z.object({
   type: z.literal('UPDATE_BEAT_CONTENT'),
   payload: z.object({
     beatId: z.string(),
-    logline: z.string().nullable(),
-    description: z.string().nullable(),
+    logline: z.string().nullable().optional(),
+    description: z.string().nullable().optional(),
   }),
 })
 
@@ -434,18 +529,25 @@ export const UpdateBeatActionSchema = z.object({
   type: z.literal('UPDATE_BEAT'),
   payload: z.object({
     beatId: z.string(),
-    updates: z.object({
-      logline: z.string().nullable(),
-      content: z.string().nullable(),
-      beatType: BeatTypeSchema.nullable(),
-      charactersInvolved: z.array(z.string()).nullable(),
-      visualHook: z.string().nullable(),
-      emotionalShifts: z.array(z.object({
-        characterName: z.string(),
-        emotionalShift: z.string()
-      })).nullable(),
-      status: z.enum(['proposed', 'approved', 'rejected']).nullable(),
-    }).describe('Partial updates to beat content'),
+    updates: z
+      .object({
+        logline: z.string().nullable().optional(),
+        content: z.string().nullable().optional(),
+        beatType: BeatTypeSchema.nullable().optional(),
+        charactersInvolved: z.array(z.string()).nullable().optional(),
+        visualHook: z.string().nullable().optional(),
+        emotionalShifts: z
+          .array(
+            z.object({
+              characterName: z.string(),
+              emotionalShift: z.string(),
+            })
+          )
+          .nullable()
+          .optional(),
+        status: z.enum(['proposed', 'approved', 'rejected']).nullable().optional(),
+      })
+      .describe('Partial updates to beat content'),
   }),
 })
 
@@ -461,7 +563,7 @@ export const DeleteBeatActionSchema = z.object({
   type: z.literal('DELETE_BEAT'),
   payload: z.object({
     beatId: z.string(),
-    reason: z.string().nullable(),
+    reason: z.string().nullable().optional(),
   }),
 })
 
@@ -498,15 +600,13 @@ export const TagBeatActionSchema = z.object({
   }),
 })
 
-
-
 // --- Script & Scene ---
 
 export const CreateSceneActionSchema = z.object({
   type: z.literal('CREATE_SCENE'),
   payload: z.object({
     heading: z.string(),
-    action: z.string().nullable(),
+    action: z.string().nullable().optional(),
   }),
 })
 
@@ -524,7 +624,7 @@ export const UpdateDialogueActionSchema = z.object({
     sceneId: z.string(),
     characterName: z.string(),
     newDialogue: z.string(),
-    parenthetical: z.string().nullable(),
+    parenthetical: z.string().nullable().optional(),
   }),
 })
 
@@ -548,7 +648,7 @@ export const AddSceneNoteActionSchema = z.object({
   payload: z.object({
     sceneId: z.string(),
     note: z.string(),
-    author: z.string().nullable(),
+    author: z.string().nullable().optional(),
   }),
 })
 
@@ -564,9 +664,9 @@ export const UpdateScriptContentActionSchema = z.object({
   type: z.literal('UPDATE_SCRIPT_CONTENT'),
   payload: z.object({
     content: z.string(),
-    append: z.boolean().nullable()
-  })
-});
+    append: z.boolean().nullable().optional(),
+  }),
+})
 
 // --- Partial Bible Update Actions (Smart Merge) ---
 
@@ -576,96 +676,104 @@ export const UpdateWorldRulesActionSchema = z.object({
   type: z.literal('UPDATE_WORLD_RULES'),
   payload: z.object({
     rules: z.array(WorldRuleSchema),
-    mergeMode: MergeModeSchema.describe('replace: overwrite all, merge: add new, smart: match by rule name and update/add')
-  })
+    mergeMode: MergeModeSchema.describe(
+      'replace: overwrite all, merge: add new, smart: match by rule name and update/add'
+    ),
+  }),
 })
 
 export const UpdateFactionsActionSchema = z.object({
   type: z.literal('UPDATE_FACTIONS'),
   payload: z.object({
     factions: z.array(FactionSchema),
-    mergeMode: MergeModeSchema.describe('replace: overwrite all, merge: add new, smart: match by id/name and update/add')
-  })
+    mergeMode: MergeModeSchema.describe(
+      'replace: overwrite all, merge: add new, smart: match by id/name and update/add'
+    ),
+  }),
 })
 
 export const UpdateInspirationsActionSchema = z.object({
   type: z.literal('UPDATE_INSPIRATIONS'),
   payload: z.object({
     inspirations: z.object({
-      books: z.array(InspirationItemSchema).nullable(),
-      movies: z.array(InspirationItemSchema).nullable(),
-      games: z.array(InspirationItemSchema).nullable()
+      books: z.array(InspirationItemSchema).nullable().optional(),
+      movies: z.array(InspirationItemSchema).nullable().optional(),
+      games: z.array(InspirationItemSchema).nullable().optional(),
     }),
-    mergeMode: z.enum(['replace', 'merge']).nullable()
-  })
+    mergeMode: z.enum(['replace', 'merge']).nullable().optional(),
+  }),
 })
 
 export const UpdateWorldDescriptionActionSchema = z.object({
   type: z.literal('UPDATE_WORLD_DESCRIPTION'),
   payload: z.object({
-    description: z.string()
-  })
+    description: z.string(),
+  }),
 })
 
 export const UpdateMoodSoundtrackActionSchema = z.object({
   type: z.literal('UPDATE_MOOD_SOUNDTRACK'),
   payload: z.object({
-    moodSoundtrack: z.string().describe('Atmosphere description and soundtrack suggestion')
-  })
+    moodSoundtrack: z.string().describe('Atmosphere description and soundtrack suggestion'),
+  }),
 })
 
 export const UpdateSoundtracksActionSchema = z.object({
   type: z.literal('UPDATE_SOUNDTRACKS'),
   payload: z.object({
     soundtracks: z.array(SoundtrackTrackSchema),
-    mergeMode: z.enum(['replace', 'merge']).nullable()
-  })
+    mergeMode: z.enum(['replace', 'merge']).nullable().optional(),
+  }),
 })
 
 export const UpdatePlotTwistsActionSchema = z.object({
   type: z.literal('UPDATE_PLOT_TWISTS'),
   payload: z.object({
     plotTwists: z.array(z.string()),
-    mergeMode: z.enum(['replace', 'merge']).nullable()
-  })
+    mergeMode: z.enum(['replace', 'merge']).nullable().optional(),
+  }),
 })
 
 export const UpdateKeyCharactersActionSchema = z.object({
   type: z.literal('UPDATE_KEY_CHARACTERS'),
   payload: z.object({
-    keyCharacters: z.array(z.object({
-      name: z.string(),
-      role: z.string(),
-      archetype: z.string(),
-      motivation: z.string(),
-      factionId: z.string().nullable()
-    })),
-    mergeMode: MergeModeSchema.describe('replace: overwrite all, merge: add new, smart: match by name and update/add')
-  })
+    keyCharacters: z.array(
+      z.object({
+        name: z.string(),
+        role: z.string(),
+        archetype: z.string(),
+        motivation: z.string(),
+        factionId: z.string().nullable(),
+      })
+    ),
+    mergeMode: MergeModeSchema.describe(
+      'replace: overwrite all, merge: add new, smart: match by name and update/add'
+    ),
+  }),
 })
 
 export const UpdateEpisodeRoadmapActionSchema = z.object({
   type: z.literal('UPDATE_EPISODE_ROADMAP'),
   payload: z.object({
     sequences: z.array(StoryArcSchema),
-    seasonStructure: SeasonStructureSchema.optional().nullable(),
+    seasonStructure: SeasonStructureSchema.nullable().optional(),
     executiveSummary: z.string().nullable().optional(),
-    mergeMode: z.enum(['replace', 'merge']).nullable()
-  })
+    mergeMode: z.enum(['replace', 'merge']).nullable().optional(),
+  }),
 })
 
 export const UpdateSeasonStructureActionSchema = z.object({
   type: z.literal('UPDATE_SEASON_STRUCTURE'),
   payload: z.object({
-    seasonStructure: SeasonStructureSchema
-  })
+    seasonStructure: SeasonStructureSchema,
+  }),
 })
 
 export const UpdateRoadmapSummaryActionSchema = z.object({
   type: z.literal('UPDATE_ROADMAP_SUMMARY'),
   payload: z.object({
-    executiveSummary: z.string().describe('2-3 sentence pitch summarizing the entire season arc')
-  })
+    executiveSummary: z.string().describe('2-3 sentence pitch summarizing the entire season arc'),
+  }),
 })
 
 // --- Unified Action Union ---
@@ -720,7 +828,7 @@ export const AgentActionSchema = z.discriminatedUnion('type', [
   DeleteSceneActionSchema,
   AddSceneNoteActionSchema,
   SetSceneMoodActionSchema,
-  UpdateScriptContentActionSchema
+  UpdateScriptContentActionSchema,
 ])
 
 export type AgentActionValidated = z.infer<typeof AgentActionSchema>
@@ -732,9 +840,9 @@ export type AgentActionValidated = z.infer<typeof AgentActionSchema>
 export const QuestionOptionSchema = z.object({
   id: z.string(),
   label: z.string(),
-  description: z.string().nullable(),
-  consequence: z.string().nullable(),
-  recommended: z.boolean().nullable(),
+  description: z.string().nullable().optional(),
+  consequence: z.string().nullable().optional(),
+  recommended: z.boolean().nullable().optional(),
 })
 
 export const QuestionUrgencySchema = z.enum(['blocking', 'important', 'optional'])
@@ -746,13 +854,13 @@ export const QuestionTypeSchema = z.enum([
 ])
 
 export const AgentQuestionSchema = z.object({
-  id: z.string().nullable(),
+  id: z.string().nullable().optional(),
   question: z.string().min(10),
   questionType: QuestionTypeSchema,
-  options: z.array(QuestionOptionSchema).nullable(),
-  context: z.string().nullable(),
+  options: z.array(QuestionOptionSchema).nullable().optional(),
+  context: z.string().nullable().optional(),
   urgency: QuestionUrgencySchema,
-  defaultOption: z.string().nullable(),
+  defaultOption: z.string().nullable().optional(),
 })
 
 export type AgentQuestionValidated = z.infer<typeof AgentQuestionSchema>
@@ -763,9 +871,9 @@ export type AgentQuestionValidated = z.infer<typeof AgentQuestionSchema>
 
 export const BaseAgentResponseSchema = z.object({
   message: z.string().describe('Your response to the user - be specific and concrete'),
-  thinking: z.string().nullable().describe('Your reasoning process (for transparency)'),
-  confidence: z.number().min(0).max(1).describe('Your confidence level 0-1'),
-  nextAgent: z.string().nullable().describe('Suggest which agent should respond next'),
+  thinking: z.string().nullable().optional().describe('Your reasoning process (for transparency)'),
+  confidence: z.number().min(0).max(1).nullable().optional().describe('Your confidence level 0-1'),
+  nextAgent: z.string().nullable().optional().describe('Suggest which agent should respond next'),
 })
 
 // Showrunner specific response
@@ -780,18 +888,19 @@ export const ShowrunnerResponseSchema = BaseAgentResponseSchema.extend({
       'NEEDS_INPUT',
       'DELEGATE',
       'UPDATE_SERIES_BIBLE',
-      'DIRECT_ACTION'
+      'DIRECT_ACTION',
     ])
-    .nullable(),
-  actions: z.array(AgentActionSchema),
-  questions: z.array(AgentQuestionSchema),
+    .nullable()
+    .optional(),
+  actions: z.array(AgentActionSchema).nullable().optional(),
+  questions: z.array(AgentQuestionSchema).nullable().optional(),
 })
 
 export type ShowrunnerResponse = z.infer<typeof ShowrunnerResponseSchema>
 
 // Plot Architect specific response
 export const PlotArchitectResponseSchema = BaseAgentResponseSchema.extend({
-  actions: z.array(AgentActionSchema), // Now supports all actions (e.g. UPDATE_BEAT)
+  actions: z.array(AgentActionSchema).nullable().optional(), // Now supports all actions (e.g. UPDATE_BEAT)
 })
 
 export type PlotArchitectResponse = z.infer<typeof PlotArchitectResponseSchema>
@@ -810,12 +919,14 @@ export const CharacterPsychologyResponseSchema = BaseAgentResponseSchema.extend(
             from: z.string(),
             to: z.string(),
           })
-          .nullable(),
-        stressChange: z.number().min(-50).max(50).nullable(),
-        selfTalk: z.string().nullable().describe('What they tell themselves'),
+          .nullable()
+          .optional(),
+        stressChange: z.number().min(-50).max(50).nullable().optional(),
+        selfTalk: z.string().nullable().optional().describe('What they tell themselves'),
       })
     )
-    .nullable(),
+    .nullable()
+    .optional(),
 })
 
 export type CharacterPsychologyResponse = z.infer<typeof CharacterPsychologyResponseSchema>
@@ -836,7 +947,8 @@ export const DevilsAdvocateResponseSchema = BaseAgentResponseSchema.extend({
         'stakes',
       ])
     )
-    .nullable(),
+    .nullable()
+    .optional(),
 })
 
 export type DevilsAdvocateResponse = z.infer<typeof DevilsAdvocateResponseSchema>
@@ -850,24 +962,31 @@ export const ConsequenceTrackerResponseSchema = BaseAgentResponseSchema.extend({
         needsPayoffBy: z
           .number()
           .nullable()
+          .optional()
           .describe('Beat number by which this needs payoff'),
       })
-    ),
+    )
+    .nullable()
+    .optional(),
   resolvedSetups: z
     .array(
       z.object({
         setupDescription: z.string(),
         howResolved: z.string(),
       })
-    ),
-  danglingWarnings: z.array(z.string()),
+    )
+    .nullable()
+    .optional(),
+  danglingWarnings: z.array(z.string()).nullable().optional(),
   knowledgeUpdates: z
     .array(
       z.object({
         characterName: z.string(),
         newKnowledge: z.string(),
       })
-    ),
+    )
+    .nullable()
+    .optional(),
 })
 
 export type ConsequenceTrackerResponse = z.infer<typeof ConsequenceTrackerResponseSchema>
@@ -876,17 +995,16 @@ export type ConsequenceTrackerResponse = z.infer<typeof ConsequenceTrackerRespon
 
 export type StoryPlan = z.infer<typeof StoryPlanSchema>
 
-
 export const EpisodePremiseArchitectResponseSchema = BaseAgentResponseSchema.extend({
-  episodePremise: EpisodePremiseSchema.partial().nullable(),
-  actions: z.array(AgentActionSchema),
+  episodePremise: EpisodePremisePartialSchema.nullable().optional(),
+  actions: z.array(AgentActionSchema).nullable().optional(),
 })
 
 export type EpisodePremiseArchitectResponse = z.infer<typeof EpisodePremiseArchitectResponseSchema>
 
 export const PremiseArchitectResponseSchema = BaseAgentResponseSchema.extend({
-  actions: z.array(AgentActionSchema),
-  storyPlan: StoryPlanSchema.nullable(),
+  actions: z.array(AgentActionSchema).nullable().optional(),
+  storyPlan: StoryPlanSchema.nullable().optional(),
 })
 
 export type PremiseArchitectResponse = z.infer<typeof PremiseArchitectResponseSchema>
@@ -894,33 +1012,53 @@ export type PremiseArchitectResponse = z.infer<typeof PremiseArchitectResponseSc
 // Writer response
 export const WriterResponseSchema = BaseAgentResponseSchema.extend({
   scriptContent: z.string().describe('The screenplay content for this beat'),
-  beatId: z.string().nullable(),
-  sceneHeading: z.string().nullable().describe('INT./EXT. LOCATION - TIME'),
-  actions: z.array(AgentActionSchema)
+  beatId: z.string().nullable().optional(),
+  sceneHeading: z.string().nullable().optional().describe('INT./EXT. LOCATION - TIME'),
+  actions: z.array(AgentActionSchema).nullable().optional(),
 })
 
 export type WriterResponse = z.infer<typeof WriterResponseSchema>
 
 // Script Editor response (Evaluator-Optimizer pattern)
 export const ScriptEditorResponseSchema = BaseAgentResponseSchema.extend({
-  verdict: z.enum(['PASS', 'REVISE']).describe('Whether the script passes quality review or needs revision'),
-  feedback: z.array(z.string()).describe('Specific feedback items for the writer'),
-  improvements: z.array(z.object({
-    category: z.enum([
-      'dialogue',
-      'visual_hook',
-      'pacing',
-      'format',
-      'character_voice',
-      'action_lines',
-      'subtext'
-    ]).describe('Category of improvement'),
-    issue: z.string().describe('What is wrong'),
-    suggestion: z.string().describe('How to fix it'),
-    severity: z.enum(['critical', 'important', 'minor']).describe('How important is this fix'),
-  })).describe('Detailed improvement suggestions'),
-  overallQuality: z.number().min(0).max(100).describe('Overall script quality score 0-100'),
-  strengths: z.array(z.string()).describe('What the script does well'),
+  verdict: z
+    .enum(['PASS', 'REVISE'])
+    .describe('Whether the script passes quality review or needs revision'),
+  feedback: z
+    .array(z.string())
+    .nullable()
+    .optional()
+    .describe('Specific feedback items for the writer'),
+  improvements: z
+    .array(
+      z.object({
+        category: z
+          .enum([
+            'dialogue',
+            'visual_hook',
+            'pacing',
+            'format',
+            'character_voice',
+            'action_lines',
+            'subtext',
+          ])
+          .describe('Category of improvement'),
+        issue: z.string().describe('What is wrong'),
+        suggestion: z.string().describe('How to fix it'),
+        severity: z.enum(['critical', 'important', 'minor']).describe('How important is this fix'),
+      })
+    )
+    .nullable()
+    .optional()
+    .describe('Detailed improvement suggestions'),
+  overallQuality: z
+    .number()
+    .min(0)
+    .max(100)
+    .nullable()
+    .optional()
+    .describe('Overall script quality score 0-100'),
+  strengths: z.array(z.string()).nullable().optional().describe('What the script does well'),
 })
 
 export type ScriptEditorResponse = z.infer<typeof ScriptEditorResponseSchema>

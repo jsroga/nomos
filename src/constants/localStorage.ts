@@ -1,4 +1,7 @@
 export enum LocalStorageKeys {
+  // Developer Testing
+  FORCE_ONBOARDING = 'forceOnboarding',
+
   // AI Configuration
   AI_CONFIG_OPENAI = 'ai-config-openai',
   AI_CONFIG_GEMINI = 'ai-config-gemini',
@@ -30,12 +33,12 @@ export enum LocalStorageKeys {
   SIDEBAR_WIDTH = 'sidebar-width',
 
   // Temporary / Legacy
-  STABILITY_API_KEY_LEGACY = 'STABILITY_API_KEY'
+  STABILITY_API_KEY_LEGACY = 'STABILITY_API_KEY',
 }
 
 export const DynamicLocalStorageKeys = {
   upscaleRun: (tileId: string) => `upscale-run-${tileId}`,
   mjGrid: (tileId: string) => `mj-grid-${tileId}`,
   fidelityRun: (tileId: string) => `fidelity-run-${tileId}`,
-  tileGen: (x: number, y: number) => `tile-gen-${x}-${y}`
+  tileGen: (x: number, y: number) => `tile-gen-${x}-${y}`,
 }

@@ -41,7 +41,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
 }) => {
   const [isApplying, setIsApplying] = useState(false)
   const [isExpanded, setIsExpanded] = useState(true)
-  
+
   const style = SUGGESTION_STYLES[suggestion.type] || SUGGESTION_STYLES.generic
 
   const handleApply = async () => {
@@ -54,11 +54,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
   }
 
   return (
-    <div className={cn(
-      'rounded-lg border overflow-hidden',
-      style.color,
-      className
-    )}>
+    <div className={cn('rounded-lg border overflow-hidden', style.color, className)}>
       {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
@@ -72,9 +68,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
         <span className="text-base">{style.icon}</span>
         <span className="text-sm font-medium flex-1">{suggestion.title}</span>
         {suggestion.items && (
-          <span className="text-xs text-muted-foreground">
-            {suggestion.items.length} items
-          </span>
+          <span className="text-xs text-muted-foreground">{suggestion.items.length} items</span>
         )}
       </button>
 
@@ -82,9 +76,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
         <>
           {/* Description */}
           {suggestion.description && (
-            <div className="px-3 pb-2 text-xs text-muted-foreground">
-              {suggestion.description}
-            </div>
+            <div className="px-3 pb-2 text-xs text-muted-foreground">{suggestion.description}</div>
           )}
 
           {/* Items Preview */}
@@ -136,7 +128,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
               )}
               Apply
             </button>
-            
+
             {onEdit && (
               <button
                 onClick={onEdit}
@@ -149,7 +141,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
                 Edit
               </button>
             )}
-            
+
             <button
               onClick={onDismiss}
               className={cn(
@@ -168,19 +160,26 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
 }
 
 // Helper to detect suggestions in AI responses
-export const detectSuggestion = (content: string, actions?: Array<{ type: string; payload?: any }>): Suggestion | null => {
+export const detectSuggestion = (
+  content: string,
+  actions?: Array<{ type: string; payload?: any }>
+): Suggestion | null => {
   // Check for soundtrack suggestions
-  if (content.toLowerCase().includes('soundtrack') && content.includes('1.') && content.includes('2.')) {
+  if (
+    content.toLowerCase().includes('soundtrack') &&
+    content.includes('1.') &&
+    content.includes('2.')
+  ) {
     const lines = content.split('\n')
     const items: Array<{ label: string; value: string }> = []
-    
+
     lines.forEach(line => {
       const match = line.match(/^\d+\.\s+\*?\*?"?(.+?)"?\*?\*?\s*[–-]\s*(.+)$/i)
       if (match) {
         items.push({ label: match[1].trim(), value: match[2].trim() })
       }
     })
-    
+
     if (items.length > 0) {
       return {
         id: `suggestion-${Date.now()}`,
@@ -190,7 +189,7 @@ export const detectSuggestion = (content: string, actions?: Array<{ type: string
       }
     }
   }
-  
+
   // Check for world rule suggestions
   if (actions?.some(a => a.type === 'ADD_WORLD_RULE')) {
     const ruleAction = actions.find(a => a.type === 'ADD_WORLD_RULE')
@@ -202,7 +201,7 @@ export const detectSuggestion = (content: string, actions?: Array<{ type: string
       preview: ruleAction?.payload?.description,
     }
   }
-  
+
   // Check for beat suggestions
   if (actions?.some(a => a.type === 'CREATE_BEAT')) {
     const beatAction = actions.find(a => a.type === 'CREATE_BEAT')
@@ -213,9 +212,8 @@ export const detectSuggestion = (content: string, actions?: Array<{ type: string
       description: beatAction?.payload?.logline,
     }
   }
-  
+
   return null
 }
 
 export default SuggestionCard
-

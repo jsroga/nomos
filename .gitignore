@@ -29,3 +29,6 @@ public/projects/
 # LangGraph API
 .langgraph_api
 .vercel
+
+*storybook.log
+storybook-static

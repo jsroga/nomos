@@ -6,6 +6,8 @@ import { useInteriorStore, SceneObject } from '@/domains/interior-designer/store
 import { Box, Sphere, useGLTF, Html } from '@react-three/drei'
 import { Loader2 } from 'lucide-react'
 import * as THREE from 'three'
+import { WindowMesh } from './meshes/WindowMesh'
+import { DoorMesh } from './meshes/DoorMesh'
 
 // Proxy external URLs to avoid CORS issues
 const getProxiedUrl = (url: string): string => {
@@ -81,9 +83,9 @@ const GLBModel: React.FC<{
     box.getSize(size)
 
     // Shift geometry so pivot is at bottom-center
-    clone.position.x += (clone.position.x - center.x)
-    clone.position.z += (clone.position.z - center.z)
-    clone.position.y += (clone.position.y - box.min.y)
+    clone.position.x += clone.position.x - center.x
+    clone.position.z += clone.position.z - center.z
+    clone.position.y += clone.position.y - box.min.y
 
     return { clonedScene: clone, naturalSize: size }
   }, [scene])
@@ -109,7 +111,6 @@ const ObjectRenderer: React.FC<{
   onClick: () => void
   opacity?: number
 }> = ({ obj, isSelected, onClick, opacity = 1 }) => {
-
   const [isLoaded, setIsLoaded] = useState(false)
   const updateObject = useInteriorStore(state => state.updateObject)
 
@@ -121,8 +122,20 @@ const ObjectRenderer: React.FC<{
   // Determine effective URL
   const effectiveModelUrl = obj.modelUrl
 
-  const isPrimitive = ['cube', 'sphere', 'cylinder', 'cone', 'building', 'tree'].includes(effectiveModelUrl)
-  const isExternalModel = effectiveModelUrl.startsWith('http://') || effectiveModelUrl.startsWith('https://') || effectiveModelUrl.startsWith('data:')
+  const isPrimitive = [
+    'cube',
+    'sphere',
+    'cylinder',
+    'cone',
+    'building',
+    'tree',
+    'window',
+    'door',
+  ].includes(effectiveModelUrl)
+  const isExternalModel =
+    effectiveModelUrl.startsWith('http://') ||
+    effectiveModelUrl.startsWith('https://') ||
+    effectiveModelUrl.startsWith('data:')
 
   const handleLoaded = () => {
     setIsLoaded(true)
@@ -141,12 +154,16 @@ const ObjectRenderer: React.FC<{
       const scaleY = naturalSize.y > 0.01 ? targetY / naturalSize.y : 1
       const scaleZ = naturalSize.z > 0.01 ? targetZ / naturalSize.z : 1
 
-      console.log(`[Auto-Scale] ${obj.id}`, { natural: naturalSize, target: obj.targetDimensions, newScale: [scaleX, scaleY, scaleZ] })
+      console.log(`[Auto-Scale] ${obj.id}`, {
+        natural: naturalSize,
+        target: obj.targetDimensions,
+        newScale: [scaleX, scaleY, scaleZ],
+      })
 
       // Apply new scale and clear targetDimensions to prevent re-loop
       updateObject(obj.id, {
         scale: [scaleX, scaleY, scaleZ],
-        targetDimensions: undefined
+        targetDimensions: undefined,
       })
     }
   }
@@ -157,7 +174,7 @@ const ObjectRenderer: React.FC<{
       position={obj.position}
       rotation={obj.rotation}
       scale={obj.scale}
-      onClick={(e) => {
+      onClick={e => {
         e.stopPropagation()
         onClick()
       }}
@@ -223,6 +240,16 @@ const ObjectRenderer: React.FC<{
         </group>
       )}
 
+      {/* Window Primitive */}
+      {effectiveModelUrl === 'window' && (
+        <WindowMesh color={obj.color || '#7a6f5e'} isSelected={isSelected} opacity={opacity} />
+      )}
+
+      {/* Door Primitive */}
+      {effectiveModelUrl === 'door' && (
+        <DoorMesh color={obj.color || '#7a6f5e'} isSelected={isSelected} opacity={opacity} />
+      )}
+
       {/* External GLB Models */}
       {isExternalModel && (
         <ModelErrorBoundary
@@ -259,10 +286,7 @@ export const ObjectManager: React.FC = () => {
         const objectLevel = obj.level ?? 0
         const isOnActiveLevel = objectLevel === activeLevel
         return (
-          <group
-            key={obj.id}
-            position={[0, objectLevel * 3, 0]}
-          >
+          <group key={obj.id} position={[0, objectLevel * 3, 0]}>
             <ObjectRenderer
               obj={obj}
               isSelected={obj.id === selectedId}
@@ -279,6 +303,3 @@ export const ObjectManager: React.FC = () => {
     </group>
   )
 }
-
-
-

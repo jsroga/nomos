@@ -7,6 +7,7 @@ import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 
 const TERRAIN_SIZE = 64 // Must match TerrainMesh
+const BRUSH_UPDATE_THROTTLE_MS = 33 // ~30fps for brush position updates
 
 export const TerrainTool: React.FC = () => {
   const mode = useInteriorStore(state => state.mode)
@@ -23,17 +24,25 @@ export const TerrainTool: React.FC = () => {
   const lastPaintPosition = useRef<THREE.Vector3 | null>(null)
   const paintIntervalRef = useRef<number | null>(null)
 
+  // OPTIMIZATION: Cache terrain mesh reference (avoid scene traversal every frame)
+  const cachedTerrainMeshRef = useRef<THREE.Mesh | null>(null)
+  const lastBrushUpdateRef = useRef<number>(0)
 
-
-
-  // Find terrain mesh in scene
+  // Find terrain mesh in scene (with caching)
   const findTerrainMesh = useCallback((): THREE.Mesh | null => {
+    // Return cached if still valid (check if still in scene)
+    if (cachedTerrainMeshRef.current && cachedTerrainMeshRef.current.parent) {
+      return cachedTerrainMeshRef.current
+    }
+
+    // Traverse scene only if cache miss
     let terrainMesh: THREE.Mesh | null = null
-    scene.traverse((obj) => {
+    scene.traverse(obj => {
       if (obj.name === 'terrain-mesh' && obj instanceof THREE.Mesh) {
         terrainMesh = obj
       }
     })
+    cachedTerrainMeshRef.current = terrainMesh
     return terrainMesh
   }, [scene])
 
@@ -64,41 +73,58 @@ export const TerrainTool: React.FC = () => {
   }, [raycaster, pointer, camera, findTerrainMesh, terrainSettings.baseGroundHeight])
 
   // Handle continuous painting
-  const doPaint = useCallback((position: THREE.Vector3) => {
-    const brushRadius = terrainBrush.size / 10 // Convert to world units
-    const strength = terrainBrush.strength * 0.05 // Scale strength
+  const doPaint = useCallback(
+    (position: THREE.Vector3) => {
+      const brushRadius = terrainBrush.size / 10 // Convert to world units
+      const strength = terrainBrush.strength * 0.05 // Scale strength
 
-    // Check if Shift is held for material painting mode
-    // For now, we'll use the brush type to determine action
-    updateHeightmapAt(position.x, position.z, brushRadius, strength, terrainBrush.type)
+      // Check if Shift is held for material painting mode
+      // For now, we'll use the brush type to determine action
+      updateHeightmapAt(position.x, position.z, brushRadius, strength, terrainBrush.type)
 
-    lastPaintPosition.current = position.clone()
-  }, [terrainBrush, updateHeightmapAt])
+      lastPaintPosition.current = position.clone()
+    },
+    [terrainBrush, updateHeightmapAt]
+  )
 
   const handlePointerMove = useCallback(() => {
+    const now = performance.now()
+
+    // OPTIMIZATION: Throttle brush position updates (max 30fps for hover preview)
+    const shouldUpdateBrush = now - lastBrushUpdateRef.current > BRUSH_UPDATE_THROTTLE_MS
+
     const point = getIntersection()
     if (point) {
-      setTerrainBrushPosition([point.x, point.y, point.z])
+      // Only update brush position at throttled rate
+      if (shouldUpdateBrush) {
+        setTerrainBrushPosition([point.x, point.y, point.z])
+        lastBrushUpdateRef.current = now
+      }
 
       if (isPainting) {
         // Only paint if we've moved enough distance
-        if (!lastPaintPosition.current ||
-          point.distanceTo(lastPaintPosition.current) > terrainBrush.size / 20) {
+        if (
+          !lastPaintPosition.current ||
+          point.distanceTo(lastPaintPosition.current) > terrainBrush.size / 20
+        ) {
           doPaint(point)
         }
       }
     }
   }, [getIntersection, setTerrainBrushPosition, isPainting, doPaint, terrainBrush.size])
 
-  const handlePointerDown = useCallback((e: any) => {
-    if (e.button !== 0) return // Only left click
+  const handlePointerDown = useCallback(
+    (e: any) => {
+      if (e.button !== 0) return // Only left click
 
-    const point = getIntersection()
-    if (point) {
-      setIsPainting(true)
-      doPaint(point)
-    }
-  }, [getIntersection, doPaint])
+      const point = getIntersection()
+      if (point) {
+        setIsPainting(true)
+        doPaint(point)
+      }
+    },
+    [getIntersection, doPaint]
+  )
 
   const handlePointerUp = useCallback(() => {
     setIsPainting(false)
@@ -111,23 +137,49 @@ export const TerrainTool: React.FC = () => {
     lastPaintPosition.current = null
   }, [setTerrainBrushPosition])
 
-  if (mode !== 'TERRAIN') {
-    return null;
-  }
-
   return (
-    <mesh
-      rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, terrainSettings.baseGroundHeight - 0.01, 0]}
-      visible={false}
-      onPointerMove={handlePointerMove}
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
-      onPointerLeave={handlePointerLeave}
-    >
-      <planeGeometry args={[200, 200]} />
-      <meshBasicMaterial transparent opacity={0} />
-    </mesh>
+    <>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, terrainSettings.baseGroundHeight - 0.01, 0]}
+        visible={false}
+        onPointerMove={handlePointerMove}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerLeave}
+      >
+        <planeGeometry args={[200, 200]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
+
+      {/* Brush Radius Preview */}
+      {terrainBrush.position && (
+        <group
+          position={[
+            terrainBrush.position[0],
+            terrainBrush.position[1] + 0.1,
+            terrainBrush.position[2],
+          ]}
+        >
+          <mesh rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[terrainBrush.size / 10 - 0.05, terrainBrush.size / 10, 32]} />
+            <meshBasicMaterial color="#3b82f6" transparent opacity={0.5} side={THREE.DoubleSide} />
+          </mesh>
+          {/* Outer glow or subtle fill */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0, terrainBrush.size / 10, 32]} />
+            <meshBasicMaterial color="#3b82f6" transparent opacity={0.1} side={THREE.DoubleSide} />
+          </mesh>
+        </group>
+      )}
+
+      {/* Water Level Reference Plane (Visual aid when editing height) */}
+      {!terrainSettings.showWaterPlane && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, terrainSettings.waterSurfaceHeight, 0]}>
+          <planeGeometry args={[TERRAIN_SIZE, TERRAIN_SIZE]} />
+          <meshBasicMaterial color="#06b6d4" transparent opacity={0.05} side={THREE.DoubleSide} />
+        </mesh>
+      )}
+    </>
   )
 }
-

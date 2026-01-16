@@ -2,40 +2,63 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
-import { Message, AgentConfigMap, AgentQuestion } from '../types'
-import { Bot, User, Loader2, CheckCircle2, AlertCircle, Clock, Brain, ChevronDown, ChevronRight, Copy, RefreshCw, Check } from 'lucide-react'
+import {
+  Message,
+  AgentConfigMap,
+  AgentQuestion,
+  AgentAction,
+  AgentConfig,
+  ThinkingMessagesConfig,
+  DEFAULT_THINKING_MESSAGES,
+  getThinkingMessage,
+} from '../types'
+import {
+  Bot,
+  User,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  Brain,
+  ChevronDown,
+  ChevronRight,
+  Copy,
+  Check,
+} from 'lucide-react'
+import { ConsistencyMessage } from '@/domains/storyteller/components/ConsistencyMessage'
 import { motion, AnimatePresence } from 'framer-motion'
-import QuestionCard from '@/domains/storyteller/components/QuestionCard'
+import ReactMarkdown from 'react-markdown'
 
 // ============================================
 // Friendly Agent Name Mapping
 // ============================================
 
 const AGENT_DISPLAY_NAMES: Record<string, string> = {
-  'Showrunner': 'Showrunner',
-  'PlotArchitect': 'Plot Architect',
-  'CharacterPsychology': 'Character Expert',
-  'ConsequenceTracker': 'Story Tracker',
-  'DevilsAdvocate': "Devil's Advocate",
-  'VisualMoment': 'Visual Designer',
-  'Writer': 'Writer',
-  'User': 'You',
-  'Supervisor': 'Showrunner',
-  'supervisor': 'Showrunner',
-  'delegate_to_premise_architect': 'Premise Architect',
-  'DELEGATE_TO_PREMISE_ARCHITECT': 'Premise Architect',
-  'premiseArchitect': 'Premise Architect',
-  'PremiseArchitect': 'Premise Architect',
-  'PREMISEARCHITECT': 'Premise Architect',
-  'delegate_to_plot_architect': 'Plot Architect',
-  'delegate_to_character_psychology': 'Character Expert',
-  'delegate_to_world_simulator': 'World Simulator',
-  'delegate_to_magic_agent': 'Creative Spark',
-  'WorldSimulator': 'World Simulator',
-  'MagicAgent': 'Creative Spark',
-  'EpisodePremiseArchitect': 'Premise Architect',
-  'episodePremiseArchitect': 'Premise Architect',
-  'ScriptEditor': 'Script Editor',
+  Showrunner: 'Showrunner',
+  PlotArchitect: 'Plot Architect',
+  CharacterPsychology: 'Character Expert',
+  ConsequenceTracker: 'Story Tracker',
+  DevilsAdvocate: 'Devil\'s Advocate',
+  VisualMoment: 'Visual Designer',
+  Writer: 'Writer',
+  User: 'You',
+  Supervisor: 'Showrunner',
+  supervisor: 'Showrunner',
+  RunnableSequence: 'Processing',
+  delegate_to_premise_architect: 'Premise Architect',
+  DELEGATE_TO_PREMISE_ARCHITECT: 'Premise Architect',
+  premiseArchitect: 'Premise Architect',
+  PremiseArchitect: 'Premise Architect',
+  PREMISEARCHITECT: 'Premise Architect',
+  delegate_to_plot_architect: 'Plot Architect',
+  delegate_to_character_psychology: 'Character Expert',
+  delegate_to_world_simulator: 'World Simulator',
+  delegate_to_magic_agent: 'Creative Spark',
+  WorldSimulator: 'World Simulator',
+  MagicAgent: 'Creative Spark',
+  EpisodePremiseArchitect: 'Premise Architect',
+  episodePremiseArchitect: 'Premise Architect',
+  ScriptEditor: 'Script Editor',
 }
 
 const getAgentDisplayName = (agentName: string): string => {
@@ -57,10 +80,16 @@ const getAgentDisplayName = (agentName: string): string => {
 const isDelegationMessage = (msg: Message): boolean => {
   const content = msg.content?.toLowerCase() || ''
   const sender = (msg.sender || msg.name || '').toLowerCase()
-  
+
   // If the message is substantial, it's not just a technical delegation step
   if (content.length > 100 || content.split(' ').length > 15) return false
-  
+
+  // Never hide narrative text from the main host
+  if (sender === 'showrunner' || sender === 'supervisor') {
+    const isTechnical = content.includes('delegating to') || content.includes('delegated task')
+    if (!isTechnical) return false
+  }
+
   return (
     content.includes('delegating to') ||
     content.includes('delegated task') ||
@@ -74,7 +103,7 @@ const isDelegationMessage = (msg: Message): boolean => {
 const isPureJsonMessage = (msg: Message): boolean => {
   const content = msg.content?.trim() || ''
   if (!content.startsWith('{')) return false
-  
+
   try {
     const parsed = JSON.parse(content)
     // If it has a readable message field, it's not "pure" JSON
@@ -101,8 +130,16 @@ export interface AgentStatusInfo {
 }
 
 interface AgentStatusIndicatorProps {
-  status: AgentStatusInfo
-  config: { color: string; bgColor: string; icon: React.ReactNode }
+  agent: string
+  config: {
+    color: string
+    bgColor?: string
+    icon: React.ReactNode
+  }
+  status: AgentStatus
+  message?: string
+  details?: string
+  startTime: number
   showDetails?: boolean
 }
 
@@ -110,25 +147,29 @@ interface AgentStatusIndicatorProps {
  * Agent Status Indicator Component - Minimalist
  */
 export const AgentStatusIndicator: React.FC<AgentStatusIndicatorProps> = ({
-  status,
+  agent,
   config,
+  status,
+  message,
+  details,
+  startTime,
   showDetails = true,
 }) => {
   const [elapsed, setElapsed] = useState(0)
 
   useEffect(() => {
-    if (status.status === 'thinking' || status.status === 'working') {
+    if (status === 'thinking' || status === 'working') {
       const interval = setInterval(() => {
-        if (status.startTime) {
-          setElapsed(Math.floor((Date.now() - status.startTime) / 1000))
+        if (startTime) {
+          setElapsed(Math.floor((Date.now() - startTime) / 1000))
         }
       }, 1000)
       return () => clearInterval(interval)
     }
-  }, [status.status, status.startTime])
+  }, [status, startTime])
 
   const getStatusIcon = () => {
-    switch (status.status) {
+    switch (status) {
       case 'thinking':
         return <Brain className="w-3.5 h-3.5" />
       case 'working':
@@ -145,7 +186,7 @@ export const AgentStatusIndicator: React.FC<AgentStatusIndicatorProps> = ({
   }
 
   const getStatusLabel = () => {
-    switch (status.status) {
+    switch (status) {
       case 'thinking':
         return 'Thinking'
       case 'working':
@@ -161,7 +202,7 @@ export const AgentStatusIndicator: React.FC<AgentStatusIndicatorProps> = ({
     }
   }
 
-  const isActive = status.status === 'thinking' || status.status === 'working'
+  const isActive = status === 'thinking' || status === 'working'
 
   return (
     <motion.div
@@ -174,27 +215,23 @@ export const AgentStatusIndicator: React.FC<AgentStatusIndicatorProps> = ({
       )}
     >
       <div className="flex items-center gap-2">
-        <div className="opacity-70">
-          {getStatusIcon()}
-        </div>
+        <div className="opacity-70">{getStatusIcon()}</div>
         <span className="font-bold text-[10px] uppercase tracking-widest opacity-80">
-          {getAgentDisplayName(status.agent)}
+          {getAgentDisplayName(agent)}
         </span>
       </div>
-      
+
       <div className="flex-1 flex items-center gap-2">
-        <span className="text-[11px] text-muted-foreground">{status.message || getStatusLabel()}</span>
-        
+        <span className="text-[11px] text-muted-foreground">{message || getStatusLabel()}</span>
+
         {isActive && elapsed > 0 && (
-          <span className="text-[10px] text-muted-foreground/50 font-mono">
-            ({elapsed}s)
-          </span>
+          <span className="text-[10px] text-muted-foreground/50 font-mono">({elapsed}s)</span>
         )}
       </div>
 
-      {showDetails && status.details && (
+      {showDetails && details && (
         <span className="text-[10px] text-muted-foreground/40 truncate max-w-[150px] font-mono">
-          {status.details}
+          {details}
         </span>
       )}
     </motion.div>
@@ -214,15 +251,21 @@ export const ActiveAgentsPanel: React.FC<{
   return (
     <div className="space-y-2 mb-4">
       <AnimatePresence>
-        {activeAgents.map((status) => (
+        {activeAgents.map(status => (
           <AgentStatusIndicator
             key={status.agent}
-            status={status}
-            config={agentConfig[status.agent] || {
-              color: 'text-muted-foreground',
-              bgColor: 'bg-muted/50 border-border',
-              icon: <Bot className="w-4 h-4" />,
-            }}
+            agent={status.agent}
+            status={status.status}
+            message={status.message}
+            details={status.details}
+            startTime={status.startTime || 0} // Provide a default for startTime if it's optional in AgentStatusInfo
+            config={
+              agentConfig[status.agent] || {
+                color: 'text-muted-foreground',
+                bgColor: 'bg-muted/50 border-border',
+                icon: <Bot className="w-4 h-4" />,
+              }
+            }
           />
         ))}
       </AnimatePresence>
@@ -233,12 +276,19 @@ export const ActiveAgentsPanel: React.FC<{
 /**
  * Collapsible Delegation Chain
  * Groups technical delegation messages into an expandable section
+ * NOTE: We never show "Processing..." here - the bottom indicator handles that
  */
-const DelegationChain: React.FC<{ messages: Message[] }> = ({ messages }) => {
+const DelegationChain: React.FC<{ messages: Message[]; isComplete?: boolean }> = ({
+  messages,
+  isComplete = false,
+}) => {
   const [isExpanded, setIsExpanded] = useState(false)
-  
+
   if (messages.length === 0) return null
-  
+
+  // Only show when complete - don't show "Processing" here (bottom indicator handles it)
+  if (!isComplete) return null
+
   return (
     <div className="mb-2">
       <button
@@ -246,10 +296,10 @@ const DelegationChain: React.FC<{ messages: Message[] }> = ({ messages }) => {
         className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors py-1 px-2 rounded hover:bg-muted/50"
       >
         {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-        <Loader2 className="w-3 h-3 animate-spin" />
-        <span>Processing... ({messages.length} steps)</span>
+        <CheckCircle2 className="w-3 h-3 text-green-500/50" />
+        <span>Processed ({messages.length} steps)</span>
       </button>
-      
+
       {isExpanded && (
         <div className="mt-2 ml-4 pl-3 border-l border-muted space-y-1">
           {messages.map((msg, idx) => {
@@ -258,7 +308,10 @@ const DelegationChain: React.FC<{ messages: Message[] }> = ({ messages }) => {
             return (
               <div key={idx} className="text-xs text-muted-foreground py-1">
                 <span className="font-medium">{displayName}:</span>{' '}
-                <span className="opacity-70">{msg.content.slice(0, 80)}{msg.content.length > 80 ? '...' : ''}</span>
+                <span className="opacity-70">
+                  {msg.content.slice(0, 80)}
+                  {msg.content.length > 80 ? '...' : ''}
+                </span>
               </div>
             )
           })}
@@ -269,412 +322,605 @@ const DelegationChain: React.FC<{ messages: Message[] }> = ({ messages }) => {
 }
 
 interface AgentLogProps {
-    messages: Message[]
-    agentConfig: AgentConfigMap
-    onQuestionAnswer?: (questionId: string, answer: string | string[]) => void
-    onQuestionSkip?: (questionId: string) => void
-    showThinking?: boolean
-    children?: React.ReactNode
-    ActionComponent?: React.ComponentType<{ action: any, agentName: string, id: string }>
-    QuestionComponent?: React.ComponentType<{ question: AgentQuestion, onAnswer: (a: string | string[]) => void, onSkip?: () => void }>
-    // New props for enhanced UX
-    activeAgents?: AgentStatusInfo[]
-    showActiveAgents?: boolean
-    isActivityPanelOpen?: boolean
-    isSending?: boolean
+  messages: Message[]
+  agentConfig: AgentConfigMap
+  onQuestionAnswer?: (questionId: string, answer: string | string[]) => void
+  onQuestionSkip?: (questionId: string) => void
+  onApproveAllActions?: (messageIndex: number) => void
+  onClose?: () => void
+  showThinking?: boolean
+  children?: React.ReactNode
+  ActionComponent?: React.ComponentType<{
+    action: AgentAction
+    agentName: string
+    messageIndex: number
+    actionIndex: number
+  }>
+  QuestionComponent?: React.ComponentType<{
+    question: AgentQuestion
+    onAnswer: (a: string | string[]) => void
+    onSkip?: () => void
+  }>
+  // New props for enhanced UX
+  activeAgents?: AgentStatusInfo[]
+  showActiveAgents?: boolean
+  isActivityPanelOpen?: boolean
+  isSending?: boolean
+  thinkingAgent?: string | null // Current agent that's processing
+  /** Customizable thinking messages - defaults to DEFAULT_THINKING_MESSAGES */
+  thinkingMessagesConfig?: ThinkingMessagesConfig
 }
 
 export const AgentLog: React.FC<AgentLogProps> = ({
-    messages,
-    agentConfig,
-    onQuestionAnswer,
-    onQuestionSkip,
-    showThinking = false,
-    children,
-    ActionComponent, // Optional injection for custom action rendering
-    QuestionComponent, // Optional injection for custom question rendering
-    activeAgents = [],
-    showActiveAgents = true,
-    isActivityPanelOpen = false,
-    isSending = false,
+  messages,
+  agentConfig,
+  onQuestionAnswer,
+  onQuestionSkip,
+  onApproveAllActions,
+  onClose,
+  showThinking = false,
+  children,
+  ActionComponent, // Optional injection for custom action rendering
+  QuestionComponent, // Optional injection for custom question rendering
+  activeAgents = [],
+  showActiveAgents = true,
+  isActivityPanelOpen = false,
+  isSending = false,
+  thinkingAgent,
+  thinkingMessagesConfig = DEFAULT_THINKING_MESSAGES,
 }) => {
-    const bottomRef = useRef<HTMLDivElement>(null)
-    const [hasProcessed, setHasProcessed] = useState(false)
-    const lastIsSending = useRef(isSending)
+  const bottomRef = useRef<HTMLDivElement>(null)
+  const [hasProcessed, setHasProcessed] = useState(false)
+  const lastIsSending = useRef(isSending)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const isNearBottomRef = useRef(true)
 
-    // Track when processing finishes to show the "Done" marker
-    useEffect(() => {
-        if (lastIsSending.current && !isSending) {
-            setHasProcessed(true)
-        } else if (isSending) {
-            setHasProcessed(false)
-        }
-        lastIsSending.current = isSending
-    }, [isSending])
+  const [thinkingTime, setThinkingTime] = useState(0)
 
-    useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, [messages, activeAgents, isSending, hasProcessed])
+  // Detect current agent - prefer explicit thinkingAgent prop
+  const currentAgent = React.useMemo(() => {
+    if (!isSending) return null
 
-    const getAgentConfigLocal = (agentName: string) => {
-        // Try exact match first
-        if (agentConfig[agentName]) {
-            return agentConfig[agentName]
-        }
-        // Try normalized match
-        const normalized = agentName.replace(/[_-]/g, '').toLowerCase()
-        for (const [key, config] of Object.entries(agentConfig)) {
-            if (key.toLowerCase() === normalized) {
-                return config
-            }
-        }
-        return {
-            color: 'text-muted-foreground',
-            icon: <Bot className="w-3.5 h-3.5" />,
-        }
+    // Use explicit thinkingAgent if provided
+    if (thinkingAgent && thinkingAgent !== 'RunnableSequence') {
+      return thinkingAgent
     }
 
-    // Group messages: collect consecutive delegation messages into chains
-    const groupedMessages: Array<{ type: 'message' | 'delegation', messages: Message[] }> = []
-    let currentDelegationChain: Message[] = []
+    // Try to get from active agents
+    if (activeAgents.length > 0) {
+      return activeAgents[activeAgents.length - 1]?.agent || null
+    }
 
-    messages.forEach((msg) => {
-        if (isDelegationMessage(msg)) {
-            currentDelegationChain.push(msg)
-        } else {
-            if (currentDelegationChain.length > 0) {
-                groupedMessages.push({ type: 'delegation', messages: currentDelegationChain })
-                currentDelegationChain = []
-            }
-            groupedMessages.push({ type: 'message', messages: [msg] })
-        }
+    // Fallback: get from last AI message
+    const lastAIMessage = [...messages].reverse().find(m => m.type === 'ai' && m.sender)
+    return lastAIMessage?.sender || null
+  }, [isSending, thinkingAgent, activeAgents, messages])
+
+  // Track when processing finishes to show the "Done" marker
+  useEffect(() => {
+    let interval: NodeJS.Timeout | undefined
+    if (isSending) {
+      setHasProcessed(false)
+      setThinkingTime(0)
+      interval = setInterval(() => {
+        setThinkingTime(t => t + 1)
+      }, 1000)
+    } else if (lastIsSending.current && !isSending) {
+      setHasProcessed(true)
+    }
+    lastIsSending.current = isSending
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [isSending])
+
+  // Track if user is near bottom of scroll
+  const handleScroll = () => {
+    if (!containerRef.current) return
+    const { scrollTop, scrollHeight, clientHeight } = containerRef.current
+    // Consider "near bottom" if within 100px of bottom
+    isNearBottomRef.current = scrollHeight - scrollTop - clientHeight < 100
+  }
+
+  // Only auto-scroll if user is near bottom (not reading history)
+  useEffect(() => {
+    if (isNearBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [messages, activeAgents, isSending, hasProcessed])
+
+  const getAgentConfigLocal = (agentName: string): AgentConfig => {
+    // Try exact match first
+    if (agentConfig[agentName]) {
+      return agentConfig[agentName]
+    }
+    // Try normalized match
+    const normalized = agentName.replace(/[_-]/g, '').toLowerCase()
+    for (const [key, config] of Object.entries(agentConfig)) {
+      if (key.toLowerCase() === normalized) {
+        return config
+      }
+    }
+    return {
+      color: 'text-muted-foreground',
+      bgColor: 'bg-muted/10 border-border/20',
+      icon: <Bot className="w-3.5 h-3.5" />,
+    }
+  }
+
+  // Group messages: collect consecutive delegation messages into chains
+  // Track original indices for action approval
+  const groupedMessages: Array<{
+    type: 'message' | 'delegation'
+    messages: Message[]
+    originalIndices: number[] // Track original message indices
+  }> = []
+  let currentDelegationChain: Message[] = []
+  let currentDelegationIndices: number[] = []
+
+  messages.forEach((msg, originalIndex) => {
+    if (isDelegationMessage(msg)) {
+      currentDelegationChain.push(msg)
+      currentDelegationIndices.push(originalIndex)
+    } else {
+      if (currentDelegationChain.length > 0) {
+        groupedMessages.push({
+          type: 'delegation',
+          messages: currentDelegationChain,
+          originalIndices: currentDelegationIndices,
+        })
+        currentDelegationChain = []
+        currentDelegationIndices = []
+      }
+      groupedMessages.push({
+        type: 'message',
+        messages: [msg],
+        originalIndices: [originalIndex],
+      })
+    }
+  })
+  // Don't forget trailing delegation chain
+  if (currentDelegationChain.length > 0) {
+    groupedMessages.push({
+      type: 'delegation',
+      messages: currentDelegationChain,
+      originalIndices: currentDelegationIndices,
     })
-    // Don't forget trailing delegation chain
-    if (currentDelegationChain.length > 0) {
-        groupedMessages.push({ type: 'delegation', messages: currentDelegationChain })
-    }
+  }
 
-    return (
-        <div className="flex-1 overflow-y-auto space-y-6 pr-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent pb-4">
-            {/* Active Agents Panel */}
-            {showActiveAgents && activeAgents.length > 0 && (
-                <ActiveAgentsPanel
-                    activeAgents={activeAgents}
-                    agentConfig={agentConfig}
-                />
+  return (
+    <div
+      ref={containerRef}
+      onScroll={handleScroll}
+      className="flex-1 overflow-y-auto space-y-6 pr-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent pb-4"
+    >
+      {/* Active Agents Panel */}
+      {showActiveAgents && activeAgents.length > 0 && (
+        <ActiveAgentsPanel activeAgents={activeAgents} agentConfig={agentConfig} />
+      )}
+
+      {groupedMessages.map((group, groupIdx) => {
+        // Strict Activity Filtering: Skip technical delegation if Activity is OFF
+        if (group.type === 'delegation' && !isActivityPanelOpen) {
+          return null
+        }
+
+        // Render delegation chain as collapsed
+        if (group.type === 'delegation') {
+          // Only show checkmark for completed chains. If it's the current one, it will show text,
+          // and the global spinner at the bottom will handle the "working" visual.
+          const isLastGroup = groupIdx === groupedMessages.length - 1
+          const isCurrentlyWorking = isSending && isLastGroup
+          return (
+            <DelegationChain
+              key={`delegation-${groupIdx}`}
+              messages={group.messages}
+              isComplete={!isCurrentlyWorking}
+            />
+          )
+        }
+
+        // Render regular message
+        const msg = group.messages[0]
+
+        const agentName = msg.sender || msg.name || 'Unknown'
+        const displayName = getAgentDisplayName(agentName)
+        const isHuman = msg.type === 'human' || agentName === 'User'
+        const config = getAgentConfigLocal(agentName)
+
+        // Skip pure JSON messages when Activity is OFF (but NEVER skip human messages)
+        if (!isHuman && !isActivityPanelOpen && isPureJsonMessage(msg)) {
+          return null
+        }
+
+        return (
+          <div
+            key={groupIdx}
+            className={cn(
+              'text-sm animate-in fade-in slide-in-from-bottom-1 duration-300',
+              isHuman ? 'ml-12' : 'mr-4'
             )}
-            
-            {groupedMessages.map((group, groupIdx) => {
-                // Strict Activity Filtering: Skip technical delegation if Activity is OFF
-                if (group.type === 'delegation' && !isActivityPanelOpen) {
-                    return null
-                }
+          >
+            {/* Agent Header - Minimalist */}
+            <div
+              className={cn(
+                'flex items-center gap-2 mb-1.5',
+                isHuman ? 'justify-end text-primary' : config.color
+              )}
+            >
+              {!isHuman && (
+                <div
+                  className={cn(
+                    'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full transition-all duration-300',
+                    config.bgColor || 'bg-muted/30 border border-border/20'
+                  )}
+                >
+                  <div className="p-0.5 opacity-90">{config.icon}</div>
+                  <span className="font-bold text-[10px] uppercase tracking-[0.15em]">
+                    {displayName}
+                  </span>
+                </div>
+              )}
+              {isHuman && (
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20">
+                  <span className="font-bold text-[10px] uppercase tracking-[0.15em]">You</span>
+                  <div className="p-0.5 opacity-90">
+                    <User className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+              )}
 
-                // Render delegation chain as collapsed
-                if (group.type === 'delegation') {
-                    return <DelegationChain key={`delegation-${groupIdx}`} messages={group.messages} />
-                }
-
-                // Render regular message
-                const msg = group.messages[0]
-                
-                // Skip pure JSON messages when Activity is OFF
-                if (!isActivityPanelOpen && isPureJsonMessage(msg)) {
-                    return null
-                }
-                
-                const agentName = msg.sender || msg.name || 'Unknown'
-                const displayName = getAgentDisplayName(agentName)
-                const isHuman = msg.type === 'human' || agentName === 'User'
-                const config = getAgentConfigLocal(agentName)
-
-                return (
-                    <div key={groupIdx} className={cn('text-sm animate-in fade-in slide-in-from-bottom-1 duration-300', isHuman ? 'ml-12' : 'mr-4')}>
-                        {/* Agent Header - Minimalist */}
-                        <div className={cn('flex items-center gap-2 mb-1.5', isHuman ? 'justify-end text-primary' : config.color)}>
-                            {!isHuman && <div className="p-0.5 opacity-70">{config.icon}</div>}
-                            <span className="font-bold text-[10px] uppercase tracking-[0.1em] opacity-80">{displayName}</span>
-                            {isHuman && <div className="p-0.5 opacity-70"><User className="w-3.5 h-3.5" /></div>}
-                            
-                            {!isHuman && msg.confidence !== undefined && isActivityPanelOpen && (
-                                <span className="text-[10px] text-muted-foreground/60 ml-auto font-mono">
-                                    {Math.round(msg.confidence * 100)}%
-                                </span>
-                            )}
-                        </div>
-
-                        {/* Thinking (if enabled and Activity is ON) */}
-                        {showThinking && msg.thinking && isActivityPanelOpen && (
-                            <div className="mb-3 p-2.5 rounded border border-dashed border-border/40 text-[11px] text-muted-foreground italic leading-relaxed bg-muted/5">
-                                <span className="font-semibold not-italic text-[10px] uppercase tracking-wider opacity-70">Thinking:</span> {msg.thinking}
-                            </div>
-                        )}
-
-                        {/* Message Content - Minimalist (No background box) */}
-                        <div className={cn(
-                            'relative group leading-relaxed',
-                            isHuman ? 'text-right text-foreground/90' : 'text-foreground border-l-2 border-border/30 pl-4 py-0.5'
-                        )}>
-                            <MessageContent content={msg.content} isActivityPanelOpen={isActivityPanelOpen} />
-                            {/* Hover Actions */}
-                            {!isHuman && (
-                                <MessageHoverActions content={msg.content} />
-                            )}
-                        </div>
-
-                        {/* Actions - using flex wrap for compact display */}
-                        {msg.actions && msg.actions.length > 0 && ActionComponent && isActivityPanelOpen && (
-                            <div className={cn("mt-3 flex flex-wrap gap-2", isHuman ? "justify-end" : "pl-4")}>
-                                {msg.actions.map((action, actionIdx) => (
-                                    <ActionComponent
-                                        key={actionIdx}
-                                        action={action}
-                                        agentName={displayName}
-                                        id={`${groupIdx}-${actionIdx}`}
-                                    />
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Questions */}
-                        {msg.questions && msg.questions.length > 0 && QuestionComponent && (
-                            <div className={cn("mt-4 space-y-3", isHuman ? "items-end" : "pl-4")}>
-                                {msg.questions.map(question => (
-                                    <QuestionComponent
-                                        key={question.id}
-                                        question={question}
-                                        onAnswer={answer => onQuestionAnswer?.(question.id, answer)}
-                                        onSkip={
-                                            question.urgency !== 'blocking'
-                                                ? () => onQuestionSkip?.(question.id)
-                                                : undefined
-                                        }
-                                    />
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )
-            })}
-
-            {/* Status Indicators */}
-            <div className="mt-4 border-t border-border/10 pt-2 px-2">
-                {isSending ? (
-                    <div className="flex items-center gap-2 text-primary/60 text-[10px] uppercase tracking-widest font-medium animate-pulse">
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                        <span>Processing...</span>
-                    </div>
-                ) : (hasProcessed && isActivityPanelOpen) ? (
-                    <div className="flex items-center gap-2 text-green-500/40 text-[10px] uppercase tracking-widest font-medium animate-in fade-in duration-500">
-                        <Check className="w-3 h-3" />
-                        <span>Done</span>
-                    </div>
-                ) : null}
+              {!isHuman && msg.confidence !== undefined && isActivityPanelOpen && (
+                <span className="text-[10px] text-muted-foreground/60 ml-auto font-mono">
+                  {Math.round(msg.confidence * 100)}%
+                </span>
+              )}
             </div>
 
-            {children}
+            {/* Thinking (if enabled and Activity is ON) */}
+            {showThinking && msg.thinking && isActivityPanelOpen && (
+              <div className="mb-3 p-2.5 rounded border border-dashed border-border/40 text-[11px] text-muted-foreground italic leading-relaxed bg-muted/5">
+                <span className="font-semibold not-italic text-[10px] uppercase tracking-wider opacity-70">
+                  Thinking:
+                </span>{' '}
+                {msg.thinking}
+              </div>
+            )}
 
-            <div ref={bottomRef} />
-        </div>
-    )
+            {/* Message Content - Minimalist (No background box) */}
+            <div
+              className={cn(
+                'relative group leading-relaxed',
+                isHuman
+                  ? 'text-right text-foreground/90'
+                  : 'text-foreground border-l-2 border-border/30 pl-4 py-0.5'
+              )}
+            >
+              <MessageContent
+                content={msg.content}
+                isActivityPanelOpen={isActivityPanelOpen}
+                hasActions={!!(msg.actions && msg.actions.length > 0)}
+              />
+              {/* Hover Actions */}
+              {!isHuman && <MessageHoverActions content={msg.content} />}
+            </div>
+
+            {/* Actions - ALWAYS show (approval is user-critical, not technical detail) */}
+            {msg.actions && msg.actions.length > 0 && ActionComponent && (
+              <div className={cn('mt-3 flex flex-wrap gap-2', isHuman ? 'justify-end' : 'pl-4')}>
+                {msg.actions.length > 1 && onApproveAllActions && (
+                  <button
+                    onClick={() => onApproveAllActions(group.originalIndices[0])}
+                    disabled={isSending}
+                    className={cn(
+                      'flex items-center gap-1.5 px-3 py-1 rounded-md bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-widest hover:bg-primary/20 transition-colors shadow-sm',
+                      isSending && 'opacity-50 cursor-not-allowed'
+                    )}
+                  >
+                    {isSending ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    )}
+                    Approve All ({msg.actions.length})
+                  </button>
+                )}
+                {msg.actions.map((action, actionIdx) => (
+                  <ActionComponent
+                    key={`${actionIdx}-${action.status || 'pending'}`}
+                    action={action}
+                    agentName={displayName}
+                    messageIndex={group.originalIndices[0]}
+                    actionIndex={actionIdx}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Questions */}
+            {msg.questions && msg.questions.length > 0 && QuestionComponent && (
+              <div className={cn('mt-4 space-y-3', isHuman ? 'items-end' : 'pl-4')}>
+                {msg.questions.map(question => (
+                  <QuestionComponent
+                    key={question.id}
+                    question={question}
+                    onAnswer={answer => onQuestionAnswer?.(question.id, answer)}
+                    onSkip={
+                      question.urgency !== 'blocking'
+                        ? () => onQuestionSkip?.(question.id)
+                        : undefined
+                    }
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Consistency Check Result */}
+            {msg.type === 'consistency_check' && msg.consistencyResult && (
+              <div className={cn('mt-4', isHuman ? 'items-end' : 'pl-4')}>
+                <ConsistencyMessage result={msg.consistencyResult} canUndo={true} />
+              </div>
+            )}
+          </div>
+        )
+      })}
+
+      {/* Status Indicators - Enhanced */}
+      <div className="mt-4 border-t border-border/10 pt-3 px-2">
+        {isSending ? (
+          <div className="space-y-2">
+            {/* Current Agent Indicator */}
+            {currentAgent && (
+              <div className="flex items-center gap-2 animate-in slide-in-from-bottom-2 duration-300">
+                <div className="flex items-center gap-2 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-lg px-3 py-2 shadow-sm flex-1">
+                  <div className="relative">
+                    {getAgentConfigLocal(currentAgent).icon}
+                    <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary animate-ping" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-xs font-bold text-primary uppercase tracking-wider">
+                      {getAgentDisplayName(currentAgent)}
+                    </div>
+                    <div className="text-[9px] text-muted-foreground font-medium">
+                      {getThinkingMessage(thinkingMessagesConfig, thinkingTime, true)}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                    <span className="text-[10px] font-mono text-muted-foreground">
+                      {thinkingTime}s
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Generic processing indicator (fallback) */}
+            {!currentAgent && (
+              <div className="flex items-center gap-2 text-primary/70 text-[10px] uppercase tracking-widest font-medium">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span>
+                  {getThinkingMessage(thinkingMessagesConfig, thinkingTime, false)}
+                  {thinkingTime < 15 && ` (${thinkingTime}s)`}
+                </span>
+              </div>
+            )}
+          </div>
+        ) : hasProcessed && isActivityPanelOpen ? (
+          <div className="flex items-center gap-2 text-green-500/60 text-[10px] uppercase tracking-widest font-medium animate-in fade-in slide-in-from-bottom-1 duration-500">
+            <div className="relative">
+              <Check className="w-3 h-3" />
+              <div className="absolute inset-0 bg-green-500/30 blur-sm animate-pulse" />
+            </div>
+            <span>{thinkingMessagesConfig.completeMessage}</span>
+          </div>
+        ) : null}
+      </div>
+
+      {children}
+
+      <div ref={bottomRef} />
+    </div>
+  )
 }
 
 // ============================================
-// Message Content - Renders markdown-like content with URLs
+// Message Content - Renders markdown with react-markdown
 // ============================================
-
-// Parse inline formatting (bold, italic, URLs) in text
-const parseInlineFormatting = (text: string, keyPrefix: string = ''): React.ReactNode[] => {
-    const parts: React.ReactNode[] = []
-    
-    // Combined pattern for bold, italic, and URLs
-    const combinedPattern = /(\*\*(.+?)\*\*)|(_(.+?)_)|(https?:\/\/[^\s<>"{}|\\^`[\]]+)/g
-    
-    let lastIndex = 0
-    let match
-    let keyCounter = 0
-    
-    while ((match = combinedPattern.exec(text)) !== null) {
-        // Add text before the match
-        if (match.index > lastIndex) {
-            parts.push(text.slice(lastIndex, match.index))
-        }
-        
-        const key = `${keyPrefix}-${keyCounter++}`
-        
-        if (match[1]) {
-            // Bold: **text**
-            parts.push(<strong key={key}>{match[2]}</strong>)
-        } else if (match[3]) {
-            // Italic: _text_
-            parts.push(<em key={key} className="text-muted-foreground">{match[4]}</em>)
-        } else if (match[5]) {
-            // URL - subtle styling
-            const url = match[5]
-            parts.push(
-                <a
-                    key={key}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground/60 hover:text-muted-foreground underline underline-offset-2 transition-colors"
-                >
-                    {url.length > 50 ? url.slice(0, 50) + '...' : url}
-                </a>
-            )
-        }
-        
-        lastIndex = match.index + match[0].length
-    }
-    
-    // Add remaining text
-    if (lastIndex < text.length) {
-        parts.push(text.slice(lastIndex))
-    }
-    
-    return parts.length > 0 ? parts : [text]
-}
 
 // Hover actions for message content (Cursor-like)
 const MessageHoverActions: React.FC<{ content: string }> = ({ content }) => {
-    const [copied, setCopied] = useState(false)
-    
-    const handleCopy = async () => {
-        try {
-            await navigator.clipboard.writeText(content)
-            setCopied(true)
-            setTimeout(() => setCopied(false), 2000)
-        } catch (err) {
-            console.error('Failed to copy:', err)
-        }
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(content)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
     }
-    
-    return (
-        <div className="absolute top-1 right-1 flex items-center gap-0.5 p-0.5 rounded bg-card/90 border border-border/50 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-            <button
-                onClick={handleCopy}
-                title={copied ? 'Copied!' : 'Copy'}
-                className="p-1 rounded hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground"
-            >
-                {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-            </button>
-        </div>
-    )
+  }
+
+  return (
+    <div className="absolute top-1 right-1 flex items-center gap-0.5 p-0.5 rounded bg-card/90 border border-border/50 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+      <button
+        onClick={handleCopy}
+        title={copied ? 'Copied!' : 'Copy'}
+        className="p-1 rounded hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground"
+      >
+        {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+      </button>
+    </div>
+  )
 }
 
 // Collapsible JSON block for technical data (Activity ON only)
-const CollapsibleJSON: React.FC<{ data: any }> = ({ data }) => {
-    const [isExpanded, setIsExpanded] = useState(false)
-    
-    return (
-        <div className="border border-border/20 rounded bg-muted/5">
-            <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full flex items-center gap-2 px-2 py-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-            >
-                {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                <span className="uppercase tracking-wider font-medium">Technical Data</span>
-            </button>
-            {isExpanded && (
-                <pre className="px-2 pb-2 text-[10px] overflow-x-auto max-h-[200px] overflow-y-auto whitespace-pre-wrap font-mono text-muted-foreground/70">
-                    {JSON.stringify(data, null, 2)}
-                </pre>
-            )}
+const CollapsibleJSON: React.FC<{ data: Record<string, unknown>; defaultExpanded?: boolean }> = ({
+  data,
+  defaultExpanded = true,
+}) => {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded)
+
+  return (
+    <div className="border border-border/20 rounded bg-muted/5 overflow-hidden">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center gap-2 px-3 py-2 text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted/20 transition-colors"
+      >
+        {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+        <span className="uppercase tracking-wider font-medium">Technical Data</span>
+        <span className="ml-auto text-[9px] opacity-50">
+          {isExpanded ? 'Click to collapse' : 'Click to expand'}
+        </span>
+      </button>
+      {isExpanded && (
+        <div className="border-t border-border/20 bg-background/50">
+          <pre className="px-3 py-2 text-[10px] overflow-x-auto max-h-[500px] overflow-y-auto whitespace-pre-wrap font-mono text-muted-foreground/70 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+            {JSON.stringify(data, null, 2)}
+          </pre>
         </div>
-    )
+      )}
+    </div>
+  )
 }
 
-const MessageContent: React.FC<{ content: string; isActivityPanelOpen?: boolean }> = ({ content, isActivityPanelOpen = false }) => {
-    // Check if content is JSON and extract message field
-    let displayContent = content
+const MessageContent: React.FC<{
+  content: string
+  isActivityPanelOpen?: boolean
+  hasActions?: boolean
+}> = ({ content, isActivityPanelOpen = false, hasActions = false }) => {
+  // Check if content is JSON and extract message field
+  let displayContent = content
 
-    // Try to parse JSON if it looks like it
-    if (content.trim().startsWith('{')) {
-        try {
-            const parsed = JSON.parse(content)
-            if (parsed.message && typeof parsed.message === 'string') {
-                displayContent = parsed.message
-            } else {
-                // Valid JSON but not our wrapper
-                // When Activity OFF: hide JSON entirely
-                if (!isActivityPanelOpen) {
-                    return null
-                }
-                // When Activity ON: show in collapsible block
-                return <CollapsibleJSON data={parsed} />
-            }
-        } catch {
-            // Not valid JSON, might be streaming
-            // Regex to extract message field from partial JSON
-            const messageMatch = content.match(/"message"\s*:\s*"([^"]*)"?/)
-            if (messageMatch) {
-                displayContent = messageMatch[1]
-            } else if (!isActivityPanelOpen) {
-                // If it's technical JSON streaming and Activity is OFF, hide it
-                return null
-            }
+  // Try to parse JSON if it looks like it
+  if (content.trim().startsWith('{')) {
+    let parsedData: Record<string, unknown> | null = null
+    try {
+      parsedData = JSON.parse(content)
+    } catch {
+      // Not valid JSON, might be streaming
+      const messageMatch = content.match(/"message"\s*:\s*"([^"]*)"?/)
+      if (messageMatch) {
+        displayContent = messageMatch[1]
+      } else if (!isActivityPanelOpen) {
+        return null
+      }
+    }
+
+    if (parsedData) {
+      if (parsedData.message && typeof parsedData.message === 'string') {
+        displayContent = parsedData.message
+
+        if (isActivityPanelOpen && hasActions) {
+          return (
+            <>
+              <div className="mb-3">{parseMessageContent(displayContent)}</div>
+              <CollapsibleJSON data={parsedData} defaultExpanded={true} />
+            </>
+          )
         }
+      } else {
+        if (!isActivityPanelOpen) {
+          return null
+        }
+        return <CollapsibleJSON data={parsedData} defaultExpanded={false} />
+      }
     }
+  }
 
-    // Custom rendering for delegation messages (shouldn't show normally due to collapsing)
-    if (displayContent.includes('Delegating to')) {
-        const toolName = displayContent.replace('Delegating to', '').trim().replace('...', '')
-        const friendlyName = getAgentDisplayName(toolName)
+  return parseMessageContent(displayContent)
+}
 
-        return (
-            <div className="flex items-center gap-2 text-muted-foreground italic">
-                <span className="text-primary">→</span>
-                <span>Handing off to <span className="font-semibold text-primary">{friendlyName}</span>...</span>
-            </div>
-        )
-    }
-
-    // Simple markdown-like rendering
-    const lines = displayContent.split('\n')
+// Helper to parse message content with markdown
+function parseMessageContent(content: string) {
+  // Custom rendering for delegation messages (shouldn't show normally due to collapsing)
+  if (content.includes('Delegating to')) {
+    const toolName = content.replace('Delegating to', '').trim().replace('...', '')
+    const friendlyName = getAgentDisplayName(toolName)
 
     return (
-        <div className="space-y-1.5">
-            {lines.map((line, idx) => {
-                const lineKey = `line-${idx}`
-                
-                // Headers (full line bold)
-                if (line.startsWith('**') && line.endsWith('**')) {
-                    return (
-                        <p key={lineKey} className="font-bold text-foreground">
-                            {parseInlineFormatting(line.slice(2, -2), lineKey)}
-                        </p>
-                    )
-                }
-
-                // Empty lines become spacers
-                if (line.trim() === '') {
-                    return <div key={lineKey} className="h-2" />
-                }
-
-                // List items
-                if (line.startsWith('- ') || line.startsWith('• ')) {
-                    return (
-                        <div key={lineKey} className="flex gap-2 pl-1">
-                            <span className="text-primary shrink-0">•</span>
-                            <span className="flex-1">{parseInlineFormatting(line.slice(2), lineKey)}</span>
-                        </div>
-                    )
-                }
-
-                // Numbered items
-                const numberedMatch = line.match(/^(\d+)\.\s+(.+)$/)
-                if (numberedMatch) {
-                    return (
-                        <div key={lineKey} className="flex gap-2 pl-1">
-                            <span className="text-primary font-medium shrink-0 w-5">{numberedMatch[1]}.</span>
-                            <span className="flex-1">{parseInlineFormatting(numberedMatch[2], lineKey)}</span>
-                        </div>
-                    )
-                }
-
-                // Regular paragraph with inline formatting
-                return <p key={lineKey}>{parseInlineFormatting(line, lineKey)}</p>
-            })}
-        </div>
+      <div className="flex items-center gap-2 text-muted-foreground italic">
+        <span className="text-primary">→</span>
+        <span>
+          Handing off to <span className="font-semibold text-primary">{friendlyName}</span>...
+        </span>
+      </div>
     )
+  }
+
+  // Use react-markdown for proper markdown rendering
+  return (
+    <ReactMarkdown
+      components={{
+        // Headers
+        h1: ({ children }) => (
+          <h1 className="font-bold text-xl text-foreground mt-4 mb-2">{children}</h1>
+        ),
+        h2: ({ children }) => (
+          <h2 className="font-bold text-lg text-foreground mt-3 mb-1.5">{children}</h2>
+        ),
+        h3: ({ children }) => (
+          <h3 className="font-semibold text-base text-foreground mt-2 mb-1">{children}</h3>
+        ),
+        h4: ({ children }) => (
+          <h4 className="font-medium text-sm text-foreground/90 mt-1.5">{children}</h4>
+        ),
+
+        // Paragraphs
+        p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+
+        // Lists
+        ul: ({ children }) => <ul className="space-y-1 pl-1 mb-2">{children}</ul>,
+        ol: ({ children }) => <ol className="space-y-1 pl-1 mb-2">{children}</ol>,
+        li: ({ children }) => (
+          <li className="flex gap-2">
+            <span className="text-primary shrink-0">•</span>
+            <span className="flex-1">{children}</span>
+          </li>
+        ),
+
+        // Inline formatting
+        strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+        em: ({ children }) => <em className="italic text-muted-foreground">{children}</em>,
+
+        // Links
+        a: ({ href, children }) => (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            {children}
+          </a>
+        ),
+
+        // Code
+        code: ({ children, className }) => {
+          const isBlock = className?.includes('language-')
+          return isBlock ? (
+            <pre className="bg-muted/50 rounded p-2 overflow-x-auto my-2">
+              <code className="text-sm font-mono">{children}</code>
+            </pre>
+          ) : (
+            <code className="bg-muted/50 px-1 py-0.5 rounded text-sm font-mono">{children}</code>
+          )
+        },
+        pre: ({ children }) => <>{children}</>,
+
+        // Blockquote
+        blockquote: ({ children }) => (
+          <blockquote className="border-l-2 border-primary/50 pl-3 italic text-muted-foreground my-2">
+            {children}
+          </blockquote>
+        ),
+
+        // Horizontal rule
+        hr: () => <hr className="border-border my-3" />,
+      }}
+    >
+      {content}
+    </ReactMarkdown>
+  )
 }

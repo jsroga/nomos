@@ -7,17 +7,8 @@ import { SettingsDialog } from '@/domains/world-building-toolkit/components/Sett
 import { AssetUploadZone } from './AssetUploadZone'
 import { Plus, Palette, Package, Info, Eye, EyeOff } from 'lucide-react'
 import { LocalStorageKeys } from '@/constants/localStorage'
-import {
-  DomainSidebar,
-  SidebarSection,
-  SidebarEmptyState,
-} from '@/components/ui/domain-sidebar'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { DomainSidebar, SidebarSection, SidebarEmptyState } from '@/components/ui/domain-sidebar'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 export const AssetExporterSidebar: React.FC = () => {
   const defaultMasterPrompt =
@@ -61,7 +52,9 @@ export const AssetExporterSidebar: React.FC = () => {
                     <Info size={12} className="text-muted-foreground/60 cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent side="right">
-                    <p className="max-w-[200px]">Define the overall art style that will be applied to all generated 3D assets</p>
+                    <p className="max-w-[200px]">
+                      Define the overall art style that will be applied to all generated 3D assets
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               }
@@ -86,7 +79,7 @@ export const AssetExporterSidebar: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono text-muted-foreground">{assets.length}</span>
                   <button
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation()
                       setShowAllAssetMasks(!showAllAssetMasks)
                     }}
@@ -101,7 +94,7 @@ export const AssetExporterSidebar: React.FC = () => {
               <div className="mb-4">
                 <AssetUploadZone
                   projectId={currentProject.id}
-                  onUploadComplete={(assetIds) => {
+                  onUploadComplete={assetIds => {
                     // Refresh assets list after upload
                     const fetchAssets = useWorldStore.getState().fetchAssets
                     if (fetchAssets) {

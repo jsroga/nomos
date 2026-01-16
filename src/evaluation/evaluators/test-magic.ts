@@ -39,88 +39,90 @@ Her phone buzzed. Another email from her boss. She sighed and opened it.
 `
 
 async function testHeuristic() {
-  console.log("========== HEURISTIC ONLY ==========\n")
-  
-  console.log("=== AI SLOP SAMPLE ===")
+  console.log('========== HEURISTIC ONLY ==========\n')
+
+  console.log('=== AI SLOP SAMPLE ===')
   const slopResult = await magicScoreHeuristic.evaluate({
     input: {},
-    output: { response: AI_SLOP }
+    output: { response: AI_SLOP },
   })
-  console.log("Score:", (slopResult.score * 100).toFixed(0))
-  console.log("Reasoning:", slopResult.reasoning)
+  console.log('Score:', (slopResult.score * 100).toFixed(0))
+  console.log('Reasoning:', slopResult.reasoning)
   const slopMeta = slopResult.metadata as Record<string, unknown>
-  console.log("Dimensions:", JSON.stringify(slopMeta.dimensions, null, 2))
-  console.log("")
-  
-  console.log("=== GOOD WRITING SAMPLE ===")
+  console.log('Dimensions:', JSON.stringify(slopMeta.dimensions, null, 2))
+  console.log('')
+
+  console.log('=== GOOD WRITING SAMPLE ===')
   const goodResult = await magicScoreHeuristic.evaluate({
     input: {},
-    output: { response: GOOD_WRITING }
+    output: { response: GOOD_WRITING },
   })
-  console.log("Score:", (goodResult.score * 100).toFixed(0))
-  console.log("Reasoning:", goodResult.reasoning)
-  console.log("")
-  
-  console.log("=== MEDIOCRE SAMPLE ===")
+  console.log('Score:', (goodResult.score * 100).toFixed(0))
+  console.log('Reasoning:', goodResult.reasoning)
+  console.log('')
+
+  console.log('=== MEDIOCRE SAMPLE ===')
   const medResult = await magicScoreHeuristic.evaluate({
     input: {},
-    output: { response: MEDIOCRE }
+    output: { response: MEDIOCRE },
   })
-  console.log("Score:", (medResult.score * 100).toFixed(0))
-  console.log("Reasoning:", medResult.reasoning)
+  console.log('Score:', (medResult.score * 100).toFixed(0))
+  console.log('Reasoning:', medResult.reasoning)
 }
 
 async function testFull() {
-  console.log("\n========== WITH LLM JUDGE ==========\n")
-  
-  console.log("=== AI SLOP SAMPLE ===")
+  console.log('\n========== WITH LLM JUDGE ==========\n')
+
+  console.log('=== AI SLOP SAMPLE ===')
   const slopResult = await magicScoreEvaluator.evaluate({
     input: {},
-    output: { response: AI_SLOP }
+    output: { response: AI_SLOP },
   })
-  console.log("Score:", (slopResult.score * 100).toFixed(0))
-  console.log("Reasoning:", slopResult.reasoning)
+  console.log('Score:', (slopResult.score * 100).toFixed(0))
+  console.log('Reasoning:', slopResult.reasoning)
   const slopMeta = slopResult.metadata as Record<string, unknown>
   if (slopMeta.semanticAnalysis) {
-    console.log("LLM Analysis:", JSON.stringify(slopMeta.semanticAnalysis, null, 2))
+    console.log('LLM Analysis:', JSON.stringify(slopMeta.semanticAnalysis, null, 2))
   }
   if (slopMeta.slopIndicators) {
-    const indicators = slopMeta.slopIndicators as Array<{evidence: string}>
-    console.log("Slop found:", indicators.slice(0, 5).map(i => i.evidence))
+    const indicators = slopMeta.slopIndicators as Array<{ evidence: string }>
+    console.log(
+      'Slop found:',
+      indicators.slice(0, 5).map(i => i.evidence)
+    )
   }
-  console.log("")
-  
-  console.log("=== GOOD WRITING SAMPLE ===")
+  console.log('')
+
+  console.log('=== GOOD WRITING SAMPLE ===')
   const goodResult = await magicScoreEvaluator.evaluate({
     input: {},
-    output: { response: GOOD_WRITING }
+    output: { response: GOOD_WRITING },
   })
-  console.log("Score:", (goodResult.score * 100).toFixed(0))
-  console.log("Reasoning:", goodResult.reasoning)
+  console.log('Score:', (goodResult.score * 100).toFixed(0))
+  console.log('Reasoning:', goodResult.reasoning)
   const goodMeta = goodResult.metadata as Record<string, unknown>
   if (goodMeta.creativeSparks) {
-    console.log("Creative sparks:", goodMeta.creativeSparks)
+    console.log('Creative sparks:', goodMeta.creativeSparks)
   }
-  console.log("")
-  
-  console.log("=== MEDIOCRE SAMPLE ===")
+  console.log('')
+
+  console.log('=== MEDIOCRE SAMPLE ===')
   const medResult = await magicScoreEvaluator.evaluate({
     input: {},
-    output: { response: MEDIOCRE }
+    output: { response: MEDIOCRE },
   })
-  console.log("Score:", (medResult.score * 100).toFixed(0))
-  console.log("Reasoning:", medResult.reasoning)
+  console.log('Score:', (medResult.score * 100).toFixed(0))
+  console.log('Reasoning:', medResult.reasoning)
 }
 
 async function main() {
   await testHeuristic()
-  
+
   if (process.env.OPENAI_API_KEY) {
     await testFull()
   } else {
-    console.log("\nSkipping LLM judge (OPENAI_API_KEY not set)")
+    console.log('\nSkipping LLM judge (OPENAI_API_KEY not set)')
   }
 }
 
 main()
-

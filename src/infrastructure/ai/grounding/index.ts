@@ -1,6 +1,6 @@
 /**
  * Grounding Module
- * 
+ *
  * Exports grounding and citation tracking services.
  */
 
@@ -13,4 +13,3 @@ export {
   type RetrievedChunk,
   type ClaimAnalysis,
 } from './grounding-service'
-

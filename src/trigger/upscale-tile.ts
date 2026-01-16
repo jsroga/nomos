@@ -60,7 +60,7 @@ async function pollLegNextTask(
 
       if (status === 'completed') {
         logger.info('LegNext task completed successfully', {
-          imageUrl: data.output?.image_url
+          imageUrl: data.output?.image_url,
         })
         await metadata.set('progress', progressOffset + 65)
         return data
@@ -92,7 +92,11 @@ async function upscaleWithLegNext(
   styleReferenceUrls?: string[],
   creativity: number = 0.3
 ): Promise<{ id: string; imageUrl: string }> {
-  logger.info('Starting Midjourney upscale via LegNext AI (upload_paint)', { mimeType, styleReferenceUrls, creativity })
+  logger.info('Starting Midjourney upscale via LegNext AI (upload_paint)', {
+    mimeType,
+    styleReferenceUrls,
+    creativity,
+  })
   await metadata.set('stage', 'uploading_image')
   await metadata.set('progress', 32)
 
@@ -146,8 +150,8 @@ async function upscaleWithLegNext(
           width: MASK_CONFIG.FULL_CANVAS.width,
           height: MASK_CONFIG.FULL_CANVAS.height,
           points: MASK_CONFIG.FULL_CANVAS.points,
-        }
-      ]
+        },
+      ],
     },
     remixPrompt,
   }
@@ -165,7 +169,9 @@ async function upscaleWithLegNext(
 
   if (!uploadPaintResponse.ok) {
     const errorText = await uploadPaintResponse.text()
-    throw new Error(`LegNext upload_paint submission failed: ${uploadPaintResponse.status} - ${errorText}`)
+    throw new Error(
+      `LegNext upload_paint submission failed: ${uploadPaintResponse.status} - ${errorText}`
+    )
   }
 
   const uploadPaintData = await uploadPaintResponse.json()
@@ -193,7 +199,7 @@ async function upscaleWithLegNext(
   const upscalePayload = {
     jobId: jobId,
     imageNo: 0,
-    type: 0
+    type: 0,
   }
 
   logger.info('Submitting upscale with payload:', upscalePayload)
@@ -267,19 +273,19 @@ async function upscaleWithReplicate(
   logger.info('Input image uploaded for Replicate', { inputImageUrl })
 
   // Use the URL instead of base64 - more reliable
-  const output = await replicate.run(model as `${string}/${string}`, {
+  const output = (await replicate.run(model as `${string}/${string}`, {
     input: {
       image: inputImageUrl,
       prompt,
     },
-  }) as any
+  })) as any
 
   logger.info('Replicate raw output:', {
     type: typeof output,
     isArray: Array.isArray(output),
     constructor: output?.constructor?.name,
     keys: typeof output === 'object' && output ? Object.keys(output) : [],
-    stringified: JSON.stringify(output).substring(0, 500)
+    stringified: JSON.stringify(output).substring(0, 500),
   })
 
   await metadata.set('progress', 100)
@@ -317,7 +323,8 @@ async function upscaleWithReplicate(
   // Handle object output (FileOutput or similar)
   if (output && typeof output === 'object' && !Array.isArray(output)) {
     // Check for common URL properties
-    const possibleUrl = (output as any).url || (output as any).href || (output as any).uri || (output as any).output
+    const possibleUrl =
+      (output as any).url || (output as any).href || (output as any).uri || (output as any).output
     if (possibleUrl && typeof possibleUrl === 'string' && possibleUrl.startsWith('http')) {
       return { type: 'url', data: possibleUrl }
     }
@@ -410,7 +417,9 @@ async function upscaleWithStability(
     })
 
     if (submitResponse.status !== 200) {
-      throw new Error(`Stability API error (${submitResponse.status}): ${submitResponse.data?.message}`)
+      throw new Error(
+        `Stability API error (${submitResponse.status}): ${submitResponse.data?.message}`
+      )
     }
 
     const generationId = submitResponse.data?.id
@@ -442,7 +451,10 @@ async function upscaleWithStability(
         logger.info('Stability creative upscale complete!')
         await metadata.set('progress', 100)
         const base64 = btoa(
-          new Uint8Array(resultResponse.data).reduce((data, byte) => data + String.fromCharCode(byte), '')
+          new Uint8Array(resultResponse.data).reduce(
+            (data, byte) => data + String.fromCharCode(byte),
+            ''
+          )
         )
         return base64
       } else if (resultResponse.status === 202) {
@@ -461,7 +473,7 @@ async function upscaleWithStability(
 // Main upscale task
 export const upscaleTileTask = task({
   id: 'upscale-tile',
-  machine: 'medium-1x',  // More memory for image processing
+  machine: 'medium-1x', // More memory for image processing
   maxDuration: 1200, // 20 minutes
   retry: {
     maxAttempts: 1, // Don't retry - costs money
@@ -495,7 +507,11 @@ export const upscaleTileTask = task({
       styleReferenceUrls,
     } = payload
 
-    logger.info(`Starting upscale for tile ${tileId}`, { provider, projectId, skipGeminiPreUpscale })
+    logger.info(`Starting upscale for tile ${tileId}`, {
+      provider,
+      projectId,
+      skipGeminiPreUpscale,
+    })
 
     await metadata.set('progress', 0)
     await metadata.set('provider', provider)
@@ -561,7 +577,10 @@ export const upscaleTileTask = task({
       const inlineData = imagePart.inline_data || imagePart.inlineData
       step1Image = inlineData.data
       step1MimeType = inlineData.mime_type || inlineData.mimeType || 'image/png'
-      logger.info('Gemini Step 1 upscale completed', { mimeType: step1MimeType, imageLength: step1Image?.length })
+      logger.info('Gemini Step 1 upscale completed', {
+        mimeType: step1MimeType,
+        imageLength: step1Image?.length,
+      })
       await metadata.set('progress', 30)
     } else {
       logger.info('Skipping Gemini pre-upscale')
@@ -572,7 +591,7 @@ export const upscaleTileTask = task({
     await metadata.set('stage', 'provider_upscale')
     let finalImageUrl: string | null = null
     let finalImageBase64: string | null = null
-    let mjGridResult: any = null // For MJ variant selection
+    const mjGridResult: any = null // For MJ variant selection
 
     switch (provider) {
       case 'midjourney':
@@ -593,7 +612,14 @@ export const upscaleTileTask = task({
 
           // LegNext now auto-upscales variant 0, so we get the final image URL directly
           // No need to return a grid and ask for user selection anymore
-          const legNextResult = await upscaleWithLegNext(step1Image, prompt, providerConfig.apiKey, step1MimeType, styleReferenceUrls, creativity)
+          const legNextResult = await upscaleWithLegNext(
+            step1Image,
+            prompt,
+            providerConfig.apiKey,
+            step1MimeType,
+            styleReferenceUrls,
+            creativity
+          )
 
           finalImageUrl = legNextResult.imageUrl
 
@@ -696,7 +722,7 @@ export const upscaleTileTask = task({
       upscaledUrl,
       originalUrl,
       provider,
-      pendingReview: true
+      pendingReview: true,
     }
   },
 })

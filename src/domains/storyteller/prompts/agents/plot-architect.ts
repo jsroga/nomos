@@ -1,6 +1,6 @@
 /**
  * Plot Architect Agent Prompt
- * 
+ *
  * A bold, innovative creative mind that creates story beats.
  */
 

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { Button } from '@/components/ui/button'
-import { Loader2, Save, Trash2, Square } from 'lucide-react'
+import { Loader2, Save, Trash2, Square, Check } from 'lucide-react'
 import { getSupabaseClient } from '@/infrastructure/storage/supabaseClient'
 import { selectModeService } from '@/domains/world-building-toolkit/services/SelectModeService'
 import toast from 'react-hot-toast'
@@ -96,32 +96,38 @@ export const SelectModeToolbar: React.FC = () => {
   if (!isSelectMode) return null
 
   return (
-    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-card border border-border rounded-xl shadow-2xl p-3 flex items-center gap-3 z-50">
+    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-background/60 backdrop-blur-xl border border-border/50 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] p-3 flex items-center gap-3 z-50">
       {/* Mode indicator */}
-      <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-lg">
-        <Square className="w-4 h-4 text-primary" />
-        <span className="text-xs font-semibold text-primary">Select Mode</span>
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
+        <Square className="w-4 h-4 text-indigo-400" />
+        <span className="text-xs font-bold font-syne uppercase tracking-wider text-indigo-100/90">
+          Select
+        </span>
       </div>
 
-      <div className="w-px h-6 bg-border" />
+      <div className="w-px h-6 bg-border/50" />
 
       {/* Status */}
-      <div className="flex items-center gap-2 min-w-[140px]">
+      <div className="flex items-center gap-2 min-w-[140px] px-2">
         {isSegmenting ? (
           <>
-            <Loader2 size={14} className="animate-spin text-primary" />
-            <span className="text-xs text-muted-foreground">Segmenting...</span>
+            <Loader2 size={14} className="animate-spin text-indigo-400" />
+            <span className="text-xs text-muted-foreground font-mono">Segmenting...</span>
           </>
         ) : selectedMask?.imageUrl ? (
-          <span className="text-xs text-green-600 font-medium">✓ Object selected</span>
+          <span className="text-xs text-green-400 font-mono flex items-center gap-1.5">
+            <Check size={12} /> Object selected
+          </span>
         ) : selectBox ? (
-          <span className="text-xs text-muted-foreground">Enter prompt...</span>
+          <span className="text-xs text-muted-foreground font-mono animate-pulse">
+            Enter prompt...
+          </span>
         ) : (
-          <span className="text-xs text-muted-foreground">Draw a box to select</span>
+          <span className="text-xs text-muted-foreground font-mono">Draw box on map</span>
         )}
       </div>
 
-      <div className="w-px h-6 bg-border" />
+      <div className="w-px h-6 bg-border/50" />
 
       {/* Actions */}
       <div className="flex items-center gap-2">
@@ -130,13 +136,18 @@ export const SelectModeToolbar: React.FC = () => {
           size="sm"
           onClick={handleClear}
           disabled={!selectBox && !selectedMask}
-          className="h-8 px-2 text-xs"
+          className="h-8 px-3 text-[10px] uppercase tracking-widest font-bold text-muted-foreground hover:text-foreground hover:bg-white/5"
         >
-          <Trash2 className="w-3.5 h-3.5 mr-1" />
+          <Trash2 className="w-3.5 h-3.5 mr-1.5 opacity-70" />
           Clear
         </Button>
 
-        <Button variant="secondary" size="sm" onClick={handleCancel} className="h-8 px-3 text-xs">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={handleCancel}
+          className="h-8 px-4 text-[10px] uppercase tracking-widest font-bold bg-white/5 border border-border/50 hover:bg-white/10"
+        >
           Exit
         </Button>
 
@@ -145,15 +156,15 @@ export const SelectModeToolbar: React.FC = () => {
             size="sm"
             onClick={handleSaveAsset}
             disabled={isSaving}
-            className="h-8 px-3 text-xs bg-green-600 hover:bg-green-700 text-white"
+            className="h-8 px-4 text-[10px] uppercase tracking-widest font-bold bg-green-600/90 hover:bg-green-600 text-white shadow-lg shadow-green-900/20 transition-all active:scale-95"
           >
             {isSaving ? (
               <>
-                <Loader2 size={14} className="animate-spin mr-1" /> Saving...
+                <Loader2 size={14} className="animate-spin mr-1.5" /> Saving
               </>
             ) : (
               <>
-                <Save size={14} className="mr-1" /> Save Asset
+                <Save size={14} className="mr-1.5" /> Save Asset
               </>
             )}
           </Button>

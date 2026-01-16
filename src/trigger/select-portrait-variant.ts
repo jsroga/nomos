@@ -15,7 +15,10 @@ export const selectPortraitVariant = task({
   run: async (payload: SelectPortraitVariantPayload) => {
     const { projectId, characterId, gridImageUrl, variantIndex } = payload
 
-    logger.info(`Cropping portrait variant ${variantIndex} from grid`, { gridImageUrl, characterId })
+    logger.info(`Cropping portrait variant ${variantIndex} from grid`, {
+      gridImageUrl,
+      characterId,
+    })
 
     await metadata.set('progress', 10)
     await metadata.set('stage', 'downloading')

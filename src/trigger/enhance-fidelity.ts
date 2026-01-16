@@ -23,7 +23,15 @@ export const enhanceFidelityTask = task({
     }
     styleReferenceUrls?: string[]
   }) => {
-    const { tileId, projectId, imageBase64, stylePrompt, creativity, geminiConfig, styleReferenceUrls } = payload
+    const {
+      tileId,
+      projectId,
+      imageBase64,
+      stylePrompt,
+      creativity,
+      geminiConfig,
+      styleReferenceUrls,
+    } = payload
 
     logger.info(`Starting fidelity enhancement for tile ${tileId}`, { projectId })
 
@@ -103,7 +111,9 @@ export const enhanceFidelityTask = task({
     if (!imagePart) {
       const textPart = parts.find((p: any) => p.text)
       if (textPart) {
-        throw new Error(`Gemini returned text instead of image: ${textPart.text.substring(0, 100)}...`)
+        throw new Error(
+          `Gemini returned text instead of image: ${textPart.text.substring(0, 100)}...`
+        )
       }
       throw new Error('No image found in Gemini response')
     }
@@ -177,5 +187,3 @@ export const enhanceFidelityTask = task({
     }
   },
 })
-
-

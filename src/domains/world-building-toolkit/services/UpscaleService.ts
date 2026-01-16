@@ -23,13 +23,21 @@ export class UpscaleService {
   /**
    * Start upscaling a tile using Trigger.dev background task
    */
-  async upscale(tile: Tile, creativity: number, styleReferenceUrls?: string[]): Promise<string | null> {
-    console.log('Starting upscale via Trigger.dev for tile', tile.id, 'creativity', creativity, { styleReferenceUrls })
+  async upscale(
+    tile: Tile,
+    creativity: number,
+    styleReferenceUrls?: string[]
+  ): Promise<string | null> {
+    console.log('Starting upscale via Trigger.dev for tile', tile.id, 'creativity', creativity, {
+      styleReferenceUrls,
+    })
 
     // Get configs from localStorage
-    let geminiConfig = { apiKey: '', model: 'gemini-3-pro-image-preview' }
+    const geminiConfig = { apiKey: '', model: 'gemini-3-pro-image-preview' }
     let replicateConfig = { apiKey: '', model: '' }
-    let stabilityConfig: { apiKey: string; upscaleMode?: 'conservative' | 'creative' } = { apiKey: '' }
+    let stabilityConfig: { apiKey: string; upscaleMode?: 'conservative' | 'creative' } = {
+      apiKey: '',
+    }
     let legnextConfig = { apiKey: '' }
     let activeUpscaler: UpscaleProvider = 'stability'
 
@@ -54,15 +62,20 @@ export class UpscaleService {
       const savedLegNext = localStorage.getItem(LocalStorageKeys.AI_CONFIG_LEGNEXT)
       if (savedLegNext) legnextConfig = JSON.parse(savedLegNext)
 
-      activeUpscaler = (localStorage.getItem(LocalStorageKeys.AI_ACTIVE_UPSCALER) as UpscaleProvider) || 'stability'
+      activeUpscaler =
+        (localStorage.getItem(LocalStorageKeys.AI_ACTIVE_UPSCALER) as UpscaleProvider) ||
+        'stability'
 
       // Check if Gemini pre-upscale should be skipped
-      skipGeminiPreUpscale = localStorage.getItem(LocalStorageKeys.SKIP_GEMINI_PRE_UPSCALE) === 'true'
+      skipGeminiPreUpscale =
+        localStorage.getItem(LocalStorageKeys.SKIP_GEMINI_PRE_UPSCALE) === 'true'
     }
 
     // Gemini is required for Step 1 unless skipped
     if (!skipGeminiPreUpscale && !geminiConfig.apiKey) {
-      throw new Error('Gemini API key is required for pre-upscaling. Configure it in Settings or disable Gemini pre-upscale.')
+      throw new Error(
+        'Gemini API key is required for pre-upscaling. Configure it in Settings or disable Gemini pre-upscale.'
+      )
     }
 
     // Get the provider config based on selection
@@ -73,20 +86,23 @@ export class UpscaleService {
         if (!legnextConfig.apiKey) throw new Error('LegNext API key not found for Midjourney')
         providerConfig = {
           apiKey: legnextConfig.apiKey,
-          parameters: (legnextConfig as any).parameters // Pass specific MJ parameters
+          parameters: (legnextConfig as any).parameters, // Pass specific MJ parameters
         }
         break
       case 'replicate':
         if (!replicateConfig.apiKey) throw new Error('Replicate API key not found')
         // Default to recraft-ai/recraft-creative-upscale if model not specified
-        providerConfig = { 
-          apiKey: replicateConfig.apiKey, 
-          model: replicateConfig.model || 'recraft-ai/recraft-creative-upscale' 
+        providerConfig = {
+          apiKey: replicateConfig.apiKey,
+          model: replicateConfig.model || 'recraft-ai/recraft-creative-upscale',
         }
         break
       case 'stability':
         if (!stabilityConfig.apiKey) throw new Error('Stability API key not found')
-        providerConfig = { apiKey: stabilityConfig.apiKey, upscaleMode: stabilityConfig.upscaleMode || 'conservative' }
+        providerConfig = {
+          apiKey: stabilityConfig.apiKey,
+          upscaleMode: stabilityConfig.upscaleMode || 'conservative',
+        }
         break
       default:
         throw new Error(`Unknown upscaler: ${activeUpscaler}`)
@@ -232,11 +248,7 @@ export class UpscaleService {
   /**
    * Handle successful completion
    */
-  private async handleCompletion(
-    runState: UpscaleRunState,
-    output: any,
-    opId: string
-  ) {
+  private async handleCompletion(runState: UpscaleRunState, output: any, opId: string) {
     try {
       // Check if upscale requires user review (new flow)
       if (output?.pendingReview && output?.upscaledUrl) {
@@ -248,21 +260,18 @@ export class UpscaleService {
 
         // Images are now stored in Supabase Storage - use URLs directly
         const upscaledUrl = output.upscaledUrl
-        
+
         // For original, prefer the local existing tile (if any), otherwise use uploaded original
         const tiles = useWorldStore.getState().tiles
         const existingTile = tiles[`${runState.tileX},${runState.tileY}`]
-        const originalUrl = existingTile?.image_filename 
+        const originalUrl = existingTile?.image_filename
           ? `/projects/${runState.projectId}/${existingTile.image_filename}`
           : output.originalUrl
 
         // Store pending upscale in store
-        useWorldStore.getState().setPendingUpscale(
-          runState.tileX,
-          runState.tileY,
-          upscaledUrl,
-          originalUrl
-        )
+        useWorldStore
+          .getState()
+          .setPendingUpscale(runState.tileX, runState.tileY, upscaledUrl, originalUrl)
 
         // Update global status to show review is needed
         useGlobalStatusStore.getState().updateOperation(opId, {
@@ -272,14 +281,16 @@ export class UpscaleService {
 
         // Emit event for UI to show review dialog
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('upscale-review-ready', {
-            detail: {
-              tileX: runState.tileX,
-              tileY: runState.tileY,
-              upscaledUrl,
-              originalUrl,
-            }
-          }))
+          window.dispatchEvent(
+            new CustomEvent('upscale-review-ready', {
+              detail: {
+                tileX: runState.tileX,
+                tileY: runState.tileY,
+                upscaledUrl,
+                originalUrl,
+              },
+            })
+          )
         }
 
         this.clearRunState(runState, opId)
@@ -292,14 +303,17 @@ export class UpscaleService {
 
         // Store the grid data for variant selection UI
         if (typeof window !== 'undefined') {
-          localStorage.setItem(DynamicLocalStorageKeys.mjGrid(runState.tileId), JSON.stringify({
-            gridImageUrl: output.gridImageUrl,
-            taskId: output.taskId,
-            buttons: output.buttons,
-            tileId: output.tileId,
-            projectId: output.projectId,
-            runState,
-          }))
+          localStorage.setItem(
+            DynamicLocalStorageKeys.mjGrid(runState.tileId),
+            JSON.stringify({
+              gridImageUrl: output.gridImageUrl,
+              taskId: output.taskId,
+              buttons: output.buttons,
+              tileId: output.tileId,
+              projectId: output.projectId,
+              runState,
+            })
+          )
         }
 
         // Update global status to show variant selection is needed
@@ -318,16 +332,18 @@ export class UpscaleService {
 
         // Emit event for UI to show variant picker
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('mj-grid-ready', {
-            detail: {
-              tileId: runState.tileId,
-              tileX: runState.tileX,
-              tileY: runState.tileY,
-              gridImageUrl: output.gridImageUrl,
-              buttons: output.buttons,
-              taskId: output.taskId,
-            }
-          }))
+          window.dispatchEvent(
+            new CustomEvent('mj-grid-ready', {
+              detail: {
+                tileId: runState.tileId,
+                tileX: runState.tileX,
+                tileY: runState.tileY,
+                gridImageUrl: output.gridImageUrl,
+                buttons: output.buttons,
+                taskId: output.taskId,
+              },
+            })
+          )
         }
         return
       }

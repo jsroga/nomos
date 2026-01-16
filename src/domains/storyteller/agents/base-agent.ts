@@ -5,7 +5,6 @@ import { WritersRoomState } from '../graph/state'
 import { AgentResponse, AgentAction, AgentQuestion, AGENT_RESPONSE_SCHEMA } from '../actions/types'
 import { assembleContext } from '../context/assembler'
 
-
 // ============================================
 // MODEL CONFIGURATION
 // ============================================
@@ -23,7 +22,6 @@ export const fastModel = new ChatOpenAI({
   temperature: 0.5,
   maxRetries: 2,
 })
-
 
 // ============================================
 // BASE AGENT - Common functionality for all agents
@@ -96,13 +94,14 @@ export abstract class BaseAgent {
     const structuredOutputInstruction = this.getStructuredOutputInstruction()
 
     // Combine system content into single message (required for Claude)
-    const combinedSystem = [context.systemPrompt, context.stateContext, structuredOutputInstruction].join('\n\n---\n\n')
+    const combinedSystem = [
+      context.systemPrompt,
+      context.stateContext,
+      structuredOutputInstruction,
+    ].join('\n\n---\n\n')
     const conversationMessages = state.messages.slice(-6).filter(m => m._getType() !== 'system')
 
-    return [
-      new SystemMessage(combinedSystem),
-      ...conversationMessages,
-    ]
+    return [new SystemMessage(combinedSystem), ...conversationMessages]
   }
 
   /**
@@ -167,7 +166,10 @@ IMPORTANT:
   /**
    * Get structured response from LLM with self-correction
    */
-  protected async getStructuredResponse(messages: any[], attempt: number = 1): Promise<AgentResponse> {
+  protected async getStructuredResponse(
+    messages: any[],
+    attempt: number = 1
+  ): Promise<AgentResponse> {
     const MAX_RETRIES = 2
 
     try {
@@ -194,7 +196,7 @@ IMPORTANT:
 
       // Basic validation: must have message and confidence
       if (!parsed.message && !parsed.actions) {
-        throw new Error("Missing 'message' or 'actions' in response")
+        throw new Error('Missing \'message\' or \'actions\' in response')
       }
 
       // Ensure required fields
@@ -208,7 +210,9 @@ IMPORTANT:
       }
     } catch (e) {
       const errorMsg = e instanceof Error ? e.message : 'Unknown JSON parse error'
-      console.warn(`${this.config.name}: validation failed (attempt ${attempt}/${MAX_RETRIES + 1}): ${errorMsg}`)
+      console.warn(
+        `${this.config.name}: validation failed (attempt ${attempt}/${MAX_RETRIES + 1}): ${errorMsg}`
+      )
 
       if (attempt <= MAX_RETRIES) {
         console.log(`${this.config.name}: Self-correcting...`)
@@ -220,9 +224,11 @@ IMPORTANT:
       }
 
       // If all retries fail, return fallback
-      console.warn(`${this.config.name}: All validation attempts failed. Falling back to plain text.`)
+      console.warn(
+        `${this.config.name}: All validation attempts failed. Falling back to plain text.`
+      )
       return {
-        message: "I encountered an error generating the structured response.",
+        message: 'I encountered an error generating the structured response.',
         actions: [],
         confidence: 0.0,
       }

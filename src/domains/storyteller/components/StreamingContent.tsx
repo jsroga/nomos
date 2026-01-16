@@ -2,10 +2,25 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
-import { 
-  Loader2, BookOpen, Users, Globe, Sparkles, Lightbulb, FileText, 
-  Check, Circle, Search, Brain, Pen, ChevronDown, ChevronRight,
-  Music, Target, Zap, Eye
+import {
+  Loader2,
+  BookOpen,
+  Users,
+  Globe,
+  Sparkles,
+  Lightbulb,
+  FileText,
+  Check,
+  Circle,
+  Search,
+  Brain,
+  Pen,
+  ChevronDown,
+  ChevronRight,
+  Music,
+  Target,
+  Zap,
+  Eye,
 } from 'lucide-react'
 
 export interface StreamingSection {
@@ -128,17 +143,17 @@ export const StreamingContent: React.FC<StreamingContentProps> = ({
         ) : (
           <Check className="w-3 h-3 text-green-500/70" />
         )}
-        
+
         <span className="text-[10px] uppercase tracking-[0.15em] font-bold text-muted-foreground/80 flex-1">
           {formatAgentName(agent) || 'Agent'} {isStreaming ? 'Working' : 'Ready'}
         </span>
-        
+
         {totalCount > 0 && (
           <span className="text-[10px] font-mono text-muted-foreground/40">
             {completedCount}/{totalCount}
           </span>
         )}
-        
+
         <div className="ml-1 opacity-40">
           {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
         </div>
@@ -185,13 +200,15 @@ const ProgressStep: React.FC<{ section: StreamingSection }> = ({ section }) => {
           <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/20" />
         )}
       </div>
-      
-      <span className={cn(
-        "text-[10px] uppercase tracking-wider font-medium",
-        section.status === 'complete' && 'text-muted-foreground/50',
-        section.status === 'streaming' && 'text-foreground/80',
-        section.status === 'pending' && 'text-muted-foreground/30'
-      )}>
+
+      <span
+        className={cn(
+          'text-[10px] uppercase tracking-wider font-medium',
+          section.status === 'complete' && 'text-muted-foreground/50',
+          section.status === 'streaming' && 'text-foreground/80',
+          section.status === 'pending' && 'text-muted-foreground/30'
+        )}
+      >
         {name}
       </span>
     </div>
@@ -226,7 +243,7 @@ const SectionIndicator: React.FC<{ section: StreamingSection }> = ({ section }) 
 
 // Streaming text with cursor - more compact
 const StreamingText: React.FC<{ text: string; isStreaming: boolean }> = ({ text, isStreaming }) => {
-  // Limit displayed text to last ~500 characters for performance  
+  // Limit displayed text to last ~500 characters for performance
   const displayText = text.length > 500 ? '...' + text.slice(-500) : text
 
   return (
@@ -239,11 +256,3 @@ const StreamingText: React.FC<{ text: string; isStreaming: boolean }> = ({ text,
 
 export default StreamingContent
 export { ProgressStep, SectionIndicator }
-
-
-
-
-
-
-
-

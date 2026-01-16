@@ -12,13 +12,13 @@ async function fetchProjectStyleRefs(projectId: string): Promise<string[]> {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
-    
+
     const { data, error } = await supabase
       .from('projects')
       .select('style_reference_urls')
       .eq('id', projectId)
       .single()
-    
+
     if (error || !data) return []
     return (data.style_reference_urls as string[]) || []
   } catch {
@@ -39,10 +39,7 @@ export async function POST(request: Request) {
     }
 
     if (!payload.providerConfig?.apiKey) {
-      return NextResponse.json(
-        { error: 'Missing providerConfig.apiKey' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Missing providerConfig.apiKey' }, { status: 400 })
     }
 
     // Gemini config is optional - only required if not skipping pre-upscale
@@ -54,15 +51,20 @@ export async function POST(request: Request) {
     }
 
     // Fetch project style references if not provided
-    const styleReferenceUrls = payload.styleReferenceUrls || await fetchProjectStyleRefs(payload.projectId)
+    const styleReferenceUrls =
+      payload.styleReferenceUrls || (await fetchProjectStyleRefs(payload.projectId))
 
     // Trigger the upscale task with style references
-    const handle = await tasks.trigger<typeof upscaleTileTask>('upscale-tile', {
-      ...payload,
-      styleReferenceUrls,
-    }, {
-      ttl: '25m', // Slightly less than maxDuration to avoid race
-    })
+    const handle = await tasks.trigger<typeof upscaleTileTask>(
+      'upscale-tile',
+      {
+        ...payload,
+        styleReferenceUrls,
+      },
+      {
+        ttl: '25m', // Slightly less than maxDuration to avoid race
+      }
+    )
 
     return NextResponse.json({
       success: true,

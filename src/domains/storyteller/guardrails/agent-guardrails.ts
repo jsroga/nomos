@@ -1,6 +1,6 @@
 /**
  * Agent-Specific Guardrail Configurations
- * 
+ *
  * Defines role-specific validation rules, allowed actions,
  * and consistency checks for each agent in the Writer's Room.
  */
@@ -45,10 +45,7 @@ export const AGENT_GUARDRAILS: Record<AgentRole, AgentGuardrailConfig> = {
       'INSERT_SCRIPT_SECTION',
       'REVISE_SCRIPT_SECTION',
     ],
-    consistencyChecks: [
-      'factionsHaveConflict',
-      'worldRulesHaveConsequences',
-    ],
+    consistencyChecks: ['factionsHaveConflict', 'worldRulesHaveConsequences'],
     minConfidenceForActions: 0.6,
     allowedPhases: ['premise', 'breaking'],
     highConfidenceActions: ['UPDATE_SERIES_BIBLE'],
@@ -57,12 +54,7 @@ export const AGENT_GUARDRAILS: Record<AgentRole, AgentGuardrailConfig> = {
   episodePremiseArchitect: {
     maxOutputTokens: 4000,
     requiredFields: ['message'],
-    forbiddenActions: [
-      'CREATE_BEAT',
-      'UPDATE_BEAT',
-      'DELETE_BEAT',
-      'UPDATE_SCRIPT',
-    ],
+    forbiddenActions: ['CREATE_BEAT', 'UPDATE_BEAT', 'DELETE_BEAT', 'UPDATE_SCRIPT'],
     consistencyChecks: ['charactersExist'],
     minConfidenceForActions: 0.6,
     allowedPhases: ['premise'],
@@ -79,11 +71,7 @@ export const AGENT_GUARDRAILS: Record<AgentRole, AgentGuardrailConfig> = {
       'UPDATE_FACTIONS',
       'UPDATE_SCRIPT',
     ],
-    consistencyChecks: [
-      'charactersExist',
-      'beatFitsPhase',
-      'characterMotivationsAlign',
-    ],
+    consistencyChecks: ['charactersExist', 'beatFitsPhase', 'characterMotivationsAlign'],
     minConfidenceForActions: 0.6,
     allowedPhases: ['breaking', 'cardlock'],
     highConfidenceActions: ['DELETE_BEAT', 'REORDER_BEATS'],
@@ -92,16 +80,8 @@ export const AGENT_GUARDRAILS: Record<AgentRole, AgentGuardrailConfig> = {
   characterPsychology: {
     maxOutputTokens: 3000,
     requiredFields: ['message'],
-    forbiddenActions: [
-      'CREATE_BEAT',
-      'DELETE_BEAT',
-      'UPDATE_SCRIPT',
-      'UPDATE_SERIES_BIBLE',
-    ],
-    consistencyChecks: [
-      'charactersExist',
-      'characterMotivationsAlign',
-    ],
+    forbiddenActions: ['CREATE_BEAT', 'DELETE_BEAT', 'UPDATE_SCRIPT', 'UPDATE_SERIES_BIBLE'],
+    consistencyChecks: ['charactersExist', 'characterMotivationsAlign'],
     minConfidenceForActions: 0.6,
     allowedPhases: ['breaking', 'cardlock'],
     highConfidenceActions: [],
@@ -110,16 +90,8 @@ export const AGENT_GUARDRAILS: Record<AgentRole, AgentGuardrailConfig> = {
   consequenceTracker: {
     maxOutputTokens: 3000,
     requiredFields: ['message'],
-    forbiddenActions: [
-      'CREATE_BEAT',
-      'DELETE_BEAT',
-      'UPDATE_SCRIPT',
-      'UPDATE_SERIES_BIBLE',
-    ],
-    consistencyChecks: [
-      'setupsHavePayoffs',
-      'timelineConsistent',
-    ],
+    forbiddenActions: ['CREATE_BEAT', 'DELETE_BEAT', 'UPDATE_SCRIPT', 'UPDATE_SERIES_BIBLE'],
+    consistencyChecks: ['setupsHavePayoffs', 'timelineConsistent'],
     minConfidenceForActions: 0.5,
     allowedPhases: ['breaking', 'cardlock'],
     highConfidenceActions: [],
@@ -160,12 +132,7 @@ export const AGENT_GUARDRAILS: Record<AgentRole, AgentGuardrailConfig> = {
   scriptEditor: {
     maxOutputTokens: 4000,
     requiredFields: ['message'],
-    forbiddenActions: [
-      'UPDATE_SERIES_BIBLE',
-      'CREATE_BEAT',
-      'DELETE_BEAT',
-      'CREATE_CHARACTER',
-    ],
+    forbiddenActions: ['UPDATE_SERIES_BIBLE', 'CREATE_BEAT', 'DELETE_BEAT', 'CREATE_CHARACTER'],
     consistencyChecks: [],
     minConfidenceForActions: 0.6,
     allowedPhases: ['cardlock', 'writing'],
@@ -202,10 +169,7 @@ export function getAgentGuardrails(role: AgentRole): AgentGuardrailConfig {
 /**
  * Check if an action is allowed for an agent
  */
-export function isActionAllowedForAgent(
-  action: AgentAction,
-  role: AgentRole
-): boolean {
+export function isActionAllowedForAgent(action: AgentAction, role: AgentRole): boolean {
   const config = getAgentGuardrails(role)
   return !config.forbiddenActions.includes(action.type)
 }
@@ -229,10 +193,7 @@ export function getConsistencyChecksForAgent(role: AgentRole): ConsistencyCheckT
 /**
  * Check if an action requires high confidence for an agent
  */
-export function requiresHighConfidence(
-  action: AgentAction,
-  role: AgentRole
-): boolean {
+export function requiresHighConfidence(action: AgentAction, role: AgentRole): boolean {
   const config = getAgentGuardrails(role)
   return config.highConfidenceActions.includes(action.type)
 }
@@ -240,10 +201,7 @@ export function requiresHighConfidence(
 /**
  * Get minimum confidence required for an action
  */
-export function getMinConfidenceForAction(
-  action: AgentAction,
-  role: AgentRole
-): number {
+export function getMinConfidenceForAction(action: AgentAction, role: AgentRole): number {
   const config = getAgentGuardrails(role)
   if (requiresHighConfidence(action, role)) {
     return 0.8 // High confidence actions need 80%
@@ -297,7 +255,7 @@ export function getAgentCapabilitySummary(role: AgentRole): {
   consistencyChecks: ConsistencyCheckType[]
 } {
   const config = getAgentGuardrails(role)
-  
+
   // All possible action types
   const allActions: AgentAction['type'][] = [
     'CREATE_BEAT',
@@ -317,9 +275,7 @@ export function getAgentCapabilitySummary(role: AgentRole): {
     'UPDATE_EPISODE_PREMISE',
   ]
 
-  const allowedActions = allActions.filter(
-    a => !config.forbiddenActions.includes(a)
-  )
+  const allowedActions = allActions.filter(a => !config.forbiddenActions.includes(a))
 
   return {
     allowedActions,
@@ -328,12 +284,3 @@ export function getAgentCapabilitySummary(role: AgentRole): {
     consistencyChecks: config.consistencyChecks,
   }
 }
-
-
-
-
-
-
-
-
-

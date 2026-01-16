@@ -1,32 +1,32 @@
 /**
  * Citation Display Component
- * 
+ *
  * Displays inline citation markers and expandable source previews.
  * Shows RAG confidence indicators for grounded responses.
  */
 
 import React, { useState } from 'react'
 import { cn } from '@/lib/utils'
-import { 
-  ChevronDown, 
-  ChevronUp, 
-  ExternalLink, 
-  FileText, 
+import {
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  FileText,
   BookOpen,
   User,
   Globe,
   MessageSquare,
-  Brain
+  Brain,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export interface Citation {
   id: string
-  marker: string           // [1], [2], etc.
-  source: string           // Document type
+  marker: string // [1], [2], etc.
+  source: string // Document type
   chunkId: string
-  content?: string         // Preview content
-  confidence: number       // 0-1
+  content?: string // Preview content
+  confidence: number // 0-1
   metadata?: {
     documentType?: string
     episodeId?: string
@@ -107,11 +107,11 @@ export const CitationMarker: React.FC<CitationMarkerProps> = ({
     <button
       onClick={onClick}
       className={cn(
-        "inline-flex items-center justify-center px-1.5 py-0.5 rounded text-xs font-mono font-medium",
-        "transition-all duration-150 cursor-pointer",
+        'inline-flex items-center justify-center px-1.5 py-0.5 rounded text-xs font-mono font-medium',
+        'transition-all duration-150 cursor-pointer',
         getConfidenceColor(confidence),
-        isActive && "ring-2 ring-offset-2 ring-offset-background",
-        "hover:scale-105"
+        isActive && 'ring-2 ring-offset-2 ring-offset-background',
+        'hover:scale-105'
       )}
       title={`Source confidence: ${formatConfidence(confidence)}`}
     >
@@ -129,57 +129,56 @@ export const CitationPreview: React.FC<CitationPreviewProps> = ({
   onToggle,
 }) => {
   const confidencePercent = Math.round(citation.confidence * 100)
-  
+
   return (
-    <div className={cn(
-      "border rounded-lg overflow-hidden",
-      "transition-all duration-200"
-    )}>
+    <div className={cn('border rounded-lg overflow-hidden', 'transition-all duration-200')}>
       {/* Header */}
       <button
         onClick={onToggle}
         className={cn(
-          "w-full flex items-center justify-between px-3 py-2 text-left",
-          "hover:bg-muted/50 transition-colors"
+          'w-full flex items-center justify-between px-3 py-2 text-left',
+          'hover:bg-muted/50 transition-colors'
         )}
       >
         <div className="flex items-center gap-2">
           {/* Marker */}
-          <span className={cn(
-            "px-1.5 py-0.5 rounded text-xs font-mono font-medium",
-            getConfidenceColor(citation.confidence)
-          )}>
+          <span
+            className={cn(
+              'px-1.5 py-0.5 rounded text-xs font-mono font-medium',
+              getConfidenceColor(citation.confidence)
+            )}
+          >
             {citation.marker}
           </span>
-          
+
           {/* Source icon and type */}
           <div className="flex items-center gap-1.5 text-muted-foreground">
             {getSourceIcon(citation.source)}
-            <span className="text-sm capitalize">
-              {citation.source.replace(/_/g, ' ')}
-            </span>
+            <span className="text-sm capitalize">{citation.source.replace(/_/g, ' ')}</span>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {/* Confidence indicator */}
           <div className="flex items-center gap-1">
             <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-              <div 
+              <div
                 className={cn(
-                  "h-full rounded-full",
-                  citation.confidence >= 0.8 ? 'bg-emerald-500' :
-                  citation.confidence >= 0.6 ? 'bg-blue-500' :
-                  citation.confidence >= 0.4 ? 'bg-amber-500' : 'bg-red-500'
+                  'h-full rounded-full',
+                  citation.confidence >= 0.8
+                    ? 'bg-emerald-500'
+                    : citation.confidence >= 0.6
+                      ? 'bg-blue-500'
+                      : citation.confidence >= 0.4
+                        ? 'bg-amber-500'
+                        : 'bg-red-500'
                 )}
                 style={{ width: `${confidencePercent}%` }}
               />
             </div>
-            <span className="text-xs text-muted-foreground w-8">
-              {confidencePercent}%
-            </span>
+            <span className="text-xs text-muted-foreground w-8">{confidencePercent}%</span>
           </div>
-          
+
           {/* Expand toggle */}
           {isExpanded ? (
             <ChevronUp className="w-4 h-4 text-muted-foreground" />
@@ -188,7 +187,7 @@ export const CitationPreview: React.FC<CitationPreviewProps> = ({
           )}
         </div>
       </button>
-      
+
       {/* Expanded content */}
       <AnimatePresence>
         {isExpanded && citation.content && (
@@ -202,7 +201,7 @@ export const CitationPreview: React.FC<CitationPreviewProps> = ({
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                 {citation.content}
               </p>
-              
+
               {/* Metadata */}
               {citation.metadata && (
                 <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-border/50">
@@ -243,7 +242,7 @@ export const CitationDisplay: React.FC<CitationDisplayProps> = ({
 }) => {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [isAllExpanded, setIsAllExpanded] = useState(defaultExpanded)
-  
+
   const toggleCitation = (id: string) => {
     setExpandedIds(prev => {
       const newSet = new Set(prev)
@@ -255,7 +254,7 @@ export const CitationDisplay: React.FC<CitationDisplayProps> = ({
       return newSet
     })
   }
-  
+
   const toggleAll = () => {
     if (isAllExpanded) {
       setExpandedIds(new Set())
@@ -264,16 +263,16 @@ export const CitationDisplay: React.FC<CitationDisplayProps> = ({
     }
     setIsAllExpanded(!isAllExpanded)
   }
-  
+
   if (citations.length === 0) {
     return null
   }
-  
+
   // Calculate average confidence
   const avgConfidence = citations.reduce((sum, c) => sum + c.confidence, 0) / citations.length
-  
+
   return (
-    <div className={cn("space-y-2", className)}>
+    <div className={cn('space-y-2', className)}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -281,17 +280,16 @@ export const CitationDisplay: React.FC<CitationDisplayProps> = ({
           <span className="text-xs text-muted-foreground">
             ({citations.length} citation{citations.length !== 1 ? 's' : ''})
           </span>
-          
+
           {showConfidence && (
-            <span className={cn(
-              "text-xs px-1.5 py-0.5 rounded",
-              getConfidenceColor(avgConfidence)
-            )}>
+            <span
+              className={cn('text-xs px-1.5 py-0.5 rounded', getConfidenceColor(avgConfidence))}
+            >
               Avg: {formatConfidence(avgConfidence)}
             </span>
           )}
         </div>
-        
+
         {collapsible && citations.length > 1 && (
           <button
             onClick={toggleAll}
@@ -301,7 +299,7 @@ export const CitationDisplay: React.FC<CitationDisplayProps> = ({
           </button>
         )}
       </div>
-      
+
       {/* Citations list */}
       <div className="space-y-2">
         {citations.map(citation => (
@@ -327,22 +325,22 @@ export function parseInlineCitations(
 ): React.ReactNode[] {
   const citationMap = new Map(citations.map(c => [c.marker, c]))
   const parts: React.ReactNode[] = []
-  
+
   // Pattern to match [1], [2], etc.
   const pattern = /\[(\d+)\]/g
   let lastIndex = 0
   let match
-  
+
   while ((match = pattern.exec(text)) !== null) {
     // Add text before marker
     if (match.index > lastIndex) {
       parts.push(text.slice(lastIndex, match.index))
     }
-    
+
     // Add citation marker
     const marker = match[0]
     const citation = citationMap.get(marker)
-    
+
     if (citation) {
       parts.push(
         <CitationMarker
@@ -355,17 +353,16 @@ export function parseInlineCitations(
     } else {
       parts.push(marker)
     }
-    
+
     lastIndex = match.index + match[0].length
   }
-  
+
   // Add remaining text
   if (lastIndex < text.length) {
     parts.push(text.slice(lastIndex))
   }
-  
+
   return parts
 }
 
 export default CitationDisplay
-

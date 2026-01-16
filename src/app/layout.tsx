@@ -12,8 +12,8 @@ const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mon
 const syne = Syne({ subsets: ['latin'], variable: '--font-syne' })
 
 export const metadata = {
-  title: 'Cutafonina',
-  description: 'AI-powered infinite canvas for world generation',
+  title: 'KURTVITZA',
+  description: 'Crazy project for games - AI-powered infinite canvas for world generation',
 }
 
 import NextTopLoader from 'nextjs-toploader'

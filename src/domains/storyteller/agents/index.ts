@@ -50,7 +50,7 @@ const _consequenceTrackerAgent = async (
 ): Promise<Partial<WritersRoomState>> => {
   // Create model inside function to use request-scoped config
   const model = getModel('consequenceTracker')
-  
+
   console.log('Consequence Tracker updating...')
 
   const context = assembleContext(state, 'consequenceTracker')
@@ -58,11 +58,8 @@ const _consequenceTrackerAgent = async (
   // Combine system content into single message (required for Claude)
   const combinedSystem = [context.systemPrompt, context.stateContext].join('\n\n---\n\n')
   const conversationMessages = state.messages.slice(-3).filter(m => m._getType() !== 'system')
-  
-  const messages = [
-    new SystemMessage(combinedSystem),
-    ...conversationMessages,
-  ]
+
+  const messages = [new SystemMessage(combinedSystem), ...conversationMessages]
 
   try {
     const response = await model.invoke(messages)
@@ -128,8 +125,8 @@ const _devilsAdvocateAgent = async (
 ): Promise<Partial<WritersRoomState>> => {
   // Create model inside function to use request-scoped config
   const model = getModel('devilsAdvocate')
-  
-  console.log("Devil's Advocate challenging...")
+
+  console.log('Devil\'s Advocate challenging...')
 
   const context = assembleContext(state, 'devilsAdvocate')
 
@@ -170,13 +167,12 @@ Respond ONLY with valid JSON.
 `
 
   // Combine system content into single message (required for Claude)
-  const combinedSystem = [context.systemPrompt, context.stateContext, structuredPrompt].join('\n\n---\n\n')
+  const combinedSystem = [context.systemPrompt, context.stateContext, structuredPrompt].join(
+    '\n\n---\n\n'
+  )
   const conversationMessages = state.messages.slice(-3).filter(m => m._getType() !== 'system')
-  
-  const messages = [
-    new SystemMessage(combinedSystem),
-    ...conversationMessages,
-  ]
+
+  const messages = [new SystemMessage(combinedSystem), ...conversationMessages]
 
   try {
     const response = await model.invoke(messages)
@@ -193,7 +189,7 @@ Respond ONLY with valid JSON.
       }
       parsed = JSON.parse(jsonStr)
     } catch (e) {
-      console.warn("Devil's Advocate: Failed to parse JSON")
+      console.warn('Devil\'s Advocate: Failed to parse JSON')
     }
 
     const verdict =
@@ -214,9 +210,9 @@ ${verdict === 'CHALLENGE' && parsed?.alternative ? `**Alternative:** ${parsed.al
       name: 'DevilsAdvocate',
     })
 
-      // Attach metadata for routing
-      ; (namedMessage as any).verdict = verdict
-      ; (namedMessage as any).confidence = confidence
+    // Attach metadata for routing
+    ;(namedMessage as any).verdict = verdict
+    ;(namedMessage as any).confidence = confidence
 
     return {
       messages: [namedMessage],
@@ -224,7 +220,7 @@ ${verdict === 'CHALLENGE' && parsed?.alternative ? `**Alternative:** ${parsed.al
       lastAgentConfidence: confidence,
     }
   } catch (error) {
-    console.error("Devil's Advocate error:", error)
+    console.error('Devil\'s Advocate error:', error)
     const errorMessage = new AIMessage({
       content: '**VERDICT: PASS**\n\nNo major objections. The beat can proceed.',
       name: 'DevilsAdvocate',
@@ -247,7 +243,7 @@ export const visualMomentAgent = async (
 
   if (!state.currentBeat?.visualHook) {
     const content =
-      "⚠️ VISUAL HOOK MISSING: What's the first thing we see? Every beat needs an iconic, meaningful image."
+      '⚠️ VISUAL HOOK MISSING: What\'s the first thing we see? Every beat needs an iconic, meaningful image.'
     const namedMessage = new AIMessage({
       content,
       name: 'VisualMoment',

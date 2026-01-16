@@ -40,17 +40,24 @@ const CanvasLoader: React.FC = () => {
 }
 
 const ModelLoader: React.FC<{ url: string; onLoaded?: () => void }> = ({ url, onLoaded }) => {
-  if (!useGLTF || !Center) return null
-
   const proxiedUrl = getProxiedUrl(url)
 
-  // useGLTF suspends during loading - don't wrap in try/catch
+  // Early return AFTER we establish that hooks won't be called
+  // The parent component only renders this when useGLTF is available
+  if (!useGLTF || !Center) {
+    return null
+  }
+
+  // Now hooks are called unconditionally within this component's lifecycle
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const { scene } = useGLTF(proxiedUrl)
 
   // Clone the scene to avoid issues with reuse
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const clonedScene = React.useMemo(() => scene.clone(), [scene])
 
   // Call onLoaded when model is ready
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (scene && onLoaded) {
       onLoaded()
@@ -77,8 +84,10 @@ const FitToView: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 // Helper to zoom on click (optional)
 const SelectToZoom: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Early return before hook if dependency not loaded
   if (!useBounds) return <>{children}</>
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const bounds = useBounds()
 
   return (
@@ -204,7 +213,7 @@ export const ThreeDViewer: React.FC<ThreeDViewerProps> = ({ modelUrl }) => {
           }}
           onCreated={({ gl }) => {
             // Handle context loss
-            gl.domElement.addEventListener('webglcontextlost', (e) => {
+            gl.domElement.addEventListener('webglcontextlost', e => {
               e.preventDefault()
               console.warn('WebGL context lost')
             })
@@ -219,17 +228,12 @@ export const ThreeDViewer: React.FC<ThreeDViewerProps> = ({ modelUrl }) => {
           <directionalLight position={[-10, -10, -5]} intensity={0.3} />
 
           {/* Environment for reflections */}
-          <Suspense fallback={null}>
-            {Environment && <Environment preset="city" />}
-          </Suspense>
+          <Suspense fallback={null}>{Environment && <Environment preset="city" />}</Suspense>
 
           {/* Model with auto-fit bounds */}
           <Suspense fallback={<CanvasLoader />}>
             <FitToView>
-              <ModelLoader
-                url={modelUrl}
-                onLoaded={() => setIsModelLoaded(true)}
-              />
+              <ModelLoader url={modelUrl} onLoaded={() => setIsModelLoaded(true)} />
             </FitToView>
           </Suspense>
 

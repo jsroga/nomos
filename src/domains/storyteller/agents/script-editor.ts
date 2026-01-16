@@ -79,9 +79,13 @@ ${state.scriptFeedback?.length ? state.scriptFeedback.join('\n') : 'First evalua
 
   // Load prompt from Hub
   const loadedPrompt = await loadPromptCached('scriptEditor')
-  const promptMessages = (loadedPrompt.prompt as any).promptMessages || (loadedPrompt.prompt as any).messages || []
-  const systemMessage = promptMessages.find((m: any) => m.lc_id?.[3] === 'SystemMessagePromptTemplate' || m._type === 'system')
-  const systemTemplate = systemMessage?.prompt?.template || systemMessage?.template || SCRIPT_EDITOR_PROMPT
+  const promptMessages =
+    (loadedPrompt.prompt as any).promptMessages || (loadedPrompt.prompt as any).messages || []
+  const systemMessage = promptMessages.find(
+    (m: any) => m.lc_id?.[3] === 'SystemMessagePromptTemplate' || m._type === 'system'
+  )
+  const systemTemplate =
+    systemMessage?.prompt?.template || systemMessage?.template || SCRIPT_EDITOR_PROMPT
 
   // Combine system content into single message (required for Claude)
   const combinedSystem = [systemTemplate, contextMessage].join('\n\n---\n\n')
@@ -143,23 +147,24 @@ ${parsed.message}
 
 ${parsed.strengths.length > 0 ? `**Strengths:**\n${parsed.strengths.map(s => `- ${s}`).join('\n')}\n` : ''}
 
-${verdict === 'REVISE' && parsed.improvements.length > 0
-        ? `**Required Improvements:**\n${parsed.improvements
-          .filter(i => i.severity === 'critical' || i.severity === 'important')
-          .map(i => `- [${i.category.toUpperCase()}] ${i.issue}\n  → ${i.suggestion}`)
-          .join('\n')}`
-        : ''
-      }`
+${
+  verdict === 'REVISE' && parsed.improvements.length > 0
+    ? `**Required Improvements:**\n${parsed.improvements
+        .filter(i => i.severity === 'critical' || i.severity === 'important')
+        .map(i => `- [${i.category.toUpperCase()}] ${i.issue}\n  → ${i.suggestion}`)
+        .join('\n')}`
+    : ''
+}`
 
     const namedMessage = new AIMessage({
       content: messageContent,
       name: 'ScriptEditor',
     })
 
-      // Attach metadata for routing
-      ; (namedMessage as any).verdict = verdict
-      ; (namedMessage as any).confidence = parsed.confidence
-      ; (namedMessage as any).improvements = parsed.improvements
+    // Attach metadata for routing
+    ;(namedMessage as any).verdict = verdict
+    ;(namedMessage as any).confidence = parsed.confidence
+    ;(namedMessage as any).improvements = parsed.improvements
 
     // Increment revision count if we're sending back for revision
     const newRevisionCount = verdict === 'REVISE' ? revisionCount + 1 : revisionCount
@@ -183,14 +188,3 @@ ${verdict === 'REVISE' && parsed.improvements.length > 0
     }
   }
 }
-
-
-
-
-
-
-
-
-
-
-

@@ -253,7 +253,7 @@ export function TurbulentBackground({
   children,
   zoom = 0.1,
   rotation = 2.02,
-  speed = 1.0,  // Flow speed
+  speed = 1.0, // Flow speed
   morphSpeed = 0.5, // Reshape speed
   colorShift = 0,
   saturation = 0.65,
@@ -261,8 +261,8 @@ export function TurbulentBackground({
   contrast = 1.32,
   hue = 0,
   showCanvas = true,
-  onRef
-}: TurbulentBackgroundProps & { speed?: number, morphSpeed?: number }) {
+  onRef,
+}: TurbulentBackgroundProps & { speed?: number; morphSpeed?: number }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
   const sceneRef = useRef<THREE.Scene | null>(null)
@@ -289,7 +289,7 @@ export function TurbulentBackground({
       antialias: false, // Disable for performance
       alpha: false,
       powerPreference: 'high-performance',
-      preserveDrawingBuffer: true // Required for html2canvas/liquidGL to capture it
+      preserveDrawingBuffer: true, // Required for html2canvas/liquidGL to capture it
     })
     renderer.setSize(width, height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)) // Cap at 2x for performance
@@ -318,12 +318,12 @@ export function TurbulentBackground({
         uContrast: { value: contrast },
         uHue: { value: hue },
         uSpeed: { value: speed },
-        uMorphSpeed: { value: morphSpeed }
+        uMorphSpeed: { value: morphSpeed },
       },
       vertexShader,
       fragmentShader,
       depthWrite: false,
-      depthTest: false
+      depthTest: false,
     })
     materialRef.current = material
 
@@ -333,7 +333,7 @@ export function TurbulentBackground({
     scene.add(mesh)
 
     // Animation loop
-    let startTime = Date.now()
+    const startTime = Date.now()
     const animate = () => {
       // Pass elapsed time directly - multiplication happens in shader
       const elapsed = (Date.now() - startTime) * 0.001

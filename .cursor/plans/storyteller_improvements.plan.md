@@ -14,27 +14,27 @@ flowchart TB
         E3[Magic Score Anti-Slop]
         E4[Score Aggregation]
     end
-    
+
     subgraph phase2 [Phase 2: RAG Improvements]
         R1[Query Expansion]
         R2[Re-ranking with Cohere]
         R3[Citation Verification]
         R4[Retrieval Metrics]
     end
-    
+
     subgraph phase3 [Phase 3: Agent Quality]
         A1[Structured CoT Reasoning]
         A2[Agent-Specific Validators]
         A3[LangSmith Prompt Hub]
         A4[Feedback Loop Integration]
     end
-    
+
     subgraph prompts [LangSmith Prompt Hub]
         P1[Version Control]
         P2[Environment Tags]
         P3[A/B Testing]
     end
-    
+
     phase1 --> phase2
     phase2 --> phase3
     phase3 --> prompts
@@ -63,8 +63,6 @@ interface ParallelEvalConfig {
 }
 ```
 
-
-
 ### 1.2 Regression Detection
 
 **File:** `src/evaluation/regression/detector.ts`**Purpose:** Compare current run against baseline and detect quality drops.
@@ -80,11 +78,9 @@ interface RegressionReport {
     delta: number
     significance: 'critical' | 'warning' | 'ok'
   }>
-  newFailures: string[]  // Examples that passed before but fail now
+  newFailures: string[] // Examples that passed before but fail now
 }
 ```
-
-
 
 ### 1.3 Prompt A/B Testing Framework
 
@@ -105,8 +101,6 @@ const supervisorVariants = [
   { id: 'v3-cot-reasoning', promptTemplate: COT_REASONING_PROMPT },
 ]
 ```
-
-
 
 ### 1.4 New Evaluators
 
@@ -152,7 +146,7 @@ const validator = new AntiSlopValidator(40) // threshold
 // Before: "Tell me about the main character"
 // After expansion:
 // - "main character name and role"
-// - "main character personality traits"  
+// - "main character personality traits"
 // - "main character goals and motivations"
 // - "main character relationships"
 
@@ -163,25 +157,21 @@ interface QueryExpansion {
 }
 ```
 
-
-
 ### 2.2 Re-ranking with Cross-Encoder
 
 **File:** `src/infrastructure/ai/rag/reranker.ts`**Purpose:** Re-score initial retrieval results for better ordering.Options:
 
 - **Cohere Rerank** (API-based, high quality)
 - **Cross-encoder model** (local, faster)
+
 ```typescript
 interface RerankerConfig {
   provider: 'cohere' | 'cross-encoder'
-  topK: 10,           // Retrieve 10 initially
-  rerankedTopK: 5,    // Return top 5 after reranking
-  minScore: 0.5,      // Filter low-confidence results
+  topK: 10 // Retrieve 10 initially
+  rerankedTopK: 5 // Return top 5 after reranking
+  minScore: 0.5 // Filter low-confidence results
 }
 ```
-
-
-
 
 ### 2.3 Citation Verification
 
@@ -193,8 +183,6 @@ interface RerankerConfig {
 // 2. Cited content is semantically related to claim
 // 3. No fabricated citations
 ```
-
-
 
 ### 2.4 Retrieval Metrics Dashboard
 
@@ -239,8 +227,6 @@ const STRUCTURED_REASONING_TEMPLATE = `
 `
 ```
 
-
-
 ### 3.2 Agent-Specific Validators
 
 **File:** `src/domains/storyteller/guardrails/agent-validators/`Create specialized validators per agent:| Agent | Validator | Checks ||-------|-----------|--------|| PlotArchitect | `beat-consistency.ts` | Beat follows causality chain || Writer | `dialogue-quality.ts` | Natural dialogue, no exposition dumps || Supervisor | `routing-validity.ts` | Routes to phase-appropriate agent || PremiseArchitect | `world-coherence.ts` | New rules don't contradict existing |
@@ -258,10 +244,12 @@ const STRUCTURED_REASONING_TEMPLATE = `
 **File:** `src/domains/storyteller/prompts/hub-loader.ts`
 
 ```typescript
-import { pull } from "langchain/hub"
+import { pull } from 'langchain/hub'
 
 // Pull prompts from LangSmith Hub
-export async function loadAgentPrompts(environment: 'production' | 'staging' | 'dev' = 'production') {
+export async function loadAgentPrompts(
+  environment: 'production' | 'staging' | 'dev' = 'production'
+) {
   const prompts = {
     supervisor: await pull(`tilemap/storyteller-supervisor:${environment}`),
     plotArchitect: await pull(`tilemap/storyteller-plot-architect:${environment}`),
@@ -275,7 +263,7 @@ export async function loadAgentPrompts(environment: 'production' | 'staging' | '
 }
 
 // Or pin to specific version
-const supervisorPrompt = await pull("tilemap/storyteller-supervisor@abc123")
+const supervisorPrompt = await pull('tilemap/storyteller-supervisor@abc123')
 ```
 
 **Workflow:**
@@ -289,17 +277,17 @@ const supervisorPrompt = await pull("tilemap/storyteller-supervisor@abc123")
 **Push Prompts to Hub:**
 
 ```typescript
-import { push } from "langchain/hub"
-import { ChatPromptTemplate } from "@langchain/core/prompts"
+import { push } from 'langchain/hub'
+import { ChatPromptTemplate } from '@langchain/core/prompts'
 
 const supervisorPrompt = ChatPromptTemplate.fromMessages([
-  ["system", SUPERVISOR_SYSTEM_PROMPT],
-  ["human", "{input}"],
+  ['system', SUPERVISOR_SYSTEM_PROMPT],
+  ['human', '{input}'],
 ])
 
-await push("tilemap/storyteller-supervisor", supervisorPrompt, {
+await push('tilemap/storyteller-supervisor', supervisorPrompt, {
   newRepoIsPublic: false,
-  tags: ["v2.1", "staging"],
+  tags: ['v2.1', 'staging'],
 })
 ```
 
@@ -308,9 +296,9 @@ await push("tilemap/storyteller-supervisor", supervisorPrompt, {
 ```typescript
 // Load multiple variants
 const variants = [
-  await pull("tilemap/storyteller-supervisor:baseline"),
-  await pull("tilemap/storyteller-supervisor:cot-reasoning"),
-  await pull("tilemap/storyteller-supervisor:explicit-routing"),
+  await pull('tilemap/storyteller-supervisor:baseline'),
+  await pull('tilemap/storyteller-supervisor:cot-reasoning'),
+  await pull('tilemap/storyteller-supervisor:explicit-routing'),
 ]
 
 // Run evaluation against each
@@ -319,8 +307,6 @@ for (const variant of variants) {
   console.log(`Variant score: ${score}`)
 }
 ```
-
-
 
 ### 3.4 Prompt Optimization Based on Eval Feedback
 
@@ -455,7 +441,6 @@ interface UserFeedback {
    ```javascript
          Edit in Playground -> Test against dataset -> Tag as staging -> Test in staging env -> Promote to production
    ```
-
 
 ---
 

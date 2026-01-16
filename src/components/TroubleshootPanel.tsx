@@ -26,8 +26,10 @@ function ErrorCard({ error }: { error: CapturedError }) {
       `Error: ${error.message}`,
       error.source ? `Source: ${error.source}` : '',
       `Time: ${formatTime(error.timestamp)}`,
-      error.stack ? `\nStack Trace:\n${error.stack}` : ''
-    ].filter(Boolean).join('\n')
+      error.stack ? `\nStack Trace:\n${error.stack}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n')
 
     try {
       await navigator.clipboard.writeText(errorText)
@@ -51,8 +53,8 @@ function ErrorCard({ error }: { error: CapturedError }) {
         >
           <pre
             className={cn(
-              "text-sm font-medium text-foreground break-words whitespace-pre-wrap max-h-[200px] overflow-auto",
-              "cursor-pointer hover:bg-muted/50 rounded px-2 py-1 -mx-2 -my-1 transition-colors"
+              'text-sm font-medium text-foreground break-words whitespace-pre-wrap max-h-[200px] overflow-auto',
+              'cursor-pointer hover:bg-muted/50 rounded px-2 py-1 -mx-2 -my-1 transition-colors'
             )}
             onClick={handleCopyToClipboard}
             title="Click to copy error"
@@ -78,8 +80,8 @@ function ErrorCard({ error }: { error: CapturedError }) {
         <div className="mt-3 pt-3 border-t border-border">
           <pre
             className={cn(
-              "text-xs text-muted-foreground font-mono overflow-x-auto whitespace-pre-wrap break-all max-h-48 overflow-y-auto",
-              "cursor-pointer hover:bg-muted/50 rounded px-2 py-1 transition-colors"
+              'text-xs text-muted-foreground font-mono overflow-x-auto whitespace-pre-wrap break-all max-h-48 overflow-y-auto',
+              'cursor-pointer hover:bg-muted/50 rounded px-2 py-1 transition-colors'
             )}
             onClick={handleCopyToClipboard}
             title="Click to copy error with stack trace"

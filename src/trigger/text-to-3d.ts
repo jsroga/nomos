@@ -60,7 +60,10 @@ export const textTo3DTask = task({
 
     if (!previewResponse.ok) {
       const errText = await previewResponse.text()
-      logger.error('Meshy preview task creation failed', { status: previewResponse.status, body: errText })
+      logger.error('Meshy preview task creation failed', {
+        status: previewResponse.status,
+        body: errText,
+      })
       let errMessage = previewResponse.statusText
       try {
         const errJson = JSON.parse(errText)
@@ -99,7 +102,10 @@ export const textTo3DTask = task({
 
     if (!refineResponse.ok) {
       const errText = await refineResponse.text()
-      logger.error('Meshy refine task creation failed', { status: refineResponse.status, body: errText })
+      logger.error('Meshy refine task creation failed', {
+        status: refineResponse.status,
+        body: errText,
+      })
       let errMessage = refineResponse.statusText
       try {
         const errJson = JSON.parse(errText)
@@ -250,10 +256,3 @@ async function pollMeshyTask(
 
   throw new Error(`Meshy ${stage} task timed out after 30 minutes`)
 }
-
-
-
-
-
-
-

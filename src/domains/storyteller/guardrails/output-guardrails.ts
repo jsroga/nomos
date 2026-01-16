@@ -1,6 +1,6 @@
 /**
  * Output Guardrails
- * 
+ *
  * Validates agent outputs before they are sent to the user or committed to state.
  * Includes schema validation, semantic validation, and action safety checks.
  */
@@ -17,10 +17,10 @@ import {
 } from './types'
 import { checkConsistency, extractBibleRef } from './consistency-guardrails'
 import { AGENT_GUARDRAILS } from './agent-guardrails'
-import { 
-  validateURLsInText, 
+import {
+  validateURLsInText,
   extractURLsFromText,
-  URLValidationResult 
+  URLValidationResult,
 } from '@/infrastructure/ai/tools/url-validator'
 
 // ============================================
@@ -31,33 +31,108 @@ const ACTION_SAFETY: ActionSafetyConfig[] = [
   // Safe actions - low risk
   { type: 'CREATE_BEAT', safetyLevel: 'safe', requiresConfirmation: false, minConfidence: 0.5 },
   { type: 'UPDATE_BEAT', safetyLevel: 'safe', requiresConfirmation: false, minConfidence: 0.5 },
-  { type: 'CREATE_CHARACTER', safetyLevel: 'safe', requiresConfirmation: false, minConfidence: 0.5 },
-  { type: 'UPDATE_CHARACTER', safetyLevel: 'safe', requiresConfirmation: false, minConfidence: 0.5 },
-  { type: 'UPDATE_CHARACTER_METRICS', safetyLevel: 'safe', requiresConfirmation: false, minConfidence: 0.5 },
+  {
+    type: 'CREATE_CHARACTER',
+    safetyLevel: 'safe',
+    requiresConfirmation: false,
+    minConfidence: 0.5,
+  },
+  {
+    type: 'UPDATE_CHARACTER',
+    safetyLevel: 'safe',
+    requiresConfirmation: false,
+    minConfidence: 0.5,
+  },
+  {
+    type: 'UPDATE_CHARACTER_METRICS',
+    safetyLevel: 'safe',
+    requiresConfirmation: false,
+    minConfidence: 0.5,
+  },
   { type: 'ADD_KNOWLEDGE', safetyLevel: 'safe', requiresConfirmation: false, minConfidence: 0.5 },
   { type: 'UPDATE_SCRIPT', safetyLevel: 'safe', requiresConfirmation: false, minConfidence: 0.5 },
   { type: 'ADD_WORLD_RULE', safetyLevel: 'safe', requiresConfirmation: false, minConfidence: 0.5 },
   { type: 'ADD_SETUP', safetyLevel: 'safe', requiresConfirmation: false, minConfidence: 0.5 },
   { type: 'RESOLVE_SETUP', safetyLevel: 'safe', requiresConfirmation: false, minConfidence: 0.5 },
-  
+
   // Partial bible updates - moderate risk
-  { type: 'UPDATE_WORLD_RULES', safetyLevel: 'moderate', requiresConfirmation: false, minConfidence: 0.6 },
-  { type: 'UPDATE_FACTIONS', safetyLevel: 'moderate', requiresConfirmation: false, minConfidence: 0.6 },
-  { type: 'UPDATE_KEY_CHARACTERS', safetyLevel: 'moderate', requiresConfirmation: false, minConfidence: 0.6 },
-  { type: 'UPDATE_INSPIRATIONS', safetyLevel: 'safe', requiresConfirmation: false, minConfidence: 0.5 },
-  { type: 'UPDATE_WORLD_DESCRIPTION', safetyLevel: 'safe', requiresConfirmation: false, minConfidence: 0.5 },
-  { type: 'UPDATE_MOOD_SOUNDTRACK', safetyLevel: 'safe', requiresConfirmation: false, minConfidence: 0.5 },
-  { type: 'UPDATE_PLOT_TWISTS', safetyLevel: 'moderate', requiresConfirmation: false, minConfidence: 0.6 },
-  { type: 'UPDATE_EPISODE_ROADMAP', safetyLevel: 'moderate', requiresConfirmation: false, minConfidence: 0.6 },
-  { type: 'UPDATE_EPISODE_PREMISE', safetyLevel: 'moderate', requiresConfirmation: false, minConfidence: 0.6 },
-  
+  {
+    type: 'UPDATE_WORLD_RULES',
+    safetyLevel: 'moderate',
+    requiresConfirmation: false,
+    minConfidence: 0.6,
+  },
+  {
+    type: 'UPDATE_FACTIONS',
+    safetyLevel: 'moderate',
+    requiresConfirmation: false,
+    minConfidence: 0.6,
+  },
+  {
+    type: 'UPDATE_KEY_CHARACTERS',
+    safetyLevel: 'moderate',
+    requiresConfirmation: false,
+    minConfidence: 0.6,
+  },
+  {
+    type: 'UPDATE_INSPIRATIONS',
+    safetyLevel: 'safe',
+    requiresConfirmation: false,
+    minConfidence: 0.5,
+  },
+  {
+    type: 'UPDATE_WORLD_DESCRIPTION',
+    safetyLevel: 'safe',
+    requiresConfirmation: false,
+    minConfidence: 0.5,
+  },
+  {
+    type: 'UPDATE_MOOD_SOUNDTRACK',
+    safetyLevel: 'safe',
+    requiresConfirmation: false,
+    minConfidence: 0.5,
+  },
+  {
+    type: 'UPDATE_PLOT_TWISTS',
+    safetyLevel: 'moderate',
+    requiresConfirmation: false,
+    minConfidence: 0.6,
+  },
+  {
+    type: 'UPDATE_EPISODE_ROADMAP',
+    safetyLevel: 'moderate',
+    requiresConfirmation: false,
+    minConfidence: 0.6,
+  },
+  {
+    type: 'UPDATE_EPISODE_PREMISE',
+    safetyLevel: 'moderate',
+    requiresConfirmation: false,
+    minConfidence: 0.6,
+  },
+
   // Full bible update - moderate risk (can overwrite a lot)
-  { type: 'UPDATE_SERIES_BIBLE', safetyLevel: 'moderate', requiresConfirmation: false, minConfidence: 0.7 },
-  
+  {
+    type: 'UPDATE_SERIES_BIBLE',
+    safetyLevel: 'moderate',
+    requiresConfirmation: false,
+    minConfidence: 0.7,
+  },
+
   // Dangerous actions - require higher confidence
   { type: 'DELETE_BEAT', safetyLevel: 'dangerous', requiresConfirmation: true, minConfidence: 0.8 },
-  { type: 'REORDER_BEATS', safetyLevel: 'moderate', requiresConfirmation: false, minConfidence: 0.6 },
-  { type: 'LOCK_BEAT_BOARD', safetyLevel: 'dangerous', requiresConfirmation: true, minConfidence: 0.8 },
+  {
+    type: 'REORDER_BEATS',
+    safetyLevel: 'moderate',
+    requiresConfirmation: false,
+    minConfidence: 0.6,
+  },
+  {
+    type: 'LOCK_BEAT_BOARD',
+    safetyLevel: 'dangerous',
+    requiresConfirmation: true,
+    minConfidence: 0.8,
+  },
 ]
 
 /**
@@ -65,12 +140,14 @@ const ACTION_SAFETY: ActionSafetyConfig[] = [
  */
 function getActionSafety(actionType: AgentAction['type']): ActionSafetyConfig {
   const config = ACTION_SAFETY.find(a => a.type === actionType)
-  return config || {
-    type: actionType,
-    safetyLevel: 'moderate',
-    requiresConfirmation: false,
-    minConfidence: 0.6,
-  }
+  return (
+    config || {
+      type: actionType,
+      safetyLevel: 'moderate',
+      requiresConfirmation: false,
+      minConfidence: 0.6,
+    }
+  )
 }
 
 // ============================================
@@ -116,7 +193,7 @@ export async function validateAgentOutput(
   // 2. Check action safety vs confidence
   for (const action of actions) {
     const safety = getActionSafety(action.type)
-    
+
     if (confidence < safety.minConfidence) {
       issues.push({
         code: 'LOW_CONFIDENCE_ACTION',
@@ -129,7 +206,7 @@ export async function validateAgentOutput(
           safetyLevel: safety.safetyLevel,
         },
       })
-      
+
       if (safety.safetyLevel === 'dangerous') {
         shouldBlock = true
       }
@@ -158,7 +235,7 @@ export async function validateAgentOutput(
       guardrailConfig?.consistencyChecks || []
     )
     issues.push(...consistencyResult.issues)
-    
+
     // Only block on consistency errors, not warnings
     if (!consistencyResult.isConsistent) {
       const hasBlockingIssue = consistencyResult.issues.some(i => i.severity === 'error')
@@ -170,10 +247,11 @@ export async function validateAgentOutput(
 
   // 5. Check message content quality
   if (lastMessage) {
-    const content = typeof lastMessage.content === 'string' 
-      ? lastMessage.content 
-      : JSON.stringify(lastMessage.content)
-    
+    const content =
+      typeof lastMessage.content === 'string'
+        ? lastMessage.content
+        : JSON.stringify(lastMessage.content)
+
     const contentIssues = validateMessageContent(content, agentRole)
     issues.push(...contentIssues)
   }
@@ -278,7 +356,7 @@ function validateMessageContent(content: string, agentRole: AgentRole): Guardrai
 function checkURLPatterns(content: string): GuardrailIssue[] {
   const issues: GuardrailIssue[] = []
   const urls = extractURLsFromText(content)
-  
+
   if (urls.length === 0) return issues
 
   // Check for obvious hallucination patterns
@@ -321,21 +399,22 @@ export async function validateAgentOutputWithURLs(
 ): Promise<OutputValidationResult> {
   // First run the standard validation
   const baseResult = await validateAgentOutput(agentResult, agentRole, state)
-  
+
   // Extract message content
   const messages = agentResult.messages || []
   const lastMessage = messages[messages.length - 1] as AIMessage | undefined
-  
+
   if (!lastMessage) return baseResult
-  
-  const content = typeof lastMessage.content === 'string'
-    ? lastMessage.content
-    : JSON.stringify(lastMessage.content)
-  
+
+  const content =
+    typeof lastMessage.content === 'string'
+      ? lastMessage.content
+      : JSON.stringify(lastMessage.content)
+
   // Validate URLs asynchronously
   try {
     const urlValidation = await validateURLsInText(content)
-    
+
     if (urlValidation.hasHallucinatedURLs) {
       for (const urlResult of urlValidation.urls.filter(u => u.isLikelyHallucinated)) {
         baseResult.issues.push({
@@ -353,7 +432,7 @@ export async function validateAgentOutputWithURLs(
       baseResult.shouldBlock = true
       baseResult.isValid = false
     }
-    
+
     if (urlValidation.hasInvalidURLs) {
       for (const urlResult of urlValidation.urls.filter(u => !u.isValid || !u.isReachable)) {
         if (!urlResult.isLikelyHallucinated) {
@@ -375,7 +454,7 @@ export async function validateAgentOutputWithURLs(
     console.warn('[OutputGuardrails] URL validation failed:', error)
     // Don't block on URL validation failures
   }
-  
+
   return baseResult
 }
 
@@ -479,7 +558,7 @@ export function validateActions(actions: AgentAction[]): GuardrailIssue[] {
   // Check for conflicting actions
   const createBeatActions = actions.filter(a => a.type === 'CREATE_BEAT')
   const deleteBeatActions = actions.filter(a => a.type === 'DELETE_BEAT')
-  
+
   // Creating and deleting beats in same response is suspicious
   if (createBeatActions.length > 0 && deleteBeatActions.length > 0) {
     issues.push({
@@ -581,12 +660,3 @@ export function getValidationSummary(validation: OutputValidationResult): string
 
   return `Output validation: ${parts.join(', ')}`
 }
-
-
-
-
-
-
-
-
-

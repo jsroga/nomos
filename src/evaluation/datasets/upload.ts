@@ -1,6 +1,6 @@
 /**
  * Dataset Upload Script
- * 
+ *
  * Uploads all golden datasets to LangSmith.
  * Run with: npm run eval:upload-datasets
  */
@@ -27,13 +27,13 @@ async function uploadDataset(client: Client, config: DatasetConfig) {
     let dataset
     try {
       dataset = await client.readDataset({ datasetName: config.name })
-      console.log(`   ⚠️  Dataset already exists. Updating...`)
+      console.log('   ⚠️  Dataset already exists. Updating...')
     } catch {
       // Dataset doesn't exist, create it
       dataset = await client.createDataset(config.name, {
         description: config.description,
       })
-      console.log(`   ✅ Created new dataset`)
+      console.log('   ✅ Created new dataset')
     }
 
     // Upload examples
@@ -42,14 +42,10 @@ async function uploadDataset(client: Client, config: DatasetConfig) {
 
     for (const example of config.examples) {
       try {
-        await client.createExample(
-          example.input,
-          example.expected || {},
-          {
-            datasetId: dataset.id,
-            metadata: { ...example.metadata, originalId: example.id },
-          }
-        )
+        await client.createExample(example.input, example.expected || {}, {
+          datasetId: dataset.id,
+          metadata: { ...example.metadata, originalId: example.id },
+        })
         uploadedCount++
       } catch (err: unknown) {
         // Example might already exist
@@ -96,15 +92,15 @@ export async function uploadAllDatasets() {
   console.log('📋 Upload Summary')
   console.log('===========================')
 
-  const successful = results.filter((r) => r.success)
-  const failed = results.filter((r) => !r.success)
+  const successful = results.filter(r => r.success)
+  const failed = results.filter(r => !r.success)
 
   console.log(`✅ Successful: ${successful.length}`)
-  successful.forEach((r) => console.log(`   - ${r.name}`))
+  successful.forEach(r => console.log(`   - ${r.name}`))
 
   if (failed.length > 0) {
     console.log(`❌ Failed: ${failed.length}`)
-    failed.forEach((r) => console.log(`   - ${r.name}`))
+    failed.forEach(r => console.log(`   - ${r.name}`))
   }
 
   console.log('\n🔗 View datasets at: https://smith.langchain.com/datasets')
@@ -116,9 +112,8 @@ export async function uploadAllDatasets() {
 if (require.main === module) {
   uploadAllDatasets()
     .then(() => process.exit(0))
-    .catch((err) => {
+    .catch(err => {
       console.error('Fatal error:', err)
       process.exit(1)
     })
 }
-

@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { seriesBibles, storyPlans, projects, beats, characters, episodes } from '@/domains/storyteller/db/schema'
+import {
+  seriesBibles,
+  storyPlans,
+  projects,
+  beats,
+  characters,
+  episodes,
+} from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -25,7 +32,11 @@ function deepMerge(target: any, source: any): any {
     if (Array.isArray(sourceValue)) {
       // Replace arrays entirely (don't merge)
       result[key] = sourceValue
-    } else if (typeof sourceValue === 'object' && typeof targetValue === 'object' && !Array.isArray(targetValue)) {
+    } else if (
+      typeof sourceValue === 'object' &&
+      typeof targetValue === 'object' &&
+      !Array.isArray(targetValue)
+    ) {
       // Recursively merge objects
       result[key] = deepMerge(targetValue, sourceValue)
     } else {
@@ -177,50 +188,65 @@ export async function POST(req: NextRequest) {
       case 'ADD_WORLD_RULE': // Legacy
       case 'ADD_THEME': // Legacy
       case 'REMOVE_THEME': // Legacy
-      case 'SET_GENRE_AND_TONE': // Legacy
-        {
-          // Map legacy/specific payloads to generic partial update
-          let updates: any = {}
-          if (action.type === 'UPDATE_WORLD_RULES') updates = { worldRules: action.payload.rules } // payload.rules vs worldRules? Schema says payload.rules. Adapter needed?
-          // Actually updateSeriesBible uses deepMerge, so we can pass partial objects matching the schema keys
+      case 'SET_GENRE_AND_TONE': { // Legacy
+        // Map legacy/specific payloads to generic partial update
+        let updates: any = {}
+        if (action.type === 'UPDATE_WORLD_RULES') updates = { worldRules: action.payload.rules } // payload.rules vs worldRules? Schema says payload.rules. Adapter needed?
+        // Actually updateSeriesBible uses deepMerge, so we can pass partial objects matching the schema keys
 
-          // Mapping logic:
-          if (action.type === 'UPDATE_WORLD_RULES') updates = { worldRules: action.payload.rules } // WARNING: Schema payload is { rules: [...] } but DB stores { worldRules: [...] }?
-          // Let's assume the DB schema keys match legacy keys: worldRules, factions, etc.
-          // DeepMerge handles replacement of arrays. Smart merge happens at AGENT level (agent sends full array or we implement smart merge here?)
-          // Agent prompt says "Use mergeMode smart". 
-          // If mergeMode is 'smart', we shouldn't just overwrite.
-          // BUT `deepMerge` function at top of file replaces arrays.
-          // We might need to implement smart merge here if we want to support it, OR rely on agent sending full array.
-          // Agent tools prompt says: "Use mergeMode smart... Respond with ... payload: { rules: [...] }"
-          // Usually agents read existing, append, and send back full list if they are "smart".
-          // But "smart" mergeMode implies the server handles it?
-          // "action-reducer.ts" usually handles this.
-          // HERE in route.ts, we are the executor.
+        // Mapping logic:
+        if (action.type === 'UPDATE_WORLD_RULES') updates = { worldRules: action.payload.rules } // WARNING: Schema payload is { rules: [...] } but DB stores { worldRules: [...] }?
+        // Let's assume the DB schema keys match legacy keys: worldRules, factions, etc.
+        // DeepMerge handles replacement of arrays. Smart merge happens at AGENT level (agent sends full array or we implement smart merge here?)
+        // Agent prompt says "Use mergeMode smart".
+        // If mergeMode is 'smart', we shouldn't just overwrite.
+        // BUT `deepMerge` function at top of file replaces arrays.
+        // We might need to implement smart merge here if we want to support it, OR rely on agent sending full array.
+        // Agent tools prompt says: "Use mergeMode smart... Respond with ... payload: { rules: [...] }"
+        // Usually agents read existing, append, and send back full list if they are "smart".
+        // But "smart" mergeMode implies the server handles it?
+        // "action-reducer.ts" usually handles this.
+        // HERE in route.ts, we are the executor.
 
-          // For now, assume agent sends the FINAL array (simplest). 
+        // For now, assume agent sends the FINAL array (simplest).
 
-          if (action.type === 'UPDATE_WORLD_RULES') updates = { worldRules: action.payload.rules }
-          else if (action.type === 'UPDATE_FACTIONS') updates = { factions: action.payload.factions }
-          else if (action.type === 'UPDATE_INSPIRATIONS') updates = { inspirations: action.payload.inspirations }
-          else if (action.type === 'UPDATE_WORLD_DESCRIPTION') updates = { worldDescription: action.payload.description }
-          else if (action.type === 'UPDATE_PLOT_TWISTS') updates = { plotTwists: action.payload.plotTwists }
-          else if (action.type === 'UPDATE_KEY_CHARACTERS') updates = { keyCharacters: action.payload.keyCharacters }
-          else if (action.type === 'ADD_WORLD_RULE') {
-            // Need to fetch existing to append? updateSeriesBible does not append arrays, it replaces.
-            // But we can implement specific append logic here or inside updateSeriesBible.
-            // Let's stick to updateSeriesBible replacement for now and assume deepMerge replaces arrays.
-            // Legacy ADD_WORLD_RULE fetches existing.
-            const [proj] = await db.select().from(seriesBibles).where(eq(seriesBibles.projectId, projectId)).limit(1)
-            const curr = (proj?.content as any) || {}
-            updates = { worldRules: [...(curr.worldRules || []), action.payload.rule] }
+        if (action.type === 'UPDATE_WORLD_RULES') updates = { worldRules: action.payload.rules }
+        else if (action.type === 'UPDATE_FACTIONS') updates = { factions: action.payload.factions }
+        else if (action.type === 'UPDATE_INSPIRATIONS')
+          updates = { inspirations: action.payload.inspirations }
+        else if (action.type === 'UPDATE_WORLD_DESCRIPTION')
+          updates = { worldDescription: action.payload.description }
+        else if (action.type === 'UPDATE_PLOT_TWISTS')
+          updates = { plotTwists: action.payload.plotTwists }
+        else if (action.type === 'UPDATE_KEY_CHARACTERS')
+          updates = { keyCharacters: action.payload.keyCharacters }
+        else if (action.type === 'ADD_WORLD_RULE') {
+          // Need to fetch existing to append? updateSeriesBible does not append arrays, it replaces.
+          // But we can implement specific append logic here or inside updateSeriesBible.
+          // Let's stick to updateSeriesBible replacement for now and assume deepMerge replaces arrays.
+          // Legacy ADD_WORLD_RULE fetches existing.
+          const [proj] = await db
+            .select()
+            .from(seriesBibles)
+            .where(eq(seriesBibles.projectId, projectId))
+            .limit(1)
+          const curr = (proj?.content as any) || {}
+          updates = { worldRules: [...(curr.worldRules || []), action.payload.rule] }
+        } else if (action.type === 'SET_GENRE_AND_TONE')
+          updates = {
+            genre: action.payload.genre,
+            tone: action.payload.tone,
+            styleReference: action.payload.styleReference,
           }
-          else if (action.type === 'SET_GENRE_AND_TONE') updates = { genre: action.payload.genre, tone: action.payload.tone, styleReference: action.payload.styleReference }
-          else if (action.type === 'UPDATE_SOUNDTRACKS') updates = { soundtracks: action.payload.soundtracks }
+        else if (action.type === 'UPDATE_SOUNDTRACKS')
+          updates = { soundtracks: action.payload.soundtracks }
 
-          const updated = await updateSeriesBible(updates)
-          return NextResponse.json({ success: true, result: { type: 'bible_updated', seriesBible: updated } })
-        }
+        const updated = await updateSeriesBible(updates)
+        return NextResponse.json({
+          success: true,
+          result: { type: 'bible_updated', seriesBible: updated },
+        })
+      }
 
       case 'UPDATE_EPISODE_ROADMAP': {
         // This belongs to Story Plan
@@ -231,18 +257,29 @@ export async function POST(req: NextRequest) {
         if (payload.executiveSummary) updates.executiveSummary = payload.executiveSummary
 
         const updatedPlan = await updateStoryPlan(updates)
-        return NextResponse.json({ success: true, result: { type: 'bible_updated', seriesBible: { storyPlan: updatedPlan } } })
+        return NextResponse.json({
+          success: true,
+          result: { type: 'bible_updated', seriesBible: { storyPlan: updatedPlan } },
+        })
       }
 
       case 'UPDATE_ROADMAP_SUMMARY': {
-        const updatedPlan = await updateStoryPlan({ executiveSummary: action.payload.executiveSummary })
-        return NextResponse.json({ success: true, result: { type: 'bible_updated', seriesBible: { storyPlan: updatedPlan } } })
+        const updatedPlan = await updateStoryPlan({
+          executiveSummary: action.payload.executiveSummary,
+        })
+        return NextResponse.json({
+          success: true,
+          result: { type: 'bible_updated', seriesBible: { storyPlan: updatedPlan } },
+        })
       }
 
       case 'UPDATE_EPISODE_PREMISE': {
         const { premise } = action.payload
         if (!episodeId) {
-          return NextResponse.json({ error: 'Episode ID required for UPDATE_EPISODE_PREMISE' }, { status: 400 })
+          return NextResponse.json(
+            { error: 'Episode ID required for UPDATE_EPISODE_PREMISE' },
+            { status: 400 }
+          )
         }
 
         const [existing] = await db.select().from(episodes).where(eq(episodes.id, episodeId))
@@ -252,14 +289,15 @@ export async function POST(req: NextRequest) {
           ...existingPlan,
           premise: {
             ...((existingPlan.premise as any) || {}),
-            ...premise
-          }
+            ...premise,
+          },
         }
 
-        await db.update(episodes)
+        await db
+          .update(episodes)
           .set({
             storyPlan: newPlan,
-            updatedAt: new Date()
+            updatedAt: new Date(),
           })
           .where(eq(episodes.id, episodeId))
 
@@ -275,13 +313,13 @@ export async function POST(req: NextRequest) {
 
       case 'CREATE_BEAT': {
         if (!episodeId) {
-          return NextResponse.json({ error: 'Episode ID required for CREATE_BEAT' }, { status: 400 })
+          return NextResponse.json(
+            { error: 'Episode ID required for CREATE_BEAT' },
+            { status: 400 }
+          )
         }
 
-        const existingBeats = await db
-          .select()
-          .from(beats)
-          .where(eq(beats.episodeId, episodeId))
+        const existingBeats = await db.select().from(beats).where(eq(beats.episodeId, episodeId))
 
         const newBeat = {
           id: uuidv4(),
@@ -468,30 +506,35 @@ export async function POST(req: NextRequest) {
         const append = action.payload.append
 
         if (episodeId) {
-          const [episode] = await db.select().from(episodes).where(eq(episodes.id, episodeId)).limit(1)
+          const [episode] = await db
+            .select()
+            .from(episodes)
+            .where(eq(episodes.id, episodeId))
+            .limit(1)
           const currentScript = episode?.scriptContent || ''
 
-          const newScript = append
-            ? currentScript + '\n\n' + content
-            : content
+          const newScript = append ? currentScript + '\n\n' + content : content
 
-          await db.update(episodes)
+          await db
+            .update(episodes)
             .set({ scriptContent: newScript, updatedAt: new Date() })
             .where(eq(episodes.id, episodeId))
 
           return NextResponse.json({
             success: true,
-            result: { type: 'script_updated', script: newScript }
+            result: { type: 'script_updated', script: newScript },
           })
         }
 
         // Fallback to project-level bible (legacy)
-        const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1)
+        const [project] = await db
+          .select()
+          .from(projects)
+          .where(eq(projects.id, projectId))
+          .limit(1)
         const currentBible = (project?.seriesBible as Record<string, any>) || {}
 
-        const newScript = append
-          ? (currentBible.script || '') + '\n\n' + content
-          : content
+        const newScript = append ? (currentBible.script || '') + '\n\n' + content : content
 
         const updatedBible = await updateSeriesBible({ script: newScript })
 
@@ -524,15 +567,24 @@ export async function POST(req: NextRequest) {
       case 'RESOLVE_SETUP':
       case 'ADD_KNOWLEDGE': {
         // These update tracking state - store in series bible
-        const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1)
+        const [project] = await db
+          .select()
+          .from(projects)
+          .where(eq(projects.id, projectId))
+          .limit(1)
         const currentBible = (project?.seriesBible as Record<string, any>) || {}
 
         if (action.type === 'ADD_SETUP') {
-          const setups = [...(currentBible.unresolvedSetups || []), { id: uuidv4(), ...action.payload }]
+          const setups = [
+            ...(currentBible.unresolvedSetups || []),
+            { id: uuidv4(), ...action.payload },
+          ]
           await updateSeriesBible({ unresolvedSetups: setups })
         } else if (action.type === 'RESOLVE_SETUP') {
           const setups = (currentBible.unresolvedSetups || []).map((s: any) =>
-            s.id === action.payload.setupId ? { ...s, isResolved: true, payoffBeatId: action.payload.payoffBeatId } : s
+            s.id === action.payload.setupId
+              ? { ...s, isResolved: true, payoffBeatId: action.payload.payoffBeatId }
+              : s
           )
           await updateSeriesBible({ unresolvedSetups: setups })
         }
@@ -561,15 +613,3 @@ export async function POST(req: NextRequest) {
     )
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-

@@ -407,6 +407,27 @@
         }
       }
     },
+    "/interior-designer/material": {
+      "post": {
+        "operationId": "post-interior-designer-material",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Interior-designer"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/interior-designer/retexture": {
       "post": {
         "operationId": "post-interior-designer-retexture",
@@ -491,6 +512,27 @@
         }
       }
     },
+    "/interior-designer/material/{taskId}": {
+      "get": {
+        "operationId": "get-interior-designer-material-{taskId}",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Interior-designer"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/interior-designer/retexture/{runId}": {
       "get": {
         "operationId": "get-interior-designer-retexture-{runId}",
@@ -519,6 +561,244 @@
         "description": "",
         "tags": [
           "Interior-designer"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/loop-creator/chat": {
+      "post": {
+        "operationId": "post-loop-creator-chat",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Loop-creator"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "get-loop-creator-chat",
+        "summary": "GET endpoint for health check",
+        "description": "",
+        "tags": [
+          "Loop-creator"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/loop-creator/loops": {
+      "get": {
+        "operationId": "get-loop-creator-loops",
+        "summary": "GET - Fetch game loops",
+        "description": "",
+        "tags": [
+          "Loop-creator"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "post-loop-creator-loops",
+        "summary": "POST - Create a new game loop",
+        "description": "",
+        "tags": [
+          "Loop-creator"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patch-loop-creator-loops",
+        "summary": "PATCH - Update an existing game loop",
+        "description": "",
+        "tags": [
+          "Loop-creator"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete-loop-creator-loops",
+        "summary": "DELETE - Delete a game loop",
+        "description": "",
+        "tags": [
+          "Loop-creator"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/loop-creator/market-analysis": {
+      "post": {
+        "operationId": "post-loop-creator-market-analysis",
+        "summary": "2 minutes max for thorough analysis",
+        "description": "",
+        "tags": [
+          "Loop-creator"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/loop-creator/market-analysis/{gameLoopId}": {
+      "get": {
+        "operationId": "get-loop-creator-market-analysis-{gameLoopId}",
+        "summary": "GET - Retrieve saved market analysis for a game loop",
+        "description": "",
+        "tags": [
+          "Loop-creator"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "post-loop-creator-market-analysis-{gameLoopId}",
+        "summary": "POST - Save a new market analysis",
+        "description": "",
+        "tags": [
+          "Loop-creator"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete-loop-creator-market-analysis-{gameLoopId}",
+        "summary": "DELETE - Delete saved market analysis (to allow regeneration)",
+        "description": "",
+        "tags": [
+          "Loop-creator"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/onboarding": {
+      "post": {
+        "operationId": "post-projects-{projectId}-onboarding",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Projects"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "get-projects-{projectId}-onboarding",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Projects"
         ],
         "parameters": [],
         "responses": {
@@ -897,6 +1177,48 @@
         }
       }
     },
+    "/storyteller/save-episode-poster-variant": {
+      "post": {
+        "operationId": "post-storyteller-save-episode-poster-variant",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storyteller/save-portrait-variant": {
+      "post": {
+        "operationId": "post-storyteller-save-portrait-variant",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/storyteller/snapshots": {
       "post": {
         "operationId": "post-storyteller-snapshots",
@@ -1019,6 +1341,67 @@
         }
       }
     },
+    "/storyteller/beats/status": {
+      "get": {
+        "operationId": "get-storyteller-beats-status",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storyteller/bible/lock": {
+      "post": {
+        "operationId": "post-storyteller-bible-lock",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "get-storyteller-bible-lock",
+        "summary": "GET /api/storyteller/bible/lock",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/storyteller/characters/{characterId}": {
       "patch": {
         "operationId": "patch-storyteller-characters-{characterId}",
@@ -1082,9 +1465,72 @@
         }
       }
     },
-    "/storyteller/episodes/{id}": {
+    "/storyteller/consistency/apply": {
+      "post": {
+        "operationId": "post-storyteller-consistency-apply",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storyteller/consistency/check": {
+      "post": {
+        "operationId": "post-storyteller-consistency-check",
+        "summary": "60 seconds for AI processing",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storyteller/consistency/undo": {
+      "post": {
+        "operationId": "post-storyteller-consistency-undo",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storyteller/episodes/{episodeId}": {
       "patch": {
-        "operationId": "patch-storyteller-episodes-{id}",
+        "operationId": "patch-storyteller-episodes-{episodeId}",
         "summary": "",
         "description": "",
         "tags": [
@@ -1103,7 +1549,7 @@
         }
       },
       "delete": {
-        "operationId": "delete-storyteller-episodes-{id}",
+        "operationId": "delete-storyteller-episodes-{episodeId}",
         "summary": "",
         "description": "",
         "tags": [
@@ -1246,9 +1692,9 @@
         }
       }
     },
-    "/storyteller/episodes/{id}/beats": {
+    "/storyteller/episodes/{episodeId}/beats": {
       "get": {
-        "operationId": "get-storyteller-episodes-{id}-beats",
+        "operationId": "get-storyteller-episodes-{episodeId}-beats",
         "summary": "",
         "description": "",
         "tags": [
@@ -1267,7 +1713,70 @@
         }
       },
       "post": {
-        "operationId": "post-storyteller-episodes-{id}-beats",
+        "operationId": "post-storyteller-episodes-{episodeId}-beats",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storyteller/episodes/{episodeId}/generate-combined": {
+      "post": {
+        "operationId": "post-storyteller-episodes-{episodeId}-generate-combined",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storyteller/episodes/{episodeId}/generate-poster": {
+      "post": {
+        "operationId": "post-storyteller-episodes-{episodeId}-generate-poster",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Storyteller"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storyteller/episodes/poster/status": {
+      "get": {
+        "operationId": "get-storyteller-episodes-poster-status",
         "summary": "",
         "description": "",
         "tags": [
@@ -1587,6 +2096,67 @@
         "description": "",
         "tags": [
           "Upscale"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/onboarding": {
+      "post": {
+        "operationId": "post-users-onboarding",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "get-users-onboarding",
+        "summary": "",
+        "description": "",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/waitlist": {
+      "post": {
+        "operationId": "post-waitlist",
+        "summary": "Simple waitlist implementation.",
+        "description": "",
+        "tags": [
+          "Waitlist"
         ],
         "parameters": [],
         "responses": {

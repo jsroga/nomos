@@ -14,9 +14,15 @@ export const magicAgent = async (state: WritersRoomState): Promise<Partial<Write
 
   // Load prompt from Hub
   const loadedPrompt = await loadPromptCached('magicAgent')
-  const promptMessages = (loadedPrompt.prompt as any).promptMessages || (loadedPrompt.prompt as any).messages || []
-  const systemMessageFromPrompt = promptMessages.find((m: any) => m.lc_id?.[3] === 'SystemMessagePromptTemplate' || m._type === 'system')
-  const systemTemplate = systemMessageFromPrompt?.prompt?.template || systemMessageFromPrompt?.template || MAGIC_AGENT_PROMPT
+  const promptMessages =
+    (loadedPrompt.prompt as any).promptMessages || (loadedPrompt.prompt as any).messages || []
+  const systemMessageFromPrompt = promptMessages.find(
+    (m: any) => m.lc_id?.[3] === 'SystemMessagePromptTemplate' || m._type === 'system'
+  )
+  const systemTemplate =
+    systemMessageFromPrompt?.prompt?.template ||
+    systemMessageFromPrompt?.template ||
+    MAGIC_AGENT_PROMPT
 
   const systemMessage = new SystemMessage(systemTemplate)
 

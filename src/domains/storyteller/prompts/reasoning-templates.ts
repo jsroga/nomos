@@ -1,6 +1,6 @@
 /**
  * Structured Chain-of-Thought Reasoning Templates
- * 
+ *
  * Provides structured reasoning frameworks for agents to ensure
  * transparent, traceable decision-making.
  */
@@ -247,7 +247,7 @@ export function getReasoningTemplate(agentRole: string): string {
     devilsAdvocate: DEVILS_ADVOCATE_REASONING,
     premiseArchitect: PREMISE_ARCHITECT_REASONING,
   }
-  
+
   return templates[agentRole] || STRUCTURED_REASONING_TEMPLATE
 }
 
@@ -260,7 +260,7 @@ export function createAgentPromptWithReasoning(
   context?: ReasoningContext
 ): string {
   const reasoningTemplate = getReasoningTemplate(agentRole)
-  
+
   return `${basePrompt}
 
 ---
@@ -287,26 +287,35 @@ export function hasExplicitReasoning(response: string): {
   score: number
 } {
   const reasoningMarkers = [
-    'understand', 'analyze', 'assess',
-    'reason', 'consider', 'evaluate',
-    'decide', 'conclude', 'determine',
-    'because', 'therefore', 'since',
-    'option', 'alternative', 'tradeoff',
+    'understand',
+    'analyze',
+    'assess',
+    'reason',
+    'consider',
+    'evaluate',
+    'decide',
+    'conclude',
+    'determine',
+    'because',
+    'therefore',
+    'since',
+    'option',
+    'alternative',
+    'tradeoff',
   ]
-  
+
   const responseLower = response.toLowerCase()
   const foundMarkers = reasoningMarkers.filter(m => responseLower.includes(m))
-  
+
   const sections: string[] = []
   if (/understand|analyze|what .* asking/i.test(response)) sections.push('understanding')
   if (/consider|option|alternative/i.test(response)) sections.push('options')
   if (/because|since|therefore/i.test(response)) sections.push('justification')
   if (/decide|conclude|will/i.test(response)) sections.push('decision')
-  
+
   return {
     hasReasoning: foundMarkers.length >= 3,
     sections,
     score: Math.min(1, foundMarkers.length / 5),
   }
 }
-

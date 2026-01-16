@@ -5,12 +5,7 @@ import { AlertTriangle } from 'lucide-react'
 import { useErrorStore } from '@/store/useErrorStore'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 export const TroubleshootIndicator: React.FC = () => {
   const errors = useErrorStore(state => state.errors)

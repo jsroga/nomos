@@ -18,11 +18,19 @@ export class FidelityService {
   /**
    * Enhance tile fidelity using Gemini with a style prompt
    */
-  async enhance(tile: Tile, stylePrompt: string, creativity: number, styleReferenceUrls?: string[]): Promise<string | null> {
-    console.log('Starting fidelity enhancement via Trigger.dev for tile', tile.id, { creativity, styleReferenceUrls })
+  async enhance(
+    tile: Tile,
+    stylePrompt: string,
+    creativity: number,
+    styleReferenceUrls?: string[]
+  ): Promise<string | null> {
+    console.log('Starting fidelity enhancement via Trigger.dev for tile', tile.id, {
+      creativity,
+      styleReferenceUrls,
+    })
 
     // Get Gemini config from localStorage
-    let geminiConfig = { apiKey: '', model: 'gemini-3-pro-image-preview' }
+    const geminiConfig = { apiKey: '', model: 'gemini-3-pro-image-preview' }
 
     if (typeof window !== 'undefined') {
       const savedGemini = localStorage.getItem(LocalStorageKeys.AI_CONFIGS)
@@ -35,7 +43,9 @@ export class FidelityService {
     }
 
     if (!geminiConfig.apiKey) {
-      throw new Error('Gemini API key is required for fidelity enhancement. Configure it in Settings.')
+      throw new Error(
+        'Gemini API key is required for fidelity enhancement. Configure it in Settings.'
+      )
     }
 
     // Track enhancing status
@@ -175,7 +185,14 @@ export class FidelityService {
    */
   private async handleCompletion(
     runState: FidelityRunState,
-    output: { success: boolean; filename: string; enhancedUrl: string; enhancedBase64: string; originalUrl: string; pendingReview?: boolean },
+    output: {
+      success: boolean
+      filename: string
+      enhancedUrl: string
+      enhancedBase64: string
+      originalUrl: string
+      pendingReview?: boolean
+    },
     opId: string
   ) {
     try {
@@ -197,15 +214,11 @@ export class FidelityService {
           : output.originalUrl || ''
 
         // Store pending fidelity in store
-        useWorldStore.getState().setPendingFidelity(
-          runState.tileX,
-          runState.tileY,
-          {
-            newUrl: enhancedUrl,
-            newBase64: output.enhancedBase64, // Still keep for acceptFidelity
-            originalUrl,
-          }
-        )
+        useWorldStore.getState().setPendingFidelity(runState.tileX, runState.tileY, {
+          newUrl: enhancedUrl,
+          newBase64: output.enhancedBase64, // Still keep for acceptFidelity
+          originalUrl,
+        })
 
         // Update global status to show review is needed
         useGlobalStatusStore.getState().updateOperation(opId, {
@@ -215,14 +228,16 @@ export class FidelityService {
 
         // Emit event for UI to show review dialog
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('fidelity-review-ready', {
-            detail: {
-              tileX: runState.tileX,
-              tileY: runState.tileY,
-              newUrl: enhancedUrl,
-              originalUrl,
-            }
-          }))
+          window.dispatchEvent(
+            new CustomEvent('fidelity-review-ready', {
+              detail: {
+                tileX: runState.tileX,
+                tileY: runState.tileY,
+                newUrl: enhancedUrl,
+                originalUrl,
+              },
+            })
+          )
         }
 
         this.clearRunState(runState, opId)
@@ -332,4 +347,3 @@ export class FidelityService {
 }
 
 export const fidelityService = new FidelityService()
-

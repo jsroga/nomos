@@ -23,7 +23,10 @@ export class StabilityAIModel implements AIModel {
 
     const formData = new FormData()
     // Append "seamless" logic or specific texture prompt engineering here or in the service
-    formData.append('text_prompts[0][text]', prompt + ', seamless texture, top down view, flat lighting, high quality, 8k')
+    formData.append(
+      'text_prompts[0][text]',
+      prompt + ', seamless texture, top down view, flat lighting, high quality, 8k'
+    )
     formData.append('text_prompts[0][weight]', '1')
     formData.append('cfg_scale', (config.params?.cfgScale || 7).toString())
     formData.append('samples', '1')

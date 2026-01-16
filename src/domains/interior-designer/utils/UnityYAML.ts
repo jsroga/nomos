@@ -1,21 +1,20 @@
-
 // ------------------------------------------------------------------
 // UNITY YAML GENERATION HELPER
 // ------------------------------------------------------------------
 
 export const UnityYAML = {
-    // Generate a random 32-character hex GUID
-    generateGUID: (): string => {
-        return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-            const r = (Math.random() * 16) | 0
-            const v = c === 'x' ? r : (r & 0x3) | 0x8
-            return v.toString(16)
-        })
-    },
+  // Generate a random 32-character hex GUID
+  generateGUID: (): string => {
+    return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = (Math.random() * 16) | 0
+      const v = c === 'x' ? r : (r & 0x3) | 0x8
+      return v.toString(16)
+    })
+  },
 
-    // Basic .meta file content
-    generateMeta: (guid: string): string => {
-        return `fileFormatVersion: 2
+  // Basic .meta file content
+  generateMeta: (guid: string): string => {
+    return `fileFormatVersion: 2
 guid: ${guid}
 DefaultImporter:
   externalObjects: {}
@@ -23,11 +22,11 @@ DefaultImporter:
   assetBundleName: 
   assetBundleVariant: 
 `
-    },
+  },
 
-    // Scene Header
-    generateSceneHeader: (): string => {
-        return `%YAML 1.1
+  // Scene Header
+  generateSceneHeader: (): string => {
+    return `%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!29 &1
 OcclusionCullingSettings:
@@ -151,16 +150,16 @@ NavMeshSettings:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
 `
-    },
+  },
 
-    // -------------------------------------------------------
-    // COMPONENT GENERATORS
-    // -------------------------------------------------------
+  // -------------------------------------------------------
+  // COMPONENT GENERATORS
+  // -------------------------------------------------------
 
-    // GameObject
-    gameObject: (id: number, name: string, components: { type: number, id: number }[]): string => {
-        const componentList = components.map(c => `  - component: {fileID: ${c.id}}`).join('\n')
-        return `--- !u!1 &${id}
+  // GameObject
+  gameObject: (id: number, name: string, components: { type: number; id: number }[]): string => {
+    const componentList = components.map(c => `  - component: {fileID: ${c.id}}`).join('\n')
+    return `--- !u!1 &${id}
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -177,12 +176,17 @@ ${componentList}
   m_StaticEditorFlags: 0
   m_IsActive: 1
 `
-    },
+  },
 
-
-    // Transform
-    transform: (id: number, gameObject: number, pos: { x: number, y: number, z: number }, rot: { x: number, y: number, z: number, w: number }, scale: { x: number, y: number, z: number }): string => {
-        return `--- !u!4 &${id}
+  // Transform
+  transform: (
+    id: number,
+    gameObject: number,
+    pos: { x: number; y: number; z: number },
+    rot: { x: number; y: number; z: number; w: number },
+    scale: { x: number; y: number; z: number }
+  ): string => {
+    return `--- !u!4 &${id}
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -197,13 +201,13 @@ Transform:
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 `
-        // NOTE: Rotation is Quat in YAML. For simplicity we might need to convert Euler to Quat if we use rotational layouts.
-        // Ideally we output Euler hint but unity reconstructs Quat 
-    },
+    // NOTE: Rotation is Quat in YAML. For simplicity we might need to convert Euler to Quat if we use rotational layouts.
+    // Ideally we output Euler hint but unity reconstructs Quat
+  },
 
-    // MeshFilter (Cube)
-    cubeMeshFilter: (id: number, gameObject: number): string => {
-        return `--- !u!33 &${id}
+  // MeshFilter (Cube)
+  cubeMeshFilter: (id: number, gameObject: number): string => {
+    return `--- !u!33 &${id}
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -212,19 +216,19 @@ MeshFilter:
   m_GameObject: {fileID: ${gameObject}}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 `
-    },
+  },
 
-    // MeshRenderer
-    meshRenderer: (id: number, gameObject: number, materialGuid?: string): string => {
-        // Default Material: {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
-        // If we have a custom material/texture, referencing it is harder without generating a Material Asset (.mat).
-        // For now, we will use Default Material for untextured walls.
-        // TODO: If we want textures, we strictly need to generate a .mat file per texture and reference it here.
-        const matRef = materialGuid
-            ? `{fileID: 2100000, guid: ${materialGuid}, type: 2}`
-            : `{fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}`
+  // MeshRenderer
+  meshRenderer: (id: number, gameObject: number, materialGuid?: string): string => {
+    // Default Material: {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+    // If we have a custom material/texture, referencing it is harder without generating a Material Asset (.mat).
+    // For now, we will use Default Material for untextured walls.
+    // TODO: If we want textures, we strictly need to generate a .mat file per texture and reference it here.
+    const matRef = materialGuid
+      ? `{fileID: 2100000, guid: ${materialGuid}, type: 2}`
+      : '{fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}'
 
-        return `--- !u!23 &${id}
+    return `--- !u!23 &${id}
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -266,34 +270,40 @@ MeshRenderer:
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
 `
-    },
+  },
 
-    // Prefab Instance (for GLB Models)
-    // This is tricky. Import a GLB creates a model, not a prefab in the traditional .prefab sense, 
-    // but it can be instantiated as a PrefabInstance referencing the Model Importer GUID.
-    prefabInstance: (id: number, assetGuid: string, pos: { x: number, y: number, z: number }, rot: { x: number, y: number, z: number, w: number }, scale: { x: number, y: number, z: number }): string => {
-        // A PrefabInstance in scene does NOT have a GameObject block. 
-        // It has a PrefabInstance block which overrides properties of the Source Asset.
-        // However, for minimal complexity, we just want to "spawn" the default view of the model.
+  // Prefab Instance (for GLB Models)
+  // This is tricky. Import a GLB creates a model, not a prefab in the traditional .prefab sense,
+  // but it can be instantiated as a PrefabInstance referencing the Model Importer GUID.
+  prefabInstance: (
+    id: number,
+    assetGuid: string,
+    pos: { x: number; y: number; z: number },
+    rot: { x: number; y: number; z: number; w: number },
+    scale: { x: number; y: number; z: number }
+  ): string => {
+    // A PrefabInstance in scene does NOT have a GameObject block.
+    // It has a PrefabInstance block which overrides properties of the Source Asset.
+    // However, for minimal complexity, we just want to "spawn" the default view of the model.
 
-        // Structure of a scene entry for a prefab:
-        // 1. PrefabInstance (!u!1001) pointing to Source Prefab
-        // 2. Transform/GameObject overrides (optional, but usually unity generates many modification entries).
+    // Structure of a scene entry for a prefab:
+    // 1. PrefabInstance (!u!1001) pointing to Source Prefab
+    // 2. Transform/GameObject overrides (optional, but usually unity generates many modification entries).
 
-        // Strategy: It's actually remarkably hard to write a valid PrefabInstance manually without knowing the internal fileIDs of the source GLB's nodes (which we don't know until import).
-        // ALTERNATIVE: Create a "Dummy" GameObject and script the loading? No, user wants NO scripts.
+    // Strategy: It's actually remarkably hard to write a valid PrefabInstance manually without knowing the internal fileIDs of the source GLB's nodes (which we don't know until import).
+    // ALTERNATIVE: Create a "Dummy" GameObject and script the loading? No, user wants NO scripts.
 
-        // BACKUP STRATEGY: 
-        // Just create a GameObject with NO MeshFilter/Renderer, but maybe a script? No.
-        // WAIT. If we just output a GameObject !u!1 and !u!4 Transform, it's just an empty object.
+    // BACKUP STRATEGY:
+    // Just create a GameObject with NO MeshFilter/Renderer, but maybe a script? No.
+    // WAIT. If we just output a GameObject !u!1 and !u!4 Transform, it's just an empty object.
 
-        // For "Copy Paste" to work with Models, we really need the Prefab reference. 
-        // But referencing a Model (GLB) as a Prefab requires knowing the FileID of the root GameObject inside the GLB. 
-        // Standard GLB import usually assigns FileID 100100000 to the root. Let's try guessing it.
+    // For "Copy Paste" to work with Models, we really need the Prefab reference.
+    // But referencing a Model (GLB) as a Prefab requires knowing the FileID of the root GameObject inside the GLB.
+    // Standard GLB import usually assigns FileID 100100000 to the root. Let's try guessing it.
 
-        const transformId = id + 1
+    const transformId = id + 1
 
-        return `--- !u!1001 &${id}
+    return `--- !u!1001 &${id}
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -343,7 +353,7 @@ PrefabInstance:
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ${assetGuid}, type: 3}
 `
-        // Note: fileID 400000 is usually the Transform of the root object in the .glb prefab.
-        // This is a risky guess, but standard for Unity's default importer.
-    }
+    // Note: fileID 400000 is usually the Transform of the root object in the .glb prefab.
+    // This is a risky guess, but standard for Unity's default importer.
+  },
 }

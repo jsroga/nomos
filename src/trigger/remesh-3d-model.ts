@@ -147,9 +147,7 @@ export const remesh3DModelTask = task({
 
       // FAILED - throw immediately
       if (status === 'FAILED') {
-        throw new Error(
-          `Meshy remesh failed: ${result.task_error?.message || 'Unknown error'}`
-        )
+        throw new Error(`Meshy remesh failed: ${result.task_error?.message || 'Unknown error'}`)
       }
     }
 
@@ -159,4 +157,3 @@ export const remesh3DModelTask = task({
     )
   },
 })
-

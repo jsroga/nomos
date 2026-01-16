@@ -8,7 +8,18 @@ import { SurfaceProperties } from './SurfaceProperties'
 import { TerrainEditorPanel } from './TerrainEditorPanel'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
-import { Move, RotateCw, Maximize, Layers, Check, X, Sparkles, Loader2, Wand2, Box } from 'lucide-react'
+import {
+  Move,
+  RotateCw,
+  Maximize,
+  Layers,
+  Check,
+  X,
+  Sparkles,
+  Loader2,
+  Wand2,
+  Box,
+} from 'lucide-react'
 import { seedFromString } from '@/lib/seedFromString'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,7 +28,6 @@ import { LocalStorageKeys } from '@/constants/localStorage'
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
 import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/constants/polling'
 import { SidebarSection, SidebarLabel } from '@/components/ui/domain-sidebar'
-
 
 export const PropertiesPanel: React.FC = () => {
   const selectedId = useInteriorStore(state => state.selectedId)
@@ -57,6 +67,12 @@ export const PropertiesPanel: React.FC = () => {
   const multiSelectedIds = useInteriorStore(state => state.multiSelectedIds)
   const combineWalls = useInteriorStore(state => state.combineWalls)
 
+  // Group Actions
+  const groups = useInteriorStore(state => state.groups)
+  const createGroup = useInteriorStore(state => state.createGroup)
+  const deleteGroup = useInteriorStore(state => state.deleteGroup)
+  const removeFromGroup = useInteriorStore(state => state.removeFromGroup)
+
   // Derive selected surface from selectedId
   const selectedSurface = selectedId ? surfaces.find(s => s.id === selectedId) : null
 
@@ -73,11 +89,6 @@ export const PropertiesPanel: React.FC = () => {
       </div>
     )
   }
-
-
-
-
-
 
   const selectedItem =
     walls.find(w => w.id === selectedId) ||
@@ -97,9 +108,12 @@ export const PropertiesPanel: React.FC = () => {
       <div className="p-6 space-y-8 h-full overflow-y-auto">
         <SidebarSection
           title="Multi-Selection"
-          rightContent={<span className="text-[10px] font-bold text-zinc-500 uppercase ml-2">{multiSelectedIds.length} items</span>}
+          rightContent={
+            <span className="text-[10px] font-bold text-zinc-500 uppercase ml-2">
+              {multiSelectedIds.length} items
+            </span>
+          }
         >
-
           {allAreWalls && (
             <div className="space-y-6 pt-2">
               {/* Batch Height */}
@@ -110,8 +124,10 @@ export const PropertiesPanel: React.FC = () => {
                 </div>
                 <Slider
                   value={[batchHeight]}
-                  min={0.5} max={10} step={0.5}
-                  onValueChange={(vals) => {
+                  min={0.5}
+                  max={10}
+                  step={0.5}
+                  onValueChange={vals => {
                     const h = vals[0]
                     setBatchHeight(h)
                     multiSelectedIds.forEach(id => updateWall(id, { height: h }))
@@ -128,8 +144,10 @@ export const PropertiesPanel: React.FC = () => {
                   </div>
                   <Slider
                     value={[combineRoundness]}
-                    min={0} max={1} step={0.05}
-                    onValueChange={(vals) => setCombineRoundness(vals[0])}
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    onValueChange={vals => setCombineRoundness(vals[0])}
                   />
                   <div className="flex justify-between text-[10px] text-zinc-600 font-medium">
                     <span>Sharp</span>
@@ -139,13 +157,13 @@ export const PropertiesPanel: React.FC = () => {
 
                 <Button
                   onClick={() => combineWalls({ roundness: combineRoundness })}
-                  className="w-full bg-zinc-100 text-zinc-950 font-bold py-2 rounded-xl text-xs hover:bg-white flex items-center justify-center gap-2 shadow-xl shadow-white/5"
+                  className="w-full bg-indigo-600 text-white font-bold py-2 rounded-2xl text-xs hover:bg-indigo-700 flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(79,70,229,0.3)] transition-all"
                 >
                   <Layers size={14} />
                   Combine Walls
                 </Button>
 
-                <div className="text-[10px] text-zinc-500 bg-white/5 p-3 rounded-xl border border-white/5 leading-relaxed">
+                <div className="text-[10px] text-zinc-500 bg-white/5 p-3 rounded-2xl border border-white/5 leading-relaxed">
                   Merges selected walls into a single curved surface with the specified roundness.
                 </div>
               </div>
@@ -153,8 +171,24 @@ export const PropertiesPanel: React.FC = () => {
           )}
 
           {!allAreWalls && (
-            <div className="text-[10px] text-zinc-500 bg-white/5 p-3 rounded-xl border border-white/5">
-              Multiple types selected. Actions limited.
+            <div className="space-y-4 pt-2">
+              <div className="text-[10px] text-zinc-500 bg-white/5 p-3 rounded-2xl border border-white/5">
+                {multiSelectedIds.length} items selected
+              </div>
+
+              {/* Group Creation for Objects */}
+              {multiSelectedIds.some(id => objects.find(o => o.id === id)) && (
+                <Button
+                  onClick={() => {
+                    const name = `Group ${groups.length + 1}`
+                    createGroup(name, multiSelectedIds)
+                  }}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(79,70,229,0.3)]"
+                >
+                  <Layers size={14} />
+                  Create Group
+                </Button>
+              )}
             </div>
           )}
         </SidebarSection>
@@ -178,7 +212,9 @@ export const PropertiesPanel: React.FC = () => {
           {/* Show snap controls in OBJECT mode when nothing selected */}
           {mode === 'OBJECT' && !selectedId && (
             <div className="space-y-6">
-              <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4">Object Placement</div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4">
+                Object Placement
+              </div>
               <SnapControls />
             </div>
           )}
@@ -191,18 +227,22 @@ export const PropertiesPanel: React.FC = () => {
 
           {selectedItem && (
             <div className="space-y-8">
-              <div className="text-[10px] font-bold bg-white/5 p-3 rounded-xl text-zinc-400 border border-white/5 flex items-center justify-between">
-                <span className="uppercase tracking-widest opacity-50">Reference ID</span>
-                <span className="font-mono text-zinc-100">{selectedItem.id.slice(0, 8)}</span>
+              <div className="text-[10px] font-mono font-bold bg-muted/10 p-3 rounded-xl text-muted-foreground border border-border/50 flex items-center justify-between">
+                <span className="uppercase tracking-widest opacity-70">Reference ID</span>
+                <span className="font-mono text-zinc-300">{selectedItem.id.slice(0, 8)}</span>
               </div>
 
               {/* Color/Texture Input */}
-              <div className="space-y-2">
-                <SidebarLabel className="text-zinc-400 font-semibold text-[11px]">Color / Texture</SidebarLabel>
+              <div className="space-y-3">
+                <SidebarLabel className="text-indigo-400 font-bold uppercase tracking-widest">
+                  Color / Texture
+                </SidebarLabel>
                 <input
                   type="text"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-xs text-zinc-100 focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all placeholder:text-zinc-600"
-                  value={isObject(selectedItem) ? selectedItem.modelUrl : selectedItem.texture || ''}
+                  className="w-full bg-background/40 border border-border rounded-xl py-2 px-3 text-xs font-mono text-foreground focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 focus:outline-none transition-all placeholder:text-muted-foreground/40"
+                  value={
+                    isObject(selectedItem) ? selectedItem.modelUrl : selectedItem.texture || ''
+                  }
                   placeholder="#ffffff or url"
                   onChange={e => {
                     const val = e.target.value
@@ -216,31 +256,34 @@ export const PropertiesPanel: React.FC = () => {
               {/* Height Input (Walls only) */}
               {isWall(selectedItem) && (
                 <div className="space-y-2">
-                  <SidebarLabel className="text-zinc-400 font-semibold text-[11px]">Height</SidebarLabel>
+                  <SidebarLabel className="text-zinc-400 font-semibold text-[11px]">
+                    Height
+                  </SidebarLabel>
                   <input
                     type="number"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-xs text-zinc-100 focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-2.5 px-4 text-xs text-zinc-100 focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all"
                     value={selectedItem.height}
                     onChange={e => updateWall(selectedId!, { height: Number(e.target.value) })}
                   />
                 </div>
               )}
 
-
               {/* Object Transform Controls */}
               {isObject(selectedItem) && (
                 <div className="space-y-6 pt-6 border-t border-white/5">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Transform Settings</h3>
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                    Transform Settings
+                  </h3>
 
                   <SnapControls />
 
                   {/* Mode Switcher */}
-                  <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                  <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10">
                     <button
                       className={cn(
-                        "flex-1 flex items-center justify-center py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                        'flex-1 flex items-center justify-center py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all',
                         transformMode === 'translate'
-                          ? 'bg-zinc-100 text-zinc-950 shadow-lg'
+                          ? 'bg-indigo-600 text-white shadow-lg'
                           : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
                       )}
                       onClick={() => setTransformMode('translate')}
@@ -251,9 +294,9 @@ export const PropertiesPanel: React.FC = () => {
                     </button>
                     <button
                       className={cn(
-                        "flex-1 flex items-center justify-center py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                        'flex-1 flex items-center justify-center py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all',
                         transformMode === 'rotate'
-                          ? 'bg-zinc-100 text-zinc-950 shadow-lg'
+                          ? 'bg-indigo-600 text-white shadow-lg'
                           : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
                       )}
                       onClick={() => setTransformMode('rotate')}
@@ -264,9 +307,9 @@ export const PropertiesPanel: React.FC = () => {
                     </button>
                     <button
                       className={cn(
-                        "flex-1 flex items-center justify-center py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                        'flex-1 flex items-center justify-center py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all',
                         transformMode === 'scale'
-                          ? 'bg-zinc-100 text-zinc-950 shadow-lg'
+                          ? 'bg-indigo-600 text-white shadow-lg'
                           : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
                       )}
                       onClick={() => setTransformMode('scale')}
@@ -282,18 +325,54 @@ export const PropertiesPanel: React.FC = () => {
                     <HeightScaleControl
                       objectId={selectedItem.id}
                       currentScale={selectedItem.scale}
-                      onScaleChange={(newScale) => updateObject(selectedItem.id, { scale: newScale })}
+                      onScaleChange={newScale => updateObject(selectedItem.id, { scale: newScale })}
                     />
                   )}
                 </div>
               )}
+
+              {/* COLOR PICKER for Window/Door */}
+              {isObject(selectedItem) &&
+                (selectedItem.modelUrl === 'window' || selectedItem.modelUrl === 'door') && (
+                  <div className="pt-6 border-t border-white/5 space-y-3">
+                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                      Object Color
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={selectedItem.color || '#7a6f5e'}
+                        onChange={e => updateObject(selectedItem.id, { color: e.target.value })}
+                        className="w-10 h-10 rounded-lg border border-white/10 cursor-pointer bg-transparent"
+                      />
+                      <span className="text-xs font-mono text-zinc-400">
+                        {selectedItem.color || '#7a6f5e'}
+                      </span>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      {['#7a6f5e', '#a39484', '#5c534a', '#8b7355', '#6b5b4f', '#3d3630'].map(
+                        preset => (
+                          <button
+                            key={preset}
+                            onClick={() => updateObject(selectedItem.id, { color: preset })}
+                            className="w-8 h-8 rounded-lg border border-white/10 hover:scale-110 transition-transform"
+                            style={{ backgroundColor: preset }}
+                            title={preset}
+                          />
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
 
               {/* RETEXTURE UI */}
               {(isObject(selectedItem) || isWall(selectedItem)) && (
                 <div className="pt-6 border-t border-white/5">
                   <RetextureControls
                     objectId={selectedItem.id}
-                    modelUrl={isObject(selectedItem) ? selectedItem.modelUrl : (selectedItem.texture || '')}
+                    modelUrl={
+                      isObject(selectedItem) ? selectedItem.modelUrl : selectedItem.texture || ''
+                    }
                   />
                 </div>
               )}
@@ -303,7 +382,9 @@ export const PropertiesPanel: React.FC = () => {
                 <div className="pt-6 border-t border-white/5">
                   <TextTo3DControls
                     objectId={selectedItem.id}
-                    onModelGenerated={(modelUrl) => updateObject(selectedItem.id, { modelUrl, isLoading: false })}
+                    onModelGenerated={modelUrl =>
+                      updateObject(selectedItem.id, { modelUrl, isLoading: false })
+                    }
                   />
                 </div>
               )}
@@ -311,7 +392,7 @@ export const PropertiesPanel: React.FC = () => {
               <Button
                 onClick={handleDelete}
                 variant="ghost"
-                className="w-full text-red-400 hover:text-red-300 hover:bg-red-500/10 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all"
+                className="w-full text-red-400 hover:text-red-300 hover:bg-red-500/10 py-3 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all"
               >
                 Delete Object
               </Button>
@@ -370,7 +451,7 @@ function SnapControls() {
 function HeightScaleControl({
   objectId,
   currentScale,
-  onScaleChange
+  onScaleChange,
 }: {
   objectId: string
   currentScale: [number, number, number]
@@ -407,16 +488,14 @@ function HeightScaleControl({
           <Maximize size={12} />
           Object Height
         </label>
-        <span className="text-xs text-muted-foreground font-mono">
-          {heightValue.toFixed(2)}m
-        </span>
+        <span className="text-xs text-muted-foreground font-mono">{heightValue.toFixed(2)}m</span>
       </div>
       <Slider
         value={[heightValue]}
         min={0.1}
         max={10}
         step={0.1}
-        onValueChange={(vals) => handleHeightChange(vals[0])}
+        onValueChange={vals => handleHeightChange(vals[0])}
       />
       <div className="flex justify-between text-[10px] text-muted-foreground">
         <span>0.1m</span>
@@ -428,7 +507,7 @@ function HeightScaleControl({
 }
 
 // Retexture Controls Component
-function RetextureControls({ objectId, modelUrl }: { objectId: string, modelUrl: string }) {
+function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl: string }) {
   const [prompt, setPrompt] = React.useState('')
   const [isStarting, setIsStarting] = React.useState(false)
   const [previewScale, setPreviewScale] = React.useState(1)
@@ -483,7 +562,10 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string, modelUrl:
         if (!res.ok) {
           updateOperation(operationId, {
             status: 'failed',
-            details: JSON.stringify({ ...JSON.parse(currentOperation.details || '{}'), error: 'Task not found' })
+            details: JSON.stringify({
+              ...JSON.parse(currentOperation.details || '{}'),
+              error: 'Task not found',
+            }),
           })
           return
         }
@@ -502,14 +584,17 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string, modelUrl:
               status: 'completed',
               details: JSON.stringify({
                 ...JSON.parse(currentOperation.details || '{}'),
-                retexturedUrl: output.retexturedUrl
-              })
+                retexturedUrl: output.retexturedUrl,
+              }),
             })
           }
         } else if (!ACTIVE_TASK_STATUSES.includes(data.status)) {
           updateOperation(operationId, {
             status: 'failed',
-            details: JSON.stringify({ ...JSON.parse(currentOperation.details || '{}'), error: data.error })
+            details: JSON.stringify({
+              ...JSON.parse(currentOperation.details || '{}'),
+              error: data.error,
+            }),
           })
         }
       } catch (err) {
@@ -524,19 +609,24 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string, modelUrl:
   React.useEffect(() => {
     if (!currentOperation) return
 
-    const isTerminalState = currentOperation.status === 'completed' || currentOperation.status === 'failed'
+    const isTerminalState =
+      currentOperation.status === 'completed' || currentOperation.status === 'failed'
     if (isTerminalState) return
 
     const checkStatus = async () => {
       try {
-        const latestOp = useGlobalStatusStore.getState().operations.find(op => op.id === operationId)
+        const latestOp = useGlobalStatusStore
+          .getState()
+          .operations.find(op => op.id === operationId)
         if (!latestOp || latestOp.status === 'completed' || latestOp.status === 'failed') return
 
         let taskId: string | null = null
         try {
           const metadata = JSON.parse(currentOperation.details || '{}')
           taskId = metadata.taskId
-        } catch (e) { return }
+        } catch (e) {
+          return
+        }
 
         if (!taskId) return
 
@@ -556,19 +646,25 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string, modelUrl:
               status: 'completed',
               details: JSON.stringify({
                 ...JSON.parse(currentOperation.details || '{}'),
-                retexturedUrl: retexturedUrl
-              })
+                retexturedUrl: retexturedUrl,
+              }),
             })
           } else {
             updateOperation(operationId, {
               status: 'failed',
-              details: JSON.stringify({ ...JSON.parse(currentOperation.details || '{}'), error: 'Output missing URL' })
+              details: JSON.stringify({
+                ...JSON.parse(currentOperation.details || '{}'),
+                error: 'Output missing URL',
+              }),
             })
           }
         } else if (!ACTIVE_TASK_STATUSES.includes(data.status)) {
           updateOperation(operationId, {
             status: 'failed',
-            details: JSON.stringify({ ...JSON.parse(currentOperation.details || '{}'), error: data.error })
+            details: JSON.stringify({
+              ...JSON.parse(currentOperation.details || '{}'),
+              error: data.error,
+            }),
           })
         }
       } catch (err) {
@@ -580,69 +676,73 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string, modelUrl:
     return () => clearInterval(pollInterval)
   }, [currentOperation, operationId, updateOperation, previewRetexture, objectId])
 
-  const triggerRetexture = React.useCallback(async (urlOrBase64: string) => {
-    try {
-      let apiKey = ''
+  const triggerRetexture = React.useCallback(
+    async (urlOrBase64: string) => {
       try {
-        const savedMeshy = localStorage.getItem(LocalStorageKeys.AI_CONFIG_MESHY)
-        if (savedMeshy) apiKey = JSON.parse(savedMeshy).apiKey || ''
-      } catch (err) { }
+        let apiKey = ''
+        try {
+          const savedMeshy = localStorage.getItem(LocalStorageKeys.AI_CONFIG_MESHY)
+          if (savedMeshy) apiKey = JSON.parse(savedMeshy).apiKey || ''
+        } catch (err) { }
 
-      // Get actual project ID for style reference lookup
-      const currentProject = useWorldStore.getState().currentProject
-      const currentProjectId = currentProject?.id || 'default'
-      console.log(`[RetextureControls] Sending retexture request with projectId: ${currentProjectId}`, { currentProject: currentProject?.name })
+        // Get actual project ID for style reference lookup
+        const currentProject = useWorldStore.getState().currentProject
+        const currentProjectId = currentProject?.id || 'default'
+        console.log(
+          `[RetextureControls] Sending retexture request with projectId: ${currentProjectId}`,
+          { currentProject: currentProject?.name }
+        )
 
-      const res = await fetch('/api/interior-designer/retexture', {
-
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          modelUrlOrBase64: urlOrBase64,
-          prompt,
-          assetId: objectId,
-          projectId: currentProjectId,
-          apiKey // Send the key to the backend
+        const res = await fetch('/api/interior-designer/retexture', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            modelUrlOrBase64: urlOrBase64,
+            prompt,
+            assetId: objectId,
+            projectId: currentProjectId,
+            apiKey, // Send the key to the backend
+          }),
         })
-      })
-      const data = await res.json()
-      if (data.runId) {
-
-        // Prepare metadata with original state for undo
-        const metadata: any = {
-          taskId: data.runId,
-          originalModelUrl: modelUrl
-        }
-
-        // If it's a wall, save its data so we can revert
-        const wallData = useInteriorStore.getState().walls.find(w => w.id === objectId)
-        if (wallData) {
-          metadata.originalType = 'wall'
-          metadata.originalData = wallData
-        } else {
-          // Check if it's a surface
-          const surfaceData = useInteriorStore.getState().surfaces.find(s => s.id === objectId)
-          if (surfaceData) {
-            metadata.originalType = 'surface'
-            metadata.originalData = surfaceData
-          } else {
-            metadata.originalType = 'object'
+        const data = await res.json()
+        if (data.runId) {
+          // Prepare metadata with original state for undo
+          const metadata: any = {
+            taskId: data.runId,
+            originalModelUrl: modelUrl,
           }
-        }
 
-        updateOperation(operationId, {
-          status: 'in-progress',
-          details: JSON.stringify(metadata)
-        })
-      } else {
-        throw new Error(data.error)
+          // If it's a wall, save its data so we can revert
+          const wallData = useInteriorStore.getState().walls.find(w => w.id === objectId)
+          if (wallData) {
+            metadata.originalType = 'wall'
+            metadata.originalData = wallData
+          } else {
+            // Check if it's a surface
+            const surfaceData = useInteriorStore.getState().surfaces.find(s => s.id === objectId)
+            if (surfaceData) {
+              metadata.originalType = 'surface'
+              metadata.originalData = surfaceData
+            } else {
+              metadata.originalType = 'object'
+            }
+          }
+
+          updateOperation(operationId, {
+            status: 'in-progress',
+            details: JSON.stringify(metadata),
+          })
+        } else {
+          throw new Error(data.error)
+        }
+      } catch (e: any) {
+        toast.error('Failed to start retexture')
+        removeOperation(operationId)
+        setIsStarting(false)
       }
-    } catch (e: any) {
-      toast.error('Failed to start retexture')
-      removeOperation(operationId)
-      setIsStarting(false)
-    }
-  }, [prompt, objectId, operationId, updateOperation, removeOperation, modelUrl])
+    },
+    [prompt, objectId, operationId, updateOperation, removeOperation, modelUrl]
+  )
 
   // Effect for export
   React.useEffect(() => {
@@ -653,11 +753,13 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string, modelUrl:
     }
   }, [retextureModelBase64, isStarting, triggerRetexture, setRetextureModelBase64])
 
-
   const handleGenerate = async () => {
     if (!prompt) return
 
-    if (currentOperation && (currentOperation.status === 'pending' || currentOperation.status === 'in-progress')) {
+    if (
+      currentOperation &&
+      (currentOperation.status === 'pending' || currentOperation.status === 'in-progress')
+    ) {
       toast.error('Job already in progress')
       return
     }
@@ -668,14 +770,16 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string, modelUrl:
     addOperation({
       id: operationId,
       type: 'retexture',
-      label: `Retexturing Element`,
+      label: 'Retexturing Element',
       details: JSON.stringify({ prompt, originalModelUrl: modelUrl }),
-      status: 'pending'
+      status: 'pending',
     })
 
     setRetextureModelBase64(null)
 
-    const is3DModelUrl = modelUrl && (modelUrl.endsWith('.glb') || modelUrl.endsWith('.gltf') || modelUrl.startsWith('http'))
+    const is3DModelUrl =
+      modelUrl &&
+      (modelUrl.endsWith('.glb') || modelUrl.endsWith('.gltf') || modelUrl.startsWith('http'))
 
     if (!is3DModelUrl) {
       setRequestRetextureExport(true)
@@ -729,7 +833,7 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string, modelUrl:
             max={5}
             step={0.1}
             value={[object?.scale[0] || 1]}
-            onValueChange={(val) => handleScaleChange(val)}
+            onValueChange={val => handleScaleChange(val)}
           />
         </div>
 
@@ -737,7 +841,12 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string, modelUrl:
           <Button onClick={handleApply} size="sm" className="flex-1 h-8 text-xs font-mono">
             <Check size={12} className="mr-1.5" /> Apply
           </Button>
-          <Button onClick={handleDiscard} size="sm" variant="ghost" className="flex-1 h-8 text-xs font-mono text-destructive hover:text-destructive hover:bg-destructive/10">
+          <Button
+            onClick={handleDiscard}
+            size="sm"
+            variant="ghost"
+            className="flex-1 h-8 text-xs font-mono text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
             <X size={12} className="mr-1.5" /> Discard
           </Button>
         </div>
@@ -746,7 +855,10 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string, modelUrl:
   }
 
   // IN PROGRESS STATE - Show Loading
-  if (currentOperation && (currentOperation.status === 'pending' || currentOperation.status === 'in-progress')) {
+  if (
+    currentOperation &&
+    (currentOperation.status === 'pending' || currentOperation.status === 'in-progress')
+  ) {
     return (
       <div className="pt-4 border-t border-zinc-800">
         <div className="flex flex-col items-center justify-center p-4 bg-zinc-950/20 rounded gap-2">
@@ -765,7 +877,9 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string, modelUrl:
       <div className="pt-4 border-t border-zinc-800">
         <div className="bg-destructive/10 border border-destructive/20 p-3 rounded text-xs">
           <p className="font-semibold text-destructive mb-1">Retexture Failed</p>
-          <p className="text-muted-foreground mb-2">An error occurred while generating the texture.</p>
+          <p className="text-muted-foreground mb-2">
+            An error occurred while generating the texture.
+          </p>
           <Button
             onClick={() => removeOperation(operationId)}
             size="sm"
@@ -796,7 +910,11 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string, modelUrl:
           className="w-full h-8 text-xs font-mono"
           variant="outline"
         >
-          {isStarting ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Wand2 className="mr-2 h-3 w-3" />}
+          {isStarting ? (
+            <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+          ) : (
+            <Wand2 className="mr-2 h-3 w-3" />
+          )}
           Generate New Texture
         </Button>
       </div>
@@ -807,7 +925,7 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string, modelUrl:
 // Text to 3D Controls Component - Generate 3D object from text prompt using Meshy API
 function TextTo3DControls({
   objectId,
-  onModelGenerated
+  onModelGenerated,
 }: {
   objectId: string
   onModelGenerated: (modelUrl: string) => void
@@ -851,7 +969,11 @@ function TextTo3DControls({
           console.warn(`[TextTo3D] Failed to fetch status for ${taskId}, marking as failed`)
           updateOperation(operationId, {
             status: 'failed',
-            details: JSON.stringify({ taskId, error: 'Task not found or API error', failureStatus: 'NOT_FOUND' })
+            details: JSON.stringify({
+              taskId,
+              error: 'Task not found or API error',
+              failureStatus: 'NOT_FOUND',
+            }),
           })
           return
         }
@@ -868,16 +990,18 @@ function TextTo3DControls({
                 taskId,
                 modelUrl: output.modelUrl,
                 assetId: output.assetId,
-                thumbnailUrl: output.thumbnailUrl
-              })
+                thumbnailUrl: output.thumbnailUrl,
+              }),
             })
             console.log(`[TextTo3D] Stale operation ${operationId} was actually completed`)
           }
         } else if (!ACTIVE_TASK_STATUSES.includes(data.status)) {
-          console.warn(`[TextTo3D] Stale operation ${operationId} has failed status: ${data.status}`)
+          console.warn(
+            `[TextTo3D] Stale operation ${operationId} has failed status: ${data.status}`
+          )
           updateOperation(operationId, {
             status: 'failed',
-            details: JSON.stringify({ taskId, error: data.error, failureStatus: data.status })
+            details: JSON.stringify({ taskId, error: data.error, failureStatus: data.status }),
           })
         }
       } catch (err) {
@@ -893,22 +1017,29 @@ function TextTo3DControls({
     if (!currentOperation) return
 
     // Stop polling if operation is in a terminal state
-    const isTerminalState = currentOperation.status === 'completed' || currentOperation.status === 'failed'
+    const isTerminalState =
+      currentOperation.status === 'completed' || currentOperation.status === 'failed'
     if (isTerminalState) {
-      console.log(`[TextTo3D] Polling stopped for ${operationId} - terminal state: ${currentOperation.status}`)
+      console.log(
+        `[TextTo3D] Polling stopped for ${operationId} - terminal state: ${currentOperation.status}`
+      )
       return
     }
 
-    console.log(`[TextTo3D] Starting polling for ${operationId} - status: ${currentOperation.status}`)
+    console.log(
+      `[TextTo3D] Starting polling for ${operationId} - status: ${currentOperation.status}`
+    )
 
     let pollInterval: NodeJS.Timeout
 
     const checkStatus = async () => {
       try {
         // Re-check current state before making API call
-        const latestOp = useGlobalStatusStore.getState().operations.find(op => op.id === operationId)
+        const latestOp = useGlobalStatusStore
+          .getState()
+          .operations.find(op => op.id === operationId)
         if (!latestOp || latestOp.status === 'completed' || latestOp.status === 'failed') {
-          console.log(`[TextTo3D] Skipping poll - operation is in terminal state or missing`)
+          console.log('[TextTo3D] Skipping poll - operation is in terminal state or missing')
           return
         }
 
@@ -940,8 +1071,8 @@ function TextTo3DControls({
                 taskId,
                 modelUrl: output.modelUrl,
                 assetId: output.assetId,
-                thumbnailUrl: output.thumbnailUrl
-              })
+                thumbnailUrl: output.thumbnailUrl,
+              }),
             })
             console.log(`[TextTo3D] Marked ${operationId} as completed`)
           }
@@ -950,7 +1081,7 @@ function TextTo3DControls({
           console.error('Text-to-3D task failed or was terminated:', data.status, data.error)
           updateOperation(operationId, {
             status: 'failed',
-            details: JSON.stringify({ taskId, error: data.error, failureStatus: data.status })
+            details: JSON.stringify({ taskId, error: data.error, failureStatus: data.status }),
           })
         }
       } catch (err) {
@@ -970,7 +1101,10 @@ function TextTo3DControls({
     if (!prompt) return
 
     // DUPLICATE PREVENTION: Check if job already exists
-    if (currentOperation && (currentOperation.status === 'pending' || currentOperation.status === 'in-progress')) {
+    if (
+      currentOperation &&
+      (currentOperation.status === 'pending' || currentOperation.status === 'in-progress')
+    ) {
       toast.error('Text-to-3D job already in progress for this element')
       return
     }
@@ -983,7 +1117,7 @@ function TextTo3DControls({
       type: 'text-to-3d',
       label: `Generating 3D: ${prompt.slice(0, 30)}...`,
       details: JSON.stringify({ prompt }),
-      status: 'pending'
+      status: 'pending',
     })
 
     try {
@@ -1006,7 +1140,8 @@ function TextTo3DControls({
       const currentProjectId = currentProject?.id
 
       if (currentProjectId) {
-        masterPrompt = localStorage.getItem(`${LocalStorageKeys.MASTER_PROMPT}-${currentProjectId}`) || ''
+        masterPrompt =
+          localStorage.getItem(`${LocalStorageKeys.MASTER_PROMPT}-${currentProjectId}`) || ''
       }
 
       // Generate seed from master prompt + object prompt
@@ -1019,8 +1154,8 @@ function TextTo3DControls({
           projectId: currentProjectId || 'default',
           prompt,
           seed,
-          apiKey
-        })
+          apiKey,
+        }),
       })
 
       const data = await res.json()
@@ -1028,7 +1163,7 @@ function TextTo3DControls({
         // Update operation with task ID
         updateOperation(operationId, {
           status: 'in-progress',
-          details: JSON.stringify({ taskId: data.runId, prompt, seed })
+          details: JSON.stringify({ taskId: data.runId, prompt, seed }),
         })
         toast.success('3D generation started!')
       } else {
@@ -1080,17 +1215,30 @@ function TextTo3DControls({
         </h3>
         {thumbnailUrl && (
           <div className="mb-3 rounded overflow-hidden border border-border">
-            <img src={thumbnailUrl} alt="Generated 3D preview" className="w-full h-24 object-cover" />
+            <img
+              src={thumbnailUrl}
+              alt="Generated 3D preview"
+              className="w-full h-24 object-cover"
+            />
           </div>
         )}
         <div className="bg-muted/30 p-2 rounded text-xs mb-3 font-mono">
           New 3D model generated. Apply to replace current object.
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <Button onClick={handleApply} size="sm" className="w-full bg-blue-600 hover:bg-blue-700 font-mono text-xs">
+          <Button
+            onClick={handleApply}
+            size="sm"
+            className="w-full bg-blue-600 hover:bg-blue-700 font-mono text-xs"
+          >
             <Check size={14} className="mr-1" /> Apply
           </Button>
-          <Button onClick={handleDiscard} size="sm" variant="destructive" className="w-full font-mono text-xs">
+          <Button
+            onClick={handleDiscard}
+            size="sm"
+            variant="destructive"
+            className="w-full font-mono text-xs"
+          >
             <X size={14} className="mr-1" /> Discard
           </Button>
         </div>
@@ -1099,7 +1247,10 @@ function TextTo3DControls({
   }
 
   // IN PROGRESS STATE - Show Loading
-  if (currentOperation && (currentOperation.status === 'pending' || currentOperation.status === 'in-progress')) {
+  if (
+    currentOperation &&
+    (currentOperation.status === 'pending' || currentOperation.status === 'in-progress')
+  ) {
     return (
       <div className="pt-4 border-t border-zinc-800">
         <div className="flex flex-col items-center justify-center p-4 bg-blue-500/10 rounded gap-2">
@@ -1118,8 +1269,12 @@ function TextTo3DControls({
     return (
       <div className="pt-4 border-t border-zinc-800">
         <div className="bg-destructive/10 border border-destructive/20 p-3 rounded text-xs">
-          <p className="font-semibold text-destructive mb-1 font-mono uppercase tracking-wide">3D Generation Failed</p>
-          <p className="text-muted-foreground mb-2">An error occurred while generating the model.</p>
+          <p className="font-semibold text-destructive mb-1 font-mono uppercase tracking-wide">
+            3D Generation Failed
+          </p>
+          <p className="text-muted-foreground mb-2">
+            An error occurred while generating the model.
+          </p>
           <Button
             onClick={() => removeOperation(operationId)}
             size="sm"
@@ -1142,7 +1297,9 @@ function TextTo3DControls({
       </div>
 
       <div className="space-y-2">
-        <label className="text-[10px] font-mono font-medium text-muted-foreground uppercase tracking-wide">Object Description</label>
+        <label className="text-[10px] font-mono font-medium text-muted-foreground uppercase tracking-wide">
+          Object Description
+        </label>
         <Input
           value={prompt}
           onChange={e => setPrompt(e.target.value)}
@@ -1155,7 +1312,11 @@ function TextTo3DControls({
           className="w-full h-8 text-xs font-mono"
           variant="outline"
         >
-          {isStarting ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Box className="mr-2 h-3 w-3" />}
+          {isStarting ? (
+            <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+          ) : (
+            <Box className="mr-2 h-3 w-3" />
+          )}
           Generate 3D Model
         </Button>
         <p className="text-[10px] text-muted-foreground font-mono">

@@ -1,9 +1,9 @@
 /**
  * RAG Grounding Evaluator
- * 
+ *
  * Evaluates whether agent outputs properly cite and ground their responses
  * in retrieved source documents.
- * 
+ *
  * Uses LLM-as-judge pattern to assess:
  * - Citation accuracy
  * - Grounding quality
@@ -70,15 +70,13 @@ export const ragGroundingEvaluator: CustomEvaluator = {
         temperature: 0,
       })
 
-      const prompt = GROUNDING_JUDGE_PROMPT
-        .replace('{input}', JSON.stringify(input, null, 2))
+      const prompt = GROUNDING_JUDGE_PROMPT.replace('{input}', JSON.stringify(input, null, 2))
         .replace('{reference}', JSON.stringify(reference, null, 2))
         .replace('{output}', JSON.stringify(output, null, 2))
 
       const response = await model.invoke(prompt)
-      const content = typeof response.content === 'string' 
-        ? response.content 
-        : JSON.stringify(response.content)
+      const content =
+        typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
 
       // Parse JSON response
       const jsonMatch = content.match(/\{[\s\S]*\}/)
@@ -140,16 +138,14 @@ export const ragGroundingHeuristic: CustomEvaluator = {
       /world rules/i,
     ]
 
-    const citationsFound = citationPatterns.filter((p) => p.test(outputStr)).length
+    const citationsFound = citationPatterns.filter(p => p.test(outputStr)).length
 
     // Check if key terms from reference appear in output
-    const referenceTerms = referenceStr
-      .toLowerCase()
-      .match(/\b[a-z]{4,}\b/g) || []
+    const referenceTerms = referenceStr.toLowerCase().match(/\b[a-z]{4,}\b/g) || []
     const uniqueTerms = Array.from(new Set(referenceTerms))
     const outputLower = outputStr.toLowerCase()
 
-    const termsUsed = uniqueTerms.filter((term) => outputLower.includes(term)).length
+    const termsUsed = uniqueTerms.filter(term => outputLower.includes(term)).length
     const termCoverage = uniqueTerms.length > 0 ? termsUsed / uniqueTerms.length : 0
 
     // Calculate score
@@ -169,4 +165,3 @@ export const ragGroundingHeuristic: CustomEvaluator = {
     }
   },
 }
-

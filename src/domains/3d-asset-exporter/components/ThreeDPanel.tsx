@@ -3,23 +3,40 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
-import { Box, Loader2, Cuboid, Download, Image as ImageIcon, XCircle, RefreshCw, Settings, Layers, ToggleLeft, ToggleRight, Upload } from 'lucide-react'
+import {
+  Box,
+  Loader2,
+  Cuboid,
+  Download,
+  Image as ImageIcon,
+  XCircle,
+  RefreshCw,
+  Settings,
+  Layers,
+  ToggleLeft,
+  ToggleRight,
+  Upload,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import toast from 'react-hot-toast'
 import { AIProvider } from '@/types/enums'
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
 import { LocalStorageKeys } from '@/constants/localStorage'
+import { TOUR_STEP_IDS } from '@/lib/tour-constants'
 
 // Dynamic import with SSR disabled to avoid React reconciler issues
-const ThreeDViewer = dynamic(() => import('./ThreeDViewer').then(mod => ({ default: mod.ThreeDViewer })), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-full flex items-center justify-center">
-      <Loader2 className="animate-spin text-muted-foreground" size={32} />
-    </div>
-  )
-})
+const ThreeDViewer = dynamic(
+  () => import('./ThreeDViewer').then(mod => ({ default: mod.ThreeDViewer })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full flex items-center justify-center">
+        <Loader2 className="animate-spin text-muted-foreground" size={32} />
+      </div>
+    ),
+  }
+)
 
 // Meshy result type
 interface MeshyResult {
@@ -67,7 +84,15 @@ interface ThreeDPanelProps {
 }
 
 // Active statuses that indicate the run is still processing
-const ACTIVE_STATUSES = ['PENDING', 'QUEUED', 'EXECUTING', 'WAITING', 'REATTEMPTING', 'FROZEN', 'PENDING_VERSION']
+const ACTIVE_STATUSES = [
+  'PENDING',
+  'QUEUED',
+  'EXECUTING',
+  'WAITING',
+  'REATTEMPTING',
+  'FROZEN',
+  'PENDING_VERSION',
+]
 
 export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, initialModelUrl }) => {
   const [modelUrl, setModelUrl] = useState<string | undefined>(initialModelUrl)
@@ -110,7 +135,9 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
   // Cleanup on unmount
   useEffect(() => {
     isMounted.current = true
-    return () => { isMounted.current = false }
+    return () => {
+      isMounted.current = false
+    }
   }, [])
 
   // Save metadata via API (auto-merges with existing)
@@ -130,7 +157,10 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
   }
 
   // Update asset via API
-  const updateAssetViaApi = async (updates: { model_filename?: string; metadata?: Partial<GenerationMetadata> }) => {
+  const updateAssetViaApi = async (updates: {
+    model_filename?: string
+    metadata?: Partial<GenerationMetadata>
+  }) => {
     try {
       const response = await fetch(`/api/assets/${assetId}`, {
         method: 'PATCH',
@@ -180,7 +210,9 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
         if (metadata.trigger_run_id && metadata.generation_status === 'processing') {
           // Verify the run actually exists and is active before resuming
           try {
-            const statusResponse = await fetch(`/api/trigger-3d/status?runId=${metadata.trigger_run_id}`)
+            const statusResponse = await fetch(
+              `/api/trigger-3d/status?runId=${metadata.trigger_run_id}`
+            )
 
             if (statusResponse.ok) {
               const statusData = await statusResponse.json()
@@ -196,18 +228,22 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
                   type: '3d-gen',
                   label: 'Generating 3D Model',
                   details: `${metadata.provider || 'Meshy'} - Resuming...`,
-                  status: 'in-progress'
+                  status: 'in-progress',
                 })
               } else {
                 // Run completed/failed - update metadata to reflect actual status
-                console.log(`Generation run ${metadata.trigger_run_id} is no longer active (status: ${status}), cleaning up metadata`)
+                console.log(
+                  `Generation run ${metadata.trigger_run_id} is no longer active (status: ${status}), cleaning up metadata`
+                )
                 await saveMetadata({
                   generation_status: status === 'COMPLETED' ? 'completed' : 'failed',
                 })
               }
             } else if (statusResponse.status === 404) {
               // Run doesn't exist - mark as failed in metadata
-              console.log(`Generation run ${metadata.trigger_run_id} not found (404), marking as failed`)
+              console.log(
+                `Generation run ${metadata.trigger_run_id} not found (404), marking as failed`
+              )
               await saveMetadata({
                 generation_status: 'failed',
               })
@@ -233,7 +269,9 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
         if (metadata.remesh_run_id && metadata.remesh_status === 'processing') {
           // Verify the run actually exists and is active before resuming
           try {
-            const statusResponse = await fetch(`/api/trigger-3d/status?runId=${metadata.remesh_run_id}`)
+            const statusResponse = await fetch(
+              `/api/trigger-3d/status?runId=${metadata.remesh_run_id}`
+            )
 
             if (statusResponse.ok) {
               const statusData = await statusResponse.json()
@@ -249,11 +287,13 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
                   type: '3d-remesh',
                   label: 'Remeshing 3D Model',
                   details: 'Meshy - Resuming...',
-                  status: 'in-progress'
+                  status: 'in-progress',
                 })
               } else {
                 // Run completed/failed - update metadata to reflect actual status
-                console.log(`Remesh run ${metadata.remesh_run_id} is no longer active (status: ${status}), cleaning up metadata`)
+                console.log(
+                  `Remesh run ${metadata.remesh_run_id} is no longer active (status: ${status}), cleaning up metadata`
+                )
                 await saveMetadata({
                   remesh_status: status === 'COMPLETED' ? 'completed' : 'failed',
                 })
@@ -318,7 +358,10 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
     toast.loading('Attempting to recover from Meshy...')
 
     try {
-      const configKey = provider === AIProvider.Meshy ? LocalStorageKeys.AI_CONFIG_MESHY : LocalStorageKeys.AI_CONFIG_HYPER3D
+      const configKey =
+        provider === AIProvider.Meshy
+          ? LocalStorageKeys.AI_CONFIG_MESHY
+          : LocalStorageKeys.AI_CONFIG_HYPER3D
       const savedConfig = localStorage.getItem(configKey)
       if (!savedConfig) {
         throw new Error('No Meshy API key found. Set it in Settings.')
@@ -326,7 +369,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
       const apiKey = JSON.parse(savedConfig).apiKey
 
       const response = await fetch(`https://api.meshy.ai/v1/image-to-3d/${meshyTaskId}`, {
-        headers: { Authorization: `Bearer ${apiKey}` }
+        headers: { Authorization: `Bearer ${apiKey}` },
       })
 
       if (!response.ok) {
@@ -347,8 +390,8 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
           metadata: {
             generation_status: 'completed',
             meshy_task_id: meshyTaskId,
-            generation_result: result
-          }
+            generation_result: result,
+          },
         })
 
         if (updateAsset) {
@@ -390,7 +433,10 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
             })
 
             if (meshyTaskId) {
-              toast('Task not found. Click "Recover" to try fetching from Meshy.', { icon: '⚠️', duration: 5000 })
+              toast('Task not found. Click "Recover" to try fetching from Meshy.', {
+                icon: '⚠️',
+                duration: 5000,
+              })
             } else {
               toast('Previous generation task not found.', { icon: 'ℹ️' })
             }
@@ -426,8 +472,8 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
               metadata: {
                 generation_status: 'completed',
                 meshy_task_id: data.metadata?.meshy_task_id || meshyTaskId,
-                generation_result: output.result
-              }
+                generation_result: output.result,
+              },
             })
 
             if (updateAsset) {
@@ -445,10 +491,13 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
             setMeshyTaskId(storedMeshyId)
             await saveMetadata({
               generation_status: 'failed',
-              meshy_task_id: storedMeshyId
+              meshy_task_id: storedMeshyId,
             })
 
-            toast.error(`Task failed, but Meshy ID saved. Click "Recover" to try fetching result.`, { duration: 8000 })
+            toast.error(
+              `Task failed, but Meshy ID saved. Click "Recover" to try fetching result.`,
+              { duration: 8000 }
+            )
           } else {
             const errorMessage = data.error?.message || `Generation ended with status: ${status}`
             toast.error(`Generation Failed: ${errorMessage}`)
@@ -582,7 +631,10 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
     setMeshyTaskId(null)
 
     try {
-      const configKey = provider === AIProvider.Meshy ? LocalStorageKeys.AI_CONFIG_MESHY : LocalStorageKeys.AI_CONFIG_HYPER3D
+      const configKey =
+        provider === AIProvider.Meshy
+          ? LocalStorageKeys.AI_CONFIG_MESHY
+          : LocalStorageKeys.AI_CONFIG_HYPER3D
       const savedConfig = localStorage.getItem(configKey)
       let apiKey = ''
       if (savedConfig) {
@@ -593,7 +645,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
         throw new Error(`No API Key found for ${provider}. Please set it in Settings.`)
       }
 
-      toast.loading("Starting 3D generation... This may take up to 15 minutes.")
+      toast.loading('Starting 3D generation... This may take up to 15 minutes.')
 
       const response = await fetch('/api/trigger-3d', {
         method: 'POST',
@@ -606,8 +658,8 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
           apiKey: apiKey,
           // Meshy-specific settings
           topology: topology,
-          targetPolycount: targetPolycount
-        })
+          targetPolycount: targetPolycount,
+        }),
       })
 
       if (!response.ok) {
@@ -618,13 +670,13 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
       const { runId } = await response.json()
 
       toast.dismiss()
-      toast.success("3D generation started! Monitoring progress...")
+      toast.success('3D generation started! Monitoring progress...')
 
       await saveMetadata({
         trigger_run_id: runId,
         generation_status: 'processing',
         generation_started_at: new Date().toISOString(),
-        provider: provider
+        provider: provider,
       })
 
       setCurrentRunId(runId)
@@ -634,9 +686,8 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
         type: '3d-gen',
         label: 'Generating 3D Model',
         details: `${provider} - In progress`,
-        status: 'in-progress'
+        status: 'in-progress',
       })
-
     } catch (error: any) {
       console.error(error)
       toast.dismiss()
@@ -706,7 +757,10 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
     setShowRemeshSettings(false)
 
     try {
-      const configKey = provider === AIProvider.Meshy ? LocalStorageKeys.AI_CONFIG_MESHY : LocalStorageKeys.AI_CONFIG_HYPER3D
+      const configKey =
+        provider === AIProvider.Meshy
+          ? LocalStorageKeys.AI_CONFIG_MESHY
+          : LocalStorageKeys.AI_CONFIG_HYPER3D
       const savedConfig = localStorage.getItem(configKey)
 
       if (!savedConfig) {
@@ -714,7 +768,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
       }
       const apiKey = JSON.parse(savedConfig).apiKey
 
-      toast.loading("Starting remesh... This may take a few minutes.")
+      toast.loading('Starting remesh... This may take a few minutes.')
 
       const response = await fetch('/api/trigger-3d/remesh', {
         method: 'POST',
@@ -725,8 +779,8 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
           apiKey: apiKey,
           topology: remeshTopology,
           targetPolycount: remeshPolycount,
-          resizeHeight: remeshHeight ? parseFloat(remeshHeight) : undefined
-        })
+          resizeHeight: remeshHeight ? parseFloat(remeshHeight) : undefined,
+        }),
       })
 
       if (!response.ok) {
@@ -738,7 +792,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
       const { runId } = data
 
       toast.dismiss()
-      toast.success("Remesh started! Optimizing your 3D model...")
+      toast.success('Remesh started! Optimizing your 3D model...')
 
       await saveMetadata({
         remesh_run_id: runId,
@@ -752,9 +806,8 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
         type: '3d-remesh',
         label: 'Remeshing 3D Model',
         details: 'Meshy - In progress',
-        status: 'in-progress'
+        status: 'in-progress',
       })
-
     } catch (error: any) {
       console.error(error)
       toast.dismiss()
@@ -796,7 +849,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
     setUploadProgress(0)
 
     try {
-      toast.loading("Starting upload to Vercel Blob...")
+      toast.loading('Starting upload to Vercel Blob...')
 
       const response = await fetch('/api/trigger-upload', {
         method: 'POST',
@@ -804,8 +857,8 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
         body: JSON.stringify({
           projectId: currentProject.id,
           assetId: assetId,
-          modelFilename: filename
-        })
+          modelFilename: filename,
+        }),
       })
 
       if (!response.ok) {
@@ -816,7 +869,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
       const { runId } = await response.json()
 
       toast.dismiss()
-      toast.success("Upload started! Monitoring progress...")
+      toast.success('Upload started! Monitoring progress...')
 
       setUploadRunId(runId)
 
@@ -825,9 +878,8 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
         type: 'upload',
         label: 'Uploading to Vercel',
         details: 'In progress',
-        status: 'in-progress'
+        status: 'in-progress',
       })
-
     } catch (error: any) {
       console.error(error)
       toast.dismiss()
@@ -859,7 +911,11 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
               disabled={isRecovering}
               className="gap-1"
             >
-              {isRecovering ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+              {isRecovering ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <RefreshCw size={14} />
+              )}
               Recover
             </Button>
           )}
@@ -870,7 +926,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
               <select
                 className="h-8 text-xs bg-background border border-input rounded px-2 outline-none focus:ring-1 focus:ring-primary"
                 value={provider}
-                onChange={(e) => setProvider(e.target.value as AIProvider)}
+                onChange={e => setProvider(e.target.value as AIProvider)}
                 disabled={isGenerating}
               >
                 <option value={AIProvider.Meshy}>Meshy (Meshy 6)</option>
@@ -881,7 +937,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
               {provider === AIProvider.Meshy && (
                 <Button
                   size="sm"
-                  variant={showSettings ? "secondary" : "ghost"}
+                  variant={showSettings ? 'secondary' : 'ghost'}
                   onClick={() => setShowSettings(!showSettings)}
                   className="gap-1 h-8 w-8 p-0"
                   title="Generation settings"
@@ -891,6 +947,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
               )}
 
               <Button
+                id={TOUR_STEP_IDS.GENERATE_3D_BUTTON}
                 size="sm"
                 onClick={handleGenerate}
                 disabled={isGenerating}
@@ -919,11 +976,15 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
           {modelUrl && !isGenerating && !isRemeshing && (
             <Button
               size="sm"
-              variant={showRemeshSettings ? "secondary" : "outline"}
+              variant={showRemeshSettings ? 'secondary' : 'outline'}
               onClick={() => setShowRemeshSettings(!showRemeshSettings)}
               className="gap-1"
               disabled={!meshyTaskId}
-              title={!meshyTaskId ? "Generate a model first to enable remesh" : "Configure and remesh this model"}
+              title={
+                !meshyTaskId
+                  ? 'Generate a model first to enable remesh'
+                  : 'Configure and remesh this model'
+              }
             >
               <Layers size={14} />
               Remesh
@@ -942,7 +1003,6 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
               Stop Remesh
             </Button>
           )}
-
         </div>
       </div>
 
@@ -955,7 +1015,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
               <select
                 className="h-7 text-xs bg-background border border-input rounded px-2 outline-none focus:ring-1 focus:ring-primary"
                 value={topology}
-                onChange={(e) => setTopology(e.target.value as 'quad' | 'triangle')}
+                onChange={e => setTopology(e.target.value as 'quad' | 'triangle')}
               >
                 <option value="triangle">Triangle</option>
                 <option value="quad">Quad</option>
@@ -970,11 +1030,13 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
                 max="300000"
                 step="1000"
                 value={targetPolycount}
-                onChange={(e) => setTargetPolycount(Number(e.target.value))}
+                onChange={e => setTargetPolycount(Number(e.target.value))}
                 className="flex-1 h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
               />
               <span className="text-xs text-muted-foreground w-16 text-right">
-                {targetPolycount >= 1000 ? `${(targetPolycount / 1000).toFixed(0)}k` : targetPolycount}
+                {targetPolycount >= 1000
+                  ? `${(targetPolycount / 1000).toFixed(0)}k`
+                  : targetPolycount}
               </span>
             </div>
           </div>
@@ -1000,7 +1062,6 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
         </div>
       )}
 
-
       {/* Remesh settings panel */}
       {showRemeshSettings && modelUrl && !isRemeshing && (
         <div className="px-3 py-2 border-b border-border bg-blue-500/5 space-y-2">
@@ -1014,7 +1075,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
               <select
                 className="h-7 text-xs bg-background border border-input rounded px-2 outline-none focus:ring-1 focus:ring-primary"
                 value={remeshTopology}
-                onChange={(e) => setRemeshTopology(e.target.value as 'quad' | 'triangle')}
+                onChange={e => setRemeshTopology(e.target.value as 'quad' | 'triangle')}
               >
                 <option value="triangle">Triangle</option>
                 <option value="quad">Quad</option>
@@ -1029,11 +1090,13 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
                 max="300000"
                 step="1000"
                 value={remeshPolycount}
-                onChange={(e) => setRemeshPolycount(Number(e.target.value))}
+                onChange={e => setRemeshPolycount(Number(e.target.value))}
                 className="flex-1 h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-blue-500"
               />
               <span className="text-xs text-muted-foreground w-16 text-right">
-                {remeshPolycount >= 1000 ? `${(remeshPolycount / 1000).toFixed(0)}k` : remeshPolycount}
+                {remeshPolycount >= 1000
+                  ? `${(remeshPolycount / 1000).toFixed(0)}k`
+                  : remeshPolycount}
               </span>
             </div>
 
@@ -1045,14 +1108,15 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
                 min="0"
                 placeholder="Auto"
                 value={remeshHeight}
-                onChange={(e) => setRemeshHeight(e.target.value)}
+                onChange={e => setRemeshHeight(e.target.value)}
                 className="h-7 w-20 text-xs bg-background border border-input rounded px-2 outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
           <div className="flex items-center justify-between pt-2">
             <p className="text-[10px] text-muted-foreground">
-              Remesh optimizes the mesh topology and exports to multiple formats (GLB, FBX, OBJ, USDZ).
+              Remesh optimizes the mesh topology and exports to multiple formats (GLB, FBX, OBJ,
+              USDZ).
             </p>
             <Button
               size="sm"
@@ -1085,7 +1149,10 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
         </div>
       )}
 
-      <div className="flex-1 relative bg-[#1a1a1a] flex flex-col items-center justify-center min-h-0">
+      <div
+        className="flex-1 relative bg-[#1a1a1a] flex flex-col items-center justify-center min-h-0"
+        id={TOUR_STEP_IDS.ASSET_3D_PREVIEW}
+      >
         {modelUrl ? (
           <ThreeDViewer modelUrl={showRemeshed && remeshModelUrl ? remeshModelUrl : modelUrl} />
         ) : (
@@ -1100,10 +1167,10 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
             <h4 className="font-medium">No 3D Model</h4>
             <p className="text-xs max-w-[200px] mx-auto">
               {isGenerating
-                ? "Generation is running in the background. This may take up to 10 minutes."
+                ? 'Generation is running in the background. This may take up to 10 minutes.'
                 : meshyTaskId
-                  ? "Previous generation may have data. Click Recover to check."
-                  : "Select a provider and click Generate to create a 3D model from your 2D asset."}
+                  ? 'Previous generation may have data. Click Recover to check.'
+                  : 'Select a provider and click Generate to create a 3D model from your 2D asset.'}
             </p>
           </div>
         )}
@@ -1119,19 +1186,21 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowRemeshed(false)}
-                  className={`text-xs px-2 py-1 rounded transition-colors ${!showRemeshed
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted hover:bg-muted/80 text-muted-foreground'
-                    }`}
+                  className={`text-xs px-2 py-1 rounded transition-colors ${
+                    !showRemeshed
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                  }`}
                 >
                   Original
                 </button>
                 <button
                   onClick={() => setShowRemeshed(true)}
-                  className={`text-xs px-2 py-1 rounded transition-colors flex items-center gap-1 ${showRemeshed
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-muted hover:bg-muted/80 text-muted-foreground'
-                    }`}
+                  className={`text-xs px-2 py-1 rounded transition-colors flex items-center gap-1 ${
+                    showRemeshed
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                  }`}
                 >
                   <Layers size={10} />
                   Remeshed
@@ -1143,7 +1212,8 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
           <div>
             <div className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
               <Download size={12} />
-              Download Model {showRemeshed && remeshModelUrl && <span className="text-blue-400">(Remeshed)</span>}
+              Download Model{' '}
+              {showRemeshed && remeshModelUrl && <span className="text-blue-400">(Remeshed)</span>}
             </div>
             <div className="flex flex-wrap gap-2">
               {/* Show remesh download buttons when viewing remeshed version */}
@@ -1154,7 +1224,9 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
                       size="sm"
                       variant="outline"
                       className="h-7 text-xs border-blue-500/30 hover:bg-blue-500/10"
-                      onClick={() => handleDownload(remeshResult.model_urls!.glb!, 'model_remeshed.glb')}
+                      onClick={() =>
+                        handleDownload(remeshResult.model_urls!.glb!, 'model_remeshed.glb')
+                      }
                     >
                       GLB (Web)
                     </Button>
@@ -1164,7 +1236,9 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
                       size="sm"
                       variant="outline"
                       className="h-7 text-xs border-blue-500/30 hover:bg-blue-500/10"
-                      onClick={() => handleDownload(remeshResult.model_urls!.fbx!, 'model_remeshed.fbx')}
+                      onClick={() =>
+                        handleDownload(remeshResult.model_urls!.fbx!, 'model_remeshed.fbx')
+                      }
                     >
                       FBX (Unity)
                     </Button>
@@ -1174,7 +1248,9 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
                       size="sm"
                       variant="outline"
                       className="h-7 text-xs border-blue-500/30 hover:bg-blue-500/10"
-                      onClick={() => handleDownload(remeshResult.model_urls!.obj!, 'model_remeshed.obj')}
+                      onClick={() =>
+                        handleDownload(remeshResult.model_urls!.obj!, 'model_remeshed.obj')
+                      }
                     >
                       OBJ
                     </Button>
@@ -1184,7 +1260,9 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
                       size="sm"
                       variant="outline"
                       className="h-7 text-xs border-blue-500/30 hover:bg-blue-500/10"
-                      onClick={() => handleDownload(remeshResult.model_urls!.usdz!, 'model_remeshed.usdz')}
+                      onClick={() =>
+                        handleDownload(remeshResult.model_urls!.usdz!, 'model_remeshed.usdz')
+                      }
                     >
                       USDZ (AR)
                     </Button>
@@ -1228,7 +1306,9 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
                       size="sm"
                       variant="outline"
                       className="h-7 text-xs"
-                      onClick={() => handleDownload(generationResult.model_urls!.usdz!, 'model.usdz')}
+                      onClick={() =>
+                        handleDownload(generationResult.model_urls!.usdz!, 'model.usdz')
+                      }
                     >
                       USDZ (AR)
                     </Button>
@@ -1260,7 +1340,12 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
                     size="sm"
                     variant="ghost"
                     className="h-7 text-xs"
-                    onClick={() => handleDownload(generationResult.texture_urls![0].base_color!, 'texture_base_color.png')}
+                    onClick={() =>
+                      handleDownload(
+                        generationResult.texture_urls![0].base_color!,
+                        'texture_base_color.png'
+                      )
+                    }
                   >
                     Base Color
                   </Button>
@@ -1270,7 +1355,12 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
                     size="sm"
                     variant="ghost"
                     className="h-7 text-xs"
-                    onClick={() => handleDownload(generationResult.texture_urls![0].normal!, 'texture_normal.png')}
+                    onClick={() =>
+                      handleDownload(
+                        generationResult.texture_urls![0].normal!,
+                        'texture_normal.png'
+                      )
+                    }
                   >
                     Normal
                   </Button>
@@ -1280,7 +1370,12 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
                     size="sm"
                     variant="ghost"
                     className="h-7 text-xs"
-                    onClick={() => handleDownload(generationResult.texture_urls![0].metallic!, 'texture_metallic.png')}
+                    onClick={() =>
+                      handleDownload(
+                        generationResult.texture_urls![0].metallic!,
+                        'texture_metallic.png'
+                      )
+                    }
                   >
                     Metallic
                   </Button>
@@ -1290,7 +1385,12 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
                     size="sm"
                     variant="ghost"
                     className="h-7 text-xs"
-                    onClick={() => handleDownload(generationResult.texture_urls![0].roughness!, 'texture_roughness.png')}
+                    onClick={() =>
+                      handleDownload(
+                        generationResult.texture_urls![0].roughness!,
+                        'texture_roughness.png'
+                      )
+                    }
                   >
                     Roughness
                   </Button>
@@ -1300,10 +1400,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
           )}
 
           <div className="flex justify-end pt-2 border-t border-border/50">
-            <button
-              onClick={handleRegenerate}
-              className="text-xs text-primary hover:underline"
-            >
+            <button onClick={handleRegenerate} className="text-xs text-primary hover:underline">
               Regenerate
             </button>
           </div>

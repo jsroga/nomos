@@ -3,7 +3,7 @@
  *
  * Provides a unified interface for getting LLM models based on user preference.
  * Supports Claude 4.5 Sonnet, GPT-5.1, and Gemini.
- * 
+ *
  * Uses AsyncLocalStorage to receive config from API routes, allowing the
  * Settings UI to control which provider is used server-side.
  */

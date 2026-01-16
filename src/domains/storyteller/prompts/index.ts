@@ -1,6 +1,6 @@
 /**
  * Storyteller Prompts Index
- * 
+ *
  * Central export for all storyteller prompts.
  */
 
@@ -20,10 +20,10 @@ export { MAGIC_AGENT_PROMPT } from './agents/magic-agent'
 
 // Image Prompts
 export {
-    buildPortraitPrompt,
-    buildPosterPrompt,
-    enhanceEpisodePosterPrompt,
-    buildCombinedStoryboardPrompt
+  buildPortraitPrompt,
+  buildPosterPrompt,
+  enhanceEpisodePosterPrompt,
+  buildCombinedStoryboardPrompt,
 } from './image'
 
 // System Prompts (to be added)

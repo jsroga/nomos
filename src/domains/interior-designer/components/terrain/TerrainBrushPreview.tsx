@@ -28,11 +28,13 @@ export const TerrainBrushPreview: React.FC = () => {
 
     for (let i = 0; i <= segments; i++) {
       const angle = (i / segments) * Math.PI * 2
-      points.push(new THREE.Vector3(
-        Math.cos(angle) * radius,
-        0.1, // Slightly above terrain
-        Math.sin(angle) * radius
-      ))
+      points.push(
+        new THREE.Vector3(
+          Math.cos(angle) * radius,
+          0.1, // Slightly above terrain
+          Math.sin(angle) * radius
+        )
+      )
     }
 
     const geo = new THREE.BufferGeometry().setFromPoints(points)

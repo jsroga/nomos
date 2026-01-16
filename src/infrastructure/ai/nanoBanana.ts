@@ -33,11 +33,16 @@ export class NanoBananaProModel {
     return this.callApi(url, payload)
   }
 
-  async inpainting(base64Image: string, maskBase64: string, prompt: string, styleReferenceUrls?: string[]): Promise<string> {
+  async inpainting(
+    base64Image: string,
+    maskBase64: string,
+    prompt: string,
+    styleReferenceUrls?: string[]
+  ): Promise<string> {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`
 
     // Build style reference hint
-    const styleRefHint = styleReferenceUrls?.length 
+    const styleRefHint = styleReferenceUrls?.length
       ? ` Use these style references for visual guidance: ${styleReferenceUrls.join(', ')}.`
       : ''
 

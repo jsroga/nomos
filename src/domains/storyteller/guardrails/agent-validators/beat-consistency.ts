@@ -1,6 +1,6 @@
 /**
  * Beat Consistency Validator
- * 
+ *
  * Validates that story beats follow causality chains and maintain
  * logical consistency with established story elements.
  */
@@ -50,13 +50,11 @@ const CONSISTENCY_CHECKS: ConsistencyCheck[] = [
       if (!beat.characters || beat.characters.length === 0) {
         return { passed: true, severity: 'info' }
       }
-      
+
       const unknownCharacters = beat.characters.filter(
-        c => !context.characters.some(
-          known => known.toLowerCase() === c.toLowerCase()
-        )
+        c => !context.characters.some(known => known.toLowerCase() === c.toLowerCase())
       )
-      
+
       if (unknownCharacters.length > 0) {
         return {
           passed: false,
@@ -64,38 +62,39 @@ const CONSISTENCY_CHECKS: ConsistencyCheck[] = [
           severity: 'warning',
         }
       }
-      
+
       return { passed: true, severity: 'info' }
     },
   },
-  
+
   {
     name: 'causality-chain',
     check: (beat, context) => {
       // Check if beat logically follows from previous beats
       const loglineLower = beat.logline.toLowerCase()
-      
+
       // Detect sudden character knowledge
       const knowledgePatterns = [
         /suddenly (knows?|realizes?|discovers?)/i,
         /somehow (learned?|found out)/i,
         /inexplicably (aware|understands?)/i,
       ]
-      
+
       for (const pattern of knowledgePatterns) {
         if (pattern.test(loglineLower)) {
           return {
             passed: false,
-            issue: 'Beat implies sudden unexplained knowledge. Characters should learn information through established scenes.',
+            issue:
+              'Beat implies sudden unexplained knowledge. Characters should learn information through established scenes.',
             severity: 'warning',
           }
         }
       }
-      
+
       return { passed: true, severity: 'info' }
     },
   },
-  
+
   {
     name: 'location-continuity',
     check: (beat, context) => {
@@ -103,28 +102,28 @@ const CONSISTENCY_CHECKS: ConsistencyCheck[] = [
       if (!beat.location || context.previousBeats.length === 0) {
         return { passed: true, severity: 'info' }
       }
-      
+
       const lastBeat = context.previousBeats[context.previousBeats.length - 1]
       if (!lastBeat.location) {
         return { passed: true, severity: 'info' }
       }
-      
+
       // Flag instant transitions between distant locations
       const instantTransitionWords = ['meanwhile', 'at the same time', 'simultaneously']
-      const hasInstantTransition = instantTransitionWords.some(
-        word => beat.logline.toLowerCase().includes(word)
+      const hasInstantTransition = instantTransitionWords.some(word =>
+        beat.logline.toLowerCase().includes(word)
       )
-      
+
       if (hasInstantTransition && lastBeat.location !== beat.location) {
         // This is fine - it's a parallel cut
         return { passed: true, severity: 'info' }
       }
-      
+
       // TODO: Add more sophisticated location distance checking
       return { passed: true, severity: 'info' }
     },
   },
-  
+
   {
     name: 'stakes-progression',
     check: (beat, context) => {
@@ -134,17 +133,17 @@ const CONSISTENCY_CHECKS: ConsistencyCheck[] = [
         medium: ['danger', 'risk', 'threat', 'challenge', 'conflict'],
         low: ['minor', 'small', 'trivial', 'inconvenience'],
       }
-      
+
       const loglineLower = beat.logline.toLowerCase()
-      
+
       // Check if we're going from high to low stakes
       if (context.previousBeats.length > 0) {
         const lastBeat = context.previousBeats[context.previousBeats.length - 1]
         const lastLogline = lastBeat.logline.toLowerCase()
-        
+
         const lastHadHighStakes = stakesKeywords.high.some(k => lastLogline.includes(k))
         const currentHasLowStakes = stakesKeywords.low.some(k => loglineLower.includes(k))
-        
+
         if (lastHadHighStakes && currentHasLowStakes) {
           return {
             passed: true, // Don't block, just warn
@@ -153,11 +152,11 @@ const CONSISTENCY_CHECKS: ConsistencyCheck[] = [
           }
         }
       }
-      
+
       return { passed: true, severity: 'info' }
     },
   },
-  
+
   {
     name: 'resolution-timing',
     check: (beat, context) => {
@@ -169,7 +168,7 @@ const CONSISTENCY_CHECKS: ConsistencyCheck[] = [
         /everything (works out|is fine)/i,
         /learns? (a valuable|an important) lesson/i,
       ]
-      
+
       // Only flag if we're early in the beat sequence
       if (context.previousBeats.length < 5) {
         for (const pattern of resolutionPatterns) {
@@ -182,7 +181,7 @@ const CONSISTENCY_CHECKS: ConsistencyCheck[] = [
           }
         }
       }
-      
+
       return { passed: true, severity: 'info' }
     },
   },
@@ -196,21 +195,19 @@ function extractBeatInfo(content: string): BeatInfo | null {
   // Try to extract beat information from content
   const beatMatch = content.match(/beat[:\s]+["']?(.+?)["']?(?:\n|$)/i)
   const loglineMatch = content.match(/logline[:\s]+["']?(.+?)["']?(?:\n|$)/i)
-  
+
   const logline = beatMatch?.[1] || loglineMatch?.[1] || null
-  
+
   if (!logline) return null
-  
+
   // Extract characters mentioned
   const characterMatch = content.match(/characters?[:\s]+(.+?)(?:\n|$)/i)
-  const characters = characterMatch 
-    ? characterMatch[1].split(/[,;]/).map(c => c.trim())
-    : []
-  
+  const characters = characterMatch ? characterMatch[1].split(/[,;]/).map(c => c.trim()) : []
+
   // Extract location
   const locationMatch = content.match(/location[:\s]+(.+?)(?:\n|$)/i)
   const location = locationMatch?.[1]?.trim()
-  
+
   return {
     logline,
     characters,
@@ -224,25 +221,27 @@ function extractBeatInfo(content: string): BeatInfo | null {
 
 export class BeatConsistencyValidator implements Validator<Partial<WritersRoomState>> {
   name = 'BeatConsistency'
-  
+
   async validate(output: Partial<WritersRoomState>): Promise<ValidationResult> {
     const issues: GuardrailIssue[] = []
-    
+
     // Extract content from last message
     const messages = output.messages || []
     const lastMessage = messages[messages.length - 1]
-    const content = lastMessage 
-      ? (typeof lastMessage.content === 'string' ? lastMessage.content : '')
+    const content = lastMessage
+      ? typeof lastMessage.content === 'string'
+        ? lastMessage.content
+        : ''
       : ''
-    
+
     // Try to extract beat info
     const beatInfo = extractBeatInfo(content)
-    
+
     if (!beatInfo) {
       // Not a beat-related message, skip validation
       return { isValid: true, issues: [] }
     }
-    
+
     // Build context from state
     // TODO: Get this from actual state/series bible
     const context: BeatContext = {
@@ -251,11 +250,11 @@ export class BeatConsistencyValidator implements Validator<Partial<WritersRoomSt
       locations: [],
       establishedRules: [],
     }
-    
+
     // Run all consistency checks
     for (const check of CONSISTENCY_CHECKS) {
       const result = check.check(beatInfo, context)
-      
+
       if (!result.passed || result.issue) {
         issues.push({
           code: `BEAT_${check.name.toUpperCase().replace('-', '_')}`,
@@ -268,10 +267,10 @@ export class BeatConsistencyValidator implements Validator<Partial<WritersRoomSt
         })
       }
     }
-    
+
     // Determine overall validity (errors block, warnings don't)
     const hasErrors = issues.some(i => i.severity === 'error')
-    
+
     return {
       isValid: !hasErrors,
       issues,
@@ -285,4 +284,3 @@ export class BeatConsistencyValidator implements Validator<Partial<WritersRoomSt
 export function createBeatConsistencyValidator(): BeatConsistencyValidator {
   return new BeatConsistencyValidator()
 }
-

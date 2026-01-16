@@ -25,7 +25,13 @@ interface AssetEditorProps {
   isPlaceholderImage?: boolean
 }
 
-export const AssetEditor: React.FC<AssetEditorProps> = ({ assetId, imageUrl, hasModel, imageFilename, isPlaceholderImage }) => {
+export const AssetEditor: React.FC<AssetEditorProps> = ({
+  assetId,
+  imageUrl,
+  hasModel,
+  imageFilename,
+  isPlaceholderImage,
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const cursorCanvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -35,26 +41,27 @@ export const AssetEditor: React.FC<AssetEditorProps> = ({ assetId, imageUrl, has
   const [strokes, setStrokes] = useState<Array<{ x: number; y: number }>>([])
   const [history, setHistory] = useState<string[]>([]) // Base64 history
   const [historyIndex, setHistoryIndex] = useState(-1)
-  
+
   // Image loading state
   const [imageLoadError, setImageLoadError] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
-  
+
   const currentProject = useWorldStore(state => state.currentProject)
   const updateAsset = useWorldStore(state => state.updateAsset)
   const fetchAssets = useWorldStore(state => state.fetchAssets)
-  
+
   // State for loaded image URL (to force re-render after upload)
   const [loadedImageUrl, setLoadedImageUrl] = useState(imageUrl)
   // Local override for isPlaceholderImage after successful upload
   const [uploadedRealImage, setUploadedRealImage] = useState(false)
-  
+
   // Determine if we should show upload zone
   // Show when: asset has a 3D model AND (no image filename OR image failed to load OR image is a placeholder)
   // But NOT if we just uploaded a real image
-  const showUploadZone = hasModel && !uploadedRealImage && (!imageFilename || imageLoadError || isPlaceholderImage)
+  const showUploadZone =
+    hasModel && !uploadedRealImage && (!imageFilename || imageLoadError || isPlaceholderImage)
 
   // Update loadedImageUrl when imageUrl prop changes
   useEffect(() => {
@@ -65,13 +72,13 @@ export const AssetEditor: React.FC<AssetEditorProps> = ({ assetId, imageUrl, has
   useEffect(() => {
     // Reset error state when imageUrl changes
     setImageLoadError(false)
-    
+
     // Skip loading if it's a placeholder and we haven't uploaded a real image
     if (!uploadedRealImage && (!imageFilename || isPlaceholderImage)) {
       setImageLoadError(true)
       return
     }
-    
+
     const canvas = canvasRef.current
     if (!canvas) return
 
@@ -132,7 +139,10 @@ export const AssetEditor: React.FC<AssetEditorProps> = ({ assetId, imageUrl, has
 
       // Sync cursor canvas size just in case (though it should be matching)
       const cursorCanvas = cursorCanvasRef.current
-      if (cursorCanvas && (cursorCanvas.width !== canvas.width || cursorCanvas.height !== canvas.height)) {
+      if (
+        cursorCanvas &&
+        (cursorCanvas.width !== canvas.width || cursorCanvas.height !== canvas.height)
+      ) {
         cursorCanvas.width = canvas.width
         cursorCanvas.height = canvas.height
       }
@@ -252,7 +262,7 @@ export const AssetEditor: React.FC<AssetEditorProps> = ({ assetId, imageUrl, has
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     setIsDragging(false)
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0]
       handleFileUpload(file)
@@ -296,7 +306,7 @@ export const AssetEditor: React.FC<AssetEditorProps> = ({ assetId, imageUrl, has
 
       const xhr = new XMLHttpRequest()
 
-      xhr.upload.addEventListener('progress', (e) => {
+      xhr.upload.addEventListener('progress', e => {
         if (e.lengthComputable) {
           setUploadProgress(Math.round((e.loaded / e.total) * 100))
         }
@@ -306,24 +316,24 @@ export const AssetEditor: React.FC<AssetEditorProps> = ({ assetId, imageUrl, has
         if (xhr.status === 200) {
           const response = JSON.parse(xhr.responseText)
           toast.success('2D image uploaded successfully!')
-          
+
           // Update the asset in store
           if (updateAsset && response.imageFilename) {
             updateAsset(assetId, { image_filename: response.imageFilename })
           }
-          
+
           // Refresh assets list from server
           if (fetchAssets) {
             await fetchAssets()
           }
-          
+
           // Update the loaded image URL to trigger canvas reload
           const newImageUrl = `/projects/${currentProject.id}/assets/${response.imageFilename}`
           setLoadedImageUrl(newImageUrl)
-          
+
           // Mark that we uploaded a real image (overrides isPlaceholderImage prop)
           setUploadedRealImage(true)
-          
+
           // Reset states
           setImageLoadError(false)
           setIsUploading(false)
@@ -410,9 +420,10 @@ export const AssetEditor: React.FC<AssetEditorProps> = ({ assetId, imageUrl, has
             onDrop={handleDrop}
             className={`
               relative z-10 w-full max-w-md mx-4 border-2 border-dashed rounded-xl p-8 transition-all
-              ${isDragging
-                ? 'border-primary bg-primary/10 scale-[0.98]'
-                : 'border-muted-foreground/30 bg-background/5 hover:border-primary/50 hover:bg-background/10'
+              ${
+                isDragging
+                  ? 'border-primary bg-primary/10 scale-[0.98]'
+                  : 'border-muted-foreground/30 bg-background/5 hover:border-primary/50 hover:bg-background/10'
               }
             `}
           >
@@ -444,7 +455,10 @@ export const AssetEditor: React.FC<AssetEditorProps> = ({ assetId, imageUrl, has
               ) : (
                 <>
                   <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-                    <Upload size={32} className={isDragging ? 'text-primary' : 'text-muted-foreground opacity-50'} />
+                    <Upload
+                      size={32}
+                      className={isDragging ? 'text-primary' : 'text-muted-foreground opacity-50'}
+                    />
                   </div>
                   <div>
                     <h4 className="font-medium text-foreground mb-1">Upload 2D Image</h4>

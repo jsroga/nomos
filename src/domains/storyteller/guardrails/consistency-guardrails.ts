@@ -1,6 +1,6 @@
 /**
  * Consistency Guardrails
- * 
+ *
  * Cross-references agent outputs against the series bible to ensure
  * characters, factions, and world rules are consistent.
  */
@@ -27,14 +27,14 @@ export function extractBibleRef(state: WritersRoomState): SeriesBibleRef {
 
   // Get characters from multiple sources
   const characters: SeriesBibleRef['characters'] = []
-  
+
   // From state.characters
   if (state.characters?.length) {
     state.characters.forEach(c => {
       characters.push({ name: c.name, id: c.characterId })
     })
   }
-  
+
   // From bible.keyCharacters
   const keyChars = storyPlan.keyCharacters || bible.keyCharacters || []
   keyChars.forEach((c: any) => {
@@ -244,10 +244,7 @@ export function checkWorldRulesHaveConsequences(bible: SeriesBibleRef): Guardrai
 /**
  * Check if a beat fits the current story phase
  */
-export function checkBeatFitsPhase(
-  beat: Partial<BeatCard>,
-  phase: string
-): GuardrailIssue[] {
+export function checkBeatFitsPhase(beat: Partial<BeatCard>, phase: string): GuardrailIssue[] {
   const issues: GuardrailIssue[] = []
 
   const beatTypePhaseMap: Record<string, string[]> = {
@@ -291,10 +288,8 @@ export function checkCharacterMotivationsAlign(
 
   for (const charName of beat.charactersInvolved) {
     // Find character in state
-    const character = state.characters.find(
-      c => c.name.toLowerCase() === charName.toLowerCase()
-    )
-    
+    const character = state.characters.find(c => c.name.toLowerCase() === charName.toLowerCase())
+
     if (character && character.currentGoals.length > 0) {
       // This is a soft check - just noting when character actions might seem off
       // Real validation would need NLP to understand if the beat aligns with goals
@@ -368,9 +363,7 @@ export function checkActionConsistency(
     case 'UPDATE_CHARACTER_METRICS':
     case 'ADD_KNOWLEDGE': {
       const payload = action.payload as any
-      const charExists = state.characters.some(
-        c => c.characterId === payload.characterId
-      )
+      const charExists = state.characters.some(c => c.characterId === payload.characterId)
       if (!charExists) {
         issues.push({
           code: 'CHARACTER_ID_NOT_FOUND',
@@ -485,9 +478,7 @@ function generateSuggestions(issues: GuardrailIssue[]): string[] {
   }
 
   if (issues.some(i => i.code === 'INSUFFICIENT_FACTIONS')) {
-    suggestions.push(
-      'Add at least 2 factions with incompatible goals to create dramatic tension.'
-    )
+    suggestions.push('Add at least 2 factions with incompatible goals to create dramatic tension.')
   }
 
   return suggestions
@@ -502,9 +493,7 @@ function generateSuggestions(issues: GuardrailIssue[]): string[] {
  */
 export function characterExists(name: string, state: WritersRoomState): boolean {
   const bible = extractBibleRef(state)
-  return bible.characters.some(
-    c => c.name.toLowerCase() === name.toLowerCase()
-  )
+  return bible.characters.some(c => c.name.toLowerCase() === name.toLowerCase())
 }
 
 /**
@@ -533,12 +522,3 @@ export function getKnownFactionNames(state: WritersRoomState): string[] {
   const bible = extractBibleRef(state)
   return bible.factions.map(f => f.name)
 }
-
-
-
-
-
-
-
-
-

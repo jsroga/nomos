@@ -89,10 +89,16 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
         ...(initialData.autonomy !== undefined && { autonomy: initialData.autonomy }),
         ...(initialData.competence !== undefined && { competence: initialData.competence }),
         ...(initialData.relatedness !== undefined && { relatedness: initialData.relatedness }),
-        ...(initialData.cognitiveClarity !== undefined && { cognitiveClarity: initialData.cognitiveClarity }),
-        ...(initialData.perceivedStakes !== undefined && { perceivedStakes: initialData.perceivedStakes }),
+        ...(initialData.cognitiveClarity !== undefined && {
+          cognitiveClarity: initialData.cognitiveClarity,
+        }),
+        ...(initialData.perceivedStakes !== undefined && {
+          perceivedStakes: initialData.perceivedStakes,
+        }),
         ...(initialData.socialSafety !== undefined && { socialSafety: initialData.socialSafety }),
-        ...(initialData.moralAlignment !== undefined && { moralAlignment: initialData.moralAlignment }),
+        ...(initialData.moralAlignment !== undefined && {
+          moralAlignment: initialData.moralAlignment,
+        }),
       }))
     }
   }, [isOpen, initialData])
@@ -104,7 +110,11 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
 
   useEffect(() => {
     // Condition 1: Just finished generating (transition from generating -> not generating with new URL)
-    const justFinished = prevIsGeneratingRef.current && !isGeneratingPortrait && portraitUrl && portraitUrl !== prevPortraitUrlRef.current
+    const justFinished =
+      prevIsGeneratingRef.current &&
+      !isGeneratingPortrait &&
+      portraitUrl &&
+      portraitUrl !== prevPortraitUrlRef.current
 
     // Condition 2: Initial load with a grid URL (resume/return flow)
     // A URL is a "grid" ONLY if it's an external HTTP URL. Saved variants are local paths.
@@ -172,7 +182,9 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
       for (let i = 0; i < maxAttempts; i++) {
         await new Promise(r => setTimeout(r, 5000)) // Poll every 5s
 
-        const statusRes = await fetch(`/api/storyteller/generate-portrait/status?runId=${data.handleId}`)
+        const statusRes = await fetch(
+          `/api/storyteller/generate-portrait/status?runId=${data.handleId}`
+        )
         const statusData = await statusRes.json()
 
         if (statusData.status === 'COMPLETED') {
@@ -271,7 +283,6 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
     handleClose()
   }
 
-
   return (
     <>
       <div className="fixed inset-0 z-[99] flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -279,7 +290,11 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border">
             <h2 className="text-lg font-bold">
-              {mode === 'edit' ? 'Edit Character' : (initialData ? 'Convert to Cast' : 'Create New Character')}
+              {mode === 'edit'
+                ? 'Edit Character'
+                : initialData
+                  ? 'Convert to Cast'
+                  : 'Create New Character'}
             </h2>
             <Button variant="outline" size="sm" onClick={handleClose}>
               <X size={16} />
@@ -391,11 +406,11 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
                 <div className="w-full">
                   <StorytellerImage
                     src={portraitUrl}
-                    alt={name || "Character Portrait"}
+                    alt={name || 'Character Portrait'}
                     isLoading={isGeneratingPortrait}
                     aspectRatio="aspect-square"
-                    emptyLabel={description ? "Ready to Imagine" : "Describe character first"}
-                    onGenerate={(!name && !description) ? undefined : handleGeneratePortrait}
+                    emptyLabel={description ? 'Ready to Imagine' : 'Describe character first'}
+                    onGenerate={!name && !description ? undefined : handleGeneratePortrait}
                     overlay={
                       <div className="flex flex-col gap-2 w-full px-2">
                         <Button
@@ -463,7 +478,9 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
                       value={[metrics.valence + 100]}
                       max={200}
                       step={1}
-                      onValueChange={([val]) => setMetrics(prev => ({ ...prev, valence: val - 100 }))}
+                      onValueChange={([val]) =>
+                        setMetrics(prev => ({ ...prev, valence: val - 100 }))
+                      }
                     />
                     <div className="flex justify-between text-[10px] text-muted-foreground/60">
                       <span>Negative</span>
@@ -615,7 +632,9 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
                       value={[metrics.socialSafety]}
                       max={100}
                       step={1}
-                      onValueChange={([val]) => setMetrics(prev => ({ ...prev, socialSafety: val }))}
+                      onValueChange={([val]) =>
+                        setMetrics(prev => ({ ...prev, socialSafety: val }))
+                      }
                     />
                   </div>
                   <div className="space-y-1">
@@ -640,33 +659,39 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
                 </div>
               </div>
             </div>
-          </div >
+          </div>
 
           {/* Footer */}
-          < div className="p-4 border-t border-border flex justify-end gap-2" >
+          <div className="p-4 border-t border-border flex justify-end gap-2">
             <Button variant="outline" onClick={handleClose}>
               Cancel
             </Button>
-            <Button variant="default" onClick={handleSubmit} disabled={!name || !gender || !description || !mbti}>
-              {mode === 'edit' ? 'Save Changes' : (initialData ? 'Convert to Cast' : 'Create Character')}
+            <Button
+              variant="default"
+              onClick={handleSubmit}
+              disabled={!name || !gender || !description || !mbti}
+            >
+              {mode === 'edit'
+                ? 'Save Changes'
+                : initialData
+                  ? 'Convert to Cast'
+                  : 'Create Character'}
             </Button>
-          </div >
-        </div >
-      </div >
+          </div>
+        </div>
+      </div>
 
       {/* Portrait Variant Picker Modal */}
-      {
-        showVariantPicker && gridImageUrl && (
-          <ImageVariantSelector
-            gridImageUrl={gridImageUrl}
-            onSelect={(index, croppedDataUrl) => handleVariantSelect(croppedDataUrl, index)}
-            onCancel={() => {
-              setShowVariantPicker(false)
-              setGridImageUrl(null)
-            }}
-          />
-        )
-      }
+      {showVariantPicker && gridImageUrl && (
+        <ImageVariantSelector
+          gridImageUrl={gridImageUrl}
+          onSelect={(index, croppedDataUrl) => handleVariantSelect(croppedDataUrl, index)}
+          onCancel={() => {
+            setShowVariantPicker(false)
+            setGridImageUrl(null)
+          }}
+        />
+      )}
     </>
   )
 }

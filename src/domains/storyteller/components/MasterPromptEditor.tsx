@@ -74,12 +74,7 @@ export const MasterPromptEditor: React.FC<MasterPromptEditorProps> = ({
             </Button>
           )}
           {isDirty && !suggestedIdea && (
-            <Button
-              size="sm"
-              variant="default"
-              className="h-6 text-xs gap-1"
-              onClick={handleSave}
-            >
+            <Button size="sm" variant="default" className="h-6 text-xs gap-1" onClick={handleSave}>
               <Save size={12} />
               Save
             </Button>

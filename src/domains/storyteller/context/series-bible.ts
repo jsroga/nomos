@@ -167,11 +167,19 @@ Social Context: ${bible.setting?.socialContext || 'Not defined'}
     prompt += `\n--- WORLD DESCRIPTION ---\n${bible.worldDescription}\n`
   }
 
-  if (bible.inspirations && (bible.inspirations.books?.length > 0 || bible.inspirations.movies?.length > 0 || bible.inspirations.games?.length > 0)) {
+  if (
+    bible.inspirations &&
+    (bible.inspirations.books?.length > 0 ||
+      bible.inspirations.movies?.length > 0 ||
+      bible.inspirations.games?.length > 0)
+  ) {
     prompt += '\n--- INSPIRATIONS ---\n'
-    if (bible.inspirations.books?.length > 0) prompt += `Books: ${bible.inspirations.books.join(', ')}\n`
-    if (bible.inspirations.movies?.length > 0) prompt += `Movies: ${bible.inspirations.movies.join(', ')}\n`
-    if (bible.inspirations.games?.length > 0) prompt += `Games: ${bible.inspirations.games.join(', ')}\n`
+    if (bible.inspirations.books?.length > 0)
+      prompt += `Books: ${bible.inspirations.books.join(', ')}\n`
+    if (bible.inspirations.movies?.length > 0)
+      prompt += `Movies: ${bible.inspirations.movies.join(', ')}\n`
+    if (bible.inspirations.games?.length > 0)
+      prompt += `Games: ${bible.inspirations.games.join(', ')}\n`
   }
 
   if (bible.moodSoundtrack) {
@@ -257,6 +265,6 @@ export function bibleToVisualPrompt(bible: SeriesBible): string {
   if (bible.setting?.place) parts.push(bible.setting.place)
   if (bible.setting?.time) parts.push(`Set in ${bible.setting.time}.`)
   if (bible.setting?.socialContext) parts.push(bible.setting.socialContext)
-  
+
   return parts.join(' ') || ''
 }

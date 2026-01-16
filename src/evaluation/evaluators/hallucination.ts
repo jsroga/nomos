@@ -1,6 +1,6 @@
 /**
  * Hallucination Detector Evaluator
- * 
+ *
  * Detects fabricated content in agent outputs:
  * - Invalid/fake URLs
  * - Made-up external references
@@ -11,13 +11,13 @@ import { CustomEvaluator, EvaluatorInput, EvaluatorResult } from '../types'
 
 // URL patterns that are commonly hallucinated
 const SUSPICIOUS_URL_PATTERNS = [
-  /youtube\.com\/watch\?v=[a-zA-Z0-9_-]{11}/,  // YouTube videos
-  /imdb\.com\/title\/tt\d+/,                    // IMDB titles
-  /wikipedia\.org\/wiki\//,                      // Wikipedia
-  /amazon\.com\/dp\//,                           // Amazon products
-  /twitter\.com\/\w+\/status\//,                 // Twitter/X posts
-  /github\.com\/[\w-]+\/[\w-]+/,                 // GitHub repos
-  /medium\.com\/@[\w-]+\//,                      // Medium articles
+  /youtube\.com\/watch\?v=[a-zA-Z0-9_-]{11}/, // YouTube videos
+  /imdb\.com\/title\/tt\d+/, // IMDB titles
+  /wikipedia\.org\/wiki\//, // Wikipedia
+  /amazon\.com\/dp\//, // Amazon products
+  /twitter\.com\/\w+\/status\//, // Twitter/X posts
+  /github\.com\/[\w-]+\/[\w-]+/, // GitHub repos
+  /medium\.com\/@[\w-]+\//, // Medium articles
 ]
 
 // Patterns that indicate external reference (might be fabricated)
@@ -82,7 +82,7 @@ export const hallucinationDetector: CustomEvaluator = {
     const validUrls: string[] = []
 
     for (const url of urls) {
-      const isSuspicious = SUSPICIOUS_URL_PATTERNS.some((pattern) => pattern.test(url))
+      const isSuspicious = SUSPICIOUS_URL_PATTERNS.some(pattern => pattern.test(url))
 
       if (isSuspicious) {
         suspiciousUrls.push(url)
@@ -155,8 +155,8 @@ export const hallucinationHeuristic: CustomEvaluator = {
     const urls = outputStr.match(urlPattern) || []
 
     // Check for suspicious URL patterns without validating
-    const suspiciousUrls = urls.filter((url) =>
-      SUSPICIOUS_URL_PATTERNS.some((pattern) => pattern.test(url))
+    const suspiciousUrls = urls.filter(url =>
+      SUSPICIOUS_URL_PATTERNS.some(pattern => pattern.test(url))
     )
 
     // Check for specific red flags
@@ -169,7 +169,7 @@ export const hallucinationHeuristic: CustomEvaluator = {
     }
 
     // External references without citations
-    const externalRefs = EXTERNAL_REFERENCE_PATTERNS.filter((p) => p.test(outputStr)).length
+    const externalRefs = EXTERNAL_REFERENCE_PATTERNS.filter(p => p.test(outputStr)).length
     if (externalRefs > 1) {
       redFlags.push(`${externalRefs} external reference patterns - verify sources`)
     }
@@ -210,4 +210,3 @@ export const hallucinationHeuristic: CustomEvaluator = {
     }
   },
 }
-

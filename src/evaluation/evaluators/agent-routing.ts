@@ -1,6 +1,6 @@
 /**
  * Agent Routing Evaluator
- * 
+ *
  * Evaluates whether the supervisor/orchestrator makes correct routing decisions:
  * - Delegation to appropriate agents
  * - Phase-appropriate actions
@@ -60,7 +60,7 @@ const SHOULD_HALT_PATTERNS = [
   /\bshould (we|i)\b/i,
   /\bwhy did you\b/i,
   /\bexplain\b/i,
-  /\?\s*$/,  // Questions ending with ?
+  /\?\s*$/, // Questions ending with ?
 ]
 
 // Commands that should NOT halt
@@ -78,28 +78,30 @@ export const agentRoutingEvaluator: CustomEvaluator = {
   name: 'agent-routing',
 
   evaluate: async ({ input, output, reference }: EvaluatorInput): Promise<EvaluatorResult> => {
-    const inputStr = typeof input === 'object' && 'message' in input
-      ? String(input.message)
-      : JSON.stringify(input)
-    
+    const inputStr =
+      typeof input === 'object' && 'message' in input
+        ? String(input.message)
+        : JSON.stringify(input)
+
     const outputStr = typeof output === 'string' ? output : JSON.stringify(output)
 
-    const expected = reference as {
-      expectedAgents?: string[]
-      shouldNotHalt?: boolean
-      shouldHalt?: boolean
-    } | undefined
+    const expected = reference as
+      | {
+          expectedAgents?: string[]
+          shouldNotHalt?: boolean
+          shouldHalt?: boolean
+        }
+      | undefined
 
     const issues: string[] = []
     let score = 1.0
 
     // 1. Check halting behavior
-    const shouldHalt = SHOULD_HALT_PATTERNS.some((p) => p.test(inputStr))
-    const shouldNotHalt = SHOULD_NOT_HALT_PATTERNS.some((p) => p.test(inputStr))
-    
+    const shouldHalt = SHOULD_HALT_PATTERNS.some(p => p.test(inputStr))
+    const shouldNotHalt = SHOULD_NOT_HALT_PATTERNS.some(p => p.test(inputStr))
+
     const outputHalted =
-      /awaiting[_\s]*(user[_\s]*)?input/i.test(outputStr) ||
-      /waiting for/i.test(outputStr)
+      /awaiting[_\s]*(user[_\s]*)?input/i.test(outputStr) || /waiting for/i.test(outputStr)
 
     // Override with explicit expectations if provided
     const expectedHalt = expected?.shouldHalt ?? (shouldHalt && !shouldNotHalt)
@@ -136,8 +138,8 @@ export const agentRoutingEvaluator: CustomEvaluator = {
 
     // Check against expected agents
     if (expected?.expectedAgents && expected.expectedAgents.length > 0) {
-      const foundExpected = expected.expectedAgents.filter((agent) =>
-        delegatedAgents.some((d) => d.toLowerCase().includes(agent.toLowerCase()))
+      const foundExpected = expected.expectedAgents.filter(agent =>
+        delegatedAgents.some(d => d.toLowerCase().includes(agent.toLowerCase()))
       )
 
       if (foundExpected.length === 0) {
@@ -154,10 +156,10 @@ export const agentRoutingEvaluator: CustomEvaluator = {
     } else {
       // Infer expected agents from input patterns
       for (const rule of ROUTING_RULES) {
-        const matchesRule = rule.patterns.some((p) => p.test(inputStr))
+        const matchesRule = rule.patterns.some(p => p.test(inputStr))
         if (matchesRule) {
-          const foundMatch = rule.expectedAgents.some((agent) =>
-            delegatedAgents.some((d) => d.toLowerCase().includes(agent.toLowerCase()))
+          const foundMatch = rule.expectedAgents.some(agent =>
+            delegatedAgents.some(d => d.toLowerCase().includes(agent.toLowerCase()))
           )
           if (!foundMatch && delegatedAgents.length > 0) {
             issues.push(
@@ -195,16 +197,19 @@ export const haltingBehaviorEvaluator: CustomEvaluator = {
   name: 'halting-behavior',
 
   evaluate: async ({ input, output, reference }: EvaluatorInput): Promise<EvaluatorResult> => {
-    const inputStr = typeof input === 'object' && 'message' in input
-      ? String(input.message)
-      : JSON.stringify(input)
-    
+    const inputStr =
+      typeof input === 'object' && 'message' in input
+        ? String(input.message)
+        : JSON.stringify(input)
+
     const outputStr = typeof output === 'string' ? output : JSON.stringify(output)
 
-    const expected = reference as {
-      shouldNotHalt?: boolean
-      shouldHalt?: boolean
-    } | undefined
+    const expected = reference as
+      | {
+          shouldNotHalt?: boolean
+          shouldHalt?: boolean
+        }
+      | undefined
 
     const outputHalted = /awaiting[_\s]*(user[_\s]*)?input/i.test(outputStr)
 
@@ -231,4 +236,3 @@ export const haltingBehaviorEvaluator: CustomEvaluator = {
     }
   },
 }
-
