@@ -18,6 +18,55 @@ export const projects = pgTable('projects', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
+// Game Entities table (shared across ALL domains - the Swiss Army Knife bridge)
+export const gameEntities = pgTable('game_entities', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  projectId: uuid('project_id')
+    .notNull()
+    .references(() => projects.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull(),
+  
+  // Core entity data
+  entityType: text('entity_type').notNull(), // 'character' | 'location' | 'mechanic' | 'faction' | 'item' | 'quest'
+  name: text('name').notNull(),
+  description: text('description'),
+  
+  // Domain tracking
+  sourceDomain: text('source_domain').notNull(), // 'storyteller' | 'loop-creator' | 'interior-designer' | 'world-building'
+  sourceEntityId: uuid('source_entity_id'), // ID in the source domain's table
+  usedInDomains: text('used_in_domains').array().default([]), // ['storyteller', 'loop-creator']
+  
+  // Rich metadata from source domain
+  metadata: jsonb('metadata').default({}), // Domain-specific data (character stats, location coordinates, etc.)
+  
+  // Search and display
+  tags: text('tags').array().default([]),
+  imageUrl: text('image_url'),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+// Entity Relationships table (for cross-domain connections)
+export const entityRelationships = pgTable('entity_relationships', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  projectId: uuid('project_id')
+    .notNull()
+    .references(() => projects.id, { onDelete: 'cascade' }),
+  
+  fromEntityId: uuid('from_entity_id')
+    .notNull()
+    .references(() => gameEntities.id, { onDelete: 'cascade' }),
+  toEntityId: uuid('to_entity_id')
+    .notNull()
+    .references(() => gameEntities.id, { onDelete: 'cascade' }),
+  
+  relationshipType: text('relationship_type').notNull(), // 'uses' | 'located_in' | 'conflicts_with' | 'allies_with' | 'owns'
+  metadata: jsonb('metadata').default({}), // Additional relationship context
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
 // Tiles table (world-building)
 export const tiles = pgTable(
   'tiles',
@@ -290,6 +339,13 @@ export const marketAnalysisRisingCompetitors = pgTable('market_analysis_rising_c
 // Type exports for use in application
 export type Project = typeof projects.$inferSelect
 export type NewProject = typeof projects.$inferInsert
+
+// Game Entities (cross-domain)
+export type GameEntity = typeof gameEntities.$inferSelect
+export type NewGameEntity = typeof gameEntities.$inferInsert
+export type EntityRelationship = typeof entityRelationships.$inferSelect
+export type NewEntityRelationship = typeof entityRelationships.$inferInsert
+
 export type Tile = typeof tiles.$inferSelect
 export type NewTile = typeof tiles.$inferInsert
 export type Asset = typeof assets.$inferSelect

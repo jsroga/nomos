@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { characters, projects } from '@/domains/storyteller/db/schema'
+import { gameEntities } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
 import { requireAuth } from '@/lib/auth'
 
@@ -290,7 +291,70 @@ export async function POST(req: NextRequest) {
       })
       .returning()
 
-    return NextResponse.json(newCharacter)
+    // Create game entity for cross-domain visibility
+    let entityId: string | null = null
+    try {
+      const entityResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/entities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId,
+          userId: session.user.id,
+          entityType: 'character',
+          name,
+          description: description || characterPrompt,
+          sourceDomain: 'storyteller',
+          sourceEntityId: newCharacter.id,
+          metadata: {
+            role,
+            gender,
+            mbti,
+            voiceSignature,
+            metrics: { stress, trust, power, morality, hope, isolation, transformation },
+          },
+          imageUrl: portraitUrl,
+          tags: [role || 'Supporting', gender].filter(Boolean),
+        }),
+      })
+      
+      if (entityResponse.ok) {
+        const { entity } = await entityResponse.json()
+        entityId = entity?.id
+      }
+    } catch (error) {
+      console.error('[Character API] Failed to create game entity:', error)
+      // Don't fail the character creation if entity creation fails
+    }
+
+    // Generate cross-domain suggestions
+    const suggestions = [
+      {
+        id: `char-to-mechanics-${newCharacter.id}`,
+        type: 'cross_domain',
+        title: `Design mechanics for ${name}`,
+        description: 'Create gameplay systems and abilities for this character',
+        targetDomain: 'loop-creator',
+        targetRoute: `/app/${projectId}/loop-creator`,
+        autoMessage: `Design combat and movement mechanics for @${name}. Consider their role${role ? ` as ${role}` : ''}.`,
+        priority: 5,
+        entityId: entityId || newCharacter.id,
+      },
+      {
+        id: `char-to-home-${newCharacter.id}`,
+        type: 'cross_domain',
+        title: `Build ${name}'s home`,
+        description: "Design the character's living space in 3D",
+        targetDomain: 'interior-designer',
+        targetRoute: `/app/${projectId}/interior-design`,
+        priority: 3,
+        entityId: entityId || newCharacter.id,
+      },
+    ]
+
+    return NextResponse.json({
+      ...newCharacter,
+      _suggestions: suggestions,
+    })
   } catch (error) {
     console.error('Failed to create character:', error)
     return NextResponse.json({ error: 'Failed to create character' }, { status: 500 })
@@ -382,7 +446,31 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
+    // Get character to find associated entity
+    const [character] = await db.select().from(characters).where(eq(characters.id, id))
+
     await db.delete(characters).where(eq(characters.id, id))
+
+    // Delete associated game entity
+    if (character) {
+      try {
+        const entitiesResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/entities?projectId=${character.projectId}&sourceDomain=storyteller`
+        )
+        const { entities } = await entitiesResponse.json()
+        const entity = entities?.find((e: any) => e.source_entity_id === id)
+        
+        if (entity) {
+          await fetch(
+            `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/entities/${entity.id}`,
+            { method: 'DELETE' }
+          )
+        }
+      } catch (error) {
+        console.error('[Character API] Failed to delete game entity:', error)
+      }
+    }
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Failed to delete character:', error)
