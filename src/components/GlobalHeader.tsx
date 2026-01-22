@@ -23,7 +23,7 @@ export function GlobalHeader() {
             className="text-xl font-black tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent hover:to-primary/80 transition-all cursor-default"
             style={{ fontFamily: 'var(--font-syne)' }}
           >
-            O KURTVITZA
+            KUR
           </span>
         </div>
 

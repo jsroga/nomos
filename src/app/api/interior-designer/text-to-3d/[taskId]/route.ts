@@ -28,4 +28,3 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ task
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
-

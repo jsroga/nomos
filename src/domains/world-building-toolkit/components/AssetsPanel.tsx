@@ -85,7 +85,12 @@ export const AssetsPanel: React.FC<AssetsPanelProps> = ({ showHelpText = true })
 
   const handlePreview = (id: string) => {
     // Toggle preview - if same asset clicked, turn off preview
-    setPreviewAssetId(previewAssetId === id ? null : id)
+    const isSelecting = previewAssetId !== id
+    setPreviewAssetId(isSelecting ? id : null)
+
+    if (isSelecting) {
+      window.dispatchEvent(new CustomEvent('asset-selected'))
+    }
   }
 
   if (!currentProject) return null

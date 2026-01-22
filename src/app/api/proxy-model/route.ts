@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       'storage.googleapis.com',
       'supabase.co',
     ]
-    
+
     const isAllowed = allowedDomains.some(domain => parsedUrl.hostname.endsWith(domain))
     if (!isAllowed) {
       return NextResponse.json({ error: 'URL domain not allowed' }, { status: 403 })

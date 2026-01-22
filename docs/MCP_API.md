@@ -13,6 +13,7 @@ npm run mcp:dev
 ```
 
 Configure in `.cursor/mcp.json`:
+
 ```json
 {
   "mcpServers": {
@@ -36,6 +37,7 @@ Configure in `.cursor/mcp.json`:
 Game entities that can be shared across storyteller, loop-creator, interior-designer, and world-building modules.
 
 #### `list_entities`
+
 List game entities for a project with optional filtering.
 
 ```typescript
@@ -64,17 +66,23 @@ List game entities for a project with optional filtering.
 ```
 
 #### `get_entity`
+
 Get a single entity by ID.
 
 ```typescript
 // Input
-{ entityId: string }
+{
+  entityId: string
+}
 
 // Output
-{ entity: Entity }
+{
+  entity: Entity
+}
 ```
 
 #### `create_entity`
+
 Create a new game entity.
 
 ```typescript
@@ -95,6 +103,7 @@ Create a new game entity.
 ```
 
 #### `update_entity`
+
 Update an existing entity.
 
 ```typescript
@@ -113,14 +122,19 @@ Update an existing entity.
 ```
 
 #### `delete_entity`
+
 Delete an entity.
 
 ```typescript
 // Input
-{ entityId: string }
+{
+  entityId: string
+}
 
 // Output
-{ success: boolean }
+{
+  success: boolean
+}
 ```
 
 ---
@@ -130,46 +144,55 @@ Delete an entity.
 Tools for interacting with the storyteller domain - characters, episodes, beats, and AI chat.
 
 #### `list_characters`
+
 List all characters in a project.
 
 ```typescript
 // Input
-{ projectId: string }
+{
+  projectId: string
+}
 
 // Output
 {
   characters: Array<{
     id: string
     name: string
-    role: "Lead" | "Supporting" | "Background"
+    role: 'Lead' | 'Supporting' | 'Background'
     gender: string
     description: string
     portraitUrl: string
     mbti: string
     voiceSignature: string
-    stressLevel: number      // 0-100
-    trustLevel: number       // 0-100
-    powerLevel: number       // 0-100
-    moralityLevel: number    // 0-100
-    hopeLevel: number        // 0-100
-    isolationLevel: number   // 0-100
+    stressLevel: number // 0-100
+    trustLevel: number // 0-100
+    powerLevel: number // 0-100
+    moralityLevel: number // 0-100
+    hopeLevel: number // 0-100
+    isolationLevel: number // 0-100
     transformationProgress: number // 0-100
   }>
 }
 ```
 
 #### `get_character`
+
 Get a single character by ID.
 
 ```typescript
 // Input
-{ characterId: string }
+{
+  characterId: string
+}
 
 // Output
-{ character: Character }
+{
+  character: Character
+}
 ```
 
 #### `create_character`
+
 Create a new character.
 
 ```typescript
@@ -197,6 +220,7 @@ Create a new character.
 ```
 
 #### `update_character`
+
 Update an existing character.
 
 ```typescript
@@ -214,17 +238,23 @@ Update an existing character.
 ```
 
 #### `delete_character`
+
 Delete a character.
 
 ```typescript
 // Input
-{ characterId: string }
+{
+  characterId: string
+}
 
 // Output
-{ success: boolean }
+{
+  success: boolean
+}
 ```
 
 #### `list_episodes`
+
 List all episodes in a project.
 
 ```typescript
@@ -236,6 +266,7 @@ List all episodes in a project.
 ```
 
 #### `list_beats`
+
 List all beats (story moments) in an episode.
 
 ```typescript
@@ -247,6 +278,7 @@ List all beats (story moments) in an episode.
 ```
 
 #### `get_series_bible`
+
 Get the series bible containing world description, characters, factions, and story plan.
 
 ```typescript
@@ -266,6 +298,7 @@ Get the series bible containing world description, characters, factions, and sto
 ```
 
 #### `storyteller_chat`
+
 Send a message to the storyteller writers room. Invokes LangGraph multi-agent workflow.
 
 ```typescript
@@ -289,6 +322,7 @@ Send a message to the storyteller writers room. Invokes LangGraph multi-agent wo
 ```
 
 **Note:** All `storyteller_chat` calls are traced in LangSmith with:
+
 - `runName: "MCP: storyteller_chat"`
 - `tags: ["mcp", "storyteller", "chat"]`
 - Full metadata for debugging
@@ -300,6 +334,7 @@ Send a message to the storyteller writers room. Invokes LangGraph multi-agent wo
 Async generation tasks. Returns immediately with a `runId` - use `get_run_status` to track progress.
 
 #### `generate_tile`
+
 Generate a tile image using AI.
 
 ```typescript
@@ -324,6 +359,7 @@ Generate a tile image using AI.
 ```
 
 #### `upscale_tile`
+
 Upscale an existing tile to higher resolution.
 
 ```typescript
@@ -339,6 +375,7 @@ Upscale an existing tile to higher resolution.
 ```
 
 #### `generate_3d_model`
+
 Generate a 3D model from text.
 
 ```typescript
@@ -354,6 +391,7 @@ Generate a 3D model from text.
 ```
 
 #### `remesh_3d_model`
+
 Remesh a 3D model to reduce polygon count.
 
 ```typescript
@@ -369,6 +407,7 @@ Remesh a 3D model to reduce polygon count.
 ```
 
 #### `generate_portrait`
+
 Generate a character portrait.
 
 ```typescript
@@ -391,6 +430,7 @@ Generate a character portrait.
 Track and manage Trigger.dev task runs.
 
 #### `get_run_status`
+
 Get the status of a Trigger.dev run.
 
 ```typescript
@@ -410,17 +450,23 @@ Get the status of a Trigger.dev run.
 ```
 
 #### `cancel_run`
+
 Cancel a running task.
 
 ```typescript
 // Input
-{ runId: string }
+{
+  runId: string
+}
 
 // Output
-{ success: boolean }
+{
+  success: boolean
+}
 ```
 
 #### `wait_for_run`
+
 Wait for a run to complete (polling).
 
 ```typescript
@@ -447,14 +493,14 @@ Wait for a run to complete (polling).
 
 Read-only data access via MCP resources.
 
-| URI | Description |
-|-----|-------------|
-| `wbk://projects` | List all user's projects |
-| `wbk://project/{projectId}/entities` | All entities in project |
-| `wbk://project/{projectId}/characters` | All characters in project |
-| `wbk://project/{projectId}/episodes` | All episodes in project |
-| `wbk://project/{projectId}/series-bible` | Series bible |
-| `wbk://episode/{episodeId}/beats` | All beats in episode |
+| URI                                      | Description               |
+| ---------------------------------------- | ------------------------- |
+| `wbk://projects`                         | List all user's projects  |
+| `wbk://project/{projectId}/entities`     | All entities in project   |
+| `wbk://project/{projectId}/characters`   | All characters in project |
+| `wbk://project/{projectId}/episodes`     | All episodes in project   |
+| `wbk://project/{projectId}/series-bible` | Series bible              |
+| `wbk://episode/{episodeId}/beats`        | All beats in episode      |
 
 ---
 
@@ -475,6 +521,7 @@ Filter by `mcp` tag to see all bot/workflow traffic in LangSmith dashboard.
 MCP uses API key authentication. Keys are stored hashed in `mcp_api_keys` table.
 
 **Scopes:**
+
 - `*` - Full access (default)
 - `entities:read`, `entities:write` - Entity operations
 - `storyteller:*` - All storyteller operations

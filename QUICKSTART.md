@@ -11,11 +11,13 @@ npx supabase migration up
 ```
 
 This creates:
+
 - `game_entities` table
 - `entity_relationships` table
 - All indexes and RLS policies
 
 **Verify**:
+
 ```sql
 SELECT * FROM game_entities LIMIT 1;
 ```
@@ -59,6 +61,7 @@ Open: http://localhost:3000
 ### Verify Entity Sync
 
 Open browser console:
+
 ```javascript
 fetch('/api/entities?projectId=YOUR_PROJECT_ID')
   .then(r => r.json())
@@ -105,11 +108,13 @@ npm run test:e2e:ui
 **Check**: Open `/app/[projectId]/page.tsx`
 
 Should have:
+
 ```typescript
 return <GameHubDashboard projectId={projectId} />
 ```
 
 NOT:
+
 ```typescript
 redirect(`/${projectId}/storyteller?bible=open`)
 ```
@@ -117,11 +122,13 @@ redirect(`/${projectId}/storyteller?bible=open`)
 ### Issue: @mentions don't work
 
 **Check browser console** for:
+
 ```
 Failed to fetch entities
 ```
 
 **Fix**: Verify `/api/entities` endpoint works:
+
 ```bash
 curl http://localhost:3000/api/entities?projectId=YOUR_ID
 ```
@@ -129,6 +136,7 @@ curl http://localhost:3000/api/entities?projectId=YOUR_ID
 ### Issue: AI doesn't have context
 
 **Check server logs** for:
+
 ```
 [Writer V2] Loaded cross-domain context
 ```

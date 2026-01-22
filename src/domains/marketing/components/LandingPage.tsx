@@ -2,7 +2,6 @@
 
 import { useRef, useState, useEffect } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { motion, useScroll, useTransform, useSpring, AnimatePresence } from 'framer-motion'
 import {
   Map,
@@ -18,16 +17,15 @@ import {
   Shield,
   X,
   Check,
+  Users,
+  Sparkles,
 } from 'lucide-react'
 import { TurbulentBackground } from './TurbulentBackground'
-import { GlowEffect } from '@/components/ui/glow-effect'
-import {
-  DecryptedText,
-  MotionHighlight,
-  LiquidDistortionText,
-  AggressiveGlitchText,
-} from '@/components/ui/text-effects'
+import { MotionHighlight, LiquidDistortionText } from '@/components/ui/text-effects'
 import { BleedingText } from './BleedingText'
+import { ThreeDIcon } from './ThreeDIcon'
+import { ToolsIntegration } from './ToolsIntegration'
+import { ProPlanPromo } from './ProPlanPromo'
 
 // ═══════════════════════════════════════════════════════════════════
 // FEATURES DATA
@@ -36,83 +34,87 @@ const FEATURES = [
   {
     icon: Map,
     title: 'World Generation',
-    description:
-      'Generate infinite tile-able terrain with AI. Days of work → minutes. Export-ready.',
+    description: 'Infinite procedural terrain. Days → minutes. Ship-ready assets.',
     accent: '#5c7cfa',
     code: 'WLD_GEN',
+    img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=600&q=80',
   },
   {
     icon: Brain,
     title: 'AI Storyteller',
-    description:
-      'Auto-generate quests, factions, and narrative arcs. Your AI co-writer that never sleeps.',
+    description: 'Quests, factions, arcs. AI co-writer. Always on.',
     accent: '#5c7cfa',
     code: 'NAR_SYS',
+    img: 'https://images.unsplash.com/photo-1516414447565-b14be0adf13e?auto=format&fit=crop&w=600&q=80',
   },
   {
     icon: Palette,
     title: 'Terrain Sculpting',
-    description:
-      'Shape landscapes with AI-assisted tools. Mountains, rivers, dungeons. Fast iteration.',
+    description: 'Mountains, rivers, dungeons. AI-assisted. Rapid iteration.',
     accent: '#5c7cfa',
     code: 'TER_SCL',
+    img: 'https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?auto=format&fit=crop&w=600&q=80',
   },
   {
     icon: Boxes,
     title: 'One-Click Export',
-    description:
-      'GLTF, Unity, Unreal. Production-ready assets straight into your engine. No conversion hassle.',
+    description: 'Unity. Unreal. GLTF. Zero friction. Ship instantly.',
     accent: '#5c7cfa',
     code: 'EXP_SYS',
+    img: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=600&q=80',
   },
   {
     icon: Zap,
-    title: 'Game Loop Designer',
-    description:
-      'AI analyzes successful games to help you design addictive core loops. Data-driven.',
+    title: 'Loop Designer',
+    description: 'Data-driven mechanics. Addictive loops. Validated patterns.',
     accent: '#5c7cfa',
     code: 'LOP_DES',
+    img: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80',
   },
   {
     icon: Flame,
     title: 'Scene Simulator',
-    description: 'Test combat, physics, and chaos before you code. Catch issues early.',
+    description: 'Combat. Physics. Chaos. Test before you code.',
     accent: '#5c7cfa',
     code: 'STR_TST',
+    img: 'https://images.unsplash.com/photo-1614729375519-c61f9e511c6e?auto=format&fit=crop&w=600&q=80',
   },
   {
     icon: Shield,
-    title: 'Team Collaboration',
-    description: 'Secure asset storage. Role-based access. Built for studios of any size.',
+    title: 'Team Collab',
+    description: 'Secure storage. Role access. Any team size.',
     accent: '#5c7cfa',
     code: 'SEC_AST',
+    img: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=600&q=80',
   },
 ]
 
 const STEPS = [
   {
-    icon: Zap,
-    title: 'Initialize System',
+    title: 'Generate',
+    subtitle: 'PROCEDURAL_ENGINE',
     description:
-      'Connect your dataset and define your world parameters. The AI begins mapping the latent space.',
+      'Terrain generation from 3 weeks to 2 days. Infinite worlds, dungeons, environments.',
+    type3d: 'GENERATOR',
+    stat: '10x',
+    statLabel: 'faster iteration',
   },
   {
-    icon: Palette,
-    title: 'Shape Reality',
+    title: 'Evolve',
+    subtitle: 'NEURAL_NARRATIVE',
     description:
-      'Use brutal sculpting tools and procedural generation to carve your vision into existence.',
+      'Procedural tools that think like an artist, not an engineer. AI handles the filler.',
+    type3d: 'NEURAL',
+    stat: '40+',
+    statLabel: 'hours saved/week',
   },
   {
-    icon: Brain,
-    title: 'Infuse Life',
-    description:
-      'Deploy emergent AI narratives and faction systems. Watch your world evolve and react.',
-  },
-  {
-    icon: Boxes,
-    title: 'Production Export',
-    description:
-      'Rip your production-ready assets straight into your engine. Unity, Unreal, or GLTF.',
+    title: 'Ship',
+    subtitle: 'EXPORT_PIPELINE',
+    description: 'You write the quests that matter. One-click export to Unity, Unreal, Godot.',
+    type3d: 'EXPORTER',
+    stat: '300%',
+    statLabel: 'more content',
   },
 ]
 
@@ -122,16 +124,8 @@ const STEPS = [
 const HeadlineVariant = () => {
   return (
     <h1 className="flex flex-col items-center gap-1 font-black uppercase tracking-[-0.02em] font-syne text-white text-center leading-[0.85]">
-      <LiquidDistortionText
-        text="BUILD"
-        className="text-[clamp(2.4rem,8vw,6.4rem)]"
-        intensity={15}
-      />
-      <LiquidDistortionText
-        text="WORLDS"
-        className="text-[clamp(3rem,10vw,8rem)]"
-        intensity={20}
-      />
+      <LiquidDistortionText text="BUILD" className="text-[clamp(2.4rem,8vw,6.4rem)]" />
+      <LiquidDistortionText text="WORLDS" className="text-[clamp(3rem,10vw,8rem)]" />
       <BleedingText text="THAT BLEED" />
     </h1>
   )
@@ -146,42 +140,53 @@ const ConceptToCarnageTile = () => {
   return (
     <motion.div
       onClick={() => setState(prev => (prev === 'concept' ? 'carnage' : 'concept'))}
-      className="group relative h-full min-h-[400px] border border-white/5 bg-black/40 backdrop-blur-sm cursor-pointer overflow-hidden rounded-xl"
+      className="group relative h-full min-h-[280px] border border-white/10 cursor-pointer overflow-hidden rounded-xl bg-black/40 backdrop-blur-sm transition-all duration-500 hover:border-primary/50"
     >
-      <div className="absolute inset-0 z-0">
+      {/* Subtle grid in background for clean look */}
+      <div
+        className="absolute inset-0 opacity-[0.03] pointer-events-none"
+        style={{
+          backgroundImage: 'radial-gradient(white 1px, transparent 1px)',
+          backgroundSize: '16px 16px',
+        }}
+      />
+
+      {/* Screenshot Frame */}
+      <div className="absolute inset-4 bottom-24 flex items-center justify-center overflow-hidden rounded-lg border border-white/5 bg-black/20">
         <AnimatePresence mode="wait">
-          <motion.div
+          <motion.img
             key={state}
-            initial={{ opacity: 0, scale: 1.1 }}
-            animate={{ opacity: 0.3, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.8 }}
-            className="absolute inset-0 bg-cover bg-center"
-            style={{
-              backgroundImage:
-                state === 'concept'
-                  ? 'url(https://images.unsplash.com/photo-1614850715649-1d0106293bd1?auto=format&fit=crop&q=80&w=2070)'
-                  : 'url(https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80&w=2070)',
-            }}
+            src={
+              state === 'concept'
+                ? '/projects/01c5deda-c654-4576-89f9-860ff545f2dd/assets/asset_1764677757871.png'
+                : '/projects/01c5deda-c654-4576-89f9-860ff545f2dd/0_0_1764510993677_upscaled_gemini_upscaled_gemini_upscaled_4k.png'
+            }
+            alt={state === 'concept' ? 'Concept sketch' : 'Final game'}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            transition={{ duration: 0.5 }}
+            className="w-full h-full object-cover"
           />
         </AnimatePresence>
+
+        {/* Glow behind screenshot */}
+        <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
       </div>
 
-      <div className="relative z-10 p-8 flex flex-col h-full justify-between">
-        <div>
-          <span className="font-mono text-[10px] text-primary mb-2 block tracking-widest uppercase">
-            [INTERACTIVE_PREVIEW]
-          </span>
-          <h3 className="text-3xl font-black tracking-wide leading-none mb-4 font-syne">
-            From Concept
-            <br />
-            <span className={state === 'carnage' ? 'text-primary' : 'text-white'}>To Carnage</span>
-          </h3>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs font-mono text-white/40">
+      {/* Content footer */}
+      <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/80 to-transparent">
+        <span className="font-mono text-[10px] text-primary mb-2 tracking-widest uppercase">
+          CLICK TO TRANSFORM
+        </span>
+        <h3 className="text-2xl font-black tracking-wide leading-tight mb-2 font-syne">
+          From Concept
+          <br />
+          <span className={state === 'carnage' ? 'text-primary' : 'text-white'}>To Carnage</span>
+        </h3>
+        <div className="flex items-center gap-2 text-xs font-mono text-white/50">
           <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-          CLICK TO EVOLVE_
+          {state === 'concept' ? 'Sketch phase' : 'Production ready'}
         </div>
       </div>
     </motion.div>
@@ -191,9 +196,16 @@ const ConceptToCarnageTile = () => {
 // ═══════════════════════════════════════════════════════════════════
 // BRUTAL FEATURE CARD
 // ═══════════════════════════════════════════════════════════════════
-const BrutalCard = ({ feature, index }: { feature: (typeof FEATURES)[0]; index: number }) => {
+const BrutalCard = ({
+  feature,
+  index,
+  className,
+}: {
+  feature: (typeof FEATURES)[0]
+  index: number
+  className?: string
+}) => {
   const Icon = feature.icon
-  const [isHovered, setIsHovered] = useState(false)
 
   return (
     <motion.div
@@ -201,149 +213,42 @@ const BrutalCard = ({ feature, index }: { feature: (typeof FEATURES)[0]; index: 
       whileInView={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.4, delay: index * 0.08, ease: [0.25, 0.1, 0.25, 1] }}
       viewport={{ once: true, margin: '-50px' }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      className="group relative h-full"
+      className={`group relative h-full min-h-[280px] ${className || ''}`}
     >
-      <div className="relative h-full border border-white/5 bg-black/40 backdrop-blur-sm p-8 transition-all duration-300 hover:border-white/20 rounded-xl overflow-hidden">
+      <div
+        className={`relative h-full border border-white/10 rounded-xl overflow-hidden backdrop-blur-sm group-hover:bg-white/[0.04] transition-colors duration-500 ${className ? '' : 'bg-white/[0.02]'}`}
+      >
+        {/* Subtle grid pattern for clean background */}
         <div
-          className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 transition-all duration-300 opacity-20 group-hover:opacity-100"
-          style={{ borderColor: feature.accent }}
+          className="absolute inset-0 opacity-[0.03] pointer-events-none"
+          style={{
+            backgroundImage: `radial-gradient(${feature.accent || '#5c7cfa'} 1px, transparent 1px)`,
+            backgroundSize: '16px 16px',
+          }}
         />
 
-        <div className="flex items-start justify-between mb-6">
-          <div
-            className="p-3 border rounded-lg transition-all duration-300"
-            style={{
-              borderColor: isHovered ? 'rgba(92, 124, 250, 0.4)' : 'rgba(255,255,255,0.1)',
-              backgroundColor: isHovered ? 'rgba(92, 124, 250, 0.08)' : 'transparent',
-            }}
-          >
-            <Icon className="w-8 h-8 text-primary" />
-          </div>
-          <span
-            className="font-mono text-[10px] tracking-wider transition-colors duration-300"
-            style={{ color: isHovered ? feature.accent : 'rgba(255,255,255,0.3)' }}
-          >
-            [{feature.code}]
-          </span>
+        {/* Large faint icon in background */}
+        <div className="absolute -right-4 -bottom-4 opacity-[0.05] group-hover:opacity-[0.08] transition-opacity duration-500">
+          <Icon size={160} strokeWidth={1} />
         </div>
 
-        <h3 className="text-xl font-black tracking-wide text-white mb-3 font-syne">
-          {feature.title}
-        </h3>
-        <p className="text-white/40 leading-relaxed text-sm font-mono">{feature.description}</p>
-
-        <div className="mt-8 pt-4 border-t border-white/5 flex items-center justify-between">
-          <div className="flex gap-1">
-            {[...Array(5)].map((_, i) => (
-              <div
-                key={i}
-                className="w-1 h-3 transition-all duration-300"
-                style={{
-                  backgroundColor: i <= index % 5 ? feature.accent : 'rgba(255,255,255,0.1)',
-                  opacity: isHovered ? 1 : 0.5,
-                }}
-              />
-            ))}
+        {/* Content */}
+        <div className="absolute inset-0 flex flex-col justify-end p-6">
+          <div className="flex items-center gap-2 mb-2">
+            <Icon className="w-5 h-5 text-primary" />
+            <span className="font-mono text-[10px] text-primary/80 tracking-wider">
+              {feature.code}
+            </span>
           </div>
-          <ArrowRight className="w-4 h-4 text-white/20 group-hover:text-primary transition-all group-hover:translate-x-1" />
+          <h3 className="text-xl font-black tracking-wide text-white mb-2 font-syne">
+            {feature.title}
+          </h3>
+          <p className="text-white/70 leading-relaxed text-sm font-mono">{feature.description}</p>
         </div>
       </div>
     </motion.div>
   )
 }
-
-const SystemModuleCard = ({ step, index }: { step: (typeof STEPS)[0]; index: number }) => {
-  const [bootStatus, setBootStatus] = useState<'IDLE' | 'BOOTING' | 'READY'>('IDLE')
-  const [syncId, setSyncId] = useState('')
-
-  useEffect(() => {
-    setSyncId(Math.random().toString(16).slice(2, 8).toUpperCase())
-    const timer = setTimeout(() => setBootStatus('BOOTING'), index * 400)
-    const readyTimer = setTimeout(() => setBootStatus('READY'), index * 400 + 1000)
-    return () => {
-      clearTimeout(timer)
-      clearTimeout(readyTimer)
-    }
-  }, [index])
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      transition={{ delay: index * 0.1 }}
-      viewport={{ once: true }}
-      className="group relative p-8 rounded-xl bg-black/40 border border-white/5 hover:border-primary/20 transition-all duration-500 overflow-hidden"
-    >
-      {/* Module Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
-            <step.icon className="w-6 h-6 text-primary" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] font-mono text-primary uppercase tracking-widest leading-none">
-              MODULE_{index + 1}
-            </span>
-            <span className="text-[9px] font-mono text-white/20 uppercase tracking-tighter">
-              SYS::INFRA_v4
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/10">
-          <div
-            className={`w-1 h-1 rounded-full ${bootStatus === 'READY' ? 'bg-primary' : 'bg-primary/50 animate-pulse'
-              }`}
-          />
-          <span className="text-[8px] font-mono text-white/40">{bootStatus}</span>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10">
-        <h3 className="text-xl font-black tracking-wide text-white mb-3 font-syne">
-          {bootStatus === 'READY' ? (
-            step.title
-          ) : (
-            <DecryptedText text={step.title} speed={20} maxIterations={2} />
-          )}
-        </h3>
-        <p className="text-white/40 leading-relaxed text-sm font-mono">{step.description}</p>
-      </div>
-
-      {/* Technical Readout */}
-      <div className="mt-8 pt-4 border-t border-white/5 flex items-center justify-between opacity-30 group-hover:opacity-100 transition-opacity">
-        <div className="flex gap-1">
-          {[...Array(4)].map((_, i) => (
-            <div
-              key={i}
-              className={`w-4 h-1 rounded-full ${i <= index ? 'bg-primary' : 'bg-white/10'}`}
-            />
-          ))}
-        </div>
-        <span className="text-[8px] font-mono text-white/50 tracking-widest">
-          SYNC_PROTOCOL://{syncId || 'LOADING...'}
-        </span>
-      </div>
-
-      {/* Background Decor */}
-      <div className="absolute top-0 right-0 p-8 pointer-events-none">
-        <span className="text-6xl font-black text-white/[0.02] group-hover:text-primary/5 transition-colors font-syne">
-          {(index + 1).toString().padStart(2, '0')}
-        </span>
-      </div>
-    </motion.div>
-  )
-}
-
-const ScannerLine = () => (
-  <motion.div
-    animate={{ y: ['0%', '100%'], opacity: [0, 1, 1, 0] }}
-    transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-    className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent z-20 pointer-events-none"
-  />
-)
 
 // ═══════════════════════════════════════════════════════════════════
 // TERMINAL INPUT
@@ -434,10 +339,213 @@ const TerminalInput = () => {
     </form>
   )
 }
+// ═══════════════════════════════════════════════════════════════════
+// FEATURE DEEP DIVE ROW
+// ═══════════════════════════════════════════════════════════════════
+const FeatureDeepDive = ({
+  title,
+  subtitle,
+  description,
+  type3d,
+  align = 'left',
+  index,
+  color = '#5c7cfa',
+  pngIcon,
+  screenshotPlaceholder = true,
+  modelScale = 0.5,
+  modelOffsetX = 0,
+  modelOffsetY = 0,
+}: {
+  title: string
+  subtitle: string
+  description: string
+  type3d: string
+  align?: 'left' | 'right'
+  index: number
+  color?: string
+  pngIcon?: string
+  screenshotPlaceholder?: boolean
+  modelScale?: number
+  modelOffsetX?: number
+  modelOffsetY?: number
+}) => {
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false)
+  const layoutId = `screenshot-${index}`
 
-// ═══════════════════════════════════════════════════════════════════
-// MAIN LANDING PAGE
-// ═══════════════════════════════════════════════════════════════════
+  return (
+    <section className="py-24 relative">
+      <div className="absolute left-[50%] top-0 bottom-0 w-px bg-white/5 hidden lg:block" />
+
+      <div
+        className={`flex flex-col lg:flex-row gap-12 lg:gap-24 items-center ${align === 'right' ? 'lg:flex-row-reverse' : ''}`}
+      >
+        {/* Visual Side - Screenshot Primary, 3D Icon as Background */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true, margin: '-100px' }}
+          transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
+          className="flex-1 w-full relative"
+        >
+          <div className="relative aspect-square lg:aspect-[4/3] rounded-lg overflow-hidden bg-[#050505] border border-white/10 group">
+            {/* Layer 1: 3D Icon as decorative background (full opacity) */}
+            <div className="absolute inset-0 pointer-events-none">
+              <ThreeDIcon
+                type={type3d}
+                color={color}
+                scale={modelScale}
+                offset={[modelOffsetX, modelOffsetY]}
+              />
+            </div>
+
+            {/* Layer 2: Screenshot Placeholder (PRIMARY) - Clickable for lightbox */}
+            <div className="absolute inset-0 flex items-center justify-center p-6 z-10">
+              <motion.div
+                layoutId={layoutId}
+                onClick={() => setIsLightboxOpen(true)}
+                className="w-[85%] aspect-video rounded-lg border-2 border-white/20 bg-black/80 backdrop-blur-md flex items-center justify-center cursor-pointer group-hover:border-white/40 hover:scale-[1.02] transition-all duration-300"
+              >
+                <div className="text-center">
+                  <div className="w-12 h-12 mx-auto mb-3 rounded-lg border border-white/20 bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
+                    <Play className="w-5 h-5 text-white/60" />
+                  </div>
+                  <span className="text-white/50 font-mono text-xs tracking-widest">
+                    CLICK TO PREVIEW
+                  </span>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Layer 3: UI overlay details */}
+            <div className="absolute top-4 left-4 flex gap-2 z-20">
+              <div
+                className="w-2 h-2 rounded-full animate-pulse"
+                style={{ backgroundColor: color }}
+              />
+              <div className="text-[10px] font-mono text-white/40 tracking-widest">{subtitle}</div>
+            </div>
+
+            {/* Corner marks */}
+            <div className="absolute top-0 left-0 w-4 h-4 border-t border-l border-white/20 z-20" />
+            <div className="absolute top-0 right-0 w-4 h-4 border-t border-r border-white/20 z-20" />
+            <div className="absolute bottom-0 left-0 w-4 h-4 border-b border-l border-white/20 z-20" />
+            <div className="absolute bottom-0 right-0 w-4 h-4 border-b border-r border-white/20 z-20" />
+          </div>
+        </motion.div>
+
+        {/* Lightbox Modal with Flip Animation */}
+        <AnimatePresence>
+          {isLightboxOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl"
+              onClick={() => setIsLightboxOpen(false)}
+            >
+              <motion.div
+                layoutId={layoutId}
+                className="relative w-[90vw] max-w-5xl aspect-video rounded-xl border-2 border-white/20 bg-black/90 overflow-hidden"
+                onClick={e => e.stopPropagation()}
+              >
+                {/* Expanded screenshot content */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-20 h-20 mx-auto mb-6 rounded-xl border border-white/20 bg-white/5 flex items-center justify-center">
+                      <Play className="w-10 h-10 text-white/60" />
+                    </div>
+                    <h4 className="text-2xl font-syne font-bold text-white mb-2">{title}</h4>
+                    <span className="text-white/40 font-mono text-sm tracking-widest">
+                      [SCREENSHOT PREVIEW]
+                    </span>
+                  </div>
+                </div>
+
+                {/* Close button */}
+                <button
+                  onClick={() => setIsLightboxOpen(false)}
+                  className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+
+                {/* Corner marks */}
+                <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-white/30" />
+                <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-white/30" />
+                <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-white/30" />
+                <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-white/30" />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Content Side with Screenshot Placeholder */}
+        <motion.div
+          initial={{ opacity: 0, x: align === 'left' ? 50 : -50 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: 0.2 }}
+          className="flex-1 text-center lg:text-left"
+        >
+          <div
+            className={`flex items-center gap-4 mb-6 ${align === 'right' ? 'lg:flex-row-reverse' : ''} justify-center lg:justify-start`}
+          >
+            <span className="text-4xl font-mono text-white/10 font-black">0{index}</span>
+            <div className="h-px w-12 bg-primary" />
+            <span className="text-xs font-mono text-primary uppercase tracking-widest">
+              {subtitle}
+            </span>
+          </div>
+
+          <h3 className="text-4xl md:text-5xl font-black text-white font-syne mb-6 leading-[0.9] uppercase">
+            {title.split(' ').map((word, i) => (
+              <span key={i} className="block">
+                {word}
+              </span>
+            ))}
+          </h3>
+
+          <p className="text-lg text-white/60 font-mono leading-relaxed max-w-md mx-auto lg:mx-0 mb-8">
+            {description}
+          </p>
+
+          {/* Screenshot Placeholder Frame */}
+          {screenshotPlaceholder && (
+            <div className="relative aspect-video max-w-md mx-auto lg:mx-0 rounded-lg overflow-hidden border border-white/10 bg-black/50 group/screenshot hover:border-primary/30 transition-colors">
+              {/* Corner marks */}
+              <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-white/30" />
+              <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-white/30" />
+              <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-white/30" />
+              <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-white/30" />
+
+              {/* Preview label */}
+              <div className="absolute top-2 right-2 px-2 py-0.5 bg-white/5 border border-white/10 rounded text-[9px] font-mono text-white/30 uppercase tracking-widest">
+                Preview
+              </div>
+
+              {/* Placeholder content */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="w-12 h-12 mx-auto mb-3 border border-dashed border-white/20 rounded-lg flex items-center justify-center">
+                    <Play className="w-5 h-5 text-white/20" />
+                  </div>
+                  <span className="text-xs font-mono text-white/20 tracking-wider">
+                    [SCREENSHOT: {title}]
+                  </span>
+                </div>
+              </div>
+
+              {/* Hover glow */}
+              <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover/screenshot:opacity-100 transition-opacity duration-500" />
+            </div>
+          )}
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
 export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const { scrollYProgress } = useScroll({
@@ -447,6 +555,8 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   const smoothProgress = useSpring(scrollYProgress, { stiffness: 100, damping: 30 })
   const heroY = useTransform(smoothProgress, [0, 0.2], [0, -100])
   const heroOpacity = useTransform(smoothProgress, [0, 0.15], [1, 0])
+  // Background darkening overlay - fades to 50% black as user scrolls
+  const bgOverlayOpacity = useTransform(smoothProgress, [0, 0.3], [0, 0.5])
 
   return (
     <TurbulentBackground
@@ -463,29 +573,43 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
         ref={containerRef}
         className="relative w-full min-h-screen text-white selection:bg-primary/30 overflow-x-hidden"
       >
+        {/* Background darkening overlay - behind content */}
+        <motion.div
+          style={{ opacity: bgOverlayOpacity }}
+          className="fixed inset-0 bg-black pointer-events-none z-0"
+        />
+
         {/* Navigation */}
         <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-black/40 backdrop-blur-xl">
           <div className="mx-auto max-w-7xl px-6">
             <div className="flex h-16 items-center justify-between">
               <Link href="/" className="flex items-center gap-3 group">
-                <div className="relative w-8 h-8 border border-primary flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                  <Skull className="w-4 h-4 text-primary" />
+                <div className="relative w-12 h-12 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                  <img
+                    src="/logo.png"
+                    alt="KUR"
+                    className="w-full h-full object-contain brightness-0 invert"
+                  />
                 </div>
                 <div className="flex flex-col">
                   <span className="text-sm font-black uppercase tracking-[0.2em] leading-none font-syne">
-                    KURTVITZA
+                    KUR
                   </span>
                   <span className="text-[9px] font-mono text-white/30 tracking-wider">
-                    SYSTEM.v4.2.0
+                    SYSTEM.v1.0.0
                   </span>
                 </div>
               </Link>
 
               <div className="hidden md:flex items-center gap-2">
                 <MotionHighlight
-                  items={['SYSTEMS', 'DOCS', 'CHANGELOG']}
+                  items={['SYSTEMS', 'DOCS', 'API', 'CHANGELOG']}
                   onSelect={item => {
                     if (item === 'DOCS') {
+                      window.location.href = '/docs/getting-started'
+                      return
+                    }
+                    if (item === 'API') {
                       window.location.href = '/docs'
                       return
                     }
@@ -498,14 +622,8 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
               <div className="flex items-center gap-4">
                 <Link
                   href={isLoggedIn ? '/app' : '/login'}
-                  className="group relative inline-flex items-center gap-2 px-6 py-2 text-sm font-bold bg-white text-black hover:bg-white/90 transition-all duration-300 rounded-full overflow-hidden"
+                  className="group relative inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white transition-all duration-300 rounded-lg overflow-hidden border border-primary/50 hover:border-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm hover:shadow-[0_0_20px_-5px_rgba(92,124,250,0.5)] hover:scale-[1.02]"
                 >
-                  <GlowEffect
-                    colors={['#4f46e5', '#8b5cf6']}
-                    mode="static"
-                    blur="soft"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                  />
                   <span className="relative z-10">{isLoggedIn ? 'Dashboard' : 'Get Started'}</span>
                   <ArrowRight className="relative z-10 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
@@ -517,18 +635,17 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
         {/* Hero Section */}
         <motion.section
           style={{ y: heroY, opacity: heroOpacity }}
-          className="relative min-h-[90vh] flex flex-col items-center justify-center px-6 pt-24"
+          className="relative min-h-[85vh] flex flex-col items-center justify-center px-6 pt-20 pb-8"
         >
-          <div className="text-center max-w-5xl mx-auto mb-16">
-            <div className="min-h-[200px] md:min-h-[320px] flex items-center justify-center mb-8">
+          <div className="text-center max-w-5xl mx-auto mb-12">
+            <div className="min-h-[160px] md:min-h-[240px] flex items-center justify-center mb-6">
               <HeadlineVariant />
             </div>
 
-            <div className="text-sm md:text-xl text-white/50 max-w-3xl mx-auto leading-relaxed min-h-[4rem] md:h-16">
-              <AggressiveGlitchText
-                text="AI-powered tools to build games faster. Or better. Or both. Pick what you need, skip what you don't."
-                className="font-mono tracking-tight"
-              />
+            <div className="flex flex-col gap-1 text-base md:text-lg text-white/70 max-w-2xl mx-auto leading-snug font-mono tracking-tight">
+              <span>AI-powered game dev toolkit.</span>
+              <span>10x faster iteration.</span>
+              <span className="text-primary">Ship games, not busywork.</span>
             </div>
           </div>
 
@@ -536,26 +653,32 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.8 }}
-            className="flex flex-col sm:flex-row items-center gap-6"
+            className="flex flex-col sm:flex-row items-center gap-5"
           >
             <Link
               href={isLoggedIn ? '/app' : '/login'}
-              className="group relative inline-flex items-center gap-3 px-10 py-5 text-base font-black bg-white text-black hover:bg-white/95 transition-all duration-500 rounded-xl shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] font-syne"
+              className="group relative inline-flex items-center gap-3 px-10 py-5 text-sm font-bold text-white transition-all duration-300 rounded-lg overflow-hidden border border-primary/60 hover:border-primary bg-primary/20 hover:bg-primary/30 backdrop-blur-sm shadow-[0_0_30px_-10px_rgba(92,124,250,0.4)] hover:shadow-[0_0_40px_-8px_rgba(92,124,250,0.6)] hover:scale-[1.03] font-syne tracking-wide"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
               START BUILDING FREE
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
 
-            <button className="group inline-flex items-center gap-3 px-8 py-5 text-sm font-bold text-white/60 hover:text-white transition-all border border-white/10 hover:border-white/30 rounded-xl bg-black/40 backdrop-blur-xl font-syne">
-              <Play className="w-4 h-4" />
-              WATCH DEMO
+            <button className="group relative inline-flex items-center gap-3 px-8 py-4 text-sm font-bold text-white transition-all duration-300 rounded-lg overflow-hidden border border-primary/50 hover:border-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm hover:shadow-[0_0_20px_-5px_rgba(92,124,250,0.5)] hover:scale-[1.02] font-syne tracking-wide">
+              <Play className="relative z-10 w-4 h-4" />
+              <span className="relative z-10">WATCH DEMO</span>
             </button>
           </motion.div>
         </motion.section>
 
+        {/* Tools Integration - "Keep Your Tools. Add More Power." */}
+        <ToolsIntegration />
+
         {/* Bento Grid Section */}
         <section id="systems" className="py-32 px-6 relative">
+          {/* Vertical Thread Line - Connecting the entire section */}
+          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/5 hidden lg:block -translate-x-1/2" />
+
           <div className="max-w-7xl mx-auto mb-20 text-center lg:text-left">
             <motion.div
               initial={{ opacity: 0, x: -50 }}
@@ -586,461 +709,510 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
             </motion.p>
           </div>
 
-          {/* FEATURE SUMMARY BAR */}
-          <div className="max-w-7xl mx-auto mb-16">
+          <div className="max-w-7xl mx-auto">
+            {/* TRUE BENTO GRID - Asymmetric with varied heights */}
+            <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-32 auto-rows-[140px]">
+              {/* Interactive Tile - Concept to Carnage (3x2) - Large feature */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className="md:col-span-3 lg:col-span-3 row-span-2"
+              >
+                <ConceptToCarnageTile />
+              </motion.div>
+
+              {/* Scene Simulator (2x1) */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="md:col-span-2 lg:col-span-2 row-span-1 rounded-lg border border-white/10 overflow-hidden group relative bg-gradient-to-br from-black/60 to-black/40 backdrop-blur-xl"
+              >
+                <div
+                  className="absolute inset-0 opacity-[0.04]"
+                  style={{
+                    backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)',
+                    backgroundSize: '12px 12px',
+                  }}
+                />
+                <div className="absolute top-0 right-0 w-24 h-24 opacity-30">
+                  <ThreeDIcon type="STR_TST" />
+                </div>
+                <div className="absolute inset-0 flex flex-col justify-end p-5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Sparkles className="w-4 h-4 text-cyan-400" />
+                    <span className="font-mono text-[9px] text-cyan-400/80 tracking-widest uppercase">
+                      Scene_Sim
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-black text-white font-syne">Scene Simulator</h3>
+                </div>
+              </motion.div>
+
+              {/* Team Collab (1x1) - Small square */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="md:col-span-1 lg:col-span-1 row-span-1 rounded-lg border border-white/10 overflow-hidden group relative bg-gradient-to-br from-violet-950/30 to-black/40 backdrop-blur-xl"
+              >
+                <div className="absolute inset-0 flex items-center justify-center opacity-20 group-hover:opacity-40 transition-opacity">
+                  <Users size={48} strokeWidth={1} />
+                </div>
+                <div className="absolute inset-0 flex flex-col justify-end p-4">
+                  <span className="font-mono text-[8px] text-violet-400/80 tracking-widest uppercase mb-1">
+                    Team
+                  </span>
+                  <h3 className="text-sm font-black text-white font-syne">Collab</h3>
+                </div>
+              </motion.div>
+
+              {/* Loop Designer (3x1) - Wide banner */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="md:col-span-3 lg:col-span-3 row-span-1 rounded-lg border border-white/10 overflow-hidden group relative bg-gradient-to-r from-green-950/30 via-black/40 to-black/60 backdrop-blur-xl"
+              >
+                <div
+                  className="absolute inset-0 opacity-[0.03]"
+                  style={{
+                    backgroundImage: 'radial-gradient(#22c55e 1px, transparent 1px)',
+                    backgroundSize: '14px 14px',
+                  }}
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-20 h-20 opacity-40">
+                  <ThreeDIcon type="LOP_DES" />
+                </div>
+                <div className="absolute inset-0 flex items-center p-5">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Zap className="w-4 h-4 text-green-400" />
+                      <span className="font-mono text-[9px] text-green-400/80 tracking-widest uppercase">
+                        Loop_Designer
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-black text-white font-syne">
+                      Addictive Game Loops
+                    </h3>
+                    <p className="text-white/50 font-mono text-xs mt-1 max-w-xs">
+                      "Just one more turn" — engineered, not guessed.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* VERTICAL DEEP DIVES - 5 MODULE SECTIONS */}
+            <div className="space-y-12">
+              {/* Section 1: AI Storyteller */}
+              <FeatureDeepDive
+                index={1}
+                title="AI Storyteller"
+                subtitle="NARRATIVE_ENGINE"
+                description="Factions. Intrigue. Betrayal. An AI co-writer that understands narrative arcs and character motivation, never sleeping, always plotting."
+                type3d="AI_NARRATIVE"
+                modelScale={5}
+                modelOffsetX={-0.5}
+                modelOffsetY={-0.2}
+                align="left"
+                pngIcon="/images/icons/ai-narrative.png"
+              />
+
+              {/* Section 2: Infinite Procedural Worlds */}
+              <FeatureDeepDive
+                index={2}
+                title="Infinite Worlds"
+                subtitle="PROCEDURAL_ENGINE"
+                description="Generate entire continents in milliseconds. Biomes, caves, cities—all procedurally crafted. The foundation of your reality, infinitely scalable."
+                type3d="WORLD_GEN"
+                align="right"
+                modelScale={5}
+                modelOffsetX={-0.5}
+                modelOffsetY={-0.2}
+                pngIcon="/images/icons/world-gen.png"
+              />
+
+              {/* Section 3: 3D Canvas / Terrain Sculpting */}
+              <FeatureDeepDive
+                index={3}
+                title="3D Canvas"
+                subtitle="SCULPT_SIMULATION"
+                description="Shape mountains and gouge trenches with real-time physics simulation. Drag, drop, sculpt. The most tactile terrain tool ever built."
+                type3d="SCULPT_SIM"
+                align="left"
+                pngIcon="/images/icons/sculpt-sim.png"
+              />
+
+              {/* Section 4: One-Click Export */}
+              <FeatureDeepDive
+                index={4}
+                title="One-Click Export"
+                subtitle="EXPORT_PIPELINE"
+                description="Unity. Unreal. Godot. GLTF. Zero friction pipeline from concept to production. Ship your worlds to any engine with a single click."
+                type3d="EXPORT_SEC"
+                modelOffsetY={-0.3}
+                modelOffsetX={-0.5}
+                align="right"
+                pngIcon="/images/icons/export-sec.png"
+              />
+
+              {/* Section 5: API & MCP Integration */}
+              <section className="py-24 relative">
+                <div className="absolute left-[50%] top-0 bottom-0 w-px bg-white/5 hidden lg:block" />
+
+                <div className="flex flex-col lg:flex-row gap-12 lg:gap-24 items-center">
+                  {/* Code Example Side */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true, margin: '-100px' }}
+                    transition={{ duration: 0.7 }}
+                    className="flex-1 w-full"
+                  >
+                    <div className="relative rounded-lg overflow-hidden bg-[#0d0d0d] border border-white/10">
+                      {/* Terminal Header */}
+                      <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-white/[0.02]">
+                        <div className="flex gap-1.5">
+                          <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                          <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                          <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                        </div>
+                        <span className="text-[10px] font-mono text-white/30 ml-2">
+                          api_example.ts
+                        </span>
+                      </div>
+
+                      {/* Code Content */}
+                      <div className="p-6 font-mono text-sm leading-relaxed overflow-x-auto">
+                        <div className="text-white/40">// REST API</div>
+                        <div>
+                          <span className="text-purple-400">const</span>{' '}
+                          <span className="text-blue-300">world</span> ={' '}
+                          <span className="text-purple-400">await</span>{' '}
+                          <span className="text-yellow-300">fetch</span>(
+                          <span className="text-green-300">'/api/worlds/generate'</span>, {'{'}
+                        </div>
+                        <div className="pl-4">
+                          <span className="text-blue-300">method</span>:{' '}
+                          <span className="text-green-300">'POST'</span>,
+                        </div>
+                        <div className="pl-4">
+                          <span className="text-blue-300">body</span>: JSON.stringify({'{'}{' '}
+                          <span className="text-blue-300">biome</span>:{' '}
+                          <span className="text-green-300">'forest'</span>,{' '}
+                          <span className="text-blue-300">size</span>:{' '}
+                          <span className="text-orange-300">1024</span> {'}'})
+                        </div>
+                        <div>{'}'});</div>
+                        <div className="mt-4 text-white/40">// MCP Protocol</div>
+                        <div>
+                          <span className="text-purple-400">import</span> {'{'}{' '}
+                          <span className="text-blue-300">MCPClient</span> {'}'}{' '}
+                          <span className="text-purple-400">from</span>{' '}
+                          <span className="text-green-300">'@kurtvitza/mcp'</span>;
+                        </div>
+                        <div className="mt-2">
+                          <span className="text-purple-400">const</span>{' '}
+                          <span className="text-blue-300">mcp</span> ={' '}
+                          <span className="text-purple-400">new</span>{' '}
+                          <span className="text-yellow-300">MCPClient</span>();
+                        </div>
+                        <div>
+                          <span className="text-purple-400">await</span> mcp.
+                          <span className="text-yellow-300">connect</span>(
+                          <span className="text-green-300">'kurtvitza://studio'</span>);
+                        </div>
+                        <div>
+                          mcp.<span className="text-yellow-300">on</span>(
+                          <span className="text-green-300">'terrain:update'</span>,{' '}
+                          <span className="text-blue-300">handleUpdate</span>);
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  {/* Content Side */}
+                  <motion.div
+                    initial={{ opacity: 0, x: 50 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.7, delay: 0.2 }}
+                    className="flex-1 text-center lg:text-left"
+                  >
+                    <div className="flex items-center gap-4 mb-6 justify-center lg:justify-start">
+                      <span className="text-4xl font-mono text-white/10 font-black">05</span>
+                      <div className="h-px w-12 bg-primary" />
+                      <span className="text-xs font-mono text-primary uppercase tracking-widest">
+                        DEVELOPER_API
+                      </span>
+                    </div>
+
+                    <h3 className="text-4xl md:text-5xl font-black text-white font-syne mb-6 leading-[0.9] uppercase">
+                      <span className="block">API &</span>
+                      <span className="block">MCP</span>
+                    </h3>
+
+                    <p className="text-lg text-white/60 font-mono leading-relaxed max-w-md mx-auto lg:mx-0 mb-6">
+                      Full REST API access for automation. MCP (Model Context Protocol) for
+                      real-time sync with AI coding assistants. Build integrations that fit your
+                      workflow.
+                    </p>
+
+                    <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
+                      <span className="px-3 py-1.5 bg-white/5 border border-white/10 rounded text-xs font-mono text-white/60">
+                        REST API
+                      </span>
+                      <span className="px-3 py-1.5 bg-white/5 border border-white/10 rounded text-xs font-mono text-white/60">
+                        WebSocket
+                      </span>
+                      <span className="px-3 py-1.5 bg-primary/20 border border-primary/30 rounded text-xs font-mono text-primary">
+                        MCP Protocol
+                      </span>
+                      <span className="px-3 py-1.5 bg-white/5 border border-white/10 rounded text-xs font-mono text-white/60">
+                        TypeScript SDK
+                      </span>
+                    </div>
+                  </motion.div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        {/* Pro Plan Promo - Glowing Card */}
+        <ProPlanPromo />
+
+        {/* Architecting Reality - Flowing Layout with Stats */}
+        <section className="py-32 lg:py-48 px-6 relative overflow-hidden">
+          {/* Section header - centered */}
+          <div className="max-w-7xl mx-auto mb-20 text-center">
+            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}>
+              <span className="text-[10px] font-mono text-primary tracking-[0.3em] uppercase mb-6 block">
+                SHIPS FASTER. STAYS CREATIVE.
+              </span>
+              <h2 className="text-4xl md:text-6xl lg:text-7xl font-black uppercase tracking-tight font-mono leading-[0.9]">
+                <span className="text-white">ARCHITECTING</span>
+                <span className="text-white/20"> REALITY</span>
+              </h2>
+            </motion.div>
+          </div>
+
+          {/* Split Layout: Massive Icon + Stats Card */}
+          <div className="max-w-7xl mx-auto relative lg:flex lg:items-center lg:gap-20">
+            {/* Left Side: Massive 3D Icon (The "Big Fucking Icon") */}
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              className="hidden lg:block lg:w-1/2 relative h-[800px] -ml-20"
+            >
+              <div className="absolute inset-0 flex items-center justify-center">
+                <ThreeDIcon type="STR_TST" color="#5c7cfa" size={700} />
+              </div>
+            </motion.div>
+
+            {/* Right Side: High Contrast Stats Card */}
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              className="lg:w-1/2"
+            >
+              <div className="bg-[#f0f0f0] rounded-sm p-12 md:p-16 text-black shadow-2xl relative overflow-hidden">
+                <div className="flex flex-col gap-12 relative z-10">
+                  {/* Stat Model 1 */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-start gap-2">
+                      <span className="text-7xl md:text-8xl font-black font-syne tracking-tighter leading-none">
+                        1M+
+                      </span>
+                      <Plus className="w-8 h-8 text-primary mt-2" strokeWidth={4} />
+                    </div>
+                    <div className="h-px w-full bg-black/10 my-2" />
+                    <div className="flex flex-col">
+                      <span className="font-bold text-lg">Polygons Rendered/Sec</span>
+                      <span className="text-black/60 font-mono text-sm">
+                        Real-time throughput for massive worlds.
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Stat Model 2 */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-start gap-2">
+                      <span className="text-7xl md:text-8xl font-black font-syne tracking-tighter leading-none">
+                        4,000+
+                      </span>
+                      <Plus className="w-8 h-8 text-primary mt-2" strokeWidth={4} />
+                    </div>
+                    <div className="h-px w-full bg-black/10 my-2" />
+                    <div className="flex flex-col">
+                      <span className="font-bold text-lg">Assets Generated</span>
+                      <span className="text-black/60 font-mono text-sm">
+                        Unique assets created by users this week.
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Stat Model 3 */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-start gap-2">
+                      <span className="text-7xl md:text-8xl font-black font-syne tracking-tighter leading-none">
+                        94%
+                      </span>
+                    </div>
+                    <div className="h-px w-full bg-black/10 my-2" />
+                    <div className="flex flex-col">
+                      <span className="font-bold text-lg">Code Written by AI</span>
+                      <span className="text-black/60 font-mono text-sm">
+                        Our engines simulate complex logic so you don't have to.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Decorative background element for the card */}
+                <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Our Manifesto - BOLD BLOCK */}
+        <section className="py-24 relative">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="w-full bg-[#ff4400] text-black py-32 px-6 overflow-hidden relative"
+          >
+            {/* Texture overlay */}
+            <div
+              className="absolute inset-0 opacity-[0.4] mix-blend-overlay pointer-events-none"
+              style={{
+                backgroundImage:
+                  'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'1\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'1\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'1\'/%3E%3C/g%3E%3C/svg%3E")',
+                backgroundSize: '12px 12px',
+              }}
+            />
+
+            <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center relative z-10">
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-4 h-4 bg-black rounded-full" />
+                  <span className="text-xs font-mono font-bold uppercase tracking-widest text-black/60">
+                    The Manifesto
+                  </span>
+                </div>
+
+                <h2 className="text-6xl md:text-8xl font-black leading-[0.85] font-syne tracking-tight">
+                  WE DON&apos;T
+                  <br />
+                  <span className="text-black/30">REPLACE</span>
+                  <br />
+                  CREATORS
+                </h2>
+              </div>
+
+              <div className="space-y-8 lg:border-l lg:border-black/10 lg:pl-16">
+                <p className="text-2xl font-bold font-syne leading-tight max-w-xl">
+                  &ldquo;AI isn&apos;t here to paint the picture. It&apos;s here to stretch the
+                  canvas.&rdquo;
+                </p>
+                <div className="space-y-4">
+                  <p className="font-mono text-sm font-bold uppercase tracking-widest mb-4 opacity-50">
+                    Core Beliefs
+                  </p>
+                  <div className="flex items-start gap-4">
+                    <div className="w-8 h-8 rounded-full border border-black/20 flex items-center justify-center shrink-0">
+                      1
+                    </div>
+                    <p className="font-mono text-sm leading-relaxed">
+                      Automate the drudgery, not the discovery.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="w-8 h-8 rounded-full border border-black/20 flex items-center justify-center shrink-0">
+                      2
+                    </div>
+                    <p className="font-mono text-sm leading-relaxed">
+                      Your taste is the only thing that can't be generated.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="w-8 h-8 rounded-full border border-black/20 flex items-center justify-center shrink-0">
+                      3
+                    </div>
+                    <p className="font-mono text-sm leading-relaxed">
+                      Tools should be dangerous enough to build something new.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Giant Background Watermark */}
+            <div className="absolute -bottom-24 -right-24 text-[30vw] font-black font-syne text-black opacity-[0.05] leading-none pointer-events-none select-none">
+              ART
+            </div>
+          </motion.div>
+        </section>
+
+        {/* CTA Footer */}
+        <footer className="py-32 px-6 relative border-t border-white/5 overflow-hidden">
+          <div className="absolute inset-0 z-0 bg-transparent" />
+          <div className="max-w-4xl mx-auto relative z-10 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <span className="text-[10px] font-mono text-primary tracking-[0.4em] uppercase mb-6 block">
+                START FREE • NO CREDIT CARD
+              </span>
+              <h2 className="text-5xl md:text-7xl font-black mb-6 uppercase tracking-tighter font-syne">
+                Build your first
+                <br />
+                <span className="text-primary">world today</span>
+              </h2>
+              <p className="text-white/40 font-mono text-sm mb-12 max-w-md mx-auto">
+                Join 2,000+ game developers shipping faster with AI-powered tools.
+              </p>
+            </motion.div>
+
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="flex flex-wrap items-center justify-between gap-6 px-8 py-5 bg-white/[0.02] border border-white/5 rounded-xl backdrop-blur-sm"
+              transition={{ delay: 0.2 }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
             >
-              {[
-                { label: 'WORLD_GEN', val: '∞ PROXIMAL', icon: Map },
-                { label: 'AI_NARRATIVE', val: 'EMERGENT', icon: Brain },
-                { label: 'SCULPT_SIM', val: 'BATTLE_TESTED', icon: Palette },
-                { label: 'EXPORT_SEC', val: 'PROD_READY', icon: Boxes },
-              ].map((stat, i) => {
-                const Icon = stat.icon
-                return (
-                  <div key={i} className="group/stat flex items-center gap-4">
-                    {/* 3D Icon Container */}
-                    <div className="relative">
-                      {/* Glow */}
-                      <div className="absolute inset-0 bg-primary rounded-xl blur-xl opacity-30 group-hover/stat:opacity-50 transition-opacity duration-500" />
-                      {/* 3D Box */}
-                      <div 
-                        className="relative w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center transition-all duration-300 group-hover/stat:scale-110 group-hover/stat:-translate-y-1"
-                        style={{
-                          boxShadow: '0 10px 30px -10px rgba(147, 51, 234, 0.6), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -2px 4px rgba(0,0,0,0.2)',
-                        }}
-                      >
-                        <Icon className="w-7 h-7 text-white" />
-                      </div>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-mono text-white/40 tracking-widest uppercase">
-                        {stat.label}
-                      </span>
-                      <span className="text-sm font-bold font-mono tracking-tight text-white">
-                        {stat.val}
-                      </span>
-                    </div>
-                    {i < 3 && <div className="hidden lg:block w-px h-10 bg-white/10 ml-2" />}
-                  </div>
-                )
-              })}
-              <div className="hidden xl:flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                <span className="text-[10px] font-mono text-primary font-bold uppercase tracking-widest leading-none">
-                  SYSTEM_READY.v4
-                </span>
-              </div>
-            </motion.div>
-          </div>
-
-          <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Row 1 & 2 Big Tile */}
-              <motion.div
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                className="lg:col-span-2 lg:row-span-2 rounded-xl border border-white/5 bg-black/40 backdrop-blur-xl overflow-hidden group"
+              <Link
+                href="/login"
+                className="group relative inline-flex items-center gap-3 px-8 py-4 text-sm font-bold text-white transition-all duration-300 rounded-lg overflow-hidden border border-primary/60 hover:border-primary bg-primary/20 hover:bg-primary/30 backdrop-blur-sm shadow-[0_0_30px_-10px_rgba(92,124,250,0.4)] hover:shadow-[0_0_40px_-8px_rgba(92,124,250,0.6)] hover:scale-[1.03] font-syne tracking-wide"
               >
-                <div className="aspect-video lg:aspect-auto lg:h-[500px] relative bg-black/40 overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                  <div className="absolute inset-0 flex items-center justify-center border-b border-white/5">
-                    <Map className="w-32 h-32 text-primary/20 group-hover:scale-110 transition-transform duration-700" />
-                  </div>
-                  <div className="absolute inset-x-0 bottom-0 h-1 bg-primary/20 overflow-hidden">
-                    <motion.div
-                      animate={{ x: ['-100%', '100%'] }}
-                      transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-                      className="w-1/3 h-full bg-primary"
-                    />
-                  </div>
-                </div>
-                <div className="p-10">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="px-3 py-1 border border-primary/30 rounded-full bg-primary/10 text-[10px] font-mono text-primary">
-                      WLD_GEN_v4
-                    </div>
-                    <span className="text-[10px] font-mono text-white/20">CORE::SYSTEM</span>
-                  </div>
-                  <h3 className="text-4xl font-black tracking-wide text-white mb-6 font-syne">
-                    Infinite Procedural Worlds
-                  </h3>
-                  <p className="text-white/50 font-mono text-base leading-relaxed">
-                    Battle-tested terrain generation algorithms. Scale from a single dungeon to a
-                    continental megastructure in milliseconds.
-                  </p>
-                </div>
-              </motion.div>
-
-              {/* Interactive Tile */}
-              <div className="lg:col-span-2">
-                <ConceptToCarnageTile />
-              </div>
-
-              {/* Stress Tested Scenes */}
-              <div className="lg:col-span-1">
-                <BrutalCard feature={FEATURES[5]} index={5} />
-              </div>
-
-              {/* Secure Assets */}
-              <div className="lg:col-span-1">
-                <BrutalCard feature={FEATURES[6]} index={6} />
-              </div>
-
-              {/* AI Narratives */}
-              <motion.div
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                className="lg:col-span-2 rounded-xl border border-white/5 bg-black/40 backdrop-blur-xl p-10 group"
+                <Plus className="w-4 h-4" />
+                START BUILDING FREE
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link
+                href="/docs"
+                className="group inline-flex items-center gap-2 px-6 py-4 text-sm font-bold text-white/60 hover:text-white transition-all duration-300 border border-transparent hover:border-white/10 rounded-lg hover:bg-white/5 font-mono"
               >
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-                    <Brain className="w-10 h-10 text-primary" />
-                  </div>
-                  <h3 className="text-3xl font-black tracking-wide text-white font-syne">
-                    Emergent AI Narratives
-                  </h3>
-                </div>
-                <p className="text-white/40 font-mono text-base leading-relaxed mb-8">
-                  The AI dungeon master that doesn&apos;t pull punches. Faction warfare, political
-                  intrigue, and cold-blooded betrayal.
-                </p>
-                <div className="h-32 rounded-xl bg-black/60 border border-white/5 flex items-center justify-center relative overflow-hidden">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(34,197,94,0.1),transparent)] group-hover:scale-150 transition-transform duration-1000" />
-                  <span className="text-[10px] font-mono text-white/30 tracking-[0.3em] uppercase">
-                    SYMLINK::NEURAL_DRIVE
-                  </span>
-                </div>
-              </motion.div>
-
-              {/* Terrain Sculpting */}
-              <div className="lg:col-span-2">
-                <motion.div
-                  initial={{ opacity: 0, y: 40 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  className="h-full rounded-xl border border-white/5 bg-black/40 backdrop-blur-xl p-10 group flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center gap-4 mb-8">
-                      <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-                        <Palette className="w-10 h-10 text-primary" />
-                      </div>
-                      <h3 className="text-3xl font-black tracking-wide text-white font-syne">
-                        Brutal Sculpting
-                      </h3>
-                    </div>
-                    <p className="text-white/40 font-mono text-base leading-relaxed">
-                      Carve mountains. Dig trenches. Shape the battlefield. Every scar on the land
-                      tells a story of survival.
-                    </p>
-                  </div>
-                  <div className="mt-8 flex items-center justify-between">
-                    <div className="flex -space-x-3">
-                      {[...Array(4)].map((_, i) => (
-                        <div
-                          key={i}
-                          className="w-8 h-8 rounded-full border-2 border-black bg-primary/20"
-                        />
-                      ))}
-                    </div>
-                    <span className="text-[10px] font-mono text-primary/50 uppercase tracking-widest">
-                      ACTIVE_SCULPTORS_04
-                    </span>
-                  </div>
-                </motion.div>
-              </div>
-
-              {/* Final Rows */}
-              <div className="lg:col-span-1">
-                <BrutalCard feature={FEATURES[3]} index={3} />
-              </div>
-              <div className="lg:col-span-3">
-                <BrutalCard feature={FEATURES[4]} index={4} />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Architecting Reality (Step by Step) */}
-        <section className="py-32 px-6 relative">
-          <div className="max-w-7xl mx-auto mb-20 text-center lg:text-left">
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              className="flex items-center justify-center lg:justify-start gap-4 mb-8"
-            >
-              <div className="w-8 h-px bg-primary" />
-              <span className="text-xs font-mono text-primary uppercase tracking-widest">
-                CORE_WORKFLOW
-              </span>
+                Read the docs
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
             </motion.div>
 
-            <motion.h2
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              className="text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter font-mono"
-            >
-              <span className="text-white">ARCHITECTING</span>
-              <span className="text-white/20"> REALITY</span>
-            </motion.h2>
-          </div>
-
-          <div className="max-w-7xl mx-auto relative">
-            {/* INFRASTRUCTURE WIRING */}
-            <svg
-              className="absolute inset-0 w-full h-full -z-10 opacity-20 pointer-events-none hidden lg:block"
-              viewBox="0 0 1000 100"
-              preserveAspectRatio="none"
-            >
-              <motion.path
-                d="M 125 50 L 375 50 M 375 50 L 625 50 M 625 50 L 875 50"
-                fill="none"
-                stroke="url(#wireGradient)"
-                strokeWidth="2"
-                strokeDasharray="10 10"
-                initial={{ strokeDashoffset: 0 }}
-                animate={{ strokeDashoffset: -100 }}
-                transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
-              />
-              <defs>
-                <linearGradient id="wireGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#5c7cfa" stopOpacity="0" />
-                  <stop offset="50%" stopColor="#5c7cfa" stopOpacity="1" />
-                  <stop offset="100%" stopColor="#5c7cfa" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-            </svg>
-
-            {/* SECTION SCANNER */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10 opacity-30">
-              <ScannerLine />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {STEPS.map((step, i) => (
-                <SystemModuleCard key={i} step={step} index={i} />
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Testimonials */}
-        <section className="py-32 px-6 relative border-t border-white/5 bg-white/[0.01]">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-20">
-              <h2 className="text-4xl md:text-5xl font-black text-white mb-6 font-syne uppercase tracking-tighter">
-                Loved by creators worldwide
-              </h2>
-              <div className="flex items-center justify-center gap-4">
-                <div className="h-px w-12 bg-white/10" />
-                <p className="text-white/40 font-mono">JOIN THE ARCHITECTS</p>
-                <div className="h-px w-12 bg-white/10" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                {
-                  quote:
-                    'This changed how I approach world-building. The AI generation is mind-blowing.',
-                  author: 'Alex Chen',
-                  role: 'Indie Game Dev',
-                  icon: <Skull className="w-5 h-5 text-primary" />,
-                },
-                {
-                  quote:
-                    'Finally, a tool that understands procedural generation the way I need it.',
-                  author: 'Sarah Miller',
-                  role: 'Tech Artist',
-                  icon: <Boxes className="w-5 h-5 text-primary" />,
-                },
-                {
-                  quote: 'The narrative AI is like having a co-writer who never sleeps.',
-                  author: 'Marcus Wright',
-                  role: 'Game Writer',
-                  icon: <Brain className="w-5 h-5 text-primary" />,
-                },
-              ].map((t, i) => (
-                <motion.div
-                  key={i}
-                  whileHover={{ y: -10 }}
-                  className="p-8 rounded-xl bg-black/40 border border-white/5 backdrop-blur-xl relative overflow-hidden group"
-                >
-                  <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-100 transition-opacity">
-                    {t.icon}
-                  </div>
-                  <p className="text-lg text-white/70 mb-8 italic font-serif leading-relaxed">
-                    &ldquo;{t.quote}&rdquo;
-                  </p>
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-bold text-primary">
-                      {t.author[0]}
-                    </div>
-                    <div>
-                      <div className="font-bold text-white text-sm">{t.author}</div>
-                      <div className="text-xs text-white/30 font-mono uppercase tracking-widest">
-                        {t.role}
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Our Manifesto */}
-        <section className="py-40 px-6 relative overflow-hidden">
-          {/* Background effects */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(147,51,234,0.15),transparent_50%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(220,38,38,0.08),transparent_50%)]" />
-          <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }} />
-          
-          <div className="max-w-6xl mx-auto relative z-10">
-            {/* Giant statement */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              className="mb-24"
-            >
-              <div className="text-center mb-8">
-                <span className="inline-block px-4 py-2 border border-primary/30 rounded-full text-[10px] font-mono text-primary tracking-[0.3em] uppercase bg-primary/5">
-                  MANIFESTO
-                </span>
-              </div>
-              
-              <h2 className="text-5xl md:text-7xl lg:text-8xl font-black text-center leading-[0.9] font-syne">
-                <span className="block text-white/20">WE DON&apos;T</span>
-                <span className="block text-white">REPLACE</span>
-                <span className="block bg-gradient-to-r from-primary via-purple-400 to-primary bg-clip-text text-transparent">
-                  CREATORS
-                </span>
-              </h2>
-              
-              <motion.div
-                initial={{ scaleX: 0 }}
-                whileInView={{ scaleX: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.3, duration: 0.8 }}
-                className="h-1 bg-gradient-to-r from-transparent via-primary to-transparent max-w-md mx-auto mt-12"
-              />
-            </motion.div>
-
-            {/* Two column layout */}
-            <div className="grid md:grid-cols-2 gap-16 mb-24">
-              <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                className="space-y-6"
-              >
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="w-12 h-12 rounded-xl bg-red-600 flex items-center justify-center">
-                    <X className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="text-2xl font-black font-syne text-white">NOT THIS</span>
-                </div>
-                <p className="text-lg text-white/50 font-mono leading-relaxed">
-                  &ldquo;AI will replace artists&rdquo;
-                </p>
-                <p className="text-lg text-white/50 font-mono leading-relaxed">
-                  &ldquo;Creativity is dead&rdquo;
-                </p>
-                <p className="text-lg text-white/50 font-mono leading-relaxed">
-                  &ldquo;Humans are obsolete&rdquo;
-                </p>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, x: 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2 }}
-                className="space-y-6"
-              >
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-                    <Check className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="text-2xl font-black font-syne text-white">BUT THIS</span>
-                </div>
-                <p className="text-lg text-white/80 font-mono leading-relaxed">
-                  AI handles the <span className="text-primary font-bold">tedious grunt work</span>
-                </p>
-                <p className="text-lg text-white/80 font-mono leading-relaxed">
-                  Humans focus on <span className="text-primary font-bold">creative vision</span>
-                </p>
-                <p className="text-lg text-white/80 font-mono leading-relaxed">
-                  Together: <span className="text-primary font-bold">10x the output</span>
-                </p>
-              </motion.div>
-            </div>
-
-            {/* Core belief */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center p-12 rounded-xl border border-white/10 bg-white/[0.02] backdrop-blur-sm"
-            >
-              <p className="text-2xl md:text-3xl font-black font-syne text-white leading-snug max-w-3xl mx-auto">
-                Your taste. Your vision. Your instinct.
-                <br />
-                <span className="text-primary">That&apos;s the magic we can&apos;t automate.</span>
-              </p>
-            </motion.div>
-
-            {/* Stats */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.3 }}
-              className="mt-20 grid grid-cols-3 gap-8"
-            >
-              {[
-                { value: '100%', label: 'HUMAN CREATIVITY', sub: 'irreplaceable' },
-                { value: '0%', label: 'TEDIOUS WORK', sub: 'automated' },
-                { value: '∞', label: 'POSSIBILITIES', sub: 'unlocked' },
-              ].map((stat, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.1 * i }}
-                  className="text-center"
-                >
-                  <div className="text-5xl md:text-6xl font-black text-primary font-mono mb-2">{stat.value}</div>
-                  <div className="text-xs font-mono text-white/60 tracking-[0.2em] uppercase">{stat.label}</div>
-                  <div className="text-[10px] font-mono text-white/30 mt-1">{stat.sub}</div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </section>
-
-        {/* CTA Footer */}
-        <footer className="py-40 px-6 relative border-t border-white/5 bg-black overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,rgba(92,124,250,0.15),transparent_70%)]" />
-          <div className="max-w-4xl mx-auto relative z-10 text-center">
-            <h2 className="text-5xl md:text-7xl font-black mb-12 uppercase tracking-tighter font-syne">
-              Ready to build?
-            </h2>
-            <div className="flex justify-center mb-16">
-              <TerminalInput />
-            </div>
-            <div className="flex flex-wrap justify-center gap-10 opacity-30 grayscale hover:grayscale-0 transition-all duration-700">
-              {['UNITY', 'UNREAL', 'GODOT', 'GLTF', 'FBX'].map(tech => (
-                <span key={tech} className="text-xl font-black tracking-widest font-mono">
-                  {tech}
-                </span>
-              ))}
+            <div className="flex justify-center gap-8 mt-12 text-[10px] font-mono tracking-widest text-white/40">
+              <Link href="/terms" className="hover:text-primary transition-colors">
+                TERMS_OF_SERVICE
+              </Link>
+              <Link href="/privacy" className="hover:text-primary transition-colors">
+                PRIVACY_POLICY
+              </Link>
             </div>
           </div>
         </footer>

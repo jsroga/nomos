@@ -1,7 +1,7 @@
 import React from 'react'
 import { TourStep } from '@/components/tour'
 import { TOUR_STEP_IDS } from '@/lib/tour-constants'
-import { MessageSquare, GitMerge, Layers, CheckCircle2 } from 'lucide-react'
+import { MessageSquare, GitMerge, Layers, CheckCircle2, Zap } from 'lucide-react'
 
 export const loopCreatorTourSteps: TourStep[] = [
   {
@@ -19,6 +19,22 @@ export const loopCreatorTourSteps: TourStep[] = [
     ),
     selectorId: TOUR_STEP_IDS.LOOP_CHAT,
     position: 'top',
+  },
+  {
+    content: (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 text-primary">
+          <Zap className="w-5 h-5" />
+          <h3 className="font-bold">⚡ Quick Actions</h3>
+        </div>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Use these one-click buttons to instantly generate loop common patterns or brainstorm new
+          mechanics.
+        </p>
+      </div>
+    ),
+    selectorId: TOUR_STEP_IDS.LOOP_SUGGESTIONS, // Reusing suggestions area for quick actions
+    position: 'left',
   },
   {
     content: (
@@ -60,8 +76,8 @@ export const loopCreatorTourSteps: TourStep[] = [
           <h3 className="font-bold">✅ Review changes</h3>
         </div>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Before anything changes your diagram, you'll see it here first. Accept or reject AI
-          suggestions.
+          Before anything changes your diagram, you'll see a preview. Accept or reject the AI's
+          modular suggestions.
         </p>
       </div>
     ),

@@ -74,6 +74,8 @@ export const VoxelTerrainMesh: React.FC<VoxelTerrainMeshProps> = React.memo(
     const storeGroundColor = useInteriorStore(state => state.terrainSettings.groundColor)
     const fidelity = useInteriorStore(state => state.terrainBrush.fidelity)
 
+    const heightmapVersion = useInteriorStore(state => state.terrainSettings.heightmapVersion)
+
     // Use prop color or fall back to store groundColor
     const effectiveColor = color || storeGroundColor
 
@@ -174,6 +176,7 @@ export const VoxelTerrainMesh: React.FC<VoxelTerrainMeshProps> = React.memo(
       blockSize,
       surface.points,
       effectiveColor,
+      heightmapVersion,
     ])
 
     // Update instance matrices when data changes

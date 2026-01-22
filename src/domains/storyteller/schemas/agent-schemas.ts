@@ -258,12 +258,15 @@ export const StoryPlanSchema = z.object({
   // UI / Permission State
   isLocked: z.boolean().nullable().optional(),
   lockedBy: z.string().nullable().optional(),
-  lockedAt: z.date().nullable().optional(),
+  lockedAt: z.string().nullable().optional(),
 
   // Legacy / Reducer compatibility fields
   styleReference: z.string().nullable().optional(),
   locations: z.array(z.any()).nullable().optional(),
-  storyPlan: z.lazy(() => StoryPlanSchema.partial()).nullable().optional(),
+  storyPlan: z
+    .lazy(() => StoryPlanSchema.partial())
+    .nullable()
+    .optional(),
 })
 
 // ============================================

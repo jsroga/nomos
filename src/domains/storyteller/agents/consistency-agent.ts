@@ -157,13 +157,29 @@ export async function runConsistencyCheck(
     // Add IDs to inconsistencies and fixes
     const inconsistencies: Inconsistency[] = response.inconsistencies.map((inc, idx) => ({
       id: `inc-${Date.now()}-${idx}`,
-      ...inc,
+      type: inc.type as any,
+      severity: inc.severity as any,
+      description: inc.description,
+      affectedElements: inc.affectedElements.map(ae => ({
+        type: ae.type,
+        id: ae.id,
+        fieldPath: ae.fieldPath,
+      })),
     }))
 
     const fixes: ConsistencyFix[] = response.fixes.map((fix, idx) => ({
       id: `fix-${Date.now()}-${idx}`,
       inconsistencyId: inconsistencies[idx]?.id || 'unknown',
-      ...fix,
+      targetElement: {
+        type: fix.targetElement.type,
+        id: fix.targetElement.id,
+      },
+      changes: fix.changes.map(c => ({
+        path: c.path,
+        before: c.before,
+        after: c.after,
+        reason: c.reason,
+      })),
     }))
 
     // Build summary

@@ -34,7 +34,9 @@ const nextConfig = {
     return config
   },
   // Enable OpenTelemetry instrumentation
-  experimental: {},
+  experimental: {
+    reactCompiler: true,
+  },
 }
 
 module.exports = nextConfig

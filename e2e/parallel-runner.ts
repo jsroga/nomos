@@ -32,12 +32,12 @@ async function runParallel(cases: TestCase[], concurrency: number) {
           // 1. Halting Checks
           if (testCase.shouldNotHalt && isHalting) {
             passed = false
-            message = `FAILED: Halted (awaiting input) when expected to proceed.`
+            message = 'FAILED: Halted (awaiting input) when expected to proceed.'
           }
 
           if (testCase.shouldHalt && !isHalting) {
             passed = false
-            message = `FAILED: Proceeded when expected to halt/ask question.`
+            message = 'FAILED: Proceeded when expected to halt/ask question.'
           }
 
           // 2. Delegation Check

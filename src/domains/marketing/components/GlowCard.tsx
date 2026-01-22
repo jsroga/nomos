@@ -99,7 +99,7 @@ export const GlowCard: React.FC<GlowCardProps> = ({
         colors.border,
         colors.glow,
         colors.hoverGlow,
-        'transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]',
+        'transition-all duration-700 ease-out',
         'hover:bg-[#0a0a0a]/60 hover:-translate-y-2 hover:scale-[1.02]',
         tilt && 'md:odd:rotate-1 md:even:-rotate-1',
         colSpanClasses[colSpan],

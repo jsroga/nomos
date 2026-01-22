@@ -11,7 +11,10 @@ import {
 import { eq } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 import { requireAuth } from '@/lib/auth'
-import { verifyProjectAccess, verifyEpisodeAccess } from '@/domains/storyteller/lib/access-verification'
+import {
+  verifyProjectAccess,
+  verifyEpisodeAccess,
+} from '@/domains/storyteller/lib/access-verification'
 
 /**
  * Deep merge two objects, with special handling for arrays (replace, not concat)
@@ -123,20 +126,71 @@ export async function POST(req: NextRequest) {
       case 'UPDATE_SERIES_BIBLE': {
         const payload = { ...action.payload }
 
+        // Fields that definitely belong to Story Plan
+        const STORY_PLAN_FIELDS = [
+          'genre',
+          'tone',
+          'themes',
+          'worldRules',
+          'factions',
+          'keyCharacters',
+          'plotTwists',
+          'inspirations',
+          'worldDescription',
+          'soundtracks',
+          'styleReference',
+          'sequences',
+          'seasonStructure',
+          'executiveSummary',
+          'moodImages',
+          'imagePrompts',
+        ]
+
+        const planUpdates: Record<string, any> = {}
+        const bibleUpdates: Record<string, any> = {}
+
+        // 1. Extract nested storyPlan if exists
         if (payload.storyPlan) {
-          const { storyPlan, ...bibleUpdates } = payload
-          await updateSeriesBible(bibleUpdates)
-          const updatedPlan = await updateStoryPlan(storyPlan)
-          return NextResponse.json({
-            success: true,
-            result: { type: 'bible_updated', seriesBible: { ...bibleUpdates, storyPlan: updatedPlan } },
-          })
+          Object.assign(planUpdates, payload.storyPlan)
+          delete payload.storyPlan
         }
 
-        const updatedBible = await updateSeriesBible(payload)
+        // 2. Separate top-level fields
+        for (const key of Object.keys(payload)) {
+          if (STORY_PLAN_FIELDS.includes(key)) {
+            planUpdates[key] = payload[key]
+          } else {
+            bibleUpdates[key] = payload[key]
+          }
+        }
+
+        let updatedBible = {}
+        let updatedPlan = {}
+
+        // 3. Execute updates
+        if (Object.keys(bibleUpdates).length > 0) {
+          updatedBible = await updateSeriesBible(bibleUpdates)
+        }
+
+        if (Object.keys(planUpdates).length > 0) {
+          updatedPlan = await updateStoryPlan(planUpdates)
+        }
+
+        // 4. Return combined result with correct structure for frontend
+        // Frontend expects result.seriesBible to contain the properties
         return NextResponse.json({
           success: true,
-          result: { type: 'bible_updated', seriesBible: updatedBible },
+          result: {
+            type: 'bible_updated',
+            seriesBible: {
+              ...bibleUpdates,
+              ...updatedBible,
+              storyPlan: {
+                ...planUpdates,
+                ...updatedPlan,
+              },
+            },
+          },
         })
       }
 
@@ -156,20 +210,37 @@ export async function POST(req: NextRequest) {
         let updates: any = {}
         if (action.type === 'UPDATE_WORLD_RULES') updates = { worldRules: action.payload.rules }
         else if (action.type === 'UPDATE_FACTIONS') updates = { factions: action.payload.factions }
-        else if (action.type === 'UPDATE_INSPIRATIONS') updates = { inspirations: action.payload.inspirations }
-        else if (action.type === 'UPDATE_WORLD_DESCRIPTION') updates = { worldDescription: action.payload.description }
-        else if (action.type === 'UPDATE_PLOT_TWISTS') updates = { plotTwists: action.payload.plotTwists }
-        else if (action.type === 'UPDATE_KEY_CHARACTERS') updates = { keyCharacters: action.payload.keyCharacters }
+        else if (action.type === 'UPDATE_INSPIRATIONS')
+          updates = { inspirations: action.payload.inspirations }
+        else if (action.type === 'UPDATE_WORLD_DESCRIPTION')
+          updates = { worldDescription: action.payload.description }
+        else if (action.type === 'UPDATE_PLOT_TWISTS')
+          updates = { plotTwists: action.payload.plotTwists }
+        else if (action.type === 'UPDATE_KEY_CHARACTERS')
+          updates = { keyCharacters: action.payload.keyCharacters }
         else if (action.type === 'ADD_WORLD_RULE') {
-          const [proj] = await db.select().from(seriesBibles).where(eq(seriesBibles.projectId, projectId)).limit(1)
+          const [proj] = await db
+            .select()
+            .from(storyPlans)
+            .where(eq(storyPlans.projectId, projectId))
+            .limit(1)
           const curr = (proj?.content as any) || {}
           updates = { worldRules: [...(curr.worldRules || []), action.payload.rule] }
         } else if (action.type === 'SET_GENRE_AND_TONE') {
-          updates = { genre: action.payload.genre, tone: action.payload.tone, styleReference: action.payload.styleReference }
-        } else if (action.type === 'UPDATE_SOUNDTRACKS') updates = { soundtracks: action.payload.soundtracks }
+          updates = {
+            genre: action.payload.genre,
+            tone: action.payload.tone,
+            styleReference: action.payload.styleReference,
+          }
+        } else if (action.type === 'UPDATE_SOUNDTRACKS')
+          updates = { soundtracks: action.payload.soundtracks }
 
-        const updated = await updateSeriesBible(updates)
-        return NextResponse.json({ success: true, result: { type: 'bible_updated', seriesBible: updated } })
+        // FIX: These fields belong to storyPlan, so we update the storyPlan table/column
+        const updated = await updateStoryPlan(updates)
+        return NextResponse.json({
+          success: true,
+          result: { type: 'bible_updated', seriesBible: { storyPlan: updated } },
+        })
       }
 
       case 'UPDATE_EPISODE_ROADMAP': {
@@ -179,12 +250,20 @@ export async function POST(req: NextRequest) {
         if (payload.seasonStructure) updates.seasonStructure = payload.seasonStructure
         if (payload.executiveSummary) updates.executiveSummary = payload.executiveSummary
         const updatedPlan = await updateStoryPlan(updates)
-        return NextResponse.json({ success: true, result: { type: 'bible_updated', seriesBible: { storyPlan: updatedPlan } } })
+        return NextResponse.json({
+          success: true,
+          result: { type: 'bible_updated', seriesBible: { storyPlan: updatedPlan } },
+        })
       }
 
       case 'UPDATE_ROADMAP_SUMMARY': {
-        const updatedPlan = await updateStoryPlan({ executiveSummary: action.payload.executiveSummary })
-        return NextResponse.json({ success: true, result: { type: 'bible_updated', seriesBible: { storyPlan: updatedPlan } } })
+        const updatedPlan = await updateStoryPlan({
+          executiveSummary: action.payload.executiveSummary,
+        })
+        return NextResponse.json({
+          success: true,
+          result: { type: 'bible_updated', seriesBible: { storyPlan: updatedPlan } },
+        })
       }
 
       case 'UPDATE_EPISODE_PREMISE': {
@@ -193,10 +272,19 @@ export async function POST(req: NextRequest) {
 
         const [existing] = await db.select().from(episodes).where(eq(episodes.id, episodeId))
         const existingPlan = (existing?.storyPlan as Record<string, any>) || {}
-        const newPlan = { ...existingPlan, premise: { ...((existingPlan.premise as any) || {}), ...premise } }
+        const newPlan = {
+          ...existingPlan,
+          premise: { ...((existingPlan.premise as any) || {}), ...premise },
+        }
 
-        await db.update(episodes).set({ storyPlan: newPlan, updatedAt: new Date() }).where(eq(episodes.id, episodeId))
-        return NextResponse.json({ success: true, result: { type: 'episode_updated', storyPlan: newPlan } })
+        await db
+          .update(episodes)
+          .set({ storyPlan: newPlan, updatedAt: new Date() })
+          .where(eq(episodes.id, episodeId))
+        return NextResponse.json({
+          success: true,
+          result: { type: 'episode_updated', storyPlan: newPlan },
+        })
       }
 
       case 'CREATE_BEAT': {
@@ -228,7 +316,10 @@ export async function POST(req: NextRequest) {
         const beatId = action.payload.beatId
         if (!beatId) return NextResponse.json({ error: 'Beat ID required' }, { status: 400 })
         const { beatId: _, ...updateData } = action.payload.updates || action.payload
-        await db.update(beats).set({ ...updateData, updatedAt: new Date() }).where(eq(beats.id, beatId))
+        await db
+          .update(beats)
+          .set({ ...updateData, updatedAt: new Date() })
+          .where(eq(beats.id, beatId))
         return NextResponse.json({ success: true, result: { type: 'beat_updated', beatId } })
       }
 
@@ -241,8 +332,14 @@ export async function POST(req: NextRequest) {
 
       case 'REORDER_BEAT': {
         const { beatId, newIndex } = action.payload
-        await db.update(beats).set({ sequence: newIndex, updatedAt: new Date() }).where(eq(beats.id, beatId))
-        return NextResponse.json({ success: true, result: { type: 'beat_reordered', beatId, newIndex } })
+        await db
+          .update(beats)
+          .set({ sequence: newIndex, updatedAt: new Date() })
+          .where(eq(beats.id, beatId))
+        return NextResponse.json({
+          success: true,
+          result: { type: 'beat_reordered', beatId, newIndex },
+        })
       }
 
       case 'CREATE_CHARACTER': {
@@ -261,13 +358,22 @@ export async function POST(req: NextRequest) {
         }
 
         await db.insert(characters).values(newCharacter)
-        return NextResponse.json({ success: true, result: { type: 'character_created', character: newCharacter } })
+        return NextResponse.json({
+          success: true,
+          result: { type: 'character_created', character: newCharacter },
+        })
       }
 
       case 'UPDATE_CHARACTER_PROFILE': {
         const { characterId, updates } = action.payload
-        await db.update(characters).set({ ...updates, updatedAt: new Date() }).where(eq(characters.id, characterId))
-        return NextResponse.json({ success: true, result: { type: 'character_updated', characterId } })
+        await db
+          .update(characters)
+          .set({ ...updates, updatedAt: new Date() })
+          .where(eq(characters.id, characterId))
+        return NextResponse.json({
+          success: true,
+          result: { type: 'character_updated', characterId },
+        })
       }
 
       case 'UPDATE_SCRIPT':
@@ -276,26 +382,49 @@ export async function POST(req: NextRequest) {
         const append = action.payload.append
 
         if (episodeId) {
-          const [episode] = await db.select().from(episodes).where(eq(episodes.id, episodeId)).limit(1)
+          const [episode] = await db
+            .select()
+            .from(episodes)
+            .where(eq(episodes.id, episodeId))
+            .limit(1)
           const currentScript = episode?.scriptContent || ''
           const newScript = append ? currentScript + '\n\n' + content : content
-          await db.update(episodes).set({ scriptContent: newScript, updatedAt: new Date() }).where(eq(episodes.id, episodeId))
-          return NextResponse.json({ success: true, result: { type: 'script_updated', script: newScript } })
+          await db
+            .update(episodes)
+            .set({ scriptContent: newScript, updatedAt: new Date() })
+            .where(eq(episodes.id, episodeId))
+          return NextResponse.json({
+            success: true,
+            result: { type: 'script_updated', script: newScript },
+          })
         }
 
-        const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1)
+        const [project] = await db
+          .select()
+          .from(projects)
+          .where(eq(projects.id, projectId))
+          .limit(1)
         const currentBible = (project?.seriesBible as Record<string, any>) || {}
         const newScript = append ? (currentBible.script || '') + '\n\n' + content : content
         const updatedBible = await updateSeriesBible({ script: newScript })
-        return NextResponse.json({ success: true, result: { type: 'script_updated', seriesBible: updatedBible } })
+        return NextResponse.json({
+          success: true,
+          result: { type: 'script_updated', seriesBible: updatedBible },
+        })
       }
 
       default:
         console.log(`⚠️ Unhandled action type: ${action.type}`)
-        return NextResponse.json({ success: true, result: { type: 'acknowledged', message: `Action ${action.type} acknowledged` } })
+        return NextResponse.json({
+          success: true,
+          result: { type: 'acknowledged', message: `Action ${action.type} acknowledged` },
+        })
     }
   } catch (error) {
     console.error('Actions API error:', error)
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Action execution failed' }, { status: 500 })
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Action execution failed' },
+      { status: 500 }
+    )
   }
 }

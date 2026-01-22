@@ -106,7 +106,10 @@ Output ONLY the single prompt string.`
             .trim()
           prompts = JSON.parse(cleanContent)
         } catch (e) {
-          console.warn('Failed to parse GPT prompts as JSON, falling back to manual construction', e)
+          console.warn(
+            'Failed to parse GPT prompts as JSON, falling back to manual construction',
+            e
+          )
           prompts = [
             `Movie concept art, ${projectTitle}, ${genre}, ${tone}. ${worldDesc}. Wide environment shot.`,
             `Movie concept art, ${projectTitle}, ${genre}, ${tone}. ${worldDesc}. Key artifact close-up.`,

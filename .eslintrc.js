@@ -20,7 +20,7 @@ module.exports = {
       jsx: true,
     },
   },
-  plugins: ['react', '@typescript-eslint'],
+  plugins: ['react', '@typescript-eslint', 'eslint-plugin-react-compiler'],
   rules: {
     '@typescript-eslint/no-explicit-any': 'error',
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
@@ -29,6 +29,7 @@ module.exports = {
     semi: ['error', 'never'],
     quotes: ['error', 'single'],
     indent: 'off',
+    'react-compiler/react-compiler': 'error',
   },
   settings: {
     react: {

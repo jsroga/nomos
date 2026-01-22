@@ -11,8 +11,7 @@ import { DomainSidebar, SidebarSection, SidebarEmptyState } from '@/components/u
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 export const AssetExporterSidebar: React.FC = () => {
-  const defaultMasterPrompt =
-    'Isometric painted world in the style of Disco Elysium, detailed urban environment, painterly art style'
+  const defaultMasterPrompt = ''
 
   const [masterPrompt, setMasterPrompt] = useState(() => {
     if (typeof window !== 'undefined') {

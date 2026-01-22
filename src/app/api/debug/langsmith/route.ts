@@ -5,7 +5,7 @@ import { requireAuth } from '@/lib/api-utils'
 /**
  * Debug endpoint to check LangSmith configuration
  * GET /api/debug/langsmith
- * 
+ *
  * PROTECTED - requires authentication
  */
 export async function GET() {

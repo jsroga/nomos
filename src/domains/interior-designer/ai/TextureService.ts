@@ -1,4 +1,4 @@
-/* eslint-disable indent */
+ 
 import { stabilityAI } from '@/infrastructure/ai/stability'
 import { TextureStyle, TEXTURE_STYLES, TEXTURE_REFINEMENT_SYSTEM_PROMPT } from '../prompts'
 

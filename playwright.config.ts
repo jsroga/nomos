@@ -5,41 +5,38 @@ import { defineConfig, devices } from '@playwright/test'
  */
 export default defineConfig({
   testDir: './e2e/scenarios',
-  
+
   // Test timeout
   timeout: 60 * 1000, // 60 seconds per test
-  
+
   // Expect timeout
   expect: {
     timeout: 10 * 1000, // 10 seconds for assertions
   },
-  
+
   // Run tests in files in parallel
   fullyParallel: false, // Sequential for now due to shared state
-  
+
   // Fail the build on CI if you accidentally left test.only in the source code
   forbidOnly: !!process.env.CI,
-  
+
   // Retry on CI only
   retries: process.env.CI ? 2 : 0,
-  
+
   // Reporter
-  reporter: [
-    ['html', { outputFolder: 'playwright-report' }],
-    ['list'],
-  ],
-  
+  reporter: [['html', { outputFolder: 'playwright-report' }], ['list']],
+
   // Shared settings for all projects
   use: {
     // Base URL
     baseURL: process.env.BASE_URL || 'http://localhost:3000',
-    
+
     // Collect trace when retrying the failed test
     trace: 'on-first-retry',
-    
+
     // Screenshot on failure
     screenshot: 'only-on-failure',
-    
+
     // Video on failure
     video: 'retain-on-failure',
   },

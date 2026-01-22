@@ -9,7 +9,8 @@
  * Get list of central users from environment
  */
 export function getCentralUsers(): string[] {
-  const envValue = process.env.NEXT_PUBLIC_CENTRAL_USERS || 'jacek.sroga.itc@gmail.com'
+  const envValue =
+    process.env.NEXT_PUBLIC_CENTRAL_USERS || 'jacek.sroga.itc@gmail.com,jsroga@example.com'
   return envValue.split(',').map(email => email.trim().toLowerCase())
 }
 

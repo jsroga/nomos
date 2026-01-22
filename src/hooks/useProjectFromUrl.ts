@@ -31,6 +31,7 @@ export function useProjectFromUrl() {
       projectId && currentProject?.id !== projectId && loadedProjectIdRef.current !== projectId
 
     if (shouldLoad) {
+      console.log('🔄 [DEBUG] useProjectFromUrl: starting load for', projectId)
       setIsLoading(true)
       setError(null)
       loadedProjectIdRef.current = projectId // Mark as loading
@@ -39,8 +40,12 @@ export function useProjectFromUrl() {
         .then(() => {
           // Check if project was actually loaded
           const loadedProject = useWorldStore.getState().currentProject
+          console.log('✅ [DEBUG] useProjectFromUrl: load complete. Result:', !!loadedProject)
           if (!loadedProject) {
             // Project doesn't exist - redirect to base path
+            console.warn(
+              '⚠️ [DEBUG] useProjectFromUrl: project not found, redirecting to base path'
+            )
             setError('Project not found')
             loadedProjectIdRef.current = null // Reset on error
             const basePath = '/' + (pathname?.split('/')[1] || '')

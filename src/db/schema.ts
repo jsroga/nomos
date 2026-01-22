@@ -7,15 +7,24 @@ import {
   integer,
   unique,
   decimal,
+  boolean,
 } from 'drizzle-orm/pg-core'
+
+import { characters, episodes, beats } from '@/domains/storyteller/db/schema'
 
 // Projects table (world-building + storyteller)
 export const projects = pgTable('projects', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
-  projectPrompt: text('project_prompt'),
+  description: text('description'),
+  projectPrompt: text('project_prompt'), // legacy field
+  masterPrompt: text('master_prompt'), // storyteller field
   userId: uuid('user_id').notNull(),
+  seriesBible: jsonb('series_bible').notNull().default({}),
+  storyPlan: jsonb('story_plan'),
+  styleReferenceUrls: jsonb('style_reference_urls').default([]),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
 
 // Game Entities table (shared across ALL domains - the Swiss Army Knife bridge)
@@ -342,6 +351,17 @@ export const marketAnalysisRisingCompetitors = pgTable('market_analysis_rising_c
 
 import { relations } from 'drizzle-orm'
 
+// Projects relations
+export const projectsRelations = relations(projects, ({ many }) => ({
+  characters: many(characters),
+  episodes: many(episodes),
+  tiles: many(tiles),
+  assets: many(assets),
+  interiorDesigns: many(interiorDesigns),
+  gameLoops: many(gameLoops),
+  gameEntities: many(gameEntities),
+}))
+
 // Game Loop relations
 export const gameLoopsRelations = relations(gameLoops, ({ many }) => ({
   marketAnalyses: many(marketAnalyses),
@@ -543,3 +563,5 @@ export type MarketAnalysisMomentumRow = typeof marketAnalysisMomentum.$inferSele
 export type MarketAnalysisGenreMomentumRow = typeof marketAnalysisGenreMomentum.$inferSelect
 export type MarketAnalysisSocialBuzzRow = typeof marketAnalysisSocialBuzz.$inferSelect
 export type MarketAnalysisRisingCompetitorRow = typeof marketAnalysisRisingCompetitors.$inferSelect
+// Re-export storyteller tables for unified db.query access
+export { characters, episodes, beats }

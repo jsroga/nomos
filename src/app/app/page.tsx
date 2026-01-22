@@ -219,7 +219,7 @@ export default function ProjectSelectionPage() {
                   <div className="space-y-4 flex flex-col items-center relative group">
                     <div className="relative">
                       <img
-                        src="/logo.svg"
+                        src="/logo.png"
                         alt="Logo"
                         className="h-[240px] w-[240px] brightness-0 invert mb-4 opacity-80 relative z-10"
                       />

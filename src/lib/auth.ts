@@ -2,8 +2,10 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies, headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 
+import { Session } from '@supabase/supabase-js'
+
 // Mock session for E2E tests in development
-const DEV_MOCK_SESSION = {
+const DEV_MOCK_SESSION: Session = {
   user: {
     id: 'e2e-test-user-id',
     email: 'e2e-test@example.com',
@@ -11,6 +13,12 @@ const DEV_MOCK_SESSION = {
     user_metadata: {},
     aud: 'authenticated',
     created_at: new Date().toISOString(),
+    phone: '',
+    confirmed_at: new Date().toISOString(),
+    email_confirmed_at: new Date().toISOString(),
+    last_sign_in_at: new Date().toISOString(),
+    role: 'authenticated',
+    updated_at: new Date().toISOString(),
   },
   access_token: 'e2e-mock-token',
   token_type: 'bearer',
@@ -25,7 +33,7 @@ export async function getUserSession() {
     const headersList = await headers()
     const e2eHeader = headersList.get('x-e2e-test')
     if (e2eHeader === 'true') {
-      return { session: DEV_MOCK_SESSION as any, supabase: null as any, error: null }
+      return { session: DEV_MOCK_SESSION, supabase: null as any, error: null }
     }
   }
 

@@ -1,7 +1,12 @@
 import { retextureModelTask } from '@/trigger/retexture-model'
 import { tasks } from '@trigger.dev/sdk/v3'
 import { NextRequest, NextResponse } from 'next/server'
-import { withAuth, withRateLimit, verifyProjectAccess, type AuthenticatedRequest } from '@/lib/api-utils'
+import {
+  withAuth,
+  withRateLimit,
+  verifyProjectAccess,
+  type AuthenticatedRequest,
+} from '@/lib/api-utils'
 
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
@@ -29,7 +34,7 @@ export const POST = withRateLimit(
         .single()
 
       const styleReferenceUrls = (data?.style_reference_urls as string[]) || []
-      
+
       if (styleReferenceUrls.length > 0) {
         // Validate first URL is accessible
         try {

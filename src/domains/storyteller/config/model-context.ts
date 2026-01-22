@@ -41,9 +41,10 @@ function getStorage(): AsyncLocalStorageType<ModelConfig> | null {
   if (!modelConfigStorage) {
     try {
       // Dynamic import to avoid bundling async_hooks for client
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+       
       const { AsyncLocalStorage } = require('async_hooks')
-      modelConfigStorage = new AsyncLocalStorage<ModelConfig>()
+      const ALS = AsyncLocalStorage as any
+      modelConfigStorage = new ALS() as AsyncLocalStorageType<ModelConfig>
     } catch {
       // Fallback if async_hooks is not available
       return null

@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { tasks } from '@trigger.dev/sdk/v3'
 import type { generate3DModelTask } from '@/trigger/generate-3d-model'
-import { withAuth, withRateLimit, verifyProjectAccess, type AuthenticatedRequest } from '@/lib/api-utils'
+import {
+  withAuth,
+  withRateLimit,
+  verifyProjectAccess,
+  type AuthenticatedRequest,
+} from '@/lib/api-utils'
 
 export const dynamic = 'force-dynamic'
 

@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
     if (beatId) {
       const { data: snapshotData, error: snapshotError } = await supabase
         .from('character_state_snapshots')
-        .select(`*, characters (id, name)`)
+        .select('*, characters (id, name)')
         .eq('beat_id', beatId)
 
       if (snapshotError) {

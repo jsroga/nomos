@@ -1653,6 +1653,7 @@ export const useTerrainSettings = () => useInteriorStore(useShallow(state => sta
 
 /**
  * Subscribe only to heightmap data (for mesh displacement)
+ * Includes heightmapVersion to ensure reactivity with in-place mutation
  */
 export const useHeightmapData = () =>
   useInteriorStore(
@@ -1660,6 +1661,7 @@ export const useHeightmapData = () =>
       heightmap: state.terrainSettings.heightmap,
       heightmapSize: state.terrainSettings.heightmapSize,
       baseGroundHeight: state.terrainSettings.baseGroundHeight,
+      heightmapVersion: state.terrainSettings.heightmapVersion,
     }))
   )
 

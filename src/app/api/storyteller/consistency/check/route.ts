@@ -53,7 +53,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[Consistency Check API] Error:', error)
     return NextResponse.json(
-      { error: 'Failed to run consistency check', details: error instanceof Error ? error.message : String(error) },
+      {
+        error: 'Failed to run consistency check',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     )
   }

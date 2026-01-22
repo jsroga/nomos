@@ -12,7 +12,7 @@ const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mon
 const syne = Syne({ subsets: ['latin'], variable: '--font-syne' })
 
 export const metadata = {
-  title: 'KURTVITZA',
+  title: 'KUR',
   description: 'Crazy project for games - AI-powered infinite canvas for world generation',
 }
 

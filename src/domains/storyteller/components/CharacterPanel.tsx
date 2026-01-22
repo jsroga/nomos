@@ -161,6 +161,8 @@ interface CharacterPanelProps {
   // NEW: For beat-linked metrics
   selectedBeatId?: string | null
   episodeId?: string | null
+  // NEW: Shimmer loading state
+  isLoading?: boolean
 }
 export const CharacterPanel: React.FC<CharacterPanelProps> = ({
   characters,
@@ -170,6 +172,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
   projectId,
   selectedBeatId,
   episodeId,
+  isLoading = false,
 }) => {
   const [isCreationOpen, setIsCreationOpen] = useState(false)
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null)
@@ -213,6 +216,31 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
     const snapshot = beatSnapshots[char.id]
     if (!snapshot) return char
     return { ...char, ...snapshot }
+  }
+
+  // Shimmer loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-4 animate-pulse">
+        <div className="flex items-center justify-between">
+          <div className="h-4 bg-muted/40 rounded w-1/4"></div>
+          <div className="h-6 w-6 bg-muted/40 rounded"></div>
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="bg-[#191919] border border-white/5 rounded-lg p-3 h-20">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 rounded-full bg-muted/20"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 bg-muted/20 rounded w-1/3"></div>
+                  <div className="h-2 bg-muted/10 rounded w-1/4"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -290,17 +318,17 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                   gender: editingCharacter.gender,
                   mbti: editingCharacter.mbti,
                   description: editingCharacter.characterPrompt,
-                  portraitUrl: (editingCharacter as any).portraitUrl,
+                  portraitUrl: editingCharacter.portraitUrl,
                   // Map metrics from character state
-                  valence: (editingCharacter as any).valence,
-                  arousal: (editingCharacter as any).arousal,
-                  autonomy: (editingCharacter as any).autonomy,
-                  competence: (editingCharacter as any).competence,
-                  relatedness: (editingCharacter as any).relatedness,
-                  cognitiveClarity: (editingCharacter as any).cognitiveClarity,
-                  perceivedStakes: (editingCharacter as any).perceivedStakes,
-                  socialSafety: (editingCharacter as any).socialSafety,
-                  moralAlignment: (editingCharacter as any).moralAlignment,
+                  valence: editingCharacter.valence,
+                  arousal: editingCharacter.arousal,
+                  autonomy: editingCharacter.autonomy,
+                  competence: editingCharacter.competence,
+                  relatedness: editingCharacter.relatedness,
+                  cognitiveClarity: editingCharacter.cognitiveClarity,
+                  perceivedStakes: editingCharacter.perceivedStakes,
+                  socialSafety: editingCharacter.socialSafety,
+                  moralAlignment: editingCharacter.moralAlignment,
                 }
               : undefined
           }
@@ -395,7 +423,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onUpdate, onDe
               Character Metrics
             </div>
             {METRIC_CONFIG.map(metric => {
-              const rawValue = (character as any)[metric.key]
+              const rawValue = character[metric.key as keyof Character] as number | undefined
               // Handle valence (-100 to +100) vs standard (0-100)
               const isValenceMetric = metric.isValence
               const defaultValue = isValenceMetric ? 0 : 50

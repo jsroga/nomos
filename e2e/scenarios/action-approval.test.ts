@@ -132,7 +132,7 @@ class ActionApprovalTestRunner {
     const data = await response.json()
 
     if (data.success) {
-      this.log(`   ✅ Action committed successfully`)
+      this.log('   ✅ Action committed successfully')
     } else {
       this.log(`   ❌ Action failed: ${data.error || 'Unknown error'}`)
     }
@@ -256,14 +256,14 @@ async function testActionStatusTracking() {
     // Verify actions have the expected structure
     const messagesWithActions = messages.filter(m => m.actions && m.actions.length > 0)
 
-    console.log(`\n📊 Summary:`)
+    console.log('\n📊 Summary:')
     console.log(`   Total messages: ${messages.length}`)
     console.log(`   Messages with actions: ${messagesWithActions.length}`)
 
     for (const msg of messagesWithActions) {
       console.log(`\n📝 Message from ${msg.sender}:`)
       console.log(`   Content: ${msg.content.slice(0, 100)}...`)
-      console.log(`   Actions:`)
+      console.log('   Actions:')
 
       for (const action of msg.actions || []) {
         console.log(`     - Type: ${action.type}`)

@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { requireAuth } from '@/lib/auth'
-import { verifyBeatAccess, verifyCharacterAccess } from '@/domains/storyteller/lib/access-verification'
+import {
+  verifyBeatAccess,
+  verifyCharacterAccess,
+} from '@/domains/storyteller/lib/access-verification'
 
 export async function POST(req: NextRequest) {
   try {

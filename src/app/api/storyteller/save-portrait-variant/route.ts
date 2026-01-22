@@ -5,7 +5,10 @@ import { eq } from 'drizzle-orm'
 import fs from 'fs'
 import path from 'path'
 import { requireAuth } from '@/lib/auth'
-import { verifyProjectAccess, verifyCharacterAccess } from '@/domains/storyteller/lib/access-verification'
+import {
+  verifyProjectAccess,
+  verifyCharacterAccess,
+} from '@/domains/storyteller/lib/access-verification'
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,7 +31,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify character access (if not a temp character)
-    if (!characterId.startsWith('temp-') && !(await verifyCharacterAccess(characterId, session.user.id))) {
+    if (
+      !characterId.startsWith('temp-') &&
+      !(await verifyCharacterAccess(characterId, session.user.id))
+    ) {
       return NextResponse.json({ error: 'Character not found or access denied' }, { status: 404 })
     }
 
@@ -69,7 +75,10 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Error saving portrait variant:', error)
     return NextResponse.json(
-      { error: 'Failed to save portrait variant', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Failed to save portrait variant',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     )
   }

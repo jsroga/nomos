@@ -5,10 +5,10 @@ import { CheckCircle } from 'lucide-react'
 
 interface StoryPlanBoardProps {
   storyPlan: StoryPlan | null
-  globalBible: any
+  globalBible: Partial<StoryPlan>
   onApprove: () => void
   isGenerating?: boolean
-  onUpdateSequence?: (id: number, updates: any) => void
+  onUpdateSequence?: (id: number, updates: Partial<StorySequence>) => void
   isGeneratingPoster?: boolean
   isGeneratingStoryboard?: boolean
   isLoading?: boolean
@@ -55,7 +55,7 @@ export const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
   const episodePremise = rawPremise
     ? {
         ...rawPremise,
-        title: rawPremise.title || (storyPlan as any)?.title,
+        title: (rawPremise as any).title || storyPlan?.title,
       }
     : null
 

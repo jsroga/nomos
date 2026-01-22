@@ -306,7 +306,7 @@ Choose music that reinforces the tone and atmosphere.`
     // =========================================================================
     runner.log('\n📍 STEP 5: Verify AI awareness of committed data\n')
 
-    const awarenessQuery = `What soundtracks have been added to this world? List their names.`
+    const awarenessQuery = 'What soundtracks have been added to this world? List their names.'
 
     const { messages: followUpMessages, rawContent } = await runner.sendMessageAndCollectActions(
       awarenessQuery,

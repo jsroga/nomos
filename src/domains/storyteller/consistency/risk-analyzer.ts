@@ -7,6 +7,7 @@
 
 import { ChangeRisk, StoryContext } from './types'
 import { AgentAction } from '../actions/types'
+import { CharacterState } from '../graph/state'
 
 /**
  * Analyze the risk level of a story change
@@ -66,7 +67,14 @@ function analyzeHighRiskAction(action: AgentAction, context: StoryContext): Chan
       affectedElements.push(`character:${payload.characterId}`)
 
       // Check if psychology/traits changed
-      if (payload.psychology || payload.traits) {
+      const charUpdates = (payload.updates || {}) as Partial<CharacterState>
+      if (
+        charUpdates.currentGoals ||
+        charUpdates.fears ||
+        charUpdates.selfDelusion ||
+        charUpdates.actualMotivation ||
+        charUpdates.traits
+      ) {
         reason = 'Character trait changes can create inconsistencies with existing beats'
 
         // Add all beats as potentially affected
@@ -90,7 +98,8 @@ function analyzeHighRiskAction(action: AgentAction, context: StoryContext): Chan
 
     case 'ADD_BEAT':
     case 'UPDATE_BEAT':
-      affectedElements.push(`beat:${payload.beatId || payload.id}`)
+      const beatId = (payload as any).beatId || (payload as any).id
+      affectedElements.push(`beat:${beatId}`)
 
       // Check if this beat references characters
       const beatText = JSON.stringify(payload).toLowerCase()

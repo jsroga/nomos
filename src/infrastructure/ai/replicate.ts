@@ -79,4 +79,3 @@ export class ReplicateClient {
     return String(output)
   }
 }
-

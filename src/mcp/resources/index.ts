@@ -6,7 +6,7 @@
  */
 
 import { Resource } from '@modelcontextprotocol/sdk/types.js'
-import { MCPServiceContext } from '../auth'
+import { MCPServiceContext } from '../core/types'
 import { entitiesService, storytellerService } from '@/services'
 
 // ============================================
@@ -45,7 +45,8 @@ export function getAllResources(): Resource[] {
     {
       uri: 'wbk://project/{projectId}/series-bible',
       name: 'Series Bible',
-      description: 'The series bible for a project containing world description, characters, factions, and story plan',
+      description:
+        'The series bible for a project containing world description, characters, factions, and story plan',
       mimeType: 'application/json',
     },
     {
@@ -106,10 +107,7 @@ function parseResourceUri(uri: string): { type: string; params: Record<string, s
 /**
  * Read a resource by URI
  */
-export async function handleResourceRead(
-  uri: string,
-  context: MCPServiceContext
-): Promise<any> {
+export async function handleResourceRead(uri: string, context: MCPServiceContext): Promise<any> {
   const { type, params } = parseResourceUri(uri)
 
   switch (type) {
@@ -164,4 +162,3 @@ export async function handleResourceRead(
       throw new Error(`Unknown resource type: ${type}`)
   }
 }
-

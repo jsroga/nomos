@@ -1,7 +1,12 @@
 import { tasks } from '@trigger.dev/sdk/v3'
 import { NextRequest, NextResponse } from 'next/server'
 import type { surfaceMaterialTask } from '@/trigger/surface-material'
-import { withAuth, withRateLimit, verifyProjectAccess, type AuthenticatedRequest } from '@/lib/api-utils'
+import {
+  withAuth,
+  withRateLimit,
+  verifyProjectAccess,
+  type AuthenticatedRequest,
+} from '@/lib/api-utils'
 
 export const dynamic = 'force-dynamic'
 

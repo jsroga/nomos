@@ -187,13 +187,13 @@ export const RoadMesh: React.FC<RoadMeshProps> = ({
     applyHeightmapDisplacement()
   }, [applyHeightmapDisplacement])
 
-  // OPTIMIZATION: Subscribe only to heightmap changes, not entire state
+  // OPTIMIZATION: Subscribe only to heightmapVersion changes for reactivity
   useEffect(() => {
-    let prevHeightmap = useInteriorStore.getState().terrainSettings.heightmap
+    let prevVersion = useInteriorStore.getState().terrainSettings.heightmapVersion
 
     const unsubscribe = useInteriorStore.subscribe(state => {
-      if (state.terrainSettings.heightmap !== prevHeightmap) {
-        prevHeightmap = state.terrainSettings.heightmap
+      if (state.terrainSettings.heightmapVersion !== prevVersion) {
+        prevVersion = state.terrainSettings.heightmapVersion
         applyHeightmapDisplacement()
       }
     })

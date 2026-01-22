@@ -1,7 +1,7 @@
 import React from 'react'
 import { TourStep } from '@/components/tour'
 import { TOUR_STEP_IDS } from '@/lib/tour-constants'
-import { ClipboardList, Scissors, Cuboid } from 'lucide-react'
+import { ClipboardList, Scissors, Cuboid, Palette, Sparkles } from 'lucide-react'
 
 export const assetExporterTourSteps: TourStep[] = [
   {
@@ -14,9 +14,30 @@ export const assetExporterTourSteps: TourStep[] = [
         <p className="text-sm text-muted-foreground leading-relaxed">
           Tiles you've exported from World Gen show up here. Pick one to turn into 3D.
         </p>
+        <div className="mt-2 p-2 bg-primary/10 rounded border border-primary/20 text-[10px] text-primary uppercase tracking-widest font-bold animate-pulse">
+          Select an asset to advance
+        </div>
       </div>
     ),
-    selectorId: TOUR_STEP_IDS.EXPORTER_SIDEBAR,
+    selectorId: TOUR_STEP_IDS.EXPORTED_ASSETS_LIST,
+    position: 'right',
+    hideNext: true,
+    advanceEvent: 'asset-selected',
+  },
+  {
+    content: (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 text-primary">
+          <Palette className="w-5 h-5" />
+          <h3 className="font-bold">🎨 Define Style</h3>
+        </div>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Set a Master Prompt to define the global art style. The 3D generator will try to match
+          this aesthetic.
+        </p>
+      </div>
+    ),
+    selectorId: TOUR_STEP_IDS.EXPORTED_ASSETS_LIST, // Selection area for sidebar generally
     position: 'right',
   },
   {
@@ -31,23 +52,37 @@ export const assetExporterTourSteps: TourStep[] = [
         </p>
       </div>
     ),
-    selectorId: TOUR_STEP_IDS.EXPORTER_EDITOR,
+    selectorId: TOUR_STEP_IDS.ASSET_EDITOR_PANEL,
     position: 'bottom',
   },
   {
     content: (
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-primary">
-          <Cuboid className="w-5 h-5" />
-          <h3 className="font-bold">🎲 Generate 3D</h3>
+          <Sparkles className="w-5 h-5" />
+          <h3 className="font-bold">🪄 Generate 3D</h3>
         </div>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Hit generate and watch your sprite become a 3D model. Preview it here, then download for
-          your engine.
+          Ready? Click the Generate button to start the AI conversion process.
         </p>
       </div>
     ),
-    selectorId: TOUR_STEP_IDS.EXPORTER_3D,
+    selectorId: TOUR_STEP_IDS.GENERATE_3D_BUTTON,
+    position: 'top',
+  },
+  {
+    content: (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 text-primary">
+          <Cuboid className="w-5 h-5" />
+          <h3 className="font-bold">🎲 3D Preview</h3>
+        </div>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Once finished, your 3D model appears here. You can orbit it to inspect the details.
+        </p>
+      </div>
+    ),
+    selectorId: TOUR_STEP_IDS.ASSET_3D_PREVIEW,
     position: 'left',
   },
 ]

@@ -4,9 +4,11 @@
  * Export all MCP components for external use.
  */
 
-export { authenticateMCPRequest, hasScope, requireScope, generateApiKey, hashApiKey } from './auth'
-export type { MCPAuthContext } from './auth'
-export { entityTools, handleEntityTool } from './tools/entities'
-export { storytellerTools, handleStorytellerTool } from './tools/storyteller'
-export { tileTools, handleTileTool } from './tools/tiles'
+// Core exports
+export * from './core'
 
+// Domain exports
+export { getAllTools, handleToolCall, listDomains, getDomainInfo } from './domains'
+
+// Resource exports
+export { getAllResources, handleResourceRead } from './resources'

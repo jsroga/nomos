@@ -142,14 +142,8 @@ export class StorytellerService {
   /**
    * Get a single character by ID
    */
-  async getCharacter(
-    characterId: string,
-    context: ServiceContext
-  ): Promise<{ character: any }> {
-    const [character] = await db
-      .select()
-      .from(characters)
-      .where(eq(characters.id, characterId))
+  async getCharacter(characterId: string, context: ServiceContext): Promise<{ character: any }> {
+    const [character] = await db.select().from(characters).where(eq(characters.id, characterId))
 
     if (!character) {
       throw new ServiceError('Character not found', 'NOT_FOUND')
@@ -222,7 +216,8 @@ export class StorytellerService {
     if (validated.name !== undefined) dbUpdates.name = validated.name
     if (validated.role !== undefined) dbUpdates.role = validated.role
     if (validated.gender !== undefined) dbUpdates.gender = validated.gender
-    if (validated.characterPrompt !== undefined) dbUpdates.characterPrompt = validated.characterPrompt
+    if (validated.characterPrompt !== undefined)
+      dbUpdates.characterPrompt = validated.characterPrompt
     if (validated.description !== undefined) dbUpdates.description = validated.description
     if (validated.portraitUrl !== undefined) dbUpdates.portraitUrl = validated.portraitUrl
     if (validated.mbti !== undefined) dbUpdates.mbti = validated.mbti
@@ -234,7 +229,8 @@ export class StorytellerService {
     if (validated.morality !== undefined) dbUpdates.moralityLevel = validated.morality
     if (validated.hope !== undefined) dbUpdates.hopeLevel = validated.hope
     if (validated.isolation !== undefined) dbUpdates.isolationLevel = validated.isolation
-    if (validated.transformation !== undefined) dbUpdates.transformationProgress = validated.transformation
+    if (validated.transformation !== undefined)
+      dbUpdates.transformationProgress = validated.transformation
 
     const [updatedCharacter] = await db
       .update(characters)
@@ -288,10 +284,7 @@ export class StorytellerService {
   /**
    * List beats for an episode
    */
-  async listBeats(
-    input: ListBeatsInput,
-    context: ServiceContext
-  ): Promise<{ beats: any[] }> {
+  async listBeats(input: ListBeatsInput, context: ServiceContext): Promise<{ beats: any[] }> {
     const validated = listBeatsSchema.parse(input)
 
     // Get episode to verify access
@@ -317,10 +310,7 @@ export class StorytellerService {
   /**
    * Get the series bible for a project
    */
-  async getSeriesBible(
-    projectId: string,
-    context: ServiceContext
-  ): Promise<{ seriesBible: any }> {
+  async getSeriesBible(projectId: string, context: ServiceContext): Promise<{ seriesBible: any }> {
     const hasAccess = await this.verifyProjectAccess(projectId, context.userId)
     if (!hasAccess) {
       throw new ServiceError('Project not found or access denied', 'NOT_FOUND')
@@ -352,7 +342,8 @@ export class StorytellerService {
     const graph = await getWritersRoomGraph()
 
     // Generate thread ID if not provided
-    const threadId = validated.threadId || `thread_${Date.now()}_${Math.random().toString(36).slice(2)}`
+    const threadId =
+      validated.threadId || `thread_${Date.now()}_${Math.random().toString(36).slice(2)}`
 
     // Build LangSmith config
     const langsmithConfig: RunnableConfig = {
@@ -419,4 +410,3 @@ export class ServiceError extends Error {
 // ============================================
 
 export const storytellerService = new StorytellerService()
-

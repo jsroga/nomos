@@ -23,6 +23,9 @@ export interface TourStep {
   height?: number
   onClickWithinArea?: () => void
   position?: 'top' | 'bottom' | 'left' | 'right'
+  action?: () => void
+  hideNext?: boolean
+  advanceEvent?: string
 }
 
 interface TourContextType {
@@ -117,26 +120,6 @@ export function TourProvider({
   } | null>(null)
   const [isCompleted, setIsCompleted] = useState(isTourCompleted)
 
-  const updateElementPosition = useCallback(() => {
-    if (currentStep >= 0 && currentStep < steps.length) {
-      const position = getElementPosition(steps[currentStep]?.selectorId ?? '')
-      if (position) {
-        setElementPosition(position)
-      }
-    }
-  }, [currentStep, steps])
-
-  useEffect(() => {
-    updateElementPosition()
-    window.addEventListener('resize', updateElementPosition)
-    window.addEventListener('scroll', updateElementPosition)
-
-    return () => {
-      window.removeEventListener('resize', updateElementPosition)
-      window.removeEventListener('scroll', updateElementPosition)
-    }
-  }, [updateElementPosition])
-
   const nextStep = useCallback(async () => {
     setCurrentStep(prev => {
       if (prev >= steps.length - 1) {
@@ -154,6 +137,43 @@ export function TourProvider({
   const previousStep = useCallback(() => {
     setCurrentStep(prev => (prev > 0 ? prev - 1 : prev))
   }, [])
+
+  const updateElementPosition = useCallback(() => {
+    if (currentStep >= 0 && currentStep < steps.length) {
+      const position = getElementPosition(steps[currentStep]?.selectorId ?? '')
+      if (position) {
+        setElementPosition(position)
+      }
+    }
+  }, [currentStep, steps])
+
+  useEffect(() => {
+    updateElementPosition()
+    window.addEventListener('resize', updateElementPosition)
+    window.addEventListener('scroll', updateElementPosition)
+
+    // Execute step action if present
+    if (currentStep >= 0 && steps[currentStep]?.action) {
+      steps[currentStep].action?.()
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateElementPosition)
+      window.removeEventListener('scroll', updateElementPosition)
+    }
+  }, [updateElementPosition, currentStep, steps])
+
+  // Listener for auto-advance events
+  useEffect(() => {
+    if (currentStep >= 0 && steps[currentStep]?.advanceEvent) {
+      const eventName = steps[currentStep].advanceEvent!
+      const handler = () => {
+        nextStep()
+      }
+      window.addEventListener(eventName, handler)
+      return () => window.removeEventListener(eventName, handler)
+    }
+  }, [currentStep, steps, nextStep])
 
   const endTour = useCallback(() => {
     setCurrentStep(-1)
@@ -294,7 +314,7 @@ export function TourProvider({
                   >
                     {steps[currentStep]?.content}
                   </motion.div>
-                  <div className="mt-4 flex justify-between">
+                  <div className="mt-4 flex justify-between items-center">
                     {currentStep > 0 && (
                       <button
                         onClick={previousStep}
@@ -304,12 +324,19 @@ export function TourProvider({
                         Previous
                       </button>
                     )}
-                    <button
-                      onClick={nextStep}
-                      className="ml-auto text-sm font-medium text-primary hover:text-primary/90"
-                    >
-                      {currentStep === steps.length - 1 ? 'Finish' : 'Next'}
-                    </button>
+                    {!steps[currentStep]?.hideNext && (
+                      <button
+                        onClick={nextStep}
+                        className="ml-auto text-sm font-medium text-primary hover:text-primary/90"
+                      >
+                        {currentStep === steps.length - 1 ? 'Finish' : 'Next'}
+                      </button>
+                    )}
+                    {steps[currentStep]?.hideNext && (
+                      <div className="ml-auto flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-widest animate-pulse">
+                        <span>Awaiting Action...</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </AnimatePresence>

@@ -14,7 +14,7 @@ import {
   Image as ImageIcon,
   RefreshCw,
 } from 'lucide-react'
-import { EpisodePremise } from '../schemas/agent-schemas'
+import { EpisodePremise, StoryPlan, Faction, WorldRule } from '../schemas/agent-schemas'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StorytellerImage } from './StorytellerImage'
@@ -22,7 +22,7 @@ import { ImageVariantSelector } from './ImageVariantSelector'
 
 interface EpisodePremisePanelProps {
   premise: EpisodePremise | null
-  globalBible: any // Read-only context
+  globalBible: Partial<StoryPlan> // Read-only context
   posterUrl?: string | null
   posterPrompt?: string | null
   onUpdate: (updates: EpisodePremise) => void
@@ -85,7 +85,7 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
     }
   }
 
-  const handleChange = (field: keyof EpisodePremise, value: any) => {
+  const handleChange = <K extends keyof EpisodePremise>(field: K, value: EpisodePremise[K]) => {
     setLocalPremise(prev => ({ ...prev, [field]: value }))
   }
 
@@ -562,10 +562,10 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
                 <Target className="w-3 h-3" /> Factions
               </h4>
               <div className="space-y-2">
-                {globalBible.factions?.map((f: any, i: number) => (
+                {globalBible.factions?.map((f: Faction, i: number) => (
                   <div key={i} className="text-xs p-2 bg-background border border-border rounded">
                     <span className="font-bold block">{f.name}</span>
-                    <span className="opacity-70">{f.corePhilosophy}</span>
+                    <span className="opacity-70">{f.ideology}</span>
                   </div>
                 ))}
               </div>
@@ -577,7 +577,7 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
                 <Book className="w-3 h-3" /> World Rules
               </h4>
               <ul className="space-y-2">
-                {globalBible.worldRules?.slice(0, 3).map((r: any, i: number) => (
+                {globalBible.worldRules?.slice(0, 3).map((r: WorldRule, i: number) => (
                   <li key={i} className="text-xs text-muted-foreground">
                     • {r.rule}
                   </li>

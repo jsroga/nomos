@@ -19,6 +19,7 @@ You wanted a **Swiss Army knife for game dev** - one platform where storytelling
 ### User Experience Transformation
 
 **Before (6 Separate Tools)**:
+
 ```
 User: "I want to create an RPG character"
 → Opens Storyteller, creates character
@@ -29,6 +30,7 @@ User: "I want to create an RPG character"
 ```
 
 **After (Swiss Army Knife)**:
+
 ```
 User: "I want to create an RPG character"
 → Opens Storyteller, creates character
@@ -40,7 +42,8 @@ User: "I want to create an RPG character"
 → Seamless roundtrip!
 ```
 
-**Activation Rate Prediction**: 
+**Activation Rate Prediction**:
+
 - Before: 20% (users create entity in 2+ domains)
 - After: 60-70% (suggestions + context make it obvious)
 
@@ -84,35 +87,35 @@ graph TB
         GameEntities[game_entities table]
         EntityRels[entity_relationships table]
     end
-    
+
     subgraph API
         EntityAPI[/api/entities]
         CharAPI[/api/storyteller/characters]
         LoopAPI[/api/loop-creator/loops]
     end
-    
+
     subgraph Frontend
         Hub[Hub Dashboard]
         Storyteller[Storyteller]
         LoopCreator[Loop Creator]
         Mentions[Mention System]
     end
-    
+
     subgraph AI
         StorytellerAgents[Storyteller Agents]
         LoopAgents[Loop Agents]
         CrossContext[Cross-Domain Context]
     end
-    
+
     CharAPI -->|Creates| GameEntities
     LoopAPI -->|Creates| GameEntities
     EntityAPI -->|Queries| GameEntities
-    
+
     Hub -->|Fetches| EntityAPI
     Storyteller -->|Uses| Mentions
     LoopCreator -->|Uses| Mentions
     Mentions -->|Queries| EntityAPI
-    
+
     StorytellerAgents -->|Loads| CrossContext
     LoopAgents -->|Loads| CrossContext
     CrossContext -->|Fetches| GameEntities
@@ -135,39 +138,40 @@ graph TB
 
 ### API Endpoints
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/api/entities` | GET | List entities (with filters) |
-| `/api/entities` | POST | Create entity |
-| `/api/entities/[id]` | GET | Get single entity |
-| `/api/entities/[id]` | PATCH | Update entity |
-| `/api/entities/[id]` | DELETE | Delete entity |
-| `/api/entities/relationships` | GET | List relationships |
-| `/api/entities/relationships` | POST | Create relationship |
-| `/api/entities/relationships` | DELETE | Delete relationship |
+| Endpoint                      | Method | Purpose                      |
+| ----------------------------- | ------ | ---------------------------- |
+| `/api/entities`               | GET    | List entities (with filters) |
+| `/api/entities`               | POST   | Create entity                |
+| `/api/entities/[id]`          | GET    | Get single entity            |
+| `/api/entities/[id]`          | PATCH  | Update entity                |
+| `/api/entities/[id]`          | DELETE | Delete entity                |
+| `/api/entities/relationships` | GET    | List relationships           |
+| `/api/entities/relationships` | POST   | Create relationship          |
+| `/api/entities/relationships` | DELETE | Delete relationship          |
 
 ### Components Created
 
-| Component | Purpose | Lines |
-|-----------|---------|-------|
-| `GameHubDashboard` | Central dashboard | ~320 |
-| `EntityPicker` | Universal entity selector | ~215 |
-| `CrossDomainSuggestionToast` | Workflow suggestions | ~130 |
-| `MentionChip` (enhanced) | Entity badges | +40 |
+| Component                    | Purpose                   | Lines |
+| ---------------------------- | ------------------------- | ----- |
+| `GameHubDashboard`           | Central dashboard         | ~320  |
+| `EntityPicker`               | Universal entity selector | ~215  |
+| `CrossDomainSuggestionToast` | Workflow suggestions      | ~130  |
+| `MentionChip` (enhanced)     | Entity badges             | +40   |
 
 ### Hooks Created
 
-| Hook | Purpose |
-|------|---------|
-| `useGameEntities` | Entity CRUD |
-| `useEntityRelationships` | Relationship management |
-| `useCrossDomainSuggestions` | Suggestion handling |
+| Hook                        | Purpose                 |
+| --------------------------- | ----------------------- |
+| `useGameEntities`           | Entity CRUD             |
+| `useEntityRelationships`    | Relationship management |
+| `useCrossDomainSuggestions` | Suggestion handling     |
 
 ---
 
 ## 📁 Files Changed (Summary)
 
 ### Week 1
+
 - ✅ 1 migration file
 - ✅ 3 API route files
 - ✅ 1 hook file
@@ -175,22 +179,26 @@ graph TB
 - ✅ 1 schema file (modified)
 
 ### Week 2
+
 - ✅ 1 dashboard component
 - ✅ 1 page file (modified)
 
 ### Week 3
+
 - ✅ 2 mention system files
 - ✅ 2 integration files (modified)
 - ✅ 1 mention chip (modified)
 - ✅ 1 exports file (modified)
 
 ### Week 4
+
 - ✅ 3 suggestion system files
 - ✅ 2 API files (modified - return suggestions)
 - ✅ 2 agent files (modified - load context)
 - ✅ 1 context builder file
 
 ### Testing
+
 - ✅ 2 E2E test files
 - ✅ 1 Playwright config
 - ✅ 1 E2E README
@@ -229,12 +237,14 @@ graph TB
 ## 🔐 Security Considerations
 
 ### Implemented
+
 - ✅ RLS policies on all tables
 - ✅ Auth checks in all API routes
 - ✅ User-scoped queries
 - ✅ Input validation (Zod schemas)
 
 ### Future Enhancements
+
 - ⬜ Rate limiting
 - ⬜ Entity ownership transfer
 - ⬜ Audit logs
@@ -245,18 +255,21 @@ graph TB
 ## 📈 Metrics to Track
 
 ### Day 1 Metrics (Launch Day)
+
 - [ ] Migration successful (0 errors)
 - [ ] All API endpoints responding (< 500ms)
 - [ ] Hub dashboard loads (< 2s)
 - [ ] First cross-domain mention works
 
 ### Week 1 Metrics (First Beta Cohort)
+
 - [ ] % users who create entity in 2+ domains
 - [ ] Avg cross-domain mentions per session
 - [ ] Suggestion click-through rate
 - [ ] Time from character creation to mechanic design
 
 ### Month 1 Metrics (Product Validation)
+
 - [ ] Cross-domain entity growth rate
 - [ ] Most common entity types
 - [ ] Most common domain flows (e.g., Storyteller → Loop Creator)
@@ -294,17 +307,20 @@ graph TB
 **Pre-Launch Checklist**:
 
 1. **Database**:
+
    ```bash
    npx supabase migration up
    ```
 
 2. **Dependencies**:
+
    ```bash
    npm install
    npm run test:playwright:install
    ```
 
 3. **Tests**:
+
    ```bash
    npm run test:e2e:swiss-knife
    npm run test:e2e:mentions

@@ -5,7 +5,10 @@ import { eq } from 'drizzle-orm'
 import fs from 'fs'
 import path from 'path'
 import { requireAuth } from '@/lib/auth'
-import { verifyProjectAccess, verifyEpisodeAccess } from '@/domains/storyteller/lib/access-verification'
+import {
+  verifyProjectAccess,
+  verifyEpisodeAccess,
+} from '@/domains/storyteller/lib/access-verification'
 
 export async function POST(req: NextRequest) {
   try {
@@ -57,7 +60,10 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Error saving episode poster variant:', error)
     return NextResponse.json(
-      { error: 'Failed to save episode poster variant', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Failed to save episode poster variant',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     )
   }

@@ -263,7 +263,7 @@ export const ActionCommitted: React.FC<ActionCommittedProps> = ({ entry, compact
 // ============================================
 
 interface ActionSuggestionProps {
-  action: any
+  action: AgentAction
   agentName: string
   onAccept: () => void // Immediate execution
   onReview: () => void // Open detailed diff modal

@@ -8,7 +8,7 @@ async function run() {
 
   try {
     // Test the exact phrase that was failing
-    const { fullResponse } = await runner.runChat("let's start working on this episode")
+    const { fullResponse } = await runner.runChat('let\'s start working on this episode')
 
     // Assertions
     // 1. It should NOT say "waiting for input"

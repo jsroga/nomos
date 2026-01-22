@@ -9,8 +9,8 @@ import ReactDiffViewer, { DiffMethod } from 'react-diff-viewer-continued'
 
 interface ActionChange {
   path: string
-  before: any
-  after: any
+  before: unknown
+  after: unknown
   reason?: string
 }
 
@@ -81,7 +81,7 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = ({
                 Action Approval: {formatActionType(action.type)}
               </div>
               <div className="text-xs text-muted-foreground mt-0.5">
-                From: {agentName} • Confidence: {((action as any).confidence || 0.8) * 100}%
+                From: {agentName} • Confidence: {(action.confidence || 0.8) * 100}%
               </div>
             </div>
           </div>
@@ -221,7 +221,7 @@ function extractChanges(action: AgentAction): ActionChange[] {
           path: key,
           before: null, // We don't have "before" state in the action
           after: value,
-          reason: (action as any).reasoning,
+          reason: action.reasoning,
         })
       }
     })
@@ -233,7 +233,7 @@ function extractChanges(action: AgentAction): ActionChange[] {
       path: 'New ' + action.type.replace('CREATE_', '').toLowerCase(),
       before: null,
       after: payload,
-      reason: (action as any).reasoning,
+      reason: action.reasoning,
     })
   }
 
@@ -243,7 +243,7 @@ function extractChanges(action: AgentAction): ActionChange[] {
 /**
  * Format value as pretty JSON
  */
-function formatJSON(value: any): string {
+function formatJSON(value: unknown): string {
   if (value === null || value === undefined) {
     return '(empty)'
   }
@@ -270,4 +270,3 @@ function formatActionType(type: string): string {
 }
 
 export default ActionApprovalModal
-

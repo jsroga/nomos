@@ -41,7 +41,12 @@ const ToolButton: React.FC<ToolButtonProps> = ({ icon, label, isActive, onClick 
 
 export const Toolbar: React.FC = () => {
   const mode = useInteriorStore(state => state.mode)
-  const setMode = useInteriorStore(state => state.setMode)
+  const setMode = (newMode: any) => {
+    useInteriorStore.getState().setMode(newMode)
+    window.dispatchEvent(
+      new CustomEvent('interior-designer-mode-changed', { detail: { mode: newMode } })
+    )
+  }
   const activeLevel = useInteriorStore(state => state.activeLevel)
   const setActiveLevel = useInteriorStore(state => state.setActiveLevel)
   const undo = useInteriorStore.temporal.getState().undo
@@ -118,8 +123,8 @@ export const Toolbar: React.FC = () => {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex flex-col items-center gap-4 p-4 h-full overflow-y-auto scrollbar-none bg-transparent">
-        <div className="flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-2 p-2 h-full overflow-y-auto scrollbar-none bg-transparent">
+        <div className="flex flex-col items-center gap-1">
           <ToolButton
             icon={
               <MousePointer2

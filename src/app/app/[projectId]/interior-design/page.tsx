@@ -99,6 +99,7 @@ export default function InteriorDesignerPage() {
           <h1 className="font-mono font-bold text-sm tracking-widest text-zinc-100 uppercase">
             Interior Designer
           </h1>
+          <DesignManager />
         </div>
         <div className="flex items-center gap-2">
           {hasUnsavedChanges && !isSaving && (
@@ -122,7 +123,6 @@ export default function InteriorDesignerPage() {
             <Save className="w-3.5 h-3.5 mr-2" />
             Save
           </Button>
-          <DesignManager />
           <Button
             size="sm"
             variant="ghost"

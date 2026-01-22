@@ -1,16 +1,14 @@
 'use client'
 
-import { ApiReferenceReact } from '@scalar/api-reference-react'
-
-import '@scalar/api-reference-react/style.css'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function ApiDocsPage() {
-  return (
-    <ApiReferenceReact
-      configuration={{
-        _integration: 'nextjs',
-        url: '/openapi.json',
-      }}
-    />
-  )
+  const router = useRouter()
+
+  useEffect(() => {
+    router.replace('/docs')
+  }, [router])
+
+  return null
 }

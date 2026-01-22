@@ -10,14 +10,7 @@ import { z } from 'zod'
 // Entity Types
 // =============================================================================
 
-export const EntityType = z.enum([
-  'character',
-  'location',
-  'mechanic',
-  'faction',
-  'item',
-  'quest',
-])
+export const EntityType = z.enum(['character', 'location', 'mechanic', 'faction', 'item', 'quest'])
 export type EntityType = z.infer<typeof EntityType>
 
 export const SourceDomain = z.enum([
@@ -161,11 +154,7 @@ export class ServiceError extends Error {
 
 export class NotFoundError extends ServiceError {
   constructor(resource: string, id?: string) {
-    super(
-      id ? `${resource} with id ${id} not found` : `${resource} not found`,
-      'NOT_FOUND',
-      404
-    )
+    super(id ? `${resource} with id ${id} not found` : `${resource} not found`, 'NOT_FOUND', 404)
     this.name = 'NotFoundError'
   }
 }
@@ -218,4 +207,3 @@ export interface AsyncOperationStatus {
 // =============================================================================
 
 export type { db as DrizzleClient } from '@/db'
-

@@ -161,9 +161,15 @@ import {
   Check,
   Activity,
   Palette,
+  FilePlus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { DomainSidebar, SidebarSection, SidebarEmptyState } from '@/components/ui/domain-sidebar'
+import {
+  DomainSidebar,
+  SidebarSection,
+  SidebarEmptyState,
+  SidebarHeader,
+} from '@/components/ui/domain-sidebar'
 import { regenerateText } from '@/domains/storyteller/services/script-operations'
 import { StoryPlan, StorySequence } from '@/domains/storyteller/schemas/agent-schemas'
 
@@ -207,16 +213,31 @@ function getModelConfigFromStorage() {
 }
 
 interface Character {
-  characterId: string
+  id: string
   name: string
-  role?: string
+  role: string
   description?: string
   archetype?: string
   traits?: string[]
+  // Shimmer/Panel compat
+  gender?: string
+  characterPrompt?: string
+  // Metrics
+  valence?: number
+  arousal?: number
+  autonomy?: number
+  competence?: number
+  relatedness?: number
+  cognitiveClarity?: number // 0-100: Mental sharpness
+  perceivedStakes?: number // 0-100: How much is on the line
+  socialSafety?: number // 0-100: Perceived safety in social context
+  moralAlignment?: number // 0-100: Alignment between actions and values
+  transformation?: number // 0-100: Arc progress
   stress?: number
   trust?: number
   resilience?: number
   agency?: number
+  image?: string
 }
 
 interface Beat {
@@ -250,6 +271,33 @@ export default function StorytellerPage() {
   const episodeParam = searchParams.get('episodeId')
   const [currentEpisodeId, setCurrentEpisodeId] = useState<string | null>(episodeParam)
   const [currentEpisodeTitle, setCurrentEpisodeTitle] = useState<string>('')
+  const [currentEpisode, setCurrentEpisode] = useState<{
+    id: string
+    episode_prompt?: string
+  } | null>(null)
+
+  // Fetch current episode details when ID changes
+  useEffect(() => {
+    if (!currentEpisodeId) {
+      setCurrentEpisode(null)
+      return
+    }
+
+    const fetchEpisode = async () => {
+      try {
+        const res = await fetch(`/api/storyteller/episodes/${currentEpisodeId}`)
+        if (res.ok) {
+          const data = await res.json()
+          setCurrentEpisode(data)
+          if (data.title) setCurrentEpisodeTitle(data.title)
+        }
+      } catch (err) {
+        console.error('Failed to fetch episode:', err)
+      }
+    }
+
+    fetchEpisode()
+  }, [currentEpisodeId])
 
   const [selectedBeatId, setSelectedBeatId] = useState<string | null>(null)
 
@@ -335,6 +383,7 @@ export default function StorytellerPage() {
         setLastEpisodeTab(activeTab)
       }
       setActiveTab('bible')
+      window.dispatchEvent(new CustomEvent('bible-opened'))
     } else if (activeTab === 'bible') {
       // Closing bible: restore last episode tab
       setActiveTab(lastEpisodeTab)
@@ -369,6 +418,16 @@ export default function StorytellerPage() {
   const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false)
   const [primaryMoodboardUrl, setPrimaryMoodboardUrl] = useState<string | null>(null)
   const [isActivityPanelOpen, setIsActivityPanelOpen] = useState(false)
+
+  // Derive if project has a bible foundation
+  const hasBible = useMemo(() => {
+    return !!(
+      storyPlan?.worldDescription ||
+      (storyPlan?.genre && storyPlan.genre !== 'Unknown') ||
+      (storyPlan?.tone && storyPlan.tone !== 'Unknown') ||
+      (storyPlan?.themes && storyPlan.themes.length > 0)
+    )
+  }, [storyPlan])
 
   // Story decisions that have been made (to prevent re-asking)
   const [storyDecisions, setStoryDecisions] = useState<Record<string, string>>({})
@@ -493,7 +552,7 @@ export default function StorytellerPage() {
                 ]
                 for (const field of planFields) {
                   if (bible[field] !== undefined) {
-                    ; (updated as any)[field] = bible[field]
+                    ;(updated as any)[field] = bible[field]
                   }
                 }
 
@@ -755,16 +814,16 @@ export default function StorytellerPage() {
           masterPrompt: currentProject?.project_prompt || '',
           userDecisions: storyDecisions,
         },
-        characters: characters.map(c => ({
+        characters: characters.map((c: any) => ({
           characterId: c.id,
           name: c.name,
-          currentGoals: c.psychology?.goals || [],
-          fears: c.psychology?.fears || [],
-          selfDelusion: c.psychology?.selfDelusion || '',
-          actualMotivation: c.psychology?.actualMotivation || '',
+          currentGoals: c.psychology?.goals || c.currentGoals || [],
+          fears: c.psychology?.fears || c.fears || [],
+          selfDelusion: c.psychology?.selfDelusion || c.selfDelusion || '',
+          actualMotivation: c.psychology?.actualMotivation || c.actualMotivation || '',
           transformationProgress: c.transformation || 0,
-          knowledgeState: [],
-          stressLevel: c.stress || 30,
+          knowledgeState: c.knowledgeState || [],
+          stressLevel: c.stress || c.stressLevel || 30,
         })),
         modelConfig: getModelConfigFromStorage(),
         streamMode: useEnhancedStreaming ? 'events' : 'nodes',
@@ -1116,6 +1175,9 @@ export default function StorytellerPage() {
                 c.transformation_progress ??
                 c.arcStatus?.transformation ??
                 0,
+              // Ensure id maps to id, and role is present
+              id: c.id || c.characterId,
+              role: c.role || '',
             }))
             setCharacters(mapped)
           }
@@ -1344,18 +1406,18 @@ export default function StorytellerPage() {
           prev.map(c =>
             c.id === id
               ? {
-                ...updated,
-                stress: updated.stressLevel ?? updated.stress_level ?? c.stress,
-                trust: updated.trustLevel ?? updated.trust_level ?? c.trust,
-                power: updated.powerLevel ?? updated.power_level ?? c.power,
-                morality: updated.moralityLevel ?? updated.morality_level ?? c.morality,
-                hope: updated.hopeLevel ?? updated.hope_level ?? c.hope,
-                isolation: updated.isolationLevel ?? updated.isolation_level ?? c.isolation,
-                transformation:
-                  updated.transformationProgress ??
-                  updated.transformation_progress ??
-                  c.transformation,
-              }
+                  ...updated,
+                  stress: updated.stressLevel ?? updated.stress_level ?? c.stress,
+                  trust: updated.trustLevel ?? updated.trust_level ?? c.trust,
+                  power: updated.powerLevel ?? updated.power_level ?? c.power,
+                  morality: updated.moralityLevel ?? updated.morality_level ?? c.morality,
+                  hope: updated.hopeLevel ?? updated.hope_level ?? c.hope,
+                  isolation: updated.isolationLevel ?? updated.isolation_level ?? c.isolation,
+                  transformation:
+                    updated.transformationProgress ??
+                    updated.transformation_progress ??
+                    c.transformation,
+                }
               : c
           )
         )
@@ -1485,6 +1547,20 @@ export default function StorytellerPage() {
       setIsSending(false)
     }
   }, [currentProject?.id, isSending, handleSendMessage, searchParams, router])
+
+  const handleGenerateBible = useCallback(() => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('bible', 'open')
+    router.push(`?${params.toString()}`)
+
+    // Give it a tiny bit of time for the panel to open before sending message
+    setTimeout(() => {
+      handleSendMessage(
+        undefined,
+        'Let\'s build the series foundation. Help me define the genre, tone, and core rules for this world.'
+      )
+    }, 100)
+  }, [searchParams, router, handleSendMessage])
 
   // Phase Navigation Handlers
   const PHASE_ORDER = ['premise', 'breaking', 'writing', 'complete']
@@ -1863,6 +1939,28 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
     }
   }, [currentProject?.id, currentEpisodeId, characters])
 
+  const handleSaveEpisodePrompt = useCallback(
+    async (prompt: string) => {
+      if (!currentEpisodeId) return
+
+      try {
+        await fetch(`/api/storyteller/episodes/${currentEpisodeId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            episode_prompt: prompt,
+          }),
+        })
+
+        // Dismiss toast if this was from a suggestion
+        handleDismissToast('episode-prompt-suggestion')
+      } catch (err) {
+        console.error('Failed to save episode prompt:', err)
+      }
+    },
+    [currentEpisodeId, handleDismissToast]
+  )
+
   const handleQuestionSkip = useCallback(
     (questionId: string) => {
       setPendingQuestions(prev => prev.filter(q => q.id !== questionId))
@@ -1952,7 +2050,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
         <DomainSidebar
           header={
             <div className="flex items-center gap-3 group cursor-default">
-              <h1 className="font-bold text-xl tracking-tight text-white/90">Storyteller</h1>
+              <SidebarHeader>Storyteller</SidebarHeader>
               <Button
                 variant={isWorldBibleOpen ? 'default' : 'outline'}
                 size="sm"
@@ -2000,7 +2098,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                     )}
                   />
                 ) : (
-                  <Sparkles
+                  <BookOpen
                     className={cn(
                       'w-3.5 h-3.5',
                       isWorldBibleOpen ? 'text-yellow-100 animate-pulse' : 'text-amber-500'
@@ -2047,10 +2145,25 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 </SidebarSection>
               </div>
 
-              {/* 2. Episode Manager - disabled while agents working */}
-              {/* 2. Episode Manager - disabled while agents working */}
+              {/* 2. Cast/Characters */}
+              <div id={TOUR_STEP_IDS.STORYTELLER_CHARACTERS}>
+                <SidebarSection separator>
+                  <CharacterPanel
+                    characters={characters}
+                    onUpdate={handleUpdateCharacter}
+                    onCreate={handleCreateCharacter}
+                    onDelete={handleDeleteCharacter}
+                    projectId={currentProject.id}
+                    selectedBeatId={selectedBeatId}
+                    episodeId={currentEpisodeId}
+                    isLoading={isFetchingCharacters}
+                  />
+                </SidebarSection>
+              </div>
+
+              {/* 3. Episode Manager - disabled while agents working */}
               <div id={TOUR_STEP_IDS.STORYTELLER_EPISODES}>
-                <SidebarSection separator icon={<Film size={12} />}>
+                <SidebarSection separator>
                   <div className={isSending ? 'opacity-50 pointer-events-none' : ''}>
                     <EpisodeManager
                       projectId={currentProject.id}
@@ -2061,7 +2174,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                         params.delete('bible') // Implicitly close bible if opening episode
                         router.push(`?${params.toString()}`)
                       }}
-                      onEpisodeTitleChange={setCurrentEpisodeTitle}
+                      onEpisodeTitleChange={title => setCurrentEpisodeTitle(title)}
                     />
                     {isSending && (
                       <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
@@ -2073,31 +2186,16 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 </SidebarSection>
               </div>
 
-              {/* 3. Episode Prompt (if episode selected) */}
+              {/* 4. Episode Prompt (if episode selected) */}
               {currentEpisodeId && (
                 <SidebarSection separator icon={<FileText size={12} />}>
                   <MasterPromptEditor
                     scope="Episode"
-                    initialPrompt=""
-                    onSave={prompt => console.log('Save episode prompt:', prompt)}
+                    initialPrompt={currentEpisode?.episode_prompt || ''}
+                    onSave={handleSaveEpisodePrompt}
                   />
                 </SidebarSection>
               )}
-
-              {/* 4. Cast/Characters (last) */}
-              <div id={TOUR_STEP_IDS.STORYTELLER_CHARACTERS}>
-                <SidebarSection separator>
-                  <CharacterPanel
-                    characters={characters}
-                    onUpdate={handleUpdateCharacter}
-                    onCreate={handleCreateCharacter}
-                    onDelete={handleDeleteCharacter}
-                    projectId={currentProject.id}
-                    selectedBeatId={selectedBeatId}
-                    episodeId={currentEpisodeId}
-                  />
-                </SidebarSection>
-              </div>
             </div>
           ) : (
             <SidebarEmptyState
@@ -2145,6 +2243,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 onSendMessage={msg => handleSendMessage(undefined, msg)}
                 isReadOnly={isSending}
                 onConvertToCast={handleCreateCharacter}
+                isLoading={isFetchingPlan}
                 onClose={() => {
                   const params = new URLSearchParams(searchParams.toString())
                   params.delete('bible')
@@ -2179,26 +2278,29 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                     {/* Phase indicators - display only, not clickable */}
                     <div className="flex items-center">
                       <span
-                        className={`text-[10px] px-1.5 py-0.5 rounded-l-full border transition-colors select-none ${currentPhase === 'premise'
+                        className={`text-[10px] px-1.5 py-0.5 rounded-l-full border transition-colors select-none ${
+                          currentPhase === 'premise'
                             ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
                             : 'bg-muted/30 text-muted-foreground border-border'
-                          }`}
+                        }`}
                       >
                         PREMISE
                       </span>
                       <span
-                        className={`text-[10px] px-1.5 py-0.5 border-y border-l transition-colors select-none ${currentPhase === 'breaking'
+                        className={`text-[10px] px-1.5 py-0.5 border-y border-l transition-colors select-none ${
+                          currentPhase === 'breaking'
                             ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
                             : 'bg-muted/30 text-muted-foreground border-border'
-                          }`}
+                        }`}
                       >
                         BREAK
                       </span>
                       <span
-                        className={`text-[10px] px-1.5 py-0.5 rounded-r-full border transition-colors select-none ${currentPhase === 'writing'
+                        className={`text-[10px] px-1.5 py-0.5 rounded-r-full border transition-colors select-none ${
+                          currentPhase === 'writing'
                             ? 'bg-green-500/20 text-green-400 border-green-500/30'
                             : 'bg-muted/30 text-muted-foreground border-border'
-                          }`}
+                        }`}
                       >
                         WRITE
                       </span>
@@ -2214,10 +2316,11 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                       if (isWorldBibleOpen && !currentEpisodeId) return
                       setActiveTab('plan')
                     }}
-                    className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-colors ${activeTab === 'plan'
+                    className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-colors ${
+                      activeTab === 'plan'
                         ? 'bg-background shadow-sm text-foreground'
                         : 'text-muted-foreground hover:text-foreground'
-                      } ${isWorldBibleOpen && !currentEpisodeId ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    } ${isWorldBibleOpen && !currentEpisodeId ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <Map size={12} />
                     Plan
@@ -2228,10 +2331,11 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                       if (isWorldBibleOpen && !currentEpisodeId) return
                       setActiveTab('board')
                     }}
-                    className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-colors ${activeTab === 'board'
+                    className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-colors ${
+                      activeTab === 'board'
                         ? 'bg-background shadow-sm text-foreground'
                         : 'text-muted-foreground hover:text-foreground'
-                      } ${isWorldBibleOpen && !currentEpisodeId ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    } ${isWorldBibleOpen && !currentEpisodeId ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <Layout size={12} />
                     Beats
@@ -2242,10 +2346,11 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                       if (isWorldBibleOpen && !currentEpisodeId) return
                       setActiveTab('script')
                     }}
-                    className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-colors ${activeTab === 'script'
+                    className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-colors ${
+                      activeTab === 'script'
                         ? 'bg-background shadow-sm text-foreground'
                         : 'text-muted-foreground hover:text-foreground'
-                      } ${isWorldBibleOpen && !currentEpisodeId ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    } ${isWorldBibleOpen && !currentEpisodeId ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <FileText size={12} />
                     Script
@@ -2322,6 +2427,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                       onUpdate={handleUpdateBible}
                       onSendMessage={msg => handleSendMessage(undefined, msg)}
                       isReadOnly={isSending}
+                      isLoading={isFetchingPlan}
                       onConvertToCast={handleCreateCharacter}
                     />
                   </div>
@@ -2364,70 +2470,93 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                     </div>
                   </div>
                   <h2 className="text-3xl font-bold text-foreground">
-                    Ready to Create Your First Episode?
+                    {hasBible
+                      ? 'Ready to Create Your First Episode?'
+                      : 'Let\'s Built Your World Bible First'}
                   </h2>
                   <p className="text-muted-foreground text-lg leading-relaxed">
-                    Use the Episode Manager in the left sidebar to create a new episode, or open the{' '}
-                    <span className="text-amber-500 font-semibold">World Bible</span> to establish
-                    your series foundation.
+                    {hasBible
+                      ? 'Use the AI to draft your first episode, or manually create one in the sidebar.'
+                      : 'Before we dive into episodes, let\'s establish the foundation of your world—the rules, themes, and characters that make it unique.'}
                   </p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-                  <Button
-                    id={TOUR_STEP_IDS.STORYTELLER_AI_DRAFT}
-                    size="lg"
-                    variant="default"
-                    onClick={handleDraftFirstEpisode}
-                    disabled={isSending}
-                    className="gap-2 text-base px-8 shadow-lg shadow-indigo-500/20 bg-indigo-600 hover:bg-indigo-700 border-none"
-                  >
-                    {isSending ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <Sparkles className="w-5 h-5" />
-                    )}
-                    AI Draft First Episode
-                  </Button>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+                  {!hasBible ? (
+                    <>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        onClick={handleGenerateBible}
+                        disabled={isSending}
+                        className="gap-2 text-base px-8 font-bold text-yellow-500 transition-all duration-300 rounded-lg overflow-hidden border border-yellow-500/50 hover:border-yellow-500 bg-yellow-500/10 hover:bg-yellow-500/20 backdrop-blur-sm hover:shadow-[0_0_20px_-5px_rgba(234,179,8,0.5)] hover:scale-[1.02]"
+                      >
+                        {isSending ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <BookOpen className="w-5 h-5" />
+                        )}
+                        Generate World Bible First
+                      </Button>
 
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={() => {
-                      // Focus on episode manager (scroll sidebar if needed)
-                      document.getElementById(TOUR_STEP_IDS.STORYTELLER_EPISODES)?.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center',
-                      })
-                    }}
-                    className="gap-2 text-base px-8 shadow-sm"
-                  >
-                    <Film className="w-5 h-5" />
-                    Manual Create
-                  </Button>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        onClick={() => {
+                          const params = new URLSearchParams(searchParams.toString())
+                          params.set('bible', 'open')
+                          router.push(`?${params.toString()}`)
+                        }}
+                        disabled={isSending}
+                        className="gap-2 text-base px-8"
+                      >
+                        <FilePlus className="w-5 h-5" />
+                        Create Manually
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        id={TOUR_STEP_IDS.STORYTELLER_AI_DRAFT}
+                        size="lg"
+                        variant="outline"
+                        onClick={handleDraftFirstEpisode}
+                        disabled={isSending}
+                        className="gap-2 text-base px-8 font-bold text-primary transition-all duration-300 rounded-lg overflow-hidden border border-primary/50 hover:border-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm hover:shadow-[0_0_20px_-5px_rgba(92,124,250,0.5)] hover:scale-[1.02]"
+                      >
+                        {isSending ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-5 h-5" />
+                        )}
+                        AI Draft First Episode
+                      </Button>
 
-                  <Button
-                    size="lg"
-                    variant="ghost"
-                    onClick={() => {
-                      const params = new URLSearchParams(searchParams.toString())
-                      params.set('bible', 'open')
-                      router.push(`?${params.toString()}`)
-                    }}
-                    className="gap-2 text-base px-8 border border-border hover:bg-accent/50"
-                  >
-                    <BookOpen className="w-5 h-5" />
-                    Open World Bible
-                  </Button>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        onClick={() => {
+                          const params = new URLSearchParams(searchParams.toString())
+                          params.set('bible', 'open')
+                          router.push(`?${params.toString()}`)
+                        }}
+                        className="gap-2 text-base px-8 shadow-sm"
+                      >
+                        <BookOpen className="w-5 h-5" />
+                        Open World Bible
+                      </Button>
+                    </>
+                  )}
                 </div>
 
                 <div className="pt-8 text-xs text-muted-foreground/60 max-w-md mx-auto">
                   <div className="flex items-start gap-2 text-left">
                     <Sparkles className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-500/50" />
                     <p>
-                      <strong className="text-foreground/80">Tip:</strong> Start with the World
-                      Bible to define your series rules, factions, and themes. Then create episodes
-                      to bring your story to life.
+                      <strong className="text-foreground/80">Tip:</strong>{' '}
+                      {hasBible
+                        ? 'Your World Bible is ready. Use it as a reference while drafting episodes to maintain consistency.'
+                        : 'Starting with the World Bible helps the AI understand your vision and maintain consistency across episodes.'}
                     </p>
                   </div>
                 </div>
@@ -2467,7 +2596,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                     userDecisions: storyDecisions,
                   },
                   characters: characters.map(c => ({
-                    characterId: c.id,
+                    id: c.id,
                     name: c.name,
                     currentGoals: c.psychology?.goals || [],
                     fears: c.psychology?.fears || [],
@@ -2557,7 +2686,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
 
               {/* Smart Quick Actions & Propose Next Step */}
               {!isSending && !isTokenStreaming && (
-                <div className="mt-4 border-t border-border/10 pt-4 px-4 pb-2">
+                <div className="mt-2 border-t border-border/10 pt-2 px-2 pb-1">
                   <div className="flex items-center gap-2 mb-1.5 px-1">
                     <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">
                       Suggested

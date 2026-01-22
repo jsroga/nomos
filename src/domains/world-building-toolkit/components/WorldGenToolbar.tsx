@@ -25,7 +25,8 @@ const ToolButton: React.FC<ToolButtonProps> = ({ icon, label, isActive, onClick 
         onClick={onClick}
         className={cn(
           'transition-all',
-          isActive && 'bg-indigo-600 hover:bg-indigo-700 shadow-[0_0_15px_rgba(79,70,229,0.4)]'
+          isActive &&
+            'bg-indigo-600 hover:bg-indigo-700 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)]'
         )}
       >
         {icon}

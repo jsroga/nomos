@@ -217,14 +217,16 @@ export const SculptableSurface: React.FC<SculptableSurfaceProps> = ({
   const quality = useInteriorStore(state => state.terrainSettings.quality)
   const voxelMode = useInteriorStore(state => state.terrainBrush.pixelate)
 
-  // Subscribe to heightmap changes and force re-render
+  // Subscribe to heightmap changes and update data
   useEffect(() => {
-    const unsubscribe = useInteriorStore.subscribe((state, prevState) => {
-      if (state.terrainSettings.heightmapVersion !== prevState.terrainSettings.heightmapVersion) {
+    let prevVersion = useInteriorStore.getState().terrainSettings.heightmapVersion
+
+    const unsubscribe = useInteriorStore.subscribe(state => {
+      if (state.terrainSettings.heightmapVersion !== prevVersion) {
+        prevVersion = state.terrainSettings.heightmapVersion
+
         // Update texture data directly
-        const heightmap = state.terrainSettings.heightmap
-        const heightmapSize = state.terrainSettings.heightmapSize
-        const baseHeight = state.terrainSettings.baseGroundHeight
+        const { heightmap, heightmapSize, baseGroundHeight: baseHeight } = state.terrainSettings
 
         if (heightmap && heightmapTextureRef.current) {
           const data = heightmapTextureRef.current.image.data as unknown as Float32Array

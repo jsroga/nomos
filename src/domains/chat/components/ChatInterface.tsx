@@ -75,46 +75,43 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   return (
     <div className="flex flex-col h-full bg-background border-l border-border/50">
       {/* Header */}
-      <div className="p-4 border-b bg-card/50 backdrop-blur-sm flex items-center justify-between sticky top-0 z-20 min-h-[65px]">
-        {headerContent ? (
-          headerContent
-        ) : title ? (
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-sm uppercase tracking-widest text-primary/80">
+      <div className="px-4 py-3 border-b bg-card/50 backdrop-blur-sm flex items-center justify-between sticky top-0 z-20 min-h-[56px]">
+        {headerContent ? headerContent : <div />}
+
+        {/* Activity Toggle with Title */}
+        <div className="flex items-center gap-3">
+          {title && (
+            <span className="text-xs font-mono text-muted-foreground uppercase tracking-widest">
               {title}
             </span>
-          </div>
-        ) : (
-          <div />
-        )}
-
-        {/* Shared Activity Toggle */}
-        {onActivityToggle && (
-          <Button
-            variant={isActivityPanelOpen ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={onActivityToggle}
-            className="h-8 gap-2 text-xs font-medium border border-border/40"
-            title={
-              isActivityPanelOpen
-                ? 'Activity ON - showing technical details'
-                : 'Activity OFF - showing results only'
-            }
-          >
-            <Activity
-              size={14}
-              className={isActivityPanelOpen ? 'text-primary' : 'text-muted-foreground'}
-            />
-            <span className={isActivityPanelOpen ? 'text-foreground' : 'text-muted-foreground'}>
-              Activity {isActivityPanelOpen ? 'ON' : 'OFF'}
-            </span>
-          </Button>
-        )}
+          )}
+          {onActivityToggle && (
+            <Button
+              variant={isActivityPanelOpen ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={onActivityToggle}
+              className="h-8 gap-2 text-xs font-medium border border-border/40"
+              title={
+                isActivityPanelOpen
+                  ? 'Activity ON - showing technical details'
+                  : 'Activity OFF - showing results only'
+              }
+            >
+              <Activity
+                size={14}
+                className={isActivityPanelOpen ? 'text-primary' : 'text-muted-foreground'}
+              />
+              <span className={isActivityPanelOpen ? 'text-foreground' : 'text-muted-foreground'}>
+                Activity {isActivityPanelOpen ? 'ON' : 'OFF'}
+              </span>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Messages Area */}
       <div className="flex-1 overflow-hidden relative">
-        <div className="absolute inset-0 p-4 pb-0 flex flex-col overflow-y-auto">
+        <div className="absolute inset-0 p-3 pb-0 flex flex-col overflow-y-auto">
           <AgentLog
             messages={messages}
             agentConfig={agentConfig}

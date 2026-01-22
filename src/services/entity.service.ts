@@ -348,4 +348,3 @@ export class EntityService {
 
 // Export singleton instance for convenience
 export const entityService = new EntityService()
-

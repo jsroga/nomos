@@ -8,7 +8,10 @@ import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verificati
 /**
  * Verify design access using single JOIN query
  */
-async function verifyDesignAccess(designId: string, userId: string): Promise<{
+async function verifyDesignAccess(
+  designId: string,
+  userId: string
+): Promise<{
   hasAccess: boolean
   projectId?: string
 }> {
@@ -24,7 +27,7 @@ async function verifyDesignAccess(designId: string, userId: string): Promise<{
     .limit(1)
 
   if (result.length === 0) return { hasAccess: false }
-  
+
   const row = result[0]
   if (row.projectUserId !== userId) return { hasAccess: false }
 
@@ -78,14 +81,20 @@ export async function POST(req: NextRequest) {
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { allowed } = checkRateLimit(`design-create:${session.user.id}`, { maxRequests: 20, windowMs: 60000 })
+    const { allowed } = checkRateLimit(`design-create:${session.user.id}`, {
+      maxRequests: 20,
+      windowMs: 60000,
+    })
     if (!allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
 
     const body = await req.json()
     const { projectId, name, sceneData } = body
 
     if (!projectId || !name || !sceneData) {
-      return NextResponse.json({ error: 'Project ID, name, and scene data are required' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Project ID, name, and scene data are required' },
+        { status: 400 }
+      )
     }
 
     if (!(await verifyProjectAccess(projectId, session.user.id))) {

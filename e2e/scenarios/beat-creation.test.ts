@@ -155,4 +155,3 @@ async function testMultipleBeats(runner: TestRunner) {
 }
 
 runBeatTests().catch(console.error)
-

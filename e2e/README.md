@@ -16,7 +16,9 @@ These tests verify the complete "Swiss Army Knife" workflow:
 ## Test Files
 
 ### `swiss-knife-integration.test.ts`
+
 Complete end-to-end workflow test covering:
+
 - Character creation in Storyteller
 - Entity auto-sync verification
 - Cross-domain @mentions in Loop Creator
@@ -26,7 +28,9 @@ Complete end-to-end workflow test covering:
 - Roundtrip back to Storyteller
 
 ### `mention-system.test.ts`
+
 Detailed tests for the @mention system:
+
 - Autocomplete across domains
 - Source domain badges
 - Filtered search
@@ -59,6 +63,7 @@ npx supabase migration up
 ```
 
 Make sure the `game_entities` tables are created:
+
 - `game_entities`
 - `entity_relationships`
 
@@ -186,6 +191,7 @@ npx playwright test --debug
 **Cause:** Cross-domain context builder not called
 
 **Fix:** Verify `buildCrossDomainContext()` is called in:
+
 - `src/domains/storyteller/agents/agent-v2-base.ts`
 - `src/domains/loop-creator/agents/supervisor.ts`
 
@@ -194,6 +200,7 @@ npx playwright test --debug
 **Cause:** Game entity provider not added to mention providers
 
 **Fix:** Check these files include `getGameEntityProvider()`:
+
 - `src/app/app/[projectId]/storyteller/page.tsx`
 - `src/domains/loop-creator/components/LoopCreatorLayout.tsx`
 
@@ -202,6 +209,7 @@ npx playwright test --debug
 **Cause:** API not returning `_suggestions`
 
 **Fix:** Verify suggestion logic in:
+
 - `src/app/api/storyteller/characters/route.ts`
 - `src/app/api/loop-creator/loops/route.ts`
 
@@ -254,7 +262,7 @@ Expected test execution times:
 Tests create entities with prefix `test-`. Clean up periodically:
 
 ```sql
-DELETE FROM game_entities 
-WHERE name LIKE '%Test%' 
+DELETE FROM game_entities
+WHERE name LIKE '%Test%'
   OR tags @> ARRAY['test'];
 ```

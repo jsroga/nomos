@@ -57,7 +57,7 @@ export const StorytellerImage: React.FC<StorytellerImageProps> = ({
           <div className="flex flex-col items-center justify-center w-full h-full p-4 relative z-20">
             <div className="relative">
               <img
-                src="/logo.svg"
+                src="/logo.png"
                 alt="Loading..."
                 className="w-12 h-12 opacity-80 animate-pulse drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]"
               />

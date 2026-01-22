@@ -13,13 +13,13 @@ import { ChatAnthropic } from '@langchain/anthropic'
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai'
 import { BaseChatModel } from '@langchain/core/language_models/chat_models'
 import { z } from 'zod'
-import { LocalStorageKeys } from '@/constants/localStorage'
+import { LocalStorageKeys } from '../../../constants/localStorage'
 
 // Lazy context getters to avoid importing async_hooks on client side
 function getContextProvider(): import('./model-context').ModelProvider | undefined {
   if (typeof window !== 'undefined') return undefined
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+     
     const { getContextProvider: fn } = require('./model-context')
     return fn()
   } catch {
@@ -30,7 +30,7 @@ function getContextProvider(): import('./model-context').ModelProvider | undefin
 function getContextAnthropicKey(): string | undefined {
   if (typeof window !== 'undefined') return undefined
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+     
     const { getContextAnthropicKey: fn } = require('./model-context')
     return fn()
   } catch {
@@ -41,7 +41,7 @@ function getContextAnthropicKey(): string | undefined {
 function getContextGeminiKey(): string | undefined {
   if (typeof window !== 'undefined') return undefined
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+     
     const { getContextGeminiKey: fn } = require('./model-context')
     return fn()
   } catch {
@@ -61,6 +61,7 @@ export type AgentRole =
   | 'writer'
   | 'premiseArchitect'
   | 'magicAgent'
+  | 'consistency'
   | 'default'
 
 // Model configurations per provider

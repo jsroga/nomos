@@ -19,10 +19,10 @@ function hashString(str: string): number {
 function getAnonymousId(): string {
   if (typeof window === 'undefined') return 'server'
 
-  let id = localStorage.getItem('kurtvitza_anon_id')
+  let id = localStorage.getItem('kur_anon_id')
   if (!id) {
     id = `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    localStorage.setItem('kurtvitza_anon_id', id)
+    localStorage.setItem('kur_anon_id', id)
   }
   return id
 }

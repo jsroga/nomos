@@ -1,9 +1,0 @@
-node_modules
-.next
-build
-dist
-.env*
-*.pfx
-*.cert
-package-lock.json
-public

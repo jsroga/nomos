@@ -25,34 +25,34 @@ export type AgentAction = // Beat Operations
     // Character Operations
     | { type: 'CREATE_CHARACTER'; payload: { name: string; role: string; description?: string } }
     | {
-      type: 'UPDATE_CHARACTER'
-      payload: { characterId: string; updates: Partial<CharacterState> }
-    }
-    | {
-      type: 'UPDATE_CHARACTER_METRICS'
-      payload: {
-        characterId: string
-        changes: Partial<
-          Record<
-            | 'valence'
-            | 'arousal'
-            | 'autonomy'
-            | 'competence'
-            | 'relatedness'
-            | 'cognitiveClarity'
-            | 'perceivedStakes'
-            | 'socialSafety'
-            | 'moralAlignment',
-            number
-          >
-        >
-        reason?: string
+        type: 'UPDATE_CHARACTER'
+        payload: { characterId: string; updates: Partial<CharacterState> }
       }
-    }
     | {
-      type: 'UPDATE_STRESS_LEVEL'
-      payload: { characterId: string; delta: number; reason?: string }
-    } // Deprecated: use UPDATE_CHARACTER_METRICS
+        type: 'UPDATE_CHARACTER_METRICS'
+        payload: {
+          characterId: string
+          changes: Partial<
+            Record<
+              | 'valence'
+              | 'arousal'
+              | 'autonomy'
+              | 'competence'
+              | 'relatedness'
+              | 'cognitiveClarity'
+              | 'perceivedStakes'
+              | 'socialSafety'
+              | 'moralAlignment',
+              number
+            >
+          >
+          reason?: string
+        }
+      }
+    | {
+        type: 'UPDATE_STRESS_LEVEL'
+        payload: { characterId: string; delta: number; reason?: string }
+      } // Deprecated: use UPDATE_CHARACTER_METRICS
     | { type: 'ADD_KNOWLEDGE'; payload: { characterId: string; knowledge: string } }
 
     // Script Operations
@@ -62,146 +62,163 @@ export type AgentAction = // Beat Operations
 
     // Story Bible Operations
     | {
-      type: 'UPDATE_SERIES_BIBLE'
-      payload: {
-        genre?: string
-        tone?: string
-        themes?: string[]
-        worldRules?: WorldRule[]
-        factions?: Faction[]
-        keyCharacters?: KeyCharacter[]
-        storyPlan?: Partial<StoryPlan>
+        type: 'UPDATE_SERIES_BIBLE'
+        payload: {
+          genre?: string
+          tone?: string
+          themes?: string[]
+          worldRules?: WorldRule[]
+          factions?: Faction[]
+          keyCharacters?: KeyCharacter[]
+          storyPlan?: Partial<StoryPlan>
+        }
       }
-    }
     | { type: 'ADD_WORLD_RULE'; payload: { rule: string } }
     | { type: 'ADD_SETUP'; payload: { description: string; beatId: string } }
     | { type: 'RESOLVE_SETUP'; payload: { setupId: string; payoffBeatId: string } }
 
     // Partial Bible Update Operations (Smart Merge)
     | {
-      type: 'UPDATE_WORLD_RULES'
-      payload: {
-        rules: WorldRule[]
-        mergeMode: 'replace' | 'merge' | 'smart'
-      }
-    }
-    | {
-      type: 'UPDATE_FACTIONS'
-      payload: {
-        factions: Faction[]
-        mergeMode: 'replace' | 'merge' | 'smart'
-      }
-    }
-    | {
-      type: 'UPDATE_INSPIRATIONS'
-      payload: {
-        inspirations: {
-          books?: Array<string | InspirationItem>
-          movies?: Array<string | InspirationItem>
-          games?: Array<string | InspirationItem>
+        type: 'UPDATE_WORLD_RULES'
+        payload: {
+          rules: WorldRule[]
+          mergeMode: 'replace' | 'merge' | 'smart'
         }
-        mergeMode?: 'replace' | 'merge'
       }
-    }
     | {
-      type: 'UPDATE_WORLD_DESCRIPTION'
-      payload: { description: string }
-    }
-    | {
-      type: 'UPDATE_MOOD_SOUNDTRACK'
-      payload: { moodSoundtrack: string }
-    }
-    | {
-      type: 'UPDATE_SOUNDTRACKS'
-      payload: {
-        soundtracks: SoundtrackTrack[]
-        mergeMode?: 'replace' | 'merge'
+        type: 'UPDATE_FACTIONS'
+        payload: {
+          factions: Faction[]
+          mergeMode: 'replace' | 'merge' | 'smart'
+        }
       }
-    }
     | {
-      type: 'UPDATE_PLOT_TWISTS'
-      payload: {
-        plotTwists: string[]
-        mergeMode?: 'replace' | 'merge'
+        type: 'UPDATE_INSPIRATIONS'
+        payload: {
+          inspirations: {
+            books?: Array<string | InspirationItem>
+            movies?: Array<string | InspirationItem>
+            games?: Array<string | InspirationItem>
+          }
+          mergeMode?: 'replace' | 'merge'
+        }
       }
-    }
     | {
-      type: 'UPDATE_KEY_CHARACTERS'
-      payload: {
-        keyCharacters: KeyCharacter[]
-        mergeMode: 'replace' | 'merge' | 'smart'
+        type: 'UPDATE_WORLD_DESCRIPTION'
+        payload: { description: string }
       }
-    }
     | {
-      type: 'UPDATE_EPISODE_ROADMAP'
-      payload: {
-        sequences: Array<{
-          id: number
-          name: string
-          description: string
-          keyFactionsInvolved?: string[]
-          worldConsequence?: string
-        }>
-        executiveSummary?: string | null
-        mergeMode?: 'replace' | 'merge'
+        type: 'UPDATE_MOOD_SOUNDTRACK'
+        payload: { moodSoundtrack: string }
       }
-    }
     | {
-      type: 'UPDATE_ROADMAP_SUMMARY'
-      payload: {
-        executiveSummary: string
+        type: 'UPDATE_SOUNDTRACKS'
+        payload: {
+          soundtracks: SoundtrackTrack[]
+          mergeMode?: 'replace' | 'merge'
+        }
       }
-    }
     | {
-      type: 'UPDATE_EPISODE_PREMISE'
-      payload: {
-        episodeId?: string
-        premise: Partial<EpisodePremise>
+        type: 'UPDATE_PLOT_TWISTS'
+        payload: {
+          plotTwists: string[]
+          mergeMode?: 'replace' | 'merge'
+        }
       }
-    }
     | {
-      type: 'GENERATE_POSTER'
-      payload: {
-        episodeId: string
-        prompt: string
+        type: 'UPDATE_KEY_CHARACTERS'
+        payload: {
+          keyCharacters: KeyCharacter[]
+          mergeMode: 'replace' | 'merge' | 'smart'
+        }
       }
-    }
     | {
-      type: 'SET_GENRE_AND_TONE'
-      payload: {
-        genre: string
-        tone: string
-        styleReference?: string
+        type: 'UPDATE_EPISODE_ROADMAP'
+        payload: {
+          sequences: Array<{
+            id: number
+            name: string
+            description: string
+            keyFactionsInvolved?: string[]
+            worldConsequence?: string
+          }>
+          executiveSummary?: string | null
+          mergeMode?: 'replace' | 'merge'
+        }
       }
-    }
+    | {
+        type: 'UPDATE_ROADMAP_SUMMARY'
+        payload: {
+          executiveSummary: string
+        }
+      }
+    | {
+        type: 'UPDATE_EPISODE_PREMISE'
+        payload: {
+          episodeId?: string
+          premise: Partial<EpisodePremise>
+        }
+      }
+    | {
+        type: 'GENERATE_POSTER'
+        payload: {
+          episodeId: string
+          prompt: string
+        }
+      }
+    | {
+        type: 'SET_GENRE_AND_TONE'
+        payload: {
+          genre: string
+          tone: string
+          styleReference?: string
+        }
+      }
     | { type: 'ADD_THEME'; payload: { theme: string } }
     | { type: 'REMOVE_THEME'; payload: { theme: string } }
     | {
-      type: 'CREATE_LOCATION'
-      payload: {
-        name: string
-        description: string
-        type?: string
-        importance?: string
+        type: 'CREATE_LOCATION'
+        payload: {
+          name: string
+          description: string
+          type?: string
+          importance?: string
+        }
       }
-    }
     | {
-      type: 'UPDATE_LOCATION'
-      payload: {
-        locationId: string
-        updates: Record<string, any>
+        type: 'UPDATE_LOCATION'
+        payload: {
+          locationId: string
+          updates: Record<string, any>
+        }
       }
-    }
     | {
-      type: 'ADD_LORE_ENTRY'
-      payload: {
-        title: string
-        content: string
-        category?: string
+        type: 'ADD_LORE_ENTRY'
+        payload: {
+          title: string
+          content: string
+          category?: string
+        }
       }
-    }
+    | {
+        type: 'GENERATE_STORY_ROADMAP'
+        payload: {
+          genre?: string
+          tone?: string
+          themes?: string[]
+          targetAudience?: string
+        }
+      }
+    | { type: 'ADD_BEAT'; payload: { beatId?: string; id?: string; [key: string]: any } }
+    | { type: 'ADD_CHARACTER'; payload: { characterId?: string; [key: string]: any } }
+    | { type: 'UPDATE_CHARACTER_PSYCHOLOGY'; payload: { characterId: string; [key: string]: any } }
+    | { type: 'UPDATE_FACTION'; payload: { factionId: string; [key: string]: any } }
+    | { type: 'ADD_FACTION'; payload: { factionId?: string; [key: string]: any } }
+    | { type: 'UPDATE_STORY_PLAN'; payload: { [key: string]: any } }
   ) & {
     status?: 'pending' | 'executing' | 'committed' | 'rejected'
+    confidence?: number
+    reasoning?: string
   }
 
 // ============================================

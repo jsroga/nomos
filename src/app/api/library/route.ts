@@ -12,14 +12,11 @@ export async function GET() {
   try {
     const data = await fs.readFile(MANIFEST_PATH, 'utf-8')
     const manifest = JSON.parse(data)
-    
+
     return NextResponse.json(manifest)
   } catch (error) {
     console.error('Error reading library manifest:', error)
-    return NextResponse.json(
-      { error: 'Failed to load library' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to load library' }, { status: 500 })
   }
 }
 
@@ -36,7 +33,7 @@ export async function POST(req: Request) {
     }
 
     const newAsset = await req.json()
-    
+
     // Validate required fields
     if (!newAsset.id || !newAsset.name || !newAsset.file) {
       return NextResponse.json(
@@ -44,37 +41,31 @@ export async function POST(req: Request) {
         { status: 400 }
       )
     }
-    
+
     // Read current manifest
     const data = await fs.readFile(MANIFEST_PATH, 'utf-8')
     const manifest = JSON.parse(data)
-    
+
     // Check for duplicate
     if (manifest.assets.find((a: any) => a.id === newAsset.id)) {
-      return NextResponse.json(
-        { error: 'Asset with this ID already exists' },
-        { status: 409 }
-      )
+      return NextResponse.json({ error: 'Asset with this ID already exists' }, { status: 409 })
     }
-    
+
     // Add defaults
     const asset = {
       ...newAsset,
       createdAt: newAsset.createdAt || new Date().toISOString().split('T')[0],
       featured: newAsset.featured || false,
     }
-    
+
     manifest.assets.push(asset)
-    
+
     // Write updated manifest
     await fs.writeFile(MANIFEST_PATH, JSON.stringify(manifest, null, 2))
-    
+
     return NextResponse.json({ success: true, asset })
   } catch (error) {
     console.error('Error adding to library:', error)
-    return NextResponse.json(
-      { error: 'Failed to add asset' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to add asset' }, { status: 500 })
   }
 }

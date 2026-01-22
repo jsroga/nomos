@@ -26,31 +26,20 @@ export const storytellerTourSteps: TourStep[] = [
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-primary">
           <BookOpen className="w-5 h-5" />
-          <h3 className="font-bold">✨ Need Inspiration?</h3>
-        </div>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Stuck? Click this to get random story prompts based on trending genres.
-        </p>
-      </div>
-    ),
-    selectorId: TOUR_STEP_IDS.SUGGEST_IDEA_BUTTON,
-    position: 'bottom',
-  },
-  {
-    content: (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-primary">
-          <PenTool className="w-5 h-5" />
           <h3 className="font-bold">📖 Build Your World</h3>
         </div>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Once you have a concept, flesh out your world here — factions, rules, tone. The AI uses
-          this to stay consistent.
+          Open the World Bible to flesh out factions, rules, and tone.
         </p>
+        <div className="mt-2 p-2 bg-primary/10 rounded border border-primary/20 text-[10px] text-primary uppercase tracking-widest font-bold animate-pulse">
+          Click the BIBLE button to advance
+        </div>
       </div>
     ),
     selectorId: TOUR_STEP_IDS.STORYTELLER_BIBLE,
     position: 'right',
+    hideNext: true,
+    advanceEvent: 'bible-opened',
   },
   {
     content: (
@@ -71,22 +60,6 @@ export const storytellerTourSteps: TourStep[] = [
     content: (
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-primary">
-          <Sparkles className="w-5 h-5" />
-          <h3 className="font-bold">🪄 Magic Start</h3>
-        </div>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Short on time? Use this button to let me draft your first episode's premise automatically
-          based on your project goals.
-        </p>
-      </div>
-    ),
-    selectorId: TOUR_STEP_IDS.STORYTELLER_AI_DRAFT,
-    position: 'top',
-  },
-  {
-    content: (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-primary">
           <Users className="w-5 h-5" />
           <h3 className="font-bold">👥 Add Characters</h3>
         </div>
@@ -97,5 +70,21 @@ export const storytellerTourSteps: TourStep[] = [
     ),
     selectorId: TOUR_STEP_IDS.STORYTELLER_CHARACTERS,
     position: 'left',
+  },
+  {
+    content: (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 text-primary">
+          <Sparkles className="w-5 h-5" />
+          <h3 className="font-bold">🪄 AI Assistance</h3>
+        </div>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Short on time? Use the AI tools to suggest ideas or draft your first episode's premise
+          automatically.
+        </p>
+      </div>
+    ),
+    selectorId: TOUR_STEP_IDS.STORYTELLER_AI_DRAFT,
+    position: 'top',
   },
 ]

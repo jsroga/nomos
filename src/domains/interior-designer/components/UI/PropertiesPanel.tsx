@@ -1207,7 +1207,7 @@ function TextTo3DControls({
     try {
       const metadata = JSON.parse(currentOperation.details || '{ }')
       thumbnailUrl = metadata.thumbnailUrl || ''
-    } catch { }
+    } catch {}
 
     return (
       <div className="pt-4 border-t border-border animate-in fade-in">

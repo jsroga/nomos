@@ -18,8 +18,8 @@ import {
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js'
 
-import { validateApiKey, getServiceContext } from './auth'
-import { getAllTools, handleToolCall } from './tools'
+import { validateApiKey, getServiceContext } from './core/auth'
+import { getAllTools, handleToolCall } from './domains'
 import { getAllResources, handleResourceRead } from './resources'
 
 // ============================================
@@ -54,7 +54,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 /**
  * Execute a tool call
  */
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+server.setRequestHandler(CallToolRequestSchema, async request => {
   const { name, arguments: args } = request.params
 
   // Validate API key and get service context
@@ -142,7 +142,7 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
 /**
  * Read a specific resource
  */
-server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+server.setRequestHandler(ReadResourceRequestSchema, async request => {
   const { uri } = request.params
 
   // Validate API key
@@ -188,8 +188,7 @@ async function main() {
   console.error('[MCP] Server connected and ready')
 }
 
-main().catch((error) => {
+main().catch(error => {
   console.error('[MCP] Fatal error:', error)
   process.exit(1)
 })
-

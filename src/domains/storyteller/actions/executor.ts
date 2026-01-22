@@ -408,7 +408,10 @@ export class ActionExecutor {
     }
   }
 
-  private captureRelevantState(state: WritersRoomState, action: AgentAction): Partial<WritersRoomState> {
+  private captureRelevantState(
+    state: WritersRoomState,
+    action: AgentAction
+  ): Partial<WritersRoomState> {
     // Capture only the relevant part of state for efficient undo
     switch (action.type) {
       case 'CREATE_BEAT':

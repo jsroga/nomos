@@ -383,7 +383,7 @@ async function testPromptHubConfiguration() {
       'storyteller-supervisor',
     ]
 
-    runner.log(`   Expected Hub paths for premise-related agents:`)
+    runner.log('   Expected Hub paths for premise-related agents:')
     expectedPaths.forEach(p => runner.log(`     - ${p}`))
 
     runner.recordResult(

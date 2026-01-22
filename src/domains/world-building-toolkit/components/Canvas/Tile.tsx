@@ -39,6 +39,7 @@ export const Tile: React.FC<TileProps> = ({ x, y, size }) => {
 
     // Single selection only
     useWorldStore.getState().setSelectedTile({ x, y })
+    window.dispatchEvent(new CustomEvent('tile-selected'))
   }
 
   // Construct image URL: /projects/<projectId>/<filename>

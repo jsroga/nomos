@@ -13,13 +13,13 @@ This report documents security vulnerabilities identified and fixed in the Tilem
 ### Risk Summary
 
 | Severity | Found | Fixed | Remaining |
-|----------|-------|-------|-----------|
-| Critical | 9 | 9 | 0 |
-| High | 12 | 12 | 0 |
-| Medium | 8 | 4 | 4* |
-| Low | 8 | 0 | 8* |
+| -------- | ----- | ----- | --------- |
+| Critical | 9     | 9     | 0         |
+| High     | 12    | 12    | 0         |
+| Medium   | 8     | 4     | 4\*       |
+| Low      | 8     | 0     | 8\*       |
 
-*Remaining issues are in transitive dependencies (Trigger.dev SDK, drizzle-kit) awaiting upstream fixes.
+\*Remaining issues are in transitive dependencies (Trigger.dev SDK, drizzle-kit) awaiting upstream fixes.
 
 ---
 
@@ -32,6 +32,7 @@ This report documents security vulnerabilities identified and fixed in the Tilem
 **Impact:** Unauthorized access to user data, project manipulation, resource abuse.
 
 **Files Fixed:**
+
 - `/api/storyteller/actions/route.ts`
 - `/api/storyteller/consistency/check/route.ts`
 - `/api/storyteller/consistency/apply/route.ts`
@@ -58,12 +59,14 @@ This report documents security vulnerabilities identified and fixed in the Tilem
 **Impact:** Attackers could probe internal networks, access cloud metadata endpoints (169.254.169.254), or exfiltrate data.
 
 **Files Fixed:**
+
 - `/api/generate-3d/route.ts`
 - `/api/proxy-model/route.ts`
 - `/api/save-model/route.ts`
 - `/api/upscale/midjourney/route.ts`
 
 **Solution:** Created `/lib/security.ts` with:
+
 ```typescript
 // Whitelist-based URL validation
 isAllowedUrl(url: string): { allowed: boolean; reason?: string }
@@ -73,6 +76,7 @@ safeFetch(url: string, options?: RequestInit): Promise<Response>
 ```
 
 **Blocked:**
+
 - Localhost (127.0.0.1, ::1, 0.0.0.0)
 - Private IP ranges (10.x.x.x, 172.16-31.x.x, 192.168.x.x)
 - Link-local addresses (169.254.x.x)
@@ -88,12 +92,14 @@ safeFetch(url: string, options?: RequestInit): Promise<Response>
 **Impact:** Read/write arbitrary files on the server (e.g., `/etc/passwd`, `.env`).
 
 **Files Fixed:**
+
 - `/api/save-image/route.ts`
 - `/api/delete-image/route.ts`
 - `/api/save-model/route.ts`
 - `/api/generate-3d/route.ts`
 
 **Solution:**
+
 ```typescript
 // Validates and normalizes paths
 sanitizePath(userInput: string, allowedBaseDir: string): {
@@ -107,6 +113,7 @@ sanitizeFilename(filename: string): string | null
 ```
 
 **Blocked:**
+
 - `../` sequences
 - Null bytes (`\0`)
 - Absolute paths
@@ -121,6 +128,7 @@ sanitizeFilename(filename: string): string | null
 **File Fixed:** `/middleware.ts`
 
 **Headers Added:**
+
 ```
 X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
@@ -147,10 +155,12 @@ Content-Security-Policy: (production only)
 **Vulnerability:** API keys, tokens, and passwords were being logged.
 
 **Files Fixed:**
+
 - `/hooks/useTriggerRealtime.ts`
 - `/api/trigger/token/route.ts`
 
 **Solution:** Created secure logging utilities:
+
 ```typescript
 // Auto-redacts sensitive fields
 redactSensitive(obj: any): any
@@ -166,6 +176,7 @@ secureLog.info/warn/error/debug(message, data)
 **Vulnerability:** No protection against brute force or resource exhaustion.
 
 **Solution:** `withRateLimit()` wrapper applied to expensive endpoints:
+
 - 3D generation: 5 req/min
 - Image operations: 60 req/min
 - AI endpoints: 10-30 req/min
@@ -177,6 +188,7 @@ secureLog.info/warn/error/debug(message, data)
 **Vulnerability:** Insufficient input validation allowed malformed data.
 
 **Solution:** Zod schemas in `/lib/security.ts`:
+
 ```typescript
 schemas.uuid
 schemas.projectId
@@ -193,6 +205,7 @@ schemas.imageBase64
 ### 9. Next.js Critical Vulnerability Fixed
 
 **Vulnerability:** Next.js 15.0-15.4.6 had 9 CVEs including:
+
 - GHSA-9qr9-h5gf-34mp (RCE in React flight protocol)
 - GHSA-f82v-jwr5-mffw (Authorization Bypass in Middleware)
 - GHSA-4342-x723-ch2f (SSRF via Middleware Redirect)
@@ -205,11 +218,11 @@ schemas.imageBase64
 
 ### Transitive Dependencies
 
-| Package | Severity | Issue | Status |
-|---------|----------|-------|--------|
-| cookie (via @trigger.dev/sdk) | Low | Out of bounds characters | Awaiting upstream |
-| esbuild (via drizzle-kit) | Moderate | Dev server request exposure | Dev-only, low risk |
-| undici (via @vercel/blob) | Low | Decompression DoS | Awaiting upstream |
+| Package                       | Severity | Issue                       | Status             |
+| ----------------------------- | -------- | --------------------------- | ------------------ |
+| cookie (via @trigger.dev/sdk) | Low      | Out of bounds characters    | Awaiting upstream  |
+| esbuild (via drizzle-kit)     | Moderate | Dev server request exposure | Dev-only, low risk |
+| undici (via @vercel/blob)     | Low      | Decompression DoS           | Awaiting upstream  |
 
 ### Configuration Warnings
 
@@ -225,6 +238,7 @@ schemas.imageBase64
 ### `/lib/security.ts`
 
 Centralized security utilities:
+
 - `sanitizePath()` - Path traversal protection
 - `sanitizeFilename()` - Filename sanitization
 - `isValidProjectId()` - UUID validation
@@ -238,6 +252,7 @@ Centralized security utilities:
 ### `/lib/api-utils.ts`
 
 API middleware utilities:
+
 - `withAuth()` - Authentication wrapper
 - `withRateLimit()` - Rate limiting wrapper
 - `withCsrfProtection()` - CSRF protection
@@ -253,7 +268,7 @@ API middleware utilities:
 npm audit
 
 # Test authentication
-curl -X POST http://localhost:3000/api/storyteller/actions -d '{}' 
+curl -X POST http://localhost:3000/api/storyteller/actions -d '{}'
 # Expected: 401 Unauthorized
 
 # Test SSRF protection
@@ -281,6 +296,7 @@ curl -X POST http://localhost:3000/api/save-image -d '{"projectId":"test","filen
 ## Conclusion
 
 All critical and high-severity vulnerabilities have been addressed. The application now has:
+
 - ✅ Authentication on all sensitive endpoints
 - ✅ SSRF protection with domain whitelist
 - ✅ Path traversal prevention

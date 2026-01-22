@@ -121,9 +121,7 @@ export class EntitiesService {
     }
 
     if (validated.search) {
-      query = query.or(
-        `name.ilike.%${validated.search}%,description.ilike.%${validated.search}%`
-      )
+      query = query.or(`name.ilike.%${validated.search}%,description.ilike.%${validated.search}%`)
     }
 
     const { data, error } = await query
@@ -139,10 +137,7 @@ export class EntitiesService {
   /**
    * Get a single entity by ID
    */
-  async get(
-    entityId: string,
-    context: ServiceContext
-  ): Promise<{ entity: GameEntity }> {
+  async get(entityId: string, context: ServiceContext): Promise<{ entity: GameEntity }> {
     const { data, error } = await context.supabase
       .from('game_entities')
       .select('*')
@@ -165,10 +160,7 @@ export class EntitiesService {
   /**
    * Create a new entity
    */
-  async create(
-    input: CreateEntityInput,
-    context: ServiceContext
-  ): Promise<{ entity: GameEntity }> {
+  async create(input: CreateEntityInput, context: ServiceContext): Promise<{ entity: GameEntity }> {
     const validated = createEntitySchema.parse(input)
 
     // Verify project access via RLS
@@ -259,10 +251,7 @@ export class EntitiesService {
   /**
    * Verify project access via RLS
    */
-  private async verifyProjectAccess(
-    supabase: SupabaseClient,
-    projectId: string
-  ): Promise<boolean> {
+  private async verifyProjectAccess(supabase: SupabaseClient, projectId: string): Promise<boolean> {
     const { data, error } = await supabase
       .from('projects')
       .select('id')
@@ -300,4 +289,3 @@ export class ServiceError extends Error {
 // ============================================
 
 export const entitiesService = new EntitiesService()
-

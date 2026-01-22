@@ -1,5 +1,6 @@
 import React, { useState, useEffect, memo, useCallback } from 'react'
 import { BeatCard } from './BeatCard'
+import { BeatCard as BeatData } from '../graph/state'
 import { useParams } from 'next/navigation'
 import { Plus, Image as ImageIcon, Loader2, Sparkles, Film } from 'lucide-react'
 import { useConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -11,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 
 interface CorkBoardProps {
-  beats: any[]
+  beats: BeatData[]
   episodeId?: string
   onAddMessage?: (message: Message) => void
 
@@ -34,7 +35,7 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
   onGenerateCombined,
   projectId: propProjectId,
 }) {
-  const [beats, setBeats] = useState<any[]>(initialBeats)
+  const [beats, setBeats] = useState<BeatData[]>(initialBeats)
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [isGeneratingBeats, setIsGeneratingBeats] = useState(false)
   const [expandedBeatId, setExpandedBeatId] = useState<string | null>(null)
@@ -92,7 +93,7 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
     setBeats([...beats, created])
   }
 
-  const handleUpdate = async (id: string, updates: any) => {
+  const handleUpdate = async (id: string, updates: Partial<BeatCard>) => {
     setBeats(beats.map(b => (b.id === id ? { ...b, ...updates } : b)))
     await fetch(`/api/storyteller/beats/${id}`, {
       method: 'PATCH',

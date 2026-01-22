@@ -52,4 +52,3 @@ export const StreamInterruptedBanner: React.FC<StreamInterruptedBannerProps> = (
 }
 
 export default StreamInterruptedBanner
-

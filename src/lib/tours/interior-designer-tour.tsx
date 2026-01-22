@@ -27,12 +27,17 @@ export const interiorDesignerTourSteps: TourStep[] = [
           <h3 className="font-bold">🛠️ Pick a tool</h3>
         </div>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Walls, floors, terrain, objects — start with "Ground" to lay your foundation.
+          Walls, floors, terrain, objects — start with "Ground" or "Walls" to lay your foundation.
         </p>
+        <div className="mt-2 p-2 bg-primary/10 rounded border border-primary/20 text-[10px] text-primary uppercase tracking-widest font-bold animate-pulse">
+          Click any tool to advance
+        </div>
       </div>
     ),
     selectorId: TOUR_STEP_IDS.INTERIOR_TOOLBAR,
     position: 'right',
+    hideNext: true,
+    advanceEvent: 'interior-designer-mode-changed',
   },
   {
     content: (

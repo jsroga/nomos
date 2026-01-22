@@ -76,7 +76,13 @@ export async function middleware(req: NextRequest) {
     path.startsWith('/api/') ||
     path.startsWith('/_next/') ||
     path.startsWith('/assets/') ||
-    path.startsWith('/scripts/')
+    path.startsWith('/3d-models/') ||
+    path.startsWith('/images/') ||
+    path.startsWith('/fonts/') ||
+    path.startsWith('/library/') ||
+    path.startsWith('/projects/') ||
+    path.startsWith('/scripts/') ||
+    (process.env.NODE_ENV === 'development' && req.headers.get('x-bypass-auth') === 'true')
   ) {
     return res
   }
@@ -105,6 +111,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * Note: We now include /api/ in the matcher for CSRF protection
      */
-    '/((?!_next/static|_next/image|favicon.ico|assets|.*\\.png$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|assets|3d-models|images|fonts|library|projects|scripts|.*\\.png$).*)',
   ],
 }

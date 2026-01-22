@@ -34,14 +34,19 @@ export async function POST(request: NextRequest) {
 
     // Check if user is a central user
     if (!isCentralUser(session.user.email)) {
-      return NextResponse.json({ error: 'Only central users can lock/unlock the Bible' }, { status: 403 })
+      return NextResponse.json(
+        { error: 'Only central users can lock/unlock the Bible' },
+        { status: 403 }
+      )
     }
 
     if (action !== 'lock' && action !== 'unlock') {
       return NextResponse.json({ error: 'Action must be "lock" or "unlock"' }, { status: 400 })
     }
 
-    console.log(`[Bible Lock API] ${action} Bible for project ${projectId} by ${session.user.email}`)
+    console.log(
+      `[Bible Lock API] ${action} Bible for project ${projectId} by ${session.user.email}`
+    )
 
     const cookieStore = await cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
@@ -71,7 +76,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[Bible Lock API] Error:', error)
     return NextResponse.json(
-      { error: 'Failed to update Bible lock status', details: error instanceof Error ? error.message : String(error) },
+      {
+        error: 'Failed to update Bible lock status',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     )
   }
@@ -101,7 +109,7 @@ export async function GET(request: NextRequest) {
       .from('series_bibles')
       .select('is_locked, locked_by, locked_at')
       .eq('project_id', projectId)
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error('[Bible Lock API] Fetch error:', error)
@@ -116,7 +124,10 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('[Bible Lock API] Error:', error)
     return NextResponse.json(
-      { error: 'Failed to get Bible lock status', details: error instanceof Error ? error.message : String(error) },
+      {
+        error: 'Failed to get Bible lock status',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     )
   }

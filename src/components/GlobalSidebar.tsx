@@ -53,7 +53,7 @@ export const GlobalSidebar = () => {
             className="opacity-0 group-hover:opacity-50 transition-opacity duration-500"
           />
           <img
-            src="/logo.svg"
+            src="/logo.png"
             alt="Logo"
             className="w-full h-full object-contain brightness-0 invert relative z-10 transition-transform duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_15px_rgba(168,85,247,0.8)]"
           />

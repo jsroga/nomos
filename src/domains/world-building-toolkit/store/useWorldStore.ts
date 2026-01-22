@@ -210,7 +210,7 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   projects: [],
   setCurrentProject: project => set({ currentProject: project }),
   tiles: {},
-  viewport: { x: 0, y: 0, scale: 1 },
+  viewport: { x: -256, y: -256, scale: 1 },
   selectedTile: null,
   selectedTiles: [],
 

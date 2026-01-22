@@ -75,7 +75,7 @@ class FullFromScratchTestRunner {
 
     const response = await fetch(config.API_URL, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'x-e2e-test': 'true', // Bypass auth for E2E tests in dev
       },
@@ -118,7 +118,7 @@ class FullFromScratchTestRunner {
 
     const actions = messages.flatMap(m => m.actions || [])
     this.log(`📥 Received ${messages.length} messages, ${actions.length} actions`)
-    
+
     return { messages, rawContent, actions }
   }
 
@@ -134,7 +134,7 @@ class FullFromScratchTestRunner {
 
     const response = await fetch('http://localhost:3000/api/storyteller/actions', {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'x-e2e-test': 'true', // Bypass auth for E2E tests in dev
       },
@@ -146,7 +146,9 @@ class FullFromScratchTestRunner {
   }
 
   async fetchBible(projectId: string): Promise<any> {
-    const response = await fetch(`http://localhost:3000/api/storyteller/plan?projectId=${projectId}`)
+    const response = await fetch(
+      `http://localhost:3000/api/storyteller/plan?projectId=${projectId}`
+    )
     if (!response.ok) {
       throw new Error(`Failed to fetch bible: ${response.status}`)
     }
@@ -154,7 +156,9 @@ class FullFromScratchTestRunner {
   }
 
   async fetchEpisodes(projectId: string): Promise<any[]> {
-    const response = await fetch(`http://localhost:3000/api/storyteller/episodes?projectId=${projectId}`)
+    const response = await fetch(
+      `http://localhost:3000/api/storyteller/episodes?projectId=${projectId}`
+    )
     if (!response.ok) {
       return []
     }
@@ -163,7 +167,9 @@ class FullFromScratchTestRunner {
   }
 
   async fetchBeats(episodeId: string): Promise<any[]> {
-    const response = await fetch(`http://localhost:3000/api/storyteller/episodes/${episodeId}/beats`)
+    const response = await fetch(
+      `http://localhost:3000/api/storyteller/episodes/${episodeId}/beats`
+    )
     if (!response.ok) {
       return []
     }
@@ -216,18 +222,14 @@ async function testFullFlowFromScratch() {
 
     const episodes = await runner.fetchEpisodes(projectId)
     runner.log(`   Found ${episodes.length} existing episodes`)
-    
+
     const episodeId = episodes[0]?.id || config.TEST_EPISODE_ID
     if (episodeId) {
       const beats = await runner.fetchBeats(episodeId)
       runner.log(`   Episode ${episodeId.slice(0, 8)}... has ${beats.length} beats`)
     }
 
-    runner.recordResult(
-      '1-check-state',
-      true,
-      `Project has ${episodes.length} episodes`
-    )
+    runner.recordResult('1-check-state', true, `Project has ${episodes.length} episodes`)
 
     // =========================================================================
     // STEP 2: Request fresh premise
@@ -247,24 +249,26 @@ Give me a compelling logline and 3-5 key story elements.`
 
     // Check for premise/bible action
     const premiseAction = premiseActions.find(
-      a => a.type === 'UPDATE_SERIES_BIBLE' || 
-           a.type === 'UPDATE_EPISODE_PREMISE' ||
-           a.type === 'CREATE_EPISODE_PREMISE'
+      a =>
+        a.type === 'UPDATE_SERIES_BIBLE' ||
+        a.type === 'UPDATE_EPISODE_PREMISE' ||
+        a.type === 'CREATE_EPISODE_PREMISE'
     )
 
     // Also check if agent responded meaningfully
     const agentResponse = premiseMessages.map(m => m.content).join(' ')
-    const hasPremiseContent = agentResponse.includes('journalist') || 
-                              agentResponse.includes('Warsaw') ||
-                              agentResponse.includes('cold war') ||
-                              agentResponse.length > 200
+    const hasPremiseContent =
+      agentResponse.includes('journalist') ||
+      agentResponse.includes('Warsaw') ||
+      agentResponse.includes('cold war') ||
+      agentResponse.length > 200
 
     runner.recordResult(
       '2-premise',
       !!premiseAction || hasPremiseContent,
-      premiseAction 
-        ? `Got ${premiseAction.type} action` 
-        : hasPremiseContent 
+      premiseAction
+        ? `Got ${premiseAction.type} action`
+        : hasPremiseContent
           ? 'Agent responded with premise content'
           : 'No premise action or meaningful response'
     )
@@ -299,22 +303,24 @@ Give me a compelling logline and 3-5 key story elements.`
     )
 
     const planAction = planActions.find(
-      a => a.type === 'UPDATE_STORY_PLAN' || 
-           a.type === 'UPDATE_SERIES_BIBLE' ||
-           a.type === 'CREATE_BEAT'
+      a =>
+        a.type === 'UPDATE_STORY_PLAN' ||
+        a.type === 'UPDATE_SERIES_BIBLE' ||
+        a.type === 'CREATE_BEAT'
     )
 
     const planContent = planMessages.map(m => m.content).join(' ')
-    const hasPlanContent = planContent.includes('beat') || 
-                           planContent.includes('arc') ||
-                           planContent.includes('plot') ||
-                           planContent.length > 300
+    const hasPlanContent =
+      planContent.includes('beat') ||
+      planContent.includes('arc') ||
+      planContent.includes('plot') ||
+      planContent.length > 300
 
     runner.recordResult(
       '3-plan',
       !!planAction || hasPlanContent,
-      planAction 
-        ? `Got ${planAction.type} action` 
+      planAction
+        ? `Got ${planAction.type} action`
         : hasPlanContent
           ? 'Agent responded with plan content'
           : 'No plan action or content'
@@ -341,17 +347,16 @@ For each beat, include: logline, type, characters involved, and emotional shift.
 
     // Check for delegation to Plot Architect
     const delegatedToPlotArchitect = beatMessages.some(
-      m => m.sender?.toLowerCase().includes('plot') || 
-           m.content?.includes('Plot Architect')
+      m => m.sender?.toLowerCase().includes('plot') || m.content?.includes('Plot Architect')
     )
 
     runner.recordResult(
       '4-beats-delegation',
       delegatedToPlotArchitect || !!beatAction,
-      delegatedToPlotArchitect 
+      delegatedToPlotArchitect
         ? 'Delegated to Plot Architect ✓'
-        : beatAction 
-          ? `Got CREATE_BEAT action directly`
+        : beatAction
+          ? 'Got CREATE_BEAT action directly'
           : 'No delegation or beat action'
     )
 
@@ -373,7 +378,8 @@ For each beat, include: logline, type, characters involved, and emotional shift.
     await new Promise(r => setTimeout(r, 1000)) // Wait for DB writes
 
     const bible = await runner.fetchBible(projectId)
-    const storyPlan = bible.seriesBible?.storyPlan || bible.series_bible?.storyPlan || bible.storyPlan
+    const storyPlan =
+      bible.seriesBible?.storyPlan || bible.series_bible?.storyPlan || bible.storyPlan
 
     const hasLogline = !!storyPlan?.logline || !!storyPlan?.premise
     const hasCharacters = (storyPlan?.keyCharacters?.length || 0) > 0
@@ -420,7 +426,7 @@ Motivation: To understand what really happened to their father`
     runner.recordResult(
       '6-bible-update',
       !!bibleUpdateAction,
-      bibleUpdateAction 
+      bibleUpdateAction
         ? `Got ${bibleUpdateAction.type} action for character`
         : 'No Bible update action (may need approval first)'
     )
@@ -440,8 +446,11 @@ List the main characters and key plot elements.`
       'premise'
     )
 
-    const awarenessContent = awarenessMessages.map(m => m.content).join(' ').toLowerCase()
-    
+    const awarenessContent = awarenessMessages
+      .map(m => m.content)
+      .join(' ')
+      .toLowerCase()
+
     // Check if AI mentions things from our session
     const knowsAboutJournalist = awarenessContent.includes('journalist')
     const knowsAboutWarsaw = awarenessContent.includes('warsaw')
@@ -470,7 +479,6 @@ List the main characters and key plot elements.`
       console.log('\n❌ FULL FLOW TEST FAILED - Multiple issues detected\n')
       process.exit(1)
     }
-
   } catch (error: any) {
     console.error('\n💥 TEST ERROR:', error.message)
     console.error(error.stack)
@@ -503,13 +511,12 @@ async function quickSmokeTest() {
     runner.recordResult(
       'smoke-api',
       gotResponse,
-      gotResponse 
+      gotResponse
         ? `Got ${messages.length} messages, ${actions.length} actions`
         : 'No response from API'
     )
 
     runner.printSummary()
-
   } catch (error: any) {
     console.error('\n💥 SMOKE TEST FAILED:', error.message)
     process.exit(1)
@@ -522,7 +529,7 @@ async function quickSmokeTest() {
 
 async function main() {
   const args = process.argv.slice(2)
-  
+
   console.log('\n🚀 Full Flow From Scratch E2E Tests')
   console.log('   API URL:', config.API_URL)
   console.log('   Project:', config.TEST_PROJECT_ID)

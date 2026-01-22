@@ -162,7 +162,7 @@ async function testTimelineInconsistency(runner: TestRunner) {
 
     // Verify consistency check
     if (response.consistencyResult?.inconsistencies.length) {
-      console.log(`  ✅ Timeline inconsistency detected`)
+      console.log('  ✅ Timeline inconsistency detected')
       runner.recordSuccess('Timeline inconsistency detected and fixed')
     } else {
       console.log('  ⚠️  Timeline inconsistency not detected')
@@ -214,7 +214,7 @@ async function testWorldRuleViolation(runner: TestRunner) {
 
     // Verify consistency check
     if (response.consistencyResult?.inconsistencies.some(inc => inc.type === 'world_rule')) {
-      console.log(`  ✅ World rule violation detected`)
+      console.log('  ✅ World rule violation detected')
       runner.recordSuccess('World rule violation detected and fixed')
     } else {
       console.log('  ⚠️  World rule violation not detected')

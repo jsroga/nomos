@@ -73,10 +73,7 @@ export class TilesService {
    * Generate a tile using AI
    * Returns immediately with a run ID - use getRunStatus to track progress
    */
-  async generateTile(
-    input: GenerateTileInput,
-    context: ServiceContext
-  ): Promise<TriggerRunResult> {
+  async generateTile(input: GenerateTileInput, context: ServiceContext): Promise<TriggerRunResult> {
     const validated = generateTileSchema.parse(input)
 
     try {
@@ -111,10 +108,7 @@ export class TilesService {
    * Upscale an existing tile
    * Returns immediately with a run ID - use getRunStatus to track progress
    */
-  async upscaleTile(
-    input: UpscaleTileInput,
-    context: ServiceContext
-  ): Promise<TriggerRunResult> {
+  async upscaleTile(input: UpscaleTileInput, context: ServiceContext): Promise<TriggerRunResult> {
     const validated = upscaleTileSchema.parse(input)
 
     try {
@@ -332,4 +326,3 @@ export class ServiceError extends Error {
 export const tilesService = new TilesService()
 export const threeDService = new ThreeDService()
 export const portraitService = new PortraitService()
-

@@ -60,10 +60,12 @@ export async function POST(req: Request) {
     } = body
 
     // Map history to LangChain messages
-    const mappedHistory = (history || []).map((m: { role: string; content: string; name?: string }) => {
-      if (m.role === 'user') return new HumanMessage({ content: m.content, name: m.name })
-      return new AIMessage({ content: m.content, name: m.name })
-    })
+    const mappedHistory = (history || []).map(
+      (m: { role: string; content: string; name?: string }) => {
+        if (m.role === 'user') return new HumanMessage({ content: m.content, name: m.name })
+        return new AIMessage({ content: m.content, name: m.name })
+      }
+    )
 
     // Determine streaming mode - 'events' enables token-level streaming
     const streamMode: StreamMode = requestedStreamMode === 'events' ? 'events' : 'nodes'
@@ -92,8 +94,8 @@ export async function POST(req: Request) {
           episodeId: b.episodeId,
           sequence: b.sequence,
           logline: b.logline,
-          beatType: (b.beatType as any), // Cast to specific enum if possible
-          status: (b.status as any),
+          beatType: b.beatType as any, // Cast to specific enum if possible
+          status: b.status as any,
           charactersInvolved: b.charactersInvolved || [],
           emotionalShifts: (b.emotionalShifts as any) || {},
         }))

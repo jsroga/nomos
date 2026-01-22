@@ -61,4 +61,3 @@ function formatAge(seconds: number): string {
 }
 
 export default ChatRehydrationBanner
-

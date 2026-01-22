@@ -59,7 +59,9 @@ function smartMergeFactions(
       result[existingIndex] = {
         ...result[existingIndex],
         ...newFaction,
-        goals: [...new Set([...(result[existingIndex].goals || []), ...(newFaction.goals || [])])],
+        goals: Array.from(
+          new Set([...(result[existingIndex].goals || []), ...(newFaction.goals || [])])
+        ),
         rivals: newFaction.rivals || result[existingIndex].rivals,
       }
     } else {
@@ -121,7 +123,7 @@ function mergeStringArrays(
   mode: 'replace' | 'merge' | null | undefined
 ): string[] {
   if (mode === 'replace' || !mode) return incoming
-  return [...new Set([...(existing || []), ...incoming])]
+  return Array.from(new Set([...(existing || []), ...incoming]))
 }
 
 /**
@@ -275,9 +277,7 @@ export function reduceAgentActions(
           if (mode === 'replace') return incomingObjects
 
           // Merge: add new items
-          const existingTitles = new Set(
-            (existing || []).map(item => item.title)
-          )
+          const existingTitles = new Set((existing || []).map(item => item.title))
           const newItems = incomingObjects.filter(item => !existingTitles.has(item.title))
           return [...(existing || []), ...newItems]
         }

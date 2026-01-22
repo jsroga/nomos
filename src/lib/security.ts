@@ -42,7 +42,11 @@ export function sanitizePath(
 
   // After normalization, check again for traversal
   if (normalized.includes('..') || normalized.startsWith('/') || normalized.startsWith('\\')) {
-    return { safe: false, sanitizedPath: null, error: 'Path traversal detected after normalization' }
+    return {
+      safe: false,
+      sanitizedPath: null,
+      error: 'Path traversal detected after normalization',
+    }
   }
 
   // Build the full path and verify it's within the allowed directory
@@ -194,10 +198,7 @@ export function isAllowedUrl(url: string): { allowed: boolean; reason?: string }
 /**
  * Safe fetch wrapper with SSRF protection
  */
-export async function safeFetch(
-  url: string,
-  options?: RequestInit
-): Promise<Response> {
+export async function safeFetch(url: string, options?: RequestInit): Promise<Response> {
   const check = isAllowedUrl(url)
   if (!check.allowed) {
     throw new Error(`SSRF Protection: ${check.reason}`)
@@ -226,11 +227,15 @@ export const schemas = {
   projectId: z.string().uuid(),
   email: z.string().email(),
   url: z.string().url(),
-  filename: z.string().min(1).max(255).regex(/^[a-zA-Z0-9._-]+$/),
-  
+  filename: z
+    .string()
+    .min(1)
+    .max(255)
+    .regex(/^[a-zA-Z0-9._-]+$/),
+
   // Coordinate validation
   coordinate: z.number().int().min(-1000).max(1000),
-  
+
   // Common API payloads
   createTile: z.object({
     projectId: z.string().uuid(),
@@ -238,7 +243,7 @@ export const schemas = {
     y: z.number().int().min(-1000).max(1000),
     prompt: z.string().min(1).max(5000),
   }),
-  
+
   imageBase64: z.string().regex(/^data:image\/(png|jpeg|jpg|webp|gif);base64,/),
 }
 
@@ -340,4 +345,3 @@ export function applySecurityHeaders(response: Response): Response {
     headers,
   })
 }
-

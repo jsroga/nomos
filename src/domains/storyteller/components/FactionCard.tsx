@@ -75,7 +75,7 @@ export const FactionCard: React.FC<FactionCardProps> = ({ faction, className }) 
               <Target className="w-3 h-3" /> Goals
             </div>
             <ul className="space-y-1.5 ml-1">
-              {faction.goals.map((goal, i) => (
+              {faction.goals?.map((goal, i) => (
                 <li key={i} className="text-xs text-foreground/70 flex items-start gap-2">
                   <span className="mt-1.5 w-1 h-1 rounded-full bg-amber-400/40 shrink-0" />
                   {goal}

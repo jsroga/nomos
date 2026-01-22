@@ -12,6 +12,8 @@ export const SeasonOverviewCard: React.FC<SeasonOverviewCardProps> = ({
   seasonStructure,
   className,
 }) => {
+  if (!seasonStructure) return null
+
   return (
     <div
       className={cn(

@@ -7,6 +7,7 @@ Complete testing documentation for the cross-domain integration system.
 The "Swiss Army Knife" enables seamless integration across all game dev tools:
 
 ### Core Features
+
 1. **Shared Entity System** (`game_entities` table)
 2. **Cross-Domain @Mentions** (reference entities from any domain)
 3. **AI Context Sharing** (agents know about cross-domain entities)
@@ -27,6 +28,7 @@ The "Swiss Army Knife" enables seamless integration across all game dev tools:
 **File**: `e2e/scenarios/swiss-knife-integration.test.ts`
 
 **Tests**:
+
 - ✅ Character creation in Storyteller
 - ✅ Entity auto-sync to `game_entities`
 - ✅ Cross-domain @mentions in Loop Creator
@@ -42,6 +44,7 @@ The "Swiss Army Knife" enables seamless integration across all game dev tools:
 **File**: `e2e/scenarios/mention-system.test.ts`
 
 **Tests**:
+
 - ✅ Autocomplete shows cross-domain entities
 - ✅ Source domain badges display correctly
 - ✅ Filtered search works
@@ -156,16 +159,16 @@ npm run test:e2e:headed
 
 ### Success Criteria
 
-| Feature | Expected Result | Status |
-|---------|----------------|--------|
-| Entity Creation | Character saved, returns 201 | ⬜ |
-| Auto-Sync | Entity in `game_entities` table | ⬜ |
-| Cross-Domain Mentions | See entities from other domains | ⬜ |
-| Source Badges | Shows "Storyteller", "Loop Creator", etc | ⬜ |
-| AI Context | AI knows about cross-domain entities | ⬜ |
-| Hub Dashboard | Shows all entities, search works | ⬜ |
-| Suggestions | API returns `_suggestions` array | ⬜ |
-| Roundtrip | Can @mention entities bidirectionally | ⬜ |
+| Feature               | Expected Result                          | Status |
+| --------------------- | ---------------------------------------- | ------ |
+| Entity Creation       | Character saved, returns 201             | ⬜     |
+| Auto-Sync             | Entity in `game_entities` table          | ⬜     |
+| Cross-Domain Mentions | See entities from other domains          | ⬜     |
+| Source Badges         | Shows "Storyteller", "Loop Creator", etc | ⬜     |
+| AI Context            | AI knows about cross-domain entities     | ⬜     |
+| Hub Dashboard         | Shows all entities, search works         | ⬜     |
+| Suggestions           | API returns `_suggestions` array         | ⬜     |
+| Roundtrip             | Can @mention entities bidirectionally    | ⬜     |
 
 ## 🐛 Common Issues
 
@@ -174,12 +177,14 @@ npm run test:e2e:headed
 **Symptoms**: Only see entities from current domain
 
 **Check**:
+
 1. Is `getGameEntityProvider()` added to mention providers?
 2. Files to check:
    - `src/app/app/[projectId]/storyteller/page.tsx`
    - `src/domains/loop-creator/components/LoopCreatorLayout.tsx`
 
 **Fix**: Add to `mentionProviders` array:
+
 ```typescript
 const mentionProviders = [
   ...getDomainMentionProviders(),
@@ -192,12 +197,14 @@ const mentionProviders = [
 **Symptoms**: AI doesn't reference entities from other domains
 
 **Check**:
+
 1. Is `buildCrossDomainContext()` called in agents?
 2. Files to check:
    - `src/domains/storyteller/agents/agent-v2-base.ts`
    - `src/domains/loop-creator/agents/supervisor.ts`
 
 **Fix**: Verify this code exists:
+
 ```typescript
 const crossDomainContext = await buildCrossDomainContext(state.projectId)
 if (crossDomainContext) {
@@ -210,6 +217,7 @@ if (crossDomainContext) {
 **Symptoms**: Entity created but not in `game_entities`
 
 **Check**:
+
 1. Character API call in `src/app/api/storyteller/characters/route.ts`
 2. Look for fetch to `/api/entities` after character creation
 
@@ -220,6 +228,7 @@ if (crossDomainContext) {
 **Symptoms**: No "Storyteller" or domain badges on mentions
 
 **Check**:
+
 1. `MentionChip` component updated?
 2. File: `src/domains/chat/components/MentionChip.tsx`
 
@@ -230,6 +239,7 @@ if (crossDomainContext) {
 **Symptoms**: No entities shown on hub
 
 **Check**:
+
 1. Is `GameHubDashboard` component rendered?
 2. File: `src/app/app/[projectId]/page.tsx`
 3. Should render `<GameHubDashboard projectId={projectId} />`
@@ -239,11 +249,13 @@ if (crossDomainContext) {
 ## 📊 Performance Expectations
 
 ### API Response Times
+
 - GET `/api/entities`: < 200ms
 - POST `/api/entities`: < 300ms
 - Cross-domain context build: < 500ms
 
 ### UI Interactions
+
 - Mention autocomplete: < 100ms
 - Entity search: < 200ms
 - Navigation: < 1s
@@ -253,6 +265,7 @@ if (crossDomainContext) {
 ### Enable Verbose Logging
 
 Add to browser console:
+
 ```javascript
 localStorage.setItem('DEBUG', 'swiss-knife:*')
 ```
@@ -264,17 +277,17 @@ localStorage.setItem('DEBUG', 'swiss-knife:*')
 SELECT * FROM game_entities;
 
 -- Entities by domain
-SELECT source_domain, COUNT(*) 
-FROM game_entities 
+SELECT source_domain, COUNT(*)
+FROM game_entities
 GROUP BY source_domain;
 
 -- Multi-domain entities
-SELECT name, used_in_domains 
-FROM game_entities 
+SELECT name, used_in_domains
+FROM game_entities
 WHERE array_length(used_in_domains, 1) > 1;
 
 -- Entity relationships
-SELECT 
+SELECT
   e1.name as from_entity,
   er.relationship_type,
   e2.name as to_entity
@@ -286,9 +299,11 @@ JOIN game_entities e2 ON er.to_entity_id = e2.id;
 ### Inspect AI Context
 
 Add breakpoint or console.log in:
+
 - `src/lib/agent-context/cross-domain-context.ts`
 
 Check that XML context is built correctly:
+
 ```xml
 <cross_domain_context>
   <project_entities count="2">
@@ -309,6 +324,7 @@ Check that XML context is built correctly:
 ## 📈 Coverage Goals
 
 ### Current Coverage
+
 - ✅ Entity CRUD operations
 - ✅ Cross-domain mentions
 - ✅ AI context injection
@@ -316,6 +332,7 @@ Check that XML context is built correctly:
 - ✅ Suggestion generation
 
 ### Future Coverage
+
 - ⬜ Entity relationships
 - ⬜ Real-time sync (WebSockets)
 - ⬜ Conflict resolution
@@ -328,11 +345,13 @@ Check that XML context is built correctly:
 
 1. Create file in `e2e/scenarios/`
 2. Import test utilities:
+
 ```typescript
 import { test, expect } from '@playwright/test'
 ```
 
 3. Write test:
+
 ```typescript
 test('My new feature', async ({ page }) => {
   await page.goto('/...')
@@ -342,6 +361,7 @@ test('My new feature', async ({ page }) => {
 ```
 
 4. Run test:
+
 ```bash
 npm run test:e2e:ui
 ```
@@ -363,7 +383,7 @@ npm run test:e2e:ui
   run: npm run test:e2e
   env:
     DATABASE_URL: ${{ secrets.DATABASE_URL }}
-    
+
 - name: Upload Report
   if: always()
   uses: actions/upload-artifact@v3

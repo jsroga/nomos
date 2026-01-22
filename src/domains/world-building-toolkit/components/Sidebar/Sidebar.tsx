@@ -22,6 +22,8 @@ import {
   SidebarHeader,
   SidebarLabel,
   SidebarSliderRow,
+  SidebarTextarea,
+  SidebarInput,
 } from '@/components/ui/domain-sidebar'
 import {
   Loader2,
@@ -51,15 +53,14 @@ import toast from 'react-hot-toast'
 import LiquidGlass from 'liquid-glass-react'
 
 export const Sidebar: React.FC = () => {
-  const defaultMasterPrompt =
-    'Isometric painted world in the style of Disco Elysium, detailed urban environment, painterly art style'
+  const defaultMasterPrompt = ''
 
   const currentProject = useWorldStore(state => state.currentProject)
   const assets = useWorldStore(state => state.assets)
   const showAllAssetMasks = useWorldStore(state => state.showAllAssetMasks)
   const setShowAllAssetMasks = useWorldStore(state => state.setShowAllAssetMasks)
 
-  const [masterPrompt, setMasterPrompt] = useState(defaultMasterPrompt)
+  const [masterPrompt, setMasterPrompt] = useState('')
   const [tilePrompt, setTilePrompt] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [upscaleCreativity, setUpscaleCreativity] = useState(0.3)
@@ -515,11 +516,11 @@ export const Sidebar: React.FC = () => {
               </div>
             }
           >
-            <textarea
+            <SidebarTextarea
               value={masterPrompt}
               onChange={e => handleMasterPromptChange(e.target.value)}
               placeholder="Define the overall art style and aesthetic..."
-              className="w-full h-24 bg-zinc-900/30 border border-zinc-800 rounded-md py-2 px-3 text-xs text-zinc-300 font-mono resize-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-all placeholder:text-zinc-600 shadow-inner"
+              className="h-24"
             />
           </SidebarSection>
 
@@ -559,12 +560,11 @@ export const Sidebar: React.FC = () => {
                   </TooltipContent>
                 </Tooltip>
               </SidebarLabel>
-              <input
+              <SidebarInput
                 type="text"
                 value={tilePrompt}
                 onChange={e => setTilePrompt(e.target.value)}
                 placeholder="e.g., church, forest, river..."
-                className="w-full bg-zinc-900/30 border border-zinc-800 rounded-md py-2 px-3 text-xs text-zinc-300 font-mono focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-all placeholder:text-zinc-600 shadow-inner"
               />
             </div>
 
@@ -901,16 +901,6 @@ export const Sidebar: React.FC = () => {
         header={
           <div className="flex items-center justify-between w-full pl-2">
             <SidebarHeader>World Gen</SidebarHeader>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase tracking-wider font-medium font-mono text-zinc-500">
-                Auto
-              </span>
-              <Switch
-                checked={autoApprove}
-                onCheckedChange={handleAutoApproveChange}
-                className="scale-75 origin-right"
-              />
-            </div>
           </div>
         }
         storageKey="world-gen"

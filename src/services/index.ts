@@ -69,4 +69,3 @@ export {
 
 // Re-export common error types
 export { ServiceError, type ServiceErrorCode } from './entities.service'
-

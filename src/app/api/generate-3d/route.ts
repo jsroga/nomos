@@ -88,7 +88,7 @@ export const POST = withRateLimit(
       }
 
       if (!fs.existsSync(sanitizedPath)) {
-        return NextResponse.json({ error: `Image file not found` }, { status: 404 })
+        return NextResponse.json({ error: 'Image file not found' }, { status: 404 })
       }
 
       const fileBuffer = fs.readFileSync(sanitizedPath)

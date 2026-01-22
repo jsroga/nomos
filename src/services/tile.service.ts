@@ -186,9 +186,7 @@ export class TileService {
     const rows = await this.dbClient
       .select()
       .from(tiles)
-      .where(
-        and(eq(tiles.projectId, input.projectId), eq(tiles.x, input.x), eq(tiles.y, input.y))
-      )
+      .where(and(eq(tiles.projectId, input.projectId), eq(tiles.x, input.x), eq(tiles.y, input.y)))
       .limit(1)
 
     return rows.length > 0 ? toTile(rows[0]) : null
@@ -251,9 +249,7 @@ export class TileService {
 
     await this.dbClient
       .delete(tiles)
-      .where(
-        and(eq(tiles.projectId, input.projectId), eq(tiles.x, input.x), eq(tiles.y, input.y))
-      )
+      .where(and(eq(tiles.projectId, input.projectId), eq(tiles.x, input.x), eq(tiles.y, input.y)))
   }
 
   /**
@@ -288,19 +284,23 @@ export class TileService {
     }
 
     // Trigger the task
-    const handle = await tasks.trigger<typeof generateTileTask>('generate-tile', {
-      projectId: input.projectId,
-      x: input.x,
-      y: input.y,
-      prompt: input.prompt,
-      aiProvider: input.aiProvider,
-      aiConfig: input.aiConfig,
-      isFirstTile: input.isFirstTile ?? true,
-      ...(styleReferenceUrls ? { styleReferenceUrls } : {}),
-      ...(input.contextImageBase64 ? { contextImageBase64: input.contextImageBase64 } : {}),
-    }, {
-      ttl: '10m',
-    })
+    const handle = await tasks.trigger<typeof generateTileTask>(
+      'generate-tile',
+      {
+        projectId: input.projectId,
+        x: input.x,
+        y: input.y,
+        prompt: input.prompt,
+        aiProvider: input.aiProvider,
+        aiConfig: input.aiConfig,
+        isFirstTile: input.isFirstTile ?? true,
+        ...(styleReferenceUrls ? { styleReferenceUrls } : {}),
+        ...(input.contextImageBase64 ? { contextImageBase64: input.contextImageBase64 } : {}),
+      },
+      {
+        ttl: '10m',
+      }
+    )
 
     return {
       status: 'started',
@@ -370,4 +370,3 @@ export class TileService {
 
 // Export singleton instance for convenience
 export const tileService = new TileService()
-
