@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Skull, FileText, Code, Shield } from 'lucide-react'
+import { Skull, FileText, Code, Shield, FlaskConical } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 
@@ -12,6 +12,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
     { label: 'Getting Started', href: '/docs/getting-started', icon: FileText },
     { label: 'API Reference', href: '/docs', icon: Code },
     { label: 'MCP Server', href: '/docs/mcp', icon: Shield },
+    { label: 'Evaluation', href: '/docs/evaluation', icon: FlaskConical },
   ]
 
   return (
