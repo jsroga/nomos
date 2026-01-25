@@ -7,31 +7,8 @@
  * Based on research from Cursor/Claude Code effectiveness techniques.
  */
 
-// Load environment variables
-import * as fs from 'fs'
-import * as path from 'path'
-
-function loadEnvFile() {
-  const envPath = path.resolve(process.cwd(), '.env.local')
-  if (fs.existsSync(envPath)) {
-    const content = fs.readFileSync(envPath, 'utf-8')
-    content.split('\n').forEach(line => {
-      const trimmed = line.trim()
-      if (trimmed && !trimmed.startsWith('#')) {
-        const cleanLine = trimmed.replace(/^export\s+/, '')
-        const [key, ...valueParts] = cleanLine.split('=')
-        if (key && valueParts.length > 0) {
-          let value = valueParts.join('=')
-          value = value.replace(/^["']|["']$/g, '')
-          process.env[key] = value
-        }
-      }
-    })
-    console.log('📂 Loaded environment from .env.local')
-  }
-}
-
-loadEnvFile()
+import dotenv from 'dotenv'
+dotenv.config({ path: '.env.local' })
 
 import { ChatOpenAI } from '@langchain/openai'
 import { runABTest, runStorytellerExperiment, EVALUATOR_CONFIGS } from './storyteller-experiments'
