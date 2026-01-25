@@ -1,5 +1,5 @@
-import { AIMessage, BaseMessage, SystemMessage } from '@langchain/core/messages'
-import { WritersRoomState } from '../schemas/agent-schemas'
+import { AIMessage, BaseMessage } from '@langchain/core/messages'
+import { WritersRoomState } from '../graph/state'
 import { detectTargetSection, buildSectionContext } from './section-utils'
 import {
   SECTION_PROMPTS,
