@@ -41,7 +41,7 @@ function getStorage(): AsyncLocalStorageType<ModelConfig> | null {
   if (!modelConfigStorage) {
     try {
       // Dynamic import to avoid bundling async_hooks for client
-       
+
       const { AsyncLocalStorage } = require('async_hooks')
       const ALS = AsyncLocalStorage as any
       modelConfigStorage = new ALS() as AsyncLocalStorageType<ModelConfig>

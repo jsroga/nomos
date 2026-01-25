@@ -180,9 +180,6 @@ function routeFromSupervisor(state: WritersRoomState) {
       delegate_to_episode_premise_architect: 'episodePremiseArchitect',
       delegate_to_magic_agent: 'magicAgent',
       delegate_to_script_editor: 'scriptEditor',
-      delegate_to_episode_premise_architect: 'episodePremiseArchitect',
-      delegate_to_magic_agent: 'magicAgent',
-      delegate_to_script_editor: 'scriptEditor',
       delegate_to_planner: 'planner',
       search_series_bible: 'utility_tools', // Route RAG to utility node
     }

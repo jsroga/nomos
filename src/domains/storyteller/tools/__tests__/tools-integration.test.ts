@@ -78,7 +78,7 @@ function createRealisticState() {
         {
           name: 'Marcus',
           role: 'Ally',
-          description: 'Elena\'s partner, secretly working for The Collective',
+          description: "Elena's partner, secretly working for The Collective",
         },
         { name: 'Viktor', role: 'Antagonist', description: 'Charismatic leader of The Sovereign' },
       ],
@@ -100,9 +100,9 @@ function createRealisticState() {
         name: 'Marcus',
         currentGoals: ['Protect Elena', 'Complete mission for The Collective'],
         fears: ['Elena discovering his betrayal', 'Failing The Collective'],
-        selfDelusion: 'I\'m doing this to protect her',
+        selfDelusion: "I'm doing this to protect her",
         actualMotivation: 'Redemption for past failures',
-        knowledgeState: ['Elena\'s true identity', 'The Collective\'s real plans'],
+        knowledgeState: ["Elena's true identity", "The Collective's real plans"],
         metrics: { ...DEFAULT_CHARACTER_METRICS, valence: -10, arousal: 50, moralAlignment: 40 },
         metricsHistory: [],
       },
@@ -111,9 +111,9 @@ function createRealisticState() {
         name: 'Viktor',
         currentGoals: ['Capture Elena', 'Destroy The Collective'],
         fears: ['Loss of control', 'Being proven wrong'],
-        selfDelusion: 'I am humanity\'s savior',
+        selfDelusion: "I am humanity's savior",
         actualMotivation: 'Power and revenge',
-        knowledgeState: ['Elena\'s value as a navigator', 'The Collective\'s weakness'],
+        knowledgeState: ["Elena's value as a navigator", "The Collective's weakness"],
         metrics: { ...DEFAULT_CHARACTER_METRICS, valence: 30, arousal: 70, autonomy: 90 },
         metricsHistory: [],
       },
@@ -127,7 +127,7 @@ function createRealisticState() {
         beatType: BeatType.SETUP,
         charactersInvolved: ['Elena'],
         emotionalShifts: { Elena: { from: 'confusion', to: 'fear' } },
-        visualHook: 'Close-up on Elena\'s eye snapping open, reflected in the ship\'s dark viewport',
+        visualHook: "Close-up on Elena's eye snapping open, reflected in the ship's dark viewport",
         causalDependencies: [],
         setupsPayoffs: { setupId: 'setup-memory-gap' },
         status: BeatStatus.APPROVED,
@@ -143,7 +143,7 @@ function createRealisticState() {
           Elena: { from: 'fear', to: 'tentative trust' },
           Marcus: { from: 'relief', to: 'guilt' },
         },
-        visualHook: 'Marcus\'s hand reaches for Elena, hesitates, then pulls back',
+        visualHook: "Marcus's hand reaches for Elena, hesitates, then pulls back",
         causalDependencies: ['beat-001'],
         setupsPayoffs: { setupId: 'setup-marcus-lie' },
         status: BeatStatus.PROPOSED,
@@ -152,13 +152,13 @@ function createRealisticState() {
     unresolvedSetups: [
       {
         id: 'setup-memory-gap',
-        description: 'Elena\'s three-day memory gap',
+        description: "Elena's three-day memory gap",
         beatId: 'beat-001',
         isResolved: false,
       },
       {
         id: 'setup-marcus-lie',
-        description: 'Marcus\'s claim about their escape',
+        description: "Marcus's claim about their escape",
         beatId: 'beat-002',
         isResolved: false,
       },
@@ -183,7 +183,7 @@ async function runTests() {
         logline: 'Viktor intercepts their distress signal',
         beatType: 'revelation',
         charactersInvolved: ['Viktor'],
-        visualHook: 'Viktor\'s face illuminated by the signal trace, a cold smile forming',
+        visualHook: "Viktor's face illuminated by the signal trace, a cold smile forming",
       },
       targetPosition: 3,
     })
@@ -208,7 +208,7 @@ async function runTests() {
     const result = await tool.invoke({
       operation: 'update',
       beatId: 'beat-002',
-      data: { visualHook: 'NEW: Marcus\'s guilty expression in ship\'s reflection' },
+      data: { visualHook: "NEW: Marcus's guilty expression in ship's reflection" },
     })
     const parsed = JSON.parse(result)
     assert(parsed.success === true, 'Should succeed')
@@ -393,7 +393,7 @@ async function runTests() {
   await test('Generate visual concept for dramatic moment', async () => {
     const tool = createVisualConceptTool(state)
     const result = await tool.invoke({
-      moment: 'Elena confronts Marcus about his betrayal in the ship\'s cargo bay',
+      moment: "Elena confronts Marcus about his betrayal in the ship's cargo bay",
       emotionalTone: 'betrayal and anger',
       characters: ['Elena', 'Marcus'],
       outputFormat: 'all',

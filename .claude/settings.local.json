@@ -3,7 +3,21 @@
     "allow": [
       "Bash(npx prettier:*)",
       "Bash(npx eslint:*)",
-      "Bash(npx unimported:*)"
+      "Bash(npx unimported:*)",
+      "Bash(npx knip)",
+      "Bash(git checkout:*)",
+      "Bash(ls:*)",
+      "Bash(npx tsc:*)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=8192\" npx tsc:*)",
+      "Bash(tee:*)",
+      "Bash(pkill:*)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npx tsc:*)",
+      "Bash(npx next build:*)",
+      "Bash(xargs:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(npx tsx:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

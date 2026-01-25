@@ -222,7 +222,7 @@ function validateRouting(
     if (hasExclusion) {
       issues.push(
         `${decision.targetAgent} should not handle ${requestTypes.join(', ')}. ` +
-          'These are excluded from this agent\'s scope.'
+          "These are excluded from this agent's scope."
       )
     }
   }

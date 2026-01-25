@@ -22,20 +22,40 @@ The module utilizes a LangGraph-based workflow where specialized game design age
 
 State is maintained via a centralized graph state (defined in `src/domains/loop-creator/graph/state.ts`):
 
-- **Loop Definition**: Detailed breakdown of the actions, rewards, and feedback cycles.
-- **Systemic Constants**: The "magic numbers" of the game (damage multipliers, walk speeds, drop rates).
-- **Reference Games**: A library of successfully implemented loops from existing titles used for cross-referencing.
-- **Design Reasoning**: Persistent logs of why specific design choices were made by the agents.
+#### 1. Mechanic Nodes
 
-## Implementation Details
+The fundamental building blocks of gameplay.
 
-### `loop-graph.ts`
+- **Structure**:
+  - `inputs`/`outputs`: Trigger/Effect logic.
+  - `balanceFactors`: `effort` (1-10), `reward` (1-10), `frequency` (per session).
+  - `citations`: RAG sources justifying the mechanic.
+- **Types**: `core` (essential), `secondary` (depth), `meta` (retention), `progression`.
+
+#### 2. Game Loops
+
+Collections of mechanics forming a cycle.
+
+- **Psychological Phases**: `challenge` -> `action` -> `feedback`.
+- **Metrics**: `satisfactionPeak` and `playerExperience` descriptions.
+- **Timeframes**: `micro` (seconds), `session` (minutes), `meta` (days).
+
+#### 3. Progression Systems
+
+Long-term retention vectors.
+
+- **Curves**: `linear`, `exponential`, `logarithmic`, `s-curve`.
+- **Milestones**: specific achievements with `requiredEffort` (hours) and `unlocks`.
+
+### Implementation Details
+
+#### `loop-graph.ts`
 
 Defines the state machine for the design process. It supports branching paths (e.g., iterating on mechanics before finalizing progression) and ensures that all agent contributions are synthesized into a coherent design document.
 
-### Systems Integration
+#### Systems Integration (`useLoopDesign`)
 
-The module provides hooks (`useLoopDesign`) for other parts of the application to consume the generated design. This allows the Storyteller or Interior Designer to align narrative and spatial choices with the underlying mechanical loop.
+The module provides hooks for other parts of the application to consume the generated design. This allows the Storyteller or Interior Designer to align narrative and spatial choices with the underlying mechanical loop.
 
 ## Workflow
 

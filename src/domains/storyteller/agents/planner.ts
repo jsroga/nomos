@@ -11,7 +11,7 @@ const PlanSchema = z.object({
   plan: z
     .array(
       z.object({
-        id: z.string().describe('Unique short ID for the task (e.g. \'task_1\')'),
+        id: z.string().describe("Unique short ID for the task (e.g. 'task_1')"),
         description: z.string().describe('Clear, actionable task description'),
         assignedAgent: z.enum([
           'premiseArchitect',

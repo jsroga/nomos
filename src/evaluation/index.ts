@@ -24,7 +24,6 @@ export { agentRoutingEvaluator, haltingBehaviorEvaluator } from './evaluators/ag
 export { scriptQualityEvaluator, scriptFormatEvaluator } from './evaluators/script-quality'
 export {
   magicScoreEvaluator,
-  magicScoreHeuristic,
   AntiSlopValidator,
 } from './evaluators/magic-score'
 export {

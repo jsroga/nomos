@@ -313,4 +313,3 @@ export const SmartQuickActions: React.FC<SmartQuickActionsProps> = ({
   return <QuickActions actions={getActionsForPhase()} className={className} />
 }
 
-export default QuickActions

@@ -124,4 +124,3 @@ function formatValue(value: unknown): string {
   return String(value)
 }
 
-export default JSONDiffViewer

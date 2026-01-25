@@ -71,7 +71,7 @@ async function runMigration() {
         .limit(1)
 
       if (testError) {
-        console.log('⚠️  Columns don\'t exist yet. Manual SQL migration required.')
+        console.log("⚠️  Columns don't exist yet. Manual SQL migration required.")
         console.log('\n📝 Run this SQL in your Supabase dashboard:\n')
         console.log('```sql')
         console.log(migration)

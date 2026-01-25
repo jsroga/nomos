@@ -41,7 +41,7 @@ export const devilsAdvocateAgent = async (state: WritersRoomState) => {
       messages: [namedMessage],
     }
   } catch (error) {
-    console.error('Devil\'s Advocate error:', error)
+    console.error("Devil's Advocate error:", error)
     return {
       messages: [new AIMessage({ content: 'No objections. PASS.', name: 'DevilsAdvocate' })],
     }

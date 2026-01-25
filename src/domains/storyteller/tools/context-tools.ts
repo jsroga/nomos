@@ -48,7 +48,7 @@ export const createBibleTools = (bible: Record<string, any>) => {
 
     new DynamicStructuredTool({
       name: 'read_bible_section',
-      description: 'Read a full section of the bible (e.g. \'factions\', \'worldRules\', \'sequences\').',
+      description: "Read a full section of the bible (e.g. 'factions', 'worldRules', 'sequences').",
       schema: z.object({
         section: z.string().describe('The section key to read'),
       }),

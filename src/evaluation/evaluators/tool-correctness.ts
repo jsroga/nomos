@@ -376,19 +376,16 @@ export const toolConsistencyEvaluator: CustomEvaluator = {
  * Heuristic version of tool output evaluator.
  * Same as LLM version since it doesn't use LLM.
  */
-export const toolOutputHeuristic = toolOutputEvaluator
 
 /**
  * Heuristic version of tool schema evaluator.
  * Same as LLM version since it doesn't use LLM.
  */
-export const toolSchemaHeuristic = toolSchemaEvaluator
 
 /**
  * Heuristic version of tool consistency evaluator.
  * Same as LLM version since it doesn't use LLM.
  */
-export const toolConsistencyHeuristic = toolConsistencyEvaluator
 
 // ========================================
 // COMBINED EVALUATOR

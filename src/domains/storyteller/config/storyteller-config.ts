@@ -106,8 +106,8 @@ const DEFAULT_CONFIG: StorytellerConfig = {
     antiSlop: {
       enabled: true,
       severity: 'warning',
-      threshold: 40, // Score < 40 triggers warning
-      blockOnCritical: false, // Don't block by default
+      threshold: 60, // Score < 60 triggers warning (raised for higher quality bar)
+      blockOnCritical: true, // Block output if score indicates AI slop
       minContentLength: 100,
     },
 
@@ -135,11 +135,11 @@ const DEFAULT_CONFIG: StorytellerConfig = {
   },
 
   prompts: {
-    useHub: process.env.STORYTELLER_USE_PROMPT_HUB === 'true',
+    useHub: process.env.STORYTELLER_USE_PROMPT_HUB !== 'false', // Default to TRUE
     hubOwner: process.env.LANGSMITH_HUB_OWNER || 'tilemap',
     environment:
-      (process.env.STORYTELLER_PROMPT_ENV as 'production' | 'staging' | 'dev') || 'production',
-    fallbackToLocal: true,
+      (process.env.STORYTELLER_PROMPT_ENV as 'production' | 'staging' | 'dev') || 'dev', // Default to dev, safer than production
+    fallbackToLocal: false, // Strict mode by default
   },
 
   performance: {
@@ -278,6 +278,7 @@ export const ENV_VARS = {
   // Feature flags
   STORYTELLER_HITL_ENABLED: 'Enable human-in-the-loop confirmation',
   STORYTELLER_GUARDRAILS_ENABLED: 'Enable all guardrails (master switch)',
+  STORYTELLER_FORCE_CLAUDE: 'Force Claude Opus 4.5 for all storyteller operations',
 
   // Prompt Hub
   STORYTELLER_USE_PROMPT_HUB: 'Pull prompts from LangSmith Hub',
@@ -293,6 +294,9 @@ export const ENV_VARS = {
   LANGCHAIN_API_KEY: 'LangSmith API key',
   LANGCHAIN_TRACING_V2: 'Enable LangSmith tracing',
   LANGCHAIN_PROJECT: 'LangSmith project name',
+
+  // Model Configuration
+  ANTHROPIC_API_KEY: 'Anthropic API key for Claude Opus 4.5',
 } as const
 
 // ============================================
@@ -331,4 +335,3 @@ export const STORYTELLER_CONFIG = getStorytellerConfig()
  * Type-safe config for static imports
  * Note: This is a snapshot at import time, use getStorytellerConfig() for runtime values
  */
-export default STORYTELLER_CONFIG

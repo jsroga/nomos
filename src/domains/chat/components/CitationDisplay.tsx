@@ -365,4 +365,3 @@ export function parseInlineCitations(
   return parts
 }
 
-export default CitationDisplay

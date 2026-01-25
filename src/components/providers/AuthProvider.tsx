@@ -10,7 +10,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Development Mock User
     if (process.env.NODE_ENV === 'development') {
-      console.log('AuthProvider: Dev mode detected, mocking user \'jsroga\'')
+      console.log("AuthProvider: Dev mode detected, mocking user 'jsroga'")
       setUser({
         id: 'dev-mock-user-id',
         email: 'jsroga@example.com',

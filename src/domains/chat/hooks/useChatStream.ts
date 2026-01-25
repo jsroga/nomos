@@ -576,6 +576,7 @@ export function useChatStream({
           const text = streamingTokensRef.current.trim()
           if (text) {
             let finalContent = text
+            let shouldFlush = true
 
             // If it looks like JSON, try to extract the message field even if broken
             if (text.startsWith('{')) {
@@ -587,24 +588,26 @@ export function useChatStream({
                 finalContent = messageMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
               } else {
                 // It's technical JSON without a message, don't flush as narrative
-                return
+                shouldFlush = false
               }
             }
 
-            setMessages(prev => {
-              const lastMsg = prev[prev.length - 1]
-              // If the last message is already this text (dedupe), don't append
-              if (lastMsg && lastMsg.content === finalContent) return prev
+            if (shouldFlush) {
+              setMessages(prev => {
+                const lastMsg = prev[prev.length - 1]
+                // If the last message is already this text (dedupe), don't append
+                if (lastMsg && lastMsg.content === finalContent) return prev
 
-              return [
-                ...prev,
-                {
-                  sender: thinkingAgent || 'Agent',
-                  content: finalContent,
-                  type: 'ai',
-                },
-              ]
-            })
+                return [
+                  ...prev,
+                  {
+                    sender: thinkingAgent || 'Agent',
+                    content: finalContent,
+                    type: 'ai',
+                  },
+                ]
+              })
+            }
           }
         }
 
@@ -731,4 +734,3 @@ export function useChatStream({
   }
 }
 
-export default useChatStream

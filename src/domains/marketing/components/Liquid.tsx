@@ -64,7 +64,7 @@ export function Liquid({
     const initLiquid = () => {
       const elementExists = document.getElementById(id)
 
-      // @ts-ignore
+      // @ts-expect-error - liquidGL and html2canvas are dynamically loaded globals
       if (window.liquidGL && window.html2canvas && elementExists) {
         // Add safety delay to allow background/layout to stabilize
         timer = setTimeout(() => {

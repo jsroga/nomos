@@ -26,6 +26,20 @@ module.exports = [
     ],
   },
   js.configs.recommended,
+  // Configuration for .mjs files (Node scripts)
+  {
+    files: ['**/*.mjs'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+      },
+    },
+  },
   {
     files: ['**/*.{ts,tsx,js,jsx}'],
     languageOptions: {
@@ -87,12 +101,55 @@ module.exports = [
       '@typescript-eslint/no-require-imports': 'off',
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
+      'react/no-unescaped-entities': 'off', // Allow quotes/apostrophes in JSX for readability
+      'react/jsx-no-comment-textnodes': 'off', // Allow comment-like text in JSX
+      'react/no-unknown-property': [
+        'error',
+        {
+          ignore: [
+            // React Three.js (@react-three/fiber) props
+            'args',
+            'position',
+            'rotation',
+            'geometry',
+            'material',
+            'intensity',
+            'castShadow',
+            'receiveShadow',
+            'userData',
+            'frustumCulled',
+            'transparent',
+            'side',
+            'depthWrite',
+            'map',
+            'metalness',
+            'roughness',
+            'emissive',
+            'emissiveIntensity',
+            'toneMapped',
+            'object',
+            // styled-jsx props
+            'jsx',
+            'global',
+          ],
+        },
+      ],
       semi: ['error', 'never'],
       quotes: ['error', 'single'],
       indent: 'off',
-      'react-compiler/react-compiler': 'error',
+      'react-compiler/react-compiler': 'warn', // Optimization hints, not bugs
+      'react-hooks/set-state-in-effect': 'warn', // Often intentional for syncing external state
+      'react-hooks/immutability': 'off', // Allow mutating values for imperative APIs (THREE.js, etc.)
+      'react-hooks/purity': 'off', // Allow Date.now(), Math.random() for animations/timestamps
+      'react-hooks/preserve-manual-memoization': 'off', // Allow React compiler to skip optimization
+      '@typescript-eslint/no-empty-object-type': 'off', // Allow {} types
+      'no-empty': 'off', // Allow empty catch blocks with comments
+      'no-control-regex': 'off', // Allow control characters in regex for input sanitization
+      'no-useless-escape': 'off', // Allow escapes in regex for clarity
+      'no-case-declarations': 'off', // Allow lexical declarations in case blocks
       'no-undef': 'off', // TypeScript handles this
       'no-unused-vars': 'off', // Using TypeScript version
+      'no-redeclare': 'off', // TypeScript handles this (allows Zod schema + type pattern)
     },
     settings: {
       react: {

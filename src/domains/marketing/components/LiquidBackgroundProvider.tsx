@@ -38,7 +38,7 @@ export function LiquidBackgroundProvider({
     let rafId: number
     const updateTexture = () => {
       const bgCanvas = document.getElementById('turbulent-bg-canvas') as HTMLCanvasElement
-      // @ts-ignore
+      // @ts-expect-error - __liquidGLRenderer__ is a custom global property
       const renderer = window.__liquidGLRenderer__
 
       if (bgCanvas && renderer && renderer._uploadTexture) {

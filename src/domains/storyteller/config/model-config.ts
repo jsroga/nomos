@@ -19,7 +19,6 @@ import { LocalStorageKeys } from '../../../constants/localStorage'
 function getContextProvider(): import('./model-context').ModelProvider | undefined {
   if (typeof window !== 'undefined') return undefined
   try {
-     
     const { getContextProvider: fn } = require('./model-context')
     return fn()
   } catch {
@@ -30,7 +29,6 @@ function getContextProvider(): import('./model-context').ModelProvider | undefin
 function getContextAnthropicKey(): string | undefined {
   if (typeof window !== 'undefined') return undefined
   try {
-     
     const { getContextAnthropicKey: fn } = require('./model-context')
     return fn()
   } catch {
@@ -41,7 +39,6 @@ function getContextAnthropicKey(): string | undefined {
 function getContextGeminiKey(): string | undefined {
   if (typeof window !== 'undefined') return undefined
   try {
-     
     const { getContextGeminiKey: fn } = require('./model-context')
     return fn()
   } catch {
@@ -84,20 +81,21 @@ const MODEL_CONFIGS = {
     },
   },
   anthropic: {
-    model: 'claude-sonnet-4-20250514',
-    // Claude tends to be more creative at lower temps
+    model: 'claude-opus-4-5-20251101', // Upgraded to Claude 4.5 Opus for maximum quality
+    // Claude Opus temperatures - slightly lower as Opus is more capable
     temperatures: {
       showrunner: 0.7,
-      plotArchitect: 0.9,
-      characterPsychology: 0.75,
+      plotArchitect: 0.85, // Slightly lower for Opus - still creative
+      characterPsychology: 0.7,
       consequenceTracker: 0.6,
-      devilsAdvocate: 0.9,
-      visualMoment: 0.85,
-      planner: 0.9,
-      writer: 0.8,
-      premiseArchitect: 0.8,
-      magicAgent: 1.0, // Maximum chaos
-      default: 0.75,
+      devilsAdvocate: 0.85, // Harsh critic
+      visualMoment: 0.8,
+      planner: 0.85,
+      writer: 0.75,
+      premiseArchitect: 0.75,
+      magicAgent: 0.95, // High creativity
+      consistency: 0.3, // Low temp for evaluation accuracy
+      default: 0.7,
     },
   },
   gemini: {
@@ -120,6 +118,11 @@ const MODEL_CONFIGS = {
 
 // Get the preferred provider from context, environment, or localStorage
 function getPreferredProvider(): ModelProvider {
+  // 0. Force Claude Opus for storyteller if environment flag is set
+  if (process.env.STORYTELLER_FORCE_CLAUDE === 'true') {
+    return 'anthropic'
+  }
+
   // 1. Check request context first (AsyncLocalStorage - set by API routes)
   const contextProvider = getContextProvider()
   if (contextProvider) {
@@ -140,8 +143,8 @@ function getPreferredProvider(): ModelProvider {
     }
   }
 
-  // Default to OpenAI
-  return 'openai'
+  // Default to Anthropic (Claude Opus) for best storytelling quality
+  return 'anthropic'
 }
 
 // Check if we have the necessary API key for a provider
@@ -311,7 +314,7 @@ export function getCurrentModelName(): string {
   const model = MODEL_CONFIGS[provider].model // Get the actual model name
 
   if (provider === 'anthropic') {
-    return 'Claude Sonnet 4'
+    return 'Claude Opus 4.5'
   }
   if (provider === 'gemini') {
     return 'Gemini 2.5 Pro'
@@ -320,6 +323,25 @@ export function getCurrentModelName(): string {
     return 'GPT-5.1'
   }
   return 'GPT-4.1'
+}
+
+/**
+ * Get a model specifically for evaluation tasks
+ * ALWAYS uses Claude Opus 4.5 for consistent, high-quality evaluation
+ */
+export function getEvaluationModel(temperature = 0.3): BaseChatModel {
+  const apiKey = getAnthropicApiKey()
+  if (!apiKey) {
+    console.warn('Anthropic API key not found for evaluation model, falling back to default')
+    return getModel('consistency')
+  }
+
+  return new ChatAnthropic({
+    modelName: 'claude-opus-4-5-20251101',
+    temperature,
+    maxRetries: 2,
+    anthropicApiKey: apiKey,
+  })
 }
 
 /**

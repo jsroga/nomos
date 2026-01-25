@@ -135,7 +135,9 @@ export class MeshyClient {
       try {
         const json = JSON.parse(errorText)
         message = json.message || message
-      } catch {}
+      } catch {
+        // Ignore JSON parse errors, use default message
+      }
       throw new Error(`Meshy Retexture Start Failed: ${message}`)
     }
 

@@ -321,7 +321,7 @@ function formatAgentName(agent: string): string {
     character_psychology: 'Character Psychology',
     premise_architect: 'Premise Architect',
     episode_premise_architect: 'Episode Premise Architect',
-    devils_advocate: 'Devil\'s Advocate',
+    devils_advocate: "Devil's Advocate",
     planner: 'Planner',
   }
 

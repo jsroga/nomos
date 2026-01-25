@@ -5,48 +5,84 @@
  * - Series bible (characters, factions, world rules)
  * - Previous story elements
  * - Character knowledge states
+ * - Temporal logic and causality
+ *
+ * Uses Claude Opus 4.5 for high-accuracy evaluation with multi-pass verification.
  */
 
-import { ChatOpenAI } from '@langchain/openai'
+import { ChatAnthropic } from '@langchain/anthropic'
 import { CustomEvaluator, EvaluatorInput, EvaluatorResult } from '../types'
 
-const CONSISTENCY_JUDGE_PROMPT = `You are an expert evaluator assessing narrative and story consistency.
+const CONSISTENCY_JUDGE_PROMPT = `You are an expert continuity editor with decades of experience on HBO-level prestige dramas. Your job is to catch EVERY inconsistency - you are the last line of defense against plot holes that would make fans riot.
 
 ## Task
-Evaluate whether the OUTPUT maintains consistency with the established context.
+Perform a MULTI-PASS consistency audit of the OUTPUT against the established canon.
 
 ## Scoring Criteria (0.0 to 1.0)
-- **1.0 (Perfect)**: No inconsistencies, fully aligned with established facts
-- **0.8 (Good)**: Minor inconsistencies that don't affect story logic
-- **0.6 (Fair)**: Some notable inconsistencies but story remains coherent
-- **0.4 (Poor)**: Significant inconsistencies that affect narrative logic
-- **0.2 (Very Poor)**: Major contradictions with established elements
-- **0.0 (Critical)**: Fundamental violations of established canon
+- **1.0 (Perfect)**: No inconsistencies. Every detail aligns with canon. Continuity-obsessed fans would approve.
+- **0.8 (Good)**: Minor details that only sharp-eyed fans would notice. No story logic affected.
+- **0.6 (Fair)**: Notable inconsistencies but story structure remains intact.
+- **0.4 (Poor)**: Significant contradictions that undermine story logic. Characters acting against established traits.
+- **0.2 (Very Poor)**: Major canon violations. "But that character was dead!" level issues.
+- **0.0 (Critical)**: Fundamental breaks with established reality. Completely incompatible with canon.
 
-## Consistency Checks
-1. **Characters**: Do referenced characters exist? Are their traits consistent?
-2. **Locations**: Do locations match established world?
-3. **Timeline**: Is temporal logic maintained?
-4. **Knowledge**: Do characters know only what they should know?
-5. **World Rules**: Are established rules followed?
+## Multi-Pass Verification Checklist
 
-## ESTABLISHED CONTEXT
+### Pass 1: ENTITY CONSISTENCY
+- Character names spelled correctly?
+- Characters that appear are actually in this story?
+- No characters mysteriously teleported or appearing where they shouldn't be?
+- Character relationships match established dynamics?
+
+### Pass 2: TEMPORAL CONSISTENCY
+- Timeline makes sense? (No events before their causes)
+- Character ages consistent?
+- Day/night, seasons, time references align?
+- "Last week" events actually happened last week in story time?
+
+### Pass 3: CAUSAL CONSISTENCY
+- Do actions have logical consequences?
+- Are cause-effect chains preserved?
+- Do decisions follow from character motivations?
+- Are there dangling plot threads or forgotten setups?
+
+### Pass 4: CHARACTER KNOWLEDGE CONSISTENCY
+- Do characters only know what they SHOULD know?
+- No psychic knowledge of off-screen events?
+- Secrets remain secret until revealed?
+- Information flows logically between characters?
+
+### Pass 5: WORLD RULE ADHERENCE
+- Magic/technology systems follow established rules?
+- Political/social rules respected?
+- Economic realities consistent?
+- Physical laws of the world maintained?
+
+## ESTABLISHED CANON (Your Reference Bible)
 {reference}
 
 ## OUTPUT TO EVALUATE
 {output}
 
 ## Instructions
-Identify any inconsistencies and score accordingly.
+Run ALL FIVE verification passes. Document every inconsistency found. Be thorough but fair - minor stylistic variations are not inconsistencies.
 
 Respond with ONLY valid JSON:
 {
   "score": 0.85,
-  "reasoning": "Brief explanation",
+  "reasoning": "Executive summary of consistency status",
+  "passResults": {
+    "entityConsistency": {"passed": true, "issues": []},
+    "temporalConsistency": {"passed": true, "issues": []},
+    "causalConsistency": {"passed": false, "issues": ["description"]},
+    "characterKnowledge": {"passed": true, "issues": []},
+    "worldRuleAdherence": {"passed": true, "issues": []}
+  },
   "inconsistencies": [
-    {"type": "character", "issue": "description", "severity": "minor|major|critical"}
+    {"type": "entity|temporal|causal|knowledge|world_rule", "issue": "description", "severity": "minor|major|critical", "quote": "offending text if applicable"}
   ],
-  "consistentElements": ["list of consistent elements verified"]
+  "consistentElements": ["list of verified consistent elements"],
+  "recommendation": "What to fix to achieve perfect consistency"
 }`
 
 export const consistencyEvaluator: CustomEvaluator = {
@@ -62,9 +98,11 @@ export const consistencyEvaluator: CustomEvaluator = {
     }
 
     try {
-      const model = new ChatOpenAI({
-        modelName: 'gpt-4o-mini',
-        temperature: 0,
+      // Use Claude Opus 4.5 for high-accuracy multi-pass consistency evaluation
+      const model = new ChatAnthropic({
+        modelName: 'claude-opus-4-5-20251101',
+        temperature: 0, // Zero temperature for maximum consistency in evaluation
+        maxRetries: 2,
       })
 
       const prompt = CONSISTENCY_JUDGE_PROMPT.replace(
@@ -83,12 +121,25 @@ export const consistencyEvaluator: CustomEvaluator = {
 
       const parsed = JSON.parse(jsonMatch[0])
 
+      // Count critical issues for severity assessment
+      const criticalCount = (parsed.inconsistencies || []).filter(
+        (i: any) => i.severity === 'critical'
+      ).length
+      const majorCount = (parsed.inconsistencies || []).filter(
+        (i: any) => i.severity === 'major'
+      ).length
+
       return {
         score: Math.max(0, Math.min(1, parsed.score)),
         reasoning: parsed.reasoning,
         metadata: {
+          passResults: parsed.passResults,
           inconsistencies: parsed.inconsistencies,
           consistentElements: parsed.consistentElements,
+          recommendation: parsed.recommendation,
+          criticalIssues: criticalCount,
+          majorIssues: majorCount,
+          evaluatedBy: 'claude-opus-4-5-20251101',
         },
       }
     } catch (error) {

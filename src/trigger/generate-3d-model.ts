@@ -78,7 +78,9 @@ export const generate3DModelTask = task({
         try {
           const errJson = JSON.parse(errText)
           errMessage = errJson.message || errJson.error || errMessage
-        } catch {}
+        } catch {
+          // Ignore JSON parse errors, use status text
+        }
         throw new Error(`Meshy API error: ${errMessage}`)
       }
 

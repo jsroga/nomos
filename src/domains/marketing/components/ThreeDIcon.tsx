@@ -83,13 +83,12 @@ function GlowingSphere({
 }) {
   const meshRef = useRef<THREE.Mesh>(null)
 
-  useFrame &&
-    useFrame((state: any) => {
-      if (meshRef.current) {
-        const pulse = 1 + Math.sin(state.clock.elapsedTime * 2) * 0.15
-        meshRef.current.scale.setScalar(pulse)
-      }
-    })
+  useFrame((state: any) => {
+    if (meshRef.current) {
+      const pulse = 1 + Math.sin(state.clock.elapsedTime * 2) * 0.15
+      meshRef.current.scale.setScalar(pulse)
+    }
+  })
 
   return (
     <group position={position}>
@@ -229,12 +228,11 @@ function PointCloudDots({
     return mat
   }, [color])
 
-  useFrame &&
-    useFrame((state: any) => {
-      if (material.uniforms.time) {
-        material.uniforms.time.value = state.clock.elapsedTime * 0.5
-      }
-    })
+  useFrame((state: any) => {
+    if (material.uniforms.time) {
+      material.uniforms.time.value = state.clock.elapsedTime * 0.5
+    }
+  })
 
   return <points geometry={pointsGeometry} material={material} />
 }
@@ -270,12 +268,11 @@ function GLTFModel({ url, scale = 1, dotsColor = '#ffffff', dotsDensity = 0.25 }
     return geos
   }, [gltf])
 
-  useFrame &&
-    useFrame((state: any) => {
-      if (groupRef.current) {
-        groupRef.current.rotation.y = state.clock.elapsedTime * 0.12
-      }
-    })
+  useFrame((state: any) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = state.clock.elapsedTime * 0.12
+    }
+  })
 
   if (geometries.length === 0) {
     return null
@@ -378,12 +375,11 @@ function WorldGenSculpture() {
     return geos
   }, [])
 
-  useFrame &&
-    useFrame((state: any) => {
-      if (groupRef.current) {
-        groupRef.current.rotation.y = state.clock.elapsedTime * 0.15
-      }
-    })
+  useFrame((state: any) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = state.clock.elapsedTime * 0.15
+    }
+  })
 
   return (
     <group ref={groupRef}>
@@ -424,12 +420,11 @@ function AINarrativeSculpture() {
     return geos
   }, [])
 
-  useFrame &&
-    useFrame((state: any) => {
-      if (groupRef.current) {
-        groupRef.current.rotation.y = state.clock.elapsedTime * 0.12
-      }
-    })
+  useFrame((state: any) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = state.clock.elapsedTime * 0.12
+    }
+  })
 
   return (
     <group ref={groupRef}>
@@ -480,12 +475,11 @@ function SculptSimSculpture() {
     return geos
   }, [])
 
-  useFrame &&
-    useFrame((state: any) => {
-      if (groupRef.current) {
-        groupRef.current.rotation.y = state.clock.elapsedTime * 0.1
-      }
-    })
+  useFrame((state: any) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = state.clock.elapsedTime * 0.1
+    }
+  })
 
   return (
     <group ref={groupRef}>
@@ -522,12 +516,11 @@ function ExportSecSculpture() {
     return geos
   }, [])
 
-  useFrame &&
-    useFrame((state: any) => {
-      if (groupRef.current) {
-        groupRef.current.rotation.y = state.clock.elapsedTime * 0.18
-      }
-    })
+  useFrame((state: any) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = state.clock.elapsedTime * 0.18
+    }
+  })
 
   return (
     <group ref={groupRef}>
@@ -556,12 +549,11 @@ function LoopDesSculpture() {
     return geos
   }, [])
 
-  useFrame &&
-    useFrame((state: any) => {
-      if (groupRef.current) {
-        groupRef.current.rotation.y = state.clock.elapsedTime * 0.15
-      }
-    })
+  useFrame((state: any) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = state.clock.elapsedTime * 0.15
+    }
+  })
 
   return (
     <group ref={groupRef}>
@@ -598,12 +590,11 @@ function StrTstSculpture() {
     return geos
   }, [])
 
-  useFrame &&
-    useFrame((state: any) => {
-      if (groupRef.current) {
-        groupRef.current.rotation.y = state.clock.elapsedTime * 0.2
-      }
-    })
+  useFrame((state: any) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = state.clock.elapsedTime * 0.2
+    }
+  })
 
   return (
     <group ref={groupRef}>
@@ -642,12 +633,11 @@ function SecAstSculpture() {
     return geos
   }, [])
 
-  useFrame &&
-    useFrame((state: any) => {
-      if (groupRef.current) {
-        groupRef.current.rotation.y = state.clock.elapsedTime * 0.12
-      }
-    })
+  useFrame((state: any) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = state.clock.elapsedTime * 0.12
+    }
+  })
 
   return (
     <group ref={groupRef}>
@@ -819,4 +809,3 @@ export function ThreeDIcon({
   )
 }
 
-export default ThreeDIcon

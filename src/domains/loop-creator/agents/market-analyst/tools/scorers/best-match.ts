@@ -376,7 +376,7 @@ Returns:
       } else if (primaryArchetype.score >= 25) {
         viabilityVerdict = 'niche'
         viabilityReason =
-          'Design doesn\'t strongly match any reference archetype. May need unique positioning or hybrid appeal.'
+          "Design doesn't strongly match any reference archetype. May need unique positioning or hybrid appeal."
       } else {
         viabilityVerdict = 'unclear'
         viabilityReason =

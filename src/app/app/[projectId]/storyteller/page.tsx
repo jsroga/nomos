@@ -29,7 +29,7 @@ import {
   ActionToastContainer,
   ActionSuggestion,
 } from '@/domains/storyteller/components/ActionToast'
-import QuestionCard from '@/domains/storyteller/components/QuestionCard'
+import { QuestionCard } from '@/domains/storyteller/components/QuestionCard'
 import { Bot, User, Sparkles, Brain, Lightbulb, Scale, Eye, Pen, Loader2, Lock } from 'lucide-react'
 
 // Define Storyteller Agent Config - Minimalist
@@ -1538,7 +1538,7 @@ export default function StorytellerPage() {
         setTimeout(() => {
           handleSendMessage(
             undefined,
-            'Let\'s draft the first episode. Start by generating a compelling premise for \'Episode 1: The Beginning\'.'
+            "Let's draft the first episode. Start by generating a compelling premise for 'Episode 1: The Beginning'."
           )
         }, 100)
       }
@@ -1557,7 +1557,7 @@ export default function StorytellerPage() {
     setTimeout(() => {
       handleSendMessage(
         undefined,
-        'Let\'s build the series foundation. Help me define the genre, tone, and core rules for this world.'
+        "Let's build the series foundation. Help me define the genre, tone, and core rules for this world."
       )
     }, 100)
   }, [searchParams, router, handleSendMessage])
@@ -2472,12 +2472,12 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                   <h2 className="text-3xl font-bold text-foreground">
                     {hasBible
                       ? 'Ready to Create Your First Episode?'
-                      : 'Let\'s Built Your World Bible First'}
+                      : "Let's Built Your World Bible First"}
                   </h2>
                   <p className="text-muted-foreground text-lg leading-relaxed">
                     {hasBible
                       ? 'Use the AI to draft your first episode, or manually create one in the sidebar.'
-                      : 'Before we dive into episodes, let\'s establish the foundation of your world—the rules, themes, and characters that make it unique.'}
+                      : "Before we dive into episodes, let's establish the foundation of your world—the rules, themes, and characters that make it unique."}
                   </p>
                 </div>
 

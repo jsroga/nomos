@@ -57,8 +57,6 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
   initialData,
   mode = 'create',
 }) => {
-  if (!isOpen) return null
-
   const [name, setName] = useState('')
   const [gender, setGender] = useState('')
   const [role, setRole] = useState('Supporting')
@@ -134,6 +132,9 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
       hasCheckedInitialRef.current = false
     }
   }, [portraitUrl, isGeneratingPortrait, isOpen, showVariantPicker])
+
+  // Only render when open - check after all hooks
+  if (!isOpen) return null
 
   // Reset form when dialog closes
   const handleClose = () => {

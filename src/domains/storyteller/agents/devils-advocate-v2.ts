@@ -13,7 +13,7 @@ export const devilsAdvocateAgentV2 = async (
   state: WritersRoomState
 ): Promise<Partial<WritersRoomState>> => {
   return executeAgentV2(state, {
-    agentName: 'Devil\'s Advocate',
+    agentName: "Devil's Advocate",
     agentKey: 'devils_advocate',
     promptId: 'devilsAdvocate',
     fallbackPrompt: FALLBACK_PROMPT,

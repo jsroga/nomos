@@ -116,7 +116,7 @@ function extractReferenceGame(description: string): string {
     'Animal Crossing',
     'Celeste',
     'Undertale',
-    'Baldur\'s Gate',
+    "Baldur's Gate",
     'Mass Effect',
     'The Witcher',
   ]

@@ -363,4 +363,3 @@ export const ActionSuggestion: React.FC<ActionSuggestionProps> = ({
   )
 }
 
-export default ActionToast

@@ -174,7 +174,7 @@ const GAMING_TRENDS_DATABASE: Record<string, TwitterTrendResult[]> = {
         'Choice-driven games need more failure states that are interesting, not punishing',
       ],
       relevanceToGaming: 1.0,
-      relatedGames: ['Baldur\'s Gate 3', 'Disco Elysium', 'Pathfinder', 'Pillars of Eternity'],
+      relatedGames: ["Baldur's Gate 3", 'Disco Elysium', 'Pathfinder', 'Pillars of Eternity'],
       isRising: true,
       timeframe: 'last 30 days',
     },
@@ -230,7 +230,7 @@ const EMERGING_TRENDS: TwitterTrendResult[] = [
     sampleTweets: [
       'Extraction shooters are what battle royale should have evolved into',
       'The risk/reward in extraction games > any other genre',
-      'Tarkov-likes are having a moment and I\'m here for it',
+      "Tarkov-likes are having a moment and I'm here for it",
     ],
     relevanceToGaming: 1.0,
     relatedGames: ['Escape from Tarkov', 'Dark and Darker', 'Arena Breakout'],
@@ -245,7 +245,7 @@ const EMERGING_TRENDS: TwitterTrendResult[] = [
     sentimentScore: 0.85,
     sampleTweets: [
       'Cozy games are self-care. No one can convince me otherwise.',
-      'The farming sim market is so saturated but I\'ll buy every single one',
+      "The farming sim market is so saturated but I'll buy every single one",
       'Stardew Valley effect is still going strong',
     ],
     relevanceToGaming: 1.0,

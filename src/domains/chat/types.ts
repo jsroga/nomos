@@ -109,7 +109,7 @@ export const DEFAULT_THINKING_MESSAGES: ThinkingMessagesConfig = {
   fallback: [
     { minSeconds: 0, message: 'Processing...' },
     { minSeconds: 15, message: '☕ Complex request detected. Grab a coffee while I work...' },
-    { minSeconds: 30, message: '🧠 Deep thinking... This one\'s a masterpiece in the making!' },
+    { minSeconds: 30, message: "🧠 Deep thinking... This one's a masterpiece in the making!" },
   ],
   completeMessage: '✨ Complete',
 }

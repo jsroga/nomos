@@ -22,7 +22,7 @@ export const MAZUR_BENCHMARK = {
     {
       name: 'Core Concept',
       description: 'Every scene must reinforce the central theme of the story.',
-      prompt: 'How does this beat connect to the story\'s central question or theme?',
+      prompt: "How does this beat connect to the story's central question or theme?",
     },
     {
       name: 'Attribute',
@@ -31,7 +31,7 @@ export const MAZUR_BENCHMARK = {
     },
     {
       name: 'Action',
-      description: 'Use active verbs and distinct physical movement. Show, don\'t tell.',
+      description: "Use active verbs and distinct physical movement. Show, don't tell.",
       prompt: 'What is the character physically DOING? Use a specific, active verb.',
     },
     {
@@ -43,7 +43,7 @@ export const MAZUR_BENCHMARK = {
       name: 'Setting',
       description: 'Environment as character. The space reflects internal state.',
       prompt:
-        'Where does this take place? How does the environment mirror the character\'s psychology?',
+        "Where does this take place? How does the environment mirror the character's psychology?",
     },
     {
       name: 'Timeframe',
@@ -52,8 +52,8 @@ export const MAZUR_BENCHMARK = {
     },
     {
       name: 'Motivation',
-      description: 'Clear \'Why\' behind every action. What does the character WANT?',
-      prompt: 'What does the character want in this moment? What\'s driving them?',
+      description: "Clear 'Why' behind every action. What does the character WANT?",
+      prompt: "What does the character want in this moment? What's driving them?",
     },
     {
       name: 'Tone',
@@ -81,7 +81,7 @@ A beat that lacks any of these elements is incomplete.
 export const GILLIGAN_METHOD = {
   principles: [
     {
-      name: 'Where\'s Their Head At?',
+      name: "Where's Their Head At?",
       description: 'Before any character acts, understand their complete psychological state.',
       questions: [
         'What do they believe about themselves right now?',
@@ -102,9 +102,9 @@ export const GILLIGAN_METHOD = {
     {
       name: 'Mystery vs Confusion',
       description:
-        'Mystery is good—the audience knows something is hidden. Confusion is bad—they can\'t follow causality.',
+        "Mystery is good—the audience knows something is hidden. Confusion is bad—they can't follow causality.",
       questions: [
-        'Is the audience asking \'what will happen?\' (good) or \'what is happening?\' (bad)',
+        "Is the audience asking 'what will happen?' (good) or 'what is happening?' (bad)",
         'Are we withholding information for suspense, or have we failed to communicate?',
       ],
     },
@@ -113,13 +113,13 @@ export const GILLIGAN_METHOD = {
       description:
         'Every character justifies their actions to themselves. Villains are heroes of their own story.',
       questions: [
-        'How does this character justify what they\'re doing?',
+        "How does this character justify what they're doing?",
         'What would they say if confronted about their actions?',
-        'What\'s the \'good reason\' they tell themselves?',
+        "What's the 'good reason' they tell themselves?",
       ],
     },
     {
-      name: 'What\'s The First Thing We See?',
+      name: "What's The First Thing We See?",
       description: 'Every scene needs a visual hook—an image that captures the essence.',
       questions: [
         'What single image summarizes this beat?',
@@ -168,7 +168,7 @@ export const MARTIN_STORYTELLING = {
     {
       name: 'The Unexpected Is Earned',
       description:
-        'Shocking moments work because they were set up. Ned Stark\'s death was earned by his honor.',
+        "Shocking moments work because they were set up. Ned Stark's death was earned by his honor.",
     },
     {
       name: 'Multiple Perspectives',

@@ -96,7 +96,7 @@ DISSOLVE TO:
   'visual-storytelling': {
     id: 'visual-storytelling',
     name: 'Visual Storytelling',
-    description: 'Show don\'t tell through action and imagery',
+    description: "Show don't tell through action and imagery",
     category: 'writer',
     tags: ['visual', 'action', 'cinematography'],
     tokens: 180,

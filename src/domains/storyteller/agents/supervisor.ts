@@ -165,7 +165,7 @@ export function getPhaseGuidance(state: WritersRoomState): string {
     premise:
       '📋 **PREMISE PHASE**: Build your world bible - define world rules, factions, and characters. Use the Premise Architect to create your foundation.',
     breaking:
-      '🎬 **BREAKING PHASE**: Create story beats using the Plot Architect. Challenge them with Devil\'s Advocate. Build your episode structure.',
+      "🎬 **BREAKING PHASE**: Create story beats using the Plot Architect. Challenge them with Devil's Advocate. Build your episode structure.",
     cardlock:
       '🔒 **CARD LOCK PHASE**: Review and finalize beats. Lock the beat board when ready. Start writing scenes.',
     writing:

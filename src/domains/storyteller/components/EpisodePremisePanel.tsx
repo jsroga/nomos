@@ -89,6 +89,50 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
     setLocalPremise(prev => ({ ...prev, [field]: value }))
   }
 
+  // Auto-show variant picker hooks - must be before conditional returns
+  const prevPosterUrlRef = React.useRef(posterUrl)
+  const prevIsGeneratingRef = React.useRef(isGeneratingPoster)
+  const hasCheckedInitialRef = React.useRef(false)
+
+  // Compute full poster URL for use in useEffect
+  const fullPosterUrl = localPremise.poster
+    ? localPremise.poster.startsWith('data:')
+      ? localPremise.poster
+      : localPremise.poster.startsWith('http') || localPremise.poster.startsWith('/')
+        ? localPremise.poster
+        : localPremise.poster.startsWith('projects/')
+          ? `/${localPremise.poster}`
+          : `/projects/${projectId}/${localPremise.poster}`
+    : posterUrl
+      ? posterUrl.startsWith('http') || posterUrl.startsWith('/')
+        ? posterUrl
+        : posterUrl.startsWith('projects/')
+          ? `/${posterUrl}`
+          : `/projects/${projectId}/${posterUrl}`
+      : null
+
+  React.useEffect(() => {
+    const justFinished =
+      prevIsGeneratingRef.current &&
+      !isGeneratingPoster &&
+      posterUrl &&
+      posterUrl !== prevPosterUrlRef.current
+
+    // A URL is considered a "grid" (unpicked multi-variant) ONLY if it's an external HTTP URL.
+    // Saved variants are always local paths like /projects/.../poster_xxx_v1_xxx.png
+    const isGrid = posterUrl && posterUrl.startsWith('http')
+
+    // Only auto-pop if we have a grid and haven't checked yet
+    if ((justFinished || (!hasCheckedInitialRef.current && isGrid)) && fullPosterUrl) {
+      setGridImageUrl(fullPosterUrl)
+      setShowVariantPicker(true)
+      hasCheckedInitialRef.current = true
+    }
+
+    prevPosterUrlRef.current = posterUrl
+    prevIsGeneratingRef.current = isGeneratingPoster
+  }, [posterUrl, isGeneratingPoster, fullPosterUrl])
+
   if (!premise && !isEditing) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center h-full">
@@ -112,50 +156,6 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
       </div>
     )
   }
-
-  const fullPosterUrl = localPremise.poster
-    ? localPremise.poster.startsWith('data:')
-      ? localPremise.poster
-      : localPremise.poster.startsWith('http') || localPremise.poster.startsWith('/')
-        ? localPremise.poster
-        : localPremise.poster.startsWith('projects/')
-          ? `/${localPremise.poster}`
-          : `/projects/${projectId}/${localPremise.poster}`
-    : posterUrl
-      ? posterUrl.startsWith('http') || posterUrl.startsWith('/')
-        ? posterUrl
-        : posterUrl.startsWith('projects/')
-          ? `/${posterUrl}`
-          : `/projects/${projectId}/${posterUrl}`
-      : null
-
-  // Auto-show variant picker when a new poster is generated
-  // We track the previous posterUrl to detect changes
-  const prevPosterUrlRef = React.useRef(posterUrl)
-  const prevIsGeneratingRef = React.useRef(isGeneratingPoster)
-  const hasCheckedInitialRef = React.useRef(false)
-
-  React.useEffect(() => {
-    const justFinished =
-      prevIsGeneratingRef.current &&
-      !isGeneratingPoster &&
-      posterUrl &&
-      posterUrl !== prevPosterUrlRef.current
-
-    // A URL is considered a "grid" (unpicked multi-variant) ONLY if it's an external HTTP URL.
-    // Saved variants are always local paths like /projects/.../poster_xxx_v1_xxx.png
-    const isGrid = posterUrl && posterUrl.startsWith('http')
-
-    // Only auto-pop if we have a grid and haven't checked yet
-    if ((justFinished || (!hasCheckedInitialRef.current && isGrid)) && fullPosterUrl) {
-      setGridImageUrl(fullPosterUrl)
-      setShowVariantPicker(true)
-      hasCheckedInitialRef.current = true
-    }
-
-    prevPosterUrlRef.current = posterUrl
-    prevIsGeneratingRef.current = isGeneratingPoster
-  }, [posterUrl, isGeneratingPoster, fullPosterUrl])
 
   const handleVariantSelect = async (variantIndex: number, croppedDataUrl: string) => {
     console.log('[EpisodePremise] handleVariantSelect called:', {

@@ -533,13 +533,14 @@ export const useInteriorStore = create<InteriorState>()(
                 case 'lower':
                   heightmap[idx] -= delta * falloff
                   break
-                case 'flatten':
+                case 'flatten': {
                   // Flatten to the height at the center point
                   const centerIdx = gridZ * heightmapSize + gridX
                   const targetHeight = heightmap[centerIdx]
                   heightmap[idx] = heightmap[idx] + (targetHeight - heightmap[idx]) * falloff * 0.5
                   break
-                case 'smooth':
+                }
+                case 'smooth': {
                   // Average with neighbors
                   let sum = 0
                   let count = 0
@@ -557,6 +558,7 @@ export const useInteriorStore = create<InteriorState>()(
                     heightmap[idx] = heightmap[idx] + (sum / count - heightmap[idx]) * falloff * 0.3
                   }
                   break
+                }
               }
 
               // Apply pixelate (voxel) effect - snap to discrete steps for Minecraft-like terrain

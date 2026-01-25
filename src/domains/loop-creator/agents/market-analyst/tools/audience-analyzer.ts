@@ -596,7 +596,7 @@ const AUDIENCE_PROFILES: AudienceProfile[] = [
       'Mass Effect',
       'The Witcher 3',
       'Life is Strange',
-      'Baldur\'s Gate 3',
+      "Baldur's Gate 3",
     ],
 
     designAdvice: [

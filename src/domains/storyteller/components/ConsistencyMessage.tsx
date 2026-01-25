@@ -219,4 +219,3 @@ const InconsistencyCard: React.FC<{
   )
 }
 
-export default ConsistencyMessage

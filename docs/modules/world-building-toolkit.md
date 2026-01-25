@@ -20,7 +20,23 @@ Takes low-resolution AI outputs and transforms them into production-ready assets
 - **MJ Integration**: Leverages Midjourney (or similar high-end models) for detailed upscaling.
 - **Review Workflow**: Includes `UpscaleReviewDialog` for designers to pick the best variant before committing to the tile library.
 
-### 3. Repaint & Modification (`RepaintService`)
+### 3. Fidelity Enhancement (`FidelityService`)
+
+Transforms base tiles into high-resolution, stylistically consistent assets using AI.
+
+- **Trigger.dev Integration**: Offloads heavy processing to background jobs.
+- **Review Workflow**: Includes a "Pending Review" state (`fidelity-review-ready` event) allowing designers to approve/reject enhancements before they overwrite the original tile.
+- **Style Matching**: accepts `styleReferenceUrls` to ensure the enhanced tile matches the specific aesthetic of the biome.
+
+### 4. Smart Selection & Segmentation (`SelectModeService`)
+
+Allows users to extract specific objects from flat tile images for reuse as independent assets.
+
+- **SAM Integration**: Uses Segment Anything Model (SAM-2 via Replicate or SAM-3 via Fal.ai) to intelligently identify object boundaries within a user-drawn box.
+- **Asset Extraction**: Automatically handles transparency masking and cropping to create clean, reusable PNG assets.
+- **Coordinate Mapping**: Translates between detailed pixel coordinates and game-world units (512px tiles).
+
+### 5. Repaint & Modification (`RepaintService`)
 
 Allows for localized edits to existing tiles.
 

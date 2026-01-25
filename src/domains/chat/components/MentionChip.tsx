@@ -127,4 +127,3 @@ export const MentionChipBar: React.FC<MentionChipBarProps> = ({ mentions, onRemo
   )
 }
 
-export default MentionChip

@@ -25,7 +25,7 @@ async function main() {
       },
     ],
     beatBoard: [],
-    messages: [new HumanMessage('Let\'s break the first scene.')],
+    messages: [new HumanMessage("Let's break the first scene.")],
   }
 
   const stream = await writersRoomGraph.stream(initialState, {

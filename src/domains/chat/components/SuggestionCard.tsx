@@ -216,4 +216,3 @@ export const detectSuggestion = (
   return null
 }
 
-export default SuggestionCard

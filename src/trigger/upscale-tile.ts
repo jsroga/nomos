@@ -627,7 +627,7 @@ export const upscaleTileTask = task({
         }
         break
 
-      case 'replicate':
+      case 'replicate': {
         if (!providerConfig.model) {
           throw new Error('Replicate model is required')
         }
@@ -643,6 +643,7 @@ export const upscaleTileTask = task({
           finalImageBase64 = replicateResult.data
         }
         break
+      }
 
       case 'stability':
         finalImageBase64 = await upscaleWithStability(

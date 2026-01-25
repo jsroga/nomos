@@ -237,4 +237,3 @@ export async function getWritersRoomGraphV2() {
 /**
  * Export the graph (alias for consistency)
  */
-export const getWritersRoomGraph = getWritersRoomGraphV2

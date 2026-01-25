@@ -74,7 +74,7 @@ export const improveDialogueTool = new DynamicStructuredTool({
       .string()
       .optional()
       .describe(
-        'Notes about the character\'s voice (e.g., \'speaks in short sentences\', \'uses technical jargon\')'
+        "Notes about the character's voice (e.g., 'speaks in short sentences', 'uses technical jargon')"
       ),
   }),
   func: async ({ selection, characterName, voiceNotes }) => {
@@ -116,7 +116,7 @@ export const shiftToneTool = new DynamicStructuredTool({
     selection: z.string().describe('The script text to adjust'),
     targetTone: z
       .string()
-      .describe('The target tone (e.g., \'darker\', \'comedic\', \'tense\', \'melancholic\', \'hopeful\')'),
+      .describe("The target tone (e.g., 'darker', 'comedic', 'tense', 'melancholic', 'hopeful')"),
   }),
   func: async ({ selection, targetTone }) => {
     console.log('[Tool] shift_tone called, target:', targetTone)

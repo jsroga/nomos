@@ -256,4 +256,3 @@ const OptionButton: React.FC<OptionButtonProps> = ({
   )
 }
 
-export default QuestionCard

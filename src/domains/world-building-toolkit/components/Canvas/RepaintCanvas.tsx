@@ -1,4 +1,3 @@
- 
 import React, { useRef, useEffect, useCallback } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 
@@ -125,7 +124,6 @@ export const RepaintCanvas: React.FC = () => {
     }
 
     requestRef.current = requestAnimationFrame(render)
-     
   }, [repaintStrokes, brushSize, viewport, repaintResult, isRepaintMode])
 
   // Start/Stop Loop

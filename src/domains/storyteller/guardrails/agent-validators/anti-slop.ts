@@ -2,18 +2,19 @@
  * Anti-Slop Validator
  *
  * Guardrail that detects AI slop in agent outputs.
- * Uses the magic-score evaluator for detection.
+ * Uses the magic-score LLM evaluator for detection (requires ANTHROPIC_API_KEY).
  */
 
 import { ValidationResult, Validator } from '../runnable-guard'
 import { WritersRoomState } from '../../graph/state'
-import { magicScoreHeuristic } from '@/evaluation/evaluators/magic-score'
+import { magicScoreEvaluator } from '@/evaluation/evaluators/magic-score'
 import { STORYTELLER_CONFIG } from '../../config/storyteller-config'
 
 /**
  * Anti-Slop Validator for use in RunnableGuard
  *
  * Detects AI-generated "slop" - generic, predictable, clichéd content.
+ * REQUIRES ANTHROPIC_API_KEY for LLM-based evaluation.
  * Can be configured to warn or block based on severity.
  */
 export class AntiSlopValidator implements Validator<Partial<WritersRoomState>> {
@@ -42,14 +43,21 @@ export class AntiSlopValidator implements Validator<Partial<WritersRoomState>> {
       return { isValid: true, issues: [] }
     }
 
-    // Run fast heuristic check
-    const result = await magicScoreHeuristic.evaluate({
+    // Run LLM-based evaluation (requires ANTHROPIC_API_KEY)
+    const result = await magicScoreEvaluator.evaluate({
       input: {},
       output: { response: content },
     })
 
-    const magicScore = (result.metadata as any)?.overallMagic || 50
+    // If evaluation failed (no API key), skip validation
+    if ((result.metadata as any)?.error) {
+      console.warn('AntiSlopValidator: Skipping - ANTHROPIC_API_KEY not configured')
+      return { isValid: true, issues: [] }
+    }
+
+    const magicScore = (result.metadata as any)?.overallMagic || 0
     const dimensions = (result.metadata as any)?.dimensions || {}
+    const slopAlerts = (result.metadata as any)?.slopAlerts || []
 
     // Determine severity based on score
     const isCritical = magicScore < 30
@@ -66,6 +74,7 @@ export class AntiSlopValidator implements Validator<Partial<WritersRoomState>> {
             context: {
               magicScore,
               dimensions,
+              slopAlerts,
               reasoning: result.reasoning,
             },
           },
@@ -84,8 +93,9 @@ export class AntiSlopValidator implements Validator<Partial<WritersRoomState>> {
             context: {
               magicScore,
               dimensions,
+              slopAlerts,
               reasoning: result.reasoning,
-              suggestions: getSlopSuggestions(dimensions),
+              suggestion: (result.metadata as any)?.suggestion,
             },
           },
         ],
@@ -94,35 +104,6 @@ export class AntiSlopValidator implements Validator<Partial<WritersRoomState>> {
 
     return { isValid: true, issues: [] }
   }
-}
-
-/**
- * Generate specific suggestions based on dimension scores
- */
-function getSlopSuggestions(dimensions: Record<string, number>): string[] {
-  const suggestions: string[] = []
-
-  if (dimensions.lexicalDiversity < 50) {
-    suggestions.push('Use more varied vocabulary - avoid repeating the same words')
-  }
-
-  if (dimensions.structuralUnpredictability < 50) {
-    suggestions.push('Subvert expectations - avoid formulaic story structures')
-  }
-
-  if (dimensions.dialogueAuthenticity < 50) {
-    suggestions.push('Make dialogue more natural - use fragments, interruptions, subtext')
-  }
-
-  if (dimensions.emotionalSpecificity < 50) {
-    suggestions.push('Show specific emotions through actions, not generic descriptions')
-  }
-
-  if (dimensions.phraseOriginality < 50) {
-    suggestions.push('Replace clichéd phrases with fresh, specific alternatives')
-  }
-
-  return suggestions
 }
 
 /**

@@ -68,7 +68,9 @@ export const textTo3DTask = task({
       try {
         const errJson = JSON.parse(errText)
         errMessage = errJson.message || errJson.error || errMessage
-      } catch {}
+      } catch {
+        // Ignore JSON parse errors, use status text
+      }
       throw new Error(`Meshy preview API error: ${errMessage}`)
     }
 
@@ -110,7 +112,9 @@ export const textTo3DTask = task({
       try {
         const errJson = JSON.parse(errText)
         errMessage = errJson.message || errJson.error || errMessage
-      } catch {}
+      } catch {
+        // Ignore JSON parse errors, use status text
+      }
       throw new Error(`Meshy refine API error: ${errMessage}`)
     }
 

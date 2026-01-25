@@ -1,7 +1,5 @@
 ---
-description: Only the most important rules for writing basic Trigger.dev tasks
-globs: **/trigger/**/*.ts
-alwaysApply: false
+applyTo: **/trigger/**/*.ts
 ---
 # Trigger.dev Basic Tasks (v4)
 

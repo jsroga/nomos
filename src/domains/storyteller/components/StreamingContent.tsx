@@ -254,5 +254,4 @@ const StreamingText: React.FC<{ text: string; isStreaming: boolean }> = ({ text,
   )
 }
 
-export default StreamingContent
 export { ProgressStep, SectionIndicator }

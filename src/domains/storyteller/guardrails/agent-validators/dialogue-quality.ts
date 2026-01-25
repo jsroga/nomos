@@ -67,7 +67,7 @@ const DIALOGUE_ANTIPATTERNS = {
     minOccurrences: 3,
     message: 'Dialogue sounds overly formal - lacking contractions',
     severity: 'info' as const,
-    suggestion: 'Use contractions (can\'t, don\'t, won\'t) for more natural speech',
+    suggestion: "Use contractions (can't, don't, won't) for more natural speech",
   },
 
   speechifyning: {
@@ -94,7 +94,7 @@ const DIALOGUE_ANTIPATTERNS = {
     checkNameOveruse: true,
     message: 'Character names overused in dialogue - sounds unnatural',
     severity: 'info' as const,
-    suggestion: 'People rarely use each other\'s names mid-conversation',
+    suggestion: "People rarely use each other's names mid-conversation",
   },
 }
 
@@ -195,7 +195,7 @@ function checkNameOveruse(lines: DialogueLine[]): DialogueIssue[] {
         type: 'nameOveruse',
         severity: 'info',
         line,
-        suggestion: 'People rarely use each other\'s names repeatedly in conversation',
+        suggestion: "People rarely use each other's names repeatedly in conversation",
       })
     }
   }

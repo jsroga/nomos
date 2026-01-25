@@ -1,7 +1,5 @@
 ---
-description: Comprehensive rules to help you write advanced Trigger.dev tasks
-globs: **/trigger/**/*.ts
-alwaysApply: false
+applyTo: **/trigger/**/*.ts
 ---
 # Trigger.dev Advanced Tasks (v4)
 

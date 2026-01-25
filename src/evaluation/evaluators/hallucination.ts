@@ -5,8 +5,13 @@
  * - Invalid/fake URLs
  * - Made-up external references
  * - Fabricated statistics or facts
+ * - Invented characters, locations, or events not in the world bible
+ * - Facts that contradict established canon
+ *
+ * Uses Claude Opus 4.5 for LLM-based semantic hallucination detection.
  */
 
+import { ChatAnthropic } from '@langchain/anthropic'
 import { CustomEvaluator, EvaluatorInput, EvaluatorResult } from '../types'
 
 // URL patterns that are commonly hallucinated
@@ -206,6 +211,166 @@ export const hallucinationHeuristic: CustomEvaluator = {
         urls: urls.slice(0, 10),
         suspiciousUrls,
         redFlags,
+      },
+    }
+  },
+}
+
+// ============================================
+// LLM-BASED SEMANTIC HALLUCINATION DETECTION
+// ============================================
+
+const SEMANTIC_HALLUCINATION_PROMPT = `You are a ruthless fact-checker for a prestige television writers room. Your job is to catch ANY fabricated content that isn't grounded in the established canon.
+
+## Your Sacred Duty
+Identify content that was INVENTED by the AI and not present in or derivable from the established world bible/canon.
+
+## Types of Hallucinations to Detect
+
+### 1. INVENTED ENTITIES
+- Characters that don't exist in the world bible
+- Locations not established in the world
+- Factions or organizations never mentioned
+- Objects or artifacts pulled from nowhere
+
+### 2. CONTRADICTORY FACTS
+- Events that contradict established timeline
+- Character traits that conflict with their established personality
+- World rules being violated (e.g., dead character appearing alive)
+- Historical facts that don't match the established lore
+
+### 3. IMPOSSIBLE KNOWLEDGE
+- Characters knowing things they shouldn't know
+- References to future events (unless justified by prophecy/time travel)
+- Information appearing without any source
+
+### 4. FABRICATED CONTEXT
+- Made-up backstories not in the canon
+- Invented relationships between characters
+- Created history that wasn't established
+
+## ESTABLISHED CANON (Source of Truth)
+{reference}
+
+## CONTENT TO VERIFY
+{output}
+
+## Instructions
+Compare the content against the canon. Every claim in the output should either:
+1. Be directly stated in the canon, OR
+2. Be a reasonable inference from the canon
+
+If it's neither, it's a hallucination.
+
+Respond with ONLY valid JSON:
+{
+  "score": 0.85,
+  "reasoning": "Summary of hallucination analysis",
+  "hallucinations": [
+    {
+      "type": "invented_entity|contradictory_fact|impossible_knowledge|fabricated_context",
+      "evidence": "The exact quote or element that is hallucinated",
+      "issue": "Why this is a hallucination",
+      "severity": "minor|major|critical"
+    }
+  ],
+  "verifiedClaims": ["List of claims that were verified against canon"],
+  "confidence": 0.9
+}`
+
+/**
+ * LLM-based semantic hallucination detector using Claude Opus 4.5
+ * Verifies content against established world bible/canon
+ */
+export const semanticHallucinationDetector: CustomEvaluator = {
+  name: 'semantic-hallucination',
+
+  evaluate: async ({ output, reference }: EvaluatorInput): Promise<EvaluatorResult> => {
+    // If no reference provided, can only do URL-based checks
+    if (!reference || Object.keys(reference).length === 0) {
+      // Fall back to URL-based detection
+      return hallucinationDetector.evaluate({ input: {}, output })
+    }
+
+    try {
+      const model = new ChatAnthropic({
+        modelName: 'claude-opus-4-5-20251101',
+        temperature: 0, // Zero temperature for factual verification
+        maxRetries: 2,
+      })
+
+      const outputStr = typeof output === 'string' ? output : JSON.stringify(output, null, 2)
+      const referenceStr = JSON.stringify(reference, null, 2)
+
+      const prompt = SEMANTIC_HALLUCINATION_PROMPT.replace('{reference}', referenceStr).replace(
+        '{output}',
+        outputStr.slice(0, 8000)
+      )
+
+      const response = await model.invoke(prompt)
+      const content =
+        typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+
+      const jsonMatch = content.match(/\{[\s\S]*\}/)
+      if (!jsonMatch) {
+        throw new Error('Failed to parse hallucination check response')
+      }
+
+      const parsed = JSON.parse(jsonMatch[0])
+
+      // Count severity levels
+      const hallucinations = parsed.hallucinations || []
+      const criticalCount = hallucinations.filter((h: any) => h.severity === 'critical').length
+      const majorCount = hallucinations.filter((h: any) => h.severity === 'major').length
+
+      return {
+        score: Math.max(0, Math.min(1, parsed.score)),
+        reasoning: parsed.reasoning,
+        metadata: {
+          hallucinations,
+          verifiedClaims: parsed.verifiedClaims,
+          confidence: parsed.confidence,
+          criticalHallucinations: criticalCount,
+          majorHallucinations: majorCount,
+          evaluatedBy: 'claude-opus-4-5-20251101',
+        },
+      }
+    } catch (error) {
+      console.error('Semantic hallucination detection failed:', error)
+      // Fall back to heuristic
+      return hallucinationHeuristic.evaluate({ input: {}, output })
+    }
+  },
+}
+
+/**
+ * Combined hallucination evaluator - runs both URL and semantic checks
+ */
+export const combinedHallucinationEvaluator: CustomEvaluator = {
+  name: 'hallucination-combined',
+
+  evaluate: async ({ input, output, reference }: EvaluatorInput): Promise<EvaluatorResult> => {
+    // Run both evaluations in parallel
+    const [urlResult, semanticResult] = await Promise.all([
+      hallucinationDetector.evaluate({ input, output }),
+      reference
+        ? semanticHallucinationDetector.evaluate({ input, output, reference })
+        : Promise.resolve({ score: 1.0, reasoning: 'No reference for semantic check', metadata: {} }),
+    ])
+
+    // Combine scores - semantic is more important if we have reference
+    const hasReference = reference && Object.keys(reference).length > 0
+    const combinedScore = hasReference
+      ? urlResult.score * 0.3 + semanticResult.score * 0.7 // 70% semantic, 30% URL
+      : urlResult.score // Only URL-based
+
+    return {
+      score: combinedScore,
+      reasoning: `URL checks: ${urlResult.reasoning}. ${hasReference ? `Semantic: ${semanticResult.reasoning}` : ''}`,
+      metadata: {
+        urlAnalysis: urlResult.metadata,
+        semanticAnalysis: hasReference ? semanticResult.metadata : null,
+        combinedScore,
       },
     }
   },

@@ -9,7 +9,7 @@ async function runTest() {
   // Scenario 1: Empty Bible -> Should ask for Rules
   console.log('\n--- TEST 1: Empty Bible ---')
   const state1: WritersRoomState = {
-    messages: [new HumanMessage('Let\'s build a new world')],
+    messages: [new HumanMessage("Let's build a new world")],
     currentPhase: 'premise',
     seriesBible: {},
     // minimal other fields
@@ -32,7 +32,7 @@ async function runTest() {
   if (msg1.content.includes('WORLD GENESIS: PHASE 1')) {
     console.log('✅ Passed: Asked for Rules')
   } else {
-    console.error('❌ Failed: Didn\'t ask for Rules')
+    console.error("❌ Failed: Didn't ask for Rules")
   }
 
   // Scenario 2: Rules Set -> Should ask for Factions
@@ -49,7 +49,7 @@ async function runTest() {
   if (msg2.content.includes('WORLD GENESIS: PHASE 2')) {
     console.log('✅ Passed: Asked for Factions')
   } else {
-    console.error('❌ Failed: Didn\'t ask for Factions')
+    console.error("❌ Failed: Didn't ask for Factions")
   }
 
   // Scenario 3: Factions Set, No Sequences -> Should Consult Architect or Ask for Spark
@@ -77,7 +77,7 @@ async function runTest() {
   if (msg3.content.includes('WORLD GENESIS: PHASE 3')) {
     console.log('✅ Passed: Asked for Inciting Incident')
   } else {
-    console.error('❌ Failed: Didn\'t ask for Inciting Incident')
+    console.error("❌ Failed: Didn't ask for Inciting Incident")
   }
 }
 

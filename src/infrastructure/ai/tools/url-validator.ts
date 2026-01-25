@@ -53,7 +53,7 @@ const PLATFORM_PATTERNS: Record<string, RegExp> = {
   spotify: /spotify\.com\/(track|album|playlist|artist)\/([a-zA-Z0-9]+)/,
   imdb: /imdb\.com\/title\/(tt\d+)/,
   wikipedia: /(?:en\.)?wikipedia\.org\/wiki\/(.+)/,
-  github: /github\.com\/([^\/]+\/[^\/]+)/,
+  github: /github\.com\/([^/]+\/[^/]+)/,
 }
 
 /**
@@ -257,7 +257,7 @@ export async function validateURLs(urls: string[]): Promise<URLValidationResult[
  * Extract all URLs from text
  */
 export function extractURLsFromText(text: string): string[] {
-  const urlPattern = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/g
+  const urlPattern = /https?:\/\/[^\s<>"{}|\\^`[\]]+/g
   return text.match(urlPattern) || []
 }
 

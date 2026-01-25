@@ -194,4 +194,3 @@ export const ContextBar: React.FC<ContextBarProps> = ({
   )
 }
 
-export default ContextChips

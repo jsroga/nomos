@@ -102,9 +102,6 @@ export enum ActionStatus {
 // ============================================
 
 export enum MergeMode {
-  REPLACE = 'replace',
-  MERGE = 'merge',
-  SMART = 'smart',
 }
 
 // ============================================

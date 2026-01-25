@@ -100,7 +100,7 @@ const DESIGN_PATTERNS: DesignPattern[] = [
       { term: 'unlock', weight: 3 },
       { term: 'progression', weight: 3 },
     ],
-    antiPatterns: ['Loops don\'t connect', 'Meta-loop invalidates core loop', 'No reason to return'],
+    antiPatterns: ["Loops don't connect", 'Meta-loop invalidates core loop', 'No reason to return'],
     examples: [
       {
         game: 'Hades',
@@ -183,7 +183,7 @@ const DESIGN_PATTERNS: DesignPattern[] = [
       { term: 'run', weight: 3 },
       { term: 'attempt', weight: 2 },
     ],
-    antiPatterns: ['Nothing carries over', 'Unlocks don\'t matter', 'Grinding required'],
+    antiPatterns: ['Nothing carries over', "Unlocks don't matter", 'Grinding required'],
     examples: [
       {
         game: 'Hades',
@@ -226,7 +226,7 @@ const DESIGN_PATTERNS: DesignPattern[] = [
       { term: 'stack', weight: 3 },
       { term: 'interact', weight: 2 },
     ],
-    antiPatterns: ['Items don\'t combine', 'Linear scaling only', 'One optimal build'],
+    antiPatterns: ["Items don't combine", 'Linear scaling only', 'One optimal build'],
     examples: [
       {
         game: 'Balatro',
@@ -353,7 +353,7 @@ const DESIGN_PATTERNS: DesignPattern[] = [
       { term: 'dodge', weight: 3 },
       { term: 'reflex', weight: 3 },
     ],
-    antiPatterns: ['Skill doesn\'t matter', 'RNG dominates outcomes', 'Low ceiling'],
+    antiPatterns: ["Skill doesn't matter", 'RNG dominates outcomes', 'Low ceiling'],
     examples: [
       {
         game: 'Celeste',

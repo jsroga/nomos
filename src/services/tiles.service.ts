@@ -89,14 +89,10 @@ export class TilesService {
         styleReferenceUrls: validated.styleReferenceUrls,
       })
 
-      // Get public access token for realtime updates
-      const publicToken = await runs.createPublicAccessToken(handle.id)
-
       return {
         runId: handle.id,
         status: 'triggered',
         message: `Tile generation started at (${validated.x}, ${validated.y}). Use get_run_status to track progress.`,
-        publicAccessToken: publicToken,
       }
     } catch (error) {
       console.error('[TilesService] Error triggering tile generation:', error)
@@ -118,13 +114,10 @@ export class TilesService {
         upscaleProvider: validated.upscaleProvider,
       })
 
-      const publicToken = await runs.createPublicAccessToken(handle.id)
-
       return {
         runId: handle.id,
         status: 'triggered',
         message: 'Tile upscale started. Use get_run_status to track progress.',
-        publicAccessToken: publicToken,
       }
     } catch (error) {
       console.error('[TilesService] Error triggering tile upscale:', error)
@@ -206,13 +199,10 @@ export class ThreeDService {
         prompt: validated.prompt,
       })
 
-      const publicToken = await runs.createPublicAccessToken(handle.id)
-
       return {
         runId: handle.id,
         status: 'triggered',
         message: '3D model generation started. Use get_run_status to track progress.',
-        publicAccessToken: publicToken,
       }
     } catch (error) {
       console.error('[ThreeDService] Error triggering 3D model generation:', error)
@@ -236,13 +226,10 @@ export class ThreeDService {
         targetPolycount: validated.targetPolycount,
       })
 
-      const publicToken = await runs.createPublicAccessToken(handle.id)
-
       return {
         runId: handle.id,
         status: 'triggered',
         message: '3D model remesh started. Use get_run_status to track progress.',
-        publicAccessToken: publicToken,
       }
     } catch (error) {
       console.error('[ThreeDService] Error triggering 3D model remesh:', error)
@@ -282,13 +269,10 @@ export class PortraitService {
         style: validated.style,
       })
 
-      const publicToken = await runs.createPublicAccessToken(handle.id)
-
       return {
         runId: handle.id,
         status: 'triggered',
         message: 'Portrait generation started. Use get_run_status to track progress.',
-        publicAccessToken: publicToken,
       }
     } catch (error) {
       console.error('[PortraitService] Error triggering portrait generation:', error)

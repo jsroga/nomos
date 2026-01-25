@@ -295,7 +295,7 @@ const SCORING_DIMENSIONS: ScoringDimension[] = [
 const REFERENCE_SCORES = {
   'Disco Elysium': { score: 95, notes: 'Gold standard for narrative RPG' },
   'Planescape Torment': { score: 88, notes: 'Classic narrative depth' },
-  'Baldur\'s Gate 3': { score: 82, notes: 'Modern AAA narrative RPG' },
+  "Baldur's Gate 3": { score: 82, notes: 'Modern AAA narrative RPG' },
   Hades: { score: 65, notes: 'Action with narrative integration' },
   'Mass Effect': { score: 72, notes: 'Choice-driven sci-fi RPG' },
   'Vampire Survivors': { score: 8, notes: 'Minimal narrative elements' },
@@ -407,7 +407,7 @@ Returns 0-100 score with detailed breakdown. High scores indicate strong narrati
       }
 
       if (dialogueScore >= 10 && !allText.includes('combat')) {
-        insights.push('✨ Dialogue-primary design follows Disco Elysium\'s innovative approach')
+        insights.push("✨ Dialogue-primary design follows Disco Elysium's innovative approach")
       }
 
       if (finalScore >= 70) {
@@ -449,7 +449,7 @@ Returns 0-100 score with detailed breakdown. High scores indicate strong narrati
           'Light narrative elements. Design prioritizes gameplay over story - valid approach for action/arcade games.'
       } else {
         interpretation =
-          'Minimal narrative focus. This is appropriate for mechanics-driven games but won\'t appeal to narrative RPG fans.'
+          "Minimal narrative focus. This is appropriate for mechanics-driven games but won't appeal to narrative RPG fans."
       }
 
       return JSON.stringify({

@@ -27,7 +27,6 @@ export enum LocalStorageKeys {
   // Storyteller / Writers Room
   PREFERRED_MODEL_PROVIDER = 'preferredModelProvider',
   ANTHROPIC_API_KEY = 'anthropicApiKey',
-  GEMINI_API_KEY = 'geminiApiKey',
 
   // UI Layout
   SIDEBAR_WIDTH = 'sidebar-width',

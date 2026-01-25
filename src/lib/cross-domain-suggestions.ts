@@ -78,7 +78,7 @@ export class SuggestionEngine {
       suggestions.push({
         id: `char-to-home-${entity.id}`,
         title: `Build ${entity.name}'s home`,
-        description: 'Design the character\'s living space in 3D',
+        description: "Design the character's living space in 3D",
         sourceDomain: 'storyteller',
         targetDomain: 'interior-designer',
         targetRoute: `/app/${projectId}/interior-design`,

@@ -159,7 +159,7 @@ const GENRE_MOMENTUM_DATA: GenreMomentum[] = [
       steam: {
         playerGrowth: 15,
         newReleases: 12,
-        topPerformers: ['Baldur\'s Gate 3', 'Disco Elysium', 'Pathfinder'],
+        topPerformers: ["Baldur's Gate 3", 'Disco Elysium', 'Pathfinder'],
       },
       reddit: {
         engagement: 120000,

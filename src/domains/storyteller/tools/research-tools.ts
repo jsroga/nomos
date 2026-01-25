@@ -377,7 +377,7 @@ function generateSimulatedResearchResults(
         title: 'Greek Mythology: Themes and Symbols',
         url: 'https://britannica.com/greek-mythology',
         snippet:
-          'Greek myths explore hubris (excessive pride), fate vs free will, and transformation. Gods embody human flaws: Zeus\'s infidelity, Hera\'s jealousy, Athena\'s pride. Heroes often have tragic flaws leading to their downfall.',
+          "Greek myths explore hubris (excessive pride), fate vs free will, and transformation. Gods embody human flaws: Zeus's infidelity, Hera's jealousy, Athena's pride. Heroes often have tragic flaws leading to their downfall.",
         relevance: 0.94,
         source: 'britannica',
       })
@@ -428,7 +428,7 @@ function generateSimulatedResearchResults(
       queryLower.includes('mars')
     ) {
       results.push({
-        title: 'Space Travel: What It\'s Really Like',
+        title: "Space Travel: What It's Really Like",
         url: 'https://nasa.gov/space-travel',
         snippet:
           'In microgravity, fluids shift to the head causing "puffy face." Muscles atrophy without exercise. Communication delays to Mars: 4-24 minutes one-way. Radiation exposure is a major concern for long-duration missions.',
@@ -456,7 +456,7 @@ function generateSimulatedResearchResults(
         title: 'Samurai Culture: Honor, Code, and Reality',
         url: 'https://britannica.com/samurai-culture',
         snippet:
-          'Bushido (warrior\'s way) emphasized loyalty, honor, and martial arts. However, it was partially romanticized later. Samurai were also bureaucrats and administrators. Ritual suicide (seppuku) was rare and highly formalized.',
+          "Bushido (warrior's way) emphasized loyalty, honor, and martial arts. However, it was partially romanticized later. Samurai were also bureaucrats and administrators. Ritual suicide (seppuku) was rare and highly formalized.",
         relevance: 0.95,
         source: 'britannica',
       })

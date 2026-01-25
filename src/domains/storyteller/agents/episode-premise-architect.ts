@@ -130,7 +130,7 @@ export const episodePremiseArchitectAgent = async (
 
           parsed = {
             message: extractedPremise
-              ? 'I\'ve updated the episode premise based on your request.'
+              ? "I've updated the episode premise based on your request."
               : content, // Keep content if extraction failed so user sees what happened
             actions: [],
             confidence: extractedPremise ? 0.6 : 0.3,

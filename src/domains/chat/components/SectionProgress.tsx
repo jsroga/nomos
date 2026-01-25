@@ -308,4 +308,3 @@ export function useSectionProgress(initialSections: ProgressSection[]) {
   }
 }
 
-export default SectionProgress

@@ -206,7 +206,7 @@ const HOT_POSTS_BY_TOPIC: Record<string, RedditPost[]> = {
         'Companion relationships in BG3 are unmatched',
         'Can we please get more games that let you fail interestingly?',
       ],
-      mentionedGames: ['Baldur\'s Gate 3', 'Disco Elysium', 'Divinity: Original Sin 2'],
+      mentionedGames: ["Baldur's Gate 3", 'Disco Elysium', 'Divinity: Original Sin 2'],
       age: '1 week',
     },
     {

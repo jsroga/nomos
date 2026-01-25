@@ -113,4 +113,3 @@ export const WithHoverActions: React.FC<WithHoverActionsProps> = ({
   )
 }
 
-export default HoverActions

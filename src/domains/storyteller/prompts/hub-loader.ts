@@ -30,104 +30,6 @@ export interface LoadedPrompt {
 export type AgentPrompts = Record<keyof typeof PROMPT_IDS, LoadedPrompt>
 
 // ============================================
-// LOCAL FALLBACK PROMPTS
-// ============================================
-
-// These are minimal fallbacks - actual prompts should be in LangSmith Hub
-const LOCAL_PROMPTS: Record<keyof typeof PROMPT_IDS, string> = {
-  supervisor: `You are the Showrunner, coordinating the creative team.
-Your job is to route requests to the appropriate specialist agent.
-Analyze the request and delegate to:
-- PremiseArchitect for world-building and character creation
-- PlotArchitect for story structure and episode arcs
-- Writer for dialogue and scene writing
-- CharacterPsychology for character motivation analysis
-- DevilsAdvocate for critical review
-- ConsequenceTracker for continuity checks
-
-User request: {input}`,
-
-  plotArchitect: `You are the Plot Architect, responsible for story structure.
-Analyze story elements and suggest compelling plot developments.
-Focus on causality, stakes, and character agency.
-
-Context: {context}
-Request: {input}`,
-
-  writer: `You are the Writer, crafting authentic dialogue and scenes.
-Write natural, subtext-laden dialogue. Avoid exposition dumps.
-Show emotions through behavior, not statements.
-
-Context: {context}
-Request: {input}`,
-
-  premiseArchitect: `You are the Premise Architect, building coherent worlds.
-Establish rules, settings, and characters that work together.
-Ensure internal consistency across all elements.
-
-Context: {context}
-Request: {input}`,
-
-  characterPsychology: `You are the Character Psychology expert.
-Analyze character motivations, arcs, and voice consistency.
-Ensure characters act from their established nature.
-
-Context: {context}
-Request: {input}`,
-
-  devilsAdvocate: `You are the Devil's Advocate, the critical reviewer.
-Challenge content for logic, character consistency, and quality.
-Identify plot holes and suggest specific fixes.
-
-Context: {context}
-Request: {input}`,
-
-  scriptEditor: `You are the Script Editor, polishing final scripts.
-Tighten dialogue, ensure proper formatting, improve flow.
-Maintain the writer's voice while enhancing quality.
-
-Context: {context}
-Request: {input}`,
-
-  consequenceTracker: `You are the Consequence Tracker, maintaining continuity.
-Track events, decisions, and their ripple effects.
-Flag inconsistencies with established story facts.
-
-Context: {context}
-Request: {input}`,
-
-  episodePremiseArchitect: `You are the Episode Premise Architect.
-Generate high-stakes, transformative episode premises.
-Focus on conflict, change, and thematic depth.
-
-Context: {context}
-Request: {input}`,
-
-  planner: `You are the Planner, breaking down complex requests.
-Decompose user requests into atomic, actionable steps.
-Sequence tasks logically based on dependencies.
-
-User request: {input}`,
-
-  // Section fallbacks
-  sectionWorldRules: 'Generate world rules. Context: {input}',
-  sectionWorldDescription: 'Generate world description. Context: {input}',
-  sectionFactions: 'Generate factions. Context: {input}',
-  sectionInspirations: 'Generate inspirations. Context: {input}',
-  sectionPlotTwists: 'Generate plot twists. Context: {input}',
-  sectionEpisodeRoadmap: 'Generate episode roadmap. Context: {input}',
-  sectionKeyCharacters: 'Generate key characters. Context: {input}',
-  sectionSoundtracks: 'Generate soundtracks. Context: {input}',
-
-  // Additional agents
-  magicAgent:
-    'You are the Magic Agent, generating creative ideas. Context: {context} Request: {input}',
-  worldSimulator:
-    'You are the World Simulator, simulating world events. Context: {context} Request: {input}',
-  visualMoment: 'You are the Visual Moment specialist. Context: {context} Request: {input}',
-}
-
-// ============================================
 // HUB LOADER
 // ============================================
 
@@ -141,26 +43,11 @@ export async function loadPromptFromHub(
   const config = getPromptConfig()
   const env = environment || config.environment
 
-  // If Hub is disabled, use local
+  // Enforce Hub usage
   if (!config.useHub) {
-    const localPrompt = LOCAL_PROMPTS[promptId]
-
-    if (!localPrompt) {
-      console.warn(`[Prompt Hub] Local prompt "${promptId}" not found, using generic fallback`)
-      return {
-        prompt: ChatPromptTemplate.fromTemplate(
-          'You are a helpful AI assistant. Context: {context} Request: {input}'
-        ),
-        source: 'local',
-        environment: env,
-      }
-    }
-
-    return {
-      prompt: ChatPromptTemplate.fromTemplate(localPrompt),
-      source: 'local',
-      environment: env,
-    }
+    throw new Error(
+      `[Prompt Hub] Hub usage is disabled but strict mode is on. Enable STORYTELLER_USE_PROMPT_HUB.`
+    )
   }
 
   try {
@@ -178,31 +65,26 @@ export async function loadPromptFromHub(
       environment: env,
     }
   } catch (error) {
-    // Fall back to local if Hub fails and fallback is enabled
-    if (config.fallbackToLocal) {
-      console.warn(`[Prompt Hub] Failed to load ${promptId} from Hub, using local fallback:`, error)
+    console.error(`[Prompt Hub] Failed to load ${promptId} from Hub:`, error)
 
-      const localPrompt = LOCAL_PROMPTS[promptId]
-
-      if (!localPrompt) {
-        console.warn(`[Prompt Hub] Local prompt "${promptId}" not found, using generic fallback`)
-        return {
-          prompt: ChatPromptTemplate.fromTemplate(
-            'You are a helpful AI assistant. Context: {context} Request: {input}'
-          ),
-          source: 'local',
-          environment: env,
-        }
-      }
-
-      return {
-        prompt: ChatPromptTemplate.fromTemplate(localPrompt),
-        source: 'local',
-        environment: env,
-      }
+    // In strict mode (default), we propagate the error
+    if (!config.fallbackToLocal) {
+      throw new Error(
+        `[Prompt Hub] Failed to load prompt "${promptId}" from LangSmith Hub. 
+            Check your internet connection and LANGCHAIN_API_KEY. 
+            Error: ${error instanceof Error ? error.message : String(error)}`
+      )
     }
 
-    throw error
+    // Minimal fail-safe only if strictly requested (runtime override)
+    console.warn(`[Prompt Hub] Using generic fail-safe for "${promptId}"`)
+    return {
+      prompt: ChatPromptTemplate.fromTemplate(
+        'System is currently offline or Hub is unreachable. Please check configuration.'
+      ),
+      source: 'local',
+      environment: env,
+    }
   }
 }
 
@@ -226,32 +108,10 @@ export async function loadPromptVersion(
       environment: config.environment,
     }
   } catch (error) {
-    if (config.fallbackToLocal) {
-      console.warn(`[Prompt Hub] Failed to load ${promptId}@${version}, using local:`, error)
-
-      const localPrompt = LOCAL_PROMPTS[promptId]
-
-      if (!localPrompt) {
-        console.warn(`[Prompt Hub] Local prompt "${promptId}" not found, using generic fallback`)
-        return {
-          prompt: ChatPromptTemplate.fromTemplate(
-            'You are a helpful AI assistant. Context: {context} Request: {input}'
-          ),
-          source: 'local',
-          version,
-          environment: config.environment,
-        }
-      }
-
-      return {
-        prompt: ChatPromptTemplate.fromTemplate(localPrompt),
-        source: 'local',
-        version,
-        environment: config.environment,
-      }
-    }
-
-    throw error
+    throw new Error(
+      `[Prompt Hub] Failed to load version ${version} of "${promptId}". 
+        Error: ${error instanceof Error ? error.message : String(error)}`
+    )
   }
 }
 

@@ -213,8 +213,8 @@ IMPORTANT: Reference the citation markers in your response to show your sources.
         return (
           `No information found for "${query}" in the knowledge base.\n\n` +
           'This could mean:\n' +
-          '1. This information hasn\'t been established yet\n' +
-          '2. The search terms don\'t match existing content\n' +
+          "1. This information hasn't been established yet\n" +
+          "2. The search terms don't match existing content\n" +
           '3. You may need to create this information\n\n' +
           'If you need to reference this in your response, clearly state it as a NEW proposal.'
         )
@@ -286,7 +286,7 @@ Use this to record:
 export const createCharacterHistoryTool = (state: WritersRoomState) => {
   return new DynamicStructuredTool({
     name: 'search_character_history',
-    description: 'Search for a specific character\'s development history and arc progression.',
+    description: "Search for a specific character's development history and arc progression.",
     schema: z.object({
       characterName: z.string().describe('Name of the character to search'),
     }),

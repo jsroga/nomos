@@ -28,7 +28,7 @@ export const BibleInspirations: React.FC<BibleInspirationsProps> = () => {
           <button
             onClick={() =>
               onSendMessage(
-                'Generate diverse inspirations for this world - include relevant books, movies, and games. For each, provide the exact title and 1-2 sentences describing what it is and why it\'s thematically relevant.'
+                "Generate diverse inspirations for this world - include relevant books, movies, and games. For each, provide the exact title and 1-2 sentences describing what it is and why it's thematically relevant."
               )
             }
             className="p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105"

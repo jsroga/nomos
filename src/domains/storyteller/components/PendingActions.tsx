@@ -192,4 +192,3 @@ const ActionItem: React.FC<ActionItemProps> = ({ entry, onUndo }) => {
   )
 }
 
-export default PendingActions
