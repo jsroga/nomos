@@ -97,6 +97,122 @@ When you run an A/B test, you'll see results like:
 
 ---
 
+## Real Example: Good vs Bad Prompt Design
+
+This is **actual output** from running the A/B test. The prompt was:
+
+> "Write a scene where a character discovers their mentor has been lying to them for years."
+
+---
+
+### BAD Example: Generic AI Output (Score: 21/100)
+
+**Prompt used (baseline):**
+\`\`\`
+You are a prestige TV writer working at HBO/AMC standards.
+Write your response directly. Make it memorable.
+\`\`\`
+
+**Output:**
+\`\`\`
+INT. DIMLY LIT STUDY - NIGHT
+
+The room is a cavern of leather-bound volumes, their spines cracked,
+whispering stories long forgot. A single desk lamp casts a pool of light...
+
+CLARA
+(softly)
+Jonathan?
+
+JONATHAN
+(not looking up)
+Clara. It's late.
+
+CLARA
+I found this.
+
+She steps forward, crossing the threshold, and places the letter
+on the desk. Jonathan glances at it, the color draining from his face.
+\`\`\`
+
+**Why it scored low (Magic Score: 21/100):**
+
+- ❌ Generic setting ("dimly lit study" - cliché)
+- ❌ "Color draining from his face" - AI slop phrase
+- ❌ No character contradiction visible
+- ❌ Dialogue is functional but lacks subtext
+- ❌ "Whispering stories" - purple prose cliché
+
+---
+
+### GOOD Example: Specific, Character-Driven (Score: 58/100)
+
+**Prompt used (extended thinking):**
+\`\`\`
+You are a prestige TV writer working at HBO/AMC standards.
+
+Before writing, answer in <thinking> tags (2-3 sentences max):
+- What do the characters WANT that conflicts?
+- What ONE specific detail will make this feel real?
+
+Then write your response in <output> tags.
+\`\`\`
+
+**Thinking process:**
+\`\`\`
+The protagonist, Alex, wants to believe in the integrity of their mentor,
+Dr. Harper, whom they hold in high esteem. Dr. Harper desires to maintain
+their reputation, even if it means perpetuating a lie about a scientific
+discovery. A specific detail: a yellowed, handwritten letter from a deceased
+colleague reveals the truth.
+\`\`\`
+
+**Output:**
+\`\`\`
+INT. DR. HARPER'S OFFICE - NIGHT
+
+The soft hum of the ancient air conditioning unit resonates in the
+dimly lit room. ALEX, late 20s, stands motionless in front of
+DR. HARPER's weathered oak desk.
+
+On the desk lies an open drawer with a stack of papers. Among them,
+a yellowed letter bears the handwriting of Dr. Harper's late colleague,
+Dr. Miriam Collins.
+
+Alex's fingers tremble as they unfold the letter. The room empties of
+air as Alex reads the damning confession: Miriam, not Harper, had
+developed the breakthrough that revolutionized modern medicine.
+
+ALEX
+(voice cracking)
+Why didn't you ever tell me?
+
+Dr. Harper remains silent, a shadow in the dim light.
+\`\`\`
+
+**Why it scored higher (Magic Score: 58/100):**
+
+- ✅ Specific detail (yellowed letter, Dr. Miriam Collins)
+- ✅ Clear character wants in conflict
+- ✅ Concrete stakes (scientific discovery theft)
+- ✅ "Room empties of air" - more original than "color drained"
+- ⚠️ Still has some clichés ("voice cracking")
+
+---
+
+### Key Insight: What Made the Difference
+
+| Aspect | Bad Example | Good Example |
+|--------|-------------|--------------|
+| **Planning** | None - jumped straight to writing | Identified conflicts first |
+| **Specificity** | "A letter of truth" (vague) | "Dr. Miriam Collins' letter about medical breakthrough" |
+| **Character Wants** | Not defined | Alex: trust mentor. Harper: protect reputation |
+| **Detail Selection** | Generic study description | Specific: air conditioning hum, weathered oak desk |
+
+The extended thinking prompt forces the writer to **think before writing**, which results in more grounded, specific output.
+
+---
+
 ## Step 3: Custom Prompts & Tests
 
 ### 3.1 Modify Test Prompts
