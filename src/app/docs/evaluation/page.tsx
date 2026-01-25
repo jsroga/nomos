@@ -1,6 +1,7 @@
 'use client'
 
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { motion } from 'framer-motion'
 
 const EVALUATION_GUIDE = `
@@ -213,6 +214,7 @@ export default function EvaluationPage() {
     <div className="prose prose-invert prose-primary max-w-none">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
         <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
           components={{
             h1: ({ children }) => (
               <h1 className="text-4xl font-black uppercase tracking-tighter font-syne mb-8 text-white">
