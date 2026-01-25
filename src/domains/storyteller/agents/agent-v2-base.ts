@@ -3,6 +3,11 @@
  *
  * Shared utilities for all V2 agents with handoffs & skills support.
  * Reduces code duplication and ensures consistent behavior.
+ *
+ * Enhanced with Extended Thinking patterns (Cursor/Claude Code style):
+ * - Chain of thought reasoning before output
+ * - Self-critique against GRRM/Gilligan standards
+ * - Structured analysis with XML tags
  */
 
 import { WritersRoomState, Task, CompletedTask } from '../graph/state'
@@ -12,9 +17,19 @@ import { getSafeMessageHistory } from '../utils/message-utils'
 import { buildAgentContext } from '../utils/context-builder'
 import { handoffTool } from '../tools/handoff-tool'
 import { completeTaskTool } from '../tools/complete-task-tool'
+import { selfCritiqueTool } from '../tools/self-critique-tool'
 import { getSkillLoader, getSkillsForAgent, getRecommendedSkills } from '../skills'
 import { loadPromptCached } from '../prompts/hub-loader'
 import { buildCrossDomainContext } from '@/lib/agent-context/cross-domain-context'
+import {
+  getThinkingFramework,
+  getQualityStandards,
+  isExtendedThinkingEnabled,
+} from '../prompts/extended-thinking'
+import {
+  parseThinkingContent,
+  createProgress,
+} from '../utils/extended-thinking-utils'
 
 export interface AgentV2Config {
   agentName: string
@@ -135,8 +150,21 @@ export async function executeAgentV2(
     }
   }
 
+  // 6c. Get extended thinking framework if enabled
+  const thinkingFramework = getThinkingFramework(agentKey)
+  const qualityStandards = getQualityStandards()
+  const extendedThinkingEnabled = isExtendedThinkingEnabled()
+
+  if (extendedThinkingEnabled) {
+    console.log(`[${agentName} V2] Extended thinking ENABLED`)
+  }
+
   const combinedSystem = [
     systemTemplate,
+    // Extended Thinking Framework (if enabled)
+    thinkingFramework ? '\n\n' + thinkingFramework : '',
+    // Quality Standards (if enabled)
+    qualityStandards ? '\n\n' + qualityStandards : '',
     '\n\n## Your Current Task',
     currentTask.description,
     skillContent ? '\n\n## Specialist Knowledge\n' + skillContent : '',
@@ -148,11 +176,23 @@ export async function executeAgentV2(
     '\n\n## Available Tools',
     '- handoff_to_specialist: Transfer control to another specialist if their expertise is needed',
     '- complete_task: Mark your task as complete when done',
+    extendedThinkingEnabled
+      ? '- self_critique: Evaluate your draft against GRRM/Gilligan quality standards before finalizing'
+      : '',
     '\n\n## Instructions',
+    extendedThinkingEnabled
+      ? 'IMPORTANT: Use <thinking> tags to show your reasoning BEFORE writing content.'
+      : '',
     'Complete the assigned task. When finished, call complete_task with a summary of what you accomplished.',
-    'If you need another specialist\'s help, use handoff_to_specialist.',
+    "If you need another specialist's help, use handoff_to_specialist.",
+    extendedThinkingEnabled
+      ? 'For creative output, consider using self_critique to validate quality before finalizing.'
+      : '',
     crossDomainContextXml
       ? '\nNOTE: You can reference cross-domain entities using @mentions (e.g., @CharacterName from Loop Creator).'
+      : '',
+    extendedThinkingEnabled
+      ? '\nOUTPUT FORMAT: Wrap your final response in <output> tags (after your <thinking> analysis).'
       : '',
   ].join('\n')
 
@@ -161,7 +201,10 @@ export async function executeAgentV2(
   )
 
   // 7. Bind tools and invoke
-  const model = getModel(agentKey).bindTools([handoffTool, completeTaskTool])
+  const tools = extendedThinkingEnabled
+    ? [handoffTool, completeTaskTool, selfCritiqueTool]
+    : [handoffTool, completeTaskTool]
+  const model = getModel(agentKey).bindTools(tools)
 
   const messages = [new SystemMessage(combinedSystem), ...conversationMessages]
 
@@ -184,9 +227,24 @@ export async function executeAgentV2(
     }
 
     // 8. Direct response (no tool calls)
+    // Parse thinking content if extended thinking is enabled
+    const rawContent = typeof response.content === 'string' ? response.content : String(response.content)
+    const parsed = extendedThinkingEnabled ? parseThinkingContent(rawContent) : { output: rawContent, thinking: null, hasThinking: false }
+
+    // Log thinking content for activity view (but don't include in user-facing message)
+    if (parsed.thinking) {
+      console.log(`[${agentName} V2] Thinking:\n${parsed.thinking.slice(0, 500)}...`)
+    }
+
     const namedMessage = new AIMessage({
-      content: response.content,
+      content: parsed.output, // Only the output portion goes to user
       name: agentName,
+      additional_kwargs: {
+        // Store thinking for activity view toggle
+        thinking: parsed.thinking,
+        hasThinking: parsed.hasThinking,
+        extendedThinkingEnabled,
+      },
     })
 
     return {

@@ -171,11 +171,11 @@ function validateCitationHeuristic(citation: Citation, fullText: string): Citati
 const CITATION_JUDGE_PROMPT = `You are verifying if citations in generated text are valid and accurate.
 
 ## Text with Citations
-{text}
+{{text}}
 
 ## Extracted Citation
-Source: {source}
-Context: {context}
+Source: {{source}}
+Context: {{context}}
 
 ## Verification Tasks
 
@@ -214,9 +214,10 @@ async function validateCitationLLM(
       temperature: 0,
     })
 
-    const prompt = CITATION_JUDGE_PROMPT.replace('{text}', fullText.slice(0, 3000))
-      .replace('{source}', citation.source)
-      .replace('{context}', citation.claim)
+    const prompt = CITATION_JUDGE_PROMPT
+      .replace('{{text}}', fullText.slice(0, 3000))
+      .replace('{{source}}', citation.source)
+      .replace('{{context}}', citation.claim)
 
     const response = await model.invoke(prompt)
     const responseText =

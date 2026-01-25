@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { AgentAction, AgentQuestion } from '../actions/types'
 import { ActionCommitted } from './ActionToast'
-import QuestionCard from './QuestionCard'
+import { QuestionCard } from './QuestionCard'
 import {
   Bot,
   User,
@@ -28,6 +28,15 @@ export interface Message {
   questions?: AgentQuestion[]
   thinking?: string
   confidence?: number
+  // Extended thinking metadata (from agent-v2-base)
+  additional_kwargs?: {
+    thinking?: string | null
+    hasThinking?: boolean
+    extendedThinkingEnabled?: boolean
+    taskComplete?: boolean
+    nextSteps?: string
+    artifacts?: string[]
+  }
 }
 
 interface AgentLogProps {
@@ -46,7 +55,7 @@ const AGENT_DISPLAY_NAMES: Record<string, string> = {
   PlotArchitect: 'Plot Architect',
   CharacterPsychology: 'Character Expert',
   ConsequenceTracker: 'Story Tracker',
-  DevilsAdvocate: 'Devil\'s Advocate',
+  DevilsAdvocate: "Devil's Advocate",
   VisualMoment: 'Visual Designer',
   Writer: 'Writer',
   User: 'You',
@@ -295,15 +304,30 @@ export const AgentLog: React.FC<AgentLogProps> = ({
               )}
             </div>
 
-            {/* Thinking (if enabled and Activity is ON) */}
-            {showThinking && msg.thinking && isActivityPanelOpen && (
-              <div className="mb-3 p-2.5 rounded border border-dashed border-border/40 text-[11px] text-muted-foreground italic leading-relaxed bg-muted/5">
-                <span className="font-semibold not-italic text-[10px] uppercase tracking-wider opacity-70">
-                  Thinking:
-                </span>{' '}
-                {msg.thinking}
-              </div>
-            )}
+            {/* Thinking (if enabled and Activity is ON) - Enhanced for extended thinking */}
+            {(() => {
+              // Get thinking from either direct field or additional_kwargs (extended thinking)
+              const thinkingContent = msg.thinking || msg.additional_kwargs?.thinking
+              const hasExtendedThinking = msg.additional_kwargs?.hasThinking || msg.additional_kwargs?.extendedThinkingEnabled
+
+              if (!showThinking || !isActivityPanelOpen || !thinkingContent) return null
+
+              return (
+                <div className="mb-3 p-2.5 rounded border border-dashed border-border/40 text-[11px] text-muted-foreground leading-relaxed bg-muted/5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Brain className="w-3 h-3 text-purple-400/70" />
+                    <span className="font-semibold text-[10px] uppercase tracking-wider text-purple-400/70">
+                      {hasExtendedThinking ? 'Extended Thinking (GRRM/Gilligan Analysis)' : 'Thinking'}
+                    </span>
+                  </div>
+                  <div className="text-muted-foreground/80 italic whitespace-pre-wrap">
+                    {typeof thinkingContent === 'string' && thinkingContent.length > 800
+                      ? thinkingContent.slice(0, 800) + '...'
+                      : thinkingContent}
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* Message Content - Minimalist (No background box) */}
             <div
@@ -510,4 +534,3 @@ const MessageContent: React.FC<{ content: string }> = ({ content }) => {
   )
 }
 
-export default AgentLog
