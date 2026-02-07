@@ -1,4 +1,4 @@
-import { StoryPlan } from '../schemas/agent-schemas'
+import { StoryPlan, StorySequence } from '../schemas/agent-schemas'
 import { EpisodePremisePanel } from './EpisodePremisePanel'
 import { Button } from '@/components/ui/button'
 import { CheckCircle } from 'lucide-react'
@@ -54,9 +54,9 @@ export const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
   const rawPremise = (storyPlan as any)?.premise || storyPlan
   const episodePremise = rawPremise
     ? {
-        ...rawPremise,
-        title: (rawPremise as any).title || storyPlan?.title,
-      }
+      ...rawPremise,
+      title: (rawPremise as any).title || storyPlan?.title,
+    }
     : null
 
   // Check if plan is complete (has all required sections)
@@ -136,3 +136,4 @@ export const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
     </div>
   )
 }
+export default StoryPlanBoard

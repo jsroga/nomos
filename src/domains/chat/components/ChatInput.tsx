@@ -44,7 +44,7 @@ import {
   CATEGORY_META,
   TYPE_ICONS,
 } from '../mentions/types'
-import { buildMessageWithContext, SelectedMention } from '../mentions/context-builder'
+import { buildMessageWithContext } from '../mentions/context-builder'
 import { MentionChipBar } from './MentionChip'
 
 // Icon component map
@@ -109,14 +109,39 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [selectedMentions, setSelectedMentions] = useState<MentionItem[]>([])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Get all mention items from providers + legacy
+  // Async fetch of mentions
+  const [providerItems, setProviderItems] = useState<MentionItem[]>([])
+
+  useEffect(() => {
+    if (!projectContext && mentionProviders.length === 0) return
+
+    let isMounted = true
+
+    const fetchItems = async () => {
+      try {
+        const promises = mentionProviders.map(provider =>
+          provider.getItems(mentionFilter, projectContext || { projectId: '' })
+        )
+        const results = await Promise.all(promises)
+        if (isMounted) {
+          setProviderItems(results.flat())
+        }
+      } catch (err) {
+        console.error('Failed to fetch mentions:', err)
+      }
+    }
+
+    // Debounce the fetch if filter changes
+    const timeoutId = setTimeout(fetchItems, 200)
+
+    return () => {
+      isMounted = false
+      clearTimeout(timeoutId)
+    }
+  }, [mentionProviders, projectContext, mentionFilter])
+
+  // Combine fetched items with legacy items
   const allMentionItems = useMemo(() => {
-    if (!projectContext && mentionProviders.length > 0) return legacyMentions
-
-    const providerItems = mentionProviders.flatMap(provider =>
-      provider.getItems(mentionFilter, projectContext || { projectId: '' })
-    )
-
     // Convert legacy mentions to new format
     const convertedLegacy: MentionItem[] = legacyMentions.map(m => ({
       ...m,
@@ -124,7 +149,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }))
 
     return [...providerItems, ...convertedLegacy]
-  }, [mentionProviders, projectContext, mentionFilter, legacyMentions])
+  }, [providerItems, legacyMentions])
 
   // Filter and group mentions
   const filteredMentions = useMemo(() => {

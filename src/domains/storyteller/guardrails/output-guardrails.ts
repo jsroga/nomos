@@ -5,9 +5,8 @@
  * Includes schema validation, semantic validation, and action safety checks.
  */
 
-import { AIMessage } from '@langchain/core/messages'
 import { AgentAction, AgentResponse } from '../actions/types'
-import { WritersRoomState, Phase } from '../graph/state'
+import { WritersRoomState, Phase } from '../types'
 import {
   AgentRole,
   OutputValidationResult,
@@ -166,8 +165,8 @@ export async function validateAgentOutput(
   let shouldBlock = false
 
   // Extract message and actions from result
-  const messages = agentResult.messages || []
-  const lastMessage = messages[messages.length - 1] as AIMessage | undefined
+  const messages = (agentResult as any).messages || []
+  const lastMessage = messages[messages.length - 1] as any | undefined
   const actions: AgentAction[] = (lastMessage as any)?.actions || []
   const confidence: number = (lastMessage as any)?.confidence ?? 0.7
 
@@ -401,8 +400,8 @@ export async function validateAgentOutputWithURLs(
   const baseResult = await validateAgentOutput(agentResult, agentRole, state)
 
   // Extract message content
-  const messages = agentResult.messages || []
-  const lastMessage = messages[messages.length - 1] as AIMessage | undefined
+  const messages = (agentResult as any).messages || []
+  const lastMessage = messages[messages.length - 1] as any | undefined
 
   if (!lastMessage) return baseResult
 
@@ -604,8 +603,8 @@ export function sanitizeAgentOutput(
       .filter(Boolean)
   )
 
-  // If we have messages with actions, filter them
-  const messages = agentResult.messages || []
+  // Extract message and actions from result
+  const messages = (agentResult as any).messages || []
   const sanitizedMessages = messages.map(msg => {
     if ('actions' in (msg as any)) {
       const actions = (msg as any).actions as AgentAction[]

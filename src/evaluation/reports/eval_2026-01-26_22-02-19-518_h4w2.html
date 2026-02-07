@@ -1,0 +1,515 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmark 2.0: Personality Matrix-Noir Detective-Fantasy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #fdfaf6;
+            --text: #1a1a1a;
+            --accent: #c43e1c;
+            --border: #e0d8cc;
+            --card-bg: #ffffff;
+            --font-serif: 'Crimson Pro', serif;
+            --font-sans: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            border-bottom: 2px solid var(--text);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-family: var(--font-serif);
+            font-size: 3rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .meta {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 60px;
+        }
+
+        .score-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 4px 4px 0px var(--border);
+        }
+
+        .score-label {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .score-value {
+            font-family: var(--font-serif);
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .score-bar-bg {
+            height: 4px;
+            background: #eee;
+            margin-top: 10px;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            background: var(--accent);
+        }
+
+        .example-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+            padding: 30px;
+        }
+
+        .example-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .example-id {
+            font-family: var(--font-serif);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .badge.high { background: #e6f4ea; color: #1e7e34; }
+        .badge.low { background: #fce8e8; color: #d93025; }
+        .badge.intent { background: #e8f0fe; color: #1967d2; }
+
+        .content-section {
+            margin-bottom: 30px;
+        }
+
+        h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            border-radius: 4px;
+        }
+
+        .literary-output {
+            font-family: var(--font-serif);
+            font-size: 1.25rem;
+            white-space: pre-wrap;
+            padding: 20px;
+            border-left: 4px solid var(--accent);
+            background: #fffafa;
+        }
+
+        .reason-block {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+        }
+
+        .regressions {
+            background: #fff0f0;
+            border: 1px solid #ffcaca;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+
+        .regression-item {
+            color: #c00;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Storyteller Benchmark 2.0</h1>
+            <div class="meta">
+                Experiment ID: eval_2026-01-26_22-02-19-518_h4w2 | Run on: 1/26/2026, 11:02:19 PM | Duration: 101.3s
+            </div>
+        </header>
+
+        
+            <div class="regressions">
+                <h3>⚠️ Regressions & Warnings</h3>
+                <div class="regression-item">Magic score (24) below threshold (60)</div>
+            </div>
+        
+
+        <div class="dashboard">
+            
+      <div class="score-card">
+        <div class="score-label">ORCHESTRATION</div>
+        <div class="score-value">98.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 98.00000000000001%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">MAGIC SCORE</div>
+        <div class="score-value">24.2%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 24.222222222222225%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">REVERSE INTENT</div>
+        <div class="score-value">48.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 48.00000000000001%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">NARRATIVE COHERENCE</div>
+        <div class="score-value">75.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 75%"></div>
+        </div>
+      </div>
+    
+        </div>
+
+        <div class="results-list">
+            
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#1 - fantasy-01</span>
+        <div class="example-badges">
+          <span class="badge low">Magic: 58</span>
+          
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "Describe the ancient dragon waking from a thousand-year slumber",
+  "phase": "writing"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            The old dragon stirred, its massive body creaking like an ancient ship. Scales the color of tarnished gold shimmered in the dim light as it opened one baleful eye. A deep rumble echoed through the cavernous lair, a sound that spoke of power and predatory hunger. This beast had slumbered for a millennium, dreaming dark dreams. But now it was awake, and the world would tremble at its wrath.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Perfect orchestration adherence.
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> Average creativity. Magic: 58. Issues: "The tension was palpable."
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> Failed to analyze intent: Error: Failed to parse. Text: "```json
+{
+  "inferredIntent": "To create a sense of foreboding and impending danger through the description of a powerful, ancient, and awakening dragon",
+  "detectedSubtext": [
+    "The dragon has been dormant for a very long time, suggesting a long-brewing threat",
+    "The dragon is described in ominous, predatory terms, hinting at its destructive potential",
+    "The language used, such as "baleful eye" and "dark dreams", creates an atmosphere of darkness and menace"
+  ],
+  "fidelityScore": 0.8,
+  "reasoning": "The text contains a number of specific details and sensory descriptions that suggest a well-crafted prompt and a clear creative intent. The description of the dragon's physical attributes, the sounds it makes, and the sense of it awakening from a long slumber all contribute to a vivid and foreboding image. There is a clear focus on evoking a sense of power, danger, and impending conflict, rather than simply describing the dragon in a generic way. The language used, such as "tarnished gold", "baleful eye", and "dark dreams", also hints at deeper layers of meaning and subtext. Overall, the text feels like it was generated with a specific narrative purpose in mind, rather than following a standard, predictable pattern."
+}
+```". Error: SyntaxError: Expected ',' or ']' after array element in JSON at position 385
+
+Troubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/OUTPUT_PARSING_FAILURE/
+
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 75/100. Consider opening the narrative with a more intimate, character-focused perspective on the dragon's awakening, rather than the more distanced, descriptive approach. This could help establish a stronger emotional connection and investment in the dragon as a central character, which would then heighten the impact of the larger-scale conflict and stakes that are promised.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#2 - fantasy-02</span>
+        <div class="example-badges">
+          <span class="badge low">Magic: 32</span>
+          <span class="badge intent">Intent: 80</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "Write a prophecy that is ambiguous but ominous",
+  "phase": "writing"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            Here goes, in the style of a hard-boiled detective:
+
+The signs have been there for years, if you knew where to look. Strange occurrences, unexplained phenomena - the kind of thing the suits downtown like to sweep under the rug. But I've got my ear to the ground, and I've been hearing whispers. 
+
+Something's coming, see? A storm on the horizon, dark clouds gathering. Can't quite make out the shape of it, not yet, but I can feel it in my bones. This city, this whole damn world - it's gonna change, and not for the better. 
+
+The old order's gonna come crashing down, and when the dust settles, who knows what'll be left standing? All I know is, anyone with half a brain better get ready. Because when the reckoning comes, it ain't gonna be pretty.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Missing Agents: Writer
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> AI slop detected. Magic: 32. Critical issues: "The signs have been there for years, if you knew where to look. Strange occurrences, unexplained phenomena - the kind of thing the suits downtown like to sweep under the rug."
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text exhibits a strong sense of voice and character, with the narrator's distinct hard-boiled, cynical perspective coming through clearly. There are specific details and turns of phrase ('the suits downtown', 'this whole damn world') that suggest a well-developed narrative world and character backstory, rather than generic 'AI-generated' language. The text also contains subtle subtext and foreshadowing that points to a deeper, more complex story unfolding. Overall, the text feels carefully crafted to evoke a particular mood and worldview, rather than following a predictable formula. The 'reverse engineering' of the constraints or prompts used to generate this text is also fairly straightforward, suggesting a high degree of intentionality on the part of the writer.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 75/100. Consider framing this as the opening of a larger story, rather than a standalone piece. Establish the narrator as a central character with a clear goal or mission, and use the 'storm on the horizon' as the inciting incident that sets them on a journey to uncover the truth and prepare for the coming 'reckoning'. This would allow for more character development, world-building, and setup/payoff tracking over the course of the larger narrative.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#3 - fantasy-03</span>
+        <div class="example-badges">
+          
+          
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "Establish the rules of blood magic - what is the cost?",
+  "phase": "premise"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            The rules of blood magic are simple, kid - you pay with your own life's blood. Every spell, every ritual, every bit of power you wield comes at a price. You slice open your palm, let the crimson liquid flow, and that's the toll you gotta pay. 
+
+The more you use it, the more it takes outta you. Start small, and it's just a flesh wound. But push it too far, and you'll be bleeding out on the floor before you know it. This ain't no parlor trick - it's a pact with forces beyond your control. You gotta be willing to risk it all, 'cause blood magic don't come cheap.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Perfect orchestration adherence.
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> LLM evaluation failed - ANTHROPIC_API_KEY not configured
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> Failed to analyze intent: Error: Failed to parse. Text: "```json
+{
+  "inferredIntent": "Establishing the high-stakes, high-risk nature of blood magic through vivid, visceral description",
+  "detectedSubtext": [
+    "The narrator is speaking directly to the reader/protagonist, establishing an intimate, almost conspiratorial tone",
+    "The repetition of "you" and "your" creates a sense of the reader being drawn into the world and the consequences of blood magic",
+    "The language is gritty, almost poetic, with a rhythm and cadence that feels intentional",
+    "There is a sense of foreboding and danger underlying the description, hinting at the potential for grave consequences"
+  ],
+  "fidelityScore": 0.9,
+  "reasoning": "This text feels like it was crafted with a clear intent and a strong authorial voice. The vivid, visceral descriptions of the mechanics and consequences of blood magic, combined with the direct address to the reader, suggest a thoughtful and deliberate approach to world-building and character development. The language is evocative and the subtext is multi-layered, hinting at a deeper narrative that extends beyond the confines of this short passage. Overall, the text displays a high degree of fidelity, with a strong sense of the author's creative vision and the constraints they may have imposed on themselves (e.g., avoiding adjectives, showing rather than telling, establishing a distinct narrative voice). The only minor detraction is that the passage feels slightly repetitive in its phrasing at times, but this could be an intentional stylistic choice to reinforce the gravity of the subject matter."
+}
+```". Error: SyntaxError: Expected ',' or ']' after array element in JSON at position 287
+
+Troubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/OUTPUT_PARSING_FAILURE/
+
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 75/100. Consider incorporating more flashbacks or nonlinear storytelling elements to better explore the character's history and relationship with blood magic, which could deepen the thematic exploration and character arc.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#4 - fantasy-04</span>
+        <div class="example-badges">
+          <span class="badge low">Magic: 32</span>
+          <span class="badge intent">Intent: 80</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "A tavern brawl breaks out between an elf and a dwarf using environmental objects",
+  "phase": "writing"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            Here's a gritty, hard-boiled account of the tavern brawl between the elf and the dwarf:
+
+The elf and the dwarf were at each other's throats, trading blows in the dimly lit tavern. Glasses shattered as they slammed each other against the bar, sending shards flying. The dwarf grabbed a wooden stool and swung it hard, catching the elf square in the ribs. The elf grunted in pain but retaliated, snatching up a half-empty bottle and bringing it down on the dwarf's head with a sickening crack. 
+
+The two combatants were oblivious to the chaos erupting around them as the other patrons scrambled to get out of the way. The air was thick with the stench of spilled ale and the metallic tang of blood. I watched it all unfold from my usual corner, taking a long drag on my cigarette. Looked like it was gonna be another long night.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Perfect orchestration adherence.
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> AI slop detected. Magic: 32. Critical issues: "Looked like it was gonna be another long night."
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text contains a number of specific, evocative details that suggest a carefully crafted prompt rather than generic 'AI-slop'. The vivid sensory descriptions (shattered glasses, metallic tang of blood, stench of spilled ale), the subtle character cues (the elf and dwarf's animosity, the narrator's detached cynicism), and the cinematic, 'show-don't-tell' style all point to a high degree of thought and intent behind the writing. While the premise is somewhat conventional, the execution feels polished and intentional, with a clear vision of the desired tone and atmosphere. The only thing holding it back from a perfect score is the lack of deeper thematic subtext or character development - it's a well-executed action scene, but doesn't necessarily transcend the genre tropes. Overall, the text demonstrates a strong grasp of literary craft and a clear directorial vision.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 75/100. Consider framing the scene from the perspective of one of the combatants, rather than the narrator, to heighten the emotional stakes and investment in the outcome.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#5 - fantasy-05</span>
+        <div class="example-badges">
+          
+          <span class="badge intent">Intent: 80</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "Describe the corrupted forest where the trees bleed",
+  "phase": "writing"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            The forest was a twisted, snarled mess of rotting wood and oozing sap. The trees looked like they were bleeding, their trunks weeping a viscous, foul-smelling liquid. The air was thick with the stench of decay, hanging heavy and oppressive. Every step crunched on a carpet of dead leaves and broken branches. Shadows lurked between the twisted, gnarled trunks, hinting at unseen horrors. This was no peaceful woodland - it was a corrupted, nightmarish landscape, a place that set my teeth on edge and made the hair on the back of my neck stand up. Something was very wrong here, and I had a bad feeling I was about to find out what.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Perfect orchestration adherence.
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> LLM evaluation failed - ANTHROPIC_API_KEY not configured
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text displays a high level of fidelity and craftsmanship, with a clear and specific creative intent. The vivid, sensory-rich descriptions, the use of personification and metaphor, and the subtle hints at an impending discovery of something sinister all suggest a thoughtfully constructed prompt or outline, rather than generic 'AI-slop'. The text avoids clichés and predictable patterns, and there is a strong sense of an underlying subtext and thematic depth. While the overall structure is relatively straightforward, the density of detail, the layered imagery, and the careful word choice all point to a high degree of creative intent and 'reverse-engineerable' constraints.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 75/100. Consider introducing a more active narrative thread, such as the protagonist encountering a specific threat or obstacle within the corrupted landscape, to better integrate the descriptive elements with a clear sense of plot progression and character development.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+        </div>
+    </div>
+</body>
+</html>
+  

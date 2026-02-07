@@ -1,0 +1,800 @@
+{
+  "id": "eval_2026-01-26_08-15-25-358_w7z1",
+  "name": "Magic Formula Discovery v1-C-Pro-Prompt-Thriller",
+  "timestamp": "2026-01-26T08:15:25.358Z",
+  "config": {
+    "name": "Magic Formula Discovery v1-C-Pro-Prompt-Thriller",
+    "evaluatorSet": "pro",
+    "examples": [
+      {
+        "id": "thriller-01",
+        "input": {
+          "message": "Create a beat where the detective realizes the killer is in the room",
+          "phase": "breaking"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "expectedAgents": [
+            "PlotArchitect"
+          ]
+        },
+        "metadata": {
+          "scenario": "thriller",
+          "focus": "tension",
+          "description": "High-stakes realization beat."
+        }
+      },
+      {
+        "id": "thriller-02",
+        "input": {
+          "message": "Write the interrogation scene - sharp, rapid-fire dialogue",
+          "phase": "writing"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "minMagicScore": 0.7
+        },
+        "metadata": {
+          "scenario": "thriller",
+          "focus": "pacing",
+          "description": "Staccato rhythm, subtext."
+        }
+      },
+      {
+        "id": "thriller-03",
+        "input": {
+          "message": "Outline the conspiracy connecting the senator to the dock workers",
+          "phase": "structure"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "requiresConsistency": true
+        },
+        "metadata": {
+          "scenario": "thriller",
+          "focus": "plot coherence",
+          "description": "Complex web of relationships."
+        }
+      },
+      {
+        "id": "thriller-04",
+        "input": {
+          "message": "The protagonist is being followed - describe the paranoia",
+          "phase": "writing"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "minMagicScore": 0.65
+        },
+        "metadata": {
+          "scenario": "thriller",
+          "focus": "internal psychology",
+          "description": "Subjective experience of fear."
+        }
+      },
+      {
+        "id": "thriller-05",
+        "input": {
+          "message": "Twist: The helper was the villain all along. Reveal it.",
+          "phase": "breaking"
+        },
+        "expected": {
+          "shouldDelegate": true
+        },
+        "metadata": {
+          "scenario": "thriller",
+          "focus": "plot twist",
+          "description": "Recontextualization of previous events."
+        }
+      }
+    ],
+    "tags": [
+      "multi-variant",
+      "C-Pro-Prompt",
+      "Thriller"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "thriller-01",
+      "input": {
+        "message": "Create a beat where the detective realizes the killer is in the room",
+        "phase": "breaking"
+      },
+      "output": {
+        "response": "Detective Lina Mendoza squinted against the dim light filtering through the cracked blinds, the air heavy with the scent of stale coffee and a hint of something metallic. The room was suffused with a quiet tension, the kind that settles in the bones like an unwelcome chill.\n\nHer colleagues huddled in small knots, exchanging low murmurs that rose and fell like the tide. Papers rustled, and the whir of a ceiling fan above added a rhythmic hum to the otherwise stagnant atmosphere.\n\nLina stood near the doorway, her fingers brushing the edge of her worn leather notebook, the pages filled with scribbles and sketches that only just began to make sense. Her gaze drifted across the room, over the familiar faces she’d come to trust—a tapestry of tired eyes and weary smiles. Yet, tonight, something felt off. It was a nagging itch at the base of her skull, a whisper that grew louder with each passing second.\n\nThe killer was clever, she knew that much. A phantom who slipped through the cracks, leaving nothing but a trail of confusion and fear. But as she watched, the pieces began to slot into place, like a key turning in a well-oiled lock.\n\nAcross the room, Harry, the rookie, shifted uneasily, his fingers tapping a nervous rhythm on the table. His eyes darted, never quite settling, and his laughter, when it came, was a beat too late. Lina’s heart thudded in slow realization, a cold finger tracing the length of her spine.\n\nThe noise in the room faded, voices blurring into a hollow buzz. Harry’s hands—too steady, too practiced—clenched and unclenched, and she noticed the faintest smudge of red on his cuff, a detail so small it begged to be overlooked.\n\n“Harry,” she said, her voice low and steady, slicing through the din like a finely honed blade. “You want to tell me about that stain?”\n\nThe room stilled, a collective breath held in the balance. Harry’s smile froze, a brittle thing, and his eyes, like twin shards of ice, met hers.\n\nIn that moment, silence reigned—a silence pregnant with the weight of unspoken truths and the creeping inevitability of what came next."
+      },
+      "scores": {
+        "orchestration": 0.9,
+        "magic-score": 0.31666666666666665,
+        "reverse-intent": 0.85,
+        "narrative-coherence": 0.78
+      },
+      "reasoning": {
+        "orchestration": "Missing Agents: PlotArchitect",
+        "magic-score": "AI slop detected. Magic: 32. Critical issues: The room was suffused with a quiet tension, the kind that settles in the bones like an unwelcome chill.; The noise in the room faded, voices blurring into a hollow buzz.",
+        "reverse-intent": "The text demonstrates high fidelity through its atmospheric description and subtle character cues. The setting is vividly described, creating a palpable tension that mirrors the internal conflict of the characters. Lina's intuition is portrayed through sensory details, such as the 'nagging itch' and 'cold finger,' which add depth to her character. Harry's behavior is subtly depicted, with his nervousness and the red stain serving as clues to his guilt. The narrative builds to a climactic moment of silence, effectively conveying the weight of the situation. These elements suggest a well-thought-out prompt with constraints focusing on atmosphere and character development, rather than a generic or predictable pattern.",
+        "narrative-coherence": "Narrative coherence: 78/100. Develop Harry's character further to provide a more satisfying payoff to the setup of the red stain."
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [
+            "Missing Agents: PlotArchitect"
+          ],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "overallMagic": 31.666666666666668,
+          "dimensions": {
+            "conceptualOriginality": 45,
+            "characterSpecificity": 30,
+            "proseVoice": 25,
+            "riskTaking": 20,
+            "memorability": 35,
+            "worldBuildingDepth": 40,
+            "characterVoiceDistinction": 35,
+            "subtextQuality": 30,
+            "unexpectedChoices": 25
+          },
+          "creativeSparks": [
+            "The air heavy with the scent of stale coffee and a hint of something metallic.",
+            "A nagging itch at the base of her skull, a whisper that grew louder with each passing second."
+          ],
+          "slopAlerts": [
+            "The room was suffused with a quiet tension, the kind that settles in the bones like an unwelcome chill.",
+            "The noise in the room faded, voices blurring into a hollow buzz."
+          ],
+          "suggestion": "Introduce a morally complex character whose motivations are ambiguous, akin to a Varys or Littlefinger, to add depth and intrigue to the narrative.",
+          "evaluatedBy": "gpt-4o",
+          "threshold": 60
+        },
+        "reverse-intent": {
+          "inferredIntent": "To create a tense and atmospheric detective scene with subtle character cues and a focus on the protagonist's intuition.",
+          "detectedSubtext": [
+            "The room's atmosphere reflects the internal tension of the characters.",
+            "Lina's intuition is highlighted through her physical sensations and observations.",
+            "Harry's nervous behavior and the small detail of the red stain suggest his guilt.",
+            "The silence at the end signifies the gravity of the situation and the impending revelation."
+          ]
+        },
+        "narrative-coherence": {
+          "overallScore": 78,
+          "dimensions": {
+            "plotProgression": {
+              "score": 85,
+              "analysis": "The narrative effectively builds tension through the gradual realization of Lina about Harry's potential involvement. Each scene logically leads to the next, with Lina's observations causing her to confront Harry.",
+              "strengths": [
+                "Logical causality between scenes",
+                "Effective build-up of tension"
+              ],
+              "weaknesses": [
+                "Could benefit from more explicit stakes escalation"
+              ]
+            },
+            "characterArc": {
+              "score": 70,
+              "analysis": "Lina's character is shown to be perceptive and intuitive, but her arc in this scene is subtle. Harry's nervousness suggests a potential arc, but it needs more development.",
+              "strengths": [
+                "Lina's perceptiveness is well-established"
+              ],
+              "weaknesses": [
+                "Harry's character needs more depth",
+                "Lina's internal change is not fully explored"
+              ]
+            },
+            "thematicCoherence": {
+              "score": 75,
+              "analysis": "Themes of trust and deception are present, with the tension between Lina and Harry highlighting these. However, the theme could be more deeply woven into the narrative.",
+              "strengths": [
+                "Clear theme of deception"
+              ],
+              "weaknesses": [
+                "Theme could be more integrated into character actions"
+              ]
+            },
+            "setupPayoff": {
+              "score": 70,
+              "analysis": "The red stain on Harry's cuff is a strong setup, but the payoff is only partially realized in this scene. More context on its significance would enhance the impact.",
+              "activeSetups": [
+                "Red stain on Harry's cuff"
+              ],
+              "missedPayoffs": [
+                "The significance of the stain is not fully explored"
+              ]
+            },
+            "pacing": {
+              "score": 90,
+              "analysis": "The pacing is well-managed, with a gradual build-up of tension leading to a climactic confrontation. The quiet moments are used effectively to build suspense.",
+              "strengths": [
+                "Effective tension build-up",
+                "Good use of quiet moments"
+              ],
+              "weaknesses": [
+                "None significant"
+              ]
+            }
+          },
+          "narrativeNotes": {
+            "whatsMagical": [
+              "The tension in the room is palpable and well-crafted",
+              "Lina's realization is a strong moment"
+            ],
+            "whatNeedsWork": [
+              "Harry's character needs more depth and motivation",
+              "The thematic elements could be more intertwined with the plot"
+            ],
+            "structuralSuggestion": "Develop Harry's character further to provide a more satisfying payoff to the setup of the red stain."
+          },
+          "seriesLevel": {
+            "episodicCoherence": "This scene fits well within a larger narrative, suggesting ongoing tension and character dynamics.",
+            "serialElements": "The mystery of the killer and Lina's investigation are continuing threads that are being serviced."
+          },
+          "evaluatedBy": "gpt-4o"
+        }
+      }
+    },
+    {
+      "exampleId": "thriller-02",
+      "input": {
+        "message": "Write the interrogation scene - sharp, rapid-fire dialogue",
+        "phase": "writing"
+      },
+      "output": {
+        "response": "The interrogation room was a sterile cube of pale concrete, the kind that absorbed sound and hope. A single bulb dangled above the table, casting shadows that crept like whispers along the walls. The air was thick with the scent of cheap coffee and a hint of sweat.\n\nDetective Alston leaned forward, elbows on the table, his eyes sharp as broken glass. \"You were there at midnight. The cameras don't lie.\"\n\nAcross from him, Jake shifted in his chair, the metal legs scraping the floor with a screech. His hands, cuffed to the table, were calloused and restless. \"I was at the docks. Not at the warehouse.\"\n\n\"Then why does the footage show your truck pulling up?\" Alston’s voice was a hammer, each word a strike.\n\nJake's eyes flicked to the corner of the room, where the red light of the recording device blinked steadily. \"Ain't my truck. Maybe you should get your eyes checked.\"\n\nAlston smirked, a wolfish curl of his lips. \"Funny. But that license plate says otherwise. You want to keep this up?\"\n\nJake’s gaze snapped back, a glint of defiance in his eyes. \"You ever think maybe someone set me up? I got enemies, you know.\"\n\nThe detective leaned back, crossing his arms, the leather of his jacket creaking like old bones. \"You got a lot of stories, Jake. But not much truth.\"\n\nA pause hung between them, heavy as storm clouds. Jake's breath was shallow, tasting of stale smoke and desperation. \"What do you want me to say, huh? I ain't no snitch.\"\n\nAlston tapped a finger on the table, a slow, deliberate rhythm. \"Tell me who you’re covering for. We both know you didn’t act alone.\"\n\nJake’s jaw clenched, the muscles tight like coiled springs. \"I ain't covering for nobody. This is all on you, detective. You want a story? Write your own.\" His voice was low, a rumble of distant thunder.\n\nThe room fell silent, save for the hum of the fluorescent bulb, buzzing like an insistent mosquito. Alston stared, eyes narrowing, as if he could peel back the layers of Jake's bravado and find the truth beneath.\n\n\"You're running out of time, Jake.\" Alston’s voice was softer now, almost a whisper. \"Think about what you're leaving behind.\"\n\nJake looked down, the cuffs cold and unyielding against his skin. His silence was a fortress, and inside, somewhere, was the truth he couldn’t afford to tell."
+      },
+      "scores": {
+        "orchestration": 1,
+        "magic-score": 0.37222222222222223,
+        "reverse-intent": 0.85,
+        "narrative-coherence": 0.73
+      },
+      "reasoning": {
+        "orchestration": "Perfect orchestration adherence.",
+        "magic-score": "AI slop detected. Magic: 37. Critical issues: Detective Alston leaned forward, elbows on the table, his eyes sharp as broken glass.; The air was thick with the scent of cheap coffee and a hint of sweat.",
+        "reverse-intent": "The text demonstrates high fidelity through its vivid descriptions and layered character interactions. The setting is meticulously crafted to evoke a claustrophobic and tense atmosphere, while the dialogue reveals character dynamics and underlying themes. The use of sensory details, such as sound and smell, adds depth to the scene. The narrative avoids clichés by presenting a nuanced portrayal of both the detective and the suspect, suggesting a well-thought-out prompt. The subtext and character cues indicate a deliberate effort to convey complexity and ambiguity, elevating the text above generic AI-generated content.",
+        "narrative-coherence": "Narrative coherence: 73/100. Introduce a mid-scene revelation or twist that forces Jake or Alston to reconsider their positions, adding depth to the conflict."
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "overallMagic": 37.22222222222222,
+          "dimensions": {
+            "conceptualOriginality": 45,
+            "characterSpecificity": 40,
+            "proseVoice": 35,
+            "riskTaking": 30,
+            "memorability": 40,
+            "worldBuildingDepth": 40,
+            "characterVoiceDistinction": 35,
+            "subtextQuality": 40,
+            "unexpectedChoices": 30
+          },
+          "creativeSparks": [
+            "The interrogation room was a sterile cube of pale concrete, the kind that absorbed sound and hope.",
+            "Alston smirked, a wolfish curl of his lips."
+          ],
+          "slopAlerts": [
+            "Detective Alston leaned forward, elbows on the table, his eyes sharp as broken glass.",
+            "The air was thick with the scent of cheap coffee and a hint of sweat."
+          ],
+          "suggestion": "Introduce a morally complex twist where Detective Alston is revealed to have a personal stake in the case, perhaps a hidden connection to Jake, adding layers of intrigue and moral ambiguity.",
+          "evaluatedBy": "gpt-4o",
+          "threshold": 60
+        },
+        "reverse-intent": {
+          "inferredIntent": "To create a tense and atmospheric interrogation scene that explores themes of deception, loyalty, and the struggle for truth.",
+          "detectedSubtext": [
+            "The interrogation room's description suggests a sense of entrapment and hopelessness.",
+            "Detective Alston's demeanor and dialogue indicate a hardened, relentless pursuit of the truth.",
+            "Jake's defiance and mention of enemies hint at a complex backstory and possible innocence.",
+            "The recurring motif of sound (e.g., screeching chair, buzzing bulb) underscores the tension and discomfort.",
+            "The dialogue's rhythm and pauses suggest a psychological battle between the characters."
+          ]
+        },
+        "narrative-coherence": {
+          "overallScore": 73,
+          "dimensions": {
+            "plotProgression": {
+              "score": 75,
+              "analysis": "The scene effectively builds tension between Detective Alston and Jake, with each line of dialogue escalating the stakes. The cause-and-effect relationship is clear as Alston's accusations prompt Jake's defensive responses. However, the scene lacks a definitive turning point or revelation that propels the narrative forward.",
+              "strengths": [
+                "Clear conflict between characters",
+                "Escalating tension"
+              ],
+              "weaknesses": [
+                "Lacks a significant plot twist or revelation"
+              ]
+            },
+            "characterArc": {
+              "score": 70,
+              "analysis": "Jake's character is portrayed with a consistent sense of defiance and desperation. However, there is little indication of change or growth within this scene. Alston's character remains static, serving primarily as an interrogator rather than a dynamic participant.",
+              "strengths": [
+                "Consistent character portrayal"
+              ],
+              "weaknesses": [
+                "Lack of character development or change"
+              ]
+            },
+            "thematicCoherence": {
+              "score": 75,
+              "analysis": "Themes of truth, deception, and loyalty are present, with Jake's refusal to 'snitch' hinting at deeper loyalties. The theme is explored through dialogue rather than action, which limits its impact.",
+              "strengths": [
+                "Clear thematic elements"
+              ],
+              "weaknesses": [
+                "Themes are more stated than shown"
+              ]
+            },
+            "setupPayoff": {
+              "score": 65,
+              "analysis": "The scene sets up potential future conflicts, such as Jake's enemies and the mystery of who he might be covering for. However, there are no immediate payoffs within the scene itself, leaving these elements unresolved.",
+              "activeSetups": [
+                "Jake's enemies",
+                "Mystery of the truck"
+              ],
+              "missedPayoffs": [
+                "No immediate resolution or revelation"
+              ]
+            },
+            "pacing": {
+              "score": 80,
+              "analysis": "The pacing maintains tension throughout, with the dialogue-driven scene allowing for a steady build-up of suspense. The quiet moments are used effectively to underscore the emotional stakes.",
+              "strengths": [
+                "Consistent tension",
+                "Effective use of quiet moments"
+              ],
+              "weaknesses": [
+                "Could benefit from a more dynamic shift in pace"
+              ]
+            }
+          },
+          "narrativeNotes": {
+            "whatsMagical": [
+              "The atmospheric setting and tension-filled dialogue"
+            ],
+            "whatNeedsWork": [
+              "Introduce a turning point or revelation to propel the plot"
+            ],
+            "structuralSuggestion": "Introduce a mid-scene revelation or twist that forces Jake or Alston to reconsider their positions, adding depth to the conflict."
+          },
+          "seriesLevel": {
+            "episodicCoherence": "The scene fits well within a larger narrative, suggesting ongoing conflicts and character dynamics.",
+            "serialElements": "The mystery of Jake's involvement and his potential allies or enemies are threads that could be developed further in the series."
+          },
+          "evaluatedBy": "gpt-4o"
+        }
+      }
+    },
+    {
+      "exampleId": "thriller-03",
+      "input": {
+        "message": "Outline the conspiracy connecting the senator to the dock workers",
+        "phase": "structure"
+      },
+      "output": {
+        "response": "**Title: Shadows on the Waterfront**\n\n**1. Introduction: The Whispering Docks**\n   - **Sensory Details**: The air is thick with the smell of salt and rust. The creaking of aged wood blends with the distant clang of metal containers being shuffled. Gulls cry out, their calls echoing over the murmur of workers exchanging quiet words.\n   - **Subtext**: The docks, seemingly just a place of labor, are a hub of secrets, where every whispered conversation carries the weight of hidden agendas.\n\n**2. Characters Introduced**\n   - **Senator Charles Whitmore**: A man of polished shoes and sharper words. His voice, smooth like a radio host, conceals the grit of his past connections.\n   - **George \"Brick\" Thompson**: Foreman of the dock workers. His voice is gruff, like gravel crunching underfoot, each word deliberate and weighted with unspoken history.\n   - **Lila Moreno**: Investigative journalist with a knack for finding stories in the shadows. Her eyes, always observant, are as sharp as the seagulls that perch above the docks.\n\n**3. The Connection: A Meeting in the Mist**\n   - **Sensory Details**: Fog rolls in from the bay, wrapping the docks in a chilly embrace. The sound of a lighter flicks, a brief flash illuminating faces hidden beneath the brims of hats.\n   - **Subtext**: A clandestine meeting between Whitmore and Brick. The senator’s polished demeanor slips as he implores Brick to ensure the shipments continue unimpeded.\n\n**4. Unraveling the Threads**\n   - **Sensory Details**: Papers shuffle in Lila's cramped office, the scent of ink mingling with stale coffee. Her fingers, stained with newsprint, dance over a keyboard, piecing together the puzzle.\n   - **Subtext**: Lila senses more than just corruption; there’s a personal vendetta, a debt that Whitmore owes to the underbelly of the docks.\n\n**5. The Dock Workers’ Dilemma**\n   - **Sensory Details**: The workers' calloused hands grip ropes and tools with familiarity, their voices a symphony of tired resolve. The tang of sweat and sea clings to them like a second skin.\n   - **Subtext**: Though caught in the web, the workers have their own code of loyalty. They are not just pawns but players with stakes in the unfolding drama.\n\n**6. Confrontation and Climax**\n   - **Sensory Details**: The senator’s office is a fortress of leather and mahogany, the smell of cigars lingering in the air. The tension is palpable, like the charge before a summer storm.\n   - **Subtext**: Lila confronts Whitmore, her voice a steady, relentless tide against his polished stone façade. The walls of his carefully constructed world begin to crack.\n\n**7. Resolution: The Tide Turns**\n   - **Sensory Details**: As dawn breaks over the docks, the first light catches on the water, painting the scene in hues of gold and redemption. The air is crisp, the promise of change palpable.\n   - **Subtext**: The conspiracy unravels, but the bonds between the dock workers remain, stronger for the trials faced. Whitmore, exposed, must reckon with the cost of his ambitions.\n\n**8. Epilogue: Echoes of the Past**\n   - **Sensory Details**: The docks return to their rhythm, the scent of fresh paint mingling with the sea breeze as new beginnings are forged.\n   - **Subtext**: Lila pens the final words of her expose, knowing the cycle continues but hopeful for the change she’s set in motion. The workers, though scarred, walk taller, aware of their power and unity.\n\n**Theme**: The narrative explores the intersection of power and loyalty, the hidden currents beneath the surface of ambition, and the resilience of those who toil in its shadows."
+      },
+      "scores": {
+        "orchestration": 1,
+        "magic-score": 0.31666666666666665,
+        "reverse-intent": 0.85,
+        "narrative-coherence": 0.76
+      },
+      "reasoning": {
+        "orchestration": "Perfect orchestration adherence.",
+        "magic-score": "AI slop detected. Magic: 32. Critical issues: The tension is palpable, like the charge before a summer storm.; Her voice, smooth like a radio host, conceals the grit of his past connections.",
+        "reverse-intent": "The text demonstrates high fidelity through its use of sensory details and subtext, which create a vivid and immersive setting. The characters are introduced with specific quirks and backstories that suggest depth and complexity. The narrative structure follows a classic noir pattern but is enriched by the multi-layered subtext, such as the personal vendetta and the workers' hidden influence. The constraints of focusing on sensory details and subtext are evident, as the text avoids overt exposition and instead relies on atmosphere and character interactions to convey the story's themes. This approach suggests a well-thought-out prompt that goes beyond generic storytelling.",
+        "narrative-coherence": "Narrative coherence: 76/100. Develop Brick's character arc further to enhance the emotional stakes and thematic depth."
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "overallMagic": 31.666666666666668,
+          "dimensions": {
+            "conceptualOriginality": 45,
+            "characterSpecificity": 30,
+            "proseVoice": 25,
+            "riskTaking": 20,
+            "memorability": 35,
+            "worldBuildingDepth": 40,
+            "characterVoiceDistinction": 35,
+            "subtextQuality": 30,
+            "unexpectedChoices": 25
+          },
+          "creativeSparks": [
+            "The air is thick with the smell of salt and rust.",
+            "Fog rolls in from the bay, wrapping the docks in a chilly embrace."
+          ],
+          "slopAlerts": [
+            "The tension is palpable, like the charge before a summer storm.",
+            "Her voice, smooth like a radio host, conceals the grit of his past connections."
+          ],
+          "suggestion": "Introduce a morally ambiguous character whose loyalties shift throughout the story, creating tension and unpredictability akin to the complex dynamics of Westeros.",
+          "evaluatedBy": "gpt-4o",
+          "threshold": 60
+        },
+        "reverse-intent": {
+          "inferredIntent": "To craft a noir-inspired narrative that explores themes of power, loyalty, and corruption through rich sensory details and layered subtext.",
+          "detectedSubtext": [
+            "The docks serve as a metaphor for hidden agendas and secrets.",
+            "Senator Whitmore's polished exterior hides a gritty past and current corruption.",
+            "Lila Moreno's investigative work is driven by a personal vendetta against Whitmore.",
+            "The dock workers, though seemingly minor, have their own code and influence the narrative's outcome.",
+            "The resolution suggests a cycle of corruption but also hints at hope and change."
+          ]
+        },
+        "narrative-coherence": {
+          "overallScore": 76,
+          "dimensions": {
+            "plotProgression": {
+              "score": 80,
+              "analysis": "The plot progression is logical, with each scene causing the next. The clandestine meeting between Whitmore and Brick sets off a chain of events that Lila investigates, leading to the climax. The stakes escalate as Lila uncovers more about Whitmore's dealings.",
+              "strengths": [
+                "Clear causality between scenes",
+                "Rising tension and stakes"
+              ],
+              "weaknesses": [
+                "Some scenes could benefit from more explicit conflict"
+              ]
+            },
+            "characterArc": {
+              "score": 70,
+              "analysis": "Characters have clear motivations and arcs. Whitmore's facade crumbles under pressure, and Lila grows more determined. However, Brick's arc could be more developed.",
+              "strengths": [
+                "Whitmore's and Lila's arcs are well-defined"
+              ],
+              "weaknesses": [
+                "Brick's character development is less clear"
+              ]
+            },
+            "thematicCoherence": {
+              "score": 75,
+              "analysis": "The theme of power and loyalty is consistently explored through the characters' interactions and the unfolding conspiracy. The dock workers' subplot reinforces this theme.",
+              "strengths": [
+                "Consistent exploration of theme",
+                "Subplots reinforce main theme"
+              ],
+              "weaknesses": [
+                "Theme could be more subtly woven into dialogue"
+              ]
+            },
+            "setupPayoff": {
+              "score": 65,
+              "analysis": "Several setups, such as the clandestine meeting and Lila's investigation, are paid off. However, some elements, like the workers' code of loyalty, could have stronger payoffs.",
+              "activeSetups": [
+                "Workers' loyalty",
+                "Whitmore's past connections"
+              ],
+              "missedPayoffs": [
+                "Workers' loyalty could have a more impactful resolution"
+              ]
+            },
+            "pacing": {
+              "score": 80,
+              "analysis": "The pacing is well-managed, with a good balance of tension and quieter moments for character development. The climax is intense, and the resolution provides a satisfying cooldown.",
+              "strengths": [
+                "Effective balance of tension and quiet moments",
+                "Satisfying climax and resolution"
+              ],
+              "weaknesses": [
+                "Some scenes could use more dynamic pacing"
+              ]
+            }
+          },
+          "narrativeNotes": {
+            "whatsMagical": [
+              "The sensory details create a vivid atmosphere",
+              "The confrontation scene is particularly gripping"
+            ],
+            "whatNeedsWork": [
+              "Brick's character arc needs more depth",
+              "Some thematic elements could be more subtly integrated"
+            ],
+            "structuralSuggestion": "Develop Brick's character arc further to enhance the emotional stakes and thematic depth."
+          },
+          "seriesLevel": {
+            "episodicCoherence": "The episode fits well within a larger narrative, with clear connections to ongoing themes and character arcs.",
+            "serialElements": "The conspiracy and Lila's investigation are key threads that continue to develop."
+          },
+          "evaluatedBy": "gpt-4o"
+        }
+      }
+    },
+    {
+      "exampleId": "thriller-04",
+      "input": {
+        "message": "The protagonist is being followed - describe the paranoia",
+        "phase": "writing"
+      },
+      "output": {
+        "response": "The wind carried an unsettling chill as it cut through the narrow alleyway, weaving between the brick walls that seemed to loom closer with each step. Every footfall echoed, a rhythmic tattoo that matched the thud of her heart. She pulled her coat tighter, the fabric damp against her skin, and quickened her pace, eyes darting over her shoulder with a frequency that would soon make her neck ache.\n\nThe streetlights flickered, casting long, distorted shadows that danced along the cobblestones. In the periphery of her vision, she caught glimpses of movement—fleeting, indistinct, like whispers at the edge of hearing. The city’s usual symphony of distant horns and muffled conversations was drowned out by the incessant patter of rain, amplifying the silence behind her.\n\nShe could almost feel eyes boring into her back, a prickling sensation that spread like wildfire, igniting her nerves. Each time she turned, the street lay empty, yet the air seemed charged, heavy with the weight of a gaze unseen. Her mind played back snippets of conversations, fragmented puzzles of threats and warnings, all tinged with the metallic taste of fear.\n\nPassing a shop window, she saw her reflection—a ghostly figure with wide, searching eyes—and beyond it, the indistinct outline of a shadow that vanished with a blink. Her pulse quickened, breath shallow and rapid, as if the very oxygen had turned to smoke, suffocating her with its thickness.\n\nShe reached for her phone, fingers trembling, the screen glowing too brightly in the darkness. The numbers blurred, and she cursed under her breath, a soft, bitter sound that seemed to hang in the air. The world felt suspended, every second stretching into eternity, as if time itself were conspiring to trap her in this moment of uncertainty.\n\nAround the corner, a flash of light—headlights sweeping through the rain—momentarily blinded her. She hesitated, caught in a web of indecision, before stepping into the street, the pavement slick beneath her feet. The sensation of being watched intensified, a palpable presence that gnawed at the edges of her sanity.\n\nShe forced herself to breathe deeply, the cold air biting at her lungs, and willed her legs to move, each step a battle against the invisible chains of dread. She was no longer walking but fleeing, driven by a primal instinct to escape, to find safety in the unforgiving chaos of the city night."
+      },
+      "scores": {
+        "orchestration": 1,
+        "magic-score": 0.3111111111111111,
+        "reverse-intent": 0.85,
+        "narrative-coherence": 0.72
+      },
+      "reasoning": {
+        "orchestration": "Perfect orchestration adherence.",
+        "magic-score": "AI slop detected. Magic: 31. Critical issues: The wind carried an unsettling chill as it cut through the narrow alleyway.; The streetlights flickered, casting long, distorted shadows that danced along the cobblestones.",
+        "reverse-intent": "The text demonstrates high fidelity through its rich atmospheric details and psychological depth. The narrative effectively uses sensory descriptions and subtle cues to convey the protagonist's escalating fear and paranoia. The choice of words and imagery, such as the 'metallic taste of fear' and 'invisible chains of dread,' suggests a carefully crafted intent to immerse the reader in a suspenseful experience. The text avoids generic patterns by focusing on the protagonist's internal struggle and the oppressive environment, creating a multi-layered narrative that feels intentional and engaging.",
+        "narrative-coherence": "Narrative coherence: 72/100. Introduce an inciting incident early on to clarify the stakes and provide a resolution to the protagonist's fear to complete the narrative arc."
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "overallMagic": 31.11111111111111,
+          "dimensions": {
+            "conceptualOriginality": 40,
+            "characterSpecificity": 30,
+            "proseVoice": 35,
+            "riskTaking": 25,
+            "memorability": 30,
+            "worldBuildingDepth": 35,
+            "characterVoiceDistinction": 30,
+            "subtextQuality": 30,
+            "unexpectedChoices": 25
+          },
+          "creativeSparks": [
+            "The sensation of being watched intensified, a palpable presence that gnawed at the edges of her sanity."
+          ],
+          "slopAlerts": [
+            "The wind carried an unsettling chill as it cut through the narrow alleyway.",
+            "The streetlights flickered, casting long, distorted shadows that danced along the cobblestones."
+          ],
+          "suggestion": "Introduce a character with a morally ambiguous past who unexpectedly crosses paths with the protagonist, revealing layers of political intrigue and personal vendettas that complicate her flight. This would add depth and tension reminiscent of the intricate character dynamics in A Song of Ice and Fire.",
+          "evaluatedBy": "gpt-4o",
+          "threshold": 60
+        },
+        "reverse-intent": {
+          "inferredIntent": "To create a suspenseful and atmospheric narrative that immerses the reader in the protagonist's fear and paranoia.",
+          "detectedSubtext": [
+            "The protagonist's fear is amplified by the environment, suggesting a psychological thriller.",
+            "The use of sensory details like the chill of the wind and the dampness of the coat adds to the tension.",
+            "The recurring theme of being watched implies a deeper threat or past trauma.",
+            "The protagonist's reflection in the shop window symbolizes self-awareness and vulnerability.",
+            "The blurred numbers on the phone screen indicate a state of panic and disorientation."
+          ]
+        },
+        "narrative-coherence": {
+          "overallScore": 72,
+          "dimensions": {
+            "plotProgression": {
+              "score": 70,
+              "analysis": "The narrative effectively builds tension through the protagonist's increasing paranoia and sense of being pursued. Each beat logically follows from the previous one, with the protagonist's actions driven by fear and the environment's oppressive atmosphere. However, the lack of a clear inciting incident or resolution makes the progression feel somewhat incomplete.",
+              "strengths": [
+                "Tension builds effectively",
+                "Logical sequence of events"
+              ],
+              "weaknesses": [
+                "Lacks a clear inciting incident",
+                "No resolution or climax"
+              ]
+            },
+            "characterArc": {
+              "score": 65,
+              "analysis": "The protagonist's fear and paranoia are well depicted, but there is little indication of character change or growth. The narrative focuses on the immediate emotional experience rather than a deeper exploration of the character's psychology or development.",
+              "strengths": [
+                "Strong depiction of fear and paranoia"
+              ],
+              "weaknesses": [
+                "Lack of character development",
+                "No clear arc or transformation"
+              ]
+            },
+            "thematicCoherence": {
+              "score": 70,
+              "analysis": "Themes of fear, paranoia, and the unknown are present, but they are not deeply explored or varied. The narrative effectively conveys a mood, but lacks multiple perspectives or a deeper thematic exploration.",
+              "strengths": [
+                "Strong mood and atmosphere"
+              ],
+              "weaknesses": [
+                "Limited thematic exploration",
+                "Lacks multiple perspectives"
+              ]
+            },
+            "setupPayoff": {
+              "score": 60,
+              "analysis": "The narrative sets up a sense of danger and pursuit, but there is no clear payoff or resolution to these elements. The tension is maintained, but the lack of closure leaves the setups feeling incomplete.",
+              "activeSetups": [
+                "Sense of being watched",
+                "Paranoia and fear"
+              ],
+              "missedPayoffs": [
+                "No resolution to the pursuit",
+                "Lack of closure on the threat"
+              ]
+            },
+            "pacing": {
+              "score": 85,
+              "analysis": "The pacing effectively maintains tension and urgency, with a consistent build-up of suspense. The narrative uses sensory details to enhance the atmosphere, allowing the reader to feel the protagonist's anxiety.",
+              "strengths": [
+                "Consistent tension and urgency",
+                "Effective use of sensory details"
+              ],
+              "weaknesses": [
+                "Could benefit from moments of relief or contrast"
+              ]
+            }
+          },
+          "narrativeNotes": {
+            "whatsMagical": [
+              "The vivid depiction of atmosphere and tension",
+              "The immersive sensory details"
+            ],
+            "whatNeedsWork": [
+              "Develop a clearer character arc",
+              "Provide a resolution or climax to the tension"
+            ],
+            "structuralSuggestion": "Introduce an inciting incident early on to clarify the stakes and provide a resolution to the protagonist's fear to complete the narrative arc."
+          },
+          "seriesLevel": {
+            "episodicCoherence": "The scene fits well as a tense moment within a larger narrative but lacks standalone completeness.",
+            "serialElements": "The ongoing sense of pursuit and paranoia could be part of a larger storyline involving a mysterious threat."
+          },
+          "evaluatedBy": "gpt-4o"
+        }
+      }
+    },
+    {
+      "exampleId": "thriller-05",
+      "input": {
+        "message": "Twist: The helper was the villain all along. Reveal it.",
+        "phase": "breaking"
+      },
+      "output": {
+        "response": "The air in the dimly lit study was thick with the scent of old leather and pipe smoke, a comforting aroma that clung to the edges of the antique books lining the shelves. Detective Archer paced the room, his footsteps muffled by the plush Persian rug beneath him. His eyes flickered over the scattered papers on the mahogany desk, searching for a thread to unravel the tangled mystery that had kept him awake for nights on end.\n\nHe stopped and turned to Mrs. Hargrove, the housekeeper, who stood quietly by the window, her hands folded neatly in front of her apron. Her gray hair was pulled back into a tight bun, and her eyes were downcast, the picture of servitude and discretion. \"Mrs. Hargrove,\" he began, his voice a low rumble, \"you've worked here for how long now?\"\n\n\"Thirty-five years, sir,\" she replied, her voice steady but with a hint of weariness, like a well-used teapot.\n\n\"And in all your time here, you never noticed anything unusual?\" Archer probed, watching her closely.\n\nShe hesitated, just a flicker, before responding. \"No, sir. The family has always been very private. But they've trusted me with their secrets, small as they may be.\"\n\nArcher nodded, turning away to examine the window ledge, where a thin layer of dust had settled, undisturbed. \"You see, Mrs. Hargrove, something's been troubling me,\" he said, tracing a finger through the dust. \"Every time we get close to solving this case, a detail slips away. And it's always after I've spoken with you.\"\n\nMrs. Hargrove shifted slightly, her eyes narrowing almost imperceptibly. \"I don't understand, sir. Are you suggesting...?\"\n\n\"Yes,\" Archer said, cutting her off, his voice now sharp as the edge of a blade. \"I am.\"\n\nA moment of silence stretched between them, the only sound the distant ticking of the grandfather clock. Then, Mrs. Hargrove chuckled softly, a sound like crumpled paper. \"Very clever, Detective,\" she said, her voice transforming into something richer, darker. \"You almost had me fooled with your bumbling about.\"\n\nArcher's eyes widened, the realization settling like a cold stone in his gut. \"It was you all along,\" he breathed, watching as she straightened, her demeanor shifting from meek to menacing.\n\n\"Indeed,\" she replied, her lips curling into a smile that never touched her eyes. \"You see, people always underestimate the help. They think we're invisible, just part of the furniture. But we see everything, know everything.\"\n\nArcher felt the weight of her words as he stood there, the study suddenly feeling colder, the shadows deeper. \"Why, Mrs. Hargrove? Why betray them?\"\n\nShe turned away, looking out the window into the gathering dusk. \"Because they never truly saw me,\" she said softly, her voice carrying a lifetime of resentment. \"But now, they will remember me.\"\n\nAs she spoke, Archer finally understood. The helper had not just been part of the scenery; she had orchestrated it all, a maestro hidden in plain sight. And now, as the pieces of the puzzle fell into place, he realized the game was far more dangerous than he'd ever imagined."
+      },
+      "scores": {
+        "orchestration": 1,
+        "magic-score": 0.31666666666666665,
+        "reverse-intent": 0.8,
+        "narrative-coherence": 0.76
+      },
+      "reasoning": {
+        "orchestration": "Perfect orchestration adherence.",
+        "magic-score": "AI slop detected. Magic: 32. Critical issues: Detective Archer paced the room, his footsteps muffled by the plush Persian rug beneath him.; Mrs. Hargrove, the housekeeper, who stood quietly by the window, her hands folded neatly in front of her apron.",
+        "reverse-intent": "The text demonstrates a high level of fidelity due to its rich sensory details and the subversion of classic detective tropes. The narrative cleverly uses the character of Mrs. Hargrove to explore themes of invisibility and underestimation, adding depth to the story. The twist is well-executed, with subtle cues leading up to the revelation. However, the dialogue and setting are somewhat conventional, which slightly lowers the score. Overall, the text feels thoughtfully crafted with a clear intent to surprise and engage the reader.",
+        "narrative-coherence": "Narrative coherence: 76/100. Introduce a subplot that parallels the main theme to deepen the narrative complexity."
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "overallMagic": 31.666666666666668,
+          "dimensions": {
+            "conceptualOriginality": 45,
+            "characterSpecificity": 30,
+            "proseVoice": 25,
+            "riskTaking": 20,
+            "memorability": 35,
+            "worldBuildingDepth": 40,
+            "characterVoiceDistinction": 35,
+            "subtextQuality": 30,
+            "unexpectedChoices": 25
+          },
+          "creativeSparks": [
+            "The air in the dimly lit study was thick with the scent of old leather and pipe smoke, a comforting aroma that clung to the edges of the antique books lining the shelves."
+          ],
+          "slopAlerts": [
+            "Detective Archer paced the room, his footsteps muffled by the plush Persian rug beneath him.",
+            "Mrs. Hargrove, the housekeeper, who stood quietly by the window, her hands folded neatly in front of her apron."
+          ],
+          "suggestion": "Introduce a morally complex backstory for Mrs. Hargrove, revealing her motivations through a series of flashbacks that intertwine with the main narrative, adding depth and unpredictability to her character.",
+          "evaluatedBy": "gpt-4o",
+          "threshold": 60
+        },
+        "reverse-intent": {
+          "inferredIntent": "To create a classic detective narrative with a twist, where the seemingly innocuous housekeeper is revealed as the mastermind behind the mystery.",
+          "detectedSubtext": [
+            "The use of sensory details like the scent of leather and pipe smoke to set a traditional, cozy detective scene.",
+            "Mrs. Hargrove's initial portrayal as a stereotypical, subservient housekeeper, which is later subverted.",
+            "The subtle shift in Mrs. Hargrove's demeanor, indicating her true nature.",
+            "The theme of invisibility and underestimation of domestic workers, which is central to the plot twist."
+          ]
+        },
+        "narrative-coherence": {
+          "overallScore": 76,
+          "dimensions": {
+            "plotProgression": {
+              "score": 80,
+              "analysis": "The plot progresses logically with each scene building on the previous one. The revelation of Mrs. Hargrove as the antagonist is a satisfying twist that is well-prepared by the dialogue and interactions between her and Detective Archer.",
+              "strengths": [
+                "The scenes are causally linked, leading to a climactic revelation.",
+                "The stakes escalate as Archer realizes the true nature of Mrs. Hargrove."
+              ],
+              "weaknesses": [
+                "The initial pacing could be tightened to increase tension earlier."
+              ]
+            },
+            "characterArc": {
+              "score": 70,
+              "analysis": "Detective Archer's realization and Mrs. Hargrove's reveal show character change, but Archer's arc could be more developed to show a deeper transformation.",
+              "strengths": [
+                "Mrs. Hargrove's character shift is well-executed and surprising."
+              ],
+              "weaknesses": [
+                "Archer's internal conflict and growth could be more pronounced."
+              ]
+            },
+            "thematicCoherence": {
+              "score": 75,
+              "analysis": "The theme of visibility and underestimation is effectively woven into the narrative, particularly through Mrs. Hargrove's monologue.",
+              "strengths": [
+                "The theme is explored through action and character dialogue."
+              ],
+              "weaknesses": [
+                "Additional perspectives on the theme could enrich the narrative."
+              ]
+            },
+            "setupPayoff": {
+              "score": 65,
+              "analysis": "The setup of Mrs. Hargrove's character pays off well, but there are missed opportunities for additional setups that could enhance the narrative.",
+              "activeSetups": [
+                "Mrs. Hargrove's seemingly innocuous presence."
+              ],
+              "missedPayoffs": [
+                "The dust on the window ledge could have been a more significant clue."
+              ]
+            },
+            "pacing": {
+              "score": 80,
+              "analysis": "The pacing is generally effective, with a good balance between dialogue and revelation. The tension builds well towards the climax.",
+              "strengths": [
+                "The climax is well-paced and impactful."
+              ],
+              "weaknesses": [
+                "The opening could be more dynamic to engage the audience sooner."
+              ]
+            }
+          },
+          "narrativeNotes": {
+            "whatsMagical": [
+              "The twist with Mrs. Hargrove is a standout moment.",
+              "The dialogue is sharp and reveals character effectively."
+            ],
+            "whatNeedsWork": [
+              "Archer's character development needs more depth.",
+              "The opening scene could be more engaging."
+            ],
+            "structuralSuggestion": "Introduce a subplot that parallels the main theme to deepen the narrative complexity."
+          },
+          "seriesLevel": {
+            "episodicCoherence": "This scene fits well within a larger mystery narrative, providing a key turning point.",
+            "serialElements": "The ongoing investigation and character dynamics are serviced, with potential for future exploration of Mrs. Hargrove's motivations."
+          },
+          "evaluatedBy": "gpt-4o"
+        }
+      }
+    }
+  ],
+  "aggregatedScores": {
+    "orchestration": 0.9800000000000001,
+    "magic-score": 0.32666666666666666,
+    "reverse-intent": 0.8400000000000001,
+    "narrative-coherence": 0.75
+  },
+  "regressions": [
+    {
+      "metric": "magic-score",
+      "previousValue": 0.6,
+      "currentValue": 0.32666666666666666,
+      "delta": -0.2733333333333333,
+      "severity": "critical",
+      "message": "Magic score (33) below threshold (60)"
+    }
+  ],
+  "duration": 41334
+}

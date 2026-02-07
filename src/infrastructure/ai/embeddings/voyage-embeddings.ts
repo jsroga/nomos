@@ -7,9 +7,18 @@
  * - Separate query vs document embeddings (critical for RAG)
  * - Exponential backoff for retries
  * - Caching for repeated queries
+ *
+ * NOTE: Pure implementation - no LangChain dependency
  */
 
-import { Embeddings } from '@langchain/core/embeddings'
+/**
+ * Embeddings interface (LangChain-free)
+ * Provides the standard embedding methods without external dependencies
+ */
+export interface IEmbeddings {
+  embedDocuments(texts: string[]): Promise<number[][]>
+  embedQuery(text: string): Promise<number[]>
+}
 
 // Voyage AI configuration
 const VOYAGE_API_URL = 'https://api.voyageai.com/v1/embeddings'
@@ -54,6 +63,7 @@ let requestCount = 0
 let windowStart = Date.now()
 
 function getCacheKey(text: string, inputType: string, model: string): string {
+  if (!text) return `${model}:${inputType}:empty`
   return `${model}:${inputType}:${text.slice(0, 100)}`
 }
 
@@ -94,15 +104,30 @@ async function waitForRateLimit(): Promise<void> {
   requestCount++
 }
 
+// Circuit Breaker state
+let rateLimitUntil = 0
+
 async function callVoyageAPI(
   texts: string[],
   config: VoyageEmbeddingConfig,
   retryCount = 0
 ): Promise<number[][]> {
   const apiKey = process.env.VOYAGE_API_KEY
+  const isEnabled = process.env.VOYAGE_ENABLED !== 'false'
 
-  if (!apiKey) {
-    throw new Error('VOYAGE_API_KEY environment variable is not set')
+  // 1. Check Circuit Breaker & Config
+  if (!isEnabled || !apiKey || Date.now() < rateLimitUntil) {
+    if (Date.now() < rateLimitUntil) {
+      console.warn(`[Voyage] Circuit breaker active. Skipping API call (cooldown expires in ${Math.ceil((rateLimitUntil - Date.now()) / 1000)}s).`)
+    } else if (!isEnabled) {
+      console.warn('[Voyage] Disabled via VOYAGE_ENABLED=false.')
+    } else {
+      console.warn('[Voyage] VOYAGE_API_KEY not set.')
+    }
+
+    // Return mock embeddings of correct dimension (1024)
+    const mockEmbedding = new Array(EMBEDDING_DIMENSIONS).fill(0)
+    return texts.map(() => [...mockEmbedding])
   }
 
   await waitForRateLimit()
@@ -131,8 +156,16 @@ async function callVoyageAPI(
 
       // Handle rate limiting
       if (response.status === 429) {
+        // Stop retrying if we've hit the limit too many times
+        if (retryCount >= 3) {
+          console.error('[Voyage] Rate limit exceeded max retries. Activating circuit breaker for 60s.')
+          rateLimitUntil = Date.now() + 60000 // 1 minute cooldown
+          const mockEmbedding = new Array(EMBEDDING_DIMENSIONS).fill(0)
+          return texts.map(() => [...mockEmbedding])
+        }
+
         const retryAfter = parseInt(response.headers.get('retry-after') || '5', 10)
-        console.warn(`[Voyage] Rate limited, retrying after ${retryAfter}s`)
+        console.warn(`[Voyage] Rate limited, retrying after ${retryAfter}s (attempt ${retryCount + 1}/3)`)
         await new Promise(resolve => setTimeout(resolve, retryAfter * 1000))
         return callVoyageAPI(texts, config, retryCount + 1)
       }
@@ -165,14 +198,14 @@ async function callVoyageAPI(
 }
 
 /**
- * VoyageEmbeddings class implementing LangChain's Embeddings interface
+ * VoyageEmbeddings class implementing the IEmbeddings interface
+ * Pure implementation without LangChain dependency
  */
-export class VoyageEmbeddings extends Embeddings {
+export class VoyageEmbeddings implements IEmbeddings {
   private model: string
   private truncation: boolean
 
   constructor(config?: Partial<VoyageEmbeddingConfig>) {
-    super({})
     this.model = config?.model || VOYAGE_MODEL
     this.truncation = config?.truncation ?? true
   }

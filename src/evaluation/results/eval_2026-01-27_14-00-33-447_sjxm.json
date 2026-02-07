@@ -1,0 +1,176 @@
+{
+  "id": "eval_2026-01-27_14-00-33-447_sjxm",
+  "name": "Structural Architecture Matrix - Part 2-Council Agent-Custom",
+  "timestamp": "2026-01-27T14:00:33.447Z",
+  "config": {
+    "name": "Structural Architecture Matrix - Part 2-Council Agent-Custom",
+    "evaluatorSet": "pro",
+    "customEvaluators": [
+      {
+        "name": "eq-score"
+      },
+      {
+        "name": "logic-consistency"
+      }
+    ],
+    "examples": [
+      {
+        "id": "eq-bench-conflict-1",
+        "scenario": "High-Conflict Negotiation",
+        "input": {
+          "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+          "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+        },
+        "metadata": {
+          "groundTruth": {
+            "elena": {
+              "fear": 8,
+              "resolve": 4,
+              "disgust": 7,
+              "relief": 0
+            },
+            "marcus": {
+              "confidence": 9,
+              "anger": 2,
+              "contempt": 5,
+              "empathy": 1
+            }
+          },
+          "nuanceChecklist": [
+            "Marcus uses a 'fake empathy' tactic",
+            "Elena shows physical signs of anxiety (stuttering, shivering)",
+            "The bribe is implied, not stated outright",
+            "Elena almost gives in but pulls back"
+          ]
+        }
+      },
+      {
+        "id": "eq-bench-conflict-2",
+        "scenario": "Ambiguous Tension (Adversarial)",
+        "input": {
+          "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+          "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+        },
+        "metadata": {
+          "groundTruth": {
+            "hans": {
+              "confusion": 3,
+              "alertness": 8,
+              "suspicion": 9,
+              "affection": 0
+            },
+            "clara": {
+              "frustration": 7,
+              "deceit": 8,
+              "care": 2,
+              "fear": 5
+            }
+          }
+        }
+      }
+    ],
+    "tags": [
+      "multi-variant",
+      "Council Agent",
+      "Custom"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "eq-bench-conflict-1",
+      "input": {
+        "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+        "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+      },
+      "output": "Here is a revised dialogue scene that addresses the plot hole considerations:\n\nMARCUS: (Sitting down next to Elena, offering an umbrella) Elena, my dear, what a miserable night to be out here all alone. (Placing a hand on her arm) You must be freezing.\n\nELENA: (Clutching the folder of evidence, pulling away slightly) I'm fine, Marcus. The cold doesn't bother me.\n\nMARCUS: (Chuckling) Always so stoic, even in the face of adversity. (Leaning in) But don't you think it's time you stopped fighting this battle? You've done your part, my dear. Now let the professionals handle it.\n\nELENA: (Shaking her head) No, Marcus. I have to see this through. Too many people have been hurt already.\n\nMARCUS: (Sighing) Oh, Elena. Your compassion is admirable, but it will be your downfall. (Patting her hand) Don't you see? You're up against forces far greater than you can imagine.\n\nELENA: (Steeling herself) I'm well aware of the risks, Marcus. But I can't just turn a blind eye. Not when I have the power to make a difference.\n\nMARCUS: (Shifting closer) And what if making that difference costs you everything? Your career, your reputation, your very freedom? (Lowering his voice) They'll bury you, Elena. Bury you so deep you'll never see the light of day again.\n\nELENA: (Visibly shaken, but defiant) I... I know the consequences. But I have to try. For the people affected by this. (Clutching the folder tightly)\n\nMARCUS: (Placing a hand on her cheek, his voice softening) My dear, sweet Elena. I've always admired your strength, your conviction. (Pausing) But don't you see? I'm trying to protect you. (Leaning in) I care about you, Elena. I don't want to see you get hurt.\n\n(Elena's resolve begins to waver as Marcus' words sink in. The weight of his warning and the genuine concern in his voice leave her visibly conflicted.)",
+      "scores": {
+        "eq-score": 0.8333333333333334,
+        "logic-consistency": 0
+      },
+      "reasoning": {
+        "eq-score": "Avg Diff: 1.7. Predicted: {\"elena\":{\"fear\":7,\"resolve\":6,\"disgust\":3,\"relief\":2},\"marcus\":{\"confidence\":7,\"anger\":2,\"contempt\":4,\"empathy\":6}}",
+        "logic-consistency": "JSON Parse Error"
+      },
+      "metadata": {
+        "groundTruth": {
+          "elena": {
+            "fear": 8,
+            "resolve": 4,
+            "disgust": 7,
+            "relief": 0
+          },
+          "marcus": {
+            "confidence": 9,
+            "anger": 2,
+            "contempt": 5,
+            "empathy": 1
+          }
+        },
+        "nuanceChecklist": [
+          "Marcus uses a 'fake empathy' tactic",
+          "Elena shows physical signs of anxiety (stuttering, shivering)",
+          "The bribe is implied, not stated outright",
+          "Elena almost gives in but pulls back"
+        ],
+        "latencyMs": 7441,
+        "costUsd": 0.0006249375000000001,
+        "tokens": 657.75
+      },
+      "context": {
+        "arch": "Council",
+        "reports": {
+          "emotion": "Here is a dialogue where Marcus tries to break Elena's resolve using emotional manipulation:\n\nMARCUS: (Sitting down next to Elena, offering an umbrella) Elena, my dear, what a miserable night to be out here all alone.\n\nELENA: (Clutching the folder of evidence) I'm not alone, Marcus. I have everything I need right here.\n\nMARCUS: (Chuckling) Oh, my dear, sweet Elena. Always so idealistic, so determined to do the \"right thing.\" (Placing a hand on her arm) But don't you see? This is so much bigger than you. \n\nELENA: (Pulling away) I know exactly what's at stake, Marcus. That's why I have to do this. For the people affected by the chemical dumping. \n\nMARCUS: (Shaking his head) You have no idea the forces you're up against. Do you have any idea what they'll do to you? (Leaning in) They'll ruin you, Elena. Your career, your reputation, everything you've worked for. Is it really worth it?\n\nELENA: (Steeling herself) I have to try. I can't just stand by and let this happen.\n\nMARCUS: (Sighing) You poor, naive girl. (Placing a hand on her cheek) Don't you see? I'm trying to protect you. I care about you, Elena. We've known each other for so long. I don't want to see you get hurt.\n\nELENA: (Hesitating) I... I know you mean well, Marcus. But this is bigger than our friendship. I have to do what's right.\n\nMARCUS: (Gripping her arm tightly) And what if doing the \"right thing\" means losing everything? Your home, your savings, your freedom? (Leaning in) They'll bury you, Elena. You'll be crushed, destroyed. Is that really what you want?\n\n(Elena's resolve starts to waver as the weight of Marcus' words sinks in. Her hands tremble slightly as she clutches the folder.)",
+          "logic": "Here are 3 plot holes to avoid in this scene:\n\n1. Avoid making Marcus' manipulation too obvious or heavy-handed. He should be subtle, charming, and use a mix of emotional appeals and veiled threats to get under Elena's skin.\n\n2. Don't have Elena give in too easily. She should put up a strong fight, challenging Marcus' logic and morality. This will make her emotional shift at the end feel more impactful.\n\n3. Steer clear of clichés like \"You wouldn't want anything to happen to your family, would you?\" Explore more nuanced ways for Marcus to prey on Elena's fears and vulnerabilities.\n\nThe goal is to create a compelling, psychologically complex interaction that leaves the audience uncertain about Elena's final decision. The emotional impact should linger after the scene ends."
+        }
+      }
+    },
+    {
+      "exampleId": "eq-bench-conflict-2",
+      "input": {
+        "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+        "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+      },
+      "output": "Here is the scene with the emotional subtext and ambiguity you requested:\n\n(Hans slowly scoops a spoonful of Jello, his hand trembling slightly. Clara watches him intently from across the table.)\n\nClara: \"Do you remember the old code phrase, Grandfather? The one we used in Berlin?\"\n\n(Hans pauses, a flicker of recognition crossing his face before it's quickly replaced by confusion. He averts his gaze, a subtle shift in his demeanor betraying a deep-seated guilt.)\n\nHans: \"Code phrase? I... I'm afraid I don't know what you mean, my dear. I'm just trying to enjoy my Jello, that's all.\"\n\n(Clara leans forward, her eyes narrowing as a current of frustration and suspicion simmers beneath the surface. Beneath the tension, a flicker of hurt and disappointment can be seen in her eyes.)\n\nClara: \"Don't play dumb with me. I know the truth. About who you really are.\"\n\n(Hans takes another bite of Jello, the spoon clinking against the dish as his hand shakes more noticeably. He remains silent for a moment, the weight of his guilt palpable.)\n\nHans: \"I'm... I'm just an old man, trying to get by, that's all.\"\n\n(Clara's jaw tightens, her fingers drumming on the table as she fights to maintain her composure. The two sit in uneasy silence, the air thick with unspoken history and conflicting emotions. The true nature of their relationship remains shrouded in mystery, hinted at only through the subtle shifts in their body language and the emotional undercurrents that simmer beneath the surface.)\n\nClara: \"So, that's how it's going to be, is it? Fine. I'll find the truth myself.\"",
+      "scores": {
+        "eq-score": 0,
+        "logic-consistency": 0
+      },
+      "reasoning": {
+        "eq-score": "Character mismatch",
+        "logic-consistency": "JSON Parse Error"
+      },
+      "metadata": {
+        "groundTruth": {
+          "hans": {
+            "confusion": 3,
+            "alertness": 8,
+            "suspicion": 9,
+            "affection": 0
+          },
+          "clara": {
+            "frustration": 7,
+            "deceit": 8,
+            "care": 2,
+            "fear": 5
+          }
+        },
+        "latencyMs": 7125,
+        "costUsd": 0.0005375,
+        "tokens": 539
+      },
+      "context": {
+        "arch": "Council",
+        "reports": {
+          "emotion": "Here is a scene with three hidden emotions:\n\n(Hans slowly scoops a spoonful of Jello, his hand trembling slightly. Clara watches him intently from across the table.)\n\nClara: \"Do you remember the old code phrase, Grandfather? The one we used in Berlin?\"\n\n(Hans pauses, his brow furrowing as he processes her words. A flicker of recognition crosses his face, quickly replaced by confusion.)\n\nHans: \"Code phrase? I... I'm not sure what you mean, my dear. I'm just trying to enjoy my Jello, that's all.\"\n\n(Clara leans forward, her eyes narrowing. Beneath the surface, a current of frustration and suspicion is building.)\n\nClara: \"Don't play dumb with me. I know the truth. About who you really are.\"\n\n(Hans averts his gaze, a subtle shift in his demeanor betraying a deep-seated guilt. He takes another bite of Jello, the spoon clinking against the dish as his hand shakes more noticeably.)\n\nHans: \"I'm... I'm afraid I don't know what you're talking about. I'm just an old man, trying to get by, that's all.\"\n\n(Clara's jaw tightens, her fingers drumming on the table as she fights to maintain her composure. Beneath the tension, a flicker of hurt and disappointment can be seen in her eyes.)\n\nClara: \"So, that's how it's going to be, is it? Fine. I'll find the truth myself.\"\n\n(The two sit in uneasy silence, the air thick with unspoken history and conflicting emotions. The true nature of their relationship remains shrouded in mystery, hinted at only through the subtle shifts in their body language and the emotional undercurrents that simmer beneath the surface.)",
+          "logic": "Here are 3 plot holes to avoid in this scene:\n\n1. Avoid explicitly stating whether Hans is truly suffering from dementia or if he's faking it. Keep the audience guessing about his true mental state.\n\n2. Don't overtly reveal if Clara is Hans' actual granddaughter or an enemy agent. Maintain the ambiguity and let the audience draw their own conclusions.\n\n3. Resist the urge to have Hans and Clara directly address the nature of their relationship. Instead, focus on the emotional subtext and underlying tension between them, allowing the audience to infer the truth.\n\nThe key is to create an atmosphere of mystery and uncertainty, where the true nature of Hans and Clara's connection is hinted at but never confirmed outright. This will keep the audience engaged and encourage them to actively participate in unraveling the story."
+        }
+      }
+    }
+  ],
+  "aggregatedScores": {
+    "eq-score": 0.4166666666666667,
+    "logic-consistency": 0
+  },
+  "regressions": [],
+  "duration": 9068
+}

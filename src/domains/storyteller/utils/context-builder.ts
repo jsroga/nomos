@@ -1,4 +1,4 @@
-import { WritersRoomState } from '../graph/state'
+import { WritersRoomState } from '../types'
 
 /**
  * Builds a standardized, XML-structured context for agents.

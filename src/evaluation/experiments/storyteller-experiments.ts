@@ -6,14 +6,13 @@
  * - Tracking metric trends over time
  * - Automatic regression detection
  * - Golden set comparison
- *
- * Integrates with LangSmith for experiment tracking and visualization.
  */
 
 // Load environment variables from .env.local (must be before other imports that use env vars)
 import * as dotenv from 'dotenv'
 import * as fs from 'fs'
 import * as path from 'path'
+import { registerCorePrompts } from '../../prompts/registry'
 
 // Load .env.local file, handling both standard and shell export formats
 function loadEnvFile() {
@@ -44,13 +43,41 @@ function loadEnvFile() {
 
 loadEnvFile()
 
-import { Client } from 'langsmith'
-import { magicScoreEvaluator } from '../evaluators/magic-score'
-import { consistencyEvaluator } from '../evaluators/consistency'
-import { combinedHallucinationEvaluator } from '../evaluators/hallucination'
-import { narrativeCoherenceEvaluator } from '../evaluators/narrative-coherence'
-import { STORYTELLER_GOLDEN_DATASET } from '../datasets/storyteller-golden'
-import type { CustomEvaluator } from '../types'
+// Force disable LangSmith tracing (overrides .env.local)
+process.env.LANGCHAIN_TRACING_V2 = 'false'
+process.env.LANGSMITH_TRACING = 'false'
+process.env.LANGCHAIN_TRACED_BY = ''
+
+import { MagicJudge } from '../judges/creative/magic-judge'
+import { ConsistencyJudge } from '../judges/consistency-judge'
+import { HallucinationJudge } from '../judges/rag/hallucination-judge'
+import { CoherenceJudge } from '../judges/coherence-judge'
+import { ReverseIntentJudge } from '../judges/creative/advanced-judges'
+import { OrchestrationJudge } from '../judges/operational/orchestration-judge'
+import { StorytellerExample, STORYTELLER_GOLDEN_DATASET } from '../datasets/storyteller-golden'
+import { ALL_SCENARIOS } from '../datasets/scenarios'
+import type { CustomEvaluator, MultiVariantReport, VariantReport, ScenarioMetrics, EvaluationExample, EvaluatorInput, EvaluatorResult } from '../types'
+import { saveHtmlReport } from '../report-generator'
+import { BaseJudge, JudgeResult } from '../judges/base-judge'
+
+// Adapter to bridge BaseJudge (3 args) to CustomEvaluator (1 arg object)
+class JudgeAdapter implements CustomEvaluator {
+  constructor(private judge: BaseJudge) { }
+
+  get name() { return this.judge.name }
+
+  async evaluate(params: EvaluatorInput): Promise<EvaluatorResult> {
+    const result = await this.judge.evaluate(params.input, params.output, params.reference)
+    return {
+      score: result.score,
+      reasoning: result.reason,
+      metadata: {
+        ...result.metadata,
+        scoreName: result.scoreName
+      }
+    }
+  }
+}
 
 // ============================================
 // CONFIGURATION
@@ -59,13 +86,21 @@ import type { CustomEvaluator } from '../types'
 // Default evaluator configurations (LLM-only, no heuristics)
 const EVALUATOR_CONFIGS = {
   full: [
-    magicScoreEvaluator,
-    consistencyEvaluator,
-    combinedHallucinationEvaluator,
-    narrativeCoherenceEvaluator,
+    new JudgeAdapter(new OrchestrationJudge()),
+    new JudgeAdapter(new MagicJudge()),
+    new JudgeAdapter(new ConsistencyJudge()),
+    new JudgeAdapter(new HallucinationJudge()),
+    new JudgeAdapter(new CoherenceJudge()),
+    new JudgeAdapter(new ReverseIntentJudge()),
   ],
-  magicOnly: [magicScoreEvaluator],
-  consistencyOnly: [consistencyEvaluator],
+  magicOnly: [new JudgeAdapter(new MagicJudge())],
+  pro: [
+    new JudgeAdapter(new OrchestrationJudge()),
+    new JudgeAdapter(new MagicJudge()),
+    new JudgeAdapter(new ReverseIntentJudge()),
+    new JudgeAdapter(new CoherenceJudge())
+  ],
+  consistencyOnly: [new JudgeAdapter(new ConsistencyJudge())],
 } as const
 
 // Quality thresholds for regression detection
@@ -90,6 +125,7 @@ interface ExperimentOptions {
   parallelism?: number
   compareWith?: string // Previous experiment ID for comparison
   tags?: string[]
+  examples?: EvaluationExample[] // Specific dataset to run
 }
 
 interface ExperimentRun {
@@ -110,6 +146,7 @@ interface ExampleResult {
   scores: Record<string, number>
   reasoning: Record<string, string>
   metadata: Record<string, unknown>
+  context?: Record<string, unknown>
 }
 
 interface RegressionAlert {
@@ -125,12 +162,8 @@ interface RegressionAlert {
 // LANGSMITH CLIENT
 // ============================================
 
-function getLangSmithClient(): Client | null {
-  if (!process.env.LANGCHAIN_API_KEY) {
-    console.warn('LANGCHAIN_API_KEY not set - LangSmith integration disabled')
-    return null
-  }
-  return new Client()
+function getLangSmithClient(): null {
+  return null
 }
 
 // ============================================
@@ -144,16 +177,17 @@ export async function runStorytellerExperiment(
   options: ExperimentOptions,
   generateOutput: (input: Record<string, unknown>) => Promise<unknown>
 ): Promise<ExperimentRun> {
+  // Ensure prompts are registered
+  registerCorePrompts()
+
   const startTime = Date.now()
   const client = getLangSmithClient()
 
   // Select evaluators
-  const evaluators =
-    options.customEvaluators ||
-    EVALUATOR_CONFIGS[options.evaluatorSet || 'full']
+  const evaluators = options.customEvaluators || EVALUATOR_CONFIGS[options.evaluatorSet || 'full']
 
   // Get dataset (optionally sample)
-  let examples = STORYTELLER_GOLDEN_DATASET.examples
+  let examples = options.examples || STORYTELLER_GOLDEN_DATASET.examples
   if (options.sampleSize && options.sampleSize < examples.length) {
     examples = sampleArray(examples, options.sampleSize)
   }
@@ -171,8 +205,22 @@ export async function runStorytellerExperiment(
     const batchResults = await Promise.all(
       batch.map(async example => {
         try {
-          // Generate output
-          const output = await generateOutput(example.input)
+          // Generate output with Latency Tracking
+          const genStart = Date.now()
+          const outputResult = await generateOutput(example.input)
+          const genDuration = Date.now() - genStart
+
+          let output: unknown = outputResult
+          let context: Record<string, unknown> | undefined = undefined
+
+          // Extract context if output matches { response, context } structure
+          if (outputResult && typeof outputResult === 'object' && 'context' in outputResult) {
+            context = (outputResult as any).context
+            // If response is present, evaluate that. Otherwise eval the whole object.
+            if ('response' in outputResult) {
+              output = (outputResult as any).response
+            }
+          }
 
           // Run all evaluators
           const evalResults = await Promise.all(
@@ -197,6 +245,21 @@ export async function runStorytellerExperiment(
             metadata[result.name] = result.metadata
           }
 
+          // Calculate approximate cost (Haiku pricing: $0.25/M input, $1.25/M output)
+          // Rough estimation: 1 token ~= 4 chars
+          const inputStr = JSON.stringify(example.input)
+          const outputStr = JSON.stringify(output)
+          const inputTokens = inputStr.length / 4
+          const outputTokens = outputStr.length / 4
+          const costUsd = (inputTokens / 1_000_000 * 0.25) + (outputTokens / 1_000_000 * 1.25)
+
+          // Merge example metadata (e.g. scenario name)
+          Object.assign(metadata, example.metadata, {
+            latencyMs: genDuration,
+            costUsd: costUsd,
+            tokens: inputTokens + outputTokens
+          })
+
           return {
             exampleId: example.id,
             input: example.input,
@@ -204,6 +267,7 @@ export async function runStorytellerExperiment(
             scores,
             reasoning,
             metadata,
+            context
           }
         } catch (error) {
           console.error(`Error evaluating example ${example.id}:`, error)
@@ -214,6 +278,7 @@ export async function runStorytellerExperiment(
             scores: {},
             reasoning: { error: String(error) },
             metadata: { error: true },
+            context: {}
           }
         }
       })
@@ -247,15 +312,36 @@ export async function runStorytellerExperiment(
     duration,
   }
 
-  // Log to LangSmith
-  if (client) {
-    await logExperimentToLangSmith(client, experimentRun)
-  }
+  // Save results to JSON for automated reporting
+  await saveExperimentResults(experimentRun)
+
+  // Generate and save HTML report
+  saveHtmlReport(experimentRun)
 
   // Print summary
   printExperimentSummary(experimentRun)
 
   return experimentRun
+}
+
+/**
+ * Save experiment results to a JSON file
+ */
+async function saveExperimentResults(experiment: ExperimentRun): Promise<void> {
+  const resultsDir = path.resolve(process.cwd(), 'src/evaluation/results')
+  if (!fs.existsSync(resultsDir)) {
+    fs.mkdirSync(resultsDir, { recursive: true })
+  }
+
+  const fileName = `${experiment.id}.json`
+  const filePath = path.join(resultsDir, fileName)
+
+  fs.writeFileSync(filePath, JSON.stringify(experiment, null, 2))
+  console.log(`   💾 Results saved to: src/evaluation/results/${fileName}`)
+
+  // Also maintain a 'latest.json' for easier automated reporting
+  const latestPath = path.join(resultsDir, 'latest.json')
+  fs.writeFileSync(latestPath, JSON.stringify(experiment, null, 2))
 }
 
 // ============================================
@@ -276,7 +362,12 @@ export async function runABTest(
     generate: (input: Record<string, unknown>) => Promise<unknown>
   },
   options: Omit<ExperimentOptions, 'name'> = {}
-): Promise<{ variantA: ExperimentRun; variantB: ExperimentRun; winner: string; significance: number }> {
+): Promise<{
+  variantA: ExperimentRun
+  variantB: ExperimentRun
+  winner: string
+  significance: number
+}> {
   console.log(`\n🔬 Starting A/B Test: ${name}`)
   console.log(`   Variant A: ${variantA.name}`)
   console.log(`   Variant B: ${variantB.name}`)
@@ -284,11 +375,19 @@ export async function runABTest(
   // Run both variants
   const [resultA, resultB] = await Promise.all([
     runStorytellerExperiment(
-      { ...options, name: `${name} - ${variantA.name}`, tags: [...(options.tags || []), 'ab-test', 'variant-a'] },
+      {
+        ...options,
+        name: `${name} - ${variantA.name}`,
+        tags: [...(options.tags || []), 'ab-test', 'variant-a'],
+      },
       variantA.generate
     ),
     runStorytellerExperiment(
-      { ...options, name: `${name} - ${variantB.name}`, tags: [...(options.tags || []), 'ab-test', 'variant-b'] },
+      {
+        ...options,
+        name: `${name} - ${variantB.name}`,
+        tags: [...(options.tags || []), 'ab-test', 'variant-b'],
+      },
       variantB.generate
     ),
   ])
@@ -317,15 +416,148 @@ export async function runABTest(
 }
 
 // ============================================
+// MULTI-VARIANT TESTING (MAGICAL FORMULA)
+// ============================================
+
+export interface AgentVariant {
+  name: string
+  config: Record<string, any>
+  generate: (input: Record<string, unknown>) => Promise<unknown>
+}
+
+// removed duplicate import
+
+export async function runMultiVariantTest(
+  name: string,
+  variants: AgentVariant[],
+  options?: {
+    examples?: EvaluationExample[]
+    customEvaluators?: CustomEvaluator[]
+  }
+): Promise<MultiVariantReport> {
+  console.log(`\n🧪 Starting Multi-Variant Test: ${name}`)
+  console.log(`   Variants: ${variants.map(v => v.name).join(', ')}`)
+
+  const reports: VariantReport[] = []
+  let scenarioMap: Record<string, EvaluationExample[]> = {}
+
+  if (options?.examples && options.examples.length > 0) {
+    console.log(`   Using Custom Examples: ${options.examples.length}`)
+    // Group provided examples by scenario, or default to 'Custom'
+    for (const ex of options.examples) {
+      const key = (ex.metadata?.scenario as string) || 'Custom'
+      if (!scenarioMap[key]) scenarioMap[key] = []
+      scenarioMap[key].push(ex)
+    }
+  } else {
+    // ... existing logic ...
+    console.log(`   Scenarios: Sci-Fi, Fantasy, Thriller, Edge Cases`)
+    // Map helpful scenario names to filtered subsets of ALL_SCENARIOS
+    // We filter ALL_SCENARIOS which should be imported
+    scenarioMap = {
+      'Sci-Fi': ALL_SCENARIOS.filter(e => e.metadata?.scenario === 'sci-fi'),
+      'Fantasy': ALL_SCENARIOS.filter(e => e.metadata?.scenario === 'fantasy'),
+      'Thriller': ALL_SCENARIOS.filter(e => e.metadata?.scenario === 'thriller'),
+      'Edge': ALL_SCENARIOS.filter(e => e.metadata?.scenario === 'edge'),
+    }
+  }
+
+  const scenarioNames = Object.keys(scenarioMap);
+
+  for (const variant of variants) {
+    console.log(`\n👉 Running Variant: ${variant.name}`)
+    const scenarioMetrics: Record<string, ScenarioMetrics> = {}
+    const allResults: ExampleResult[] = []
+
+    for (const [scenarioName, examples] of Object.entries(scenarioMap)) {
+      // Skip if no examples
+      if (examples.length === 0) continue;
+
+      const run = await runStorytellerExperiment({
+        name: `${name}-${variant.name}-${scenarioName}`,
+        evaluatorSet: 'pro', // Default, but overridden if customEvaluators provided
+        customEvaluators: options?.customEvaluators, // Pass custom evaluators down
+        examples: examples,
+        tags: ['multi-variant', variant.name, scenarioName]
+      }, variant.generate)
+      // ...
+
+      // Aggregate metrics for this scenario
+      scenarioMetrics[scenarioName.toLowerCase()] = {
+        magicScore: run.aggregatedScores['magic-score'] || 0,
+        consistency: run.aggregatedScores['consistency'] || 0,
+        orchestration: run.aggregatedScores['orchestration'] || 0,
+        latencyMs: run.duration / run.results.length,
+        costUsd: 0 // Placeholder
+      }
+      allResults.push(...run.results)
+    }
+
+    // Calculate Overall
+    const overallAgg = calculateAggregatedScores(allResults)
+    const overallMetrics: ScenarioMetrics = {
+      magicScore: overallAgg['magic-score'] || 0,
+      consistency: overallAgg['consistency'] || 0,
+      orchestration: overallAgg['orchestration'] || 0,
+      latencyMs: 0,
+      costUsd: 0
+    }
+
+    // Map logs for Detail View
+    const exampleLogs = allResults.map(r => ({
+      id: r.exampleId,
+      scenario: (r.metadata['scenario'] as string) || 'unknown',
+      input: (r.input['message'] as string) || JSON.stringify(r.input),
+      output: (r.output as any)?.response || JSON.stringify(r.output),
+      score: r.scores['magic-score'] || 0,
+      reasoning: r.reasoning,
+      context: r.context
+    }))
+
+    reports.push({
+      name: variant.name,
+      config: variant.config,
+      overallMetrics,
+      scenarioMetrics,
+      exampleLogs
+    })
+
+    // Save incrementally so dashboard updates live
+    const currentReport: MultiVariantReport = {
+      id: generateExperimentId(),
+      timestamp: new Date().toISOString(),
+      variants: reports,
+      scenarios: scenarioNames.map(s => s.toLowerCase())
+    }
+
+    const resultsDir = path.resolve(process.cwd(), 'src/evaluation/results')
+    if (!fs.existsSync(resultsDir)) fs.mkdirSync(resultsDir, { recursive: true })
+    fs.writeFileSync(path.join(resultsDir, 'latest.json'), JSON.stringify(currentReport, null, 2))
+    console.log(`   💾 Intermediate Report saved for Variant: ${variant.name}`)
+  }
+
+  // Final save (redundant but safe)
+  const report: MultiVariantReport = {
+    id: generateExperimentId(),
+    timestamp: new Date().toISOString(),
+    variants: reports,
+    scenarios: scenarioNames.map(s => s.toLowerCase())
+  }
+
+  console.log(`\n💾 Multi-Variant Report saved to: src/evaluation/results/latest.json`)
+
+  return report
+}
+
+// ============================================
 // REGRESSION DETECTION
 // ============================================
 
 async function detectRegressions(
   currentScores: Record<string, number>,
   _previousExperimentId: string,
-  _client: Client | null
+  _client: null
 ): Promise<RegressionAlert[]> {
-  // TODO: In a real implementation, fetch previous experiment from LangSmith
   // For now, just check against thresholds
   return detectThresholdViolations(currentScores)
 }
@@ -334,7 +566,10 @@ function detectThresholdViolations(scores: Record<string, number>): RegressionAl
   const alerts: RegressionAlert[] = []
 
   // Check magic score
-  if (scores['magic-score'] !== undefined && scores['magic-score'] < QUALITY_THRESHOLDS.magicScore / 100) {
+  if (
+    scores['magic-score'] !== undefined &&
+    scores['magic-score'] < QUALITY_THRESHOLDS.magicScore / 100
+  ) {
     alerts.push({
       metric: 'magic-score',
       previousValue: QUALITY_THRESHOLDS.magicScore / 100,
@@ -346,7 +581,10 @@ function detectThresholdViolations(scores: Record<string, number>): RegressionAl
   }
 
   // Check consistency
-  if (scores['consistency'] !== undefined && scores['consistency'] < QUALITY_THRESHOLDS.consistency) {
+  if (
+    scores['consistency'] !== undefined &&
+    scores['consistency'] < QUALITY_THRESHOLDS.consistency
+  ) {
     alerts.push({
       metric: 'consistency',
       previousValue: QUALITY_THRESHOLDS.consistency,
@@ -385,38 +623,15 @@ function calculateAggregatedScores(results: ExampleResult[]): Record<string, num
 }
 
 function generateExperimentId(): string {
-  const timestamp = Date.now().toString(36)
-  const random = Math.random().toString(36).substring(2, 8)
-  return `exp_${timestamp}_${random}`
+  const now = new Date()
+  const timestamp = now.toISOString().replace(/[:.]/g, '-').replace('T', '_').split('Z')[0]
+  const random = Math.random().toString(36).substring(2, 6)
+  return `eval_${timestamp}_${random}`
 }
 
 function sampleArray<T>(array: T[], size: number): T[] {
   const shuffled = [...array].sort(() => Math.random() - 0.5)
   return shuffled.slice(0, size)
-}
-
-async function logExperimentToLangSmith(client: Client, experiment: ExperimentRun): Promise<void> {
-  try {
-    // Log each result as a run (use 'chain' type for evaluation runs)
-    for (const result of experiment.results) {
-      await client.createRun({
-        name: `${experiment.name}/${result.exampleId}`,
-        run_type: 'chain',
-        inputs: result.input as Record<string, unknown>,
-        outputs: { output: result.output, scores: result.scores },
-        extra: {
-          metadata: result.metadata,
-          reasoning: result.reasoning,
-          experimentId: experiment.id,
-          runCategory: 'evaluation', // Track this is an evaluation run
-        },
-      })
-    }
-
-    console.log(`   📤 Logged ${experiment.results.length} results to LangSmith`)
-  } catch (error) {
-    console.error('Failed to log to LangSmith:', error)
-  }
 }
 
 function printExperimentSummary(experiment: ExperimentRun): void {
@@ -453,8 +668,9 @@ function printExperimentSummary(experiment: ExperimentRun): void {
  */
 async function main() {
   const args = process.argv.slice(2)
-  const experimentName = args.find(a => a.startsWith('--experiment='))?.split('=')[1] || 'default-test'
-  const evaluatorSet = args.find(a => a.startsWith('--evaluators='))?.split('=')[1] || 'fast'
+  const experimentName =
+    args.find(a => a.startsWith('--experiment='))?.split('=')[1] || 'default-test'
+  const evaluatorSet = args.find(a => a.startsWith('--evaluators='))?.split('=')[1] || 'magicOnly'
   const sampleSize = parseInt(args.find(a => a.startsWith('--samples='))?.split('=')[1] || '10', 10)
 
   console.log('🧪 Storyteller Evaluation Experiment Runner')

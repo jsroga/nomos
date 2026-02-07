@@ -1,6 +1,5 @@
 import { AIModel, AIModelConfig, TileContext } from './types'
 import { assembleContextImage } from './contextAssembler'
-import axios from 'axios'
 
 interface GeminiPart {
   text?: string
@@ -46,10 +45,26 @@ export class GeminiAIModel implements AIModel {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${config.apiKey}`
 
     // Prepare context
-    const { imageBlob, cropRect } = await assembleContextImage(context, 1024)
-    const base64Image = await this.blobToBase64(imageBlob)
+    // On Server, we can use sharp for faster/more robust assembly
+    // On Client, we use the fallback Canvas version
+    let contextImageBase64: string
+    let cropRect: { x: number; y: number; width: number; height: number }
+
+    if (typeof window === 'undefined') {
+      // SERVER SIDE
+      const { imageService } = await import('@/lib/server/image-service')
+      const { image, mask, cropRect: serverCropRect } = await imageService.assembleContext(context, 1024)
+      contextImageBase64 = image.toString('base64')
+      cropRect = serverCropRect
+    } else {
+      // CLIENT SIDE
+      const { imageBlob, cropRect: clientCropRect } = await assembleContextImage(context, 1024)
+      contextImageBase64 = await this.blobToBase64(imageBlob)
+      cropRect = clientCropRect
+    }
 
     // Construct Prompt - using master template directly
+    // TODO: Extract this prompt template to a shared configuration or constant
     const finalPrompt = `Inpaint the central gray square to seamlessly connect with the surrounding edge context. Fill the gray area with: ${prompt}. Ensure continuous lines, consistent perspective (Isometric), and matching lighting. Do not generate borders or frames.`
 
     // Gemini generateContent Payload
@@ -61,7 +76,7 @@ export class GeminiAIModel implements AIModel {
             {
               inline_data: {
                 mime_type: 'image/png',
-                data: base64Image,
+                data: contextImageBase64,
               },
             },
           ],
@@ -76,18 +91,26 @@ export class GeminiAIModel implements AIModel {
     }
 
     try {
-      const response = await axios.post<GeminiResponse>(url, payload, {
+      const response = await fetch(url, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify(payload),
       })
 
-      if (response.data.error) {
-        throw new Error(response.data.error.message)
+      const data = (await response.json()) as GeminiResponse
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || `HTTP Error: ${response.status}`)
+      }
+
+      if (data.error) {
+        throw new Error(data.error.message)
       }
 
       // Gemini Response Parsing
-      const candidate = response.data.candidates?.[0]
+      const candidate = data.candidates?.[0]
       if (!candidate) throw new Error('No candidates returned')
 
       if (candidate.finishReason === 'SAFETY') {
@@ -117,14 +140,19 @@ export class GeminiAIModel implements AIModel {
       if (!inlineData) throw new Error('Image data missing in response part')
 
       const generatedBase64 = inlineData.data
-      const dataUrl = `data:image/png;base64,${generatedBase64}`
 
-      return await this.cropImage(dataUrl, cropRect)
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        console.error('Gemini generation failed', error.response?.data || error)
-        throw new Error(`Gemini failed: ${error.response?.data?.error?.message || error.message}`)
+      // Crop result
+      if (typeof window === 'undefined') {
+        // SERVER SIDE with sharp
+        const { imageService } = await import('@/lib/server/image-service')
+        const croppedBuffer = await imageService.crop(Buffer.from(generatedBase64, 'base64'), cropRect)
+        return `data:image/png;base64,${croppedBuffer.toString('base64')}`
+      } else {
+        // CLIENT SIDE with Canvas
+        const dataUrl = `data:image/png;base64,${generatedBase64}`
+        return await this.cropImage(dataUrl, cropRect)
       }
+    } catch (error: unknown) {
       console.error('Gemini generation failed', error)
       throw new Error(`Gemini failed: ${error instanceof Error ? error.message : String(error)}`)
     }

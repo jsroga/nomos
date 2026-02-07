@@ -2,7 +2,7 @@
 
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Button } from '@/components/ui/button'
-import { Image as ImageIcon } from 'lucide-react' // Placeholder icon
+// Placeholder icon
 
 export default function LoginButton() {
   const supabase = createClientComponentClient()

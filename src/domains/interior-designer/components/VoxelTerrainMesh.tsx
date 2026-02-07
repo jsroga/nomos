@@ -11,7 +11,7 @@
  * - Proper disposal on unmount
  */
 
-import React, { useMemo, useRef, useEffect, useCallback } from 'react'
+import React, { useMemo, useRef, useEffect } from 'react'
 import * as THREE from 'three'
 import { useInteriorStore, Surface } from '@/domains/interior-designer/store/useInteriorStore'
 

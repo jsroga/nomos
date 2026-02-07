@@ -1,9 +1,10 @@
 import React from 'react'
-import { Lightbulb, RefreshCw, Book, Film, Gamepad2 } from 'lucide-react'
-import { StoryPlan, InspirationItem } from '../../schemas/agent-schemas'
+import { Lightbulb, RefreshCw, Book, Film, Gamepad2, Loader2 } from 'lucide-react'
+import { InspirationItem } from '../../schemas/agent-schemas'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 import { useBible } from './BibleContext'
+import { SectionPendingOverlay } from './SectionPendingOverlay'
 
 interface BibleInspirationsProps {}
 
@@ -15,10 +16,70 @@ export const BibleInspirations: React.FC<BibleInspirationsProps> = () => {
     updateInspiration: onInspirationChange,
     isReadOnly,
     onSendMessage,
+    loadingSections,
+    pendingActions,
   } = useBible()
+  
+  const isLoading = loadingSections?.inspirations?.loading ?? false
+  const pendingAction = pendingActions?.inspirations
+  
+  // Normalize inspirations - handle both flat array and categorized object formats
+  const normalizedInspirations = React.useMemo(() => {
+    const raw = storyPlan.inspirations
+    
+    // If already in correct format (object with books/movies/games keys)
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+      return raw as { books?: InspirationItem[]; movies?: InspirationItem[]; games?: InspirationItem[] }
+    }
+    
+    // If flat array, categorize by detecting type from title
+    if (Array.isArray(raw)) {
+      const books: InspirationItem[] = []
+      const movies: InspirationItem[] = []
+      const games: InspirationItem[] = []
+      
+      for (const item of raw) {
+        const title = typeof item === 'string' ? item : item?.title || ''
+        const titleLower = title.toLowerCase()
+        
+        // Detect category from title patterns
+        if (titleLower.includes('(game)') || titleLower.includes('video game') || 
+            titleLower.match(/\(\d{4}\).*game/i) || titleLower.includes('bioshock') ||
+            titleLower.includes('rpg') || titleLower.includes('zelda') || titleLower.includes('souls')) {
+          games.push(typeof item === 'string' ? { title: item } : item)
+        } else if (titleLower.includes('film') || titleLower.includes('movie') ||
+                   titleLower.match(/\(\d{4}\)$/) || titleLower.includes('anime') ||
+                   titleLower.includes('inside out') || titleLower.includes('weathering')) {
+          movies.push(typeof item === 'string' ? { title: item } : item)
+        } else {
+          // Default to books (includes "by Author" patterns)
+          books.push(typeof item === 'string' ? { title: item } : item)
+        }
+      }
+      
+      return { books, movies, games }
+    }
+    
+    return { books: [], movies: [], games: [] }
+  }, [storyPlan.inspirations])
 
   return (
-    <section>
+    <section className={isLoading || pendingAction ? 'relative' : ''}>
+      {/* Pending action overlay */}
+      {pendingAction && (
+        <SectionPendingOverlay 
+          pendingAction={pendingAction}
+          onReview={pendingAction.onReview}
+        />
+      )}
+      {isLoading && !pendingAction && (
+        <div className="absolute inset-0 z-10 bg-background/60 backdrop-blur-sm rounded-lg flex items-center justify-center">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin text-yellow-400" />
+            <span>Finding creative references...</span>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Lightbulb className="w-5 h-5 text-emerald-400/80" />
@@ -27,14 +88,16 @@ export const BibleInspirations: React.FC<BibleInspirationsProps> = () => {
         {!isReadOnly && onSendMessage && (
           <button
             onClick={() =>
-              onSendMessage(
-                "Generate diverse inspirations for this world - include relevant books, movies, and games. For each, provide the exact title and 1-2 sentences describing what it is and why it's thematically relevant."
+              onSendMessage?.(
+                "Generate diverse inspirations for this world - include relevant books, movies, and games. For each, provide the exact title and 1-2 sentences describing what it is and why it's thematically relevant.",
+                'inspirations'
               )
             }
-            className="p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105"
+            className={`p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}
             title="Generate Inspirations"
+            disabled={isLoading}
           >
-            <RefreshCw size={14} />
+            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
           </button>
         )}
       </div>
@@ -58,8 +121,8 @@ export const BibleInspirations: React.FC<BibleInspirationsProps> = () => {
               />
             ) : (
               <div className="space-y-1">
-                {storyPlan.inspirations?.books?.length ? (
-                  storyPlan.inspirations.books.map((item: InspirationItem, i: number) => {
+                {normalizedInspirations.books?.length ? (
+                  normalizedInspirations.books.map((item: InspirationItem, i: number) => {
                     const title = typeof item === 'string' ? item : item.title
                     const description = typeof item === 'object' ? item.description : null
                     return description ? (
@@ -115,8 +178,8 @@ export const BibleInspirations: React.FC<BibleInspirationsProps> = () => {
               />
             ) : (
               <div className="space-y-1">
-                {storyPlan.inspirations?.movies?.length ? (
-                  storyPlan.inspirations.movies.map((item: InspirationItem, i: number) => {
+                {normalizedInspirations.movies?.length ? (
+                  normalizedInspirations.movies.map((item: InspirationItem, i: number) => {
                     const title = typeof item === 'string' ? item : item.title
                     const description = typeof item === 'object' ? item.description : null
                     return description ? (
@@ -172,8 +235,8 @@ export const BibleInspirations: React.FC<BibleInspirationsProps> = () => {
               />
             ) : (
               <div className="space-y-1">
-                {storyPlan.inspirations?.games?.length ? (
-                  storyPlan.inspirations.games.map((item: InspirationItem, i: number) => {
+                {normalizedInspirations.games?.length ? (
+                  normalizedInspirations.games.map((item: InspirationItem, i: number) => {
                     const title = typeof item === 'string' ? item : item.title
                     const description = typeof item === 'object' ? item.description : null
                     return description ? (

@@ -1,0 +1,385 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmark 2.0: Phase 10 Full Evaluation-Critique Loop-Custom</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #fdfaf6;
+            --text: #1a1a1a;
+            --accent: #c43e1c;
+            --border: #e0d8cc;
+            --card-bg: #ffffff;
+            --font-serif: 'Crimson Pro', serif;
+            --font-sans: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            border-bottom: 2px solid var(--text);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-family: var(--font-serif);
+            font-size: 3rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .meta {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 60px;
+        }
+
+        .score-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 4px 4px 0px var(--border);
+        }
+
+        .score-label {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .score-value {
+            font-family: var(--font-serif);
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .score-bar-bg {
+            height: 4px;
+            background: #eee;
+            margin-top: 10px;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            background: var(--accent);
+        }
+
+        .example-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+            padding: 30px;
+        }
+
+        .example-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .example-id {
+            font-family: var(--font-serif);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .badge.high { background: #e6f4ea; color: #1e7e34; }
+        .badge.low { background: #fce8e8; color: #d93025; }
+        .badge.intent { background: #e8f0fe; color: #1967d2; }
+
+        .content-section {
+            margin-bottom: 30px;
+        }
+
+        h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            border-radius: 4px;
+        }
+
+        .literary-output {
+            font-family: var(--font-serif);
+            font-size: 1.25rem;
+            white-space: pre-wrap;
+            padding: 20px;
+            border-left: 4px solid var(--accent);
+            background: #fffafa;
+        }
+
+        .reason-block {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+        }
+
+        .regressions {
+            background: #fff0f0;
+            border: 1px solid #ffcaca;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+
+        .regression-item {
+            color: #c00;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Storyteller Benchmark 2.0</h1>
+            <div class="meta">
+                Experiment ID: eval_2026-01-27_16-25-55-392_4t8q | Run on: 1/27/2026, 5:25:55 PM | Duration: 15.1s
+            </div>
+        </header>
+
+        
+
+        <div class="dashboard">
+            
+      <div class="score-card">
+        <div class="score-label">EQ SCORE</div>
+        <div class="score-value">47.5%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 47.5%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">LOGIC CONSISTENCY</div>
+        <div class="score-value">75.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 75%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">EMOTIONAL NUANCE</div>
+        <div class="score-value">10.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 10%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">MULTI HOP EMPATHY</div>
+        <div class="score-value">71.7%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 71.66666666666667%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">LONG HORIZON ARC</div>
+        <div class="score-value">80.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 80%"></div>
+        </div>
+      </div>
+    
+        </div>
+
+        <div class="results-list">
+            
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#1 - eq-bench-conflict-1</span>
+        <div class="example-badges">
+          
+          
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+  "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            Here is a revised version of the dialogue with a focus on emotional realism and subtextual aggression:
+
+(The rain falls harder as ELENA sits on the park bench, her grip tightening on the envelope. MARCUS approaches, his umbrella shielding him from the downpour.)
+
+MARCUS: (Tilting his head, a faint smile on his lips) Elena, my dear. I'm so glad you could join me on this dreary evening.
+
+ELENA: (Jaw clenched, eyes narrowed) What do you want, Marcus? I don't have much time.
+
+MARCUS: (Sitting down beside her, his movements measured) Time. (A beat) That's precisely what I'm concerned about. You know, I've always looked out for you, Elena. Like a father. (His hand reaches out, but she flinches away) And it pains me to see you putting yourself in such...danger.
+
+ELENA: (Scoffing, her knuckles turning white) Danger? I'm doing the right thing. Your company has been poisoning this town for years. The EPA needs to know.
+
+MARCUS: (Sighing, his brow furrowing) Oh, Elena. Always the idealist. (He leans in, his voice lowering) Don't you see? This will only bring you more trouble than it's worth. (His gaze drifts to the envelope) Think of your family - your sweet little girl. Do you really want to put her through that kind of upheaval?
+
+ELENA: (Her eyes hardening) This isn't about me. It's about doing what's morally right. I have to turn this over.
+
+MARCUS: (His hand moving to cover hers, his touch feather-light) My dear, I understand your convictions. (A pause, his eyes searching her face) But sometimes the moral path isn't so clear-cut. (He gestures towards the town, his voice tinged with concern) Think of the damage this could do - to the company, to the community. Jobs would be lost, lives ruined. Is that the legacy you want?
+
+(ELENA's expression wavers, her resolve beginning to crumble.)
+
+MARCUS: (Leaning in, his voice low and soothing) I'm offering you a chance to make this all go away. (His fingers close around the envelope) A chance to protect the people you care about. (He pauses, his gaze unwavering) All you have to do is give me that envelope.
+
+(ELENA's eyes dart between the envelope and Marcus, her breath catching in her throat.)
+
+ELENA: (Her voice barely above a whisper) I...I don't know what to do.
+
+MARCUS: (His hand tightening around hers, his eyes filled with a grandfatherly concern) There, there. (He offers a gentle smile) It's a difficult decision, I know. But I promise, this is the best way. (His grip on the envelope tightens) For everyone.
+
+(ELENA's expression shifts, her eyes glistening with unshed tears as the weight of the choice settles on her.)
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>eq-score:</strong> Avg Diff: 0.5. Predicted: {"elena":{"fear":7,"resolve":4,"disgust":6,"relief":3},"marcus":{"confidence":8,"anger":2,"contempt":5,"empathy":6}}
+            </div>
+          
+            <div class="reason-block">
+              <strong>logic-consistency:</strong> Failed: None
+            </div>
+          
+            <div class="reason-block">
+              <strong>emotional-nuance:</strong> Found 2 nuance markers: Low subtext - too direct
+            </div>
+          
+            <div class="reason-block">
+              <strong>multi-hop-empathy:</strong> First: 8/10, Second: 8/10, Third: 7/10. Evidence: The dialogue shows a strong understanding of the characters' emotional states. Marcus demonstrates e
+            </div>
+          
+            <div class="reason-block">
+              <strong>long-horizon-arc:</strong> The emotional arc of the characters in this dialogue is consistent and motivated. The dialogue shows a clear progression of emotions that are driven by the characters' goals and the conflict between them.  Elena starts off tense and defensive, which is a natural response to Marcus' unexpected presence and the sensitive nature of the situation. As Marcus applies more pressure and manipulation, Elena's resolve begins to waver, and her emotions shift towards uncertainty and internal conflict. This change is motivated by Marcus' persuasive tactics and the weight of the decision she faces.  Marcus, on the other hand, maintains a calm and calculated demeanor throughout, using a grandfatherly tone and concern for Elena's family to try and sway her. His emotions escalate from a faint smile to a more serious, almost pleading expression as he senses Elena's resolve crumbling.  The dialogue builds tension and emotional intensity in a way that feels organic and true to the characters' motivations. There are no random mood swings, and the emotional trajectory is appropriately escalating as the stakes and pressure increase. Overall, the emotional arc is consistent, motivated, and escalating in a way that feels realistic and compelling.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#2 - eq-bench-conflict-2</span>
+        <div class="example-badges">
+          
+          
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+  "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            HANS: (Scoops up a spoonful of Jello, his movements slow and deliberate) Jello. Always reminded me of simpler times. (Pauses, his gaze distant) When I was a boy, my mother used to make the most delightful cherry Jello. (Glances up at Clara, a hint of wistfulness in his eyes)
+
+CLARA: (Watches him intently, her expression unreadable) I remember those summers by the lake. (Leans in, her voice soft) You used to take me there, don't you recall?
+
+HANS: (Furrows his brow, a flicker of uncertainty crossing his features) The lake? I'm afraid I... (Trails off, taking another bite of Jello)
+
+CLARA: (Reaches out, her fingers brushing against his hand) It was our special place, Grandpa. (Holds his gaze, a subtle intensity in her voice) Where you taught me so much. About the world. (Pauses, the corners of her lips turning up ever so slightly) About survival.
+
+HANS: (Stiffens at her touch, his eyes narrowing) Survival, you say? (Pulls his hand away, his movements deliberate) These days, it's all I can do to remember what's real. (Leans back in his chair, a hint of suspicion in his expression)
+
+CLARA: (Tilts her head, her gaze unwavering) I'm sure it must be difficult. (Pauses, her tone measured) But I'm here, Grandpa. (Reaches out again, her fingers ghosting over his) To help you remember.
+
+HANS: (Watches her hand, his jaw tightening) Remember, hmm? (Looks up, his eyes searching her face) And what is it, exactly, that you want me to remember?
+
+CLARA: (Holds his gaze, a faint smile playing on her lips) Everything. (Leans back, her posture relaxed) After all, family is the most important thing, isn't it?
+
+HANS: (Contemplates her words, a flicker of recognition in his eyes) Family. (Takes a slow, deliberate bite of Jello, never breaking eye contact) Yes, I suppose it is.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>eq-score:</strong> Character mismatch
+            </div>
+          
+            <div class="reason-block">
+              <strong>logic-consistency:</strong> Failed: The true relationship is NOT explicitly stated, Clara uses a specific phrase/trigger
+            </div>
+          
+            <div class="reason-block">
+              <strong>emotional-nuance:</strong> Found 0 nuance markers: Low subtext - too direct
+            </div>
+          
+            <div class="reason-block">
+              <strong>multi-hop-empathy:</strong> First: 7/10, Second: 6/10, Third: 7/10. Evidence: The dialogue shows that both Hans and Clara demonstrate a good understanding of each other's feeling
+            </div>
+          
+            <div class="reason-block">
+              <strong>long-horizon-arc:</strong> The emotional arc of the characters in this dialogue is largely consistent and motivated. The dialogue starts with Hans reminiscing about simpler times and his mother's Jello, which sets a nostalgic and wistful tone. Clara then responds by recalling their shared memories, which helps establish a sense of history and intimacy between the two characters.  As the dialogue progresses, there are some subtle shifts in the characters' emotional states, but these changes feel natural and motivated by the unfolding conversation. For example, when Hans expresses uncertainty about the lake, there is a flicker of uncertainty in his expression, which is a reasonable response to Clara's reference to a shared memory he doesn't seem to recall. Similarly, when Clara touches his hand, Hans stiffens and pulls away, which suggests a degree of discomfort or suspicion that is understandable given the ambiguity of their relationship.  The dialogue then escalates as Clara continues to probe Hans' memories, and he becomes more guarded and questioning. However, this escalation feels organic and driven by the characters' motivations and the underlying tension in their relationship. The final exchange, where Hans contemplates the meaning of 'family,' suggests a potential resolution or shift in his perspective, which is an appropriate and satisfying conclusion to the emotional arc.  Overall, the dialogue maintains a consistent and motivated emotional trajectory, with the characters' moods and reactions evolving in a way that feels natural and believable. There are no random mood swings or abrupt changes in the characters' emotional states, and the emotional arc builds and resolves in a compelling way.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+        </div>
+    </div>
+</body>
+</html>
+  

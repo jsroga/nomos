@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Skull, FileText, Code, Shield, FlaskConical } from 'lucide-react'
+import { FileText, Code, Shield, FlaskConical } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 
@@ -13,6 +13,17 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
     { label: 'API Reference', href: '/docs', icon: Code },
     { label: 'MCP Server', href: '/docs/mcp', icon: Shield },
     { label: 'Evaluation', href: '/docs/evaluation', icon: FlaskConical },
+  ]
+
+  const moduleItems = [
+    { label: 'Storyteller', slug: 'storyteller' },
+    { label: 'Extended Thinking', slug: 'extended-thinking-for-storyteller' },
+    { label: '3D Asset Exporter', slug: '3d-asset-exporter' },
+    { label: 'Loop Creator', slug: 'loop-creator' },
+    { label: 'World Building', slug: 'world-building-toolkit' },
+    { label: 'Interior Designer', slug: 'interior-designer' },
+    { label: 'Deduction Puzzle', slug: 'deduction-puzzle-designer' },
+    { label: 'Chat', slug: 'chat' },
   ]
 
   return (
@@ -67,16 +78,40 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
-                      isActive
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${isActive
                         ? 'bg-primary/10 text-primary border border-primary/20'
                         : 'text-white/40 hover:text-white hover:bg-white/5 border border-transparent'
-                    }`}
+                      }`}
                   >
                     <item.icon
                       className={`w-4 h-4 ${isActive ? 'text-primary' : 'text-white/20 group-hover:text-white/40'}`}
                     />
                     <span className="text-sm font-medium">{item.label}</span>
+                  </Link>
+                )
+              })}
+            </nav>
+
+            <div className="mt-10 mb-4">
+              <span className="text-[10px] font-mono text-white/20 uppercase tracking-widest leading-none">
+                MODULES
+              </span>
+            </div>
+            <nav className="space-y-1">
+              {moduleItems.map(item => {
+                const href = `/docs/modules/${item.slug}`
+                const isActive = pathname === href
+                return (
+                  <Link
+                    key={item.slug}
+                    href={href}
+                    className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 group ${isActive
+                        ? 'text-primary'
+                        : 'text-white/40 hover:text-white'
+                      }`}
+                  >
+                    <span className={`w-1 h-1 rounded-full ${isActive ? 'bg-primary' : 'bg-white/10 group-hover:bg-white/20'}`} />
+                    <span className="text-xs font-medium">{item.label}</span>
                   </Link>
                 )
               })}

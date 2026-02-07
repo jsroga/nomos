@@ -1,0 +1,177 @@
+{
+  "id": "eval_2026-01-26_08-19-47-519_q92y",
+  "name": "Magic Formula Discovery v1-I-Critique-Loop-Thriller",
+  "timestamp": "2026-01-26T08:19:47.519Z",
+  "config": {
+    "name": "Magic Formula Discovery v1-I-Critique-Loop-Thriller",
+    "evaluatorSet": "pro",
+    "examples": [
+      {
+        "id": "thriller-01",
+        "input": {
+          "message": "Create a beat where the detective realizes the killer is in the room",
+          "phase": "breaking"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "expectedAgents": [
+            "PlotArchitect"
+          ]
+        },
+        "metadata": {
+          "scenario": "thriller",
+          "focus": "tension",
+          "description": "High-stakes realization beat."
+        }
+      },
+      {
+        "id": "thriller-02",
+        "input": {
+          "message": "Write the interrogation scene - sharp, rapid-fire dialogue",
+          "phase": "writing"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "minMagicScore": 0.7
+        },
+        "metadata": {
+          "scenario": "thriller",
+          "focus": "pacing",
+          "description": "Staccato rhythm, subtext."
+        }
+      },
+      {
+        "id": "thriller-03",
+        "input": {
+          "message": "Outline the conspiracy connecting the senator to the dock workers",
+          "phase": "structure"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "requiresConsistency": true
+        },
+        "metadata": {
+          "scenario": "thriller",
+          "focus": "plot coherence",
+          "description": "Complex web of relationships."
+        }
+      },
+      {
+        "id": "thriller-04",
+        "input": {
+          "message": "The protagonist is being followed - describe the paranoia",
+          "phase": "writing"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "minMagicScore": 0.65
+        },
+        "metadata": {
+          "scenario": "thriller",
+          "focus": "internal psychology",
+          "description": "Subjective experience of fear."
+        }
+      },
+      {
+        "id": "thriller-05",
+        "input": {
+          "message": "Twist: The helper was the villain all along. Reveal it.",
+          "phase": "breaking"
+        },
+        "expected": {
+          "shouldDelegate": true
+        },
+        "metadata": {
+          "scenario": "thriller",
+          "focus": "plot twist",
+          "description": "Recontextualization of previous events."
+        }
+      }
+    ],
+    "tags": [
+      "multi-variant",
+      "I-Critique-Loop",
+      "Thriller"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "thriller-01",
+      "input": {
+        "message": "Create a beat where the detective realizes the killer is in the room",
+        "phase": "breaking"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "InsufficientQuotaError: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n"
+      },
+      "metadata": {
+        "error": true
+      }
+    },
+    {
+      "exampleId": "thriller-02",
+      "input": {
+        "message": "Write the interrogation scene - sharp, rapid-fire dialogue",
+        "phase": "writing"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "InsufficientQuotaError: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n"
+      },
+      "metadata": {
+        "error": true
+      }
+    },
+    {
+      "exampleId": "thriller-03",
+      "input": {
+        "message": "Outline the conspiracy connecting the senator to the dock workers",
+        "phase": "structure"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "InsufficientQuotaError: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n"
+      },
+      "metadata": {
+        "error": true
+      }
+    },
+    {
+      "exampleId": "thriller-04",
+      "input": {
+        "message": "The protagonist is being followed - describe the paranoia",
+        "phase": "writing"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "InsufficientQuotaError: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n"
+      },
+      "metadata": {
+        "error": true
+      }
+    },
+    {
+      "exampleId": "thriller-05",
+      "input": {
+        "message": "Twist: The helper was the villain all along. Reveal it.",
+        "phase": "breaking"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "InsufficientQuotaError: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n"
+      },
+      "metadata": {
+        "error": true
+      }
+    }
+  ],
+  "aggregatedScores": {},
+  "regressions": [],
+  "duration": 180
+}

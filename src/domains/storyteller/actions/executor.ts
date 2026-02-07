@@ -1,13 +1,14 @@
 import { v4 as uuidv4 } from 'uuid'
 import { AgentAction, ActionHistoryEntry, ActionHistory } from './types'
-import { WritersRoomState, BeatCard, Setup, Phase } from '../graph/state'
+import { WritersRoomState, BeatCard, Setup, Phase } from '../types'
 import { BeatType, BeatStatus, ActionStatus } from '../enums'
 import { analyzeChangeRisk, shouldRunConsistencyCheck } from '../consistency/risk-analyzer'
-import { runConsistencyCheck } from '../agents/consistency-agent'
+import { runConsistencyCheck } from '../agents/v2/consistency-agent'
 import { applyCascadingFixes } from '../consistency/cascade-editor'
 import { getUndoManager } from '../consistency/undo-manager'
 import { StoryContext, ConsistencyCheckResult } from '../consistency/types'
-import { WorldRule, StoryPlan, EpisodePremise } from '../schemas/agent-schemas'
+import { WorldRule } from '../schemas/agent-schemas'
+import { deepMerge } from '../config/action-config'
 
 // ============================================
 // ACTION EXECUTOR - Commits actions to state
@@ -355,9 +356,14 @@ export class ActionExecutor {
       }
 
       case 'UPDATE_EPISODE_PREMISE': {
+        // Deep merge premise fields instead of replacing entirely
+        // This allows updating just fatalFlaw without losing stakes, etc.
         return {
           ...state,
-          episodePremise: action.payload.premise,
+          episodePremise: deepMerge(
+            state.episodePremise || {},
+            action.payload.premise || {}
+          ),
           episodeId: action.payload.episodeId || state.episodeId,
         }
       }
@@ -753,278 +759,4 @@ export function getApprovalStats(): {
   return stats
 }
 
-// Helper to format action for display
-// status: 'pending' = awaiting approval, 'committed' = already approved
-export function formatActionForDisplay(
-  action: AgentAction,
-  status: 'pending' | 'committed' = 'pending'
-): {
-  title: string
-  description: string
-  icon: string
-} {
-  const isPending = status === 'pending'
 
-  switch (action.type) {
-    // Beat Operations
-    case 'CREATE_BEAT':
-      return {
-        title: isPending ? 'Create Beat' : 'Beat Created',
-        description: `"${action.payload.logline}"`,
-        icon: isPending ? '📝' : '✅',
-      }
-    case 'UPDATE_BEAT':
-      return {
-        title: isPending ? 'Update Beat' : 'Beat Updated',
-        description: 'Beat modification',
-        icon: isPending ? '✏️' : '✅',
-      }
-    case 'DELETE_BEAT':
-      return {
-        title: isPending ? 'Delete Beat' : 'Beat Deleted',
-        description: 'Remove beat from board',
-        icon: isPending ? '🗑️' : '✅',
-      }
-    case 'REORDER_BEATS':
-      return {
-        title: isPending ? 'Reorder Beats' : 'Beats Reordered',
-        description: 'Change beat sequence',
-        icon: isPending ? '🔀' : '✅',
-      }
-    case 'LOCK_BEAT_BOARD':
-      return {
-        title: isPending ? 'Lock Beat Board' : 'Beat Board Locked',
-        description: 'Ready for writing phase',
-        icon: isPending ? '🔒' : '✅',
-      }
-
-    // Character Operations
-    case 'CREATE_CHARACTER':
-      return {
-        title: isPending ? 'Create Character' : 'Character Created',
-        description: `${action.payload.name} (${action.payload.role})`,
-        icon: isPending ? '👤' : '✅',
-      }
-    case 'UPDATE_CHARACTER':
-      return {
-        title: isPending ? 'Update Character' : 'Character Updated',
-        description: 'Character profile modification',
-        icon: isPending ? '👤' : '✅',
-      }
-    case 'UPDATE_CHARACTER_METRICS':
-      return {
-        title: isPending ? 'Update Metrics' : 'Metrics Updated',
-        description: 'Emotional state change',
-        icon: isPending ? '📊' : '✅',
-      }
-    case 'UPDATE_STRESS_LEVEL':
-      return {
-        title: isPending ? 'Change Stress Level' : 'Stress Level Changed',
-        description: `${action.payload.delta > 0 ? '+' : ''}${action.payload.delta}`,
-        icon: action.payload.delta > 0 ? '📈' : '📉',
-      }
-    case 'ADD_KNOWLEDGE':
-      return {
-        title: isPending ? 'Add Knowledge' : 'Knowledge Added',
-        description: action.payload.knowledge?.slice(0, 50) + '...' || 'New knowledge',
-        icon: isPending ? '💡' : '✅',
-      }
-
-    // Script Operations
-    case 'UPDATE_SCRIPT':
-      return {
-        title: isPending ? 'Update Script' : 'Script Updated',
-        description: 'New content',
-        icon: isPending ? '📜' : '✅',
-      }
-    case 'INSERT_SCRIPT_SECTION':
-      return {
-        title: isPending ? 'Add Script Section' : 'Script Section Added',
-        description: 'New scene',
-        icon: isPending ? '📜' : '✅',
-      }
-    case 'REVISE_SCRIPT_SECTION':
-      return {
-        title: isPending ? 'Revise Script' : 'Script Revised',
-        description: 'Section rewrite',
-        icon: isPending ? '✍️' : '✅',
-      }
-
-    // Bible Operations - Core
-    case 'UPDATE_SERIES_BIBLE': {
-      // Check what's in the payload to give a better description
-      const { storyPlan, factions, worldRules, keyCharacters } = action.payload
-
-      // storyPlan is a Partial<StoryPlan>, which HAS soundtracks
-      if (storyPlan?.soundtracks && storyPlan.soundtracks.length > 0) {
-        return {
-          title: isPending ? 'Add Soundtracks' : 'Soundtracks Added',
-          description: `${storyPlan.soundtracks.length} track${storyPlan.soundtracks.length !== 1 ? 's' : ''}`,
-          icon: isPending ? '🎵' : '✅',
-        }
-      }
-      if (factions && factions.length > 0) {
-        return {
-          title: isPending ? 'Add Factions' : 'Factions Added',
-          description: `${factions.length} faction${factions.length !== 1 ? 's' : ''}`,
-          icon: isPending ? '🏛️' : '✅',
-        }
-      }
-      if (storyPlan?.factions && storyPlan.factions.length > 0) {
-        return {
-          title: isPending ? 'Add Factions' : 'Factions Added',
-          description: `${storyPlan.factions.length} faction${storyPlan.factions.length !== 1 ? 's' : ''}`,
-          icon: isPending ? '🏛️' : '✅',
-        }
-      }
-      if (worldRules && worldRules.length > 0) {
-        return {
-          title: isPending ? 'Add World Rules' : 'World Rules Added',
-          description: `${worldRules.length} rule${worldRules.length !== 1 ? 's' : ''}`,
-          icon: isPending ? '⚖️' : '✅',
-        }
-      }
-      if (storyPlan?.worldRules && storyPlan.worldRules.length > 0) {
-        return {
-          title: isPending ? 'Add World Rules' : 'World Rules Added',
-          description: `${storyPlan.worldRules.length} rule${storyPlan.worldRules.length !== 1 ? 's' : ''}`,
-          icon: isPending ? '⚖️' : '✅',
-        }
-      }
-      if (keyCharacters && keyCharacters.length > 0) {
-        return {
-          title: isPending ? 'Add Characters' : 'Characters Added',
-          description: `${keyCharacters.length} character${keyCharacters.length !== 1 ? 's' : ''}`,
-          icon: isPending ? '👥' : '✅',
-        }
-      }
-      if (storyPlan?.keyCharacters && storyPlan.keyCharacters.length > 0) {
-        return {
-          title: isPending ? 'Add Characters' : 'Characters Added',
-          description: `${storyPlan.keyCharacters.length} character${storyPlan.keyCharacters.length !== 1 ? 's' : ''}`,
-          icon: isPending ? '👥' : '✅',
-        }
-      }
-      return {
-        title: isPending ? 'Update Series Bible' : 'Series Bible Updated',
-        description: 'Story configuration',
-        icon: isPending ? '📖' : '✅',
-      }
-    }
-    case 'ADD_WORLD_RULE':
-      return {
-        title: isPending ? 'Add World Rule' : 'World Rule Added',
-        description: action.payload.rule?.slice(0, 50) + '...' || 'New rule',
-        icon: isPending ? '⚖️' : '✅',
-      }
-
-    // Bible Operations - Sections
-    case 'UPDATE_SOUNDTRACKS': {
-      const count = action.payload.soundtracks.length
-      return {
-        title: isPending ? 'Add Soundtracks' : 'Soundtracks Added',
-        description: `${count} track${count !== 1 ? 's' : ''}`,
-        icon: isPending ? '🎵' : '✅',
-      }
-    }
-    case 'UPDATE_WORLD_RULES': {
-      const count = action.payload.rules.length
-      return {
-        title: isPending ? 'Add World Rules' : 'World Rules Added',
-        description: `${count} rule${count !== 1 ? 's' : ''}`,
-        icon: isPending ? '⚖️' : '✅',
-      }
-    }
-    case 'UPDATE_FACTIONS': {
-      const count = action.payload.factions.length
-      return {
-        title: isPending ? 'Add Factions' : 'Factions Added',
-        description: `${count} faction${count !== 1 ? 's' : ''}`,
-        icon: isPending ? '🏛️' : '✅',
-      }
-    }
-    case 'UPDATE_INSPIRATIONS':
-      return {
-        title: isPending ? 'Add Inspirations' : 'Inspirations Added',
-        description: 'Reference materials',
-        icon: isPending ? '💡' : '✅',
-      }
-    case 'UPDATE_WORLD_DESCRIPTION':
-      return {
-        title: isPending ? 'Update World Description' : 'World Description Updated',
-        description: 'Atmosphere and setting',
-        icon: isPending ? '🌍' : '✅',
-      }
-    case 'UPDATE_PLOT_TWISTS': {
-      const count = action.payload.plotTwists.length
-      return {
-        title: isPending ? 'Add Plot Twists' : 'Plot Twists Added',
-        description: `${count} twist${count !== 1 ? 's' : ''}`,
-        icon: isPending ? '🔄' : '✅',
-      }
-    }
-    case 'UPDATE_KEY_CHARACTERS': {
-      const count = action.payload.keyCharacters.length
-      return {
-        title: isPending ? 'Add Key Characters' : 'Key Characters Added',
-        description: `${count} character${count !== 1 ? 's' : ''}`,
-        icon: isPending ? '👥' : '✅',
-      }
-    }
-    case 'UPDATE_EPISODE_ROADMAP': {
-      const count = action.payload.sequences.length
-      return {
-        title: isPending ? 'Update Episode Roadmap' : 'Episode Roadmap Updated',
-        description: `${count} sequence${count !== 1 ? 's' : ''}`,
-        icon: isPending ? '🗺️' : '✅',
-      }
-    }
-    case 'UPDATE_ROADMAP_SUMMARY':
-      return {
-        title: isPending ? 'Update Roadmap Summary' : 'Roadmap Summary Updated',
-        description: 'Executive summary',
-        icon: isPending ? '📋' : '✅',
-      }
-    case 'UPDATE_EPISODE_PREMISE':
-      return {
-        title: isPending ? 'Update Episode Premise' : 'Episode Premise Updated',
-        description: action.payload.premise.title || 'Premise',
-        icon: isPending ? '🎬' : '✅',
-      }
-    case 'UPDATE_MOOD_SOUNDTRACK':
-      return {
-        title: isPending ? 'Update Mood Soundtrack' : 'Mood Soundtrack Updated',
-        description: 'Audio atmosphere',
-        icon: isPending ? '🎶' : '✅',
-      }
-
-    // Tracking Operations
-    case 'ADD_SETUP':
-      return {
-        title: isPending ? 'Track Setup' : 'Setup Tracked',
-        description: action.payload.description || 'New setup',
-        icon: isPending ? '🎯' : '✅',
-      }
-    case 'RESOLVE_SETUP':
-      return {
-        title: isPending ? 'Resolve Setup' : 'Setup Resolved',
-        description: 'Payoff',
-        icon: isPending ? '🎯' : '✅',
-      }
-
-    // Generation
-    case 'GENERATE_POSTER':
-      return {
-        title: isPending ? 'Generate Poster' : 'Poster Generated',
-        description: 'Episode artwork',
-        icon: isPending ? '🖼️' : '✅',
-      }
-
-    default:
-      return {
-        title: isPending ? 'Pending Action' : 'Action Committed',
-        description: (action as AgentAction).type,
-        icon: isPending ? '⏳' : '✅',
-      }
-  }
-}

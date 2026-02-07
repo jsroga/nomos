@@ -1,7 +1,6 @@
 import { LandingPage } from '@/domains/marketing/components/LandingPage'
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
 
 export default async function Page() {
   // If user is logged in, restrict access if not admin, or direct to App?

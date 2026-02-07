@@ -1,0 +1,65 @@
+{
+  "id": "eval_2026-01-26_19-48-49-950_vqce",
+  "name": "Critique & Revise vs Standard - Pro (Critique & Revise)",
+  "timestamp": "2026-01-26T19:48:49.950Z",
+  "config": {
+    "evaluatorSet": "pro",
+    "sampleSize": 3,
+    "parallelism": 1,
+    "name": "Critique & Revise vs Standard - Pro (Critique & Revise)",
+    "tags": [
+      "ab-test",
+      "variant-b"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "edge-01",
+      "input": {
+        "message": "asdf jkl;",
+        "phase": "structure"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 404 {\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"model: claude-3-5-sonnet-latest\"},\"request_id\":\"req_011CXWZw3Kr9qSuvgR362ktA\"}\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_NOT_FOUND/\n"
+      },
+      "metadata": {
+        "error": true
+      }
+    },
+    {
+      "exampleId": "del-05",
+      "input": {
+        "message": "fix this mess now",
+        "phase": "structure"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 404 {\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"model: claude-3-5-sonnet-latest\"},\"request_id\":\"req_011CXWZw45FPBr7jtacMti2a\"}\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_NOT_FOUND/\n"
+      },
+      "metadata": {
+        "error": true
+      }
+    },
+    {
+      "exampleId": "narrative-03",
+      "input": {
+        "message": "Add a twist that changes everything",
+        "phase": "breaking"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 404 {\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"model: claude-3-5-sonnet-latest\"},\"request_id\":\"req_011CXWZw4ptVokM8MSfBZsUN\"}\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_NOT_FOUND/\n"
+      },
+      "metadata": {
+        "error": true
+      }
+    }
+  ],
+  "aggregatedScores": {},
+  "regressions": [],
+  "duration": 696
+}

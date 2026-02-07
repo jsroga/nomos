@@ -126,4 +126,3 @@ export const MentionChipBar: React.FC<MentionChipBarProps> = ({ mentions, onRemo
     </div>
   )
 }
-

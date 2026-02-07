@@ -215,4 +215,3 @@ export const detectSuggestion = (
 
   return null
 }
-

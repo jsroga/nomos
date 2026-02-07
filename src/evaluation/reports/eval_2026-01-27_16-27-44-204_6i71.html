@@ -1,0 +1,381 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmark 2.0: Phase 10 Full Evaluation-Toolkit Agent-Custom</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #fdfaf6;
+            --text: #1a1a1a;
+            --accent: #c43e1c;
+            --border: #e0d8cc;
+            --card-bg: #ffffff;
+            --font-serif: 'Crimson Pro', serif;
+            --font-sans: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            border-bottom: 2px solid var(--text);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-family: var(--font-serif);
+            font-size: 3rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .meta {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 60px;
+        }
+
+        .score-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 4px 4px 0px var(--border);
+        }
+
+        .score-label {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .score-value {
+            font-family: var(--font-serif);
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .score-bar-bg {
+            height: 4px;
+            background: #eee;
+            margin-top: 10px;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            background: var(--accent);
+        }
+
+        .example-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+            padding: 30px;
+        }
+
+        .example-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .example-id {
+            font-family: var(--font-serif);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .badge.high { background: #e6f4ea; color: #1e7e34; }
+        .badge.low { background: #fce8e8; color: #d93025; }
+        .badge.intent { background: #e8f0fe; color: #1967d2; }
+
+        .content-section {
+            margin-bottom: 30px;
+        }
+
+        h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            border-radius: 4px;
+        }
+
+        .literary-output {
+            font-family: var(--font-serif);
+            font-size: 1.25rem;
+            white-space: pre-wrap;
+            padding: 20px;
+            border-left: 4px solid var(--accent);
+            background: #fffafa;
+        }
+
+        .reason-block {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+        }
+
+        .regressions {
+            background: #fff0f0;
+            border: 1px solid #ffcaca;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+
+        .regression-item {
+            color: #c00;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Storyteller Benchmark 2.0</h1>
+            <div class="meta">
+                Experiment ID: eval_2026-01-27_16-27-44-204_6i71 | Run on: 1/27/2026, 5:27:44 PM | Duration: 17.7s
+            </div>
+        </header>
+
+        
+
+        <div class="dashboard">
+            
+      <div class="score-card">
+        <div class="score-label">EQ SCORE</div>
+        <div class="score-value">45.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 45%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">LOGIC CONSISTENCY</div>
+        <div class="score-value">100.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 100%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">EMOTIONAL NUANCE</div>
+        <div class="score-value">5.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 5%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">MULTI HOP EMPATHY</div>
+        <div class="score-value">75.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 75%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">LONG HORIZON ARC</div>
+        <div class="score-value">80.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 80%"></div>
+        </div>
+      </div>
+    
+        </div>
+
+        <div class="results-list">
+            
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#1 - eq-bench-conflict-1</span>
+        <div class="example-badges">
+          
+          
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+  "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            DIALOGUE:
+
+(The rain pours down as Elena and Marcus sit on the park bench, the atmosphere heavy with tension.)
+
+Elena: (voice trembling) How could you do this, Marcus? Samantha is an innocent girl. She has nothing to do with this.
+
+Marcus: (sighs, shaking his head) I know, my dear. I know. (places a hand on her shoulder) But you have to understand, her father is a powerful man. And he's not going to take kindly to what you're planning to do.
+
+Elena: (pulls away) So you're using her as leverage? Threatening her to keep me quiet? (eyes filling with tears) That's despicable.
+
+Marcus: (raises his hands placatingly) Please, Elena, try to understand. I'm not threatening anyone. I'm simply trying to make you see the bigger picture here. (leans in) Think of Samantha. Think of how devastated she'll be if something happens to her because of your actions.
+
+Elena: (shakes her head vehemently) No, I won't be a part of this. I can't just stand by and let those chemicals keep poisoning people. (clenches her fists) I have to do the right thing, no matter the cost.
+
+Marcus: (sighs heavily) The right thing, huh? (chuckles mirthlessly) And what do you think will happen to Samantha if you go through with this? (leans back, fixing her with a serious stare) Her father will stop at nothing to protect his company. (pauses) You know what that means, don't you?
+
+Elena: (eyes widening, voice barely above a whisper) You're saying he'll... he'll hurt her?
+
+Marcus: (shakes his head sadly) I don't want to, Elena. But you have to understand, this is bigger than just you and me. (places a hand on her arm) There are lives at stake here. Innocent lives. (leans in) Samantha's life.
+
+Elena: (trembling, tears spilling down her cheeks) I... I can't. I can't let anything happen to her. (buries her face in her hands) Oh, God, what have I done?
+
+(The rain continues to fall as Elena's resolve crumbles, the weight of her decision crushing her.)
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>eq-score:</strong> Avg Diff: 1.0. Predicted: {"elena":{"fear":8,"resolve":3,"disgust":7,"relief":2},"marcus":{"confidence":6,"anger":4,"contempt":5,"empathy":3}}
+            </div>
+          
+            <div class="reason-block">
+              <strong>logic-consistency:</strong> Failed: None
+            </div>
+          
+            <div class="reason-block">
+              <strong>emotional-nuance:</strong> Found 0 nuance markers: Low subtext - too direct
+            </div>
+          
+            <div class="reason-block">
+              <strong>multi-hop-empathy:</strong> First: 8/10, Second: 7/10, Third: 8/10. Evidence: The dialogue shows that Elena and Marcus have a good understanding of each other's feelings. Elena i
+            </div>
+          
+            <div class="reason-block">
+              <strong>long-horizon-arc:</strong> The emotional arc of the characters in this dialogue is largely consistent and motivated. The dialogue shows a clear progression of emotions as the characters grapple with a difficult moral dilemma.  Elena starts off the dialogue with a trembling voice, expressing her distress and outrage at Marcus' actions. Her emotions are clearly motivated by her desire to protect the innocent Samantha from being used as leverage.  As Marcus tries to reason with her, Elena's emotions escalate, with her pulling away and her eyes filling with tears as she becomes more distraught at the situation. Her emotions are consistently driven by her moral convictions and her concern for Samantha's wellbeing.  When Marcus raises the stakes by hinting at the potential consequences for Samantha, Elena's resolve crumbles, and she is overcome with anguish and guilt. This emotional shift is well-motivated by the gravity of the situation and the difficult choice she is forced to make.  Overall, the characters' emotional trajectories are consistent, with their moods and reactions clearly tied to the unfolding events and the high-stakes dilemma they are facing. There are no random mood swings, and the emotional escalation and resolution feel natural and appropriate given the circumstances.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#2 - eq-bench-conflict-2</span>
+        <div class="example-badges">
+          
+          
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+  "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            Clara cleared her throat, her eyes flicking between the newcomer and Hans. "Grandfather, I wasn't expecting you to have... company." Her tone was polite, but the undercurrent of tension was palpable.
+
+Hans offered a thin smile, his gaze never leaving the newcomer. "Ah, yes. This is... an old friend." He paused, his brow furrowing slightly. "Or was it an old enemy? Forgive me, my memory isn't what it used to be."
+
+The newcomer leaned forward, his eyes narrowing. "I'm sure your memory is just fine, Hans. The question is, what are you and your... granddaughter hiding?"
+
+Clara's fingers tightened around her spoon, her knuckles turning white. "I'm not sure I understand what you're implying," she said, her tone carefully neutral.
+
+Hans chuckled, the sound low and rumbling. "My dear, I'm afraid we've all been playing a rather... intricate game of chess, haven't we?" He took a deliberate bite of his Jello, his gaze never wavering from the newcomer.
+
+The newcomer's lips twitched into a humorless smile. "I suppose that's one way to put it. Though I'd argue that the game has become a bit... personal, wouldn't you say?"
+
+Clara's eyes narrowed, and for a brief moment, a flash of desperation flickered across her features. "I don't know what you're talking about," she said, her voice barely above a whisper.
+
+Hans leaned back in his chair, a small, knowing smile playing on his lips. "Oh, I think you do, my dear. You've been trying so hard to... activate me, as it were. But I'm afraid your little trigger phrase just isn't working."
+
+The newcomer's brow furrowed, and he glanced between Hans and Clara, the unspoken question hanging in the air.
+
+Clara's jaw tightened, and she shot a quick, meaningful glance at the newcomer. The subtext was clear - this was no casual visit, and the stakes were higher than they could have imagined.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>eq-score:</strong> Character mismatch
+            </div>
+          
+            <div class="reason-block">
+              <strong>logic-consistency:</strong> Failed: None
+            </div>
+          
+            <div class="reason-block">
+              <strong>emotional-nuance:</strong> Found 1 nuance markers: Low subtext - too direct
+            </div>
+          
+            <div class="reason-block">
+              <strong>multi-hop-empathy:</strong> First: 7/10, Second: 8/10, Third: 7/10. Evidence: The dialogue shows that the characters are able to understand each other's feelings and emotions to 
+            </div>
+          
+            <div class="reason-block">
+              <strong>long-horizon-arc:</strong> The emotional arc of the characters in this dialogue is largely consistent and motivated. The tension and underlying conflict between the characters is palpable, and their emotions and reactions seem to flow naturally from the situation and their relationships.  Clara's initial polite but tense response to the newcomer's presence, Hans' ambiguous and evasive responses, and the newcomer's probing and accusatory tone all contribute to a sense of escalating tension and unresolved conflict. The characters' emotions and behaviors are driven by clear motivations - they are clearly engaged in some kind of complex, high-stakes game or conflict, and their reactions are appropriate to the situation.  The only potential inconsistency is the brief flash of desperation on Clara's face, which seems to momentarily undermine the carefully neutral tone she is trying to maintain. However, this could be seen as a natural and believable reaction given the high-stakes nature of the situation. Overall, the emotional trajectory of the characters feels consistent, motivated, and appropriately escalating, with no random mood swings or unnatural emotional shifts.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+        </div>
+    </div>
+</body>
+</html>
+  

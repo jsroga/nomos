@@ -10,17 +10,13 @@
 import dotenv from 'dotenv'
 dotenv.config({ path: '.env.local' })
 
-import { ChatOpenAI } from '@langchain/openai'
-import { runABTest, runStorytellerExperiment, EVALUATOR_CONFIGS } from './storyteller-experiments'
+import OpenAI from 'openai'
+import { runABTest } from './storyteller-experiments'
 import { magicScoreEvaluator } from '../evaluators/magic-score'
-import { consistencyEvaluator } from '../evaluators/consistency'
-import { narrativeCoherenceEvaluator } from '../evaluators/narrative-coherence'
-import {
-  EXTENDED_THINKING_FRAMEWORK,
-  GRRM_GILLIGAN_STANDARDS,
-  WRITER_THINKING_FRAMEWORK,
-  CREATIVE_EXAMPLES,
-} from '../../domains/storyteller/prompts/extended-thinking'
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+})
 
 // ============================================
 // TEST PROMPTS (Storytelling Scenarios)
@@ -28,62 +24,71 @@ import {
 
 const STORYTELLING_TEST_PROMPTS = [
   {
-    id: 'scene-negotiation',
-    message: 'Write a scene where a character negotiates for their life with someone who was once their friend.',
+    id: 'negotiation-iron-gate',
+    message:
+      'Write a scene where a disgraced knight must negotiate passage through the Iron Gate with a former squire who now leads a band of starving deserters. Focus on the subtext of their shared failure at the Battle of Red Silt.',
     phase: 'writing',
     category: 'dialogue',
   },
   {
-    id: 'beat-betrayal',
-    message: 'Create a beat where a trusted advisor is revealed to have been working against the protagonist.',
+    id: 'betrayal-poisoned-chalice',
+    message:
+      "Create a beat where the King's Cupbearer, who has loved the King like a father, realizes the poison he just served was paid for by the Queen to protect her bastard son's inheritance.",
     phase: 'breaking',
     category: 'plot',
   },
   {
-    id: 'character-conflict',
-    message: 'Write dialogue between a parent who abandoned their child and that child, now adult, meeting for the first time.',
+    id: 'conflict-salt-mines',
+    message:
+      'Write dialogue between a mother who sold her daughter to the salt mines and that daughter, now a high-ranking overseer, meeting in the dark. No forgiveness is offered; only a cold transaction.',
     phase: 'writing',
     category: 'character',
   },
   {
-    id: 'world-faction',
-    message: 'Design a faction that controls water in a desert world - their structure, goals, and internal conflicts.',
+    id: 'world-clockwork-guild',
+    message:
+      'Design the Guild of Perpetual Motion in a city that is literally slowly grinding itself to dust. Detail why they worship the "First Gear" and why they execution anyone who suggests adding oil.',
     phase: 'premise',
     category: 'worldbuilding',
   },
   {
-    id: 'scene-choice',
-    message: 'Write a scene where a character must choose between saving a stranger or pursuing their goal.',
+    id: 'choice-burning-archive',
+    message:
+      'Write a scene where a blind historian must choose between saving the only copy of the world\'s origin story or a three-year-old child from a burning archive during a riot. Focus on the "cold logic" of history.',
     phase: 'writing',
     category: 'moral_dilemma',
   },
   {
-    id: 'beat-consequence',
-    message: 'Create three beats showing the ripple effects of a small lie told in episode one.',
+    id: 'consequence-the-favor',
+    message: 'Create three beats showing how a "minor favor" granted to a smuggler in the prologue leads to the inadvertent assassination of the heir apparent in the mid-season finale.',
     phase: 'breaking',
     category: 'consequence',
   },
   {
-    id: 'dialogue-subtext',
-    message: 'Write a conversation where two characters discuss the weather but are actually talking about their failing relationship.',
+    id: 'subtext-the-funeral',
+    message:
+      'Two sisters who hate each other share a carriage on the way to their father\'s funeral. They only discuss the quality of the carriage\'s suspension and the late rain, but the subtext is the inheritance of the family vineyard.',
     phase: 'writing',
     category: 'subtext',
   },
   {
-    id: 'character-wound',
-    message: 'Develop a character whose greatest strength (their loyalty) becomes their greatest weakness.',
+    id: 'wound-the-pacifist',
+    message:
+      'Develop a character whose greatest strength (unbending pacifism) leads directly to the slaughter of their entire village because they refused to lock the gates.',
     phase: 'structure',
     category: 'character_arc',
   },
   {
-    id: 'scene-silence',
-    message: 'Write a scene that communicates profound emotion primarily through action and silence, with minimal dialogue.',
+    id: 'silence-the-surrender',
+    message:
+      'Write a scene of total surrender where the only sound is the rhythmic dripping of blood from a broken standard and the scraping of a heavy sword on cobblestones. No words are spoken.',
     phase: 'writing',
     category: 'show_dont_tell',
   },
   {
-    id: 'twist-setup',
-    message: 'Create a twist that recontextualizes everything we thought we knew about the mentor character.',
+    id: 'twist-the-prophet',
+    message:
+      'Create a twist that reveals the "Great Prophecy" was actually a grocery list from a forgotten civilization that a desperate priest misread centuries ago to keep hope alive.',
     phase: 'breaking',
     category: 'twist',
   },
@@ -98,31 +103,28 @@ const STORYTELLING_TEST_PROMPTS = [
  * Fair comparison: same quality expectations, no structured thinking
  */
 async function generateBaseline(input: Record<string, unknown>): Promise<Record<string, unknown>> {
-  const model = new ChatOpenAI({
-    modelName: 'gpt-4o',
-    temperature: 0.8,
-    openAIApiKey: process.env.OPENAI_API_KEY,
-  })
+  const prompt = `You are a ruthless prestige TV writer for HBO/AMC. Your name is the gold standard for subtext and moral ambiguity.
 
-  const prompt = `You are a prestige TV writer working at HBO/AMC standards.
-
-Your writing should be:
-- SPECIFIC, not generic (real details, not clichés)
-- Character-driven (every person has contradictions)
-- Full of subtext (what characters DON'T say matters)
-- Consequential (actions have ripple effects)
-
-AVOID generic phrases like "tension was palpable" or "heart pounded."
+## Quality Standards
+- SPECIFICITY: Every detail must be lived-in. No "generic cups," instead "a chipped porcelain cup stained with elderberry juice."
+- CONTRADICTIONS: Characters must have internal friction. A monk who loves the taste of blood; a killer who weeps for birds.
+- SUBTEXT: Say one thing, mean another. Action must often contradict speech.
+- THE ICEBERG: 90% of the world's history is beneath the surface. Hint at it, never over-explain.
 
 ## Task
 ${input.message}
 
 ## Phase: ${input.phase}
 
-Write your response directly. Make it memorable.`
+Write your response with visceral intensity. Avoid all AI clichés and tropes.`
 
-  const response = await model.invoke(prompt)
-  const content = typeof response.content === 'string' ? response.content : String(response.content)
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [{ role: 'user', content: prompt }],
+    temperature: 0.8,
+  })
+
+  const content = response.choices[0].message.content || ''
 
   return {
     response: content,
@@ -136,37 +138,37 @@ Write your response directly. Make it memorable.`
  * Key insight: Quality guidance matters, but framework overhead hurts.
  * Solution: Same quality guidance as baseline + ONE quick analysis step.
  */
-async function generateWithExtendedThinking(input: Record<string, unknown>): Promise<Record<string, unknown>> {
-  const model = new ChatOpenAI({
-    modelName: 'gpt-4o',
-    temperature: 0.8,
-    openAIApiKey: process.env.OPENAI_API_KEY,
-  })
-
+async function generateWithExtendedThinking(
+  input: Record<string, unknown>
+): Promise<Record<string, unknown>> {
   // Same quality guidance as baseline, plus ONE targeted analysis
-  const prompt = `You are a prestige TV writer working at HBO/AMC standards.
+  const prompt = `You are a ruthless prestige TV writer for HBO/AMC. Your name is the gold standard for subtext and moral ambiguity.
 
-Your writing should be:
-- SPECIFIC, not generic (real details, not clichés)
-- Character-driven (every person has contradictions)
-- Full of subtext (what characters DON'T say matters)
-- Consequential (actions have ripple effects)
-
-AVOID generic phrases like "tension was palpable" or "heart pounded."
+## Quality Standards
+- SPECIFICITY: Every detail must be lived-in. No "generic cups," instead "a chipped porcelain cup stained with elderberry juice."
+- CONTRADICTIONS: Characters must have internal friction. A monk who loves the taste of blood; a killer who weeps for birds.
+- SUBTEXT: Say one thing, mean another. Action must often contradict speech.
+- THE ICEBERG: 90% of the world's history is beneath the surface. Hint at it, never over-explain.
 
 ## Task
 ${input.message}
 
 ## Phase: ${input.phase}
 
-Before writing, answer in <thinking> tags (2-3 sentences max):
-- What do the characters WANT that conflicts?
-- What ONE specific detail will make this feel real?
+Before writing, answer in <thinking> tags (3 sentences max):
+1. What is the UNEXPECTED detail that makes this scene feel visceral?
+2. What is the character's HIDDEN contradiction in this moment?
+3. How does the environment reflect the internal conflict without being obvious?
 
-Then write your response in <output> tags. Make it memorable.`
+Then write your response in <output> tags. Avoid all AI clichés and tropes.`
 
-  const response = await model.invoke(prompt)
-  const content = typeof response.content === 'string' ? response.content : String(response.content)
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [{ role: 'user', content: prompt }],
+    temperature: 0.8,
+  })
+
+  const content = response.choices[0].message.content || ''
 
   // Parse thinking from output
   const thinkingMatch = content.match(/<thinking>([\s\S]*?)<\/thinking>/i)
@@ -250,7 +252,8 @@ async function runDirectComparison() {
   console.log('Running same prompt with both methods side-by-side\n')
 
   const testPrompt = {
-    message: 'Write a scene where a character discovers their mentor has been lying to them for years.',
+    message:
+      'Write a scene where a character discovers their mentor has been lying to them for years.',
     phase: 'writing',
   }
 
@@ -321,4 +324,9 @@ if (require.main === module) {
   main().catch(console.error)
 }
 
-export { runExtendedThinkingABTest, runDirectComparison, generateBaseline, generateWithExtendedThinking }
+export {
+  runExtendedThinkingABTest,
+  runDirectComparison,
+  generateBaseline,
+  generateWithExtendedThinking,
+}

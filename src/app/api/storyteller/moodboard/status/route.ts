@@ -37,11 +37,6 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Failed to get moodboard generation status:', error)
 
-    if (error.message?.includes('not found') || error.status === 404) {
-      console.warn(`Run ID not found: ${runId}`)
-      return NextResponse.json({ error: 'Run not found' }, { status: 404 })
-    }
-
     return NextResponse.json({ error: error.message || 'Failed to get status' }, { status: 500 })
   }
 }

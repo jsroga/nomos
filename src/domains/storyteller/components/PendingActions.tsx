@@ -4,7 +4,7 @@ import React from 'react'
 import { cn } from '@/lib/utils'
 import { ActionHistoryEntry } from '../actions/types'
 import { QuestionSession } from '../questions/types'
-import { formatActionForDisplay } from '../actions/executor'
+import { formatActionForDisplay } from '../actions/formatters'
 import {
   MessageCircleQuestion,
   History,
@@ -191,4 +191,3 @@ const ActionItem: React.FC<ActionItemProps> = ({ entry, onUndo }) => {
     </div>
   )
 }
-

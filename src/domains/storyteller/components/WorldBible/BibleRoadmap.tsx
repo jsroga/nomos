@@ -1,10 +1,10 @@
 import React from 'react'
-import { Route, Plus, RefreshCw } from 'lucide-react'
-import { StoryPlan, StorySequence } from '../../schemas/agent-schemas'
+import { Route, Plus, RefreshCw, Loader2 } from 'lucide-react'
 import { SeasonOverviewCard } from '../SeasonOverviewCard'
 import { EpisodeRoadmapCard } from '../EpisodeRoadmapCard'
 
 import { useBible } from './BibleContext'
+import { SectionPendingOverlay } from './SectionPendingOverlay'
 
 interface BibleRoadmapProps {}
 
@@ -18,11 +18,33 @@ export const BibleRoadmap: React.FC<BibleRoadmapProps> = () => {
     removeSequence: onRemoveSequence,
     isReadOnly,
     onSendMessage,
+    loadingSections,
+    pendingActions,
   } = useBible()
   const sequences = storyPlan.sequences || []
+  
+  // Check for loading state - roadmap uses 'episodeRoadmap' section key
+  const isLoading = loadingSections?.episodeRoadmap?.loading ?? false
+  const pendingAction = pendingActions?.episodeRoadmap
 
   return (
-    <section>
+    <section className={isLoading || pendingAction ? 'relative' : ''}>
+      {/* Pending action overlay */}
+      {pendingAction && (
+        <SectionPendingOverlay 
+          pendingAction={pendingAction}
+          onReview={pendingAction.onReview}
+        />
+      )}
+      {/* Loading Overlay */}
+      {isLoading && !pendingAction && (
+        <div className="absolute inset-0 z-10 bg-background/60 backdrop-blur-sm rounded-lg flex items-center justify-center">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Generating roadmap...</span>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Route className="w-5 h-5 text-green-400/80" />
@@ -41,8 +63,9 @@ export const BibleRoadmap: React.FC<BibleRoadmapProps> = () => {
           {!isReadOnly && onSendMessage && (
             <button
               onClick={() =>
-                onSendMessage(
-                  'Break the season into a roadmap of 8-12 episodes. Use a professional showrunner approach: define the inciting incident, midpoint, and finale first, then fill in the connective tissue.'
+                onSendMessage?.(
+                  'Break the season into a roadmap of 8-12 episodes. Use a professional showrunner approach: define the inciting incident, midpoint, and finale first, then fill in the connective tissue.',
+                  'episodeRoadmap'
                 )
               }
               className="p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105"

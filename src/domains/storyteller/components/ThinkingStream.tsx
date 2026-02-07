@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, ChevronUp, ChevronDown, CheckCircle, Circle } from 'lucide-react'
-import { PlanItem } from '../graph/state'
+import { PlanItem } from '../types'
 
 interface ThinkingStreamProps {
   plannerThinking?: string

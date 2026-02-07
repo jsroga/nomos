@@ -6,7 +6,7 @@
 
 import { DynamicStructuredTool } from '@langchain/core/tools'
 import { z } from 'zod'
-import { WebSearchResult, ToolResult } from '../types'
+import { WebSearchResult } from '../types'
 
 /**
  * Web search tool for market research

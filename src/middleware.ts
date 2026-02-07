@@ -82,7 +82,7 @@ export async function middleware(req: NextRequest) {
     path.startsWith('/library/') ||
     path.startsWith('/projects/') ||
     path.startsWith('/scripts/') ||
-    (process.env.NODE_ENV === 'development' && req.headers.get('x-bypass-auth') === 'true')
+    (['development', 'test'].includes(process.env.NODE_ENV || '') && req.headers.get('x-bypass-auth') === 'true')
   ) {
     return res
   }

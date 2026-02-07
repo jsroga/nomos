@@ -1,0 +1,387 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmark 2.0: Phase 10 Full Evaluation-Toolkit Agent-Custom</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #fdfaf6;
+            --text: #1a1a1a;
+            --accent: #c43e1c;
+            --border: #e0d8cc;
+            --card-bg: #ffffff;
+            --font-serif: 'Crimson Pro', serif;
+            --font-sans: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            border-bottom: 2px solid var(--text);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-family: var(--font-serif);
+            font-size: 3rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .meta {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 60px;
+        }
+
+        .score-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 4px 4px 0px var(--border);
+        }
+
+        .score-label {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .score-value {
+            font-family: var(--font-serif);
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .score-bar-bg {
+            height: 4px;
+            background: #eee;
+            margin-top: 10px;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            background: var(--accent);
+        }
+
+        .example-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+            padding: 30px;
+        }
+
+        .example-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .example-id {
+            font-family: var(--font-serif);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .badge.high { background: #e6f4ea; color: #1e7e34; }
+        .badge.low { background: #fce8e8; color: #d93025; }
+        .badge.intent { background: #e8f0fe; color: #1967d2; }
+
+        .content-section {
+            margin-bottom: 30px;
+        }
+
+        h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            border-radius: 4px;
+        }
+
+        .literary-output {
+            font-family: var(--font-serif);
+            font-size: 1.25rem;
+            white-space: pre-wrap;
+            padding: 20px;
+            border-left: 4px solid var(--accent);
+            background: #fffafa;
+        }
+
+        .reason-block {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+        }
+
+        .regressions {
+            background: #fff0f0;
+            border: 1px solid #ffcaca;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+
+        .regression-item {
+            color: #c00;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Storyteller Benchmark 2.0</h1>
+            <div class="meta">
+                Experiment ID: eval_2026-01-27_15-29-40-613_546i | Run on: 1/27/2026, 4:29:40 PM | Duration: 14.5s
+            </div>
+        </header>
+
+        
+
+        <div class="dashboard">
+            
+      <div class="score-card">
+        <div class="score-label">EQ SCORE</div>
+        <div class="score-value">35.8%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 35.83333333333333%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">LOGIC CONSISTENCY</div>
+        <div class="score-value">0.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 0%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">EMOTIONAL NUANCE</div>
+        <div class="score-value">15.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 15.000000000000002%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">MULTI HOP EMPATHY</div>
+        <div class="score-value">73.3%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 73.33333333333334%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">LONG HORIZON ARC</div>
+        <div class="score-value">0.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 0%"></div>
+        </div>
+      </div>
+    
+        </div>
+
+        <div class="results-list">
+            
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#1 - eq-bench-conflict-1</span>
+        <div class="example-badges">
+          
+          
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+  "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            ELENA: (Surprised) Marcus? What are you doing here? (Notices the young girl) And who is this with you?
+
+MARCUS: (Smiling warmly) Ah, Elena, my dear. This is my daughter, Lily. (Placing a hand on the girl's shoulder) Lily, say hello to Miss Elena.
+
+LILY: (Shyly) Hello, Miss Elena.
+
+ELENA: (Softening, a maternal instinct stirring) Hello, Lily. It's nice to meet you. (Looks up at Marcus, her voice tinged with concern) I didn't realize you had a daughter.
+
+MARCUS: (Sighing) Yes, well, I try to keep her out of the spotlight. (Pauses, his expression turning serious) You see, Elena, I'm a worried man. I'm worried about what might happen to my little girl if certain... information were to come to light.
+
+ELENA: (Brow furrowing) What are you saying, Marcus?
+
+MARCUS: (Leaning in, his voice lowered) I know about the evidence you have, my dear. And I'm afraid the consequences could be devastating. Not just for me, but for Lily as well. (Shakes his head, eyes pleading) I couldn't bear to see her suffer because of my mistakes.
+
+ELENA: (Taken aback, her resolve wavering) I... I don't understand. What are you implying?
+
+MARCUS: (Placing a hand on her arm) Elena, you're a good person. I know that. And I know you care about doing the right thing. (Pauses, his eyes glistening) But sometimes, the right thing comes at a terrible cost. (Glances at Lily, who is shivering in the cold) I can't let my daughter pay for my sins. I just can't.
+
+ELENA: (Conflicted, her gaze shifting between Marcus and Lily) I... I don't know what to say. (Hugs herself, the weight of the decision pressing down on her)
+
+MARCUS: (Sensing her hesitation, his voice becomes more urgent) Please, Elena. Think of Lily. Think of the innocent life that could be destroyed if you go through with this. (Reaches out and takes her hand) I'm begging you, as a father, to reconsider. (Squeezes her hand gently) Help me protect my little girl.
+
+ELENA: (Tears welling in her eyes, her voice trembling) I... I don't know what to do.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>eq-score:</strong> Avg Diff: 2.8. Predicted: {"elena":{"fear":6,"resolve":3,"disgust":2,"relief":0},"marcus":{"confidence":7,"anger":0,"contempt":0,"empathy":8}}
+            </div>
+          
+            <div class="reason-block">
+              <strong>logic-consistency:</strong> JSON Parse Error
+            </div>
+          
+            <div class="reason-block">
+              <strong>emotional-nuance:</strong> Found 1 nuance markers: Low subtext - too direct
+            </div>
+          
+            <div class="reason-block">
+              <strong>multi-hop-empathy:</strong> First: 8/10, Second: 7/10, Third: 8/10. Evidence: The dialogue shows that the characters demonstrate a good understanding of each other's feelings and
+            </div>
+          
+            <div class="reason-block">
+              <strong>long-horizon-arc:</strong> Parse error: SyntaxError: Bad control character in string literal in JSON at position 255
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#2 - eq-bench-conflict-2</span>
+        <div class="example-badges">
+          
+          
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+  "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            Scene Continuation:
+
+Clara sat in stunned silence, watching Hans' retreating figure. She had been so sure, so convinced that he would respond to the trigger phrase. But now, as she replayed their exchange in her mind, doubt began to creep in.
+
+Perhaps she had been mistaken all along. Maybe her grandfather really was just a confused old man, his mind slipping away with the ravages of time. The thought made her stomach churn, a familiar feeling of dread washing over her.
+
+Slowly, Clara pushed her chair back and stood, her movements stiff and mechanical. She couldn't stay here, not with the weight of her failure hanging so heavily in the air. Turning on her heel, she made her way towards the exit, her eyes downcast, her jaw set in a determined line.
+
+As she passed by the nurse's station, a familiar voice called out to her.
+
+"Clara? Is everything alright, dear?"
+
+She paused, glancing up to see the kind, wrinkled face of Mrs. Wilkins, one of the nursing home's longtime residents. The older woman's brow was creased with concern, her eyes searching Clara's face.
+
+Clara forced a smile, though it didn't quite reach her eyes. "Oh, yes, Mrs. Wilkins. I'm fine, really. I just... I think I'm going to head back to my room for a bit. I'm not feeling very hungry."
+
+Mrs. Wilkins nodded, her gaze softening. "Alright, dear. You take care of yourself, you hear? And if you need anything, you just let me know, okay?"
+
+Clara murmured her thanks, then continued on her way, her mind racing. Had Mrs. Wilkins noticed the tension between her and Hans? Did the other residents suspect something was amiss?
+
+She couldn't risk drawing any more attention to herself, not when the stakes were so high. Quickening her pace, Clara made her way towards the elevator, her fingers trembling slightly as she pressed the call button.
+
+As the doors slid open, she stepped inside, her eyes scanning the empty car. Taking a deep breath, she leaned back against the wall, her shoulders sagging with a mixture of exhaustion and defeat.
+
+"What am I going to do?" she whispered to herself, her voice barely audible over the hum of the elevator.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>eq-score:</strong> Character mismatch
+            </div>
+          
+            <div class="reason-block">
+              <strong>logic-consistency:</strong> JSON Parse Error
+            </div>
+          
+            <div class="reason-block">
+              <strong>emotional-nuance:</strong> Found 2 nuance markers: Low subtext - too direct
+            </div>
+          
+            <div class="reason-block">
+              <strong>multi-hop-empathy:</strong> First: 8/10, Second: 7/10, Third: 6/10. Evidence: Clara's thoughts show that she is able to understand Mrs. Wilkins' concern for her well-being (first
+            </div>
+          
+            <div class="reason-block">
+              <strong>long-horizon-arc:</strong> Parse error: SyntaxError: Bad control character in string literal in JSON at position 500
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+        </div>
+    </div>
+</body>
+</html>
+  

@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { runConsistencyCheck } from '@/domains/storyteller/agents/consistency-agent'
+import { runConsistencyCheck } from '@/domains/storyteller/agents/v2/consistency-agent'
 import { ConsistencyCheckRequest } from '@/domains/storyteller/consistency/types'
 import { requireAuth } from '@/lib/auth'
 import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'

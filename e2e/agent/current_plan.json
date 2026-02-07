@@ -1,0 +1,14 @@
+{
+  "id": "40b7c4c1-01ff-4cbe-b3c6-e89982d68d49",
+  "goal": "Integration Test Plan",
+  "items": [
+    {
+      "id": "1",
+      "title": "Save dummy file",
+      "status": "completed"
+    }
+  ],
+  "createdAt": "2026-01-27T10:17:39.656Z",
+  "updatedAt": "2026-01-27T10:17:39.660Z",
+  "version": 1
+}

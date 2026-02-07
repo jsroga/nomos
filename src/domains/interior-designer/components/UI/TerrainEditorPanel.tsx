@@ -19,16 +19,10 @@ import {
   Box,
   Palette,
   Square,
-  Trash2,
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
-import {
-  SidebarSection,
-  SidebarHeader,
-  SidebarLabel,
-  SidebarSliderRow,
-} from '@/components/ui/domain-sidebar'
+import { SidebarSection, SidebarLabel } from '@/components/ui/domain-sidebar'
 
 // Brush type icon component
 const BrushIcon: React.FC<{ type: 'raise' | 'lower' | 'flatten' | 'smooth'; size?: number }> = ({

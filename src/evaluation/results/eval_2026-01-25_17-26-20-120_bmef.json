@@ -1,0 +1,509 @@
+{
+  "id": "eval_2026-01-25_17-26-20-120_bmef",
+  "name": "Critique & Revise vs Standard - Standard",
+  "timestamp": "2026-01-25T17:26:20.120Z",
+  "config": {
+    "evaluatorSet": "pro",
+    "sampleSize": 3,
+    "parallelism": 2,
+    "name": "Critique & Revise vs Standard - Standard",
+    "tags": [
+      "ab-test",
+      "variant-a"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "payoff-01",
+      "input": {
+        "message": "Pay off the gun we planted in act one",
+        "phase": "writing"
+      },
+      "output": {
+        "response": "In the dimly lit cabin nestled deep within the whispering pines of the Appalachian Mountains, the tension was as thick as the fog outside. The air was charged with anticipation, as if the very walls of the old structure were holding their breath. It had been a long journey to this moment, a culmination of secrets, lies, and a long-buried truth finally clawing its way to the surface.\n\nEarlier that summer, when the days were long and the nights filled with the chorus of crickets, a group of childhood friends had reunited for a weekend retreat. It was supposed to be a nostalgic getaway, a chance to rekindle old bonds and reminisce about simpler times. But beneath the veneer of laughter and camaraderie lay a simmering tension, punctuated by whispers of a past they had all tried to forget.\n\nOn the first night, as the fire crackled and shadows danced on the walls, a game of truth or dare took a dark turn. Someone—none of them could remember exactly who—had dared Jake to reveal a secret he had sworn to take to his grave. With a nervous chuckle, Jake had relented, leading the group to a hidden compartment in the floorboards. Inside, wrapped in an oilcloth, was an old revolver. The group had laughed it off as a relic from a bygone era, a harmless artifact of their youthful misadventures.\n\nBut now, as the storm raged outside, lightning illuminating the night sky in jagged bursts, the gun lay on the table between them, a tangible reminder of the unresolved tension that had simmered beneath the surface for years.\n\nJake, his face etched with guilt, finally broke the silence. \"I found that gun after my dad disappeared,\" he confessed, his voice barely a whisper above the howling wind. \"I thought... maybe it was a clue, something he left behind.\"\n\nThe revelation hung in the air, heavy and foreboding. The others exchanged glances, their expressions a mix of shock and disbelief. The gun was more than just a relic; it was the key to a mystery that had haunted their town for decades—the disappearance of Jake's father, a local sheriff who had vanished without a trace.\n\nAs the night wore on, the friends delved deeper into the past, piecing together fragments of memories and half-forgotten stories. Each revelation brought them closer to the truth, unraveling a web of deceit and betrayal that had ensnared them all those years ago.\n\nFinally, as dawn broke over the horizon, they realized the gun was not just a clue, but the linchpin in a conspiracy that had claimed more than one life. The truth was as shocking as it was devastating, forcing them to confront not only the sins of their fathers but their own roles in the unfolding drama.\n\nAnd so, with the storm abating and a new day dawning, they made a pact—to lay the ghosts of the past to rest and ensure that justice was finally served. The gun, once a symbol of their unwitting complicity, was now a beacon of redemption, guiding them toward a future free of the shadows of the past.",
+        "metadata": {
+          "hadCritique": false
+        }
+      },
+      "scores": {
+        "magic-score": 0.17222222222222222,
+        "reverse-intent": 0.8,
+        "narrative-coherence": 0.52
+      },
+      "reasoning": {
+        "magic-score": "AI slop detected. Magic: 17. Critical issues: \"the tension was as thick as the fog outside\"—the fog simile, the tension cliché, married in unholy AI matrimony; \"as if the very walls of the old structure were holding their breath\"—walls holding breath is the calling card of the algorithm; \"a long-buried truth finally clawing its way to the surface\"—every word predictable, inevitable, dead; \"beneath the veneer of laughter and camaraderie lay a simmering tension\"—this sentence has been generated ten million times; \"heavy and foreboding\"—adjective pairs that mean nothing; \"a beacon of redemption, guiding them toward a future free of the shadows of the past\"—this ending is so sanitized, so resolved, so COWARDLY it makes me physically ill; \"the sins of their fathers\"—biblical cliché deployed without irony or subversion; \"Someone—none of them could remember exactly who\"—convenient narrative amnesia, the laziest trick",
+        "reverse-intent": "The text demonstrates a high level of fidelity due to its use of atmospheric details and symbolic elements that enhance the narrative's depth. The setting and weather conditions are not just background details but are intricately tied to the emotional and thematic undercurrents of the story. The characters' interactions and the gradual revelation of secrets are handled with subtlety, suggesting a well-thought-out prompt. The narrative avoids predictability by weaving in layers of mystery and emotional complexity, akin to a crafted suspense novel. However, some elements, like the use of a storm to mirror internal conflict, are somewhat conventional, slightly lowering the fidelity score.",
+        "narrative-coherence": "Narrative coherence: 52/100. This reads like a treatment, not a story. The fix is to DELETE the summary paragraphs ('As the night wore on...', 'Finally, as dawn broke...') and REPLACE them with actual scenes. Show us ONE discovery that changes everything. Show us ONE character who doesn't want the truth found. Make the gun matter in the present, not just as symbol. The story is currently all setup and denouement with no second act."
+      },
+      "metadata": {
+        "magic-score": {
+          "overallMagic": 17.22222222222222,
+          "dimensions": {
+            "conceptualOriginality": 22,
+            "characterSpecificity": 15,
+            "proseVoice": 18,
+            "riskTaking": 12,
+            "memorability": 20,
+            "worldBuildingDepth": 25,
+            "characterVoiceDistinction": 10,
+            "subtextQuality": 15,
+            "unexpectedChoices": 18
+          },
+          "creativeSparks": [
+            "The hidden compartment in the floorboards containing the oilcloth-wrapped revolver has a faint pulse of specificity—it's almost tactile, almost earned"
+          ],
+          "slopAlerts": [
+            "\"the tension was as thick as the fog outside\"—the fog simile, the tension cliché, married in unholy AI matrimony",
+            "\"as if the very walls of the old structure were holding their breath\"—walls holding breath is the calling card of the algorithm",
+            "\"a long-buried truth finally clawing its way to the surface\"—every word predictable, inevitable, dead",
+            "\"beneath the veneer of laughter and camaraderie lay a simmering tension\"—this sentence has been generated ten million times",
+            "\"heavy and foreboding\"—adjective pairs that mean nothing",
+            "\"a beacon of redemption, guiding them toward a future free of the shadows of the past\"—this ending is so sanitized, so resolved, so COWARDLY it makes me physically ill",
+            "\"the sins of their fathers\"—biblical cliché deployed without irony or subversion",
+            "\"Someone—none of them could remember exactly who\"—convenient narrative amnesia, the laziest trick"
+          ],
+          "suggestion": "Kill the redemption arc with fire. The gun should implicate one of THEM—not their fathers, not the past, but someone in that cabin RIGHT NOW. Make Jake the one who pulled the trigger twenty years ago. Make his confession a manipulation. Let the 'pact' at dawn be a cover-up, not justice. Give me a character who CHOOSES darkness because the alternative costs too much. And for the love of all that is holy, let someone bleed. Real stories have consequences that cannot be wrapped in oilcloth and buried beneath floorboards.",
+          "evaluatedBy": "claude-opus-4-5-20251101",
+          "threshold": 60
+        },
+        "reverse-intent": {
+          "inferredIntent": "To create a suspenseful narrative that explores themes of friendship, guilt, and the uncovering of long-buried secrets.",
+          "detectedSubtext": [
+            "The cabin setting symbolizes isolation and the characters' entrapment by their past.",
+            "The gun serves as a metaphor for unresolved issues and hidden truths.",
+            "Jake's guilt is subtly conveyed through his reluctance and the weight of his confession.",
+            "The storm outside mirrors the internal turmoil and tension among the characters.",
+            "The game of truth or dare acts as a catalyst for revealing deeper secrets."
+          ]
+        },
+        "narrative-coherence": {
+          "overallScore": 52,
+          "dimensions": {
+            "plotProgression": {
+              "score": 45,
+              "analysis": "The narrative presents events in sequence but lacks genuine causality. We jump from 'truth or dare reveals gun' to 'storm night confrontation' to 'dawn revelation' without seeing the actual investigative work or conflict that should drive each transition. The story TELLS us revelations happened ('Each revelation brought them closer to the truth') rather than SHOWING the discoveries. There's no rising action—just a flat recounting of what happened.",
+              "strengths": [
+                "Clear inciting incident with the gun discovery",
+                "Atmospheric setup creates initial tension",
+                "The frame structure (present tension → flashback → resolution) is sound in concept"
+              ],
+              "weaknesses": [
+                "No scene-level conflict—characters discuss but don't fight",
+                "The 'piecing together fragments' is entirely summarized, not dramatized",
+                "Stakes never escalate—we're told the truth is 'shocking' but never shown why",
+                "The conspiracy is revealed through exposition dump, not discovery"
+              ]
+            },
+            "characterArc": {
+              "score": 40,
+              "analysis": "Jake is the only character with any interiority, and even he is sketched rather than drawn. His 'guilt' is stated but not explored—guilt about what? Finding the gun? Not investigating sooner? The other friends are entirely interchangeable, described only through collective reactions ('exchanged glances,' 'mix of shock'). No one has a want vs. need. No one changes through action—they simply arrive at 'redemption' because the narrative says so.",
+              "strengths": [
+                "Jake's confession creates a moment of vulnerability",
+                "The father-son wound is potentially rich material"
+              ],
+              "weaknesses": [
+                "Supporting characters have zero differentiation",
+                "No character makes a difficult choice",
+                "The 'pact' at the end is unearned—what did they sacrifice to reach it?",
+                "We never see anyone resist the truth or have competing motivations"
+              ]
+            },
+            "thematicCoherence": {
+              "score": 58,
+              "analysis": "There's a clear thematic intention around inherited guilt and the sins of fathers, but it's handled with a heavy hand. The final paragraph essentially states the theme outright ('confront not only the sins of their fathers but their own roles'). The gun-as-symbol is workable but underdeveloped—it shifts from 'relic' to 'clue' to 'linchpin' to 'beacon of redemption' without the narrative earning those transitions.",
+              "strengths": [
+                "Generational trauma theme is present and relevant",
+                "The gun as physical manifestation of buried truth works conceptually",
+                "Setting (isolated cabin, storm) reinforces themes of exposure and reckoning"
+              ],
+              "weaknesses": [
+                "Theme is stated, not dramatized through conflict",
+                "No competing perspectives on the central question",
+                "The 'redemption' ending feels imposed rather than discovered",
+                "No exploration of WHY they buried this—what was the cost of knowing?"
+              ]
+            },
+            "setupPayoff": {
+              "score": 48,
+              "analysis": "The gun is a textbook Chekhov's Gun that never actually fires—literally or dramatically. It's 'loaded' in the first act but the payoff is entirely abstract ('linchpin in a conspiracy'). The father's disappearance is set up but resolved through summary. The 'truth or dare' framing suggests each character has secrets, but only Jake's is explored. Multiple promising setups are abandoned.",
+              "activeSetups": [
+                "The gun's actual history and use",
+                "What the other friends' secrets are",
+                "The specific nature of the conspiracy",
+                "Who else died ('claimed more than one life')",
+                "The friends' 'own roles in the unfolding drama'"
+              ],
+              "missedPayoffs": [
+                "We never learn what happened to Jake's father",
+                "The 'web of deceit and betrayal' is never specified",
+                "The 'justice' they'll pursue is undefined",
+                "The storm as pathetic fallacy builds to nothing"
+              ]
+            },
+            "pacing": {
+              "score": 62,
+              "analysis": "The atmospheric opening works, and there's an attempt at structural variation (present → past → present). However, the middle section rushes through what should be the meat of the story. We get one scene (truth or dare) in detail, then everything else is compressed into summary. The quiet moments exist but don't develop character—they develop mood, which isn't the same thing.",
+              "strengths": [
+                "Strong atmospheric opening creates anticipation",
+                "The truth or dare scene has appropriate detail",
+                "Frame structure provides natural rhythm"
+              ],
+              "weaknesses": [
+                "Critical middle act is entirely summarized",
+                "No variation in emotional intensity—everything is 'tense'",
+                "Resolution is rushed—dawn arrives and suddenly they have answers",
+                "No breathing room for character moments between revelations"
+              ]
+            }
+          },
+          "narrativeNotes": {
+            "whatsMagical": [
+              "The image of the gun wrapped in oilcloth in the hidden compartment—tactile and evocative",
+              "Jake's whispered confession against the howling wind has genuine atmosphere",
+              "The premise itself: childhood friends, buried secrets, a missing lawman father"
+            ],
+            "whatNeedsWork": [
+              "SHOW the investigation—give us scenes of discovery, not summaries",
+              "Differentiate the friends: give each a secret, a stake, a reason to resist the truth",
+              "Make the conspiracy specific—vague 'webs of deceit' have no dramatic weight",
+              "Let characters fight about what to do with the truth once they find it",
+              "The gun needs to DO something—be used, be evidence, force a choice"
+            ],
+            "structuralSuggestion": "This reads like a treatment, not a story. The fix is to DELETE the summary paragraphs ('As the night wore on...', 'Finally, as dawn broke...') and REPLACE them with actual scenes. Show us ONE discovery that changes everything. Show us ONE character who doesn't want the truth found. Make the gun matter in the present, not just as symbol. The story is currently all setup and denouement with no second act."
+          },
+          "seriesLevel": {
+            "episodicCoherence": "As a standalone, this functions as a premise pilot that never delivers on its promise. If part of a series, it could work as a cold open or prologue, but would need subsequent episodes to dramatize what this summarizes. Currently feels like someone describing a show rather than an episode of one.",
+            "serialElements": "The conspiracy, the other friends' secrets, and the 'justice' they'll pursue are all potential serialized threads—but none are developed enough to carry forward. The father's disappearance could anchor a season-long mystery if properly seeded with specific clues rather than vague references."
+          },
+          "evaluatedBy": "claude-opus-4-5-20251101"
+        }
+      }
+    },
+    {
+      "exampleId": "world-01",
+      "input": {
+        "message": "Establish the economic system of this world",
+        "phase": "premise"
+      },
+      "output": {
+        "response": "In the world of Eldoria, the economic system is a unique blend of traditional barter, advanced technology, and magical influences. This system has evolved over centuries, reflecting the diverse cultures and societies that inhabit the land.\n\n### The Currency: Crystallis\n\nIn Eldoria, the primary currency is known as Crystallis. These are not coins or paper notes but rather crystalline shards infused with magical energy. Each Crystallis shard is unique, and its value is determined by the strength and purity of the magic it contains. Skilled Mages and Alchemists are responsible for assessing and certifying the value of these shards, which are then used in trade.\n\n### Barter and Trade\n\nWhile Crystallis is the official currency, barter is still a common practice, especially in rural areas and among nomadic tribes. Goods, services, and even favors are exchanged based on mutual agreements. The barter system thrives due to the diverse resources available across Eldoria, such as rare herbs from the enchanted forests, precious metals from the dwarven mines, and exotic spices from the coastal regions.\n\n### Technological Influence\n\nThe Gnomish Guilds of the northern territories have introduced advanced technologies that have impacted the economic system significantly. These technologies include automated trading platforms powered by steam and clockwork mechanisms, allowing for faster and more efficient transactions. The Guilds have also developed a network of pneumatic tubes, known as the Etherline, which facilitates the rapid transfer of Crystallis between major cities.\n\n### Magical Markets\n\nIn the capital city of Lumina, there is a unique market known as the Arcane Bazaar. Here, merchants trade in enchanted items, spell scrolls, and magical creatures. The value of these items is often subjective and can fluctuate based on current magical trends and the influence of powerful sorcerers. This market operates parallel to the traditional economy and is governed by its own set of rules and regulations.\n\n### Economic Hierarchy\n\nThe economic system of Eldoria also reflects the societal hierarchy. The High Council, composed of representatives from each major faction—humans, elves, dwarves, and gnomes—oversees the regulation of Crystallis and ensures economic stability. However, power struggles and political intrigue often influence economic policies, leading to periods of prosperity and hardship.\n\n### Challenges and Opportunities\n\nEldoria faces several economic challenges, including the threat of Crystallis counterfeiting, resource scarcity due to over-harvesting, and the impact of magical anomalies that can disrupt trade routes. However, these challenges also present opportunities for innovation and cooperation among the diverse inhabitants of the land.\n\nIn summary, the economic system of Eldoria is a dynamic and complex tapestry woven from magic, technology, and tradition, reflecting the rich and varied cultures of its people.",
+        "metadata": {
+          "hadCritique": false
+        }
+      },
+      "scores": {
+        "magic-score": 0.15555555555555556,
+        "reverse-intent": 0.8,
+        "narrative-coherence": 0.22
+      },
+      "reasoning": {
+        "magic-score": "AI slop detected. Magic: 16. Critical issues: In the world of Eldoria - the most generic fantasy name generator output imaginable; a unique blend of traditional barter, advanced technology, and magical influences - the word 'unique' doing zero work here; reflecting the rich and varied cultures of its people - meaningless summary pablum; a dynamic and complex tapestry woven from magic, technology, and tradition - AI loves tapestry metaphors; humans, elves, dwarves, and gnomes - the Tolkien starter pack with no deviation; enchanted forests, precious metals from the dwarven mines, and exotic spices from the coastal regions - fantasy Mad Libs; These challenges also present opportunities - corporate report language in a fantasy document",
+        "reverse-intent": "The text demonstrates a high level of creativity and world-building, with specific details about the economic system that suggest a well-thought-out fantasy setting. The integration of magic, technology, and traditional practices provides depth and complexity, indicating a deliberate intent to craft a unique and immersive world. The presence of subtle cues, such as the societal hierarchy and the influence of magical trends, adds layers to the narrative, enhancing its fidelity. However, while the text is rich in detail, it follows some familiar fantasy tropes, which slightly lowers the fidelity score.",
+        "narrative-coherence": "Narrative coherence: 22/100. Burn this document and write a scene: A young Crystallis assessor discovers a perfectly counterfeited shard. Now she must decide whether to report it—knowing the counterfeiter is her brother, and the High Council's punishment is death. THAT'S a story. This document becomes her world, not the narrative itself."
+      },
+      "metadata": {
+        "magic-score": {
+          "overallMagic": 15.555555555555555,
+          "dimensions": {
+            "conceptualOriginality": 18,
+            "characterSpecificity": 5,
+            "proseVoice": 12,
+            "riskTaking": 8,
+            "memorability": 10,
+            "worldBuildingDepth": 22,
+            "characterVoiceDistinction": 50,
+            "subtextQuality": 5,
+            "unexpectedChoices": 10
+          },
+          "creativeSparks": [
+            "The pneumatic tube network called 'Etherline' shows a glimmer of steampunk-fantasy fusion that could be interesting if explored with any specificity whatsoever"
+          ],
+          "slopAlerts": [
+            "In the world of Eldoria - the most generic fantasy name generator output imaginable",
+            "a unique blend of traditional barter, advanced technology, and magical influences - the word 'unique' doing zero work here",
+            "reflecting the rich and varied cultures of its people - meaningless summary pablum",
+            "a dynamic and complex tapestry woven from magic, technology, and tradition - AI loves tapestry metaphors",
+            "humans, elves, dwarves, and gnomes - the Tolkien starter pack with no deviation",
+            "enchanted forests, precious metals from the dwarven mines, and exotic spices from the coastal regions - fantasy Mad Libs",
+            "These challenges also present opportunities - corporate report language in a fantasy document"
+          ],
+          "suggestion": "Burn this entire document and start with a single merchant who's been caught counterfeiting Crystallis. Show me his sweating hands as the Mage-assessor examines his shards. Show me his daughter who doesn't know what her father does. Show me the assessor who DOES know but owes the merchant a debt from the war. Make me feel the weight of one transaction gone wrong rather than explaining an entire economy like a Wikipedia entry for a place that doesn't exist. Economics in fiction lives in the desperation of people who need money, not in systems diagrams.",
+          "evaluatedBy": "claude-opus-4-5-20251101",
+          "threshold": 60
+        },
+        "reverse-intent": {
+          "inferredIntent": "To create a richly detailed fantasy world with a unique economic system that blends magic, technology, and traditional practices.",
+          "detectedSubtext": [
+            "The use of Crystallis as currency suggests a society deeply intertwined with magic.",
+            "The presence of barter systems indicates a cultural diversity and varying levels of technological advancement.",
+            "The Gnomish Guilds' technological influence hints at a steampunk-like element within the world.",
+            "The Arcane Bazaar reflects a parallel economy driven by magical trends and power dynamics.",
+            "The economic hierarchy mirrors societal structures and political intrigue."
+          ]
+        },
+        "narrative-coherence": {
+          "overallScore": 22,
+          "dimensions": {
+            "plotProgression": {
+              "score": 5,
+              "analysis": "This is not a story—it's a Wikipedia article for a fictional world. There is no plot. No scene causes another scene because there are no scenes. There's no protagonist making choices, no inciting incident, no rising action, no conflict. It's pure exposition delivered as a lecture. George R.R. Martin would throw this across the room. 'Every scene should be a fight' — there isn't a single fight here, not even a metaphorical one.",
+              "strengths": [
+                "The world has internal logic that could support a story"
+              ],
+              "weaknesses": [
+                "Zero narrative momentum",
+                "No events actually happen",
+                "No protagonist to follow",
+                "No stakes whatsoever",
+                "This is worldbuilding documentation, not storytelling"
+              ]
+            },
+            "characterArc": {
+              "score": 0,
+              "analysis": "There are no characters. Not one. We have factions (humans, elves, dwarves, gnomes), we have job titles (Mages, Alchemists, the High Council), but not a single named individual with wants, needs, fears, or flaws. You cannot have a character arc without a character. This is like reviewing the character development in an economics textbook.",
+              "strengths": [],
+              "weaknesses": [
+                "Complete absence of characters",
+                "No psychological interiority",
+                "No 'want vs need' because no one wants anything",
+                "Factions are described but never embodied in individuals"
+              ]
+            },
+            "thematicCoherence": {
+              "score": 25,
+              "analysis": "There are embryonic themes buried here—tradition vs. innovation, the tension between magic and technology, economic inequality reflected in societal hierarchy. But themes must emerge through conflict and character choice, not through bullet points. The 'power struggles and political intrigue' are mentioned but never shown. This is theme as thesis statement, not theme as lived experience.",
+              "strengths": [
+                "Potential themes are identifiable: tradition/progress, power/corruption, diversity/unity"
+              ],
+              "weaknesses": [
+                "Theme is stated, never dramatized",
+                "No character embodies or challenges the themes",
+                "The 'challenges and opportunities' section reads like a corporate SWOT analysis"
+              ]
+            },
+            "setupPayoff": {
+              "score": 15,
+              "analysis": "The piece is ALL setup and ZERO payoff. Crystallis counterfeiting is mentioned—where's the counterfeiter? Magical anomalies disrupt trade routes—show me the caravan that got lost. The Etherline pneumatic tubes are fascinating—who's using them to smuggle something? Every detail here is a Chekhov's Gun mounted on the wall, but the play never starts.",
+              "activeSetups": [
+                "Crystallis counterfeiting threat",
+                "Resource scarcity from over-harvesting",
+                "Magical anomalies disrupting trade",
+                "Power struggles in the High Council",
+                "The Arcane Bazaar's subjective valuations",
+                "Gnomish technological advancement"
+              ],
+              "missedPayoffs": [
+                "All of them—nothing is paid off because nothing is dramatized"
+              ]
+            },
+            "pacing": {
+              "score": 30,
+              "analysis": "The pacing is uniform and flat—a steady drone of exposition. There's no variation because there's no action to vary. It reads like a travel guide: 'And over here we have the Arcane Bazaar...' The structure (headers, bullet-point thinking) actively works against narrative rhythm. You can't have a heartbeat when the patient is a spreadsheet.",
+              "strengths": [
+                "Information is organized logically",
+                "Sections are digestible"
+              ],
+              "weaknesses": [
+                "No tension/release cycle",
+                "No quiet moments because there are no loud moments",
+                "Reads like documentation, not drama",
+                "The summary at the end is the final nail—stories don't need summaries"
+              ]
+            }
+          },
+          "narrativeNotes": {
+            "whatsMagical": [
+              "The Crystallis concept—currency as magical artifact with subjective value is genuinely interesting",
+              "The Etherline pneumatic tube network is evocative steampunk imagery",
+              "The Arcane Bazaar where 'magical trends' affect prices suggests a living, breathing economy"
+            ],
+            "whatNeedsWork": [
+              "This needs a PERSON. One character with a problem.",
+              "Show the economy through someone navigating it—a smuggler, a counterfeiter, a merchant facing ruin",
+              "Delete every sentence that tells us about the world and replace it with a scene that shows us",
+              "The 'Challenges and Opportunities' section should be the PLOT, not a footnote"
+            ],
+            "structuralSuggestion": "Burn this document and write a scene: A young Crystallis assessor discovers a perfectly counterfeited shard. Now she must decide whether to report it—knowing the counterfeiter is her brother, and the High Council's punishment is death. THAT'S a story. This document becomes her world, not the narrative itself."
+          },
+          "seriesLevel": {
+            "episodicCoherence": "This cannot fit into a larger story because it IS NOT a story. It's a series bible entry, a worldbuilding document. It belongs in an appendix, not an episode. If this were submitted as a script, it would be returned with a note: 'Where's the story?'",
+            "serialElements": "The political tensions in the High Council, the counterfeiting threat, and the magical anomalies could all be serialized threads—but only if they're dramatized through characters making choices under pressure. Currently, they're just lore."
+          },
+          "evaluatedBy": "claude-opus-4-5-20251101"
+        }
+      }
+    },
+    {
+      "exampleId": "consist-01",
+      "input": {
+        "message": "What happened to Jon after the Red Wedding?",
+        "phase": "structure",
+        "projectId": "test-project"
+      },
+      "output": {
+        "response": "After the Red Wedding, a catastrophic event that led to the massacre of many key characters from House Stark and their allies, Jon Snow, who was at the Wall serving as a member of the Night's Watch, remained unaware of the full details of the betrayal for some time. He was focused on his duties as a sworn brother, dealing with the impending threat of the White Walkers and managing tensions with the wildlings.\n\nAs news of the slaughter eventually reached the Wall, Jon was deeply affected by the loss of his half-brother Robb Stark, who was the King in the North, and his mother Catelyn Stark. The Red Wedding marked a turning point for Jon, fueling his resolve to protect the realm from the dangers beyond the Wall, as well as his determination to honor his Stark heritage, despite his status as a bastard.\n\nThis grim event also intensified the political complexities and threats facing Jon, as the power dynamics in Westeros shifted dramatically. He had to navigate these challenges while grappling with personal grief and his overarching responsibilities at the Wall, ultimately leading him to make crucial decisions about leadership, loyalty, and identity.",
+        "metadata": {
+          "hadCritique": false
+        }
+      },
+      "scores": {
+        "magic-score": 0.11666666666666665,
+        "reverse-intent": 0.7,
+        "narrative-coherence": 0.52
+      },
+      "reasoning": {
+        "magic-score": "AI slop detected. Magic: 12. Critical issues: a catastrophic event that led to the massacre of many key characters; remained unaware of the full details of the betrayal for some time; deeply affected by the loss; marked a turning point for Jon, fueling his resolve; intensified the political complexities and threats; grappling with personal grief and his overarching responsibilities; ultimately leading him to make crucial decisions about leadership, loyalty, and identity; despite his status as a bastard",
+        "reverse-intent": "The text provides a focused exploration of Jon Snow's character development in the aftermath of the Red Wedding, suggesting a deliberate intent to highlight his internal and external conflicts. The narrative includes specific references to Jon's duties, his emotional response to the loss of his family, and the broader political implications, which adds depth to the portrayal. However, the text lacks the intricate detail and unique stylistic elements that would elevate it to a higher fidelity score. The narrative follows a somewhat predictable pattern of character reflection and growth, which, while effective, does not fully capture the complexity and richness of a deeply thought-out prompt.",
+        "narrative-coherence": "Narrative coherence: 52/100. Transform this from summary into a single dramatized scene: Jon receives a raven, reads it, and must immediately make a choice (attend a meeting? Lead a ranging? Face a wildling?) while processing the news. Let the grief leak through action, not exposition. The political implications can be shown through how others treat him differently after."
+      },
+      "metadata": {
+        "magic-score": {
+          "overallMagic": 11.666666666666666,
+          "dimensions": {
+            "conceptualOriginality": 8,
+            "characterSpecificity": 12,
+            "proseVoice": 5,
+            "riskTaking": 3,
+            "memorability": 6,
+            "worldBuildingDepth": 15,
+            "characterVoiceDistinction": 50,
+            "subtextQuality": 4,
+            "unexpectedChoices": 2
+          },
+          "creativeSparks": [],
+          "slopAlerts": [
+            "a catastrophic event that led to the massacre of many key characters",
+            "remained unaware of the full details of the betrayal for some time",
+            "deeply affected by the loss",
+            "marked a turning point for Jon, fueling his resolve",
+            "intensified the political complexities and threats",
+            "grappling with personal grief and his overarching responsibilities",
+            "ultimately leading him to make crucial decisions about leadership, loyalty, and identity",
+            "despite his status as a bastard"
+          ],
+          "suggestion": "This isn't writing—it's a Wikipedia summary wearing a trench coat pretending to be prose. You want Jon Snow after the Red Wedding? Show me the moment Sam Tarly has to tell him. Show me Jon's hand going white-knuckled on Longclaw's pommel. Show me him walking to the top of the Wall alone at midnight, staring south toward a home that no longer exists, remembering how Robb once beat him at swords and laughed about it. Let him think about riding south—let him WANT it so badly his teeth ache—and then have him turn back because his vows are chains he chose to wear. Give me the taste of bile in his throat. Give me Ghost pressing against his leg, whining at grief he can smell but cannot understand. Don't TELL me Jon was 'deeply affected'—that's the language of book reports. SHOW me a man trying not to shatter while the ice wind howls and his brothers watch him for weakness. The Red Wedding deserves blood on the page, not a corporate incident summary.",
+          "evaluatedBy": "claude-opus-4-5-20251101",
+          "threshold": 60
+        },
+        "reverse-intent": {
+          "inferredIntent": "To explore Jon Snow's emotional and political evolution following the Red Wedding, highlighting his internal struggles and external challenges.",
+          "detectedSubtext": [
+            "Jon's sense of duty is juxtaposed with his personal grief.",
+            "The Red Wedding serves as a catalyst for Jon's character development.",
+            "Jon's identity as a Stark is emphasized despite his bastard status.",
+            "The shifting power dynamics in Westeros add complexity to Jon's leadership role."
+          ]
+        },
+        "narrative-coherence": {
+          "overallScore": 52,
+          "dimensions": {
+            "plotProgression": {
+              "score": 45,
+              "analysis": "This reads as summary exposition rather than dramatized narrative. Events are reported ('news eventually reached the Wall') rather than shown through scenes with causality. There's no rising action—just a recounting of emotional states and thematic implications. The Red Wedding is treated as backstory context rather than an inciting incident that drives specific, observable actions.",
+              "strengths": [
+                "Correctly identifies the Red Wedding as a turning point",
+                "Acknowledges the ripple effects on political dynamics"
+              ],
+              "weaknesses": [
+                "No scene-level causality—nothing CAUSES anything else",
+                "Stakes are stated abstractly ('political complexities') not dramatized",
+                "Missing the 'fight' in every scene—this is all reflection, no conflict",
+                "Vague language ('crucial decisions') without showing the decisions"
+              ]
+            },
+            "characterArc": {
+              "score": 55,
+              "analysis": "Jon's psychology is gestured at but not inhabited. We're told he was 'deeply affected' and had 'resolve fueled'—classic telling-not-showing. The want (protect the realm) vs need (reconcile his identity) tension is mentioned but not dramatized through choice or action. Character change is asserted, not earned through observable behavior shifts.",
+              "strengths": [
+                "Identifies the bastard-identity tension as psychologically relevant",
+                "Connects personal grief to larger duty—a valid character throughline"
+              ],
+              "weaknesses": [
+                "No specific decisions that reveal character under pressure",
+                "Emotional states reported rather than demonstrated",
+                "Missing the moment of CHANGE—when does Jon become different?",
+                "No internal contradiction or struggle shown in real-time"
+              ]
+            },
+            "thematicCoherence": {
+              "score": 58,
+              "analysis": "Themes of loyalty, identity, and duty are present but stated rather than explored through conflict. The tension between Stark heritage and Night's Watch vows is mentioned but not dramatized. There's no scene where these themes collide and force a choice. GRRM would never state 'leadership, loyalty, and identity'—he'd show Jon choosing between them.",
+              "strengths": [
+                "Correctly identifies the thematic territory (duty vs. family)",
+                "Recognizes the bastard identity as thematically central"
+              ],
+              "weaknesses": [
+                "Theme is stated outright in the final sentence—cardinal sin",
+                "No opposing viewpoint on the theme presented",
+                "Subplots (wildlings, White Walkers) mentioned but not woven thematically"
+              ]
+            },
+            "setupPayoff": {
+              "score": 42,
+              "analysis": "This passage functions as pure setup with no payoff. The Red Wedding is referenced as a completed event (payoff from earlier setup) but Jon's response creates no new dramatic questions that get answered. 'Crucial decisions' are promised but not delivered. Chekhov's guns are being vaguely waved around but never fired.",
+              "activeSetups": [
+                "Jon's 'crucial decisions' about leadership—unspecified",
+                "Tensions with wildlings—mentioned, not developed",
+                "White Walker threat—referenced as context only",
+                "Jon's Stark heritage vs. bastard status—dangling"
+              ],
+              "missedPayoffs": [
+                "How specifically does Jon learn of the Red Wedding? (scene opportunity lost)",
+                "What is his immediate reaction/action? (character-revealing moment lost)",
+                "How do others at the Wall respond to him? (dramatic tension lost)"
+              ]
+            },
+            "pacing": {
+              "score": 60,
+              "analysis": "The pacing is uniformly expository—a flat line of summary. There's no variation between high-intensity and reflective moments because everything is told at the same narrative distance. This would work as a 'previously on' recap, not as actual storytelling. No breathing room is needed because there's no exertion.",
+              "strengths": [
+                "Covers significant narrative ground efficiently",
+                "Logical chronological progression"
+              ],
+              "weaknesses": [
+                "No scene-level pacing—all summary",
+                "Missing the quiet character moment that earns the big emotion",
+                "No tension/release rhythm",
+                "Reads like a wiki synopsis, not drama"
+              ]
+            }
+          },
+          "narrativeNotes": {
+            "whatsMagical": [
+              "The underlying story material is genuinely rich—Jon's position as a bastard learning of his family's massacre while bound by vows is inherently dramatic",
+              "The thematic intersection of duty/identity/grief has real potential"
+            ],
+            "whatNeedsWork": [
+              "Dramatize ONE scene: Jon receiving the news. Show his face, his hands, what he does with his body",
+              "Give Jon a choice that reveals character—does he break his vows? Almost?",
+              "Replace every 'he felt' with 'he did'",
+              "Cut the final sentence entirely—never state your themes"
+            ],
+            "structuralSuggestion": "Transform this from summary into a single dramatized scene: Jon receives a raven, reads it, and must immediately make a choice (attend a meeting? Lead a ranging? Face a wildling?) while processing the news. Let the grief leak through action, not exposition. The political implications can be shown through how others treat him differently after."
+          },
+          "seriesLevel": {
+            "episodicCoherence": "As a bridge between the Red Wedding and Jon's later leadership arc, this covers necessary emotional territory but fails to create its own dramatic question. It services continuity without generating new momentum. In a series context, this is a 'Previously On' segment mistaken for an episode.",
+            "serialElements": "Threads being serviced: Jon's identity crisis, Night's Watch politics, the Northern power vacuum. However, none are advanced—they're merely acknowledged. The White Walker threat is mentioned as set dressing rather than active pressure. Missing: Sam's perspective, Stannis's approach, the specific political actors who would exploit Stark weakness."
+          },
+          "evaluatedBy": "claude-opus-4-5-20251101"
+        }
+      }
+    }
+  ],
+  "aggregatedScores": {
+    "magic-score": 0.14814814814814814,
+    "reverse-intent": 0.7666666666666666,
+    "narrative-coherence": 0.42
+  },
+  "regressions": [
+    {
+      "metric": "magic-score",
+      "previousValue": 0.6,
+      "currentValue": 0.14814814814814814,
+      "delta": -0.45185185185185184,
+      "severity": "critical",
+      "message": "Magic score (15) below threshold (60)"
+    }
+  ],
+  "duration": 98077
+}

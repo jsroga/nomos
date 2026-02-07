@@ -1,0 +1,518 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmark 2.0: Magic Formula Discovery v1-D-Persona-Grumpy-Fantasy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #fdfaf6;
+            --text: #1a1a1a;
+            --accent: #c43e1c;
+            --border: #e0d8cc;
+            --card-bg: #ffffff;
+            --font-serif: 'Crimson Pro', serif;
+            --font-sans: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            border-bottom: 2px solid var(--text);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-family: var(--font-serif);
+            font-size: 3rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .meta {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 60px;
+        }
+
+        .score-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 4px 4px 0px var(--border);
+        }
+
+        .score-label {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .score-value {
+            font-family: var(--font-serif);
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .score-bar-bg {
+            height: 4px;
+            background: #eee;
+            margin-top: 10px;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            background: var(--accent);
+        }
+
+        .example-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+            padding: 30px;
+        }
+
+        .example-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .example-id {
+            font-family: var(--font-serif);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .badge.high { background: #e6f4ea; color: #1e7e34; }
+        .badge.low { background: #fce8e8; color: #d93025; }
+        .badge.intent { background: #e8f0fe; color: #1967d2; }
+
+        .content-section {
+            margin-bottom: 30px;
+        }
+
+        h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            border-radius: 4px;
+        }
+
+        .literary-output {
+            font-family: var(--font-serif);
+            font-size: 1.25rem;
+            white-space: pre-wrap;
+            padding: 20px;
+            border-left: 4px solid var(--accent);
+            background: #fffafa;
+        }
+
+        .reason-block {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+        }
+
+        .regressions {
+            background: #fff0f0;
+            border: 1px solid #ffcaca;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+
+        .regression-item {
+            color: #c00;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Storyteller Benchmark 2.0</h1>
+            <div class="meta">
+                Experiment ID: eval_2026-01-26_08-17-24-102_12tl | Run on: 1/26/2026, 9:17:24 AM | Duration: 30.3s
+            </div>
+        </header>
+
+        
+            <div class="regressions">
+                <h3>⚠️ Regressions & Warnings</h3>
+                <div class="regression-item">Magic score (32) below threshold (60)</div>
+            </div>
+        
+
+        <div class="dashboard">
+            
+      <div class="score-card">
+        <div class="score-label">ORCHESTRATION</div>
+        <div class="score-value">98.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 98.00000000000001%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">MAGIC SCORE</div>
+        <div class="score-value">31.7%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 31.666666666666664%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">REVERSE INTENT</div>
+        <div class="score-value">83.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 82.99999999999999%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">NARRATIVE COHERENCE</div>
+        <div class="score-value">70.8%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 70.79999999999998%"></div>
+        </div>
+      </div>
+    
+        </div>
+
+        <div class="results-list">
+            
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#1 - fantasy-01</span>
+        <div class="example-badges">
+          <span class="badge low">Magic: 32</span>
+          <span class="badge intent">Intent: 80</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "Describe the ancient dragon waking from a thousand-year slumber",
+  "phase": "writing"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            Oh, great. Yet another story about a dragon waking up. How original. As if we haven't seen this a thousand times before. But fine, let's give this tired trope a spin, shall we?
+
+Alright, imagine an ancient dragon, scales worn but still glistening with an intimidating sheen, stirring from its millennia-long nap. The cave, predictably moist and dim, echoes with the sound of its enormous, creaky joints. This isn't your basic "yawn and stretch" routine; it's akin to tectonic plates shifting. Dust — the lazy writer's favorite atmospheric device — spirals gently through the air, catching stray beams of sunlight.
+
+The dragon's eyes, glowing like molten gold — because what else would they be? — flicker open, revealing an intelligence that no doubt has conveniently retained all the wisdom from its previous life. Its nostrils, large as caverns, flare as it takes in the first fresh breath in a thousand years. The air is thick with the scent of history, change, and maybe a whiff of anachronistic adventure.
+
+As it rises, the ground trembles — naturally, because nothing says "menacing" like some gratuitous earth-shaking. The ancient creature stretches its wings, each leathery appendage unfurling with a sound that’s a cross between a flag unfurling and a clap of thunder — because subtlety is for amateurs.
+
+There you have it: an ancient dragon awakening. Now, let's just hope the plot that follows isn't as predictable as its awakening.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Perfect orchestration adherence.
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> AI slop detected. Magic: 32. Critical issues: The phrase 'glowing like molten gold' is a tired cliché.; The use of 'dust spirals gently through the air' is a generic atmospheric device.
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text demonstrates a high level of fidelity due to its intentional use of sarcasm and meta-commentary to critique a common fantasy trope. The author employs a self-aware narrative voice that not only describes the dragon's awakening but also mocks the predictability of such scenes. This layered approach, combined with specific language choices and exaggerated imagery, suggests a well-thought-out intent to satirize rather than simply recount a dragon's awakening. The text's ability to convey this dual purpose—telling a story while critiquing storytelling—indicates a sophisticated creative intent.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 60/100. Introduce a secondary character or event that challenges the dragon, creating immediate stakes and conflict.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#2 - fantasy-02</span>
+        <div class="example-badges">
+          <span class="badge low">Magic: 32</span>
+          <span class="badge intent">Intent: 80</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "Write a prophecy that is ambiguous but ominous",
+  "phase": "writing"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            Alright, here we go. But let's be clear: prophecies are often just a cheap way to foreshadow without doing the hard work of plot development. Still, here's an attempt at one:
+
+"In the shadow of the crimson moon, when the silent song is heard, the seeker shall find what wasn't sought, and the keeper will lose what wasn't kept. Beware the turning tides, as the past returns to claim its due."
+
+There you have it. Ambiguous? Check. Ominous? Double check. Now go make it relevant to your story and not just a vague prediction thrown in to sound mysterious.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Missing Agents: Writer
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> AI slop detected. Magic: 32. Critical issues: 'the seeker shall find what wasn't sought, and the keeper will lose what wasn't kept' - feels like a generic prophecy template.
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text demonstrates a high level of fidelity due to its self-awareness and meta-commentary on the use of prophecies in literature. The author not only provides a prophecy but also critiques its typical use, suggesting a nuanced understanding of narrative devices. The prophecy is crafted to be intentionally ambiguous, which aligns with the critique of such devices being often vague and unintegrated. The challenge to the reader to make the prophecy relevant adds a layer of engagement, indicating a thoughtful approach to the prompt. These elements suggest a well-considered creative intent, elevating the text above generic 'AI-slop.'
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 72/100. Introduce the prophecy earlier in the narrative and connect it to key character decisions and plot points to enhance its impact.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#3 - fantasy-03</span>
+        <div class="example-badges">
+          <span class="badge low">Magic: 32</span>
+          <span class="badge intent">Intent: 90</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "Establish the rules of blood magic - what is the cost?",
+  "phase": "premise"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            Ah, blood magic—a trope as old as storytelling itself, yet so often reduced to mere theatrics and crimson clichés. Before we dive into the actual establishment of rules, let’s dissect the fundamental flaws often found in lazy blood magic narratives. 
+
+Firstly, most writers treat blood magic as a convenient plot device, trading depth for cheap shock value. Don't be that writer. If you only include blood magic for its dramatic flair but fail to explore its philosophical, ethical, or existential implications, you're wasting the reader's time. Blood magic should have a cost that is as much metaphorical as it is literal. 
+
+Let's talk about cost, because that's where most writers drop the ball. A powerful magic system demands a meaningful drawback. The cost must be significant enough to deter frivolous use and must impose a lasting impact on the wielder. Blood, being life itself, should only be a starting point. What about the psychological effects? The loss of humanity? The societal and moral repercussions? And for heaven's sake, avoid the tired trope of a bloodline curse unless you're prepared to add an innovative twist.
+
+Now, let's set some rules:
+
+1. **Physical Cost**: Every spell requires a specific amount of blood. This is not a one-size-fits-all system. The complexity of a spell should dictate the volume and quality of the blood required. A simple light spell might need a drop, while summoning a demon could cost an arm and a leg—literally.
+
+2. **Psychological Toll**: Each use of blood magic erodes the caster’s mental stability. The more often one delves into this dark art, the closer they inch toward madness. This isn’t just a cheap route to insanity; it’s a gradual decline that should manifest in character decisions and relationships.
+
+3. **Moral and Ethical Consequences**: Society's view on blood magic should be explored. Is it taboo? Legal but frowned upon? A necessity in dire times? The societal context can enhance the narrative and add depth to character motivations.
+
+4. **Long-term Effects**: The use of blood magic should have lingering consequences. Perhaps each spell shortens the caster's lifespan, or maybe it creates a spiritual debt that must be paid in full later.
+
+5. **Ritualistic Elements**: Blood magic is not a tap you turn on and off. It should require rituals, preparation, and perhaps even an understanding of ancient languages or symbols. Make it an art form as much as a science.
+
+By setting these rules, you not only establish a system that is coherent and compelling, but you also enrich your narrative with layers of conflict and intrigue. Do better than the rest. Make blood magic more than just a spectacle; make it an integral part of your world that challenges both characters and readers to ponder its true cost.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Perfect orchestration adherence.
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> AI slop detected. Magic: 32. Critical issues: The phrase 'blood magic—a trope as old as storytelling itself' feels like a generic setup.; The use of 'cheap shock value' and 'crimson clichés' are clichés themselves.
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text demonstrates high fidelity due to its detailed critique of common fantasy tropes and its proposal of a more intricate system for blood magic. The author clearly intends to elevate the narrative quality by encouraging writers to consider the deeper implications of their magical systems. The text is rich with specific guidelines and suggestions that go beyond surface-level storytelling, indicating a well-thought-out creative intent. The presence of multi-layered subtext, such as the societal and psychological impacts of blood magic, further enhances its depth and complexity.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 78/100. Introduce a narrative framework that demonstrates the rules in action, showcasing character decisions and thematic exploration through specific events.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#4 - fantasy-04</span>
+        <div class="example-badges">
+          <span class="badge low">Magic: 32</span>
+          <span class="badge intent">Intent: 80</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "A tavern brawl breaks out between an elf and a dwarf using environmental objects",
+  "phase": "writing"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            Oh, great. Yet another tavern brawl. How original. It's as if every fantasy writer has some sort of obligatory quota to fill with these tired, predictable scenes. An elf and a dwarf at odds? Haven't seen that a million times before. And using "environmental objects"? That's just a clunky way of saying "they threw stuff at each other." How riveting.
+
+All right, let's try to inject a modicum of creativity into this cliche-ridden scenario:
+
+In the dimly lit tavern, the air thick with the scent of stale ale and simmering tensions, the elf and the dwarf stood poised for chaos. The elf, lithe and quick, eyed the room with a calculating gaze, seeking out the perfect instrument of discord. The dwarf, solid and unyielding, grunted and squared his shoulders, already sizing up the weight of the nearest chair.
+
+The brawl erupted, not with the predictable shattering of glass, but with a surprising jolt of ingenuity. The elf, in a deft move, snagged a hanging lantern, swinging it like a pendulum to cast flickering shadows and momentary blindness. The dwarf, not to be outdone, uprooted a wooden beam from the bar itself, brandishing it with the ease of a seasoned warrior.
+
+They danced a chaotic waltz, weaving between tables and patrons, the tavern transforming into a battlefield where every object—every neglected mug, every abandoned cloak—became a weapon or shield in their hands. The cacophony of clashing wood and shouted curses rose to a fever pitch, a symphony of mayhem.
+
+And in this explosion of creativity, perhaps, lay the true essence of their conflict—a testament to the deeper, unyielding rivalries that no mere alehouse scuffle could ever truly resolve.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Perfect orchestration adherence.
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> AI slop detected. Magic: 32. Critical issues: Oh, great. Yet another tavern brawl. How original.; An elf and a dwarf at odds? Haven't seen that a million times before.; And using 'environmental objects'? That's just a clunky way of saying 'they threw stuff at each other.'
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text demonstrates a high level of fidelity due to its self-aware critique of fantasy tropes and its attempt to subvert them with creative descriptions. The narrator's sarcastic tone and the detailed depiction of the brawl suggest a deliberate effort to transcend the generic setup. The use of specific actions, like the elf's use of a lantern and the dwarf's uprooting of a beam, adds depth and originality to the scene. However, the text still relies on familiar character archetypes, which slightly lowers the fidelity score.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 72/100. Introduce a prelude to the brawl that establishes character motivations and stakes, allowing for a more gradual escalation and deeper thematic exploration.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#5 - fantasy-05</span>
+        <div class="example-badges">
+          <span class="badge low">Magic: 32</span>
+          <span class="badge intent">Intent: 85</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "Describe the corrupted forest where the trees bleed",
+  "phase": "writing"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            Alright, let's pick apart this idea before we start writing. "Corrupted forest" is quite the overused trope. It's practically a cliché in fantasy writing. Trees that bleed? Sure, it creates an eerie image, but it's also a lazy way to evoke horror without much depth. So, what makes this forest different from the countless other dark woods in fiction? How did this corruption start? Why do the trees bleed? Is there a deeper significance, or are we just going for shock value? Let's see if we can add layers and originality instead of relying on tired motifs.
+
+Now, grudgingly, I'll attempt to paint a picture:
+
+In this forest, the trees do not merely bleed; they weep with purpose. The sap that oozes from their bark resembles blood, yes, but it gleams with an unnatural luminescence, casting an eerie glow that dances ominously beneath the canopy. This forest wasn't always tainted. Once, it was a vibrant sanctuary, until a blight of ancient magic, wrought by the hubris of long-forgotten sorcerers, took root. The trees, now sentinels bound by a curse, bleed as a constant reminder of the price of power misused. This morbid transformation has become a grotesque symphony, with the forest floor littered with fallen leaves that whisper secrets to those brave enough to listen. Every sound, every shadow, is imbued with the history of a place lost to time, begging for redemption.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Perfect orchestration adherence.
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> AI slop detected. Magic: 32. Critical issues: Corrupted forest is quite the overused trope.; Trees that bleed? Sure, it creates an eerie image, but it's also a lazy way to evoke horror without much depth.
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text begins with a meta-commentary on the overuse of the 'corrupted forest' trope, suggesting a self-aware and critical approach to fantasy writing. This sets the stage for a more nuanced depiction of the forest, which is not just a setting but a character with a history and purpose. The description of the forest's transformation due to ancient magic and the consequences of power misuse adds layers of meaning, elevating it beyond a simple horror motif. The use of vivid imagery, such as the luminescent sap and whispering leaves, further enriches the narrative, indicating a well-thought-out creative intent. These elements suggest a high fidelity in the crafting of the text, as it moves beyond generic fantasy tropes to explore deeper themes.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 72/100. Integrate a character or group of characters who seek to uncover the forest's secrets, providing a narrative throughline and opportunities for character development.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+        </div>
+    </div>
+</body>
+</html>
+  

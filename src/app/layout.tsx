@@ -4,8 +4,8 @@ import { AuthProvider } from '@/components/providers/AuthProvider'
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { JetBrains_Mono, Inter, Syne } from 'next/font/google'
-import { ErrorBoundaryWrapper } from '@/components/ErrorBoundaryWrapper'
 import { GlobalLiquidLoader } from '@/domains/marketing/components/GlobalLiquidLoader'
+import ReactQueryProvider from '@/lib/react-query'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' })
@@ -33,19 +33,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       >
         <NextTopLoader color="hsl(240, 85%, 65%)" showSpinner={false} />
         <AuthProvider>
-          <GlobalLiquidLoader />
-          {children}
-          <Toaster
-            position="bottom-right"
-            toastOptions={{
-              duration: 3000,
-              style: {
-                background: '#333',
-                color: '#fff',
-                fontFamily: 'var(--font-mono)',
-              },
-            }}
-          />
+          <ReactQueryProvider>
+            <GlobalLiquidLoader />
+            {children}
+            <Toaster
+              position="bottom-right"
+              toastOptions={{
+                duration: 3000,
+                style: {
+                  background: '#333',
+                  color: '#fff',
+                  fontFamily: 'var(--font-mono)',
+                },
+              }}
+            />
+          </ReactQueryProvider>
         </AuthProvider>
       </body>
     </html>

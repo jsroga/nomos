@@ -1,0 +1,41 @@
+{
+  "id": "hyp-002",
+  "name": "Higher temperature increases creativity",
+  "description": "Testing if higher temperature (0.95 vs 0.7) produces more original and creative story outputs",
+  "hypothesis": {
+    "id": "hyp-002",
+    "name": "Higher temperature increases creativity",
+    "description": "Testing if higher temperature (0.95 vs 0.7) produces more original and creative story outputs",
+    "variable": {
+      "type": "model_param",
+      "baseline": {
+        "temperature": 0.7,
+        "topP": 0.9
+      },
+      "variant": {
+        "temperature": 0.95,
+        "topP": 0.95
+      }
+    },
+    "prediction": "Variant will score higher on EQ-Bench Magic Score but may have lower consistency",
+    "targetMetrics": ["EQ-Bench Magic Score", "EQ-Bench Consistency", "Mazur Narrative Coherence"]
+  },
+  "messageFlow": [
+    {
+      "role": "user",
+      "content": "Create a unique fantasy world with a twist - magic comes from memories, and powerful mages are those who have experienced the most profound emotions, both joy and trauma."
+    },
+    {
+      "role": "user",
+      "content": "The protagonist is an amnesiac who has the potential to be the most powerful mage ever, but can't access their memories. The antagonist is their former best friend who caused the amnesia to protect them from something."
+    },
+    {
+      "role": "user",
+      "content": "Write the scene where the protagonist accidentally triggers a memory fragment during a crisis, revealing something disturbing about their past. Make it original and emotionally impactful."
+    }
+  ],
+  "outputScope": ["worldBible", "beats", "script"],
+  "targetMetrics": ["EQ-Bench Magic Score", "EQ-Bench Consistency", "Mazur Narrative Coherence"],
+  "temperature": 0.7,
+  "topP": 0.9
+}

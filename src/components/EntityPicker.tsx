@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useGameEntities, GameEntity, EntityType } from '@/hooks/useGameEntities'
 import { Search, Users, MapPin, Gamepad2, Shield, Package, Target } from 'lucide-react'
 

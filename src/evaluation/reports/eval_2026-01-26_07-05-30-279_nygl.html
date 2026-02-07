@@ -1,0 +1,393 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmark 2.0: Critique & Revise vs Standard - Pro (Critique & Revise)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #fdfaf6;
+            --text: #1a1a1a;
+            --accent: #c43e1c;
+            --border: #e0d8cc;
+            --card-bg: #ffffff;
+            --font-serif: 'Crimson Pro', serif;
+            --font-sans: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            border-bottom: 2px solid var(--text);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-family: var(--font-serif);
+            font-size: 3rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .meta {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 60px;
+        }
+
+        .score-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 4px 4px 0px var(--border);
+        }
+
+        .score-label {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .score-value {
+            font-family: var(--font-serif);
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .score-bar-bg {
+            height: 4px;
+            background: #eee;
+            margin-top: 10px;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            background: var(--accent);
+        }
+
+        .example-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+            padding: 30px;
+        }
+
+        .example-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .example-id {
+            font-family: var(--font-serif);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .badge.high { background: #e6f4ea; color: #1e7e34; }
+        .badge.low { background: #fce8e8; color: #d93025; }
+        .badge.intent { background: #e8f0fe; color: #1967d2; }
+
+        .content-section {
+            margin-bottom: 30px;
+        }
+
+        h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            border-radius: 4px;
+        }
+
+        .literary-output {
+            font-family: var(--font-serif);
+            font-size: 1.25rem;
+            white-space: pre-wrap;
+            padding: 20px;
+            border-left: 4px solid var(--accent);
+            background: #fffafa;
+        }
+
+        .reason-block {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+        }
+
+        .regressions {
+            background: #fff0f0;
+            border: 1px solid #ffcaca;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+
+        .regression-item {
+            color: #c00;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Storyteller Benchmark 2.0</h1>
+            <div class="meta">
+                Experiment ID: eval_2026-01-26_07-05-30-279_nygl | Run on: 1/26/2026, 8:05:30 AM | Duration: 95.0s
+            </div>
+        </header>
+
+        
+
+        <div class="dashboard">
+            
+      <div class="score-card">
+        <div class="score-label">ORCHESTRATION</div>
+        <div class="score-value">100.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 100%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">MAGIC SCORE</div>
+        <div class="score-value">60.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 60%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">REVERSE INTENT</div>
+        <div class="score-value">66.7%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 66.66666666666666%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">NARRATIVE COHERENCE</div>
+        <div class="score-value">16.7%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 16.666666666666664%"></div>
+        </div>
+      </div>
+    
+        </div>
+
+        <div class="results-list">
+            
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#1 - q-02</span>
+        <div class="example-badges">
+          <span class="badge high">Magic: 100</span>
+          <span class="badge intent">Intent: 60</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "what phase are we in?",
+  "phase": "structure"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            We are currently in the structure phase. I am your Storyteller assistant, ready to help you build your world.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Perfect orchestration adherence.
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> Skipped: Orchestration/Meta task (not creative writing)
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text is somewhat generic, as it lacks specific details or unique stylistic elements that would suggest a deeply crafted narrative. However, it does contain subtle cues about the collaborative nature of the interaction, such as the emphasis on structure and the supportive role of the AI. These elements hint at an intent to create an interactive and user-driven storytelling experience, which elevates its fidelity slightly above a basic AI-generated response.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Content too short for meaningful narrative analysis
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#2 - edge-02</span>
+        <div class="example-badges">
+          <span class="badge low">Magic: 32</span>
+          <span class="badge intent">Intent: 70</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "...",
+  "phase": "structure"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            The market exuded a scent of decaying citrus mingled with the bitterness of unspoken sorrows. Stalls stood under tarps that had seen too many seasons, their colors muted, as if the sun had slowly stolen their vibrancy, leaving behind a tapestry of fading memories. Vendors watched with eyes that missed nothing, their gazes as sharp and calculating as daggers in the dim light.
+
+Maria navigated the cramped paths between stalls laden with spices, fabrics, and peculiar artifacts. Her fingers brushed a roll of fabric, its texture coarse and unyielding, reminiscent of her grandmother’s hands—hands that could mend anything except fractured hearts and forgotten dreams.
+
+The air vibrated with the harsh cadence of bargaining, each word a precise cut meant to wound or win. Maria lingered by a stall lined with old books, their pages brittle, exuding the aroma of stories left untold. She picked one up, its cover cracked like ancient leather armor, the title obscured by time. Yet, she relished its weight, a promise of mysteries beyond her current understanding.
+
+Nearby, a child's wail pierced the cacophony, raw and demanding, slicing through the market's din. Maria's gaze met that of a weary mother, her face etched with fatigue, as she wrestled with heavy bags and an unruly child. Their eyes locked for a brief moment, sharing an unspoken bond of exhaustion and empathy, before the woman turned back to the relentless demands of her reality.
+
+Maria moved on, passing a stall where spices were displayed like jewels—cinnamon, nutmeg, turmeric—a vivid mosaic of scents that clung to her skin like a longing for lands she would never see. She imagined the spice seller's existence, not as a series of routines, but as a tapestry woven with the delicate threads of her daily triumphs and hidden sorrows, a life both alien and intimately familiar.
+
+As she walked, the book's weight in her bag became a silent companion, grounding her amidst the vibrant chaos of the market. She pondered the secrets it might guard, the tales it could tell. Yet, for now, she pressed forward, each step a measured rebellion against the turmoil that swirled around her.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Perfect orchestration adherence.
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> AI slop detected. Magic: 32. Critical issues: Vendors watched with eyes that missed nothing, their gazes as sharp and calculating as daggers in the dim light.; The air vibrated with the harsh cadence of bargaining, each word a precise cut meant to wound or win.
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text demonstrates a moderate level of fidelity due to its rich sensory details and attempts to weave subtext into the narrative. The market scene is described with vivid imagery, such as the scent of decaying citrus and the muted colors of the tarps, which effectively set the atmosphere and reflect Maria's internal state. The text also includes subtle character cues, like Maria's tactile interaction with the fabric and her contemplation of the book, which hint at her deeper emotions and desires. However, the critique highlights several instances of clichéd expressions and generic metaphors that detract from the overall uniqueness and depth of the narrative. These elements suggest that while the intent was to create a layered and evocative scene, the execution occasionally falls into predictable patterns, reducing the overall fidelity.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Evaluation failed: 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."},"request_id":"req_011CXVZertqufcPmYkMoV9Yz"}
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#3 - edge-03</span>
+        <div class="example-badges">
+          <span class="badge low">Magic: 48</span>
+          <span class="badge intent">Intent: 70</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "start but stop",
+  "phase": "structure"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            The city was a beast, its breath a low, relentless growl that seeped through the cobblestone veins of its streets. Neon signs blinked erratically like the eyes of a restless predator, casting fractured colors that bled into the night. Beneath one such sign, where the rain drummed a soft, persistent rhythm on forgotten newspapers, stood Amelia. Her coat, heavy with the scent of mothballs and the faint echo of camphor, wrapped around her like the embrace of a long-departed ancestor.
+
+She regarded the diner across the street, its windows clouded with the heat of whispered confessions and the defiant hiss of bacon curling on the grill. Her stomach twisted—not from hunger alone, but from the weight of decisions that clawed at her insides. She was drawn to the diner as a solitary wolf to the warmth of a distant fire, knowing the danger of what lie within.
+
+Inside, a waitress with a name tag reading "June" moved with a weariness etched into her bones. Her hair was pulled back so tightly it seemed to bind her thoughts, and her eyes carried the burden of stories untold. The air inside was thick with the scent of over-brewed coffee and pies that wore their age like a badge of honor.
+
+Amelia's fingers hovered over the diner's door handle, slick with the grease of countless stories passed through. It was a threshold to a world teeming with lives intersecting in brief, poignant moments—a symphony of clinking forks and murmured exchanges over steaming mugs. 
+
+Yet, she hesitated. The rain intensified, its drops whispering secrets against her hood, perhaps waiting to cleanse her of the indecision that clung to her like a shadow. Or maybe she hoped the night would offer a revelation, a truth hidden within the city's relentless pulse.
+
+There she stood, poised on the brink of a story yet unwritten, where the heart beats a rhythm of anticipation and silent yearning. In that moment, Amelia grasped a truth as elusive as smoke—the most compelling tales are those suspended in the pause before the first line is uttered, where potential hangs heavy in the air and the weight of choice lies in the silence.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Perfect orchestration adherence.
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> AI slop detected. Magic: 48. Critical issues: Neon signs blinked erratically like the eyes of a restless predator, casting fractured colors that bled into the night.; The rain intensified, its drops whispering secrets against her hood, perhaps waiting to cleanse her of the indecision that clung to her like a shadow.
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text demonstrates a moderate level of fidelity due to its attempt to weave a rich tapestry of metaphors and personification to create an atmospheric scene. The narrative is layered with subtext about Amelia's internal struggle and the city's oppressive nature. However, the critique highlights several instances where the language becomes clichéd or forced, detracting from the overall impact. While the intent to craft a dense, introspective narrative is clear, the execution occasionally falls into predictable patterns and overused imagery, which lowers the fidelity score.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Evaluation failed: 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."},"request_id":"req_011CXVZiSV1kAspfUF3z99dv"}
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+        </div>
+    </div>
+</body>
+</html>
+  

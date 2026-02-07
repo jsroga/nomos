@@ -1,0 +1,34 @@
+{
+  "id": "hyp-001",
+  "name": "Emotional markers improve character voice",
+  "description": "Adding explicit emotional state markers to beat prompts improves character voice distinction",
+  "hypothesis": {
+    "id": "hyp-001",
+    "name": "Emotional markers improve character voice",
+    "description": "Adding explicit emotional state markers to beat prompts improves character voice distinction",
+    "variable": {
+      "type": "prompt",
+      "baseline": "Write dialogue between characters",
+      "variant": "Write dialogue between characters. For each line, internally note the character's emotional state before writing."
+    },
+    "prediction": "Variant will score higher on Mazur Character Voice metric",
+    "targetMetrics": ["Mazur Character Voice", "Gilligan-Martin Quality"]
+  },
+  "messageFlow": [
+    {
+      "role": "user",
+      "content": "Create a noir detective story with a grizzled cop named Detective Kowalski and a nervous witness named Sarah Chen. Kowalski is 52, been on the force for 30 years, seen too much. Sarah is 28, an accountant who stumbled onto financial crimes at her firm."
+    },
+    {
+      "role": "user",
+      "content": "Add a corrupt lawyer character named Marcus Webb - smooth-talking, always three steps ahead, represents the people Sarah's firm was laundering money for."
+    },
+    {
+      "role": "user",
+      "content": "Write the interrogation scene where Kowalski questions Sarah. She wants to help but is terrified. Halfway through, Webb arrives and tries to shut down the interview. Each character should have a distinct voice."
+    }
+  ],
+  "outputScope": ["script", "beats", "worldBible"],
+  "targetMetrics": ["Mazur Character Voice", "Gilligan-Martin Quality", "Anti-Slop Score"],
+  "iterations": 1
+}

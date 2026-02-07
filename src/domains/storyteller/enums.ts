@@ -102,6 +102,140 @@ export enum ActionStatus {
 // ============================================
 
 export enum MergeMode {
+  REPLACE = 'replace',
+  MERGE = 'merge',
+  SMART = 'smart',
+}
+
+// ============================================
+// Bible Section - Sections of the World Bible
+// ============================================
+
+export enum BibleSection {
+  WORLD_DESCRIPTION = 'worldDescription',
+  WORLD_RULES = 'worldRules',
+  FACTIONS = 'factions',
+  INSPIRATIONS = 'inspirations',
+  PLOT_TWISTS = 'plotTwists',
+  EPISODE_ROADMAP = 'episodeRoadmap',
+  CAST = 'cast', // Project-level cast (replaces keyCharacters)
+  SOUNDTRACKS = 'soundtracks',
+  MOODBOARD = 'moodboard',
+  EPISODE_PREMISE = 'episodePremise',
+  FULL = 'full',
+}
+
+// ============================================
+// Action Type - Agent action types
+// ============================================
+
+export enum ActionType {
+  // Beat Operations
+  CREATE_BEAT = 'CREATE_BEAT',
+  UPDATE_BEAT = 'UPDATE_BEAT',
+  DELETE_BEAT = 'DELETE_BEAT',
+  REORDER_BEATS = 'REORDER_BEATS',
+  LOCK_BEAT_BOARD = 'LOCK_BEAT_BOARD',
+  ADD_BEAT = 'ADD_BEAT',
+
+  // Character Operations
+  CREATE_CHARACTER = 'CREATE_CHARACTER',
+  UPDATE_CHARACTER = 'UPDATE_CHARACTER',
+  UPDATE_CHARACTER_METRICS = 'UPDATE_CHARACTER_METRICS',
+  UPDATE_STRESS_LEVEL = 'UPDATE_STRESS_LEVEL',
+  ADD_KNOWLEDGE = 'ADD_KNOWLEDGE',
+  ADD_CHARACTER = 'ADD_CHARACTER',
+  UPDATE_CHARACTER_PSYCHOLOGY = 'UPDATE_CHARACTER_PSYCHOLOGY',
+
+  // Script Operations
+  UPDATE_SCRIPT = 'UPDATE_SCRIPT',
+  INSERT_SCRIPT_SECTION = 'INSERT_SCRIPT_SECTION',
+  REVISE_SCRIPT_SECTION = 'REVISE_SCRIPT_SECTION',
+
+  // Story Bible Operations (Full)
+  UPDATE_SERIES_BIBLE = 'UPDATE_SERIES_BIBLE',
+  UPDATE_WORLD_BIBLE = 'UPDATE_WORLD_BIBLE',
+  UPDATE_BIBLE = 'UPDATE_BIBLE',
+  ADD_WORLD_RULE = 'ADD_WORLD_RULE',
+  ADD_SETUP = 'ADD_SETUP',
+  RESOLVE_SETUP = 'RESOLVE_SETUP',
+
+  // Partial Bible Updates
+  UPDATE_WORLD_RULES = 'UPDATE_WORLD_RULES',
+  UPDATE_FACTIONS = 'UPDATE_FACTIONS',
+  UPDATE_INSPIRATIONS = 'UPDATE_INSPIRATIONS',
+  UPDATE_WORLD_DESCRIPTION = 'UPDATE_WORLD_DESCRIPTION',
+  UPDATE_MOOD_SOUNDTRACK = 'UPDATE_MOOD_SOUNDTRACK',
+  UPDATE_SOUNDTRACKS = 'UPDATE_SOUNDTRACKS',
+  UPDATE_MOODBOARD = 'UPDATE_MOODBOARD',
+  UPDATE_PLOT_TWISTS = 'UPDATE_PLOT_TWISTS',
+  UPDATE_CAST = 'UPDATE_CAST', // Project-level cast (replaces UPDATE_KEY_CHARACTERS)
+  UPDATE_EPISODE_ROADMAP = 'UPDATE_EPISODE_ROADMAP',
+  UPDATE_ROADMAP_SUMMARY = 'UPDATE_ROADMAP_SUMMARY',
+  UPDATE_EPISODE_PREMISE = 'UPDATE_EPISODE_PREMISE',
+  UPDATE_STORY_PHASE = 'UPDATE_STORY_PHASE',
+
+  // Story Plan
+  UPDATE_STORY_PLAN = 'UPDATE_STORY_PLAN',
+
+  // Faction Operations
+  UPDATE_FACTION = 'UPDATE_FACTION',
+  ADD_FACTION = 'ADD_FACTION',
+
+  // Location Operations
+  CREATE_LOCATION = 'CREATE_LOCATION',
+  UPDATE_LOCATION = 'UPDATE_LOCATION',
+  ADD_LORE_ENTRY = 'ADD_LORE_ENTRY',
+
+  // Generation Operations
+  GENERATE_POSTER = 'GENERATE_POSTER',
+  GENERATE_STORY_ROADMAP = 'GENERATE_STORY_ROADMAP',
+  SET_GENRE_AND_TONE = 'SET_GENRE_AND_TONE',
+  ADD_THEME = 'ADD_THEME',
+  REMOVE_THEME = 'REMOVE_THEME',
+}
+
+// ============================================
+// Episode Premise Section - Parts of episode premise
+// ============================================
+
+export enum EpisodePremiseSection {
+  PROTAGONIST_HOOK = 'protagonistHook',
+  FATAL_FLAW = 'fatalFlaw',
+  STAKES = 'stakes',
+  INEVITABLE_CONSEQUENCE = 'inevitableConsequence',
+  THE_HOOK = 'theHook',
+  THE_TURN = 'theTurn',
+  THE_AFTERMATH = 'theAftermath',
+  TRANSFORMATION = 'transformation',
+  THEMATIC_FOCUS = 'thematicFocus',
+  LOGLINE = 'logline',
+  TITLE = 'title',
+}
+
+// ============================================
+// World Rule Category - Categories for world rules
+// ============================================
+
+export enum WorldRuleCategory {
+  MAGIC = 'Magic',
+  PHYSICS = 'Physics',
+  TECHNOLOGY = 'Technology',
+  SOCIETY = 'Society',
+  POLITICS = 'Politics',
+  ECONOMICS = 'Economics',
+}
+
+// ============================================
+// Character Role - Character roles in story
+// ============================================
+
+export enum CharacterRole {
+  PROTAGONIST = 'Protagonist',
+  ANTAGONIST = 'Antagonist',
+  SUPPORTING = 'Supporting',
+  MENTOR = 'Mentor',
+  SIDEKICK = 'Sidekick',
 }
 
 // ============================================

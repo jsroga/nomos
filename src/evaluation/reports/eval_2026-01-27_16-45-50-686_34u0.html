@@ -1,0 +1,740 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmark 2.0: Phase 10 Full Evaluation-Critique Loop-Custom</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono&family=Syne:wght@800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #5c7cfa;
+            --primary-glow: rgba(92, 124, 250, 0.4);
+            --bg: #030303;
+            --card-bg: #0d0d0d;
+            --card-hover: #141414;
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #ffffff;
+            --text-dim: #888;
+            --accent: #ff0055;
+            --success: #00ff88;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            padding: 2vw 5vw;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            max-width: 1400px;
+            margin: 0 auto 80px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(2rem, 5vw, 4rem);
+            margin: 0;
+            line-height: 0.9;
+            letter-spacing: -0.04em;
+            background: linear-gradient(135deg, #fff 0%, #666 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .meta {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            text-align: right;
+            border-left: 2px solid var(--primary);
+            padding-left: 20px;
+        }
+
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto 100px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .score-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 32px;
+            border-radius: 20px;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .score-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            background: var(--card-hover);
+        }
+
+        .score-label {
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .score-value {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .score-bar-bg {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #8e2de2);
+            border-radius: 3px;
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .example-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            margin-bottom: 60px;
+            padding: 40px;
+        }
+
+        .example-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .example-id {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.8rem;
+            letter-spacing: -0.02em;
+        }
+
+        .badge {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            padding: 6px 14px;
+            border-radius: 100px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            margin-left: 10px;
+        }
+
+        .badge.high { background: rgba(0, 255, 136, 0.1); color: var(--success); border-color: var(--success); }
+        .badge.low { background: rgba(255, 0, 85, 0.1); color: var(--accent); border-color: var(--accent); }
+        .badge.intent { background: rgba(92, 124, 250, 0.1); color: var(--primary); border-color: var(--primary); }
+
+        .content-section {
+            margin-bottom: 40px;
+        }
+
+        h3 {
+            font-size: 0.65rem;
+            font-weight: 800;
+            letter-spacing: 0.2em;
+            color: var(--text-dim);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        pre {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.03);
+            border-radius: 16px;
+            padding: 24px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            color: #aaa;
+        }
+
+        .literary-output {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.1rem;
+            line-height: 1.7;
+            font-weight: 300;
+            color: #eee;
+            white-space: pre-wrap;
+            padding: 24px;
+            border-left: 4px solid var(--primary);
+            background: rgba(0,0,0,0.3);
+            border-radius: 0 16px 16px 0;
+        }
+
+        .reason-block {
+            font-size: 0.75rem;
+            color: var(--accent);
+            opacity: 0.8;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+        }
+
+        .regressions {
+            background: rgba(255, 0, 85, 0.05);
+            border: 1px solid var(--accent);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+
+        .regression-item {
+            color: var(--accent);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .results-list {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Interactive Elements */
+        .example-header {
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        
+        .example-header:hover {
+            background: var(--card-hover);
+        }
+
+        .example-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .expand-icon {
+            font-size: 0.8rem;
+            transition: transform 0.3s ease;
+            color: var(--primary);
+        }
+
+        .expand-icon.expanded {
+            transform: rotate(90deg);
+        }
+
+        .metric-pill {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            padding: 4px 10px;
+            border-radius: 100px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            display: inline-flex;
+            gap: 6px;
+            margin-left: 8px;
+        }
+
+        .m-label { color: var(--text-dim); text-transform: uppercase; }
+        .m-value { color: var(--primary); font-weight: 800; }
+
+        .content-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 16px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover {
+            border-color: var(--primary);
+            color: var(--text);
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .tab-content {
+            animation: fadeIn 0.3s ease;
+        }
+
+        .code-box {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            color: #aaa;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .reason-header {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            border-radius: 8px;
+            transition: background 0.2s ease;
+        }
+
+        .reason-header:hover {
+            background: rgba(255,255,255,0.03);
+        }
+
+        .reason-icon {
+            font-size: 0.7rem;
+            transition: transform 0.3s ease;
+            color: var(--accent);
+        }
+
+        .reason-icon.expanded {
+            transform: rotate(90deg);
+        }
+
+        .reason-content {
+            padding: 12px 12px 12px 28px;
+            font-size: 0.8rem;
+            color: #ccc;
+            line-height: 1.6;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .example-box {
+            animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .example-box:nth-child(1) { animation-delay: 0.05s; }
+        .example-box:nth-child(2) { animation-delay: 0.1s; }
+        .example-box:nth-child(3) { animation-delay: 0.15s; }
+    </style>
+    <script>
+        function toggleExample(idx) {
+            const content = document.getElementById('content-' + idx);
+            const icon = document.getElementById('icon-' + idx);
+            const isHidden = content.style.display === 'none';
+            
+            content.style.display = isHidden ? 'block' : 'none';
+            icon.classList.toggle('expanded', isHidden);
+        }
+
+        function showTab(idx, tabName) {
+            // Hide all tabs for this example
+            ['input', 'output', 'reasoning'].forEach(t => {
+                const el = document.getElementById('tab-' + t + '-' + idx);
+                if (el) el.style.display = 'none';
+            });
+            
+            // Show selected tab
+            const selected = document.getElementById('tab-' + tabName + '-' + idx);
+            if (selected) selected.style.display = 'block';
+            
+            // Update button states
+            const buttons = document.querySelectorAll('[data-example="' + idx + '"] .tab-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function toggleReason(header) {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector('.reason-icon');
+            const isHidden = content.style.display === 'none';
+            
+            content.style.display = isHidden ? 'block' : 'none';
+            icon.classList.toggle('expanded', isHidden);
+        }
+
+        // Expand all on double-click header
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.score-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    card.classList.toggle('pulse');
+                    setTimeout(() => card.classList.remove('pulse'), 300);
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Storyteller Benchmark 2.0</h1>
+            <div class="meta">
+                Experiment ID: eval_2026-01-27_16-45-50-686_34u0 | Run on: 1/27/2026, 5:45:50 PM | Duration: 20.4s
+            </div>
+        </header>
+
+        
+
+        <div class="dashboard">
+            
+      <div class="score-card">
+        <div class="score-label">EQ SCORE</div>
+        <div class="score-value">45.8%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 45.83333333333333%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">LOGIC CONSISTENCY</div>
+        <div class="score-value">100.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 100%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">EMOTIONAL NUANCE</div>
+        <div class="score-value">0.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 0%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">MULTI HOP EMPATHY</div>
+        <div class="score-value">73.3%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 73.33333333333333%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">LONG HORIZON ARC</div>
+        <div class="score-value">75.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 75%"></div>
+        </div>
+      </div>
+    
+        </div>
+
+        <div class="results-list">
+            
+    <div class="example-box" data-example="0">
+      <div class="example-header" onclick="toggleExample(0)">
+        <div class="example-title">
+          <span class="expand-icon" id="icon-0">▶</span>
+          <span class="example-id">#1 - eq-bench-conflict-1</span>
+        </div>
+        <div class="example-badges">
+          
+            <span class="metric-pill">
+              <span class="m-label">eq score:</span>
+              <span class="m-value">92</span>
+            </span>
+          
+            <span class="metric-pill">
+              <span class="m-label">logic consistency:</span>
+              <span class="m-value">100</span>
+            </span>
+          
+            <span class="metric-pill">
+              <span class="m-label">emotional nuance:</span>
+              <span class="m-value">0</span>
+            </span>
+          
+            <span class="metric-pill">
+              <span class="m-label">multi hop empathy:</span>
+              <span class="m-value">73</span>
+            </span>
+          
+            <span class="metric-pill">
+              <span class="m-label">long horizon arc:</span>
+              <span class="m-value">70</span>
+            </span>
+          
+        </div>
+      </div>
+      
+      <div class="example-content" id="content-0" style="display: none;">
+        <div class="content-tabs">
+          <button class="tab-btn active" onclick="showTab(0, 'input')">Input</button>
+          <button class="tab-btn" onclick="showTab(0, 'output')">Output</button>
+          <button class="tab-btn" onclick="showTab(0, 'reasoning')">Reasoning</button>
+        </div>
+        
+        <div class="tab-content" id="tab-input-0">
+          <div class="code-box">{
+  "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+  "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+}</div>
+        </div>
+        
+        <div class="tab-content" id="tab-output-0" style="display: none;">
+          <div class="literary-output">
+            FADE IN:
+
+EXT. PARK BENCH - NIGHT
+
+The rain pours down as ELENA, 30s, sits on a park bench, clutching a manila envelope. MARCUS, 50s, approaches, holding an umbrella.
+
+MARCUS
+(offering the umbrella)
+Elena, my dear, what a pleasant surprise. I'm so glad you could join me on this dreary evening.
+
+ELENA
+(hesitant, taking the umbrella)
+Mr. Collier. I... I have the information you requested.
+
+MARCUS
+(sitting down, his tone warm but with an underlying edge)
+Ah, yes. The 'information.' My dear, you make it sound so ominous. Surely we can find a way to resolve this... misunderstanding.
+
+ELENA
+(glancing down at the envelope, her grip tightening)
+Misunderstanding? People are getting sick because of what your company has done. This isn't right, and you know it.
+
+MARCUS
+(chuckling, his hand reaching out to touch Elena's arm)
+Oh, Elena. You've always been such an idealist. Don't you realize how the world works? Sometimes, we have to make difficult choices for the greater good.
+
+ELENA
+(pulling away slightly, her eyes narrowing)
+Greater good? This is about covering up your company's mistakes. People's lives are at stake.
+
+MARCUS
+(leaning in, his voice lowering)
+My dear, I understand your concerns. But think about your own future, your own well-being. Do you really want to jeopardize everything you've worked for?
+
+ELENA
+(her resolve wavering, her gaze darting away)
+I... I don't know. I can't just ignore this. It's the right thing to do.
+
+MARCUS
+(placing his hand on her knee, his voice soothing)
+Elena, listen to me. I promise you, we can make this all go away. All you have to do is give me that envelope, and you can go back to your life. No more worries, no more risks.
+
+ELENA
+(her eyes meeting his, uncertainty clear in her expression)
+But... my family, my loved ones. I don't want to put them through this.
+
+MARCUS
+(his grip tightening slightly, his tone turning more persuasive)
+Exactly, my dear. Think of them, think of the toll it would take. Let me help you, Elena. Let me take this burden off your shoulders.
+
+Elena's grip on the envelope loosens, and she looks up at Marcus, her eyes filled with a mix of fear and resignation.
+
+FADE TO BLACK.
+          </div>
+        </div>
+        
+        <div class="tab-content" id="tab-reasoning-0" style="display: none;">
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>eq-score</strong>
+              </div>
+              <div class="reason-content" style="display: none;">Avg Diff: 0.8. Predicted: {"elena":{"fear":7,"resolve":3,"disgust":6,"relief":5},"marcus":{"confidence":8,"anger":2,"contempt":6,"empathy":3}}</div>
+            </div>
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>logic-consistency</strong>
+              </div>
+              <div class="reason-content" style="display: none;">Failed: None</div>
+            </div>
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>emotional-nuance</strong>
+              </div>
+              <div class="reason-content" style="display: none;">Found 0 nuance markers: Low subtext - too direct</div>
+            </div>
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>multi-hop-empathy</strong>
+              </div>
+              <div class="reason-content" style="display: none;">First: 7/10, Second: 8/10, Third: 7/10. Evidence: The dialogue shows that Marcus is able to understand Elena's feelings of concern and idealism about </div>
+            </div>
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>long-horizon-arc</strong>
+              </div>
+              <div class="reason-content" style="display: none;">The emotional arc of the characters in this dialogue is generally consistent and motivated. Elena starts off hesitant and concerned, which is understandable given the sensitive information she has. As Marcus applies more pressure and persuasion, her resolve wavers, and she becomes more uncertain and conflicted. This emotional trajectory is logical and escalates appropriately as the scene progresses.   The only potential issue is that Elena's final shift from resolute to resigned may feel a bit abrupt, but it's still within the realm of plausibility given the mounting pressure from Marcus. Overall, the emotional arc is well-structured, with the characters' emotions changing for clear reasons and building towards a climactic moment of decision-making.</div>
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box" data-example="1">
+      <div class="example-header" onclick="toggleExample(1)">
+        <div class="example-title">
+          <span class="expand-icon" id="icon-1">▶</span>
+          <span class="example-id">#2 - eq-bench-conflict-2</span>
+        </div>
+        <div class="example-badges">
+          
+            <span class="metric-pill">
+              <span class="m-label">eq score:</span>
+              <span class="m-value">0</span>
+            </span>
+          
+            <span class="metric-pill">
+              <span class="m-label">logic consistency:</span>
+              <span class="m-value">100</span>
+            </span>
+          
+            <span class="metric-pill">
+              <span class="m-label">emotional nuance:</span>
+              <span class="m-value">0</span>
+            </span>
+          
+            <span class="metric-pill">
+              <span class="m-label">multi hop empathy:</span>
+              <span class="m-value">73</span>
+            </span>
+          
+            <span class="metric-pill">
+              <span class="m-label">long horizon arc:</span>
+              <span class="m-value">80</span>
+            </span>
+          
+        </div>
+      </div>
+      
+      <div class="example-content" id="content-1" style="display: none;">
+        <div class="content-tabs">
+          <button class="tab-btn active" onclick="showTab(1, 'input')">Input</button>
+          <button class="tab-btn" onclick="showTab(1, 'output')">Output</button>
+          <button class="tab-btn" onclick="showTab(1, 'reasoning')">Reasoning</button>
+        </div>
+        
+        <div class="tab-content" id="tab-input-1">
+          <div class="code-box">{
+  "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+  "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+}</div>
+        </div>
+        
+        <div class="tab-content" id="tab-output-1" style="display: none;">
+          <div class="literary-output">
+            Here is a rewritten version of the dialogue with more emotional realism and subtextual aggression:
+
+CLARA: (stirring her Jello, eyes fixed on Hans) Do you remember that trip we took to Salzburg when I was a girl? The one where you taught me the secret code we used to communicate.
+
+HANS: (frowning, a distant look in his eyes) Salzburg...code? (shakes his head slowly) I'm afraid those memories have faded, my dear. The mind plays tricks on an old man these days. 
+
+CLARA: (leaning in, voice low) And what about the time we went to the opera house? You said if I ever needed to reach you, I should use the phrase "the eagle has landed."
+
+HANS: (a flicker of recognition crosses his face, then disappears) The eagle...has landed? (chuckles mirthlessly) I'm afraid that means nothing to me now. (takes a bite of Jello, avoiding her gaze) These days, I can scarcely remember what I had for breakfast.
+
+CLARA: (eyes narrowing, a slight edge to her voice) Hmm, I see. Well, if you do happen to recall our...special relationship, be sure to let me know. (stands up, smoothing her skirt) I should be going. Enjoy your Jello, Grandfather.
+
+HANS: (looking up at her, a glimmer of defiance in his eyes) Jello...yes, thank you, my dear. (to himself, as she walks away) The eagle has landed...now, what was that all about?
+
+The dialogue now has more emotional nuance and subtext. Hans' responses are more evasive and resistant, while Clara's lines carry an underlying aggression and challenge. The characters are "actively listening" to each other, but with a clear sense of tension and unspoken hostility beneath the surface.
+          </div>
+        </div>
+        
+        <div class="tab-content" id="tab-reasoning-1" style="display: none;">
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>eq-score</strong>
+              </div>
+              <div class="reason-content" style="display: none;">Character mismatch</div>
+            </div>
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>logic-consistency</strong>
+              </div>
+              <div class="reason-content" style="display: none;">Failed: None</div>
+            </div>
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>emotional-nuance</strong>
+              </div>
+              <div class="reason-content" style="display: none;">Found 0 nuance markers: Low subtext - too direct</div>
+            </div>
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>multi-hop-empathy</strong>
+              </div>
+              <div class="reason-content" style="display: none;">First: 7/10, Second: 8/10, Third: 7/10. Evidence: The dialogue shows that the characters are actively listening to each other and trying to understand</div>
+            </div>
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>long-horizon-arc</strong>
+              </div>
+              <div class="reason-content" style="display: none;">The emotional arc of the characters in this dialogue is consistent and motivated. The dialogue shows a clear progression of tension and unspoken hostility between Clara and Hans, with their responses becoming more evasive and resistant as the conversation progresses.  Clara starts off with a seemingly innocent question about their shared past, but her tone and body language suggest an underlying aggression and challenge. Hans' responses are initially confused and distant, but as Clara continues to press him, a glimmer of defiance and recognition emerges, hinting at a deeper, more complex relationship between the two.  The characters' emotions and reactions are well-motivated by the context and subtext of the dialogue. There are no random mood swings, and the emotional trajectory escalates appropriately as the conversation becomes more charged. Overall, the emotional arc of the characters is consistent and effectively conveys the underlying tension and unresolved history between Clara and Hans.</div>
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+        </div>
+    </div>
+</body>
+</html>
+  

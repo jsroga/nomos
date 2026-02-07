@@ -1,5 +1,5 @@
 import { Validator, ValidationResult } from './runnable-guard'
-import { WritersRoomState } from '../graph/state'
+import { WritersRoomState } from '../types'
 import { AgentAction } from '../actions/types'
 import { validateUserInput } from './input-guardrails'
 import { validateAgentOutput } from './output-guardrails'

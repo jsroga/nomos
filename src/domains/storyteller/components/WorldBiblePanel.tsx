@@ -1,41 +1,24 @@
-import {
-  Save,
-  Edit2,
-  X,
-  Lock,
-  Unlock,
-  Shield,
-  Loader2,
-  Plus,
-  RefreshCw,
-  Trash2,
-} from 'lucide-react'
+import { Save, Edit2, X, Lock, Unlock, Shield, Loader2, Network, BookOpen } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
+
+// Lazy load CharacterWeb since it's a heavy component
+const CharacterWeb = lazy(() => import('./CharacterWeb').then(m => ({ default: m.CharacterWeb })))
 import { LocalStorageKeys } from '@/constants/localStorage'
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
-import { moodboardGenerationService } from '../services/MoodboardGenerationService'
-import toast from 'react-hot-toast'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { isCentralUser, canEditBible } from '@/lib/bible-permissions'
 
-import {
-  StoryPlan,
-  WorldRule,
-  Faction,
-  KeyCharacter,
-  StorySequence,
-} from '../schemas/agent-schemas'
-import { CharacterCreationDialog } from './CharacterCreationDialog'
+import { StoryPlan } from '../schemas/agent-schemas'
+// CharacterCreationDialog removed - Cast is managed via CharacterPanel sidebar
 
 import { BibleOverview } from './WorldBible/BibleOverview'
 import { BibleSoundtracks } from './WorldBible/BibleSoundtracks'
 import { BibleInspirations } from './WorldBible/BibleInspirations'
 import { BibleWorldLogic } from './WorldBible/BibleWorldLogic'
 import { BibleFactions } from './WorldBible/BibleFactions'
-import { BibleCharacters } from './WorldBible/BibleCharacters'
+// BibleCharacters (Key Players) removed - Cast is managed via CharacterPanel sidebar
 import { BibleRoadmap } from './WorldBible/BibleRoadmap'
 import { BibleProvider, useBible } from './WorldBible/BibleContext'
 
@@ -80,15 +63,21 @@ const getProviderConfig = () => {
   }
 }
 
+import { PendingAction } from './WorldBible/BibleContext'
+
 interface WorldBiblePanelProps {
   storyPlan: StoryPlan
   onUpdate?: (updates: Partial<StoryPlan>) => void
   isReadOnly?: boolean
-  onSendMessage?: (msg: string) => void
+  onSendMessage?: (msg: string, section?: string) => void
   projectId?: string
-  onConvertToCast?: (character: KeyCharacter) => void
   onClose?: () => void
   isLoading?: boolean
+  /** Section-specific loading states for granular shimmer */
+  loadingSections?: Record<string, { loading: boolean; message?: string }>
+  /** Pending actions per section (for blur overlay with accept/reject) */
+  pendingActions?: Record<string, PendingAction>
+  onSetPendingAction?: (section: string, action: PendingAction | null) => void
 }
 
 export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = props => {
@@ -101,7 +90,14 @@ export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = props => {
       : '')
 
   return (
-    <BibleProvider {...props} projectId={projectId} getProviderConfig={getProviderConfig}>
+    <BibleProvider
+      {...props}
+      projectId={projectId}
+      getProviderConfig={getProviderConfig}
+      loadingSections={props.loadingSections}
+      pendingActions={props.pendingActions}
+      onSetPendingAction={props.onSetPendingAction}
+    >
       <WorldBiblePanelContent {...props} projectId={projectId} />
     </BibleProvider>
   )
@@ -113,7 +109,6 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
   isReadOnly = false,
   onSendMessage,
   projectId,
-  onConvertToCast,
   onClose,
   isLoading,
 }) => {
@@ -138,9 +133,6 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
     updateFaction,
     addFaction,
     removeFaction,
-    updateKeyCharacter,
-    addKeyCharacter,
-    removeKeyCharacter,
     updateSequence,
     addSequence,
     removeSequence,
@@ -151,9 +143,51 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
   } = useBible()
 
   const [primaryImageIndex, setPrimaryImageIndex] = useState<number | null>(null)
-  const [convertDialogOpen, setConvertDialogOpen] = useState(false)
-  const [convertingCharacter, setConvertingCharacter] = useState<KeyCharacter | null>(null)
-  const [dialogMode, setDialogMode] = useState<'convert' | 'create'>('convert')
+  const [focusEntityId, setFocusEntityId] = useState<string | null>(null)
+
+  // Read initial tab from URL
+  const [activeTab, setActiveTab] = useState<'content' | 'relationships'>(() => {
+    if (typeof window === 'undefined') return 'content'
+    const params = new URLSearchParams(window.location.search)
+    return params.get('bibleTab') === 'relationships' ? 'relationships' : 'content'
+  })
+
+  // Persist tab in URL
+  const switchTab = useCallback((tab: 'content' | 'relationships') => {
+    setActiveTab(tab)
+    if (typeof window === 'undefined') return
+    const url = new URL(window.location.href)
+    if (tab === 'relationships') {
+      url.searchParams.set('bibleTab', 'relationships')
+    } else {
+      url.searchParams.delete('bibleTab')
+    }
+    window.history.replaceState({}, '', url.toString())
+  }, [])
+
+  // Listen for tab switch events (from entity click navigation)
+  useEffect(() => {
+    const handleSwitchTab = (e: Event) => {
+      const { tab } = (e as CustomEvent).detail || {}
+      if (tab === 'relationships') {
+        switchTab('relationships')
+      }
+    }
+    const handleNavigateToEntity = (e: Event) => {
+      const { refId } = (e as CustomEvent).detail || {}
+      if (refId) {
+        setFocusEntityId(refId)
+        switchTab('relationships')
+      }
+    }
+    
+    window.addEventListener('bible-switch-tab', handleSwitchTab)
+    window.addEventListener('navigate-to-entity', handleNavigateToEntity)
+    return () => {
+      window.removeEventListener('bible-switch-tab', handleSwitchTab)
+      window.removeEventListener('navigate-to-entity', handleNavigateToEntity)
+    }
+  }, [switchTab])
 
   const isUserCentralUser = isCentralUser(userEmail)
   const canUserEditBible = canEditBible(userEmail, isBibleLocked)
@@ -199,6 +233,14 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
       if (event.detail?.projectId === projectId) refetchMoodboardData()
     }
     window.addEventListener('moodboard-generation-complete', handler as EventListener)
+
+    // Resume any pending generations for this project
+    if (projectId) {
+      import('../services/MoodboardGenerationService').then(({ moodboardGenerationService }) => {
+        moodboardGenerationService.resumePendingGenerations(projectId, refetchMoodboardData)
+      })
+    }
+
     return () =>
       window.removeEventListener('moodboard-generation-complete', handler as EventListener)
   }, [projectId, refetchMoodboardData])
@@ -261,55 +303,6 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
     }
   }
 
-  // Convert to Cast handlers
-  const handleOpenConvertDialog = (char: KeyCharacter) => {
-    setConvertingCharacter(char)
-    setDialogMode('convert')
-    setConvertDialogOpen(true)
-  }
-
-  const handleOpenCreateDialog = () => {
-    setConvertingCharacter(null)
-    setDialogMode('create')
-    setConvertDialogOpen(true)
-  }
-
-  const handleCloseConvertDialog = () => {
-    setConvertDialogOpen(false)
-    setConvertingCharacter(null)
-  }
-
-  const handleDialogSubmit = (data: any) => {
-    if (dialogMode === 'convert') {
-      // Data from dialog is the NEW character data (might have edits)
-      // But onConvertToCast might expect KeyCharacter or Character?
-      // For now pass the data as it comes
-      if (onConvertToCast) onConvertToCast(data)
-    } else {
-      // Create new Key Character in Bible
-      addKeyCharacter({
-        name: data.name,
-        role: data.role,
-        archetype: data.mbti ? `${data.mbti} ${data.role}` : data.role,
-        motivation: data.description ? data.description.substring(0, 200) : 'No motivation set',
-      })
-    }
-    handleCloseConvertDialog()
-  }
-
-  const convertInitialData = convertingCharacter
-    ? {
-        name: convertingCharacter.name,
-        description: [
-          convertingCharacter.archetype && `Archetype: ${convertingCharacter.archetype}`,
-          convertingCharacter.motivation && `Motivation: ${convertingCharacter.motivation}`,
-        ]
-          .filter(Boolean)
-          .join('. '),
-        role: convertingCharacter.role,
-      }
-    : undefined
-
   return (
     <div className="h-full relative flex flex-col">
       <div
@@ -322,8 +315,36 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
           paddingTop: 10,
         }}
       >
-        <div>
+        <div className="flex items-center gap-4">
           <h2 className="text-xl font-bold font-syne text-primary">World Bible</h2>
+
+          {/* Tab buttons */}
+          <div className="flex gap-1 p-1 bg-muted/30 rounded-lg">
+            <button
+              onClick={() => switchTab('content')}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all',
+                activeTab === 'content'
+                  ? 'bg-primary/20 text-primary'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              )}
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              Content
+            </button>
+            <button
+              onClick={() => switchTab('relationships')}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all',
+                activeTab === 'relationships'
+                  ? 'bg-purple-500/20 text-purple-400'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              )}
+            >
+              <Network className="w-3.5 h-3.5" />
+              Relationships
+            </button>
+          </div>
         </div>
         <div className="flex gap-2 items-center">
           <TooltipProvider delayDuration={100}>
@@ -340,11 +361,11 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
                       ? 'border-amber-500/50 text-amber-500'
                       : 'border-muted-foreground/30 text-muted-foreground',
                     isUserCentralUser &&
-                      isBibleLocked &&
-                      'hover:bg-amber-500/10 hover:border-amber-500',
+                    isBibleLocked &&
+                    'hover:bg-amber-500/10 hover:border-amber-500',
                     isUserCentralUser &&
-                      !isBibleLocked &&
-                      'hover:bg-muted/50 hover:border-muted-foreground/50',
+                    !isBibleLocked &&
+                    'hover:bg-muted/50 hover:border-muted-foreground/50',
                     !isUserCentralUser && 'cursor-default opacity-70'
                   )}
                 >
@@ -381,7 +402,7 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
             </Tooltip>
           </TooltipProvider>
 
-          {!effectiveReadOnly && onUpdate && canUserEditBible && !isEditing && (
+          {!effectiveReadOnly && onUpdate && canUserEditBible && !isEditing && activeTab === 'content' && (
             <Button
               variant="outline"
               size="sm"
@@ -437,40 +458,50 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-2 pt-6">
-        <div className="space-y-8 pb-20">
-          <BibleOverview
-            isGenerating={isGenerating}
-            primaryImageIndex={primaryImageIndex}
-            onSetPrimaryImage={handleSetPrimaryImage}
-            generatingIndices={generatingIndices}
-            onRefetchMoodboardData={refetchMoodboardData}
-          />
+      {activeTab === 'content' ? (
+        <div className="flex-1 overflow-y-auto pr-2 pt-6">
+          <div className="space-y-8 pb-20">
+            <BibleOverview
+              isGenerating={isGenerating}
+              primaryImageIndex={primaryImageIndex}
+              onSetPrimaryImage={handleSetPrimaryImage}
+              generatingIndices={generatingIndices}
+              onRefetchMoodboardData={refetchMoodboardData}
+            />
 
-          <BibleSoundtracks />
+            <BibleSoundtracks />
 
-          <BibleInspirations />
+            <BibleInspirations />
 
-          <BibleWorldLogic />
+            <BibleWorldLogic />
 
-          <BibleFactions />
+            <BibleFactions />
 
-          <BibleRoadmap />
-
-          <BibleCharacters
-            onOpenConvertDialog={handleOpenConvertDialog}
-            onOpenCreateDialog={handleOpenCreateDialog}
-          />
+            <BibleRoadmap />
+          </div>
         </div>
-      </div>
-
-      <CharacterCreationDialog
-        isOpen={convertDialogOpen}
-        onClose={handleCloseConvertDialog}
-        onCreate={handleDialogSubmit}
-        initialData={convertInitialData}
-        mode={dialogMode === 'convert' ? 'create' : 'create'} // Both use create mode UI
-      />
+      ) : (
+        <div className="flex-1 overflow-hidden pt-4">
+          <Suspense fallback={
+            <div className="flex-1 flex items-center justify-center h-full">
+              <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+            </div>
+          }>
+            <CharacterWeb
+              projectId={projectId || ''}
+              className="h-full"
+              focusEntityId={focusEntityId}
+              onNodeClick={(nodeId: string, nodeData: any) => {
+                console.log('Character web node clicked:', nodeId, nodeData?.name)
+                setFocusEntityId(null) // Clear focus after manual click
+              }}
+            />
+          </Suspense>
+        </div>
+      )}
     </div>
   )
 }
+
+export default WorldBiblePanel
+

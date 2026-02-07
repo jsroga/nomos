@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { tasks } from '@trigger.dev/sdk/v3'
-import { generateMoodboard } from '@/trigger/generate-moodboard'
 import { db } from '@/lib/db'
 import { projects } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'

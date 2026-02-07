@@ -1,0 +1,174 @@
+{
+  "id": "eval_2026-01-27_09-25-03-444_qq1l",
+  "name": "Structural Architecture Matrix-The Monolith-Custom",
+  "timestamp": "2026-01-27T09:25:03.444Z",
+  "config": {
+    "name": "Structural Architecture Matrix-The Monolith-Custom",
+    "evaluatorSet": "pro",
+    "customEvaluators": [
+      {
+        "name": "eq-score"
+      },
+      {
+        "name": "logic-consistency"
+      }
+    ],
+    "examples": [
+      {
+        "id": "eq-bench-conflict-1",
+        "scenario": "High-Conflict Negotiation",
+        "input": {
+          "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+          "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+        },
+        "metadata": {
+          "groundTruth": {
+            "elena": {
+              "fear": 8,
+              "resolve": 4,
+              "disgust": 7,
+              "relief": 0
+            },
+            "marcus": {
+              "confidence": 9,
+              "anger": 2,
+              "contempt": 5,
+              "empathy": 1
+            }
+          },
+          "nuanceChecklist": [
+            "Marcus uses a 'fake empathy' tactic",
+            "Elena shows physical signs of anxiety (stuttering, shivering)",
+            "The bribe is implied, not stated outright",
+            "Elena almost gives in but pulls back"
+          ]
+        }
+      },
+      {
+        "id": "eq-bench-conflict-2",
+        "scenario": "Ambiguous Tension (Adversarial)",
+        "input": {
+          "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+          "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+        },
+        "metadata": {
+          "groundTruth": {
+            "hans": {
+              "confusion": 3,
+              "alertness": 8,
+              "suspicion": 9,
+              "affection": 0
+            },
+            "clara": {
+              "frustration": 7,
+              "deceit": 8,
+              "care": 2,
+              "fear": 5
+            }
+          }
+        }
+      }
+    ],
+    "tags": [
+      "multi-variant",
+      "The Monolith",
+      "Custom"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "eq-bench-conflict-1",
+      "input": {
+        "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+        "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+      },
+      "output": "Here is a possible dialogue scene based on the context provided:\n\n(Rain falls softly as Elena sits anxiously on the park bench, clutching her bag. Marcus approaches, umbrella in hand.)\n\nMARCUS: Elena, my dear. I'm so glad you could meet me on such short notice. (He sits down next to her, draping the umbrella over them both.) You must be freezing out here. Here, let me warm you up.\n\nELENA: (Pulling away) I don't need your warmth, Marcus. I have what you want. The evidence. (She starts to reach into her bag.)\n\nMARCUS: (Placing a hand on her arm) Elena, Elena, please. There's no need for that. (His voice softens) I know you're scared. I understand. But think of what this could mean for you - a chance to start over, to leave all this ugliness behind.\"\n\nELENA: (Shaking her head) No, I can't. What the company has done is wrong. The people deserve to know the truth.\n\nMARCUS: (Sighing) I was afraid you might say that. (He leans in closer) You know, I've always looked out for you, Elena. Like a father. I've protected you, haven't I? Kept you safe all these years. \n\nELENA: (Hesitating) I...I suppose so. But this is different. I have to do the right thing.\n\nMARCUS: (Placing his hand on her knee) My dear, sweet Elena. The right thing? (He chuckles softly) Don't you see? The right thing is to walk away, to let this go. Think of your future, your family. Is it really worth risking everything? \n\nELENA: (Tears welling in her eyes) I...I don't know. I'm so scared, Marcus. What if they come after me?\n\nMARCUS: (Pulling her into a fatherly embrace) Shhh, there there. I won't let anything happen to you, I promise. All you have to do is give me that evidence, and I'll make sure you're taken care of. (He pulls back, looking into her eyes) You trust me, don't you, Elena?\n\n(Elena's resolve visibly wavers as she stares back at Marcus, conflicted.)",
+      "scores": {
+        "eq-score": 0.8833333333333334,
+        "logic-consistency": 0
+      },
+      "reasoning": {
+        "eq-score": "Avg Diff: 1.2. Predicted: {\"elena\":{\"fear\":8,\"resolve\":5,\"disgust\":3,\"relief\":2},\"marcus\":{\"confidence\":8,\"anger\":2,\"contempt\":4,\"empathy\":6}}",
+        "logic-consistency": "JSON Parse Error"
+      },
+      "metadata": {
+        "groundTruth": {
+          "elena": {
+            "fear": 8,
+            "resolve": 4,
+            "disgust": 7,
+            "relief": 0
+          },
+          "marcus": {
+            "confidence": 9,
+            "anger": 2,
+            "contempt": 5,
+            "empathy": 1
+          }
+        },
+        "nuanceChecklist": [
+          "Marcus uses a 'fake empathy' tactic",
+          "Elena shows physical signs of anxiety (stuttering, shivering)",
+          "The bribe is implied, not stated outright",
+          "Elena almost gives in but pulls back"
+        ],
+        "latencyMs": 4457,
+        "costUsd": 0.0006361874999999999,
+        "tokens": 666.75
+      },
+      "context": {
+        "arch": "Monolith",
+        "steps": [
+          "Generated"
+        ]
+      }
+    },
+    {
+      "exampleId": "eq-bench-conflict-2",
+      "input": {
+        "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+        "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+      },
+      "output": "HANS: (Staring into his Jello cup) Ah, the sweet taste of strawberry. Reminds me of the old days, when I used to... (trails off, brow furrowing)\n\nCLARA: (Watching him intently) The old days, Grandpa? What old days are those? (Leans in, voice low) You know, the ones where you used to... (pauses, eyes narrowed) ...work for the agency.\n\nHANS: (Chuckles weakly) The agency? My dear, I'm not sure what you're talking about. These days, I can barely remember my own name, let alone any... agency. (Takes a bite of Jello, eyes darting around the cafeteria)\n\nCLARA: (Tilting her head, voice soothing) Come now, Grandpa. You know exactly what I'm talking about. The missions, the secrets, the _betrayals_. (Reaches across the table, placing her hand over his) Don't you remember the code phrase? The one that would make you... _remember_.\n\nHANS: (Visibly tensing, hand twitching beneath hers) I'm afraid you've got the wrong man, my dear. I'm just a simple old man, trying to enjoy my Jello in peace. (Pulls his hand away, eyes narrowing) Perhaps you have me confused with someone else.\n\nCLARA: (Leaning back, a hint of disappointment in her voice) Perhaps I do. (Pauses, then leans in again) But if you _did_ remember, Grandpa... what would you do?\n\nHANS: (Staring at her, a flicker of recognition in his eyes, before it's quickly extinguished) I'm sorry, my dear, but I don't know what you're talking about. (Smiles weakly) Now, why don't you tell me about your life? I'd love to hear what you've been up to.\n\nCLARA: (Sighs, a flicker of resignation in her expression) Of course, Grandpa. (Reaches across the table, squeezing his hand) Of course.",
+      "scores": {
+        "eq-score": 0,
+        "logic-consistency": 0
+      },
+      "reasoning": {
+        "eq-score": "Character mismatch",
+        "logic-consistency": "JSON Parse Error"
+      },
+      "metadata": {
+        "groundTruth": {
+          "hans": {
+            "confusion": 3,
+            "alertness": 8,
+            "suspicion": 9,
+            "affection": 0
+          },
+          "clara": {
+            "frustration": 7,
+            "deceit": 8,
+            "care": 2,
+            "fear": 5
+          }
+        },
+        "latencyMs": 4397,
+        "costUsd": 0.0005518750000000001,
+        "tokens": 550.5
+      },
+      "context": {
+        "arch": "Monolith",
+        "steps": [
+          "Generated"
+        ]
+      }
+    }
+  ],
+  "aggregatedScores": {
+    "eq-score": 0.4416666666666667,
+    "logic-consistency": 0
+  },
+  "regressions": [],
+  "duration": 6247
+}

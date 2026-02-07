@@ -1,28 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { characters, projects } from '@/domains/storyteller/db/schema'
-import { gameEntities } from '@/db/schema'
-import { eq, desc } from 'drizzle-orm'
+import { eq, desc, and, sql } from 'drizzle-orm'
 import { requireAuth } from '@/lib/auth'
 
-async function verifyProjectAccess(projectId: string, userId: string) {
-  const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
-  if (!project || project.userId !== userId) {
-    return false
-  }
-  return true
-}
-
-async function verifyCharacterAccess(characterId: string, userId: string) {
-  const [character] = await db.select().from(characters).where(eq(characters.id, characterId))
-  if (!character) return false
-
-  const [project] = await db.select().from(projects).where(eq(projects.id, character.projectId))
-  if (!project || project.userId !== userId) {
-    return false
-  }
-  return true
-}
+import { verifyProjectAccess, verifyCharacterAccess } from '@/domains/storyteller/lib/access-verification'
 
 /**
  * @openapi
@@ -208,6 +190,7 @@ async function verifyCharacterAccess(characterId: string, userId: string) {
  *           description: Character voice/speech pattern description
  */
 
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const projectId = searchParams.get('projectId')
@@ -269,6 +252,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
+    // Idempotency check: Check if character with same name exists in project
+    const existingCharacters = await db
+      .select()
+      .from(characters)
+      .where(
+        and(
+          eq(characters.projectId, projectId),
+          // Case-insensitive name match
+          sql`lower(${characters.name}) = lower(${name})`
+        )
+      )
+      .limit(1)
+
+    if (existingCharacters.length > 0) {
+      console.log(`[Character API] Returning existing character for: ${name}`)
+      return NextResponse.json(existingCharacters[0])
+    }
+
     const [newCharacter] = await db
       .insert(characters)
       .values({
@@ -279,15 +280,25 @@ export async function POST(req: NextRequest) {
         characterPrompt,
         description,
         portraitUrl,
-        stressLevel: stress ?? 30,
-        trustLevel: trust ?? 50,
-        powerLevel: power ?? 30,
-        moralityLevel: morality ?? 50,
-        hopeLevel: hope ?? 60,
-        isolationLevel: isolation ?? 20,
+        // Legacy metrics mapped to new schema where possible or dropped
+        // stressLevel: stress ?? 30, // Dropped
+        // trustLevel: trust ?? 50, // Dropped
+        // powerLevel: power ?? 30, // Dropped
+        moralAlignment: morality ?? 70, // Mapped from morality
+        // hopeLevel: hope ?? 60, // Dropped
+        // isolationLevel: isolation ?? 20, // Dropped
         transformationProgress: transformation ?? 0,
         mbti,
         voiceSignature,
+        // Default new metrics
+        valence: 0,
+        arousal: stress ?? 50, // Map stress to arousal as proxy?
+        autonomy: power ? (power * 0.6 + 20) : 60, // Rough proxy
+        competence: 60,
+        relatedness: isolation ? (100 - isolation) : 50, // Inverse isolation
+        cognitiveClarity: 70,
+        perceivedStakes: 40,
+        socialSafety: trust ?? 60, // Trust -> Safety proxy
       })
       .returning()
 
@@ -394,7 +405,8 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Character ID is required' }, { status: 400 })
     }
 
-    if (!(await verifyCharacterAccess(id, session.user.id))) {
+    const access = await verifyCharacterAccess(id, session.user.id)
+    if (!access.hasAccess) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
@@ -412,13 +424,19 @@ export async function PATCH(req: NextRequest) {
     if (portraitUrl !== undefined) dbUpdates.portraitUrl = portraitUrl
 
     // Metrics
-    if (stress !== undefined) dbUpdates.stressLevel = stress
-    if (trust !== undefined) dbUpdates.trustLevel = trust
-    if (power !== undefined) dbUpdates.powerLevel = power
-    if (morality !== undefined) dbUpdates.moralityLevel = morality
-    if (hope !== undefined) dbUpdates.hopeLevel = hope
-    if (isolation !== undefined) dbUpdates.isolationLevel = isolation
+    // if (stress !== undefined) dbUpdates.stressLevel = stress // REMOVED
+    // if (trust !== undefined) dbUpdates.trustLevel = trust // REMOVED
+    // if (power !== undefined) dbUpdates.powerLevel = power // REMOVED
+    if (morality !== undefined) dbUpdates.moralAlignment = morality // Mapped
+    // if (hope !== undefined) dbUpdates.hopeLevel = hope // REMOVED
+    // if (isolation !== undefined) dbUpdates.isolationLevel = isolation // REMOVED
     if (transformation !== undefined) dbUpdates.transformationProgress = transformation
+
+    // Approximate mappings for new schema if legacy values provided
+    if (stress !== undefined) dbUpdates.arousal = stress
+    if (trust !== undefined) dbUpdates.socialSafety = trust
+    if (power !== undefined) dbUpdates.autonomy = Math.floor(power * 0.6 + 20)
+    if (isolation !== undefined) dbUpdates.relatedness = 100 - isolation
 
     const [updatedCharacter] = await db
       .update(characters)
@@ -445,7 +463,8 @@ export async function DELETE(req: NextRequest) {
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    if (!(await verifyCharacterAccess(id, session.user.id))) {
+    const access = await verifyCharacterAccess(id, session.user.id)
+    if (!access.hasAccess) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 

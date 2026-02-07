@@ -1,0 +1,388 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmark 2.0: Structural Architecture Matrix-RAG Agent-Custom</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #fdfaf6;
+            --text: #1a1a1a;
+            --accent: #c43e1c;
+            --border: #e0d8cc;
+            --card-bg: #ffffff;
+            --font-serif: 'Crimson Pro', serif;
+            --font-sans: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            border-bottom: 2px solid var(--text);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-family: var(--font-serif);
+            font-size: 3rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .meta {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 60px;
+        }
+
+        .score-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 4px 4px 0px var(--border);
+        }
+
+        .score-label {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .score-value {
+            font-family: var(--font-serif);
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .score-bar-bg {
+            height: 4px;
+            background: #eee;
+            margin-top: 10px;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            background: var(--accent);
+        }
+
+        .example-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+            padding: 30px;
+        }
+
+        .example-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .example-id {
+            font-family: var(--font-serif);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .badge.high { background: #e6f4ea; color: #1e7e34; }
+        .badge.low { background: #fce8e8; color: #d93025; }
+        .badge.intent { background: #e8f0fe; color: #1967d2; }
+
+        .content-section {
+            margin-bottom: 30px;
+        }
+
+        h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            border-radius: 4px;
+        }
+
+        .literary-output {
+            font-family: var(--font-serif);
+            font-size: 1.25rem;
+            white-space: pre-wrap;
+            padding: 20px;
+            border-left: 4px solid var(--accent);
+            background: #fffafa;
+        }
+
+        .reason-block {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+        }
+
+        .regressions {
+            background: #fff0f0;
+            border: 1px solid #ffcaca;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+
+        .regression-item {
+            color: #c00;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Storyteller Benchmark 2.0</h1>
+            <div class="meta">
+                Experiment ID: eval_2026-01-27_09-26-10-671_xasz | Run on: 1/27/2026, 10:26:10 AM | Duration: 5.8s
+            </div>
+        </header>
+
+        
+
+        <div class="dashboard">
+            
+      <div class="score-card">
+        <div class="score-label">EQ SCORE</div>
+        <div class="score-value">46.7%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 46.666666666666664%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">LOGIC CONSISTENCY</div>
+        <div class="score-value">25.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 25%"></div>
+        </div>
+      </div>
+    
+        </div>
+
+        <div class="results-list">
+            
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#1 - eq-bench-conflict-1</span>
+        <div class="example-badges">
+          
+          
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+  "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            SCENE:
+
+A park bench, midnight. Rain patters on the pavement. ELENA sits huddled, clutching a folder.
+
+MARCUS approaches, umbrella in hand, and sits down beside her.
+
+MARCUS
+(warmly)
+Elena, my dear. I'm so glad you could meet me here.
+
+ELENA
+(nervous)
+Mr. Blackwood. What do you want?
+
+MARCUS
+(chuckling)
+Please, call me Marcus. After all, we're practically family now, aren't we?
+
+ELENA
+(defensive)
+I don't know what you mean.
+
+MARCUS
+(placing a hand on her shoulder)
+I think you do. I've heard about your... situation. Your mother's health, your mounting debts. It must be so stressful.
+
+ELENA
+(shifting away)
+I don't know what you're talking about.
+
+MARCUS
+(tsking)
+Oh, Elena. You know I only want to help. We've worked together for so long. I consider you almost like a daughter.
+
+ELENA
+(gripping the folder)
+If this is about the evidence I have--
+
+MARCUS
+(interrupting, squeezing her shoulder)
+Evidence? My dear, I'm not here about any evidence. I'm here because I care about you. About your family. 
+
+(leaning in)
+You know, a lot can happen in this city. Accidents happen. Especially to those who can't afford the best care.
+
+ELENA
+(paling, voice trembling)
+Are you... are you threatening me?
+
+MARCUS
+(pulling back, feigning shock)
+Threatening you? Heavens no! I would never dream of such a thing. I'm simply... concerned. For your well-being. For your mother's.
+
+(placing a hand on her knee)
+You know I have the means to help. To make things... easier. All you have to do is give me that folder, and I'll make sure your family is taken care of.
+
+ELENA
+(eyes glistening, voice breaking)
+I can't. I won't. This is the right thing to do.
+
+MARCUS
+(sighing, squeezing her knee)
+Oh, Elena. You always were so stubborn. So idealistic. 
+
+(leaning in, voice lowering)
+But you know, sometimes the right thing isn't worth the cost. Think of your mother, Elena. Think of your future.
+
+ELENA
+(shoulders slumping, resolve wavering)
+I... I don't know what to do.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>eq-score:</strong> Avg Diff: 0.7. Predicted: {"elena":{"fear":8,"resolve":4,"disgust":6,"relief":2},"marcus":{"confidence":8,"anger":3,"contempt":6,"empathy":2}}
+            </div>
+          
+            <div class="reason-block">
+              <strong>logic-consistency:</strong> JSON Parse Error
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#2 - eq-bench-conflict-2</span>
+        <div class="example-badges">
+          
+          
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+  "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            Here is a subtext-heavy dialogue between Hans and Clara in the nursing home cafeteria:
+
+CLARA (stirring her Jello, eyes downcast): Grandpa, do you remember the old days? When we used to... go on trips together?
+
+HANS (chewing slowly, studying her): The old days. Yes, I remember. So much has changed, hasn't it, my dear?
+
+CLARA (glancing up, a flicker of hope in her eyes): Has it? I feel like some things are still the same. Don't you?
+
+HANS (takes a sip of water, his gaze unwavering): The world keeps turning, Clara. But a man's mind... that's trickier. You can never be sure what he remembers. Or what he's forgotten.
+
+CLARA (leans in slightly, her voice lowering): I need you to remember, Grandpa. Remember what we used to do. Together.
+
+HANS (raises an eyebrow, a ghost of a smile on his lips): Ah, yes. The trips. The adventures. So many memories, it's hard to keep track. But I'm an old man now. My mind wanders.
+
+CLARA (frustration creeping into her tone): Please, Grandpa. You have to focus. This is important.
+
+HANS (reaches across the table, patting her hand): My dear, I'm afraid I'm not the man I used to be. Too many years, too many secrets. It's all a blur now.
+
+CLARA (jaw tightening, eyes narrowing): Then let me help you remember. (Leans in further) The code phrase, Grandpa. What was it?
+
+HANS (withdraws his hand, expression turning pensive): Code phrase? I'm afraid I don't know what you're talking about, Clara. These days, I'm lucky if I can remember my own name.
+
+CLARA (frustration giving way to desperation): Grandpa, please. You have to try. Think back. It's crucial.
+
+HANS (shakes his head slowly, a hint of sadness in his eyes): I'm sorry, my dear. The past is a foreign country to me now. I'm just an old man, trying to enjoy his Jello in peace.
+
+The two sit in tense silence, the unspoken tension thick in the air as they continue their guarded dance of memories and deception.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>eq-score:</strong> Character mismatch
+            </div>
+          
+            <div class="reason-block">
+              <strong>logic-consistency:</strong> Failed: The true relationship is NOT explicitly stated, Clara uses a specific phrase/trigger
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+        </div>
+    </div>
+</body>
+</html>
+  

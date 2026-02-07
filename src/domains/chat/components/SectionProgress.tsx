@@ -307,4 +307,3 @@ export function useSectionProgress(initialSections: ProgressSection[]) {
     resetSections,
   }
 }
-

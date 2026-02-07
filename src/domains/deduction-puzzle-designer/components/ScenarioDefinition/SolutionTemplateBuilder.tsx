@@ -2,7 +2,6 @@ import React from 'react'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { User, Box, MapPin, Flame, Clock, List } from 'lucide-react'
-import { Card } from '@/components/ui/card'
 
 export function SolutionTemplateBuilder() {
   const tokens = [

@@ -24,7 +24,7 @@ import {
   buildLoopCreatorProjectContext,
 } from '../mentions/providers'
 import { getGameEntityProvider } from '@/domains/chat/mentions/game-entity-provider'
-import { SectionProgress, ProgressSection } from '@/domains/chat/components/SectionProgress'
+import { SectionProgress } from '@/domains/chat/components/SectionProgress'
 import { ActiveAgentsPanel } from '@/domains/chat/components/AgentLog'
 import { SmartQuickActions } from '@/domains/chat/components/QuickActions'
 import {
@@ -44,13 +44,12 @@ import {
   Star,
   BarChart3,
   Layers,
-  Save,
   Check,
   AlertCircle,
   Cloud,
   Search,
 } from 'lucide-react'
-import { nodeTypes, nodeColors, nodeIcons } from './CustomNodes'
+import { nodeTypes } from './CustomNodes'
 import { autoLayoutNodes } from '../lib/layout'
 import { useAutoSave } from '../hooks/useAutoSave'
 import { SuggestionPanel, Suggestion } from './SuggestionPanel'
@@ -864,6 +863,8 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
     citations,
     groundingScore,
   } = useChatStream({
+    // Langfuse session tracking for loop-creator domain
+    projectId,
     initialMessages: [
       {
         sender: 'supervisor',

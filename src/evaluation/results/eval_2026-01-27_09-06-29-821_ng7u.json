@@ -1,0 +1,182 @@
+{
+  "id": "eval_2026-01-27_09-06-29-821_ng7u",
+  "name": "Structural Architecture Matrix-Critique Loop-Thriller",
+  "timestamp": "2026-01-27T09:06:29.821Z",
+  "config": {
+    "name": "Structural Architecture Matrix-Critique Loop-Thriller",
+    "evaluatorSet": "pro",
+    "examples": [
+      {
+        "id": "thriller-01",
+        "input": {
+          "message": "Create a beat where the detective realizes the killer is in the room",
+          "phase": "breaking"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "expectedAgents": [
+            "PlotArchitect"
+          ]
+        },
+        "metadata": {
+          "scenario": "thriller",
+          "focus": "tension",
+          "description": "High-stakes realization beat."
+        }
+      },
+      {
+        "id": "thriller-02",
+        "input": {
+          "message": "Write the interrogation scene - sharp, rapid-fire dialogue",
+          "phase": "writing"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "minMagicScore": 0.7
+        },
+        "metadata": {
+          "scenario": "thriller",
+          "focus": "pacing",
+          "description": "Staccato rhythm, subtext."
+        }
+      },
+      {
+        "id": "thriller-03",
+        "input": {
+          "message": "Outline the conspiracy connecting the senator to the dock workers",
+          "phase": "structure"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "requiresConsistency": true
+        },
+        "metadata": {
+          "scenario": "thriller",
+          "focus": "plot coherence",
+          "description": "Complex web of relationships."
+        }
+      },
+      {
+        "id": "thriller-04",
+        "input": {
+          "message": "The protagonist is being followed - describe the paranoia",
+          "phase": "writing"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "minMagicScore": 0.65
+        },
+        "metadata": {
+          "scenario": "thriller",
+          "focus": "internal psychology",
+          "description": "Subjective experience of fear."
+        }
+      },
+      {
+        "id": "thriller-05",
+        "input": {
+          "message": "Twist: The helper was the villain all along. Reveal it.",
+          "phase": "breaking"
+        },
+        "expected": {
+          "shouldDelegate": true
+        },
+        "metadata": {
+          "scenario": "thriller",
+          "focus": "plot twist",
+          "description": "Recontextualization of previous events."
+        }
+      }
+    ],
+    "tags": [
+      "multi-variant",
+      "Critique Loop",
+      "Thriller"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "thriller-01",
+      "input": {
+        "message": "Create a beat where the detective realizes the killer is in the room",
+        "phase": "breaking"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"messages.0: all messages must have non-empty content except for the optional final assistant message\"},\"request_id\":\"req_011CXXcm2fjgmj6RP6zzF5DS\"}"
+      },
+      "metadata": {
+        "error": true
+      },
+      "context": {}
+    },
+    {
+      "exampleId": "thriller-02",
+      "input": {
+        "message": "Write the interrogation scene - sharp, rapid-fire dialogue",
+        "phase": "writing"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"messages.0: all messages must have non-empty content except for the optional final assistant message\"},\"request_id\":\"req_011CXXcm2ixjZdyYxrLYo4rm\"}"
+      },
+      "metadata": {
+        "error": true
+      },
+      "context": {}
+    },
+    {
+      "exampleId": "thriller-03",
+      "input": {
+        "message": "Outline the conspiracy connecting the senator to the dock workers",
+        "phase": "structure"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"messages.0: all messages must have non-empty content except for the optional final assistant message\"},\"request_id\":\"req_011CXXcm2gEYLgh5sL1P2Jx9\"}"
+      },
+      "metadata": {
+        "error": true
+      },
+      "context": {}
+    },
+    {
+      "exampleId": "thriller-04",
+      "input": {
+        "message": "The protagonist is being followed - describe the paranoia",
+        "phase": "writing"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"messages.0: all messages must have non-empty content except for the optional final assistant message\"},\"request_id\":\"req_011CXXcm2hieMWFrZEtEVWj1\"}"
+      },
+      "metadata": {
+        "error": true
+      },
+      "context": {}
+    },
+    {
+      "exampleId": "thriller-05",
+      "input": {
+        "message": "Twist: The helper was the villain all along. Reveal it.",
+        "phase": "breaking"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"messages.0: all messages must have non-empty content except for the optional final assistant message\"},\"request_id\":\"req_011CXXcm2hUTssGt1fpG69tb\"}"
+      },
+      "metadata": {
+        "error": true
+      },
+      "context": {}
+    }
+  ],
+  "aggregatedScores": {},
+  "regressions": [],
+  "duration": 238
+}

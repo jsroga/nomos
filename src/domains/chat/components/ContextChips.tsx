@@ -193,4 +193,3 @@ export const ContextBar: React.FC<ContextBarProps> = ({
     </div>
   )
 }
-

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Sparkles, Image as ImageIcon, Loader2 } from 'lucide-react'
+import { Sparkles, Image as ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { LiquidGlass } from '@/components/LiquidGlass'

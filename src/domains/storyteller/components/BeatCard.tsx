@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
-import { Trash2, Edit2, Check, X, GripVertical } from 'lucide-react'
+import { Trash2, Edit2, Check, X, GripVertical, Sparkles, ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -25,6 +26,7 @@ interface BeatCardProps {
   onDragOver: (e: React.DragEvent, id: string) => void
   onDrop: (e: React.DragEvent, id: string) => void
   onExpand?: (id: string) => void
+  onSendMessage?: (message: string) => void
   projectId: string
 }
 
@@ -36,10 +38,29 @@ export const BeatCard: React.FC<BeatCardProps> = ({
   onDragOver,
   onDrop,
   onExpand,
+  onSendMessage,
   projectId,
 }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [editState, setEditState] = useState(beat)
+  const [isGenerating, setIsGenerating] = useState<'content' | 'image' | null>(null)
+
+  const handleGenerateContent = () => {
+    if (!onSendMessage) return
+    setIsGenerating('content')
+    const message = `Write detailed scene content for beat #${beat.sequence} "${beat.logline}". Include visual descriptions, dialogue, and subtext. Beat type: ${beat.beatType || beat.type}.`
+    onSendMessage(message)
+    // Reset after a short delay (chat will handle actual completion)
+    setTimeout(() => setIsGenerating(null), 2000)
+  }
+
+  const handleGenerateImage = () => {
+    if (!onSendMessage) return
+    setIsGenerating('image')
+    const message = `Generate a storyboard image for beat #${beat.sequence} "${beat.logline}". Create a cinematic visual that captures the mood and action.`
+    onSendMessage(message)
+    setTimeout(() => setIsGenerating(null), 2000)
+  }
 
   const beatType = beat.beatType || beat.type || 'default'
 
@@ -198,24 +219,78 @@ export const BeatCard: React.FC<BeatCardProps> = ({
               </Button>
             </>
           ) : (
-            <>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 w-6 p-0 text-muted-foreground hover:text-blue-400 hover:bg-blue-500/10"
-                onClick={() => setIsEditing(true)}
-              >
-                <Edit2 size={14} />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 w-6 p-0 text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
-                onClick={() => onDelete(beat.id)}
-              >
-                <Trash2 size={14} />
-              </Button>
-            </>
+            <TooltipProvider delayDuration={300}>
+              {/* Generate Content Button */}
+              {onSendMessage && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className={`h-6 w-6 p-0 text-muted-foreground hover:text-purple-400 hover:bg-purple-500/10 ${isGenerating === 'content' ? 'animate-pulse text-purple-400' : ''}`}
+                      onClick={handleGenerateContent}
+                      disabled={isGenerating !== null}
+                    >
+                      <Sparkles size={14} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    Generate scene content
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {/* Generate Image Button */}
+              {onSendMessage && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className={`h-6 w-6 p-0 text-muted-foreground hover:text-cyan-400 hover:bg-cyan-500/10 ${isGenerating === 'image' ? 'animate-pulse text-cyan-400' : ''}`}
+                      onClick={handleGenerateImage}
+                      disabled={isGenerating !== null}
+                    >
+                      <ImageIcon size={14} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    Generate storyboard image
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {/* Edit Button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0 text-muted-foreground hover:text-blue-400 hover:bg-blue-500/10"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    <Edit2 size={14} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  Edit beat
+                </TooltipContent>
+              </Tooltip>
+              {/* Delete Button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0 text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
+                    onClick={() => onDelete(beat.id)}
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  Delete beat
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
       </div>

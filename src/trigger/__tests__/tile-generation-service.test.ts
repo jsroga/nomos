@@ -3,6 +3,7 @@
  * Run with: npx tsx src/trigger/__tests__/tile-generation-service.test.ts
  */
 
+import 'dotenv/config'
 import { generateTileTask } from '../generate-tile'
 
 // Test task configuration

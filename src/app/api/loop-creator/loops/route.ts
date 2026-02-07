@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { gameLoops, projects } from '@/db/schema'
+import { gameLoops } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
 import { requireAuth, checkRateLimit } from '@/lib/api-utils'
 import {

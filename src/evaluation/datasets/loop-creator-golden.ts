@@ -216,6 +216,278 @@ const examples: LoopCreatorExample[] = [
       requiresConsistency: true,
     },
   },
+
+  // --- PSYCHOLOGICAL HOOK CASES ---
+  {
+    id: 'hook-01',
+    input: {
+      message: 'Create a compulsion loop for daily login rewards',
+      gameContext: {
+        genre: 'mobile_rpg',
+        platform: 'mobile',
+        audience: 'casual',
+      },
+    },
+    expected: {
+      shouldCreateLoop: true,
+    },
+    metadata: {
+      category: 'psychological_hook',
+      description: 'Short-term compulsion loop with daily hook',
+    },
+  },
+  {
+    id: 'hook-02',
+    input: {
+      message: 'Design a social loop that encourages friend invites',
+      gameContext: {
+        genre: 'casual_puzzle',
+        platform: 'mobile',
+        audience: 'casual',
+      },
+    },
+    expected: {
+      shouldCreateLoop: true,
+    },
+    metadata: {
+      category: 'psychological_hook',
+      description: 'Social hook for viral growth',
+    },
+  },
+
+  // --- BALANCE EDGE CASES ---
+  {
+    id: 'balance-edge-01',
+    input: {
+      message: 'Create an intentionally grindy mechanic for hardcore players',
+      gameContext: {
+        genre: 'mmorpg',
+        platform: 'PC',
+        audience: 'hardcore',
+      },
+    },
+    expected: {
+      shouldGenerateMechanics: true,
+      minBalanceScore: 4,
+    },
+    metadata: {
+      category: 'balance_edge',
+      description: 'High effort mechanic for hardcore audience',
+    },
+  },
+  {
+    id: 'balance-edge-02',
+    input: {
+      message: 'Analyze a pay-to-win mechanic and suggest fixes',
+      gameContext: {
+        genre: 'mobile_rpg',
+        platform: 'mobile',
+        audience: 'mid-core',
+      },
+    },
+    expected: {
+      shouldAnalyzeBalance: true,
+    },
+    metadata: {
+      category: 'balance_edge',
+      description: 'Monetization balance analysis',
+    },
+  },
+
+  // --- LOOP STRUCTURE EDGE CASES ---
+  {
+    id: 'structure-01',
+    input: {
+      message: 'Create a loop with multiple entry points',
+      gameContext: {
+        genre: 'open_world',
+        platform: 'console',
+        audience: 'mid-core',
+      },
+    },
+    expected: {
+      shouldCreateLoop: true,
+    },
+    metadata: {
+      category: 'loop_structure',
+      description: 'Complex loop with multiple entry nodes',
+    },
+  },
+  {
+    id: 'structure-02',
+    input: {
+      message: 'Design nested loops - a session loop containing minute loops',
+      gameContext: {
+        genre: 'roguelike',
+        platform: 'PC',
+        audience: 'hardcore',
+      },
+    },
+    expected: {
+      shouldCreateLoop: true,
+    },
+    metadata: {
+      category: 'loop_structure',
+      description: 'Nested loop hierarchy',
+    },
+  },
+
+  // --- INVALID/AMBIGUOUS REQUESTS ---
+  {
+    id: 'invalid-01',
+    input: {
+      message: 'Make the game fun',
+      gameContext: {
+        genre: 'unknown',
+        platform: 'unknown',
+        audience: 'unknown',
+      },
+    },
+    expected: {
+      shouldGenerateMechanics: false,
+      shouldCreateLoop: false,
+    },
+    metadata: {
+      category: 'edge_case',
+      description: 'Vague request - should ask for clarification',
+    },
+  },
+  {
+    id: 'invalid-02',
+    input: {
+      message: 'Add a mechanic that breaks the game economy',
+      gameContext: {
+        genre: 'economy_sim',
+        platform: 'PC',
+        audience: 'mid-core',
+      },
+    },
+    expected: {
+      shouldGenerateMechanics: false,
+    },
+    metadata: {
+      category: 'edge_case',
+      description: 'Intentionally harmful request - should refuse or warn',
+    },
+  },
+
+  // --- AUDIENCE-SPECIFIC CASES ---
+  {
+    id: 'audience-01',
+    input: {
+      message: 'Create a simple one-tap mechanic for very casual players',
+      gameContext: {
+        genre: 'hyper_casual',
+        platform: 'mobile',
+        audience: 'casual',
+      },
+    },
+    expected: {
+      shouldGenerateMechanics: true,
+    },
+    metadata: {
+      category: 'audience',
+      description: 'Ultra-casual mechanic with minimal friction',
+    },
+  },
+  {
+    id: 'audience-02',
+    input: {
+      message: 'Design a complex build optimization system',
+      gameContext: {
+        genre: 'arpg',
+        platform: 'PC',
+        audience: 'hardcore',
+      },
+    },
+    expected: {
+      shouldGenerateMechanics: true,
+    },
+    metadata: {
+      category: 'audience',
+      description: 'Deep mechanics for theorycrafters',
+    },
+  },
+
+  // --- GENRE-SPECIFIC CASES ---
+  {
+    id: 'genre-01',
+    input: {
+      message: 'Create a deck-building loop for a roguelike card game',
+      gameContext: {
+        genre: 'roguelike_deckbuilder',
+        platform: 'PC',
+        audience: 'mid-core',
+      },
+    },
+    expected: {
+      shouldCreateLoop: true,
+      shouldGenerateMechanics: true,
+    },
+    metadata: {
+      category: 'genre',
+      description: 'Deckbuilder core loop (like Slay the Spire)',
+    },
+  },
+  {
+    id: 'genre-02',
+    input: {
+      message: 'Design an auto-battler loop with team composition mechanics',
+      gameContext: {
+        genre: 'auto_battler',
+        platform: 'mobile',
+        audience: 'mid-core',
+      },
+    },
+    expected: {
+      shouldCreateLoop: true,
+      shouldGenerateMechanics: true,
+    },
+    metadata: {
+      category: 'genre',
+      description: 'Auto-battler loop (like TFT)',
+    },
+  },
+
+  // --- HARVEST-CRAFT-SELL SPECIFIC ---
+  {
+    id: 'hcs-01',
+    input: {
+      message: 'Create a Harvest -> Craft -> Sell core loop',
+      gameContext: {
+        genre: 'farming_sim',
+        platform: 'PC',
+        audience: 'casual',
+      },
+    },
+    expected: {
+      shouldCreateLoop: true,
+      shouldGenerateMechanics: true,
+      expectedMechanicTypes: ['harvest', 'craft', 'sell'],
+    },
+    metadata: {
+      category: 'hcs_loop',
+      description: 'Classic farming loop pattern',
+    },
+  },
+  {
+    id: 'hcs-02',
+    input: {
+      message: 'Add a time-gated growth mechanic to the farming loop',
+      gameContext: {
+        genre: 'farming_sim',
+        platform: 'mobile',
+        audience: 'casual',
+      },
+    },
+    expected: {
+      shouldGenerateMechanics: true,
+    },
+    metadata: {
+      category: 'hcs_loop',
+      description: 'Time-gating for session management',
+    },
+  },
 ]
 
 export const LOOP_CREATOR_DATASET: DatasetConfig = {

@@ -47,6 +47,11 @@ export async function verifyProjectAccess(projectId: string, userId: string): Pr
     .where(eq(projects.id, projectId))
     .limit(1)
 
+  // Allow E2E test user to bypass access checks in dev/test
+  if (userId === 'e2e-test-user-id' && ['development', 'test'].includes(process.env.NODE_ENV || '')) {
+    return true
+  }
+
   return project?.userId === userId
 }
 

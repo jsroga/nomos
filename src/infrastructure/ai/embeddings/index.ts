@@ -13,4 +13,5 @@ export {
   VOYAGE_MODEL,
   VOYAGE_LITE_MODEL,
   type VoyageEmbeddingConfig,
+  type IEmbeddings,
 } from './voyage-embeddings'

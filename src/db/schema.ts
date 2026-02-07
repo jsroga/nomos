@@ -7,10 +7,18 @@ import {
   integer,
   unique,
   decimal,
-  boolean,
 } from 'drizzle-orm/pg-core'
 
-import { characters, episodes, beats } from '@/domains/storyteller/db/schema'
+import { 
+  characters, 
+  episodes, 
+  beats, 
+  seriesBibles, 
+  storyPlans, 
+  entityReferences,
+  seriesBiblesRelations,
+  storyPlansRelations,
+} from '../domains/storyteller/db/schema'
 
 // Projects table (world-building + storyteller)
 export const projects = pgTable('projects', {
@@ -352,7 +360,7 @@ export const marketAnalysisRisingCompetitors = pgTable('market_analysis_rising_c
 import { relations } from 'drizzle-orm'
 
 // Projects relations
-export const projectsRelations = relations(projects, ({ many }) => ({
+export const projectsRelations = relations(projects, ({ one, many }) => ({
   characters: many(characters),
   episodes: many(episodes),
   tiles: many(tiles),
@@ -360,6 +368,14 @@ export const projectsRelations = relations(projects, ({ many }) => ({
   interiorDesigns: many(interiorDesigns),
   gameLoops: many(gameLoops),
   gameEntities: many(gameEntities),
+  seriesBibleTable: one(seriesBibles, {
+    fields: [projects.id],
+    references: [seriesBibles.projectId],
+  }),
+  storyPlanTable: one(storyPlans, {
+    fields: [projects.id],
+    references: [storyPlans.projectId],
+  }),
 }))
 
 // Game Loop relations
@@ -564,4 +580,13 @@ export type MarketAnalysisGenreMomentumRow = typeof marketAnalysisGenreMomentum.
 export type MarketAnalysisSocialBuzzRow = typeof marketAnalysisSocialBuzz.$inferSelect
 export type MarketAnalysisRisingCompetitorRow = typeof marketAnalysisRisingCompetitors.$inferSelect
 // Re-export storyteller tables for unified db.query access
-export { characters, episodes, beats }
+export { 
+  characters, 
+  episodes, 
+  beats, 
+  seriesBibles, 
+  storyPlans, 
+  entityReferences,
+  seriesBiblesRelations,
+  storyPlansRelations,
+}

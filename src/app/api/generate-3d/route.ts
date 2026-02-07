@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
-import path from 'path'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/lib/api-utils'
 import { sanitizePath, isValidProjectId, safeFetch, secureLog } from '@/lib/security'
 

@@ -1,26 +1,25 @@
 import React from 'react'
-import { Globe, RefreshCw, Zap, Palette, Sparkles, Star } from 'lucide-react'
-import { StoryPlan } from '../../schemas/agent-schemas'
+import { Globe, RefreshCw, Zap, Palette, Sparkles, Star, Loader2, Trash2, Plus } from 'lucide-react'
 import { IconButton } from '@/components/ui/icon-button'
 import { StorytellerImage } from '../StorytellerImage'
 import toast from 'react-hot-toast'
 import { moodboardGenerationService } from '../../services/MoodboardGenerationService'
+import { RichText } from '../RichText'
 
 import { useBible } from './BibleContext'
+import { SectionPendingOverlay } from './SectionPendingOverlay'
+import { useConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
 
 interface BibleOverviewProps {
-  isGenerating: boolean
   primaryImageIndex: number | null
   onSetPrimaryImage: (index: number) => void
-  generatingIndices: Set<number>
   onRefetchMoodboardData: () => Promise<void>
 }
 
 export const BibleOverview: React.FC<BibleOverviewProps> = ({
-  isGenerating,
   primaryImageIndex,
   onSetPrimaryImage,
-  generatingIndices,
   onRefetchMoodboardData,
 }) => {
   const {
@@ -32,11 +31,68 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
     onSendMessage,
     projectId,
     getProviderConfig,
+    loadingSections,
+    pendingActions,
   } = useBible()
+
+  // Derive generating state from global operations
+  const operations = useGlobalStatusStore(state => state.operations)
+  const generatingIndices = new Set<number>()
+  const prefix = `moodboard-gen-${projectId}`
+
+  // Find the active operation to get status details
+  const activeOp = operations.find(op => op.id.startsWith(prefix))
+  const progressDetails = activeOp?.details
+
+  operations.forEach(op => {
+    if (op.id === prefix) {
+      generatingIndices.add(0)
+      generatingIndices.add(1)
+      generatingIndices.add(2)
+      generatingIndices.add(3)
+    } else if (op.id.startsWith(prefix + '-')) {
+      const idx = parseInt(op.id.replace(prefix + '-', ''))
+      if (!isNaN(idx)) generatingIndices.add(idx)
+    }
+  })
+
+  // Define general generating state
+  const isGenerating = generatingIndices.size > 0
+
+  // Determine if we are specifically adding a new image (index out of bounds of current array)
+  // or generating the initial set (index 0,1,2,3 for empty)
+  const isAddingNew = Array.from(generatingIndices).some(idx => {
+    const currentCount = storyPlan.moodImages?.length || 0
+    return idx >= currentCount
+  })
+
+  // Extract progress percentage from string if possible (e.g. "Generating (45%)")
+  const progressMatch = progressDetails?.match(/(\d+)%/)
+  const progressPercent = progressMatch ? progressMatch[1] : null
+
+  const isWorldDescLoading = loadingSections?.worldDescription?.loading ?? false
+  const pendingAction = pendingActions?.worldDescription
+  const { confirm, ConfirmDialogComponent } = useConfirmDialog()
+
   return (
     <div className="space-y-8">
       {/* WORLD DESCRIPTION */}
-      <section>
+      <section className={isWorldDescLoading || pendingAction ? 'relative' : ''}>
+        {/* Pending action overlay */}
+        {pendingAction && (
+          <SectionPendingOverlay
+            pendingAction={pendingAction}
+            onReview={pendingAction.onReview}
+          />
+        )}
+        {isWorldDescLoading && !pendingAction && (
+          <div className="absolute inset-0 z-10 bg-background/60 backdrop-blur-sm rounded-lg flex items-center justify-center">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+              <span>Painting your world...</span>
+            </div>
+          </div>
+        )}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Globe className="w-5 h-5 text-primary/70" />
@@ -44,12 +100,14 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
           </div>
           {!isReadOnly && onSendMessage && (
             <IconButton
-              icon={<RefreshCw size={14} />}
+              icon={<RefreshCw size={14} className={isWorldDescLoading ? 'animate-spin' : ''} />}
               onClick={() =>
-                onSendMessage(
-                  'Generate a rich world description including setting, atmosphere, and key details.'
+                onSendMessage?.(
+                  'Generate a rich world description including setting, atmosphere, and key details.',
+                  'worldDescription'
                 )
               }
+              disabled={isWorldDescLoading}
               tooltip="Generate World Description"
               size="sm"
             />
@@ -58,7 +116,7 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
 
         {/* High Level Meta Info (Title, Genre, Tone) */}
         {!isEditing &&
-        (storyPlan.title || storyPlan.genre || storyPlan.tone || storyPlan.centralQuestion) ? (
+          (storyPlan.title || storyPlan.genre || storyPlan.tone || storyPlan.centralQuestion) ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             {/* Title, Genre, Tone Card */}
             {(storyPlan.title || storyPlan.genre || storyPlan.tone) && (
@@ -108,22 +166,36 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
           </div>
         ) : null}
 
+        {/* Executive Summary */}
+        {!isEditing && storyPlan.executiveSummary && (
+          <div className="mb-8 p-6 rounded-xl bg-orange-500/5 border border-orange-500/10">
+            <div className="flex items-center gap-2 mb-3">
+              <Star className="w-4 h-4 text-orange-400" />
+              <h4 className="font-bold text-sm uppercase tracking-wider text-orange-400">Executive Summary</h4>
+            </div>
+            <p className="text-lg font-medium text-foreground/90 leading-relaxed font-syne">
+              {storyPlan.executiveSummary}
+            </p>
+          </div>
+        )}
+
         <div className="w-full mt-8">
           {isEditing ? (
             <textarea
               className="w-full h-64 p-6 bg-background border border-border rounded-xl text-sm font-sans focus:ring-1 focus:ring-primary/30 outline-none resize-none shadow-sm"
               value={localPlan.worldDescription || ''}
-              onChange={e => onChange('worldDescription', e.target.value)}
+              onChange={e => onChange({ worldDescription: e.target.value })}
               placeholder="Describe the world..."
             />
           ) : (
             <div className="p-8 bg-muted/5 border border-border/20 rounded-2xl">
-              <div className="max-w-4xl mx-auto text-foreground/80 text-[15px] leading-relaxed font-sans whitespace-pre-wrap">
-                {storyPlan.worldDescription || (
-                  <span className="text-muted-foreground italic">
-                    No world description available.
-                  </span>
-                )}
+              <div className="max-w-4xl mx-auto text-foreground/80 text-[15px] leading-relaxed font-sans">
+                <RichText
+                  text={storyPlan.worldDescription}
+                  projectId={projectId}
+                  showPlaceholder
+                  placeholder="No world description available."
+                />
               </div>
             </div>
           )}
@@ -137,42 +209,14 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
             <Palette className="w-5 h-5 text-pink-400/80" />
             <h3 className="font-syne font-bold text-lg">Moodboard</h3>
           </div>
-          {isEditing && (
-            <div className="flex gap-2">
-              <button
-                onClick={async () => {
-                  if (isGenerating) return
-                  if (!storyPlan.worldDescription) {
-                    toast.error('Please add a world description first.')
-                    return
-                  }
-                  if (!projectId) return
-                  const config = getProviderConfig()
-                  if (!config.apiKey) {
-                    toast.error(
-                      `Missing API key for ${config.provider}. Please configure in Settings.`
-                    )
-                    return
-                  }
-                  try {
-                    await moodboardGenerationService.generate(
-                      projectId,
-                      [], // Prompts are generated on backend
-                      undefined, // Style ref handled on backend
-                      config,
-                      onRefetchMoodboardData
-                    )
-                  } catch (e) {
-                    console.error(e)
-                    toast.error('Error starting generation')
-                  }
-                }}
-                disabled={isGenerating}
-                className={`p-1.5 rounded-md transition-colors ${isGenerating ? 'opacity-50 cursor-not-allowed' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`}
-                title="Generate Moodboard"
-              >
-                <RefreshCw size={14} className={isGenerating ? 'animate-spin' : ''} />
-              </button>
+          {!isReadOnly && (
+            <div className="flex flex-col items-end gap-1">
+              {/* Status Display: Only show if general generating or unexpected index */}
+              {isGenerating && (
+                <div className="text-[10px] text-pink-400/80 font-mono flex items-center gap-2">
+                  <span className="animate-pulse">{progressDetails || 'Processing visuals...'}</span>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -199,9 +243,9 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
                   isLoading={isLoading}
                   isPrimary={isPrimary}
                   className="group relative"
-                  emptyLabel={!isFile ? img : 'No Image'}
+                  emptyLabel={isLoading ? (progressPercent ? `${progressPercent}%` : 'Generating...') : 'No Image'}
                   overlay={
-                    !isReadOnly && (
+                    !isReadOnly && !isLoading && (
                       <div className="flex gap-2">
                         {/* Set as Primary Button */}
                         <button
@@ -218,7 +262,7 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
                         <button
                           onClick={async e => {
                             e.stopPropagation()
-                            if (isLoading) return
+                            if (isGenerating) return // Prevent multiple concurrent generations for now to stay safe
                             if (!projectId) return
                             const config = getProviderConfig()
                             if (!config.apiKey) {
@@ -241,11 +285,51 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
                               toast.error('Error starting regeneration')
                             }
                           }}
-                          disabled={isLoading}
-                          className={`p-2 rounded-full text-white transition-colors ${isLoading ? 'bg-pink-500/50 cursor-not-allowed' : 'bg-pink-500/80 hover:bg-pink-500 backdrop-blur-md'}`}
+                          disabled={isGenerating}
+                          className={`p-2 rounded-full text-white transition-colors ${isGenerating ? 'bg-pink-500/50 cursor-not-allowed' : 'bg-pink-500/80 hover:bg-pink-500 backdrop-blur-md'}`}
                           title="Regenerate"
                         >
-                          <Sparkles size={16} className={isLoading ? 'animate-spin' : ''} />
+                          <Sparkles size={16} />
+                        </button>
+                        {/* Remove Button */}
+                        <button
+                          onClick={async e => {
+                            e.stopPropagation()
+                            if (isGenerating) return
+                            if (!projectId) return
+
+                            // Use custom UI dialog
+                            const confirmed = await confirm({
+                              title: 'Delete Image',
+                              description: 'Are you sure you want to remove this moodboard image? This cannot be undone.',
+                              confirmLabel: 'Delete',
+                              variant: 'destructive',
+                            })
+                            if (!confirmed) return
+
+                            try {
+                              const updatedImages = [...(storyPlan.moodImages || [])].filter((_, idx) => idx !== i)
+                              const res = await fetch(`/api/storyteller/projects/${projectId}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ seriesBible: { moodImages: updatedImages } }),
+                              })
+                              if (!res.ok) throw new Error('Failed to remove image')
+                              await onRefetchMoodboardData()
+                              toast.success('Image removed')
+                            } catch (err) {
+                              console.error(err)
+                              toast.error('Error removing image')
+                            }
+                          }}
+                          disabled={isGenerating}
+                          className={`p-2 rounded-full text-white transition-all shadow-md ${isGenerating
+                            ? 'bg-red-500/30 cursor-not-allowed'
+                            : 'bg-red-500/80 hover:bg-red-500 hover:scale-110 active:scale-95 backdrop-blur-md'
+                            }`}
+                          title="Remove"
+                        >
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     )
@@ -257,37 +341,126 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
                       <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 drop-shadow-md" />
                     </div>
                   )}
+                  {/* Loading indicator with progress */}
+                  {isLoading && (
+                    <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex flex-col items-center justify-center z-30">
+                      <Loader2 className="w-8 h-8 text-pink-500 animate-spin mb-2" />
+                      <span className="text-xs font-bold text-pink-500">
+                        {progressPercent ? `${progressPercent}%` : 'Generating...'}
+                      </span>
+                    </div>
+                  )}
                 </StorytellerImage>
               )
             })}
+            {/* Add New Image Button */}
+            {!isReadOnly && (
+              <button
+                onClick={async () => {
+                  if (isGenerating) return
+                  if (!projectId) return
+                  const config = getProviderConfig()
+                  if (!config.apiKey) {
+                    toast.error(`Missing API key for ${config.provider}. Please configure in Settings.`)
+                    return
+                  }
+                  try {
+                    // Generate a new image at the next index
+                    const nextIndex = storyPlan.moodImages?.length || 0
+                    await moodboardGenerationService.generate(
+                      projectId,
+                      [],
+                      undefined,
+                      config,
+                      onRefetchMoodboardData,
+                      nextIndex
+                    )
+                    toast.success('Generating new moodboard image...')
+                  } catch (err) {
+                    console.error(err)
+                    toast.error('Error starting generation')
+                  }
+                }}
+                disabled={isGenerating}
+                className={`aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all ${isGenerating
+                  ? 'border-muted-foreground/20 bg-muted/5 cursor-not-allowed opacity-50'
+                  : 'border-pink-500/30 bg-pink-500/5 hover:border-pink-500/60 hover:bg-pink-500/10 cursor-pointer'
+                  }`}
+                title="Add new moodboard image"
+              >
+                <Plus className={`w-8 h-8 ${isAddingNew ? 'text-muted-foreground/30 hidden' : 'text-pink-500/60'}`} />
+                {isAddingNew ? (
+                  <div className="flex flex-col items-center gap-2 animate-pulse">
+                    <Loader2 className="w-6 h-6 text-pink-500 animate-spin" />
+                    <span className="text-[10px] text-pink-400 font-medium">{progressPercent ? `${progressPercent}%` : 'Generating...'}</span>
+                  </div>
+                ) : (
+                  <span className={`text-xs ${isGenerating ? 'text-muted-foreground/30' : 'text-pink-500/60'}`}>
+                    Add Image
+                  </span>
+                )}
+              </button>
+            )}
           </div>
         ) : (
-          <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic mb-4">
-            No mood visuals generated yet.
+          <div className="space-y-3">
+            <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
+              No mood visuals generated yet.
+            </div>
+            {/* Add First Image Button when empty */}
+            {!isReadOnly && (
+              <button
+                onClick={async () => {
+                  if (isGenerating) return
+                  if (!storyPlan.worldDescription) {
+                    toast.error('Please add a world description first.')
+                    return
+                  }
+                  if (!projectId) return
+                  const config = getProviderConfig()
+                  if (!config.apiKey) {
+                    toast.error(`Missing API key for ${config.provider}. Please configure in Settings.`)
+                    return
+                  }
+                  try {
+                    await moodboardGenerationService.generate(
+                      projectId,
+                      [],
+                      undefined,
+                      config,
+                      onRefetchMoodboardData
+                    )
+                    toast.success('Generating moodboard images...')
+                  } catch (err) {
+                    console.error(err)
+                    toast.error('Error starting generation')
+                  }
+                }}
+                disabled={isGenerating}
+                className={`w-full p-4 rounded-xl border-2 border-dashed flex items-center justify-center gap-3 transition-all ${isGenerating
+                  ? 'border-muted-foreground/20 bg-muted/5 cursor-not-allowed opacity-50'
+                  : 'border-pink-500/30 bg-pink-500/5 hover:border-pink-500/60 hover:bg-pink-500/10 cursor-pointer'
+                  }`}
+              >
+                {isAddingNew || isGenerating ? (
+                  <>
+                    <Loader2 className="w-5 h-5 text-pink-500 animate-spin" />
+                    <span className="text-sm text-pink-500">{progressPercent ? `Generating (${progressPercent}%)` : 'Generating...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-5 h-5 text-pink-500/60" />
+                    <span className="text-sm text-pink-500/80">Generate Moodboard with Midjourney</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
         )}
 
-        {/* Image Prompts Display */}
-        {storyPlan.imagePrompts && (
-          <div className="mt-4 p-3 bg-pink-500/5 border border-pink-500/10 rounded-lg">
-            <h4 className="text-xs font-bold text-pink-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-              <Sparkles className="w-3 h-3" /> Visual Direction (Prompts)
-            </h4>
-            <div className="space-y-2">
-              {Object.entries(storyPlan.imagePrompts as Record<string, string>).map(
-                ([key, prompt], i) => (
-                  <div key={i} className="text-xs text-muted-foreground/80">
-                    <span className="font-mono text-pink-300 mr-2 uppercase text-[10px]">
-                      {key}:
-                    </span>
-                    <span className="italic">"{prompt}"</span>
-                  </div>
-                )
-              )}
-            </div>
-          </div>
-        )}
       </section>
+      {/* Confirm Dialog */}
+      {ConfirmDialogComponent}
     </div>
   )
 }

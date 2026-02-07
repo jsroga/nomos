@@ -1,7 +1,7 @@
 /* eslint-disable react/no-unknown-property */
 'use client'
 
-import React, { useMemo, useEffect, useRef } from 'react'
+import React, { useMemo } from 'react'
 import {
   useInteriorStore,
   Surface,

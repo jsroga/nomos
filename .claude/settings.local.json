@@ -17,7 +17,24 @@
       "Bash(npx ts-node:*)",
       "Bash(npx tsx:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npm install:*)",
+      "Bash(npm search:*)",
+      "Bash(npx dotenv:*)",
+      "Bash(set -a)",
+      "Bash(source .env.local)",
+      "Bash(set +a)",
+      "Bash(node -e:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npm ls:*)",
+      "Bash(npm run build:*)",
+      "Bash([[ -n \"$OPENAI_API_KEY\" ]])",
+      "WebFetch(domain:arxiv.org)",
+      "WebFetch(domain:langfuse.com)",
+      "Bash(git fetch:*)",
+      "Bash(grep:*)",
+      "WebFetch(domain:mastra.ai)",
+      "Bash(node --check:*)"
     ]
   }
 }

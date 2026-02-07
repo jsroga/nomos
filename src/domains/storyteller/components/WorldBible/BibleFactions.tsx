@@ -1,9 +1,10 @@
 import React from 'react'
-import { Crown, Plus, RefreshCw, Trash2 } from 'lucide-react'
-import { StoryPlan, Faction } from '../../schemas/agent-schemas'
+import { Crown, Plus, RefreshCw, Trash2, Loader2 } from 'lucide-react'
+import { Faction } from '../../schemas/agent-schemas'
 import { FactionCard } from '../FactionCard'
 
 import { useBible } from './BibleContext'
+import { SectionPendingOverlay } from './SectionPendingOverlay'
 
 interface BibleFactionsProps {}
 
@@ -17,11 +18,31 @@ export const BibleFactions: React.FC<BibleFactionsProps> = () => {
     removeFaction: onRemoveFaction,
     isReadOnly,
     onSendMessage,
+    loadingSections,
+    pendingActions,
+    projectId,
   } = useBible()
   const factions = storyPlan.factions || []
+  const isLoading = loadingSections?.factions?.loading ?? false
+  const pendingAction = pendingActions?.factions
 
   return (
-    <section>
+    <section className={isLoading || pendingAction ? 'relative' : ''}>
+      {/* Pending action overlay */}
+      {pendingAction && (
+        <SectionPendingOverlay 
+          pendingAction={pendingAction}
+          onReview={pendingAction.onReview}
+        />
+      )}
+      {isLoading && !pendingAction && (
+        <div className="absolute inset-0 z-10 bg-background/60 backdrop-blur-sm rounded-lg flex items-center justify-center">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+            <span>Building power structures...</span>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Crown className="w-5 h-5 text-amber-400/80" />
@@ -31,8 +52,9 @@ export const BibleFactions: React.FC<BibleFactionsProps> = () => {
           {isEditing && (
             <button
               onClick={onAddFaction}
-              className="p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105"
+              className={`p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}
               title="Add Faction"
+              disabled={isLoading}
             >
               <Plus size={14} />
             </button>
@@ -40,14 +62,16 @@ export const BibleFactions: React.FC<BibleFactionsProps> = () => {
           {!isReadOnly && onSendMessage && (
             <button
               onClick={() =>
-                onSendMessage(
-                  'Generate the major factions, power structures, and political forces in this world.'
+                onSendMessage?.(
+                  'Generate the major factions, power structures, and political forces in this world.',
+                  'factions'
                 )
               }
-              className="p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105"
+              className={`p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}
               title="Generate Factions"
+              disabled={isLoading}
             >
-              <RefreshCw size={14} />
+              <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
             </button>
           )}
         </div>
@@ -144,7 +168,7 @@ export const BibleFactions: React.FC<BibleFactionsProps> = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {factions.map((faction, idx) => {
             if (!faction) return null
-            return <FactionCard key={idx} faction={faction as Faction} />
+            return <FactionCard key={idx} faction={faction as Faction} projectId={projectId} />
           })}
         </div>
       )}

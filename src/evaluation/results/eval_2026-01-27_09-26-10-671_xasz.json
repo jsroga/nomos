@@ -1,0 +1,170 @@
+{
+  "id": "eval_2026-01-27_09-26-10-671_xasz",
+  "name": "Structural Architecture Matrix-RAG Agent-Custom",
+  "timestamp": "2026-01-27T09:26:10.671Z",
+  "config": {
+    "name": "Structural Architecture Matrix-RAG Agent-Custom",
+    "evaluatorSet": "pro",
+    "customEvaluators": [
+      {
+        "name": "eq-score"
+      },
+      {
+        "name": "logic-consistency"
+      }
+    ],
+    "examples": [
+      {
+        "id": "eq-bench-conflict-1",
+        "scenario": "High-Conflict Negotiation",
+        "input": {
+          "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+          "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+        },
+        "metadata": {
+          "groundTruth": {
+            "elena": {
+              "fear": 8,
+              "resolve": 4,
+              "disgust": 7,
+              "relief": 0
+            },
+            "marcus": {
+              "confidence": 9,
+              "anger": 2,
+              "contempt": 5,
+              "empathy": 1
+            }
+          },
+          "nuanceChecklist": [
+            "Marcus uses a 'fake empathy' tactic",
+            "Elena shows physical signs of anxiety (stuttering, shivering)",
+            "The bribe is implied, not stated outright",
+            "Elena almost gives in but pulls back"
+          ]
+        }
+      },
+      {
+        "id": "eq-bench-conflict-2",
+        "scenario": "Ambiguous Tension (Adversarial)",
+        "input": {
+          "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+          "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+        },
+        "metadata": {
+          "groundTruth": {
+            "hans": {
+              "confusion": 3,
+              "alertness": 8,
+              "suspicion": 9,
+              "affection": 0
+            },
+            "clara": {
+              "frustration": 7,
+              "deceit": 8,
+              "care": 2,
+              "fear": 5
+            }
+          }
+        }
+      }
+    ],
+    "tags": [
+      "multi-variant",
+      "RAG Agent",
+      "Custom"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "eq-bench-conflict-1",
+      "input": {
+        "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+        "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+      },
+      "output": "SCENE:\n\nA park bench, midnight. Rain patters on the pavement. ELENA sits huddled, clutching a folder.\n\nMARCUS approaches, umbrella in hand, and sits down beside her.\n\nMARCUS\n(warmly)\nElena, my dear. I'm so glad you could meet me here.\n\nELENA\n(nervous)\nMr. Blackwood. What do you want?\n\nMARCUS\n(chuckling)\nPlease, call me Marcus. After all, we're practically family now, aren't we?\n\nELENA\n(defensive)\nI don't know what you mean.\n\nMARCUS\n(placing a hand on her shoulder)\nI think you do. I've heard about your... situation. Your mother's health, your mounting debts. It must be so stressful.\n\nELENA\n(shifting away)\nI don't know what you're talking about.\n\nMARCUS\n(tsking)\nOh, Elena. You know I only want to help. We've worked together for so long. I consider you almost like a daughter.\n\nELENA\n(gripping the folder)\nIf this is about the evidence I have--\n\nMARCUS\n(interrupting, squeezing her shoulder)\nEvidence? My dear, I'm not here about any evidence. I'm here because I care about you. About your family. \n\n(leaning in)\nYou know, a lot can happen in this city. Accidents happen. Especially to those who can't afford the best care.\n\nELENA\n(paling, voice trembling)\nAre you... are you threatening me?\n\nMARCUS\n(pulling back, feigning shock)\nThreatening you? Heavens no! I would never dream of such a thing. I'm simply... concerned. For your well-being. For your mother's.\n\n(placing a hand on her knee)\nYou know I have the means to help. To make things... easier. All you have to do is give me that folder, and I'll make sure your family is taken care of.\n\nELENA\n(eyes glistening, voice breaking)\nI can't. I won't. This is the right thing to do.\n\nMARCUS\n(sighing, squeezing her knee)\nOh, Elena. You always were so stubborn. So idealistic. \n\n(leaning in, voice lowering)\nBut you know, sometimes the right thing isn't worth the cost. Think of your mother, Elena. Think of your future.\n\nELENA\n(shoulders slumping, resolve wavering)\nI... I don't know what to do.",
+      "scores": {
+        "eq-score": 0.9333333333333333,
+        "logic-consistency": 0
+      },
+      "reasoning": {
+        "eq-score": "Avg Diff: 0.7. Predicted: {\"elena\":{\"fear\":8,\"resolve\":4,\"disgust\":6,\"relief\":2},\"marcus\":{\"confidence\":8,\"anger\":3,\"contempt\":6,\"empathy\":2}}",
+        "logic-consistency": "JSON Parse Error"
+      },
+      "metadata": {
+        "groundTruth": {
+          "elena": {
+            "fear": 8,
+            "resolve": 4,
+            "disgust": 7,
+            "relief": 0
+          },
+          "marcus": {
+            "confidence": 9,
+            "anger": 2,
+            "contempt": 5,
+            "empathy": 1
+          }
+        },
+        "nuanceChecklist": [
+          "Marcus uses a 'fake empathy' tactic",
+          "Elena shows physical signs of anxiety (stuttering, shivering)",
+          "The bribe is implied, not stated outright",
+          "Elena almost gives in but pulls back"
+        ],
+        "latencyMs": 4390,
+        "costUsd": 0.0006821249999999999,
+        "tokens": 703.5
+      },
+      "context": {
+        "arch": "RAG",
+        "retrieved": "\n            CONFIDENTIAL PERSONNEL FILE:\n            - ELENA: Mother is currently hospitalized. Has $50,000 debt. \n            - MARCUS: Known to use threats against family members indirectly (\"How is your mother doing?\").\n            - CONTEXT: Elena has been vomiting from stress all morning.\n            "
+      }
+    },
+    {
+      "exampleId": "eq-bench-conflict-2",
+      "input": {
+        "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+        "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+      },
+      "output": "Here is a subtext-heavy dialogue between Hans and Clara in the nursing home cafeteria:\n\nCLARA (stirring her Jello, eyes downcast): Grandpa, do you remember the old days? When we used to... go on trips together?\n\nHANS (chewing slowly, studying her): The old days. Yes, I remember. So much has changed, hasn't it, my dear?\n\nCLARA (glancing up, a flicker of hope in her eyes): Has it? I feel like some things are still the same. Don't you?\n\nHANS (takes a sip of water, his gaze unwavering): The world keeps turning, Clara. But a man's mind... that's trickier. You can never be sure what he remembers. Or what he's forgotten.\n\nCLARA (leans in slightly, her voice lowering): I need you to remember, Grandpa. Remember what we used to do. Together.\n\nHANS (raises an eyebrow, a ghost of a smile on his lips): Ah, yes. The trips. The adventures. So many memories, it's hard to keep track. But I'm an old man now. My mind wanders.\n\nCLARA (frustration creeping into her tone): Please, Grandpa. You have to focus. This is important.\n\nHANS (reaches across the table, patting her hand): My dear, I'm afraid I'm not the man I used to be. Too many years, too many secrets. It's all a blur now.\n\nCLARA (jaw tightening, eyes narrowing): Then let me help you remember. (Leans in further) The code phrase, Grandpa. What was it?\n\nHANS (withdraws his hand, expression turning pensive): Code phrase? I'm afraid I don't know what you're talking about, Clara. These days, I'm lucky if I can remember my own name.\n\nCLARA (frustration giving way to desperation): Grandpa, please. You have to try. Think back. It's crucial.\n\nHANS (shakes his head slowly, a hint of sadness in his eyes): I'm sorry, my dear. The past is a foreign country to me now. I'm just an old man, trying to enjoy his Jello in peace.\n\nThe two sit in tense silence, the unspoken tension thick in the air as they continue their guarded dance of memories and deception.",
+      "scores": {
+        "eq-score": 0,
+        "logic-consistency": 0.5
+      },
+      "reasoning": {
+        "eq-score": "Character mismatch",
+        "logic-consistency": "Failed: The true relationship is NOT explicitly stated, Clara uses a specific phrase/trigger"
+      },
+      "metadata": {
+        "groundTruth": {
+          "hans": {
+            "confusion": 3,
+            "alertness": 8,
+            "suspicion": 9,
+            "affection": 0
+          },
+          "clara": {
+            "frustration": 7,
+            "deceit": 8,
+            "care": 2,
+            "fear": 5
+          }
+        },
+        "latencyMs": 3989,
+        "costUsd": 0.000639375,
+        "tokens": 620.5
+      },
+      "context": {
+        "arch": "RAG",
+        "retrieved": "\n            MEDICAL LOG 402:\n            - HANS: Diagnosed with early dementia, but nurses suspect he exaggerates it to avoid questioning.\n            - CLARA: Not his biological granddaughter. Handler from the agency.\n            "
+      }
+    }
+  ],
+  "aggregatedScores": {
+    "eq-score": 0.4666666666666667,
+    "logic-consistency": 0.25
+  },
+  "regressions": [],
+  "duration": 5774
+}

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { upscaleService } from '../services/UpscaleService'
 import toast from 'react-hot-toast'

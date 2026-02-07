@@ -1,11 +1,11 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import { put } from '@vercel/blob'
-import {
-  GENERATION_PROMPTS,
-  MASK_CONFIG,
-  getGenerationCreativityPrompt,
-} from '@/lib/server/prompts'
+import { GENERATION_PROMPTS, MASK_CONFIG } from '@/lib/server/prompts'
+import { imageService, StyleInfo } from '@/lib/server/image-service'
+import sharp from 'sharp'
+import { v4 as uuidv4 } from 'uuid'
+import { storageService } from '@/infrastructure/storage/StorageService'
 
 export const generateTileTask = task({
   id: 'generate-tile',
@@ -23,6 +23,7 @@ export const generateTileTask = task({
     isFirstTile?: boolean
     styleReferenceUrls?: string[]
     contextImageBase64?: string
+    neighbors?: any // Adding neighbors for server-side assembly
   }) => {
     const {
       projectId,
@@ -33,12 +34,15 @@ export const generateTileTask = task({
       aiConfig,
       isFirstTile = true,
       styleReferenceUrls,
-      contextImageBase64,
+      neighbors,
     } = payload
+
+    let contextImageBase64 = payload.contextImageBase64
 
     logger.info(`Generating tile at ${x},${y} for project ${projectId}`, {
       isFirstTile,
       hasContext: !!contextImageBase64,
+      hasNeighbors: !!neighbors,
       hasStyleRefs: !!styleReferenceUrls?.length,
     })
 
@@ -47,6 +51,19 @@ export const generateTileTask = task({
     await metadata.set('stage', 'initializing')
     await metadata.set('tile_x', x)
     await metadata.set('tile_y', y)
+
+    // Server-side context assembly if needed
+    if (!isFirstTile && !contextImageBase64 && neighbors) {
+      await metadata.set('stage', 'assembling_context')
+      logger.info('Assembling context image on server')
+      const { image } = await imageService.assembleContext({
+        targetX: x,
+        targetY: y,
+        neighbors,
+        allTiles: {} // Not needed for assembly
+      }, 1024)
+      contextImageBase64 = image.toString('base64')
+    }
 
     await metadata.set('stage', 'generating_image')
     await metadata.set('progress', 30)
@@ -275,7 +292,11 @@ async function generateWithGemini(
 
     // For follow-up tiles, we need to crop the center 512x512 from the 1024x1024 result
     if (!isFirstTile && contextImageBase64) {
-      imageData = await cropCenterFromBase64(imageData, 256, 256, 512, 512)
+      const buffer = await imageService.crop(
+        Buffer.from(imageData, 'base64'),
+        { x: 256, y: 256, width: 512, height: 512 }
+      )
+      imageData = buffer.toString('base64')
     }
 
     return imageData
@@ -288,33 +309,6 @@ async function generateWithGemini(
   }
 
   throw new Error('No image found in Gemini response')
-}
-
-// Crop center region from base64 image (server-side using sharp or canvas)
-async function cropCenterFromBase64(
-  base64Data: string,
-  x: number,
-  y: number,
-  width: number,
-  height: number
-): Promise<string> {
-  try {
-    // Try to use sharp for server-side cropping
-    const sharp = await import('sharp')
-    const inputBuffer = Buffer.from(base64Data, 'base64')
-
-    const croppedBuffer = await sharp
-      .default(inputBuffer)
-      .extract({ left: x, top: y, width, height })
-      .png()
-      .toBuffer()
-
-    return croppedBuffer.toString('base64')
-  } catch (e) {
-    // If sharp is not available, return the original image
-    logger.warn('Sharp not available for cropping, returning full image', { error: e })
-    return base64Data
-  }
 }
 
 // Server-side OpenAI image generation
@@ -379,10 +373,14 @@ async function generateWithOpenAI(
     formData.append('image', imageBlob, 'image.png')
 
     // Create mask: center 512x512 transparent (to edit), rest white (keep)
-    const maskBase64 = await createEditMask(1024, 256, 256, 512, 512)
-    const maskBuffer = Buffer.from(maskBase64, 'base64')
-    const maskBlob = new Blob([maskBuffer], { type: 'image/png' })
-    formData.append('mask', maskBlob, 'mask.png')
+    const { mask } = await imageService.assembleContext({
+      targetX: 0, // Not strictly needed for just a mask but interface expects it
+      targetY: 0,
+      neighbors: {},
+      allTiles: {}
+    }, 1024)
+    // Convert Buffer to Uint8Array for Blob compatibility if needed
+    formData.append('mask', new Blob([new Uint8Array(mask)], { type: 'image/png' }), 'mask.png')
 
     formData.append(
       'prompt',
@@ -412,64 +410,11 @@ async function generateWithOpenAI(
     }
 
     // Crop center 512x512 from the 1024x1024 result
-    return await cropCenterFromBase64(data.data[0].b64_json, 256, 256, 512, 512)
-  }
-}
-
-// Create a mask for OpenAI edit: white everywhere except center region (transparent)
-async function createEditMask(
-  size: number,
-  x: number,
-  y: number,
-  width: number,
-  height: number
-): Promise<string> {
-  try {
-    const sharp = await import('sharp')
-
-    // Create white image
-    const whiteBuffer = await sharp
-      .default({
-        create: {
-          width: size,
-          height: size,
-          channels: 4,
-          background: { r: 255, g: 255, b: 255, alpha: 1 },
-        },
-      })
-      .png()
-      .toBuffer()
-
-    // Create transparent center overlay
-    const transparentCenter = await sharp
-      .default({
-        create: {
-          width,
-          height,
-          channels: 4,
-          background: { r: 0, g: 0, b: 0, alpha: 0 },
-        },
-      })
-      .png()
-      .toBuffer()
-
-    // Composite: white base with transparent center
-    const maskBuffer = await sharp
-      .default(whiteBuffer)
-      .composite([
-        {
-          input: transparentCenter,
-          left: x,
-          top: y,
-        },
-      ])
-      .png()
-      .toBuffer()
-
-    return maskBuffer.toString('base64')
-  } catch (e) {
-    logger.warn('Failed to create mask with sharp', { error: e })
-    throw new Error('Failed to create edit mask')
+    const croppedBuffer = await imageService.crop(
+      Buffer.from(data.data[0].b64_json, 'base64'),
+      { x: 256, y: 256, width: 512, height: 512 }
+    )
+    return croppedBuffer.toString('base64')
   }
 }
 
@@ -533,7 +478,13 @@ async function generateWithStability(
     logger.info('Stability: Generating follow-up tile with context image')
 
     // Create mask for center region
-    const maskBase64 = await createInpaintMask(1024, 256, 256, 512, 512)
+    const { mask } = await imageService.assembleContext({
+      targetX: 0,
+      targetY: 0,
+      neighbors: {},
+      allTiles: {}
+    }, 1024)
+    const maskBase64 = mask.toString('base64')
 
     const formData = new FormData()
 
@@ -581,103 +532,18 @@ async function generateWithStability(
     }
 
     // Crop center 512x512 from the 1024x1024 result
-    return await cropCenterFromBase64(data.artifacts[0].base64, 256, 256, 512, 512)
+    const croppedBuffer = await imageService.crop(
+      Buffer.from(data.artifacts[0].base64, 'base64'),
+      { x: 256, y: 256, width: 512, height: 512 }
+    )
+    return croppedBuffer.toString('base64')
   }
 }
 
-// Create inpaint mask for Stability: black = inpaint area, white = keep
-async function createInpaintMask(
-  size: number,
-  x: number,
-  y: number,
-  width: number,
-  height: number
-): Promise<string> {
-  try {
-    const sharp = await import('sharp')
-
-    // Create white image (keep area)
-    const whiteBuffer = await sharp
-      .default({
-        create: {
-          width: size,
-          height: size,
-          channels: 3,
-          background: { r: 255, g: 255, b: 255 },
-        },
-      })
-      .png()
-      .toBuffer()
-
-    // Create black center (inpaint area)
-    const blackCenter = await sharp
-      .default({
-        create: {
-          width,
-          height,
-          channels: 3,
-          background: { r: 0, g: 0, b: 0 },
-        },
-      })
-      .png()
-      .toBuffer()
-
-    // Composite: white base with black center
-    const maskBuffer = await sharp
-      .default(whiteBuffer)
-      .composite([
-        {
-          input: blackCenter,
-          left: x,
-          top: y,
-        },
-      ])
-      .png()
-      .toBuffer()
-
-    return maskBuffer.toString('base64')
-  } catch (e) {
-    logger.warn('Failed to create inpaint mask with sharp', { error: e })
-    throw new Error('Failed to create inpaint mask')
-  }
-}
-
-// Server-side style analysis using sharp (replaces client-side Canvas version)
-interface StyleInfo {
-  brightness: 'bright' | 'medium' | 'dark'
-  warmth: 'warm' | 'neutral' | 'cool'
-  description: string
-}
+// Style Analysis is now handled by ImageService
 
 async function analyzeStyleWithSharp(imageBase64: string): Promise<StyleInfo> {
-  try {
-    const sharp = (await import('sharp')).default
-    const buffer = Buffer.from(imageBase64, 'base64')
-
-    // Get stats from the image
-    const { dominant, channels } = await sharp(buffer).stats()
-
-    // Calculate brightness from dominant color
-    const avgBrightness = (dominant.r + dominant.g + dominant.b) / 3
-    let brightness: 'bright' | 'medium' | 'dark'
-    if (avgBrightness > 180) brightness = 'bright'
-    else if (avgBrightness > 80) brightness = 'medium'
-    else brightness = 'dark'
-
-    // Determine warmth based on red vs blue dominance
-    let warmth: 'warm' | 'neutral' | 'cool'
-    if (dominant.r > dominant.b + 30) warmth = 'warm'
-    else if (dominant.b > dominant.r + 30) warmth = 'cool'
-    else warmth = 'neutral'
-
-    const description = `${brightness} ${warmth} palette`
-
-    logger.info('Style analysis complete', { brightness, warmth, description })
-    return { brightness, warmth, description }
-  } catch (e) {
-    logger.warn('Style analysis failed, using defaults', { error: e })
-    return { brightness: 'medium', warmth: 'neutral', description: 'medium neutral palette' }
-  }
+  return imageService.analyzeStyle(Buffer.from(imageBase64, 'base64'))
 }
 
 // Creativity prompt helper for generation
@@ -776,10 +642,6 @@ async function generateWithLegNext(
 ): Promise<string> {
   logger.info('Starting Midjourney generation via LegNext API', { isFirstTile, styleReferenceUrls })
 
-  // Import storage service for public URL upload
-  const { storageService } = await import('@/infrastructure/storage/StorageService')
-  const { v4: uuidv4 } = await import('uuid')
-
   let publicImageUrl: string | null = null
 
   // Step 1: Upload image to get public URL (if we have context or need to generate from scratch)
@@ -803,16 +665,14 @@ async function generateWithLegNext(
     logger.info('First tile generation - creating blank canvas')
     await metadata.set('stage', 'creating_blank_canvas')
 
-    const sharp = await import('sharp')
-    const blankCanvas = await sharp
-      .default({
-        create: {
-          width: 1024,
-          height: 1024,
-          channels: 4,
-          background: { r: 240, g: 240, b: 240, alpha: 1 },
-        },
-      })
+    const blankCanvas = await sharp({
+      create: {
+        width: 1024,
+        height: 1024,
+        channels: 4,
+        background: { r: 240, g: 240, b: 240, alpha: 1 },
+      },
+    })
       .png()
       .toBuffer()
 

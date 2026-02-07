@@ -808,4 +808,3 @@ export function ThreeDIcon({
     </div>
   )
 }
-

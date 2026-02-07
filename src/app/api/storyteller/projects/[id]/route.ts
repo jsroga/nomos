@@ -28,10 +28,38 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
+    const seriesBible = project.seriesBibleTable?.content || project.seriesBible || {}
+    const storyPlan = project.storyPlanTable?.content || project.storyPlan || {}
+
+    // CLEANUP: Remove legacy fields from seriesBible if they exist in storyPlan
+    // This prevents the frontend from merging stale data and ensures single source of truth
+    if (Object.keys(storyPlan).length > 0) {
+      const legacyFields = [
+        'worldDescription', 'genre', 'tone', 'worldRules',
+        'factions', 'keyCharacters', 'plotTwists', 'inspirations'
+      ]
+
+      // 1. Clean from Top Level
+      for (const field of legacyFields) {
+        if ((storyPlan as any)[field] && (seriesBible as any)[field]) {
+          delete (seriesBible as any)[field]
+        }
+      }
+
+      // 2. Clean from 'Setting' category (common legacy location)
+      if ((seriesBible as any).Setting) {
+        for (const field of legacyFields) {
+          if ((storyPlan as any)[field] && (seriesBible as any).Setting[field]) {
+            delete (seriesBible as any).Setting[field]
+          }
+        }
+      }
+    }
+
     return NextResponse.json({
       ...project,
-      seriesBible: project.seriesBibleTable?.content || project.seriesBible || {},
-      storyPlan: project.storyPlanTable?.content || project.storyPlan || {},
+      seriesBible,
+      storyPlan,
       seriesBibleTable: undefined,
       storyPlanTable: undefined,
     })
@@ -71,27 +99,41 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
       await db.update(projects).set(dbUpdates).where(eq(projects.id, params.id))
     }
 
-    // 2. Update Series Bible (Upsert)
-    const bibleContent = series_bible ?? seriesBible
-    if (bibleContent !== undefined) {
+    // 2. Update Series Bible (Upsert with Merge)
+    const bibleUpdate = series_bible ?? seriesBible
+    if (bibleUpdate !== undefined) {
+      // Fetch existing content first to merge
+      const existing = await db.query.seriesBibles.findFirst({
+        where: eq(seriesBibles.projectId, params.id),
+      })
+      const existingContent = (existing?.content || {}) as Record<string, any>
+      const mergedContent = { ...existingContent, ...bibleUpdate }
+
       await db
         .insert(seriesBibles)
-        .values({ projectId: params.id, content: bibleContent })
+        .values({ projectId: params.id, content: mergedContent })
         .onConflictDoUpdate({
           target: seriesBibles.projectId,
-          set: { content: bibleContent, updatedAt: new Date() },
+          set: { content: mergedContent, updatedAt: new Date() },
         })
     }
 
-    // 3. Update Story Plan (Upsert)
-    const planContent = story_plan ?? storyPlan
-    if (planContent !== undefined) {
+    // 3. Update Story Plan (Upsert with Merge)
+    const planUpdate = story_plan ?? storyPlan
+    if (planUpdate !== undefined) {
+      // Fetch existing content first to merge
+      const existing = await db.query.storyPlans.findFirst({
+        where: eq(storyPlans.projectId, params.id),
+      })
+      const existingContent = (existing?.content || {}) as Record<string, any>
+      const mergedContent = { ...existingContent, ...(planUpdate as Record<string, any>) }
+
       await db
         .insert(storyPlans)
-        .values({ projectId: params.id, content: planContent })
+        .values({ projectId: params.id, content: mergedContent })
         .onConflictDoUpdate({
           target: storyPlans.projectId,
-          set: { content: planContent, updatedAt: new Date() },
+          set: { content: mergedContent, updatedAt: new Date() },
         })
     }
 

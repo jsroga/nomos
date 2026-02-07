@@ -9,6 +9,18 @@ import {
   StorySequence,
 } from '../../schemas/agent-schemas'
 import { isCentralUser, canEditBible } from '@/lib/bible-permissions'
+import { cachedFetch, clearFetchCache } from '@/lib/fetch-cache'
+
+// Pending action for a section
+export interface PendingAction {
+  section: string
+  preview: any
+  action: any
+  onAccept: () => void
+  onReject: () => void
+  onReview?: () => void
+  isProcessing?: boolean
+}
 
 interface BibleContextType {
   // State
@@ -22,8 +34,15 @@ interface BibleContextType {
   userEmail: string | null
   isLockLoading: boolean
   projectId: string
-  onSendMessage?: (msg: string) => void
+  onSendMessage?: (msg: string, section?: string) => void
   getProviderConfig: () => any
+  
+  // Section loading states
+  loadingSections: Record<string, { loading: boolean; message?: string }>
+  
+  // Pending actions per section (for blur overlay with accept/reject)
+  pendingActions: Record<string, PendingAction>
+  setPendingAction: (section: string, action: PendingAction | null) => void
 
   // Actions
   setIsEditing: (val: boolean) => void
@@ -72,8 +91,11 @@ export const BibleProvider: React.FC<{
   onUpdate?: (updates: Partial<StoryPlan>) => void
   isReadOnly?: boolean
   projectId: string
-  onSendMessage?: (msg: string) => void
+  onSendMessage?: (msg: string, section?: string) => void
   getProviderConfig: () => any
+  loadingSections?: Record<string, { loading: boolean; message?: string }>
+  pendingActions?: Record<string, PendingAction>
+  onSetPendingAction?: (section: string, action: PendingAction | null) => void
 }> = ({
   children,
   storyPlan,
@@ -82,6 +104,9 @@ export const BibleProvider: React.FC<{
   projectId,
   onSendMessage,
   getProviderConfig,
+  loadingSections = {},
+  pendingActions: externalPendingActions,
+  onSetPendingAction,
 }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [localPlan, setLocalPlan] = useState<Partial<StoryPlan>>(storyPlan)
@@ -90,6 +115,22 @@ export const BibleProvider: React.FC<{
   const [lockedAt, setLockedAt] = useState<Date | null>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [isLockLoading, setIsLockLoading] = useState(false)
+  const [internalPendingActions, setInternalPendingActions] = useState<Record<string, PendingAction>>({})
+  
+  const pendingActions = externalPendingActions ?? internalPendingActions
+  const setPendingAction = useCallback((section: string, action: PendingAction | null) => {
+    if (onSetPendingAction) {
+      onSetPendingAction(section, action)
+    } else {
+      setInternalPendingActions(prev => {
+        if (action === null) {
+          const { [section]: _, ...rest } = prev
+          return rest
+        }
+        return { ...prev, [section]: action }
+      })
+    }
+  }, [onSetPendingAction])
 
   const isUserCentral = isCentralUser(userEmail)
   const canEdit = canEditBible(userEmail, isLocked)
@@ -102,25 +143,36 @@ export const BibleProvider: React.FC<{
     }
   }, [storyPlan, isEditing])
 
-  // Fetch lock status
-  const fetchLockStatus = useCallback(async () => {
+  // Fetch lock status - using cachedFetch to prevent infinite loops on remount
+  useEffect(() => {
+    let isMounted = true
     if (!projectId) return
-    try {
-      const response = await fetch(`/api/storyteller/bible/lock?projectId=${projectId}`)
-      if (response.ok) {
-        const data = await response.json()
+
+    cachedFetch(
+      `bible-lock:${projectId}`,
+      async () => {
+        const response = await fetch(`/api/storyteller/bible/lock?projectId=${projectId}`)
+        if (response.ok) {
+          return response.json()
+        }
+        return { isLocked: false, lockedBy: null, lockedAt: null }
+      },
+      { ttlMs: 60_000 } // Cache for 1 minute
+    )
+      .then(data => {
+        if (!isMounted) return
         setIsLocked(data.isLocked)
         setLockedBy(data.lockedBy)
         setLockedAt(data.lockedAt ? new Date(data.lockedAt) : null)
-      }
-    } catch (error) {
-      console.warn('[Bible Context] Failed to fetch lock status:', error)
+      })
+      .catch(error => {
+        console.warn('[Bible Context] Failed to fetch lock status:', error)
+      })
+
+    return () => {
+      isMounted = false
     }
   }, [projectId])
-
-  useEffect(() => {
-    fetchLockStatus()
-  }, [fetchLockStatus])
 
   // Fetch user
   useEffect(() => {
@@ -158,6 +210,8 @@ export const BibleProvider: React.FC<{
       })
       if (response.ok) {
         const data = await response.json()
+        // Clear the cache so future fetches get updated data
+        clearFetchCache(`bible-lock:${projectId}`)
         setIsLocked(data.action === 'lock')
         setLockedBy(data.lockedBy)
         setLockedAt(data.lockedAt ? new Date(data.lockedAt) : null)
@@ -322,6 +376,9 @@ export const BibleProvider: React.FC<{
     projectId,
     onSendMessage,
     getProviderConfig,
+    loadingSections,
+    pendingActions,
+    setPendingAction,
     setIsEditing,
     updateLocalPlan,
     savePlan,

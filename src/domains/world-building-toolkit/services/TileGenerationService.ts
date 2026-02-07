@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Tile, useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
 import { aiService } from '@/infrastructure/ai/service'
@@ -30,84 +29,26 @@ export class TileGenerationService {
   }
 
   /**
-   * Helper to load a tile image as base64 data URL
+   * Helper to get a tile's image URL
    */
-  private async loadTileAsDataUrl(
+  private getTileImageUrl(
     tile: Tile | undefined,
     projectId: string
-  ): Promise<(Tile & { imageUrl?: string }) | undefined> {
+  ): (Tile & { imageUrl?: string }) | undefined {
     if (!tile?.image_filename) return undefined
 
     // Handle both local paths and full URLs (Vercel Blob)
     const imageUrl = tile.image_filename.startsWith('http')
       ? tile.image_filename
-      : `/projects/${projectId}/${tile.image_filename}`
+      : `${window.location.origin}/projects/${projectId}/${tile.image_filename}`
 
-    try {
-      const response = await fetch(imageUrl)
-      const blob = await response.blob()
-
-      return new Promise(resolve => {
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          resolve({
-            ...tile,
-            imageUrl: reader.result as string,
-          })
-        }
-        reader.onerror = () => resolve(tile)
-        reader.readAsDataURL(blob)
-      })
-    } catch (e) {
-      console.error('Failed to load tile image:', e)
-      return tile
+    return {
+      ...tile,
+      imageUrl,
     }
   }
 
-  /**
-   * Convert blob to base64 string (without data URL prefix)
-   */
-  private blobToBase64(blob: Blob): Promise<string> {
-    return new Promise((resolve, reject) => {
-      if (!blob || blob.size === 0) {
-        console.error('[TileGenerationService] blobToBase64 received invalid blob:', {
-          blob,
-          size: blob?.size,
-        })
-        reject(new Error('Invalid blob'))
-        return
-      }
-
-      console.log('[TileGenerationService] Converting blob to base64:', {
-        size: blob.size,
-        type: blob.type,
-      })
-
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const dataUrl = reader.result as string
-        if (!dataUrl || !dataUrl.includes(',')) {
-          console.error('[TileGenerationService] Invalid data URL:', {
-            dataUrl: dataUrl?.substring(0, 100),
-          })
-          reject(new Error('Invalid data URL from FileReader'))
-          return
-        }
-        // Remove the data:image/png;base64, prefix
-        const base64 = dataUrl.split(',')[1]
-        console.log('[TileGenerationService] Base64 conversion complete:', {
-          base64Length: base64?.length,
-          isValidLength: base64?.length > 0 && base64?.length % 4 === 0,
-        })
-        resolve(base64)
-      }
-      reader.onerror = e => {
-        console.error('[TileGenerationService] FileReader error:', e)
-        reject(new Error('FileReader error'))
-      }
-      reader.readAsDataURL(blob)
-    })
-  }
+  // Removed blobToBase64 - now handled on server
 
   /**
    * Generate a tile using Trigger.dev background task
@@ -166,39 +107,19 @@ export class TileGenerationService {
         right: tiles[`${x + 1},${y}`]?.image_filename,
       })
 
-      // Load neighbor tiles with their images
-      const [
-        upTile,
-        downTile,
-        leftTile,
-        rightTile,
-        topLeftTile,
-        topRightTile,
-        bottomLeftTile,
-        bottomRightTile,
-      ] = await Promise.all([
-        this.loadTileAsDataUrl(tiles[`${x},${y - 1}`], projectId),
-        this.loadTileAsDataUrl(tiles[`${x},${y + 1}`], projectId),
-        this.loadTileAsDataUrl(tiles[`${x - 1},${y}`], projectId),
-        this.loadTileAsDataUrl(tiles[`${x + 1},${y}`], projectId),
-        this.loadTileAsDataUrl(tiles[`${x - 1},${y - 1}`], projectId),
-        this.loadTileAsDataUrl(tiles[`${x + 1},${y - 1}`], projectId),
-        this.loadTileAsDataUrl(tiles[`${x - 1},${y + 1}`], projectId),
-        this.loadTileAsDataUrl(tiles[`${x + 1},${y + 1}`], projectId),
-      ])
-
+      // Build neighbor context metadata (URLs only)
       const neighbors = {
-        up: upTile,
-        down: downTile,
-        left: leftTile,
-        right: rightTile,
-        topLeft: topLeftTile,
-        topRight: topRightTile,
-        bottomLeft: bottomLeftTile,
-        bottomRight: bottomRightTile,
+        up: this.getTileImageUrl(tiles[`${x},${y - 1}`], projectId),
+        down: this.getTileImageUrl(tiles[`${x},${y + 1}`], projectId),
+        left: this.getTileImageUrl(tiles[`${x - 1},${y}`], projectId),
+        right: this.getTileImageUrl(tiles[`${x + 1},${y}`], projectId),
+        topLeft: this.getTileImageUrl(tiles[`${x - 1},${y - 1}`], projectId),
+        topRight: this.getTileImageUrl(tiles[`${x + 1},${y - 1}`], projectId),
+        bottomLeft: this.getTileImageUrl(tiles[`${x - 1},${y + 1}`], projectId),
+        bottomRight: this.getTileImageUrl(tiles[`${x + 1},${y + 1}`], projectId),
       }
 
-      // Check if we have any neighbors with images (direct neighbors are most important)
+      // Check if we have any neighbors with images
       const hasNeighbors = !!(
         neighbors.up?.imageUrl ||
         neighbors.down?.imageUrl ||
@@ -207,21 +128,9 @@ export class TileGenerationService {
       )
 
       const isFirstTile = !hasNeighbors
-      let contextImageBase64: string | undefined
 
-      // If we have neighbors, assemble context image
-      if (hasNeighbors) {
-        console.log('Assembling context image for follow-up tile generation')
-        const context: TileContext = {
-          targetX: x,
-          targetY: y,
-          neighbors,
-          allTiles: tiles,
-        }
-
-        const { imageBlob } = await assembleContextImage(context, 1024)
-        contextImageBase64 = await this.blobToBase64(imageBlob)
-        console.log('Context image assembled, size:', contextImageBase64.length)
+      if (!isFirstTile) {
+        console.log('Follow-up tile generation - neighbor URLs passing to server for assembly')
       } else {
         console.log('First tile generation - no neighbors, using style references')
       }
@@ -242,8 +151,8 @@ export class TileGenerationService {
           aiProvider,
           aiConfig,
           isFirstTile,
-          // Pass context image for follow-up tiles
-          ...(contextImageBase64 ? { contextImageBase64 } : {}),
+          // Pass neighbors for server-side assembly
+          neighbors,
           // Pass style references for first tile, otherwise API will fetch from project
           ...(styleReferenceUrls?.length ? { styleReferenceUrls } : {}),
         }),
@@ -346,7 +255,7 @@ export class TileGenerationService {
         // - 2s if progress is actively changing
         // - 5s if progress is stable but task is active
         // - 10s if progress has been stable for a while (likely waiting for external API)
-        let nextInterval = POLLING_INTERVALS.DEFAULT
+        let nextInterval: number = POLLING_INTERVALS.DEFAULT
         if (stableProgressCount === 0) {
           nextInterval = 2000 // Progress changing, poll faster
         } else if (stableProgressCount < 3) {

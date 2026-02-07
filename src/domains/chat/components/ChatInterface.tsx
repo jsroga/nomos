@@ -1,13 +1,15 @@
 'use client'
 
-import React from 'react'
-import { Card } from '@/components/ui/card'
+import React, { useState, useEffect, useCallback } from 'react'
 import { AgentLog } from './AgentLog'
 import { ChatInput } from './ChatInput'
 import { Message, AgentConfigMap, AgentQuestion, ThinkingMessagesConfig } from '../types'
 import { Button } from '@/components/ui/button'
-import { Activity } from 'lucide-react'
+import { Activity, FlaskConical, Loader2 } from 'lucide-react'
 import { MentionProvider, ProjectContext } from '../mentions/types'
+
+// Magic key for enabling eval mode
+const EVAL_MODE_KEY = 'STORYTELLER_EVAL_MODE'
 
 interface ChatInterfaceProps {
   title?: string
@@ -34,6 +36,22 @@ interface ChatInterfaceProps {
   thinkingAgent?: string | null
   /** Customizable thinking messages configuration */
   thinkingMessagesConfig?: ThinkingMessagesConfig
+  /** Real-time streaming tokens for activity visualization */
+  streamingTokens?: string
+  /** Admin mode - enables eval button without magic key */
+  isAdmin?: boolean
+  /** Current phase for activity display */
+  currentPhase?: string
+  /** Active operations for activity display */
+  activeOperations?: Array<{
+    id: string
+    type: string
+    label: string
+    startTime?: number
+    tool?: string
+  }>
+  /** Project ID for entity reference resolution */
+  projectId?: string
 
   // Custom renderers
   ActionComponent?: React.ComponentType<{
@@ -69,22 +87,100 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   projectContext,
   thinkingAgent,
   thinkingMessagesConfig,
+  streamingTokens,
+  isAdmin = false,
+  currentPhase,
+  activeOperations = [],
   ActionComponent,
   QuestionComponent,
+  projectId,
 }) => {
+  // Eval mode state - admins always have access
+  const [isEvalEnabled, setIsEvalEnabled] = useState(isAdmin)
+  const [isEvaluating, setIsEvaluating] = useState(false)
+  const [evalResult, setEvalResult] = useState<{
+    score: number
+    feedback: string
+    criteria: Record<string, { score: number; comment: string }>
+    confidentAIUrl?: string
+  } | null>(null)
+
+  // Check localStorage for eval mode key OR admin status
+  useEffect(() => {
+    const checkEvalMode = () => {
+      if (typeof window !== 'undefined') {
+        const evalKey = localStorage.getItem(EVAL_MODE_KEY)
+        // Admin always has eval enabled, or check localStorage
+        setIsEvalEnabled(isAdmin || evalKey === 'true' || evalKey === '1')
+      }
+    }
+    checkEvalMode()
+    // Listen for storage changes
+    window.addEventListener('storage', checkEvalMode)
+    return () => window.removeEventListener('storage', checkEvalMode)
+  }, [isAdmin])
+
+  // LLM-as-Judge evaluation function
+  const runEvaluation = useCallback(async () => {
+    if (messages.length === 0) return
+
+    setIsEvaluating(true)
+    setEvalResult(null)
+
+    try {
+      const response = await fetch('/api/evaluation/llm-judge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversation: messages.map(m => ({
+            role: m.type === 'human' ? 'user' : 'assistant',
+            content: m.content,
+            agentName: m.sender || m.name,
+            thinking: m.thinking || m.additional_kwargs?.thinking,
+          })),
+          criteria: [
+            'narrative_coherence',
+            'character_consistency',
+            'creative_quality',
+            'user_goal_alignment',
+            'pacing_and_structure',
+          ],
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Evaluation failed')
+      }
+
+      const result = await response.json()
+      setEvalResult(result)
+    } catch (error) {
+      console.error('Evaluation error:', error)
+      setEvalResult({
+        score: 0,
+        feedback: 'Evaluation failed. Please try again.',
+        criteria: {},
+      })
+    } finally {
+      setIsEvaluating(false)
+    }
+  }, [messages])
+
   return (
     <div className="flex flex-col h-full bg-background border-l border-border/50">
       {/* Header */}
       <div className="px-4 py-3 border-b bg-card/50 backdrop-blur-sm flex items-center justify-between sticky top-0 z-20 min-h-[56px]">
-        {headerContent ? headerContent : <div />}
-
-        {/* Activity Toggle with Title */}
         <div className="flex items-center gap-3">
+          {headerContent}
           {title && (
             <span className="text-xs font-mono text-muted-foreground uppercase tracking-widest">
               {title}
             </span>
           )}
+        </div>
+
+        {/* Activity Toggle + Eval Button */}
+        <div className="flex items-center gap-2">
           {onActivityToggle && (
             <Button
               variant={isActivityPanelOpen ? 'secondary' : 'ghost'}
@@ -106,8 +202,83 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               </span>
             </Button>
           )}
+
+          {/* Eval Button - Only visible when magic key is set */}
+          {isEvalEnabled && (
+            <Button
+              variant={evalResult ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={runEvaluation}
+              disabled={isEvaluating || messages.length === 0}
+              className="h-8 gap-2 text-xs font-medium border border-purple-500/40 hover:border-purple-500/60"
+              title="Run LLM-as-Judge evaluation on this conversation"
+            >
+              {isEvaluating ? (
+                <Loader2 size={14} className="animate-spin text-purple-400" />
+              ) : (
+                <FlaskConical size={14} className="text-purple-400" />
+              )}
+              <span className="text-purple-400">
+                {isEvaluating ? 'Evaluating...' : evalResult ? `Score: ${evalResult.score}/10` : 'Eval'}
+              </span>
+            </Button>
+          )}
         </div>
       </div>
+
+      {/* Eval Results Panel - Show when we have results */}
+      {isEvalEnabled && evalResult && (
+        <div className="px-4 py-3 border-b bg-purple-500/5 border-purple-500/20">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <FlaskConical size={16} className="text-purple-400" />
+              <span className="text-sm font-semibold text-purple-400">
+                {evalResult.confidentAIUrl ? 'Confident AI Evaluation' : 'LLM-as-Judge Evaluation'}
+              </span>
+              {evalResult.confidentAIUrl && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300">
+                  EQ-Bench • Mazur • Gilligan
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {evalResult.confidentAIUrl && (
+                <a
+                  href={evalResult.confidentAIUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-purple-400 hover:text-purple-300 underline"
+                >
+                  View Details →
+                </a>
+              )}
+              <button
+                onClick={() => setEvalResult(null)}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="col-span-2 p-2 rounded bg-background/50 border border-border/30">
+              <div className="font-medium text-foreground mb-1">Overall Score: {evalResult.score}/10</div>
+              <p className="text-muted-foreground">{evalResult.feedback}</p>
+            </div>
+            {Object.entries(evalResult.criteria).map(([key, value]) => (
+              <div key={key} className="p-2 rounded bg-background/30 border border-border/20">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-medium capitalize">{key.replace(/_/g, ' ')}</span>
+                  <span className={`font-mono ${value.score >= 7 ? 'text-green-400' : value.score >= 5 ? 'text-yellow-400' : 'text-red-400'}`}>
+                    {value.score}/10
+                  </span>
+                </div>
+                <p className="text-muted-foreground text-[10px]">{value.comment}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Messages Area */}
       <div className="flex-1 overflow-hidden relative">
@@ -123,8 +294,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             isSending={isSending}
             thinkingAgent={thinkingAgent}
             thinkingMessagesConfig={thinkingMessagesConfig}
+            streamingTokens={streamingTokens}
+            currentPhase={currentPhase}
+            activeOperations={activeOperations}
             ActionComponent={ActionComponent}
             QuestionComponent={QuestionComponent}
+            projectId={projectId}
           >
             {/* Children injected into log flow (streaming tokens, sections, etc) */}
             {children}

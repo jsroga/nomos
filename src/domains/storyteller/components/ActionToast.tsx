@@ -3,9 +3,9 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { ActionHistoryEntry } from '../actions/types'
-import { formatActionForDisplay } from '../actions/executor'
-import { X, Undo2, Check, AlertCircle, Loader2, Eye } from 'lucide-react'
+import { ActionHistoryEntry, AgentAction } from '../actions/types'
+import { formatActionForDisplay } from '../actions/formatters'
+import { X, Undo2, Check, Loader2, Eye } from 'lucide-react'
 
 interface ActionToastProps {
   entry: ActionHistoryEntry
@@ -176,9 +176,11 @@ export const ActionToastContainer: React.FC<ActionToastContainerProps> = ({
 interface ActionCommittedProps {
   entry: ActionHistoryEntry
   compact?: boolean
+  onUndo?: () => void
+  canUndo?: boolean
 }
 
-export const ActionCommitted: React.FC<ActionCommittedProps> = ({ entry, compact = false }) => {
+export const ActionCommitted: React.FC<ActionCommittedProps> = ({ entry, compact = false, onUndo, canUndo = false }) => {
   const [showPreview, setShowPreview] = useState(false)
   // Use 'committed' status for proper wording
   const display = formatActionForDisplay(entry.action, 'committed')
@@ -207,6 +209,14 @@ export const ActionCommitted: React.FC<ActionCommittedProps> = ({ entry, compact
           >
             {showPreview ? 'Hide' : 'JSON'}
           </button>
+          {canUndo && onUndo && (
+            <button
+              onClick={onUndo}
+              className="ml-1.5 px-1.5 py-0.5 rounded text-[9px] uppercase tracking-widest font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 transition-colors border border-amber-500/30"
+            >
+              Undo
+            </button>
+          )}
         </div>
         {showPreview && (
           <div className="mt-1 p-2 rounded bg-muted/30 border border-border/50 animate-in fade-in slide-in-from-top-1 duration-200">
@@ -262,6 +272,124 @@ export const ActionCommitted: React.FC<ActionCommittedProps> = ({ entry, compact
 // ACTION SUGGESTION - For manual approval
 // ============================================
 
+// ============================================
+// VISUAL JSON DIFF - For Review Mode
+// ============================================
+
+const VisualJsonDiff: React.FC<{
+  action: AgentAction
+  onClose: () => void
+}> = ({ action, onClose }) => {
+  // Extract relevant data based on tool type
+  const getDiffData = () => {
+    const payload = action.payload || {}
+
+    // 1. World Bible Updates
+    if (payload.updatedFields) {
+      return {
+        type: 'Update World Bible',
+        changes: payload.updatedFields,
+        isPartial: true
+      }
+    }
+
+    // 2. Beat Management
+    if (payload.beat) {
+      return {
+        type: 'Manage Beat',
+        changes: payload.beat,
+        isPartial: false // Usually a full object or significant chunk
+      }
+    }
+
+    // 3. Fallback
+    return {
+      type: 'Action Payload',
+      changes: payload,
+      isPartial: false
+    }
+  }
+
+  const { type, changes, isPartial } = getDiffData()
+
+  // Recursive renderer for diff highlighting
+  const renderValue = (key: string, value: any, depth = 0): React.ReactNode => {
+    const indent = '  '.repeat(depth)
+
+    if (value === null) return <span className="text-muted-foreground">null</span>
+    if (typeof value === 'boolean') return <span className="text-orange-400">{String(value)}</span>
+    if (typeof value === 'number') return <span className="text-cyan-400">{value}</span>
+    if (typeof value === 'string') return <span className="text-green-400">"{value}"</span>
+
+    if (Array.isArray(value)) {
+      if (value.length === 0) return <span className="text-muted-foreground">[]</span>
+      return (
+        <span>
+          <span className="text-muted-foreground">{'['}</span>
+          <div className="pl-4 border-l border-border/30 my-1">
+            {value.map((item, i) => (
+              <div key={i}>
+                {renderValue(String(i), item, depth + 1)}
+                {i < value.length - 1 && <span className="text-muted-foreground">,</span>}
+              </div>
+            ))}
+          </div>
+          <span className="text-muted-foreground">{']'}</span>
+        </span>
+      )
+    }
+
+    if (typeof value === 'object') {
+      const keys = Object.keys(value)
+      if (keys.length === 0) return <span className="text-muted-foreground">{'{}'}</span>
+      return (
+        <span>
+          <span className="text-muted-foreground">{'{'}</span>
+          <div className="pl-4 border-l border-border/30 my-1">
+            {keys.map((k, i) => (
+              <div key={k} className="flex font-mono text-[10px] leading-relaxed">
+                <span className="text-purple-400 mr-1">"{k}":</span>
+                {renderValue(k, value[k], depth + 1)}
+                {i < keys.length - 1 && <span className="text-muted-foreground">,</span>}
+              </div>
+            ))}
+          </div>
+          <span className="text-muted-foreground">{'}'}</span>
+        </span>
+      )
+    }
+
+    return <span>{String(value)}</span>
+  }
+
+  return (
+    <div className="mt-3 rounded border border-blue-500/20 bg-blue-500/5 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 bg-blue-500/10 border-b border-blue-500/20">
+        <div className="flex items-center gap-2">
+          <Eye className="w-3.5 h-3.5 text-blue-400" />
+          <span className="text-xs font-bold text-blue-400 uppercase tracking-widest">
+            Review Changes: {type}
+          </span>
+        </div>
+        <Button variant="ghost" size="icon" onClick={onClose} className="h-5 w-5 text-blue-400/60 hover:text-blue-400">
+          <X className="w-3 h-3" />
+        </Button>
+      </div>
+
+      <div className="p-3 overflow-x-auto max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-blue-500/20 scrollbar-track-transparent">
+        {isPartial && (
+          <div className="text-[10px] text-muted-foreground mb-2 italic px-1">
+            * Only showing modified fields
+          </div>
+        )}
+        <div className="font-mono text-[10px]">
+          {renderValue('root', changes)}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 interface ActionSuggestionProps {
   action: AgentAction
   agentName: string
@@ -280,8 +408,16 @@ export const ActionSuggestion: React.FC<ActionSuggestionProps> = ({
   isProcessing = false,
 }) => {
   const [showPreview, setShowPreview] = useState(false)
+  const [showDiff, setShowDiff] = useState(false)
+
   // Use 'pending' status for proper wording
   const display = formatActionForDisplay(action, 'pending')
+
+  // Intercept the onReview prop to toggle local diff view
+  const handleReviewToggle = () => {
+    setShowDiff(!showDiff)
+    if (onReview) onReview() // Call original handler just in case
+  }
 
   return (
     <div className="border border-amber-500/30 bg-amber-500/5 rounded-lg p-3 my-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -337,13 +473,18 @@ export const ActionSuggestion: React.FC<ActionSuggestionProps> = ({
 
             <Button
               size="sm"
-              variant="outline"
-              onClick={onReview}
+              variant={showDiff ? "secondary" : "outline"}
+              onClick={handleReviewToggle}
               disabled={isProcessing}
-              className="h-7 text-[10px] uppercase tracking-widest bg-blue-600/10 border-blue-500/30 text-blue-400 hover:bg-blue-600/20 transition-all font-bold px-3"
+              className={cn(
+                "h-7 text-[10px] uppercase tracking-widest transition-all font-bold px-3",
+                showDiff
+                  ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
+                  : "bg-blue-600/10 border-blue-500/30 text-blue-400 hover:bg-blue-600/20"
+              )}
             >
               <Eye className="w-3 h-3 mr-1.5" />
-              Review
+              {showDiff ? 'Close Review' : 'Review'}
             </Button>
 
             <Button
@@ -357,9 +498,14 @@ export const ActionSuggestion: React.FC<ActionSuggestionProps> = ({
               Discard
             </Button>
           </div>
+
+          {/* Visual JSON Diff Area - Expandable */}
+          {showDiff && (
+            <VisualJsonDiff action={action} onClose={() => setShowDiff(false)} />
+          )}
+
         </div>
       </div>
     </div>
   )
 }
-

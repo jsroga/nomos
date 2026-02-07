@@ -13,7 +13,6 @@
 
 import { DynamicStructuredTool } from '@langchain/core/tools'
 import { z } from 'zod'
-import { AudienceFitData } from '../types'
 
 /**
  * Comprehensive audience psychographic profiles

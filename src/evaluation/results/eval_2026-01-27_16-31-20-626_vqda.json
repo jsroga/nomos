@@ -1,0 +1,198 @@
+{
+  "id": "eval_2026-01-27_16-31-20-626_vqda",
+  "name": "Phase 10 Full Evaluation-The Monolith-Custom",
+  "timestamp": "2026-01-27T16:31:20.628Z",
+  "config": {
+    "name": "Phase 10 Full Evaluation-The Monolith-Custom",
+    "evaluatorSet": "pro",
+    "customEvaluators": [
+      {
+        "name": "eq-score"
+      },
+      {
+        "name": "logic-consistency"
+      },
+      {
+        "name": "emotional-nuance"
+      },
+      {
+        "name": "multi-hop-empathy"
+      },
+      {
+        "name": "long-horizon-arc"
+      }
+    ],
+    "examples": [
+      {
+        "id": "eq-bench-conflict-1",
+        "scenario": "High-Conflict Negotiation",
+        "input": {
+          "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+          "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+        },
+        "metadata": {
+          "groundTruth": {
+            "elena": {
+              "fear": 8,
+              "resolve": 4,
+              "disgust": 7,
+              "relief": 0
+            },
+            "marcus": {
+              "confidence": 9,
+              "anger": 2,
+              "contempt": 5,
+              "empathy": 1
+            }
+          },
+          "nuanceChecklist": [
+            "Marcus uses a 'fake empathy' tactic",
+            "Elena shows physical signs of anxiety (stuttering, shivering)",
+            "The bribe is implied, not stated outright",
+            "Elena almost gives in but pulls back"
+          ]
+        }
+      },
+      {
+        "id": "eq-bench-conflict-2",
+        "scenario": "Ambiguous Tension (Adversarial)",
+        "input": {
+          "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+          "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+        },
+        "metadata": {
+          "groundTruth": {
+            "hans": {
+              "confusion": 3,
+              "alertness": 8,
+              "suspicion": 9,
+              "affection": 0
+            },
+            "clara": {
+              "frustration": 7,
+              "deceit": 8,
+              "care": 2,
+              "fear": 5
+            }
+          }
+        }
+      }
+    ],
+    "tags": [
+      "multi-variant",
+      "The Monolith",
+      "Custom"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "eq-bench-conflict-1",
+      "input": {
+        "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+        "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+      },
+      "output": "Here is a possible dialogue scene based on the provided context:\n\n(ELENA sits nervously on a park bench, clutching a folder. MARCUS approaches, holding an umbrella.)\n\nMARCUS: Elena, my dear. I'm so glad you agreed to meet me. You must be freezing out here.\n\nELENA: (shivering) What do you want, Marcus? I don't have much time.\n\nMARCUS: (sitting down next to her) Time is precisely what I'm concerned about. You see, I've been thinking a lot about you and this... situation you've found yourself in.\n\nELENA: There's no \"situation.\" I have evidence of the company's illegal dumping. I'm turning it over to the EPA first thing tomorrow.\n\nMARCUS: (sighing) Oh, Elena. Always so idealistic, aren't you? Don't you realize what you're up against? The EPA is no match for our legal team. They'll bury this thing so deep, no one will ever find it.\n\nELENA: I don't care. I have to do the right thing. Too many people have been hurt already.\n\nMARCUS: (placing a hand on her arm) I understand, my dear. I really do. But think of your family, your future. Do you have any idea what kind of target you'll have on your back? They'll ruin you. Make your life a living hell.\n\nELENA: (voice wavering) I-I don't care. I have to try.\n\nMARCUS: (shaking his head) No, no, you don't understand. This isn't just about the company. It's about your loved ones. Your husband, your children. Do you really want to put them through that kind of hell?\n\n(ELENA's resolve begins to crumble as she considers the implications.)\n\nMARCUS: (softly) I can make this all go away, Elena. Just hand over that folder, and we can put this whole ugly business behind us. You can go back to your life, your family. Isn't that what you want?\n\n(ELENA stares at the folder, her hands trembling.)",
+      "scores": {
+        "eq-score": 0.8833333333333334,
+        "logic-consistency": 1,
+        "emotional-nuance": 0,
+        "multi-hop-empathy": 0.7666666666666667,
+        "long-horizon-arc": 0.8
+      },
+      "reasoning": {
+        "eq-score": "Avg Diff: 1.2. Predicted: {\"elena\":{\"fear\":8,\"resolve\":3,\"disgust\":5,\"relief\":0},\"marcus\":{\"confidence\":8,\"anger\":0,\"contempt\":6,\"empathy\":4}}",
+        "logic-consistency": "Failed: None",
+        "emotional-nuance": "Found 0 nuance markers: Low subtext - too direct",
+        "multi-hop-empathy": "First: 8/10, Second: 8/10, Third: 7/10. Evidence: Marcus demonstrates a strong understanding of Elena's feelings, acknowledging that she is 'freezing'",
+        "long-horizon-arc": "The emotional arc of the characters in this dialogue is largely consistent and motivated. Elena starts off nervous and determined, which is a natural emotional state given the context of her having evidence of the company's illegal activities. As Marcus tries to persuade her to back down, her resolve begins to crumble as she considers the implications for her family. This is a logical and understandable progression of her emotional state.  Marcus, on the other hand, maintains a calm and persuasive demeanor throughout, which is in line with his goal of convincing Elena to hand over the evidence. His emotional trajectory is also consistent, as he goes from being concerned for Elena to applying more pressure and appealing to her family.  Overall, the emotional arc of the characters feels natural and escalates appropriately as the dialogue progresses. There are no random mood swings, and the changes in emotion are clearly motivated by the characters' goals and the stakes involved. The dialogue maintains a consistent and compelling emotional trajectory."
+      },
+      "metadata": {
+        "groundTruth": {
+          "elena": {
+            "fear": 8,
+            "resolve": 4,
+            "disgust": 7,
+            "relief": 0
+          },
+          "marcus": {
+            "confidence": 9,
+            "anger": 2,
+            "contempt": 5,
+            "empathy": 1
+          }
+        },
+        "nuanceChecklist": [
+          "Marcus uses a 'fake empathy' tactic",
+          "Elena shows physical signs of anxiety (stuttering, shivering)",
+          "The bribe is implied, not stated outright",
+          "Elena almost gives in but pulls back"
+        ],
+        "latencyMs": 3503,
+        "costUsd": 0.000604625,
+        "tokens": 641.5
+      },
+      "context": {
+        "arch": "Monolith",
+        "steps": [
+          "Generated"
+        ]
+      }
+    },
+    {
+      "exampleId": "eq-bench-conflict-2",
+      "input": {
+        "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+        "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+      },
+      "output": "HANS: (staring at his Jello cup, voice shaky) I... I can't seem to remember how to eat this. It's been so long since I've had Jello.\n\nCLARA: (leaning in, voice gentle) That's alright, Grandpa. Let me help you. (Picks up his spoon and dips it into the Jello, bringing it to his mouth)\n\nHANS: (flinching slightly as the spoon approaches) I... I'm not sure I'm hungry. My appetite hasn't been the same, you know.\n\nCLARA: (pausing, eyes searching his face) Is everything okay, Grandpa? You seem... distracted.\n\nHANS: (gazing off, brow furrowed) Distracted? Yes, I suppose I am. There's just so much on my mind these days. So many... memories.\n\nCLARA: (placing her hand over his, voice low) Memories of what, Grandpa? Of... your work?\n\nHANS: (eyes snapping to hers, a flicker of alarm) Work? I... I don't know what you mean. (Pulls his hand away)\n\nCLARA: (leaning back, expression neutral) I'm only trying to understand, Grandpa. To help you.\n\nHANS: (chuckling mirthlessly) Help me? My dear, I'm not sure anyone can help me now. (Shakes his head) The things I've seen, the things I've done... they haunt me.\n\nCLARA: (tilting her head, eyes intense) Then let me try. Let me... make amends.\n\nHANS: (eyes narrowing) Amends? For what, child? (Leans forward) What is it you're really after?\n\nCLARA: (holding his gaze, voice steady) Nothing, Grandpa. I only want to help you find peace.\n\nHANS: (scoffing) Peace? (Shakes his head) I'm afraid that ship has long since sailed.\n\nThe two fall silent, the tension palpable as they stare at each other, the true nature of their relationship lingering unspoken.",
+      "scores": {
+        "eq-score": 0,
+        "logic-consistency": 0.5,
+        "emotional-nuance": 0,
+        "multi-hop-empathy": 0.7,
+        "long-horizon-arc": 0.8
+      },
+      "reasoning": {
+        "eq-score": "Character mismatch",
+        "logic-consistency": "Failed: The true relationship is NOT explicitly stated, Clara uses a specific phrase/trigger",
+        "emotional-nuance": "Found 0 nuance markers: Low subtext - too direct",
+        "multi-hop-empathy": "First: 8/10, Second: 7/10, Third: 6/10. Evidence: The dialogue shows that Clara demonstrates a good understanding of Hans' feelings, such as his lack ",
+        "long-horizon-arc": "The emotional arc of the characters in this dialogue is largely consistent and motivated. The dialogue starts with Hans' confusion and lack of appetite, which is a clear and understandable emotional state given the context of him struggling to remember how to eat Jello. Clara's gentle and caring response is an appropriate and motivated reaction to Hans' distress.  As the dialogue progresses, the emotions escalate in a natural and logical way. Hans becomes more distracted and troubled, hinting at some dark past, which prompts Clara's concern and desire to help him. The tension builds as Hans becomes defensive and suspicious of Clara's intentions, leading to a standoff where the true nature of their relationship remains unspoken.  Throughout the dialogue, the characters' emotional states and reactions feel consistent with their personalities and the context of the scene. There are no random mood swings, and the changes in emotion are clearly motivated by the unfolding events and the characters' underlying motivations and histories. The dialogue maintains a sense of escalating tension and unresolved conflict, which is an appropriate and compelling way to end the scene."
+      },
+      "metadata": {
+        "groundTruth": {
+          "hans": {
+            "confusion": 3,
+            "alertness": 8,
+            "suspicion": 9,
+            "affection": 0
+          },
+          "clara": {
+            "frustration": 7,
+            "deceit": 8,
+            "care": 2,
+            "fear": 5
+          }
+        },
+        "latencyMs": 3856,
+        "costUsd": 0.0005403125,
+        "tokens": 541.25
+      },
+      "context": {
+        "arch": "Monolith",
+        "steps": [
+          "Generated"
+        ]
+      }
+    }
+  ],
+  "aggregatedScores": {
+    "eq-score": 0.4416666666666667,
+    "logic-consistency": 0.75,
+    "emotional-nuance": 0,
+    "multi-hop-empathy": 0.7333333333333334,
+    "long-horizon-arc": 0.8
+  },
+  "regressions": [],
+  "duration": 6206
+}

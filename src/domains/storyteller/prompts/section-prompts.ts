@@ -1,15 +1,11 @@
 import { PROMPT_IDS } from '../config/storyteller-config'
+import { BibleSection } from '../enums'
 
-export type BibleSection =
-  | 'worldDescription'
-  | 'worldRules'
-  | 'factions'
-  | 'inspirations'
-  | 'plotTwists'
-  | 'episodeRoadmap'
-  | 'keyCharacters'
-  | 'soundtracks'
-  | 'full'
+// Re-export for backwards compatibility
+export { BibleSection }
+
+// Type alias for backwards compatibility
+export type BibleSectionType = `${BibleSection}`
 
 export interface SectionDetection {
   section: BibleSection
@@ -17,19 +13,21 @@ export interface SectionDetection {
 }
 
 export const SECTION_TO_PROMPT_ID: Record<BibleSection, keyof typeof PROMPT_IDS> = {
-  worldDescription: 'sectionWorldDescription',
-  worldRules: 'sectionWorldRules',
-  factions: 'sectionFactions',
-  inspirations: 'sectionInspirations',
-  plotTwists: 'sectionPlotTwists',
-  episodeRoadmap: 'sectionEpisodeRoadmap',
-  keyCharacters: 'sectionKeyCharacters',
-  soundtracks: 'sectionSoundtracks',
-  full: 'premiseArchitect',
+  [BibleSection.WORLD_DESCRIPTION]: 'sectionWorldDescription',
+  [BibleSection.WORLD_RULES]: 'sectionWorldRules',
+  [BibleSection.FACTIONS]: 'sectionFactions',
+  [BibleSection.INSPIRATIONS]: 'sectionInspirations',
+  [BibleSection.PLOT_TWISTS]: 'sectionPlotTwists',
+  [BibleSection.EPISODE_ROADMAP]: 'sectionEpisodeRoadmap',
+  [BibleSection.KEY_CHARACTERS]: 'sectionKeyCharacters',
+  [BibleSection.SOUNDTRACKS]: 'sectionSoundtracks',
+  [BibleSection.MOODBOARD]: 'premiseArchitect', // Moodboard uses external service, not prompts
+  [BibleSection.EPISODE_PREMISE]: 'premiseArchitect', // Uses same prompt as full for now
+  [BibleSection.FULL]: 'premiseArchitect',
 }
 
 export const SECTION_PROMPTS: Record<BibleSection, string> = {
-  worldDescription: `
+  [BibleSection.WORLD_DESCRIPTION]: `
 ## SECTION UPDATE: WORLD DESCRIPTION
 
 You are updating ONLY the World Description section of an existing bible.
@@ -46,7 +44,7 @@ Respond with:
 }
 `,
 
-  worldRules: `
+  [BibleSection.WORLD_RULES]: `
 ## SECTION UPDATE: WORLD RULES (Laws of the World)
 
 You are updating ONLY the World Rules section.
@@ -73,7 +71,7 @@ Respond with:
 }
 `,
 
-  factions: `
+  [BibleSection.FACTIONS]: `
 ## SECTION UPDATE: FACTIONS (Power & Factions)
 
 You are updating ONLY the Factions section.
@@ -98,7 +96,7 @@ Respond with:
 }
 `,
 
-  inspirations: `
+  [BibleSection.INSPIRATIONS]: `
 ## SECTION UPDATE: INSPIRATIONS
 
 You are updating ONLY the Inspirations section.
@@ -130,7 +128,7 @@ Respond with:
 }
 `,
 
-  plotTwists: `
+  [BibleSection.PLOT_TWISTS]: `
 ## SECTION UPDATE: PLOT TWISTS
 
 You are generating/updating plot twists.
@@ -151,7 +149,7 @@ Respond with:
 }
 `,
 
-  episodeRoadmap: `
+  [BibleSection.EPISODE_ROADMAP]: `
 ## SECTION UPDATE: EPISODE ROADMAP (Chain-of-Thought)
 
 You are an Elite TV Showrunner breaking a season for a premium network (HBO/Netflix).
@@ -213,7 +211,7 @@ Respond with:
 }
 `,
 
-  keyCharacters: `
+  [BibleSection.KEY_CHARACTERS]: `
 ## SECTION UPDATE: KEY CHARACTERS
 
 You are updating ONLY the Key Characters section.
@@ -237,11 +235,13 @@ Respond with:
 }
 `,
 
-  soundtracks: `
+  [BibleSection.SOUNDTRACKS]: `
 ## SECTION UPDATE: SOUNDTRACKS
 
 You are suggesting NEW soundtracks for this world.
-**IMPORTANT: Generate FRESH song suggestions. Do NOT repeat any tracks that may have been suggested before.**
+
+**CRITICAL: You MUST call the update_world_bible TOOL to save the soundtracks.**
+**DO NOT just respond with text or JSON - you MUST USE THE TOOL.**
 
 Requirements:
 - Suggest 3-5 REAL songs with actual YouTube URLs
@@ -249,28 +249,26 @@ Requirements:
 - Each song must be different from any previously suggested tracks
 - Include variety in artists and moods
 
-**CRITICAL: You MUST respond with ONLY valid JSON. No prose, no explanations outside the JSON structure.**
-**Do NOT describe the songs in a text list. ONLY return the JSON object below.**
+**MANDATORY TOOL CALL:**
+You MUST call \`update_world_bible\` with these parameters:
+- projectId: Use the projectId from SYSTEM CONTEXT
+- soundtracks: Array of track objects with title, artist, youtubeUrl, mood
 
-You MUST respond with this EXACT JSON structure:
-{
-  "message": "Brief 1-line summary of music choices",
-  "actions": [{
-    "type": "UPDATE_SOUNDTRACKS",
-    "payload": {
-      "soundtracks": [
-        { "title": "Song Title", "artist": "Artist Name", "youtubeUrl": "https://youtube.com/watch?v=...", "mood": "Eerie/Upbeat/etc" }
-      ],
-      "mergeMode": "replace"
-    }
-  }],
-  "confidence": 0.9
-}
+Example tool call:
+update_world_bible({
+  projectId: "<project-id>",
+  soundtracks: [
+    { "title": "Time", "artist": "Hans Zimmer", "youtubeUrl": "https://www.youtube.com/watch?v=RxabLA7UQ9k", "mood": "epic, haunting" },
+    { "title": "Lux Aeterna", "artist": "Clint Mansell", "youtubeUrl": "https://www.youtube.com/watch?v=bbS-Zhz31CA", "mood": "intense, building" }
+  ]
+})
 
-RESPOND WITH ONLY THIS JSON. NO OTHER TEXT.
+After calling the tool, respond with a brief confirmation of the tracks you selected.
 `,
 
-  full: '', // Uses the standard PREMISE_ARCHITECT_SYSTEM_PROMPT
+  [BibleSection.MOODBOARD]: '', // Moodboard is generated via external service (Midjourney/Gemini)
+  [BibleSection.EPISODE_PREMISE]: '', // Uses premise architect
+  [BibleSection.FULL]: '', // Uses the standard PREMISE_ARCHITECT_SYSTEM_PROMPT
 }
 
 export const PREMISE_ARCHITECT_SYSTEM_PROMPT = `

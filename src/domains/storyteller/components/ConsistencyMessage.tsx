@@ -218,4 +218,3 @@ const InconsistencyCard: React.FC<{
     </div>
   )
 }
-

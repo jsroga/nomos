@@ -1,4 +1,5 @@
 <!-- TRIGGER.DEV advanced-tasks START -->
+
 # Trigger.dev Advanced Tasks (v4)
 
 **Advanced patterns and features for writing tasks**
@@ -6,28 +7,28 @@
 ## Tags & Organization
 
 ```ts
-import { task, tags } from "@trigger.dev/sdk";
+import { task, tags } from '@trigger.dev/sdk'
 
 export const processUser = task({
-  id: "process-user",
+  id: 'process-user',
   run: async (payload: { userId: string; orgId: string }, { ctx }) => {
     // Add tags during execution
-    await tags.add(`user_${payload.userId}`);
-    await tags.add(`org_${payload.orgId}`);
+    await tags.add(`user_${payload.userId}`)
+    await tags.add(`org_${payload.orgId}`)
 
-    return { processed: true };
+    return { processed: true }
   },
-});
+})
 
 // Trigger with tags
 await processUser.trigger(
-  { userId: "123", orgId: "abc" },
-  { tags: ["priority", "user_123", "org_abc"] } // Max 10 tags per run
-);
+  { userId: '123', orgId: 'abc' },
+  { tags: ['priority', 'user_123', 'org_abc'] } // Max 10 tags per run
+)
 
 // Subscribe to tagged runs
-for await (const run of runs.subscribeToRunsWithTag("user_123")) {
-  console.log(`User task ${run.id}: ${run.status}`);
+for await (const run of runs.subscribeToRunsWithTag('user_123')) {
+  console.log(`User task ${run.id}: ${run.status}`)
 }
 ```
 
@@ -49,60 +50,60 @@ Enhanced batch triggering with larger payloads and streaming ingestion.
 
 ### Rate Limiting (per environment)
 
-| Tier | Bucket Size | Refill Rate |
-|------|-------------|-------------|
-| Free | 1,200 runs | 100 runs/10 sec |
-| Hobby | 5,000 runs | 500 runs/5 sec |
-| Pro | 5,000 runs | 500 runs/5 sec |
+| Tier  | Bucket Size | Refill Rate     |
+| ----- | ----------- | --------------- |
+| Free  | 1,200 runs  | 100 runs/10 sec |
+| Hobby | 5,000 runs  | 500 runs/5 sec  |
+| Pro   | 5,000 runs  | 500 runs/5 sec  |
 
 ### Concurrent Batch Processing
 
-| Tier | Concurrent Batches |
-|------|-------------------|
-| Free | 1 |
-| Hobby | 10 |
-| Pro | 10 |
+| Tier  | Concurrent Batches |
+| ----- | ------------------ |
+| Free  | 1                  |
+| Hobby | 10                 |
+| Pro   | 10                 |
 
 ### Usage
 
 ```ts
-import { myTask } from "./trigger/myTask";
+import { myTask } from './trigger/myTask'
 
 // Basic batch trigger (up to 1,000 items)
 const runs = await myTask.batchTrigger([
-  { payload: { userId: "user-1" } },
-  { payload: { userId: "user-2" } },
-  { payload: { userId: "user-3" } },
-]);
+  { payload: { userId: 'user-1' } },
+  { payload: { userId: 'user-2' } },
+  { payload: { userId: 'user-3' } },
+])
 
 // Batch trigger with wait
 const results = await myTask.batchTriggerAndWait([
-  { payload: { userId: "user-1" } },
-  { payload: { userId: "user-2" } },
-]);
+  { payload: { userId: 'user-1' } },
+  { payload: { userId: 'user-2' } },
+])
 
 for (const result of results) {
   if (result.ok) {
-    console.log("Result:", result.output);
+    console.log('Result:', result.output)
   }
 }
 
 // With per-item options
 const batchHandle = await myTask.batchTrigger([
   {
-    payload: { userId: "123" },
+    payload: { userId: '123' },
     options: {
-      idempotencyKey: "user-123-batch",
-      tags: ["priority"],
+      idempotencyKey: 'user-123-batch',
+      tags: ['priority'],
     },
   },
   {
-    payload: { userId: "456" },
+    payload: { userId: '456' },
     options: {
-      idempotencyKey: "user-456-batch",
+      idempotencyKey: 'user-456-batch',
     },
   },
-]);
+])
 ```
 
 ## Debouncing
@@ -120,14 +121,14 @@ Consolidate multiple triggers into a single execution by debouncing task runs wi
 
 ```ts
 await myTask.trigger(
-  { userId: "123" },
+  { userId: '123' },
   {
     debounce: {
-      key: "user-123-update",  // Unique identifier for debounce group
-      delay: "5s",              // Wait duration ("5s", "1m", or milliseconds)
+      key: 'user-123-update', // Unique identifier for debounce group
+      delay: '5s', // Wait duration ("5s", "1m", or milliseconds)
     },
   }
-);
+)
 ```
 
 ### Execution Modes
@@ -136,14 +137,20 @@ await myTask.trigger(
 
 ```ts
 // First trigger sets the payload
-await myTask.trigger({ action: "first" }, {
-  debounce: { key: "my-key", delay: "10s" }
-});
+await myTask.trigger(
+  { action: 'first' },
+  {
+    debounce: { key: 'my-key', delay: '10s' },
+  }
+)
 
 // Second trigger only reschedules - payload remains "first"
-await myTask.trigger({ action: "second" }, {
-  debounce: { key: "my-key", delay: "10s" }
-});
+await myTask.trigger(
+  { action: 'second' },
+  {
+    debounce: { key: 'my-key', delay: '10s' },
+  }
+)
 // Task executes with { action: "first" }
 ```
 
@@ -151,18 +158,19 @@ await myTask.trigger({ action: "second" }, {
 
 ```ts
 await myTask.trigger(
-  { data: "latest-value" },
+  { data: 'latest-value' },
   {
     debounce: {
-      key: "trailing-example",
-      delay: "10s",
-      mode: "trailing",
+      key: 'trailing-example',
+      delay: '10s',
+      mode: 'trailing',
     },
   }
-);
+)
 ```
 
 In trailing mode, these options update with each trigger:
+
 - `payload` — task input data
 - `metadata` — run metadata
 - `tags` — run tags (replaces existing)
@@ -179,26 +187,26 @@ In trailing mode, these options update with each trigger:
 ## Concurrency & Queues
 
 ```ts
-import { task, queue } from "@trigger.dev/sdk";
+import { task, queue } from '@trigger.dev/sdk'
 
 // Shared queue for related tasks
 const emailQueue = queue({
-  name: "email-processing",
+  name: 'email-processing',
   concurrencyLimit: 5, // Max 5 emails processing simultaneously
-});
+})
 
 // Task-level concurrency
 export const oneAtATime = task({
-  id: "sequential-task",
+  id: 'sequential-task',
   queue: { concurrencyLimit: 1 }, // Process one at a time
-  run: async (payload) => {
+  run: async payload => {
     // Critical section - only one instance runs
   },
-});
+})
 
 // Per-user concurrency
 export const processUserData = task({
-  id: "process-user-data",
+  id: 'process-user-data',
   run: async (payload: { userId: string }) => {
     // Override queue with user-specific concurrency
     await childTask.trigger(payload, {
@@ -206,26 +214,26 @@ export const processUserData = task({
         name: `user-${payload.userId}`,
         concurrencyLimit: 2,
       },
-    });
+    })
   },
-});
+})
 
 export const emailTask = task({
-  id: "send-email",
+  id: 'send-email',
   queue: emailQueue, // Use shared queue
   run: async (payload: { to: string }) => {
     // Send email logic
   },
-});
+})
 ```
 
 ## Error Handling & Retries
 
 ```ts
-import { task, retry, AbortTaskRunError } from "@trigger.dev/sdk";
+import { task, retry, AbortTaskRunError } from '@trigger.dev/sdk'
 
 export const resilientTask = task({
-  id: "resilient-task",
+  id: 'resilient-task',
   retry: {
     maxAttempts: 10,
     factor: 1.8, // Exponential backoff multiplier
@@ -235,62 +243,62 @@ export const resilientTask = task({
   },
   catchError: async ({ error, ctx }) => {
     // Custom error handling
-    if (error.code === "FATAL_ERROR") {
-      throw new AbortTaskRunError("Cannot retry this error");
+    if (error.code === 'FATAL_ERROR') {
+      throw new AbortTaskRunError('Cannot retry this error')
     }
 
     // Log error details
-    console.error(`Task ${ctx.task.id} failed:`, error);
+    console.error(`Task ${ctx.task.id} failed:`, error)
 
     // Allow retry by returning nothing
-    return { retryAt: new Date(Date.now() + 60000) }; // Retry in 1 minute
+    return { retryAt: new Date(Date.now() + 60000) } // Retry in 1 minute
   },
-  run: async (payload) => {
+  run: async payload => {
     // Retry specific operations
     const result = await retry.onThrow(
       async () => {
-        return await unstableApiCall(payload);
+        return await unstableApiCall(payload)
       },
       { maxAttempts: 3 }
-    );
+    )
 
     // Conditional HTTP retries
-    const response = await retry.fetch("https://api.example.com", {
+    const response = await retry.fetch('https://api.example.com', {
       retry: {
         maxAttempts: 5,
         condition: (response, error) => {
-          return response?.status === 429 || response?.status >= 500;
+          return response?.status === 429 || response?.status >= 500
         },
       },
-    });
+    })
 
-    return result;
+    return result
   },
-});
+})
 ```
 
 ## Machines & Performance
 
 ```ts
 export const heavyTask = task({
-  id: "heavy-computation",
-  machine: { preset: "large-2x" }, // 8 vCPU, 16 GB RAM
+  id: 'heavy-computation',
+  machine: { preset: 'large-2x' }, // 8 vCPU, 16 GB RAM
   maxDuration: 1800, // 30 minutes timeout
   run: async (payload, { ctx }) => {
     // Resource-intensive computation
-    if (ctx.machine.preset === "large-2x") {
+    if (ctx.machine.preset === 'large-2x') {
       // Use all available cores
-      return await parallelProcessing(payload);
+      return await parallelProcessing(payload)
     }
 
-    return await standardProcessing(payload);
+    return await standardProcessing(payload)
   },
-});
+})
 
 // Override machine when triggering
 await heavyTask.trigger(payload, {
-  machine: { preset: "medium-1x" }, // Override for this run
-});
+  machine: { preset: 'medium-1x' }, // Override for this run
+})
 ```
 
 **Machine Presets:**
@@ -306,140 +314,140 @@ await heavyTask.trigger(payload, {
 ## Idempotency
 
 ```ts
-import { task, idempotencyKeys } from "@trigger.dev/sdk";
+import { task, idempotencyKeys } from '@trigger.dev/sdk'
 
 export const paymentTask = task({
-  id: "process-payment",
+  id: 'process-payment',
   retry: {
     maxAttempts: 3,
   },
   run: async (payload: { orderId: string; amount: number }) => {
     // Automatically scoped to this task run, so if the task is retried, the idempotency key will be the same
-    const idempotencyKey = await idempotencyKeys.create(`payment-${payload.orderId}`);
+    const idempotencyKey = await idempotencyKeys.create(`payment-${payload.orderId}`)
 
     // Ensure payment is processed only once
     await chargeCustomer.trigger(payload, {
       idempotencyKey,
-      idempotencyKeyTTL: "24h", // Key expires in 24 hours
-    });
+      idempotencyKeyTTL: '24h', // Key expires in 24 hours
+    })
   },
-});
+})
 
 // Payload-based idempotency
-import { createHash } from "node:crypto";
+import { createHash } from 'node:crypto'
 
 function createPayloadHash(payload: any): string {
-  const hash = createHash("sha256");
-  hash.update(JSON.stringify(payload));
-  return hash.digest("hex");
+  const hash = createHash('sha256')
+  hash.update(JSON.stringify(payload))
+  return hash.digest('hex')
 }
 
 export const deduplicatedTask = task({
-  id: "deduplicated-task",
-  run: async (payload) => {
-    const payloadHash = createPayloadHash(payload);
-    const idempotencyKey = await idempotencyKeys.create(payloadHash);
+  id: 'deduplicated-task',
+  run: async payload => {
+    const payloadHash = createPayloadHash(payload)
+    const idempotencyKey = await idempotencyKeys.create(payloadHash)
 
-    await processData.trigger(payload, { idempotencyKey });
+    await processData.trigger(payload, { idempotencyKey })
   },
-});
+})
 ```
 
 ## Metadata & Progress Tracking
 
 ```ts
-import { task, metadata } from "@trigger.dev/sdk";
+import { task, metadata } from '@trigger.dev/sdk'
 
 export const batchProcessor = task({
-  id: "batch-processor",
+  id: 'batch-processor',
   run: async (payload: { items: any[] }, { ctx }) => {
-    const totalItems = payload.items.length;
+    const totalItems = payload.items.length
 
     // Initialize progress metadata
     metadata
-      .set("progress", 0)
-      .set("totalItems", totalItems)
-      .set("processedItems", 0)
-      .set("status", "starting");
+      .set('progress', 0)
+      .set('totalItems', totalItems)
+      .set('processedItems', 0)
+      .set('status', 'starting')
 
-    const results = [];
+    const results = []
 
     for (let i = 0; i < payload.items.length; i++) {
-      const item = payload.items[i];
+      const item = payload.items[i]
 
       // Process item
-      const result = await processItem(item);
-      results.push(result);
+      const result = await processItem(item)
+      results.push(result)
 
       // Update progress
-      const progress = ((i + 1) / totalItems) * 100;
+      const progress = ((i + 1) / totalItems) * 100
       metadata
-        .set("progress", progress)
-        .increment("processedItems", 1)
-        .append("logs", `Processed item ${i + 1}/${totalItems}`)
-        .set("currentItem", item.id);
+        .set('progress', progress)
+        .increment('processedItems', 1)
+        .append('logs', `Processed item ${i + 1}/${totalItems}`)
+        .set('currentItem', item.id)
     }
 
     // Final status
-    metadata.set("status", "completed");
+    metadata.set('status', 'completed')
 
-    return { results, totalProcessed: results.length };
+    return { results, totalProcessed: results.length }
   },
-});
+})
 
 // Update parent metadata from child task
 export const childTask = task({
-  id: "child-task",
+  id: 'child-task',
   run: async (payload, { ctx }) => {
     // Update parent task metadata
-    metadata.parent.set("childStatus", "processing");
-    metadata.root.increment("childrenCompleted", 1);
+    metadata.parent.set('childStatus', 'processing')
+    metadata.root.increment('childrenCompleted', 1)
 
-    return { processed: true };
+    return { processed: true }
   },
-});
+})
 ```
 
 ## Logging & Tracing
 
 ```ts
-import { task, logger } from "@trigger.dev/sdk";
+import { task, logger } from '@trigger.dev/sdk'
 
 export const tracedTask = task({
-  id: "traced-task",
+  id: 'traced-task',
   run: async (payload, { ctx }) => {
-    logger.info("Task started", { userId: payload.userId });
+    logger.info('Task started', { userId: payload.userId })
 
     // Custom trace with attributes
     const user = await logger.trace(
-      "fetch-user",
-      async (span) => {
-        span.setAttribute("user.id", payload.userId);
-        span.setAttribute("operation", "database-fetch");
+      'fetch-user',
+      async span => {
+        span.setAttribute('user.id', payload.userId)
+        span.setAttribute('operation', 'database-fetch')
 
-        const userData = await database.findUser(payload.userId);
-        span.setAttribute("user.found", !!userData);
+        const userData = await database.findUser(payload.userId)
+        span.setAttribute('user.found', !!userData)
 
-        return userData;
+        return userData
       },
       { userId: payload.userId }
-    );
+    )
 
-    logger.debug("User fetched", { user: user.id });
+    logger.debug('User fetched', { user: user.id })
 
     try {
-      const result = await processUser(user);
-      logger.info("Processing completed", { result });
-      return result;
+      const result = await processUser(user)
+      logger.info('Processing completed', { result })
+      return result
     } catch (error) {
-      logger.error("Processing failed", {
+      logger.error('Processing failed', {
         error: error.message,
         userId: payload.userId,
-      });
-      throw error;
+      })
+      throw error
     }
   },
-});
+})
 ```
 
 ## Hidden Tasks
@@ -447,28 +455,28 @@ export const tracedTask = task({
 ```ts
 // Hidden task - not exported, only used internally
 const internalProcessor = task({
-  id: "internal-processor",
+  id: 'internal-processor',
   run: async (payload: { data: string }) => {
-    return { processed: payload.data.toUpperCase() };
+    return { processed: payload.data.toUpperCase() }
   },
-});
+})
 
 // Public task that uses hidden task
 export const publicWorkflow = task({
-  id: "public-workflow",
+  id: 'public-workflow',
   run: async (payload: { input: string }) => {
     // Use hidden task internally
     const result = await internalProcessor.triggerAndWait({
       data: payload.input,
-    });
+    })
 
     if (result.ok) {
-      return { output: result.output.processed };
+      return { output: result.output.processed }
     }
 
-    throw new Error("Internal processing failed");
+    throw new Error('Internal processing failed')
   },
-});
+})
 ```
 
 ## Best Practices
@@ -488,6 +496,7 @@ Design tasks to be stateless, idempotent, and resilient to failures. Use metadat
 <!-- TRIGGER.DEV advanced-tasks END -->
 
 <!-- TRIGGER.DEV basic START -->
+
 # Trigger.dev Basic Tasks (v4)
 
 **MUST use `@trigger.dev/sdk`, NEVER `client.defineJob`**
@@ -495,10 +504,10 @@ Design tasks to be stateless, idempotent, and resilient to failures. Use metadat
 ## Basic Task
 
 ```ts
-import { task } from "@trigger.dev/sdk";
+import { task } from '@trigger.dev/sdk'
 
 export const processData = task({
-  id: "process-data",
+  id: 'process-data',
   retry: {
     maxAttempts: 10,
     factor: 1.8,
@@ -508,30 +517,30 @@ export const processData = task({
   },
   run: async (payload: { userId: string; data: any[] }) => {
     // Task logic - runs for long time, no timeouts
-    console.log(`Processing ${payload.data.length} items for user ${payload.userId}`);
-    return { processed: payload.data.length };
+    console.log(`Processing ${payload.data.length} items for user ${payload.userId}`)
+    return { processed: payload.data.length }
   },
-});
+})
 ```
 
 ## Schema Task (with validation)
 
 ```ts
-import { schemaTask } from "@trigger.dev/sdk";
-import { z } from "zod";
+import { schemaTask } from '@trigger.dev/sdk'
+import { z } from 'zod'
 
 export const validatedTask = schemaTask({
-  id: "validated-task",
+  id: 'validated-task',
   schema: z.object({
     name: z.string(),
     age: z.number(),
     email: z.string().email(),
   }),
-  run: async (payload) => {
+  run: async payload => {
     // Payload is automatically validated and typed
-    return { message: `Hello ${payload.name}, age ${payload.age}` };
+    return { message: `Hello ${payload.name}, age ${payload.age}` }
   },
-});
+})
 ```
 
 ## Triggering Tasks
@@ -539,20 +548,20 @@ export const validatedTask = schemaTask({
 ### From Backend Code
 
 ```ts
-import { tasks } from "@trigger.dev/sdk";
-import type { processData } from "./trigger/tasks";
+import { tasks } from '@trigger.dev/sdk'
+import type { processData } from './trigger/tasks'
 
 // Single trigger
-const handle = await tasks.trigger<typeof processData>("process-data", {
-  userId: "123",
+const handle = await tasks.trigger<typeof processData>('process-data', {
+  userId: '123',
   data: [{ id: 1 }, { id: 2 }],
-});
+})
 
 // Batch trigger (up to 1,000 items, 3MB per payload)
-const batchHandle = await tasks.batchTrigger<typeof processData>("process-data", [
-  { payload: { userId: "123", data: [{ id: 1 }] } },
-  { payload: { userId: "456", data: [{ id: 2 }] } },
-]);
+const batchHandle = await tasks.batchTrigger<typeof processData>('process-data', [
+  { payload: { userId: '123', data: [{ id: 1 }] } },
+  { payload: { userId: '456', data: [{ id: 2 }] } },
+])
 ```
 
 ### Debounced Triggering
@@ -562,29 +571,30 @@ Consolidate multiple triggers into a single execution:
 ```ts
 // Multiple rapid triggers with same key = single execution
 await myTask.trigger(
-  { userId: "123" },
+  { userId: '123' },
   {
     debounce: {
-      key: "user-123-update",  // Unique key for debounce group
-      delay: "5s",              // Wait before executing
+      key: 'user-123-update', // Unique key for debounce group
+      delay: '5s', // Wait before executing
     },
   }
-);
+)
 
 // Trailing mode: use payload from LAST trigger
 await myTask.trigger(
-  { data: "latest-value" },
+  { data: 'latest-value' },
   {
     debounce: {
-      key: "trailing-example",
-      delay: "10s",
-      mode: "trailing",  // Default is "leading" (first payload)
+      key: 'trailing-example',
+      delay: '10s',
+      mode: 'trailing', // Default is "leading" (first payload)
     },
   }
-);
+)
 ```
 
 **Debounce modes:**
+
 - `leading` (default): Uses payload from first trigger, subsequent triggers only reschedule
 - `trailing`: Uses payload from most recent trigger
 
@@ -592,44 +602,44 @@ await myTask.trigger(
 
 ```ts
 export const parentTask = task({
-  id: "parent-task",
-  run: async (payload) => {
+  id: 'parent-task',
+  run: async payload => {
     // Trigger and continue
-    const handle = await childTask.trigger({ data: "value" });
+    const handle = await childTask.trigger({ data: 'value' })
 
     // Trigger and wait - returns Result object, NOT task output
-    const result = await childTask.triggerAndWait({ data: "value" });
+    const result = await childTask.triggerAndWait({ data: 'value' })
     if (result.ok) {
-      console.log("Task output:", result.output); // Actual task return value
+      console.log('Task output:', result.output) // Actual task return value
     } else {
-      console.error("Task failed:", result.error);
+      console.error('Task failed:', result.error)
     }
 
     // Quick unwrap (throws on error)
-    const output = await childTask.triggerAndWait({ data: "value" }).unwrap();
+    const output = await childTask.triggerAndWait({ data: 'value' }).unwrap()
 
     // Batch trigger and wait
     const results = await childTask.batchTriggerAndWait([
-      { payload: { data: "item1" } },
-      { payload: { data: "item2" } },
-    ]);
+      { payload: { data: 'item1' } },
+      { payload: { data: 'item2' } },
+    ])
 
     for (const run of results) {
       if (run.ok) {
-        console.log("Success:", run.output);
+        console.log('Success:', run.output)
       } else {
-        console.log("Failed:", run.error);
+        console.log('Failed:', run.error)
       }
     }
   },
-});
+})
 
 export const childTask = task({
-  id: "child-task",
+  id: 'child-task',
   run: async (payload: { data: string }) => {
-    return { processed: payload.data };
+    return { processed: payload.data }
   },
-});
+})
 ```
 
 > Never wrap triggerAndWait or batchTriggerAndWait calls in a Promise.all or Promise.allSettled as this is not supported in Trigger.dev tasks.
@@ -637,32 +647,32 @@ export const childTask = task({
 ## Waits
 
 ```ts
-import { task, wait } from "@trigger.dev/sdk";
+import { task, wait } from '@trigger.dev/sdk'
 
 export const taskWithWaits = task({
-  id: "task-with-waits",
-  run: async (payload) => {
-    console.log("Starting task");
+  id: 'task-with-waits',
+  run: async payload => {
+    console.log('Starting task')
 
     // Wait for specific duration
-    await wait.for({ seconds: 30 });
-    await wait.for({ minutes: 5 });
-    await wait.for({ hours: 1 });
-    await wait.for({ days: 1 });
+    await wait.for({ seconds: 30 })
+    await wait.for({ minutes: 5 })
+    await wait.for({ hours: 1 })
+    await wait.for({ days: 1 })
 
     // Wait until specific date
-    await wait.until({ date: new Date("2024-12-25") });
+    await wait.until({ date: new Date('2024-12-25') })
 
     // Wait for token (from external system)
     await wait.forToken({
-      token: "user-approval-token",
+      token: 'user-approval-token',
       timeoutInSeconds: 3600, // 1 hour timeout
-    });
+    })
 
-    console.log("All waits completed");
-    return { status: "completed" };
+    console.log('All waits completed')
+    return { status: 'completed' }
   },
-});
+})
 ```
 
 > Never wrap wait calls in a Promise.all or Promise.allSettled as this is not supported in Trigger.dev tasks.
@@ -679,13 +689,36 @@ export const taskWithWaits = task({
 ```ts
 // BREAKS APPLICATION
 client.defineJob({
-  id: "job-id",
+  id: 'job-id',
   run: async (payload, io) => {
     /* ... */
   },
-});
+})
 ```
 
 Use SDK (`@trigger.dev/sdk`), check `result.ok` before accessing `result.output`
 
 <!-- TRIGGER.DEV basic END -->
+
+# Development Commands
+
+## Scripts
+- **Build**: `npm run build`
+- **Dev**: `npm run dev`
+- **Lint**: `npm run lint`
+- **Type Check**: `npx tsc --noEmit`
+
+## Testing
+- **Unit Tests**: `npm run test:unit` (runs all vitest tests)
+- **E2E Tests**: `npm run test:e2e [scenario]`
+  - `actions`, `full-loop`, `episode-premise`, `consistency`
+  - `swiss-knife`, `mentions`
+- **Evaluation**: `npm run eval <experiment>`
+  - `storyteller`, `loop-creator`, `tools`, `pro`, `regression`
+
+## MCP
+- **MCP Dev**: `npm run mcp:dev`
+- **MCP Build**: `npm run mcp:build`
+
+---
+*Note: Legacy documentation moved to `docs/archived/`*

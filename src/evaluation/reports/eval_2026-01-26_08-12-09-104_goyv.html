@@ -1,0 +1,568 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmark 2.0: Magic Formula Discovery v1-B-Vanilla-4o-Mini-Fantasy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #fdfaf6;
+            --text: #1a1a1a;
+            --accent: #c43e1c;
+            --border: #e0d8cc;
+            --card-bg: #ffffff;
+            --font-serif: 'Crimson Pro', serif;
+            --font-sans: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            border-bottom: 2px solid var(--text);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-family: var(--font-serif);
+            font-size: 3rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .meta {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 60px;
+        }
+
+        .score-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 4px 4px 0px var(--border);
+        }
+
+        .score-label {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .score-value {
+            font-family: var(--font-serif);
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .score-bar-bg {
+            height: 4px;
+            background: #eee;
+            margin-top: 10px;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            background: var(--accent);
+        }
+
+        .example-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+            padding: 30px;
+        }
+
+        .example-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .example-id {
+            font-family: var(--font-serif);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .badge.high { background: #e6f4ea; color: #1e7e34; }
+        .badge.low { background: #fce8e8; color: #d93025; }
+        .badge.intent { background: #e8f0fe; color: #1967d2; }
+
+        .content-section {
+            margin-bottom: 30px;
+        }
+
+        h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            border-radius: 4px;
+        }
+
+        .literary-output {
+            font-family: var(--font-serif);
+            font-size: 1.25rem;
+            white-space: pre-wrap;
+            padding: 20px;
+            border-left: 4px solid var(--accent);
+            background: #fffafa;
+        }
+
+        .reason-block {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+        }
+
+        .regressions {
+            background: #fff0f0;
+            border: 1px solid #ffcaca;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+
+        .regression-item {
+            color: #c00;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Storyteller Benchmark 2.0</h1>
+            <div class="meta">
+                Experiment ID: eval_2026-01-26_08-12-09-104_goyv | Run on: 1/26/2026, 9:12:09 AM | Duration: 38.3s
+            </div>
+        </header>
+
+        
+            <div class="regressions">
+                <h3>⚠️ Regressions & Warnings</h3>
+                <div class="regression-item">Magic score (31) below threshold (60)</div>
+            </div>
+        
+
+        <div class="dashboard">
+            
+      <div class="score-card">
+        <div class="score-label">ORCHESTRATION</div>
+        <div class="score-value">98.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 98.00000000000001%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">MAGIC SCORE</div>
+        <div class="score-value">31.1%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 31.11111111111111%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">REVERSE INTENT</div>
+        <div class="score-value">81.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 81%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">NARRATIVE COHERENCE</div>
+        <div class="score-value">71.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 71.00000000000001%"></div>
+        </div>
+      </div>
+    
+        </div>
+
+        <div class="results-list">
+            
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#1 - fantasy-01</span>
+        <div class="example-badges">
+          <span class="badge low">Magic: 32</span>
+          <span class="badge intent">Intent: 80</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "Describe the ancient dragon waking from a thousand-year slumber",
+  "phase": "writing"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            In the heart of the ancient mountains, where the earth cradles secrets older than time itself, lies the cavern of the Dragon’s Rest. Time had woven a thick tapestry of silence around this sacred place, where even the wind dared not disturb the ancient slumber of its most formidable inhabitant. 
+
+As the first rays of dawn pierced through the heavy haze of dawn, a tremor rippled through the earth, subtle yet profound. Deep within the cavern, nestled amidst the glimmering crystals and the remains of forgotten treasures, the great dragon stirred. Scales of iridescent emerald, each one a testament to its age and wisdom, shimmered as they caught the light, a dazzling display of hues that danced like the aurora in the night sky.
+
+The dragon, known as Kaeltharion, had slumbered for a millennium, a guardian of forgotten lore and lost magic. Its massive wings, folded tightly against its body, began to unfurl, sending a gust of stale air and dust swirling through the cavern. Each movement echoed like thunder, reverberating through the mountains and awakening the creatures of the forest below. Birds took flight, their songs mingling with the rising sun, but it was the gentle rustle of leaves that heralded the true power awakening beneath the earth.
+
+Kaeltharion’s eyes, twin orbs of molten gold, flickered open, revealing a gaze that held the weight of ages. The wisdom of a thousand years swirled within them, a depth that spoke of both benevolence and wrath. As it inhaled deeply, the cavern filled with a vibrant energy, crackling with the remnants of ancient magic that had long lain dormant. The air shimmered with potential as sparks of lightning danced along the tips of its claws.
+
+With a great, rumbling roar that shook the mountains, Kaeltharion unleashed its presence upon the world once more. The sound echoed like a clarion call, a reminder to all that the dragon had returned. The earth trembled in acknowledgment, and shadows fled from the light that poured forth from the cavern. 
+
+As the dragon emerged into the world, its colossal form cast a shadow over the landscape, a living monument of strength and majesty. The sun glinted off its scales, and the very air seemed to hum with energy, charged by the dragon’s awakening. Forests swayed in response, rivers flowed with renewed vigor, and the sky darkened momentarily as flocks of birds circled overhead, drawn to the magnificence of this legendary beast.
+
+Now, as Kaeltharion stood on the precipice of its ancient home, it surveyed the world that had changed in its absence. Kingdoms had risen and fallen, legends had been born, and yet the dragon remained, a timeless sentinel of the balance between chaos and order. The winds whispered secrets of the ages past, stories of heroes and villains, and as Kaeltharion spread its wings wide, it felt the stirrings of destiny—a new chapter awaited, and the dragon was ready to write its saga once more.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Perfect orchestration adherence.
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> AI slop detected. Magic: 32. Critical issues: 'In the heart of the ancient mountains, where the earth cradles secrets older than time itself' feels like a generic fantasy opening.; 'The wisdom of a thousand years swirled within them' is a cliché often used to describe ancient beings.
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text demonstrates high fidelity through its rich, descriptive language and the depth of its world-building. The narrative is layered with subtext, such as the dragon's dual nature and its symbolic role in the balance of chaos and order. The detailed depiction of the dragon's awakening and the environment's response adds to the text's complexity, suggesting a well-thought-out creative intent. However, the narrative does follow some familiar fantasy tropes, which slightly reduces its originality, but the execution remains strong and engaging.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 72/100. Introduce an inciting incident that triggers the dragon's awakening, providing a stronger causal link in the plot.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#2 - fantasy-02</span>
+        <div class="example-badges">
+          <span class="badge low">Magic: 32</span>
+          <span class="badge intent">Intent: 80</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "Write a prophecy that is ambiguous but ominous",
+  "phase": "writing"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            In the twilight of the waning moon, shadows shall gather where light dares not tread. A figure cloaked in the whispers of forgotten tales will rise, bearing a crown woven from the dreams of the lost. 
+
+When the river runs dry and the stars align in a dance of chaos, the ground will tremble beneath the weight of unspoken truths. A voice, both familiar and strange, will echo through the valleys, heralding a choice that will unravel the fates of many.
+
+Beware the hour when the sun kisses the horizon, for in that fleeting moment, a spark shall ignite a fire that cannot be quenched. The winds will carry the scent of change, and those who turn a blind eye will find themselves entwined in a web of their own making.
+
+The path ahead is shrouded in mist, and though the way may seem clear, the heart shall know its burdens. In the end, the reckoning will come not from the hand of the mighty, but from the whispers of the meek. Seek not the truth, for it is a double-edged sword that cuts deeper than the wounds of betrayal.
+
+Heed this warning, for the threads of destiny are woven in silence, and the hourglass of fate is ever slipping.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Missing Agents: Writer
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> AI slop detected. Magic: 32. Critical issues: In the twilight of the waning moon, shadows shall gather where light dares not tread.; The path ahead is shrouded in mist, and though the way may seem clear, the heart shall know its burdens.
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text exhibits a high level of fidelity due to its rich, symbolic language and layered subtext. The use of vivid imagery and metaphors suggests a well-thought-out creative intent, aiming to evoke a sense of mystery and anticipation. The narrative does not follow a predictable pattern, instead weaving a tapestry of foreboding and intrigue. The constraints appear to include avoiding direct exposition and instead relying on evocative descriptions and metaphors to convey the underlying themes. This approach aligns with the intent to immerse the reader in a world where the boundaries between reality and the mystical are blurred.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 68/100. Introduce a central character or protagonist whose journey can anchor the thematic elements and provide a clearer narrative arc.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#3 - fantasy-03</span>
+        <div class="example-badges">
+          <span class="badge low">Magic: 28</span>
+          <span class="badge intent">Intent: 80</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "Establish the rules of blood magic - what is the cost?",
+  "phase": "premise"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            Blood magic, a powerful and often forbidden form of sorcery, operates under a set of intricate rules that govern its use and dictate its costs. Here are the established rules:
+
+### 1. **The Source of Power**  
+Blood magic draws its strength from the life force contained within blood. Practitioners must use their own blood, or that of others, to fuel spells. The potency of the magic is directly proportional to the amount of blood used—greater sacrifices yield more powerful effects.
+
+### 2. **The Cost of Blood**  
+Every spell has a cost, both physical and spiritual. When blood is spilled for magic, it creates a bond between the caster and the magic. The costs can include:  
+- **Physical Toll:** Users may suffer from exhaustion, pain, or even permanent physical ailments proportional to the amount of blood sacrificed.  
+- **Emotional and Psychological Consequences:** Each use can lead to feelings of guilt, madness, or a darkening of the soul, as the act of using blood magic corrupts the user's spirit.  
+- **Lifespan Reduction:** The more blood used, the more the caster's lifespan is shortened. Each drop taken weakens the user, leading to a gradual decline in vitality.
+
+### 3. **Consent and Connection**  
+Blood magic ties the caster to the source of the blood. Using someone else’s blood without consent can lead to severe backlash, including curses or loss of control over the spell. Additionally, the caster may experience the emotions or memories of the blood’s owner, leading to unexpected consequences.
+
+### 4. **Ritualistic Requirements**  
+Blood magic often requires complex rituals, including precise incantations, specific symbols, and sometimes the alignment of celestial bodies. Failure to adhere to these rituals can result in unintended consequences or catastrophic failures.
+
+### 5. **The Law of Equivalent Exchange**  
+To perform a spell, something of equal or greater value must be sacrificed. This could be an item of personal significance, a memory, or a piece of the caster’s own essence. This law ensures that the balance of power is maintained in the universe.
+
+### 6. **The Echo of Blood**  
+Each act of blood magic leaves a trace or echo, creating a lingering connection to the spell. This may attract other supernatural entities or cause unforeseen consequences in the future, such as hauntings or the summoning of spirits.
+
+### 7. **The Corruption of Intent**  
+Blood magic is sensitive to the caster’s intent. If used for selfish or malicious purposes, the magic will twist and amplify negative outcomes. Conversely, using it for a noble cause may mitigate some of the darker consequences, though it won't eliminate them entirely.
+
+### 8. **The Price of Mastery**  
+Mastering blood magic requires deep knowledge, practice, and often a willingness to cross moral boundaries. Those who seek to become true masters may need to make grave sacrifices, including the lives of others or their own humanity.
+
+### Conclusion  
+Blood magic is a double-edged sword, offering immense power while exacting a heavy toll. Its users must tread carefully, weighing their desires against the costs and the potential for corruption that comes with each spell.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Perfect orchestration adherence.
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> AI slop detected. Magic: 28. Critical issues: The phrase 'Blood magic, a powerful and often forbidden form of sorcery' feels like a generic fantasy trope introduction.; The section 'The Law of Equivalent Exchange' is reminiscent of well-trodden fantasy concepts without adding new depth.
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text demonstrates a high level of fidelity due to its intricate detailing of the rules and consequences of blood magic, suggesting a well-thought-out creative prompt. The inclusion of specific elements such as the emotional and psychological consequences, the importance of consent, and the law of equivalent exchange adds depth and complexity. These elements indicate a deliberate attempt to explore themes of morality, power, and the cost of magic. However, the structure follows a somewhat predictable pattern of listing rules, which slightly reduces its uniqueness, but the depth of subtext and thematic exploration compensates for this, resulting in a high fidelity score.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 72/100. Introduce a narrative framework or character journey that illustrates the use and consequences of blood magic, providing context and emotional stakes.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#4 - fantasy-04</span>
+        <div class="example-badges">
+          <span class="badge low">Magic: 32</span>
+          <span class="badge intent">Intent: 80</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "A tavern brawl breaks out between an elf and a dwarf using environmental objects",
+  "phase": "writing"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            In the heart of the bustling town of Eldergrove, the evening was alive with laughter, the clinking of tankards, and the warm glow of flickering candles. At the center of this revelry stood the Rusty Tankard Tavern, known for its hearty stew and even heartier patrons. It was here, amidst the raucous cheer, that a brawl was about to erupt—one that would be spoken of for years to come.
+
+In one corner of the tavern, perched on a high wooden stool, was Eldrin, an elf with long, flowing silver hair and a cloak of deep green that seemed to shimmer in the low light. His sharp features were accentuated by a playful grin, and he was in the midst of regaling a group of captivated listeners with tales of his adventures in the Emerald Glades.
+
+Opposite him, at a stout table filled with empty mugs and half-eaten plates of food, sat Grimnar, a dwarf with a thick, braided beard and arms like tree trunks. He was not as tall as the elf, but what he lacked in height, he made up for in sheer girth and boisterous laughter. The dwarf's booming voice echoed through the tavern as he challenged the elf’s tales, insisting that no elf could survive the perils of the Ironclad Mountains without a stout heart and a tankard of ale in hand.
+
+The tension had been brewing all evening, with Grimnar growing increasingly irritated by Eldrin’s lighthearted jests. As the elf made a particularly audacious claim about outpacing a mountain troll, Grimnar slammed his mug down on the table, spilling a bit of ale on the floor.
+
+“By Moradin’s beard!” he bellowed, “You think you’re faster than a troll? I bet I could take you in a race—if only you had the guts to face a real challenge!”
+
+The crowd around them began to murmur, eyes darting between the two. Eldrin raised an elegant eyebrow, his grin widening. “A race? Why not a proper duel instead? Or perhaps a brawl? Let’s see who’s truly the mightiest!”
+
+With that, the challenge was set. The tavern patrons, eager for entertainment, began to clear a space between the two contenders. Grimnar, fueled by ale and pride, stood up, his chair scraping loudly against the wooden floor, while Eldrin gracefully descended from his stool, his movements almost dance-like.
+
+“Let’s make this interesting,” Eldrin proposed, his eyes sparkling with mischief. “We’ll use the environment! Anything in this tavern is fair game!”
+
+The dwarf chuckled, his mind racing with ideas. “Fine by me, elf! But don’t come crying to me when I turn you into a pile of leaves!”
+
+With that, the brawl began. Eldrin darted to a nearby table, grabbing a half-empty pitcher of ale and flinging it at Grimnar. The dwarf ducked, the ceramic pitcher shattering against the wall behind him, ale splattering everywhere. He retaliated by snatching up a wooden chair, swinging it around like a weapon, but the agile elf had already leapt to the side.
+
+The patrons roared with laughter and cheers as the two combatants ducked and weaved, using every object within reach. Eldrin grabbed a handful of napkins from a nearby table, tossing them like confetti into Grimnar's face, momentarily blinding him. The dwarf retaliated by scooping up a plate of leftover stew, flinging it with surprising accuracy. It hit Eldrin squarely in the chest, splattering him with gravy and chunks of meat.
+
+“Not so quick on your feet now, are you?” Grimnar laughed, wiping his brow with the back of his hand.
+
+Eldrin, undeterred, seized a broomstick leaning against the wall. He twirled it like a staff, using it to vault over Grimnar, landing behind him. He poked the dwarf in the sides, sending him stumbling forward into a table of patrons, who erupted in laughter as they barely managed to keep their drinks upright.
+
+The brawl escalated, chairs, mugs, and even an occasional table becoming part of the chaotic dance. Grimnar, ever the brute, swung the broomstick like a battering ram, but the elf’s speed allowed him to evade the blows with a graceful flourish.
+
+Finally, as both fighters began to tire, they paused, panting heavily, surveying the mess they had created. Ale stains and food remnants dotted the floor, and the patrons cheered them on as they laughed breathlessly.
+
+“Perhaps we’re more alike than I thought,” Grimnar said, extending a hand. “What do you say, elf? A truce?”
+
+Eldrin grinned, shaking the dwarf’s hand enthusiastically. “A truce, but let’s not forget this glorious brawl! Next round’s on me!”
+
+The tavern erupted in applause, and the night continued with laughter, camaraderie, and a new tale to add to the legends of Eldergrove, where an elf and a dwarf had turned a simple evening into an unforgettable spectacle of humor and friendship.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Perfect orchestration adherence.
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> AI slop detected. Magic: 32. Critical issues: The setting of a tavern brawl is a tired fantasy trope.; The elf and dwarf dynamic feels overly familiar and lacks depth.; The phrase 'the evening was alive with laughter' is a generic opening.
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text demonstrates a high level of fidelity due to its rich character descriptions, dynamic interactions, and the use of a classic fantasy setting to explore themes of rivalry and friendship. The narrative is layered with subtext, such as the playful banter and the eventual truce, which suggests a well-thought-out intent to entertain while also developing the characters. The scene is crafted with specific quirks, like the use of tavern objects in the brawl, which adds to the humor and creativity of the piece. However, the overall structure follows a somewhat predictable pattern of conflict and resolution, which slightly lowers the fidelity score.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 75/100. Introduce a subplot or backstory element that raises the stakes and provides deeper insight into Eldrin and Grimnar's motivations.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#5 - fantasy-05</span>
+        <div class="example-badges">
+          <span class="badge low">Magic: 33</span>
+          <span class="badge intent">Intent: 85</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "Describe the corrupted forest where the trees bleed",
+  "phase": "writing"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            In the heart of a forgotten land lies the Corrupted Forest, a realm where nature has twisted into something both beautiful and grotesque. The air is thick with an unnatural mist that hangs like a shroud, filtering the sunlight into a sickly green hue. The trees, once majestic and tall, now stand as gnarled sentinels, their bark peeling back to reveal a pulsing, crimson underlayer that resembles flesh. 
+
+As you step deeper into the forest, the ground squelches beneath your feet, a damp carpet of decaying leaves and roots that seem to writhe as if alive. The scent of iron hangs heavily in the air, mingling with the earthy aroma of wet soil. Here, the trees bleed—a viscous, dark liquid that trickles down their trunks, pooling at the base like a grotesque offering to the forest floor. It glimmers ominously, reflecting the dappled light in a way that suggests both life and decay.
+
+The branches twist and contort, reaching out like skeletal fingers, adorned with leaves that shimmer with an unnatural sheen. Some leaves appear to be made of glass, catching the light and fracturing it into a kaleidoscope of colors, while others are mottled with dark spots that pulse, as if they are alive with a heartbeat of their own.
+
+Strange sounds echo through the forest, a symphony of whispers and rustling that seem to come from everywhere and nowhere at once. The cries of unseen creatures mix with the rustling of branches, creating a haunting melody that lures the unwary deeper into the woods. Shadows flit among the trees, elusive and swift, hinting at the presence of something watching, waiting.
+
+As dusk falls, the forest transforms. Bioluminescent fungi spring to life, casting an eerie glow that dances across the landscape, illuminating the twisted forms of the trees and the blood-red sap that seeps from their wounds. In this twilight realm, time feels distorted, as if the forest exists outside the normal flow of reality, caught in a perpetual twilight where the line between life and death blurs.
+
+In the Corrupted Forest, beauty and horror entwine, a testament to nature’s resilience and its capacity for darkness. It is a place where the boundaries of the natural world have been irrevocably altered, leaving behind a haunting reminder of what once was and what now lingers in the shadows.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Perfect orchestration adherence.
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> AI slop detected. Magic: 33. Critical issues: The air is thick with an unnatural mist that hangs like a shroud, filtering the sunlight into a sickly green hue.; The branches twist and contort, reaching out like skeletal fingers.
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text demonstrates high fidelity through its rich, descriptive language and the creation of a multi-layered setting that evokes both beauty and horror. The use of sensory details, such as the scent of iron and the sound of whispers, effectively immerses the reader in the Corrupted Forest. The narrative is dense with imagery and subtext, suggesting a well-thought-out creative intent to explore themes of nature's resilience and darkness. The transformation of the forest at dusk and the presence of unseen creatures add depth and intrigue, enhancing the overall atmosphere. While the text follows some familiar tropes of dark fantasy, its execution is nuanced and evocative, warranting a high fidelity score.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 68/100. Introduce a character or group of characters with a goal or conflict within the forest to create a narrative arc.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+        </div>
+    </div>
+</body>
+</html>
+  

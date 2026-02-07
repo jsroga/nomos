@@ -1,0 +1,106 @@
+{
+  "id": "eval_2026-01-26_19-48-21-405_4rxb",
+  "name": "Critique & Revise vs Standard - Standard",
+  "timestamp": "2026-01-26T19:48:21.405Z",
+  "config": {
+    "evaluatorSet": "pro",
+    "sampleSize": 3,
+    "parallelism": 1,
+    "name": "Critique & Revise vs Standard - Standard",
+    "tags": [
+      "ab-test",
+      "variant-a"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "tone-02",
+      "input": {
+        "message": "This needs more dark humor like Fargo",
+        "phase": "writing"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 404 {\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"model: claude-3-5-sonnet-20240620\"},\"request_id\":\"req_011CXWZtuAfFuVoHuM18oMDG\"}\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_NOT_FOUND/\n"
+      },
+      "metadata": {
+        "error": true
+      }
+    },
+    {
+      "exampleId": "edge-02",
+      "input": {
+        "message": "...",
+        "phase": "structure"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 404 {\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"model: claude-3-5-sonnet-20240620\"},\"request_id\":\"req_011CXWZtut4suq6JFqYnSwCM\"}\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_NOT_FOUND/\n"
+      },
+      "metadata": {
+        "error": true
+      }
+    },
+    {
+      "exampleId": "q-02",
+      "input": {
+        "message": "what phase are we in?",
+        "phase": "structure"
+      },
+      "output": {
+        "response": "We are currently in the structure phase.",
+        "metadata": {
+          "isMeta": true
+        }
+      },
+      "scores": {
+        "orchestration": 1,
+        "magic-score": 0.5,
+        "reverse-intent": 0,
+        "narrative-coherence": 0.5
+      },
+      "reasoning": {
+        "orchestration": "Perfect orchestration adherence.",
+        "magic-score": "Content too short for magic score evaluation",
+        "reverse-intent": "Failed to analyze intent: InsufficientQuotaError: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n",
+        "narrative-coherence": "Content too short for meaningful narrative analysis"
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "skipped": true
+        },
+        "reverse-intent": {
+          "error": true
+        },
+        "narrative-coherence": {
+          "skipped": true
+        },
+        "category": "question",
+        "description": "Meta question"
+      }
+    }
+  ],
+  "aggregatedScores": {
+    "orchestration": 1,
+    "magic-score": 0.5,
+    "reverse-intent": 0,
+    "narrative-coherence": 0.5
+  },
+  "regressions": [
+    {
+      "metric": "magic-score",
+      "previousValue": 0.6,
+      "currentValue": 0.5,
+      "delta": -0.09999999999999998,
+      "severity": "warning",
+      "message": "Magic score (50) below threshold (60)"
+    }
+  ],
+  "duration": 1184
+}

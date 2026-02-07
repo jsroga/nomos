@@ -1,9 +1,10 @@
 import React from 'react'
-import { Users, Plus, RefreshCw, Trash2, UserPlus } from 'lucide-react'
-import { StoryPlan, KeyCharacter } from '../../schemas/agent-schemas'
+import { Users, Plus, RefreshCw, Trash2, UserPlus, Loader2 } from 'lucide-react'
+import { KeyCharacter } from '../../schemas/agent-schemas'
 import { Button } from '@/components/ui/button'
 
 import { useBible } from './BibleContext'
+import { SectionPendingOverlay } from './SectionPendingOverlay'
 
 import { getDisplayCharacters } from '../../utils/bible-utils'
 
@@ -25,13 +26,32 @@ export const BibleCharacters: React.FC<BibleCharactersProps> = ({
     removeKeyCharacter: onRemoveCharacter,
     isReadOnly,
     onSendMessage,
+    loadingSections,
+    pendingActions,
   } = useBible()
 
   // Derived characters list (handling backwards compatibility safely)
   const displayCharacters = getDisplayCharacters(storyPlan)
+  const isLoading = loadingSections?.keyCharacters?.loading ?? false
+  const pendingAction = pendingActions?.keyCharacters
 
   return (
-    <section>
+    <section className={isLoading || pendingAction ? 'relative' : ''}>
+      {/* Pending action overlay */}
+      {pendingAction && (
+        <SectionPendingOverlay 
+          pendingAction={pendingAction}
+          onReview={pendingAction.onReview}
+        />
+      )}
+      {isLoading && !pendingAction && (
+        <div className="absolute inset-0 z-10 bg-background/60 backdrop-blur-sm rounded-lg flex items-center justify-center">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin text-rose-400" />
+            <span>Bringing characters to life...</span>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Users className="w-5 h-5 text-indigo-400/80" />
@@ -41,8 +61,9 @@ export const BibleCharacters: React.FC<BibleCharactersProps> = ({
           {isEditing && (
             <button
               onClick={onOpenCreateDialog ? onOpenCreateDialog : onAddCharacter}
-              className="p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105"
+              className={`p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}
               title="Add Character"
+              disabled={isLoading}
             >
               <Plus size={14} />
             </button>
@@ -50,14 +71,16 @@ export const BibleCharacters: React.FC<BibleCharactersProps> = ({
           {!isReadOnly && onSendMessage && (
             <button
               onClick={() =>
-                onSendMessage(
-                  'Generate a diverse cast of key characters including their archetypes, roles, and core motivations. Ensure they have clear conflicting goals.'
+                onSendMessage?.(
+                  'Generate a diverse cast of key characters including their archetypes, roles, and core motivations. Ensure they have clear conflicting goals.',
+                  'keyCharacters'
                 )
               }
-              className="p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105"
+              className={`p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}
               title="Generate Characters"
+              disabled={isLoading}
             >
-              <RefreshCw size={14} />
+              <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
             </button>
           )}
         </div>

@@ -1,5 +1,4 @@
 import { task, logger, metadata, AbortTaskRunError } from '@trigger.dev/sdk/v3'
-import { createClient } from '@supabase/supabase-js'
 import { put } from '@vercel/blob'
 import { storageService } from '@/infrastructure/storage/StorageService'
 import { UPSCALE_PROMPTS, MASK_CONFIG, getCreativityPrompt } from '@/lib/server/prompts'

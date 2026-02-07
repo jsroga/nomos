@@ -6,7 +6,7 @@
  */
 
 import { ValidationResult, Validator } from '../runnable-guard'
-import { WritersRoomState } from '../../graph/state'
+import { WritersRoomState } from '../../types'
 import { GuardrailIssue } from '../types'
 
 // ============================================

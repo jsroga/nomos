@@ -5,7 +5,7 @@ import React, { useState, useMemo, useEffect } from 'react'
 import { useInteriorStore, SurfaceType } from '@/domains/interior-designer/store/useInteriorStore'
 import { useThree, ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
-import { Line, Extrude } from '@react-three/drei'
+import { Line } from '@react-three/drei'
 
 // Constants for different surface types
 // Constants for different surface types

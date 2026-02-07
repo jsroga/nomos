@@ -10,7 +10,6 @@ import { cn } from '@/lib/utils'
 import {
   ChevronDown,
   ChevronUp,
-  ExternalLink,
   FileText,
   BookOpen,
   User,
@@ -364,4 +363,3 @@ export function parseInlineCitations(
 
   return parts
 }
-

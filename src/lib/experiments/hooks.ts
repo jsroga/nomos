@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import posthog from 'posthog-js'
 import { experiments, type ExperimentConfig } from './config'
 

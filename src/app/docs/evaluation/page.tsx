@@ -5,9 +5,47 @@ import remarkGfm from 'remark-gfm'
 import { motion } from 'framer-motion'
 
 const EVALUATION_GUIDE = `
-# Storyteller Evaluation Guide
+# Storyteller Evaluation Guide: Benchmark 2.0
 
-A step-by-step guide for running evaluations and viewing results in LangSmith.
+Comprehensive guide for running high-fidelity evaluations using **Critique & Revise** loops and **Reverse Intent** analysis.
+
+---
+
+## 🚀 Benchmark 2.0 Features
+
+### 1. Reverse Intent Analysis (Cursor Pattern)
+The **Reverse Intent** evaluator doesn't just check if instructions were followed. It attempts to "reverse engineer" the literary depth from the output alone. If a model generates "AI-slop," the intent remains opaque. If it generates high-fidelity prose, the hidden depth becomes detectable.
+
+### 2. Critique & Revise Loop (Pro Plan)
+Drawing from **EQ-Bench** science, our Pro Plan implements a three-stage generation process:
+1. **Drafting**: Initial creative output.
+2. **Critique**: A ruthless literary editor identifies generic tropes and weak voice.
+3. **Revision**: A final rewrite focusing on subtext and specificity.
+
+### 3. High-Parallelism Execution
+Benchmark 2.0 runs **10 examples in parallel** by default, significantly reducing evaluation time while maintaining depth.
+
+---
+
+## 📊 Running Evaluations
+
+### Standard Evaluation
+\`\`\`bash
+npm run eval:storyteller
+\`\`\`
+
+### Pro Evaluation (Benchmark 2.0)
+\`\`\`bash
+npx ts-node src/evaluation/experiments/eval-pro.ts
+\`\`\`
+
+---
+
+## 🎨 Automated Reporting
+
+After every run, Benchmark 2.0 generates a beautiful, literary HTML report for easy comparison.
+
+**Location**: \`src/evaluation/reports/latest.html\`
 
 ---
 
@@ -352,7 +390,24 @@ Each time the AI runs, it creates a "trace" - a log of everything that happened.
 
 ---
 
-## Step 5: Understanding the Evaluators
+---
+
+## Step 7: Automated Reports (Pro Plan)
+
+If you use the Pro Plan automation, you can view a premium, side-by-side comparison of results.
+
+| Command | Action |
+|---------|--------|
+| \`npm run eval:pro\` | Run 10x parallel A/B test and generate report |
+
+### View Latest Analysis
+The report is generated as a local file for maximum privacy and speed:
+- **Location**: \`src/evaluation/results/report.html\`
+- **Quick Open**: \`open src/evaluation/results/report.html\`
+
+---
+
+## Step 8: Understanding the Evaluators
 
 ### Magic Score Evaluator
 
@@ -503,17 +558,19 @@ export default function EvaluationPage() {
                 {children}
               </th>
             ),
-            td: ({ children }) => (
-              <td className="border border-white/10 px-4 py-2">{children}</td>
-            ),
+            td: ({ children }) => <td className="border border-white/10 px-4 py-2">{children}</td>,
             hr: () => <hr className="border-white/10 my-10" />,
-            ul: ({ children }) => <ul className="list-disc list-inside space-y-2 my-4">{children}</ul>,
+            ul: ({ children }) => (
+              <ul className="list-disc list-inside space-y-2 my-4">{children}</ul>
+            ),
             ol: ({ children }) => (
               <ol className="list-decimal list-inside space-y-2 my-4">{children}</ol>
             ),
             li: ({ children }) => <li className="text-white/70">{children}</li>,
             p: ({ children }) => <p className="text-white/70 leading-relaxed my-4">{children}</p>,
-            strong: ({ children }) => <strong className="text-white font-semibold">{children}</strong>,
+            strong: ({ children }) => (
+              <strong className="text-white font-semibold">{children}</strong>
+            ),
             a: ({ href, children }) => (
               <a
                 href={href}

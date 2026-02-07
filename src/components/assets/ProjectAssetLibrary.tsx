@@ -4,17 +4,7 @@ import React, { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { SidebarSection } from '@/components/ui/domain-sidebar'
-import {
-  Box,
-  Circle,
-  Cylinder,
-  Cone,
-  RefreshCw,
-  Loader2,
-  Upload,
-  Trash2,
-  Package,
-} from 'lucide-react'
+import { Box, Circle, Cylinder, Cone, RefreshCw, Loader2, Upload, Package } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { LayoutGrid, DoorOpen } from 'lucide-react'

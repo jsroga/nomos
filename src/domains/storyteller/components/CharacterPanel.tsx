@@ -22,7 +22,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useConfirmDialog } from '@/components/ui/confirm-dialog'
 
 // Character metrics based on Affective Circumplex + Self-Determination Theory
-// Aligned with src/domains/storyteller/graph/state.ts
+// Aligned with src/domains/storytell../types.ts
 interface CharacterMetrics {
   valence: number // -100 to +100: Emotional tone (negative to positive)
   arousal: number // 0-100: Energy/activation level
@@ -63,94 +63,94 @@ interface Character {
 const METRIC_CONFIG: {
   key: keyof CharacterMetrics
   label: string
-  icon: React.ElementType
+  icon: any // Use any or Import LucideIcon if possible
   color: string
   lowLabel: string
   highLabel: string
   isValence?: boolean // Special handling for -100 to +100 scale
 }[] = [
-  {
-    key: 'valence',
-    label: 'Mood',
-    icon: Heart,
-    color: 'text-pink-400',
-    lowLabel: 'Negative',
-    highLabel: 'Positive',
-    isValence: true,
-  },
-  {
-    key: 'arousal',
-    label: 'Energy',
-    icon: Zap,
-    color: 'text-yellow-400',
-    lowLabel: 'Calm',
-    highLabel: 'Activated',
-  },
-  {
-    key: 'autonomy',
-    label: 'Freedom',
-    icon: Compass,
-    color: 'text-blue-400',
-    lowLabel: 'Constrained',
-    highLabel: 'Free',
-  },
-  {
-    key: 'competence',
-    label: 'Confidence',
-    icon: Target,
-    color: 'text-green-400',
-    lowLabel: 'Doubt',
-    highLabel: 'Capable',
-  },
-  {
-    key: 'relatedness',
-    label: 'Connection',
-    icon: Users,
-    color: 'text-cyan-400',
-    lowLabel: 'Isolated',
-    highLabel: 'Connected',
-  },
-  {
-    key: 'cognitiveClarity',
-    label: 'Clarity',
-    icon: Brain,
-    color: 'text-purple-400',
-    lowLabel: 'Confused',
-    highLabel: 'Sharp',
-  },
-  {
-    key: 'perceivedStakes',
-    label: 'Tension',
-    icon: Flame,
-    color: 'text-orange-400',
-    lowLabel: 'Low',
-    highLabel: 'Critical',
-  },
-  {
-    key: 'socialSafety',
-    label: 'Security',
-    icon: ShieldCheck,
-    color: 'text-teal-400',
-    lowLabel: 'Threatened',
-    highLabel: 'Safe',
-  },
-  {
-    key: 'moralAlignment',
-    label: 'Integrity',
-    icon: Scale,
-    color: 'text-indigo-400',
-    lowLabel: 'Compromised',
-    highLabel: 'Aligned',
-  },
-  {
-    key: 'transformation',
-    label: 'Arc Progress',
-    icon: TrendingUp,
-    color: 'text-emerald-400',
-    lowLabel: 'Start',
-    highLabel: 'Complete',
-  },
-]
+    {
+      key: 'valence',
+      label: 'Mood',
+      icon: Heart,
+      color: 'text-pink-400',
+      lowLabel: 'Negative',
+      highLabel: 'Positive',
+      isValence: true,
+    },
+    {
+      key: 'arousal',
+      label: 'Energy',
+      icon: Zap,
+      color: 'text-yellow-400',
+      lowLabel: 'Calm',
+      highLabel: 'Activated',
+    },
+    {
+      key: 'autonomy',
+      label: 'Freedom',
+      icon: Compass,
+      color: 'text-blue-400',
+      lowLabel: 'Constrained',
+      highLabel: 'Free',
+    },
+    {
+      key: 'competence',
+      label: 'Confidence',
+      icon: Target,
+      color: 'text-green-400',
+      lowLabel: 'Doubt',
+      highLabel: 'Capable',
+    },
+    {
+      key: 'relatedness',
+      label: 'Connection',
+      icon: Users,
+      color: 'text-cyan-400',
+      lowLabel: 'Isolated',
+      highLabel: 'Connected',
+    },
+    {
+      key: 'cognitiveClarity',
+      label: 'Clarity',
+      icon: Brain,
+      color: 'text-purple-400',
+      lowLabel: 'Confused',
+      highLabel: 'Sharp',
+    },
+    {
+      key: 'perceivedStakes',
+      label: 'Tension',
+      icon: Flame,
+      color: 'text-orange-400',
+      lowLabel: 'Low',
+      highLabel: 'Critical',
+    },
+    {
+      key: 'socialSafety',
+      label: 'Security',
+      icon: ShieldCheck,
+      color: 'text-teal-400',
+      lowLabel: 'Threatened',
+      highLabel: 'Safe',
+    },
+    {
+      key: 'moralAlignment',
+      label: 'Integrity',
+      icon: Scale,
+      color: 'text-indigo-400',
+      lowLabel: 'Compromised',
+      highLabel: 'Aligned',
+    },
+    {
+      key: 'transformation',
+      label: 'Arc Progress',
+      icon: TrendingUp,
+      color: 'text-emerald-400',
+      lowLabel: 'Start',
+      highLabel: 'Complete',
+    },
+  ]
 
 interface CharacterPanelProps {
   characters: Character[]
@@ -188,17 +188,18 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
             // Convert array to map by characterId
             const snapshotMap: Record<string, Partial<CharacterMetrics>> = {}
             for (const snap of data.snapshots) {
+              const getVal = (key: string, def: number) => snap[key] ?? snap[key.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`)] ?? def
               snapshotMap[snap.characterId] = {
-                valence: snap.valence ?? snap.stressLevel, // fallback for legacy
-                arousal: snap.arousal ?? 50,
-                autonomy: snap.autonomy ?? 60,
-                competence: snap.competence ?? 60,
-                relatedness: snap.relatedness ?? 50,
-                cognitiveClarity: snap.cognitiveClarity ?? 70,
-                perceivedStakes: snap.perceivedStakes ?? 40,
-                socialSafety: snap.socialSafety ?? 60,
-                moralAlignment: snap.moralAlignment ?? 70,
-                transformation: snap.transformationProgress ?? snap.transformation ?? 0,
+                valence: snap.valence ?? snap.stress_level ?? snap.stressLevel ?? 0,
+                arousal: getVal('arousal', 50),
+                autonomy: getVal('autonomy', 60),
+                competence: getVal('competence', 60),
+                relatedness: getVal('relatedness', 50),
+                cognitiveClarity: getVal('cognitiveClarity', 70),
+                perceivedStakes: getVal('perceivedStakes', 40),
+                socialSafety: getVal('socialSafety', 60),
+                moralAlignment: getVal('moralAlignment', 70),
+                transformation: snap.transformationProgress ?? snap.transformation ?? snap.transformation_progress ?? 0,
               }
             }
             setBeatSnapshots(snapshotMap)
@@ -302,7 +303,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
         <CharacterCreationDialog
           isOpen={!!editingCharacter}
           onClose={() => setEditingCharacter(null)}
-          onCreate={() => {}} // Not used in edit mode
+          onCreate={() => { }} // Not used in edit mode
           onUpdate={(id, updates) => {
             if (onUpdate) onUpdate(id, updates)
             setEditingCharacter(null)
@@ -312,24 +313,24 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
           initialData={
             editingCharacter
               ? {
-                  id: editingCharacter.id,
-                  name: editingCharacter.name,
-                  role: editingCharacter.role,
-                  gender: editingCharacter.gender,
-                  mbti: editingCharacter.mbti,
-                  description: editingCharacter.characterPrompt,
-                  portraitUrl: editingCharacter.portraitUrl,
-                  // Map metrics from character state
-                  valence: editingCharacter.valence,
-                  arousal: editingCharacter.arousal,
-                  autonomy: editingCharacter.autonomy,
-                  competence: editingCharacter.competence,
-                  relatedness: editingCharacter.relatedness,
-                  cognitiveClarity: editingCharacter.cognitiveClarity,
-                  perceivedStakes: editingCharacter.perceivedStakes,
-                  socialSafety: editingCharacter.socialSafety,
-                  moralAlignment: editingCharacter.moralAlignment,
-                }
+                id: editingCharacter.id,
+                name: editingCharacter.name,
+                role: editingCharacter.role,
+                gender: editingCharacter.gender,
+                mbti: editingCharacter.mbti,
+                description: editingCharacter.characterPrompt,
+                portraitUrl: editingCharacter.portraitUrl,
+                // Map metrics from character state
+                valence: editingCharacter.valence,
+                arousal: editingCharacter.arousal,
+                autonomy: editingCharacter.autonomy,
+                competence: editingCharacter.competence,
+                relatedness: editingCharacter.relatedness,
+                cognitiveClarity: editingCharacter.cognitiveClarity,
+                perceivedStakes: editingCharacter.perceivedStakes,
+                socialSafety: editingCharacter.socialSafety,
+                moralAlignment: editingCharacter.moralAlignment,
+              }
               : undefined
           }
         />
@@ -343,9 +344,10 @@ interface CharacterCardProps {
   onUpdate?: (characterId: string, updates: Partial<Character>) => void
   onDelete?: (characterId: string) => void
   onEdit?: (character: Character) => void
+  isDeleting?: boolean
 }
 
-const CharacterCard: React.FC<CharacterCardProps> = ({ character, onUpdate, onDelete, onEdit }) => {
+const CharacterCard: React.FC<CharacterCardProps> = ({ character, onUpdate, onDelete, onEdit, isDeleting }) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
 
@@ -403,8 +405,9 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onUpdate, onDe
                 e.stopPropagation()
                 handleDelete()
               }}
+              disabled={isDeleting}
             >
-              <Trash2 size={12} />
+              {isDeleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
             </Button>
           )}
           {isExpanded ? (
@@ -423,11 +426,15 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onUpdate, onDe
               Character Metrics
             </div>
             {METRIC_CONFIG.map(metric => {
-              const rawValue = character[metric.key as keyof Character] as number | undefined
+              // Robust lookup for both camelCase and snake_case (db vs local)
+              const camelKey = metric.key as string
+              const snakeKey = camelKey.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`)
+              const rawValue = (character as any)[camelKey] ?? (character as any)[snakeKey]
+
               // Handle valence (-100 to +100) vs standard (0-100)
               const isValenceMetric = metric.isValence
               const defaultValue = isValenceMetric ? 0 : 50
-              const value = rawValue ?? defaultValue
+              const value = typeof rawValue === 'number' ? rawValue : defaultValue
 
               // Calculate display percentage (0-100% for progress bar)
               const displayPercentage = isValenceMetric
@@ -463,7 +470,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onUpdate, onDe
                 <div key={metric.key} className="space-y-0.5">
                   <div className="flex justify-between items-center text-xs">
                     <div className="flex items-center gap-1.5">
-                      <Icon size={12} className={metric.color} />
+                      <metric.icon size={12} className={metric.color} />
                       <span className="text-muted-foreground">{metric.label}</span>
                     </div>
                     <span
@@ -525,6 +532,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onUpdate, onDe
           </div>
         </div>
       )}
+      {ConfirmDialogComponent}
     </div>
   )
 }

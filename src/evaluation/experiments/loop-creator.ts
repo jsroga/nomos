@@ -6,6 +6,9 @@
  * Usage: npm run eval:loop-creator
  */
 
+import dotenv from 'dotenv'
+dotenv.config({ path: '.env.local' })
+
 import { Client, Run } from 'langsmith'
 import { evaluate } from 'langsmith/evaluation'
 import { LOOP_CREATOR_DATASET } from '../datasets/loop-creator-golden'
@@ -31,9 +34,9 @@ const mechanicsGenerationEvaluator: CustomEvaluator = {
     const outputStr = JSON.stringify(output)
     const expected = reference as
       | {
-          shouldGenerateMechanics?: boolean
-          expectedMechanicTypes?: string[]
-        }
+        shouldGenerateMechanics?: boolean
+        expectedMechanicTypes?: string[]
+      }
       | undefined
 
     // Check if mechanics were generated
@@ -86,8 +89,8 @@ const loopStructureEvaluator: CustomEvaluator = {
     const outputStr = JSON.stringify(output)
     const expected = reference as
       | {
-          shouldCreateLoop?: boolean
-        }
+        shouldCreateLoop?: boolean
+      }
       | undefined
 
     // Check for loop indicators
@@ -128,9 +131,9 @@ const balanceAnalysisEvaluator: CustomEvaluator = {
     const outputStr = JSON.stringify(output)
     const expected = reference as
       | {
-          shouldAnalyzeBalance?: boolean
-          minBalanceScore?: number
-        }
+        shouldAnalyzeBalance?: boolean
+        minBalanceScore?: number
+      }
       | undefined
 
     // Check for balance analysis indicators
@@ -243,20 +246,15 @@ function wrapEvaluator(evaluator: CustomEvaluator) {
  * Run the loop creator experiment
  */
 export async function runLoopCreatorExperiment() {
-  console.log('🚀 Starting Loop Creator Evaluation Experiment')
-  console.log('=============================================')
+  console.log('🚀 Starting Loop Creator Evaluation Experiment (Local Mode)')
+  console.log('=============================================================')
   console.log(`Dataset: ${CONFIG.datasetName}`)
   console.log(`API URL: ${CONFIG.apiUrl}`)
   console.log('')
 
-  if (!process.env.LANGCHAIN_API_KEY) {
-    console.error('❌ LANGCHAIN_API_KEY is not set')
-    process.exit(1)
-  }
-
-  const client = new Client({
-    apiKey: process.env.LANGCHAIN_API_KEY,
-  })
+  // LangSmith disabled - running local evaluation only
+  // Set USE_LANGSMITH=true in .env.local to enable (requires valid LANGCHAIN_API_KEY quota)
+  const useLangSmith = process.env.USE_LANGSMITH === 'true' && !!process.env.LANGCHAIN_API_KEY
 
   const evaluators = [
     wrapEvaluator(mechanicsGenerationEvaluator),
@@ -267,77 +265,85 @@ export async function runLoopCreatorExperiment() {
   ]
 
   console.log(`📊 Using ${evaluators.length} evaluators`)
+  console.log(`📡 LangSmith: ${useLangSmith ? 'enabled' : 'disabled (local mode)'}`)
   console.log('')
 
   try {
-    let datasetExists = false
-    try {
-      await client.readDataset({ datasetName: CONFIG.datasetName })
-      datasetExists = true
-    } catch {
-      console.log(`⚠️  Dataset '${CONFIG.datasetName}' not found`)
-      console.log('   Run: npm run eval:upload-datasets first')
-      console.log('')
-    }
-
-    if (datasetExists) {
-      const results = await evaluate(loopCreatorTarget, {
-        data: CONFIG.datasetName,
-        evaluators: evaluators.map(e => e.evaluator),
-        experimentPrefix: CONFIG.experimentPrefix,
-        maxConcurrency: CONFIG.maxConcurrency,
-        client,
+    if (useLangSmith) {
+      const client = new Client({
+        apiKey: process.env.LANGCHAIN_API_KEY,
       })
 
-      console.log('')
-      console.log('✅ Experiment complete!')
-      console.log('   View results at: https://smith.langchain.com')
-
-      return results
-    } else {
-      // Local evaluation
-      console.log('📋 Running local evaluation...')
-      console.log('')
-
-      const results: Array<{
-        id: string
-        scores: Record<string, number>
-        passed: boolean
-      }> = []
-
-      for (const example of LOOP_CREATOR_DATASET.examples) {
-        console.log(`Testing: ${example.id} - ${example.metadata?.description || ''}`)
-
-        const output = await loopCreatorTarget(example.input)
-
-        const scores: Record<string, number> = {}
-        for (const evalWrapper of evaluators) {
-          const mockRun = { outputs: output, inputs: example.input } as Run
-          const mockExample = { inputs: example.input, outputs: example.expected }
-          const evalResult = await evalWrapper.evaluator(mockRun, mockExample)
-          const score =
-            typeof evalResult.score === 'number' ? evalResult.score : evalResult.score ? 1 : 0
-          scores[evalResult.key] = score
-        }
-
-        const avgScore =
-          Object.values(scores).reduce((a, b) => a + b, 0) / Object.values(scores).length
-        const passed = avgScore >= 0.5
-
-        results.push({ id: example.id, scores, passed })
-        console.log(`  ${passed ? '✅' : '❌'} Score: ${(avgScore * 100).toFixed(1)}%`)
+      let datasetExists = false
+      try {
+        await client.readDataset({ datasetName: CONFIG.datasetName })
+        datasetExists = true
+      } catch {
+        console.log(`⚠️  Dataset '${CONFIG.datasetName}' not found on LangSmith`)
+        console.log('   Falling back to local evaluation...')
+        console.log('')
       }
 
-      console.log('')
-      console.log('============================================')
-      console.log('📊 Summary')
-      console.log('============================================')
+      if (datasetExists) {
+        const results = await evaluate(loopCreatorTarget, {
+          data: CONFIG.datasetName,
+          evaluators: evaluators.map(e => e.evaluator),
+          experimentPrefix: CONFIG.experimentPrefix,
+          maxConcurrency: CONFIG.maxConcurrency,
+          client,
+        })
 
-      const passedCount = results.filter(r => r.passed).length
-      console.log(`Passed: ${passedCount}/${results.length}`)
+        console.log('')
+        console.log('✅ Experiment complete!')
+        console.log('   View results at: https://smith.langchain.com')
 
-      return results
+        return results
+      }
     }
+
+    // Local evaluation (default)
+    // Local evaluation
+    console.log('📋 Running local evaluation...')
+    console.log('')
+
+    const results: Array<{
+      id: string
+      scores: Record<string, number>
+      passed: boolean
+    }> = []
+
+    for (const example of LOOP_CREATOR_DATASET.examples) {
+      console.log(`Testing: ${example.id} - ${example.metadata?.description || ''}`)
+
+      const output = await loopCreatorTarget(example.input)
+
+      const scores: Record<string, number> = {}
+      for (const evalWrapper of evaluators) {
+        const mockRun = { outputs: output, inputs: example.input } as Run
+        const mockExample = { inputs: example.input, outputs: example.expected }
+        const evalResult = await evalWrapper.evaluator(mockRun, mockExample)
+        const score =
+          typeof evalResult.score === 'number' ? evalResult.score : evalResult.score ? 1 : 0
+        scores[evalResult.key] = score
+      }
+
+      const avgScore =
+        Object.values(scores).reduce((a, b) => a + b, 0) / Object.values(scores).length
+      const passed = avgScore >= 0.5
+
+      results.push({ id: example.id, scores, passed })
+      console.log(`  ${passed ? '✅' : '❌'} Score: ${(avgScore * 100).toFixed(1)}%`)
+    }
+
+    console.log('')
+    console.log('============================================')
+    console.log('📊 Summary')
+    console.log('============================================')
+
+    const passedCount = results.filter(r => r.passed).length
+    console.log(`Passed: ${passedCount}/${results.length}`)
+
+    return results
   } catch (error) {
     console.error('❌ Experiment failed:', error)
     throw error

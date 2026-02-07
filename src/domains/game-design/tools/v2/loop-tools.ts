@@ -1,0 +1,92 @@
+
+import { createTool } from '@mastra/core/tools'
+import { z } from 'zod'
+import { db } from '../../../../db'
+import { gameLoops, marketAnalyses } from '../../../../db/schema'
+import { eq } from 'drizzle-orm'
+import { GameLoopSchema } from '../../schemas'
+
+// Schema for Get Loops
+const GetLoopsSchema = z.object({
+    projectId: z.string().uuid().describe('The UUID of the project'),
+})
+
+export const createGetLoopsTool = () => createTool({
+    id: 'get_game_loops',
+    description: 'Retrieve all game retention loops and their metadata for a project.',
+    schema: GetLoopsSchema,
+    execute: async ({ context: { projectId } }) => {
+        try {
+            const results = await db.query.gameLoops.findMany({
+                where: eq(gameLoops.projectId, projectId),
+                orderBy: [gameLoops.updatedAt],
+            })
+            return { success: true, loops: results }
+        } catch (error: any) {
+            return { success: false, error: error.message }
+        }
+    }
+})
+
+// Schema for Get Loop By ID
+const GetLoopByIdSchema = z.object({
+    loopId: z.string().uuid().describe('The UUID of the game loop'),
+})
+
+export const createGetLoopByIdTool = () => createTool({
+    id: 'get_game_loop_by_id',
+    description: 'Retrieve a specific game loop with full nodes and edges data.',
+    schema: GetLoopByIdSchema,
+    execute: async ({ context: { loopId } }) => {
+        try {
+            const result = await db.query.gameLoops.findFirst({
+                where: eq(gameLoops.id, loopId),
+            })
+            if (!result) return { success: false, error: 'Game loop not found' }
+
+            // Validate against our rigorous schema if possible, or return raw
+            // For now, return raw to avoid stricter validation blocking legacy data
+            return { success: true, loop: result }
+        } catch (error: any) {
+            return { success: false, error: error.message }
+        }
+    }
+})
+
+// Schema for Market Analysis
+const GetMarketAnalysisSchema = z.object({
+    loopId: z.string().uuid().describe('The UUID of the game loop'),
+})
+
+export const createGetMarketAnalysisTool = () => createTool({
+    id: 'get_market_analysis',
+    description: 'Retrieve the latest market analysis for a specific game loop.',
+    schema: GetMarketAnalysisSchema,
+    execute: async ({ context: { loopId } }) => {
+        try {
+            const result = await db.query.marketAnalyses.findFirst({
+                where: eq(marketAnalyses.gameLoopId, loopId),
+                with: {
+                    referenceScores: true,
+                    marketSize: true,
+                    audienceFit: true,
+                    primaryArchetype: true,
+                    momentum: {
+                        with: {
+                            genreMomentum: true,
+                            socialBuzz: true,
+                            risingCompetitors: true,
+                        },
+                    },
+                    competitors: true,
+                    trends: true,
+                    patterns: true,
+                },
+            })
+            if (!result) return { success: false, error: 'Market analysis not found' }
+            return { success: true, analysis: result }
+        } catch (error: any) {
+            return { success: false, error: error.message }
+        }
+    }
+})

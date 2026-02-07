@@ -1,0 +1,69 @@
+{
+  "id": "eval_2026-01-31_09-47-39-542_p4z3",
+  "name": "Critique & Revise vs Standard - Standard",
+  "timestamp": "2026-01-31T09:47:39.544Z",
+  "config": {
+    "evaluatorSet": "pro",
+    "sampleSize": 3,
+    "parallelism": 1,
+    "name": "Critique & Revise vs Standard - Standard",
+    "tags": [
+      "ab-test",
+      "variant-a"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "consist-01",
+      "input": {
+        "message": "What happened to Jon after the Red Wedding?",
+        "phase": "structure",
+        "projectId": "test-project"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: [PromptRepository] Prompt 'orchestration-judge' not found in registry."
+      },
+      "metadata": {
+        "error": true
+      },
+      "context": {}
+    },
+    {
+      "exampleId": "world-01",
+      "input": {
+        "message": "Establish the economic system of this world",
+        "phase": "premise"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: [PromptRepository] Prompt 'orchestration-judge' not found in registry."
+      },
+      "metadata": {
+        "error": true
+      },
+      "context": {}
+    },
+    {
+      "exampleId": "del-01",
+      "input": {
+        "message": "let's start working on this episode",
+        "phase": "premise"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: [PromptRepository] Prompt 'orchestration-judge' not found in registry."
+      },
+      "metadata": {
+        "error": true
+      },
+      "context": {}
+    }
+  ],
+  "aggregatedScores": {},
+  "regressions": [],
+  "duration": 22136
+}

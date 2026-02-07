@@ -7,7 +7,7 @@
 
 import { ChangeRisk, StoryContext } from './types'
 import { AgentAction } from '../actions/types'
-import { CharacterState } from '../graph/state'
+import { CharacterState } from '../types'
 
 /**
  * Analyze the risk level of a story change

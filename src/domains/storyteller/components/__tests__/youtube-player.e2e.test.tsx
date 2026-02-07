@@ -5,7 +5,7 @@
  * Focuses on meaningful behavior: URL parsing, state management, and integration.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 
 // ============================================================================
 // VIDEO ID EXTRACTION - Critical for playback to work at all

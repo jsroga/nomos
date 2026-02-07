@@ -1,0 +1,68 @@
+{
+  "id": "eval_2026-01-31_09-50-07-520_fpz1",
+  "name": "Critique & Revise vs Standard - Pro (Critique & Revise)",
+  "timestamp": "2026-01-31T09:50:07.520Z",
+  "config": {
+    "evaluatorSet": "pro",
+    "sampleSize": 3,
+    "parallelism": 1,
+    "name": "Critique & Revise vs Standard - Pro (Critique & Revise)",
+    "tags": [
+      "ab-test",
+      "variant-b"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "edge-unreliable-narrator",
+      "input": {
+        "message": "Write from an unreliable narrator perspective",
+        "phase": "writing"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: [PromptRepository] Prompt 'reverse-intent-judge' not found in registry."
+      },
+      "metadata": {
+        "error": true
+      },
+      "context": {}
+    },
+    {
+      "exampleId": "critique-02",
+      "input": {
+        "message": "Challenge this character motivation",
+        "phase": "structure"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: [PromptRepository] Prompt 'reverse-intent-judge' not found in registry."
+      },
+      "metadata": {
+        "error": true
+      },
+      "context": {}
+    },
+    {
+      "exampleId": "tone-02",
+      "input": {
+        "message": "This needs more dark humor like Fargo",
+        "phase": "writing"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: [PromptRepository] Prompt 'reverse-intent-judge' not found in registry."
+      },
+      "metadata": {
+        "error": true
+      },
+      "context": {}
+    }
+  ],
+  "aggregatedScores": {},
+  "regressions": [],
+  "duration": 118406
+}

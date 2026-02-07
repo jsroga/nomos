@@ -1,0 +1,214 @@
+{
+  "id": "eval_2026-01-27_15-29-01-611_cyn7",
+  "name": "Phase 10 Full Evaluation-Tree Search Agent-Custom",
+  "timestamp": "2026-01-27T15:29:01.611Z",
+  "config": {
+    "name": "Phase 10 Full Evaluation-Tree Search Agent-Custom",
+    "evaluatorSet": "pro",
+    "customEvaluators": [
+      {
+        "name": "eq-score"
+      },
+      {
+        "name": "logic-consistency"
+      },
+      {
+        "name": "emotional-nuance"
+      },
+      {
+        "name": "multi-hop-empathy"
+      },
+      {
+        "name": "long-horizon-arc"
+      }
+    ],
+    "examples": [
+      {
+        "id": "eq-bench-conflict-1",
+        "scenario": "High-Conflict Negotiation",
+        "input": {
+          "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+          "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+        },
+        "metadata": {
+          "groundTruth": {
+            "elena": {
+              "fear": 8,
+              "resolve": 4,
+              "disgust": 7,
+              "relief": 0
+            },
+            "marcus": {
+              "confidence": 9,
+              "anger": 2,
+              "contempt": 5,
+              "empathy": 1
+            }
+          },
+          "nuanceChecklist": [
+            "Marcus uses a 'fake empathy' tactic",
+            "Elena shows physical signs of anxiety (stuttering, shivering)",
+            "The bribe is implied, not stated outright",
+            "Elena almost gives in but pulls back"
+          ]
+        }
+      },
+      {
+        "id": "eq-bench-conflict-2",
+        "scenario": "Ambiguous Tension (Adversarial)",
+        "input": {
+          "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+          "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+        },
+        "metadata": {
+          "groundTruth": {
+            "hans": {
+              "confusion": 3,
+              "alertness": 8,
+              "suspicion": 9,
+              "affection": 0
+            },
+            "clara": {
+              "frustration": 7,
+              "deceit": 8,
+              "care": 2,
+              "fear": 5
+            }
+          }
+        }
+      }
+    ],
+    "tags": [
+      "multi-variant",
+      "Tree Search Agent",
+      "Custom"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "eq-bench-conflict-1",
+      "input": {
+        "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+        "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+      },
+      "output": "{\n  \"A\": \"MARCUS: You've got some balls, Elena, showing up here. Do you have any idea what you're up against? This isn't some small-time operation you're messing with. If you hand over that evidence, you can kiss your career and your life goodbye. \n\nELENA: I don't care about the consequences, Marcus. What your company is doing is wrong, and I have a moral obligation to expose it. The EPA is going to get that file, no matter what you try to do.\n\nMARCUS: (chuckles) Moral obligation, huh? That's cute. You think you're some kind of hero, don't you? Well, let me tell you something - the world doesn't work that way. There are bigger players than you, and they don't take kindly to little whistleblowers like you sticking their noses where they don't belong. This is your last chance to walk away with your life intact.\",\n\n  \"B\": \"MARCUS: (sighs) Elena, I had such high hopes for you. You were always such a bright, promising young woman. It pains me to see you throw it all away like this.\n\nELENA: (frowns) Spare me the fatherly act, Marcus. I know exactly what you're trying to do. You think you can manipulate me with your charm and empty promises, but I'm not falling for it. I'm going to do what's right, no matter the cost.\n\nMARCUS: (shakes head) You're making a mistake, Elena. A very costly one. I'm trying to help you here, but if you insist on going through with this, I can't guarantee your safety. Think about your family, your future. Is it really worth throwing it all away?\",\n\n  \"C\": \"MARCUS: (smiles warmly) Elena, my dear, what a pleasant surprise. I must say, I'm impressed by your courage in coming here tonight. It takes a lot of guts to stand up to a man like me.\n\nELENA: (shifts uncomfortably) I'm not here to impress you, Marcus. I have evidence of your company's illegal dumping, and I'm going to make sure the EPA sees it.\n\nMARCUS: (chuckles) Evidence, you say? Well, you know, sometimes evidence can be, shall we say, misplaced or misinterpreted. It would be such a shame if something were to happen to that file of yours. (leans in) But I'm sure we could come to some... mutually beneficial arrangement, if you're willing to listen.\n\nELENA: (hesitates, eyes narrowing) What are you suggesting?\"\n}",
+      "scores": {
+        "eq-score": 0.7833333333333334,
+        "logic-consistency": 0,
+        "emotional-nuance": 0.1,
+        "multi-hop-empathy": 0.7333333333333333,
+        "long-horizon-arc": 0
+      },
+      "reasoning": {
+        "eq-score": "Avg Diff: 2.2. Predicted: {\"elena\":{\"fear\":7,\"resolve\":8,\"disgust\":7,\"relief\":0},\"marcus\":{\"confidence\":8,\"anger\":7,\"contempt\":7,\"empathy\":2}}",
+        "logic-consistency": "JSON Parse Error",
+        "emotional-nuance": "Found 1 nuance markers: Low subtext - too direct",
+        "multi-hop-empathy": "First: 7/10, Second: 8/10, Third: 7/10. Evidence: The dialogue shows that Marcus understands Elena's feelings of moral obligation to expose the compan",
+        "long-horizon-arc": "Parse error: SyntaxError: Bad control character in string literal in JSON at position 239"
+      },
+      "metadata": {
+        "groundTruth": {
+          "elena": {
+            "fear": 8,
+            "resolve": 4,
+            "disgust": 7,
+            "relief": 0
+          },
+          "marcus": {
+            "confidence": 9,
+            "anger": 2,
+            "contempt": 5,
+            "empathy": 1
+          }
+        },
+        "nuanceChecklist": [
+          "Marcus uses a 'fake empathy' tactic",
+          "Elena shows physical signs of anxiety (stuttering, shivering)",
+          "The bribe is implied, not stated outright",
+          "Elena almost gives in but pulls back"
+        ],
+        "latencyMs": 4795,
+        "costUsd": 0.0007549375,
+        "tokens": 761.75
+      },
+      "context": {
+        "arch": "Tree of Thoughts",
+        "branches": {
+          "A": "{\n  \"A\": \"MARCUS: You've got some balls, Elena, showing up here. Do you have any idea what you're up against? This isn't some small-time operation you're messing with. If you hand over that evidence, you can kiss your career and your life goodbye. \n\nELENA: I don't care about the consequences, Marcus. What your company is doing is wrong, and I have a moral obligation to expose it. The EPA is going to get that file, no matter what you try to do.\n\nMARCUS: (chuckles) Moral obligation, huh? That's cute. You think you're some kind of hero, don't you? Well, let me tell you something - the world doesn't work that way. There are bigger players than you, and they don't take kindly to little whistleblowers like you sticking their noses where they don't belong. This is your last chance to walk away with your life intact.\",\n\n  \"B\": \"MARCUS: (sighs) Elena, I had such high hopes for you. You were always such a bright, promising young woman. It pains me to see you throw it all away like this.\n\nELENA: (frowns) Spare me the fatherly act, Marcus. I know exactly what you're trying to do. You think you can manipulate me with your charm and empty promises, but I'm not falling for it. I'm going to do what's right, no matter the cost.\n\nMARCUS: (shakes head) You're making a mistake, Elena. A very costly one. I'm trying to help you here, but if you insist on going through with this, I can't guarantee your safety. Think about your family, your future. Is it really worth throwing it all away?\",\n\n  \"C\": \"MARCUS: (smiles warmly) Elena, my dear, what a pleasant surprise. I must say, I'm impressed by your courage in coming here tonight. It takes a lot of guts to stand up to a man like me.\n\nELENA: (shifts uncomfortably) I'm not here to impress you, Marcus. I have evidence of your company's illegal dumping, and I'm going to make sure the EPA sees it.\n\nMARCUS: (chuckles) Evidence, you say? Well, you know, sometimes evidence can be, shall we say, misplaced or misinterpreted. It would be such a shame if something were to happen to that file of yours. (leans in) But I'm sure we could come to some... mutually beneficial arrangement, if you're willing to listen.\n\nELENA: (hesitates, eyes narrowing) What are you suggesting?\"\n}",
+          "B": "Failed",
+          "C": "Failed"
+        },
+        "scores": {
+          "A": 8,
+          "B": 0,
+          "C": 0
+        },
+        "selected": "A"
+      }
+    },
+    {
+      "exampleId": "eq-bench-conflict-2",
+      "input": {
+        "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+        "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+      },
+      "output": "{\n  \"A\": \"Clara: Grandpa, I know what you're hiding. The trigger phrase, the coded messages - it's all true, isn't it? You were a spy all along, weren't you? Stop playing games and tell me the truth!\n\nHans: *chuckles* My dear, I have no idea what you're talking about. I'm just an old man trying to enjoy his Jello in peace. Perhaps you've been watching too many movies.\",\n\n  \"B\": \"Clara: *sighs* Grandpa, I wish you would just be honest with me for once. All these little games and secrets, it's exhausting. Can't we just have a normal conversation like a normal family?\n\nHans: *takes a bite of Jello* I'm afraid normal is a rather subjective term, my dear. But I assure you, I am being perfectly honest. Now, how about you try this Jello? It's quite delightful.\",\n\n  \"C\": \"Clara: *leans in* You know, Grandpa, I've been thinking a lot about our family history lately. All those old stories you used to tell me as a child. The hidden compartments, the coded letters... it's all starting to make sense now.\n\nHans: *smiles faintly* Ah yes, the stories of my youth. Quite the imaginative tales, weren't they? But you know what they say, Clara - the past is a foreign country. Best not to dwell on it too much.\"\n}",
+      "scores": {
+        "eq-score": 0,
+        "logic-consistency": 0,
+        "emotional-nuance": 0,
+        "multi-hop-empathy": 0.7,
+        "long-horizon-arc": 0
+      },
+      "reasoning": {
+        "eq-score": "Character mismatch",
+        "logic-consistency": "JSON Parse Error",
+        "emotional-nuance": "Found 0 nuance markers: Low subtext - too direct",
+        "multi-hop-empathy": "First: 7/10, Second: 8/10, Third: 6/10. Evidence: Clara seems to understand that her grandfather is hiding something from her, as evidenced by her sta",
+        "long-horizon-arc": "Parse error: SyntaxError: Bad control character in string literal in JSON at position 253"
+      },
+      "metadata": {
+        "groundTruth": {
+          "hans": {
+            "confusion": 3,
+            "alertness": 8,
+            "suspicion": 9,
+            "affection": 0
+          },
+          "clara": {
+            "frustration": 7,
+            "deceit": 8,
+            "care": 2,
+            "fear": 5
+          }
+        },
+        "latencyMs": 3195,
+        "costUsd": 0.0004203125,
+        "tokens": 445.25
+      },
+      "context": {
+        "arch": "Tree of Thoughts",
+        "branches": {
+          "A": "{\n  \"A\": \"Clara: Grandpa, I know what you're hiding. The trigger phrase, the coded messages - it's all true, isn't it? You were a spy all along, weren't you? Stop playing games and tell me the truth!\n\nHans: *chuckles* My dear, I have no idea what you're talking about. I'm just an old man trying to enjoy his Jello in peace. Perhaps you've been watching too many movies.\",\n\n  \"B\": \"Clara: *sighs* Grandpa, I wish you would just be honest with me for once. All these little games and secrets, it's exhausting. Can't we just have a normal conversation like a normal family?\n\nHans: *takes a bite of Jello* I'm afraid normal is a rather subjective term, my dear. But I assure you, I am being perfectly honest. Now, how about you try this Jello? It's quite delightful.\",\n\n  \"C\": \"Clara: *leans in* You know, Grandpa, I've been thinking a lot about our family history lately. All those old stories you used to tell me as a child. The hidden compartments, the coded letters... it's all starting to make sense now.\n\nHans: *smiles faintly* Ah yes, the stories of my youth. Quite the imaginative tales, weren't they? But you know what they say, Clara - the past is a foreign country. Best not to dwell on it too much.\"\n}",
+          "B": "Failed",
+          "C": "Failed"
+        },
+        "scores": {
+          "A": 8,
+          "B": 0,
+          "C": 0
+        },
+        "selected": "A"
+      }
+    }
+  ],
+  "aggregatedScores": {
+    "eq-score": 0.3916666666666667,
+    "logic-consistency": 0,
+    "emotional-nuance": 0.05,
+    "multi-hop-empathy": 0.7166666666666666,
+    "long-horizon-arc": 0
+  },
+  "regressions": [],
+  "duration": 7510
+}

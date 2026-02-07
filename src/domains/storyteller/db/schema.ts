@@ -1,6 +1,5 @@
 import {
   pgTable,
-  serial,
   text,
   timestamp,
   uuid,
@@ -133,6 +132,23 @@ export const documentEmbeddings = pgTable('document_embeddings', {
   metadata: jsonb('metadata').notNull(), // { type: 'script'|'beat', sourceId: '...' }
   embedding: vector('embedding', { dimensions: 1536 }), // OpenAI ada-002 dimensions
   createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+// Entity References Table - For smart entity linking system
+// Stores all referenceable entities with embeddings for GraphRAG
+export const entityReferences = pgTable('entity_references', {
+  id: text('id').primaryKey(), // e.g., "char-a1b2c3d4", "place-e5f6g7h8"
+  type: text('type').notNull(), // character, place, event, faction, rule, beat
+  name: text('name').notNull(), // Display name
+  description: text('description'), // For tooltip display
+  metadata: jsonb('metadata').default({}), // Full entity data for context injection
+  projectId: uuid('project_id')
+    .references(() => projects.id, { onDelete: 'cascade' })
+    .notNull(),
+  sourceEntityId: uuid('source_entity_id'), // Link to original table (characters.id, beats.id, etc.)
+  embedding: vector('embedding', { dimensions: 1536 }), // For GraphRAG similarity search
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  lastReferencedAt: timestamp('last_referenced_at').defaultNow(),
 })
 
 // Relations for Drizzle Queries

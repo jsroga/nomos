@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import Link from 'next/link'
 import { useParams, usePathname } from 'next/navigation'
-import { Map, Box, Settings, LogOut, User, BookOpen, Home, Puzzle, Repeat } from 'lucide-react'
+import { Map, Box, LogOut, BookOpen, Home, Repeat } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'

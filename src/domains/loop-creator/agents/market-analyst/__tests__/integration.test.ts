@@ -4,13 +4,8 @@
  * Tests the full ReAct agent workflow with mocked LLM responses.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import {
-  runMarketAnalysis,
-  streamMarketAnalysis,
-  marketAnalystTools,
-  LoopAnalysisInput,
-} from '../index'
+import { describe, it, expect, vi } from 'vitest'
+import { streamMarketAnalysis, marketAnalystTools, LoopAnalysisInput } from '../index'
 
 // Mock the ChatOpenAI to avoid actual API calls
 vi.mock('@langchain/openai', () => ({

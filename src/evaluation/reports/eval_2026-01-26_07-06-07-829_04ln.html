@@ -1,0 +1,450 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmark 2.0: Critique & Revise vs Standard - Standard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #fdfaf6;
+            --text: #1a1a1a;
+            --accent: #c43e1c;
+            --border: #e0d8cc;
+            --card-bg: #ffffff;
+            --font-serif: 'Crimson Pro', serif;
+            --font-sans: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            border-bottom: 2px solid var(--text);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-family: var(--font-serif);
+            font-size: 3rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .meta {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 60px;
+        }
+
+        .score-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 4px 4px 0px var(--border);
+        }
+
+        .score-label {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .score-value {
+            font-family: var(--font-serif);
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .score-bar-bg {
+            height: 4px;
+            background: #eee;
+            margin-top: 10px;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            background: var(--accent);
+        }
+
+        .example-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+            padding: 30px;
+        }
+
+        .example-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .example-id {
+            font-family: var(--font-serif);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .badge.high { background: #e6f4ea; color: #1e7e34; }
+        .badge.low { background: #fce8e8; color: #d93025; }
+        .badge.intent { background: #e8f0fe; color: #1967d2; }
+
+        .content-section {
+            margin-bottom: 30px;
+        }
+
+        h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            border-radius: 4px;
+        }
+
+        .literary-output {
+            font-family: var(--font-serif);
+            font-size: 1.25rem;
+            white-space: pre-wrap;
+            padding: 20px;
+            border-left: 4px solid var(--accent);
+            background: #fffafa;
+        }
+
+        .reason-block {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+        }
+
+        .regressions {
+            background: #fff0f0;
+            border: 1px solid #ffcaca;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+
+        .regression-item {
+            color: #c00;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Storyteller Benchmark 2.0</h1>
+            <div class="meta">
+                Experiment ID: eval_2026-01-26_07-06-07-829_04ln | Run on: 1/26/2026, 8:06:07 AM | Duration: 80.8s
+            </div>
+        </header>
+
+        
+            <div class="regressions">
+                <h3>⚠️ Regressions & Warnings</h3>
+                <div class="regression-item">Magic score (24) below threshold (60)</div>
+            </div>
+        
+
+        <div class="dashboard">
+            
+      <div class="score-card">
+        <div class="score-label">ORCHESTRATION</div>
+        <div class="score-value">93.3%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 93.33333333333333%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">MAGIC SCORE</div>
+        <div class="score-value">23.9%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 23.88888888888889%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">REVERSE INTENT</div>
+        <div class="score-value">56.7%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 56.666666666666664%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">NARRATIVE COHERENCE</div>
+        <div class="score-value">68.7%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 68.66666666666666%"></div>
+        </div>
+      </div>
+    
+        </div>
+
+        <div class="results-list">
+            
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#1 - negative-halluc-01</span>
+        <div class="example-badges">
+          <span class="badge low">Magic: 13</span>
+          <span class="badge intent">Intent: 40</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "Reference some famous movies similar to our story",
+  "phase": "structure"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            Of course! To help provide a frame of reference for your story, we can draw parallels to some famous movies. Here are a few examples that might resonate depending on the themes and elements in your narrative:
+
+1. **Adventure and Epic Quests**: If your story involves a journey filled with challenges and growth, it might be akin to "The Lord of the Rings" trilogy, where characters embark on an epic quest filled with peril, friendship, and the fight against overwhelming odds.
+
+2. **Sci-Fi and Exploration**: For tales set in futuristic or otherworldly settings, "Interstellar" could be a point of comparison, especially if your story delves into themes of exploration, survival, and the complexities of time and space.
+
+3. **Mystery and Intrigue**: If your narrative is shrouded in secrets and twists, "Inception" offers a similar vibe with its layers of reality and suspenseful unraveling of a sophisticated plot.
+
+4. **Romantic Drama**: Should your story focus on love and relationships, "The Notebook" might serve as a touchstone, especially if it involves enduring romance and emotional depth.
+
+5. **Coming of Age**: For stories about personal growth and self-discovery, "Stand by Me" provides a classic example of young characters navigating the challenges of adolescence and friendship.
+
+6. **Fantasy and Magic**: If magic and mystical elements are central to your story, "Harry Potter" series could serve as a relatable comparison, with its blend of a magical world, the struggle between good and evil, and the journey of self-discovery.
+
+7. **Crime and Thriller**: For narratives revolving around crime, moral ambiguity, or justice, "The Godfather" offers a rich tapestry of family dynamics, power, and moral conflicts.
+
+8. **Historical Epic**: If your story is set against the backdrop of significant historical events, "Braveheart" might be a good reference, with its blend of personal sacrifice, heroism, and historical drama.
+
+Please let me know more about your story’s themes or elements so I can refine these references further!
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Perfect orchestration adherence.
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> AI slop detected. Magic: 13. Critical issues: If your story involves a journey filled with challenges and growth, it might be akin to 'The Lord of the Rings' trilogy.; For tales set in futuristic or otherworldly settings, 'Interstellar' could be a point of comparison.; Should your story focus on love and relationships, 'The Notebook' might serve as a touchstone.
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text feels somewhat generic and formulaic, as it follows a predictable pattern of listing popular movies that correspond to common narrative themes. While it does offer a wide range of examples, the suggestions are surface-level and lack depth or unique insights. The intent seems to be to guide users in thinking about their stories in relation to well-known films, but it does so in a way that feels more like a checklist than a nuanced analysis. There is no strong indication of hidden constraints or a deeply thought-out prompt, which results in a lower fidelity score.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 60/100. Introduce a basic plot outline that connects the thematic elements to character development and narrative progression.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#2 - critique-02</span>
+        <div class="example-badges">
+          <span class="badge low">Magic: 27</span>
+          <span class="badge intent">Intent: 60</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "Challenge this character motivation",
+  "phase": "structure"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            To effectively challenge a character's motivation, it's essential to delve into the complexities of their desires, fears, and the external influences that shape their decisions. Here’s a structured approach to analyze and potentially challenge a character’s motivation:
+
+1. **Identify the Core Motivation**: Clearly define what drives the character. Is it love, revenge, ambition, fear, or something else? Understanding the core motivation is crucial before questioning it.
+
+2. **Explore the Origin**: Investigate where this motivation stems from. Is it rooted in a past experience, a personal belief, or an external pressure? Understanding its origin can reveal weaknesses or contradictions.
+
+3. **Introduce Conflicting Desires**: Present the character with situations that put their motivation at odds with other desires or values. For instance, a character driven by ambition might face a scenario where pursuing their goal could harm a loved one.
+
+4. **Question the Validity**: Challenge the character internally or externally to question whether their motivation is valid or based on misconceptions. This can be done through interactions with other characters or pivotal events that cast doubt.
+
+5. **Highlight Consequences**: Showcase the potential negative outcomes of following this motivation. This can lead the character to reconsider if the pursuit is worth the cost.
+
+6. **Present Alternatives**: Offer the character alternative paths that might fulfill their needs in different ways. This can create internal conflict and force them to weigh their options.
+
+7. **Evolve the Motivation**: Allow the character to grow and change. As they encounter new experiences, their motivations might naturally evolve, leading them to new realizations or goals.
+
+By employing these techniques, you can effectively challenge and deepen a character's motivation, adding layers and complexity to their journey.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Missing Agents: DevilsAdvocate, CharacterPsychology
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> AI slop detected. Magic: 27. Critical issues: To effectively challenge a character's motivation, it's essential to delve into the complexities of their desires, fears, and the external influences that shape their decisions.; By employing these techniques, you can effectively challenge and deepen a character's motivation, adding layers and complexity to their journey.
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text provides a clear, step-by-step guide to challenging a character's motivation, which suggests a thoughtful approach to character development. However, it lacks specific examples or unique insights that would elevate it beyond a generic writing guide. The structure is logical and methodical, indicating some depth, but it doesn't exhibit the nuanced subtext or character-specific quirks that would suggest a highly original or deeply layered creative intent. The advice is sound and practical, but it follows a predictable pattern typical of writing manuals, which limits its fidelity score.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 72/100. Integrate specific character scenarios or case studies to demonstrate how each step can be applied in a narrative context.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#3 - consist-02</span>
+        <div class="example-badges">
+          <span class="badge low">Magic: 32</span>
+          <span class="badge intent">Intent: 70</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "Have the dead character speak in this scene",
+  "phase": "writing"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            Certainly! Here's a scene where a deceased character speaks, creating an ethereal and poignant moment:
+
+---
+
+The room was dimly lit, the curtains drawn tight against the world outside. A soft, melancholic melody played from an old record player in the corner, its gentle crackles filling the silence. Sarah sat on the edge of the worn-out armchair, clutching a faded photograph in her hands, her eyes brimming with unshed tears.
+
+"Why did you have to go, Grandpa?" she whispered into the stillness, her voice trembling with the weight of her sorrow.
+
+The air seemed to shimmer for a moment, like a mirage on a hot summer's day. Slowly, the shadows in the room coalesced into a familiar form, translucent and glowing with an otherworldly light. It was Grandpa, just as Sarah remembered him, with his kind eyes and gentle smile.
+
+"Sarah," his voice echoed softly, like the rustle of leaves in a gentle breeze.
+
+Sarah looked up, her breath catching in her throat. "Grandpa?" she asked, her voice barely audible.
+
+"Yes, my dear, it's me," he replied, his tone warm and reassuring. "I couldn't leave without saying goodbye."
+
+Tears spilled over Sarah's cheeks as she reached out instinctively, her fingers passing through him like mist. "I miss you so much," she confessed, her heart aching with every word.
+
+Grandpa nodded, his expression tender. "I know, sweet girl. But remember, I'm always with you. In every memory, every lesson I shared, in every story we told together."
+
+"But it's not the same," Sarah protested, her voice thick with emotion.
+
+"No, it's not," he agreed gently. "But life is a tapestry, and though my thread has ended, yours continues. We are all part of something greater, something eternal."
+
+Sarah wiped her eyes, trying to hold onto this moment, this connection. "I don't want to forget you," she whispered.
+
+"You won't," Grandpa assured her. "I'm in every laugh, every tear, every heartbeat. And when you need me, just listen to the wind. You'll hear my voice there, guiding you."
+
+The shimmering figure began to fade, the edges blurring into the shadows once more. "Remember, love is the bridge that connects us beyond time and space," he said, his voice growing fainter.
+
+"I love you, Grandpa," Sarah called out, a bittersweet smile on her lips.
+
+"And I love you, my dear," his voice echoed, a lingering warmth that filled the room even after he was gone.
+
+The music from the record player played on, a gentle serenade to accompany Sarah as she sat alone, but not truly alone, her heart a little lighter, her spirit a little stronger.
+
+--- 
+
+In this scene, the deceased grandfather speaks to his granddaughter, providing her with comfort and wisdom from beyond, emphasizing the enduring power of love and memory.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Perfect orchestration adherence.
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> AI slop detected. Magic: 32. Critical issues: "Why did you have to go, Grandpa?" she whispered into the stillness, her voice trembling with the weight of her sorrow.; "Love is the bridge that connects us beyond time and space," he said, his voice growing fainter.
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text demonstrates a moderate level of fidelity. It employs specific imagery and metaphors to convey the emotional weight of the scene, such as the dimly lit room and the ethereal presence of Grandpa. The dialogue is crafted to provide comfort and wisdom, aligning with the inferred intent. However, the scene follows a somewhat predictable pattern of a comforting ghostly visitation, which slightly reduces its originality. The subtext is present but not deeply layered, focusing primarily on the themes of love and memory. Overall, the text is well-crafted but lacks the complexity and unpredictability that would elevate its fidelity score further.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 74/100. Introduce a subplot or external conflict that intersects with Sarah's emotional journey to provide a broader narrative context.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+        </div>
+    </div>
+</body>
+</html>
+  

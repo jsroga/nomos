@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
-import { X, Wand2, Upload, User, Loader2, Target } from 'lucide-react'
+import { X, Wand2, Loader2 } from 'lucide-react'
 import { LocalStorageKeys } from '@/constants/localStorage'
 import { ImageVariantSelector } from './ImageVariantSelector'
 import { StorytellerImage } from './StorytellerImage'
@@ -284,10 +285,11 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
     handleClose()
   }
 
-  return (
+  // Use Portal to render modal at document root, escaping sidebar CSS containment
+  const modalContent = (
     <>
-      <div className="fixed inset-0 z-[99] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-        <div className="bg-card border border-border w-full max-w-2xl rounded-lg shadow-lg flex flex-col max-h-[90vh]">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="bg-card border border-border w-full max-w-2xl rounded-lg shadow-lg flex flex-col max-h-[90vh] mx-4">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border">
             <h2 className="text-lg font-bold">
@@ -695,4 +697,11 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
       )}
     </>
   )
+
+  // Render at document body to escape any parent CSS containment
+  if (typeof document !== 'undefined') {
+    return createPortal(modalContent, document.body)
+  }
+  
+  return modalContent
 }

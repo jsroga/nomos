@@ -15,6 +15,7 @@ import {
   verifyProjectAccess,
   verifyEpisodeAccess,
 } from '@/domains/storyteller/lib/access-verification'
+import { recordUserAction, flushObservability } from '@/agent-core/observability'
 
 /**
  * Deep merge two objects, with special handling for arrays (replace, not concat)
@@ -71,6 +72,19 @@ export async function POST(req: NextRequest) {
 
     console.log(`📥 Actions API: ${action.type} for project ${projectId}`)
 
+    // Extract trace ID for Langfuse correlation (from headers or body)
+    const traceId = req.headers.get('x-trace-id') || body.traceId || `action-${Date.now()}`
+    
+    // Record user action approval in Langfuse
+    try {
+      recordUserAction(traceId, {
+        type: action.type,
+        approved: true, // This route is for approved actions
+        payload: action.payload,
+        reasoning: body.reasoning,
+      })
+    } catch { /* ignore tracing errors */ }
+
     async function updateSeriesBible(updates: Record<string, any>) {
       if (!projectId) throw new Error('Project ID required')
 
@@ -109,7 +123,15 @@ export async function POST(req: NextRequest) {
         .limit(1)
 
       const currentContent = (existing?.content as Record<string, any>) || {}
+      console.log('📖 [updateStoryPlan] BEFORE - currentContent keys:', Object.keys(currentContent))
+      console.log('📖 [updateStoryPlan] BEFORE - worldDescription:', (currentContent.worldDescription as string)?.slice(0, 80))
+      console.log('📖 [updateStoryPlan] INCOMING - updates keys:', Object.keys(updates))
+      console.log('📖 [updateStoryPlan] INCOMING - worldDescription:', (updates.worldDescription as string)?.slice(0, 80))
+      
       const updatedContent = deepMerge(currentContent, updates)
+      
+      console.log('📖 [updateStoryPlan] AFTER MERGE - updatedContent keys:', Object.keys(updatedContent))
+      console.log('📖 [updateStoryPlan] AFTER MERGE - worldDescription:', (updatedContent.worldDescription as string)?.slice(0, 80))
 
       await db
         .insert(storyPlans)
@@ -118,6 +140,8 @@ export async function POST(req: NextRequest) {
           target: storyPlans.projectId,
           set: { content: updatedContent, updatedAt: new Date() },
         })
+      
+      console.log('✅ [updateStoryPlan] WRITE COMPLETE - saved to database')
 
       return updatedContent
     }
@@ -168,28 +192,39 @@ export async function POST(req: NextRequest) {
         let updatedPlan = {}
 
         // 3. Execute updates
+        console.log('🔍 [API] Detailed Updates:', {
+          bibleKeys: Object.keys(bibleUpdates),
+          planKeys: Object.keys(planUpdates),
+          rawPayload: JSON.stringify(payload).substring(0, 200) + '...'
+        })
+
         if (Object.keys(bibleUpdates).length > 0) {
+          console.log('💾 [API] Updating Series Bible Table...')
           updatedBible = await updateSeriesBible(bibleUpdates)
         }
 
         if (Object.keys(planUpdates).length > 0) {
+          console.log('💾 [API] Updating Story Plan Table...')
           updatedPlan = await updateStoryPlan(planUpdates)
         }
 
         // 4. Return combined result with correct structure for frontend
         // Frontend expects result.seriesBible to contain the properties
+        const finalResult = {
+          ...bibleUpdates,
+          ...updatedBible,
+          storyPlan: {
+            ...planUpdates,
+            ...updatedPlan,
+          },
+        }
+        console.log('✅ [API] Success. Returning:', Object.keys(finalResult))
+
         return NextResponse.json({
           success: true,
           result: {
             type: 'bible_updated',
-            seriesBible: {
-              ...bibleUpdates,
-              ...updatedBible,
-              storyPlan: {
-                ...planUpdates,
-                ...updatedPlan,
-              },
-            },
+            seriesBible: finalResult,
           },
         })
       }
@@ -207,18 +242,21 @@ export async function POST(req: NextRequest) {
       case 'SET_GENRE_AND_TONE': {
         // Legacy
         // Map legacy/specific payloads to generic partial update
+        // Support both old format (rules) and new format (worldRules)
         let updates: any = {}
-        if (action.type === 'UPDATE_WORLD_RULES') updates = { worldRules: action.payload.rules }
-        else if (action.type === 'UPDATE_FACTIONS') updates = { factions: action.payload.factions }
-        else if (action.type === 'UPDATE_INSPIRATIONS')
+        if (action.type === 'UPDATE_WORLD_RULES') {
+          updates = { worldRules: action.payload.worldRules || action.payload.rules }
+        } else if (action.type === 'UPDATE_FACTIONS') {
+          updates = { factions: action.payload.factions }
+        } else if (action.type === 'UPDATE_INSPIRATIONS') {
           updates = { inspirations: action.payload.inspirations }
-        else if (action.type === 'UPDATE_WORLD_DESCRIPTION')
-          updates = { worldDescription: action.payload.description }
-        else if (action.type === 'UPDATE_PLOT_TWISTS')
+        } else if (action.type === 'UPDATE_WORLD_DESCRIPTION') {
+          updates = { worldDescription: action.payload.worldDescription || action.payload.description }
+        } else if (action.type === 'UPDATE_PLOT_TWISTS') {
           updates = { plotTwists: action.payload.plotTwists }
-        else if (action.type === 'UPDATE_KEY_CHARACTERS')
-          updates = { keyCharacters: action.payload.keyCharacters }
-        else if (action.type === 'ADD_WORLD_RULE') {
+        } else if (action.type === 'UPDATE_KEY_CHARACTERS') {
+          updates = { keyCharacters: action.payload.keyCharacters || action.payload.characters }
+        } else if (action.type === 'ADD_WORLD_RULE') {
           const [proj] = await db
             .select()
             .from(storyPlans)
@@ -236,7 +274,9 @@ export async function POST(req: NextRequest) {
           updates = { soundtracks: action.payload.soundtracks }
 
         // FIX: These fields belong to storyPlan, so we update the storyPlan table/column
+        console.log(`💾 [API] ${action.type} - Saving updates:`, JSON.stringify(updates).slice(0, 200))
         const updated = await updateStoryPlan(updates)
+        console.log(`✅ [API] ${action.type} - Saved successfully. Keys:`, Object.keys(updated))
         return NextResponse.json({
           success: true,
           result: { type: 'bible_updated', seriesBible: { storyPlan: updated } },
@@ -358,6 +398,28 @@ export async function POST(req: NextRequest) {
         }
 
         await db.insert(characters).values(newCharacter)
+        
+        // Register as entity with name-based ID for entity linking
+        try {
+          const { entityRegistry } = await import('@/domains/storyteller/services/entity-registry')
+          const slugName = action.payload.name.toLowerCase().replace(/\s+/g, '-')
+          await entityRegistry.registerWithId(`char-${slugName}`, {
+            name: action.payload.name,
+            description: action.payload.description || action.payload.role || action.payload.name,
+            metadata: {
+              role: action.payload.role,
+              archetype: action.payload.archetype,
+              motivation: action.payload.motivation,
+              fatalFlaw: action.payload.fatalFlaw,
+            },
+            projectId,
+            sourceEntityId: newCharacter.id,
+          })
+          console.log(`✅ [Actions] Registered entity for character: char-${slugName}`)
+        } catch (entityErr) {
+          console.warn('[Actions] Entity registration failed (non-blocking):', entityErr)
+        }
+
         return NextResponse.json({
           success: true,
           result: { type: 'character_created', character: newCharacter },
@@ -415,6 +477,8 @@ export async function POST(req: NextRequest) {
 
       default:
         console.log(`⚠️ Unhandled action type: ${action.type}`)
+        // Flush Langfuse before returning
+        await flushObservability().catch(() => {})
         return NextResponse.json({
           success: true,
           result: { type: 'acknowledged', message: `Action ${action.type} acknowledged` },
@@ -422,6 +486,8 @@ export async function POST(req: NextRequest) {
     }
   } catch (error) {
     console.error('Actions API error:', error)
+    // Flush any recorded data before error response
+    await flushObservability().catch(() => {})
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Action execution failed' },
       { status: 500 }

@@ -5,7 +5,7 @@
  * Wraps agent functions with tracing and logs decisions for audit.
  */
 
-import { WritersRoomState } from '../graph/state'
+import { WritersRoomState } from '../types'
 import { ragService } from './rag-service'
 
 // Trace metadata for each agent invocation

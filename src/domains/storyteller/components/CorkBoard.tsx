@@ -1,20 +1,19 @@
-import React, { useState, useEffect, memo, useCallback } from 'react'
+import React, { useState, useEffect, memo } from 'react'
 import { BeatCard } from './BeatCard'
-import { BeatCard as BeatData } from '../graph/state'
+import { BeatCard as BeatData } from '../types'
 import { useParams } from 'next/navigation'
-import { Plus, Image as ImageIcon, Loader2, Sparkles, Film } from 'lucide-react'
+import { Plus, Image as ImageIcon, Loader2, Sparkles } from 'lucide-react'
 import { useConfirmDialog } from '@/components/ui/confirm-dialog'
 import { beatImageService } from '../services/beat-image-service'
-import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
 import { Message } from './AgentLog'
 import { ImageLightbox } from '@/components/ImageLightbox'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 
 interface CorkBoardProps {
   beats: BeatData[]
   episodeId?: string
   onAddMessage?: (message: Message) => void
+  onSendMessage?: (message: string) => void
 
   // Combined Storyboard (Gemini)
   storyboardUrl?: string | null
@@ -29,6 +28,7 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
   beats: initialBeats,
   episodeId,
   onAddMessage,
+  onSendMessage,
 
   storyboardUrl,
   isGeneratingCombined,
@@ -270,6 +270,7 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
               onDragOver={onDragOver}
               onDrop={onDrop}
               onExpand={setExpandedBeatId}
+              onSendMessage={onSendMessage}
               projectId={projectId}
             />
           ))}

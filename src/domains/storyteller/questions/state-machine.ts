@@ -1,9 +1,9 @@
-import { v4 as uuidv4 } from 'uuid'
 import {
   AgentQuestion,
   QuestionSession,
   QuestionManagerState,
   QuestionEvent,
+  QuestionStatus,
   createQuestionSession,
   isBlockingQuestion,
   UserAnswer,
@@ -115,7 +115,7 @@ export class QuestionManager {
    */
   clearPending(): void {
     this.state.pendingQuestions.forEach(q => {
-      q.status = 'skipped'
+      q.status = QuestionStatus.SKIPPED
       q.machineState = 'completed'
     })
     this.state.answeredQuestions.push(...this.state.pendingQuestions)
@@ -154,7 +154,7 @@ export class QuestionManager {
     const session = this.findQuestion(questionId)
     if (!session) return
 
-    session.status = 'answered'
+    session.status = QuestionStatus.ANSWERED
     session.machineState = 'processing'
     session.answer = answer
     session.answeredAt = new Date()
@@ -170,7 +170,7 @@ export class QuestionManager {
     const session = this.findQuestion(questionId)
     if (!session) return
 
-    session.status = 'skipped'
+    session.status = QuestionStatus.SKIPPED
     session.machineState = 'completed'
 
     this.moveToAnswered(questionId)
@@ -184,10 +184,10 @@ export class QuestionManager {
     // Use default option if available
     const defaultOpt = session.question.defaultOption
     if (defaultOpt) {
-      session.status = 'answered'
+      session.status = QuestionStatus.ANSWERED
       session.answer = defaultOpt
     } else {
-      session.status = 'timeout'
+      session.status = QuestionStatus.TIMEOUT
     }
     session.machineState = 'completed'
     session.answeredAt = new Date()

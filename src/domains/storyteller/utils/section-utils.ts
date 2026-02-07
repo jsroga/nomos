@@ -8,92 +8,13 @@ import {
   SoundtrackTrack,
 } from '../schemas/agent-schemas'
 
-let lastDetectedSection = ''
-
 /**
- * Detect which bible section the user wants to update based on their message
+ * No pattern matching - LLM decides which section to update via tool parameters.
+ * This function is deprecated - section comes from tool call.
  */
-export function detectTargetSection(userMessage: string): SectionDetection {
-  const msg = userMessage.toLowerCase()
-
-  // World Description
-  if (
-    msg.includes('world description') ||
-    msg.includes('world bible') ||
-    (msg.includes('description') && msg.includes('world'))
-  ) {
-    return { section: 'worldDescription', instruction: userMessage }
-  }
-
-  // World Rules / Laws
-  if (
-    msg.includes('world rules') ||
-    msg.includes('laws of') ||
-    msg.includes('rules') ||
-    msg.includes('magic system') ||
-    msg.includes('laws of the world')
-  ) {
-    return { section: 'worldRules', instruction: userMessage }
-  }
-
-  // Factions
-  if (
-    msg.includes('faction') ||
-    msg.includes('power') ||
-    msg.includes('groups') ||
-    msg.includes('organizations')
-  ) {
-    return { section: 'factions', instruction: userMessage }
-  }
-
-  // Inspirations
-  if (
-    msg.includes('inspiration') ||
-    msg.includes('reference') ||
-    msg.includes('books') ||
-    msg.includes('movies') ||
-    msg.includes('games')
-  ) {
-    return { section: 'inspirations', instruction: userMessage }
-  }
-
-  // Plot Twists
-  if (msg.includes('plot twist') || msg.includes('twist') || msg.includes('surprise')) {
-    return { section: 'plotTwists', instruction: userMessage }
-  }
-
-  // Episode Roadmap
-  if (
-    msg.includes('episode') ||
-    msg.includes('roadmap') ||
-    msg.includes('season') ||
-    msg.includes('arc breakdown')
-  ) {
-    return { section: 'episodeRoadmap', instruction: userMessage }
-  }
-
-  // Key Characters
-  if (
-    msg.includes('character') ||
-    msg.includes('key player') ||
-    msg.includes('protagonist') ||
-    msg.includes('antagonist')
-  ) {
-    return { section: 'keyCharacters', instruction: userMessage }
-  }
-
-  // Soundtracks
-  if (
-    msg.includes('soundtrack') ||
-    msg.includes('music') ||
-    msg.includes('songs') ||
-    msg.includes('playlist')
-  ) {
-    return { section: 'soundtracks', instruction: userMessage }
-  }
-
-  // Default to full bible
-  return { section: 'full', instruction: userMessage }
+export function detectTargetSection(_userMessage: string): SectionDetection {
+  // Always return 'full' - let the LLM's tool call specify which section
+  return { section: 'full', instruction: _userMessage }
 }
 
 /**
@@ -142,9 +63,10 @@ export function buildSectionContext(
       const factions = storyPlan.factions || bible.factions || []
       if (factions.length > 0) {
         parts.push('\n**Existing Factions:**')
-        factions.forEach((f: Faction) =>
-          parts.push(`- ${f.name}: ${f.ideology} (Goals: ${f.goals.join(', ')})`)
-        )
+        factions.forEach((f: Faction) => {
+          const goals = Array.isArray(f.goals) ? f.goals.join(', ') : (f.goals || 'N/A')
+          parts.push(`- ${f.name || 'Unknown'}: ${f.ideology || 'N/A'} (Goals: ${goals})`)
+        })
       }
       break
 
@@ -169,11 +91,14 @@ export function buildSectionContext(
 
     case 'episodeRoadmap':
       const seqs = storyPlan.sequences || bible.sequences || []
-      if (seqs.length > 0) {
+      if (Array.isArray(seqs) && seqs.length > 0) {
         parts.push('\n**Existing Episode Roadmap:**')
-        seqs.forEach((s: StorySequence) =>
-          parts.push(`- Ep ${s.id}: ${s.name} - ${s.logline || s.description}`)
-        )
+        seqs.forEach((s: StorySequence) => {
+          const id = s.id || '?'
+          const name = s.name || 'Untitled'
+          const desc = s.logline || s.description || 'No description'
+          parts.push(`- Ep ${id}: ${name} - ${desc}`)
+        })
       }
       break
 
@@ -181,9 +106,13 @@ export function buildSectionContext(
       const chars = storyPlan.keyCharacters || bible.keyCharacters || []
       if (chars.length > 0) {
         parts.push('\n**Existing Key Characters:**')
-        chars.forEach((c: KeyCharacter) =>
-          parts.push(`- ${c.name} (${c.role}): ${c.archetype} - ${c.motivation}`)
-        )
+        chars.forEach((c: KeyCharacter) => {
+          const name = c.name || 'Unknown'
+          const role = c.role || 'N/A'
+          const archetype = c.archetype || 'N/A'
+          const motivation = c.motivation || 'N/A'
+          parts.push(`- ${name} (${role}): ${archetype} - ${motivation}`)
+        })
       }
       break
 

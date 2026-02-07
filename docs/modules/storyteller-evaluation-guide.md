@@ -10,12 +10,13 @@ A step-by-step guide for running evaluations and viewing results in LangSmith.
 
 You need TWO API keys:
 
-| Key | Where to Get It | What It's For |
-|-----|-----------------|---------------|
-| `ANTHROPIC_API_KEY` | https://console.anthropic.com/settings/keys | Claude Opus (LLM evaluation) |
-| `LANGCHAIN_API_KEY` | https://smith.langchain.com/settings | LangSmith (results dashboard) |
+| Key                 | Where to Get It                             | What It's For                 |
+| ------------------- | ------------------------------------------- | ----------------------------- |
+| `ANTHROPIC_API_KEY` | https://console.anthropic.com/settings/keys | Claude Opus (LLM evaluation)  |
+| `LANGCHAIN_API_KEY` | https://smith.langchain.com/settings        | LangSmith (results dashboard) |
 
 **How to get Anthropic API Key:**
+
 1. Go to https://console.anthropic.com/
 2. Sign in (or create account)
 3. Click **Settings** in the left sidebar
@@ -24,6 +25,7 @@ You need TWO API keys:
 6. Copy the key (starts with `sk-ant-...`)
 
 **How to get LangSmith API Key:**
+
 1. Go to https://smith.langchain.com/
 2. Sign in with GitHub/Google (or create account)
 3. Click your **profile icon** (top right)
@@ -56,6 +58,7 @@ npx tsx src/evaluation/experiments/extended-thinking-ab-test.ts --mode=direct
 ```
 
 You should see output like:
+
 ```
 Direct Comparison Test
 ========================
@@ -82,11 +85,11 @@ If you see scores, your setup is working.
 
 ### Quick Commands
 
-| What You Want | Command |
-|---------------|---------|
-| Quick single test | `npx tsx src/evaluation/experiments/extended-thinking-ab-test.ts --mode=direct` |
-| A/B test (5 samples) | `npx tsx src/evaluation/experiments/extended-thinking-ab-test.ts --samples=5` |
-| A/B test (10 samples) | `npx tsx src/evaluation/experiments/extended-thinking-ab-test.ts --samples=10` |
+| What You Want         | Command                                                                         |
+| --------------------- | ------------------------------------------------------------------------------- |
+| Quick single test     | `npx tsx src/evaluation/experiments/extended-thinking-ab-test.ts --mode=direct` |
+| A/B test (5 samples)  | `npx tsx src/evaluation/experiments/extended-thinking-ab-test.ts --samples=5`   |
+| A/B test (10 samples) | `npx tsx src/evaluation/experiments/extended-thinking-ab-test.ts --samples=10`  |
 
 ### Understanding Test Output
 
@@ -122,12 +125,12 @@ WINNER: Extended Thinking (GRRM/Gilligan)
 
 **What the metrics mean:**
 
-| Metric | Good Score | What It Measures |
-|--------|------------|------------------|
-| `magic-score` | > 60% | Is it George RR Martin quality or AI slop? |
-| `consistency` | > 80% | Does it match the world bible? |
-| `hallucination` | > 90% | Did it avoid making things up? |
-| `narrative-coherence` | > 70% | Does the story structure work? |
+| Metric                | Good Score | What It Measures                           |
+| --------------------- | ---------- | ------------------------------------------ |
+| `magic-score`         | > 60%      | Is it George RR Martin quality or AI slop? |
+| `consistency`         | > 80%      | Does it match the world bible?             |
+| `hallucination`       | > 90%      | Did it avoid making things up?             |
+| `narrative-coherence` | > 70%      | Does the story structure work?             |
 
 ---
 
@@ -150,6 +153,7 @@ WINNER: Extended Thinking (GRRM/Gilligan)
 Each time the AI runs, it creates a "trace" - a log of everything that happened.
 
 **To view traces:**
+
 1. In your project, you'll see a list of runs
 2. Click on any row to see details
 3. You'll see:
@@ -164,6 +168,7 @@ Each time the AI runs, it creates a "trace" - a log of everything that happened.
 When you run A/B tests, each batch is saved as an "experiment" for comparison.
 
 **To view experiments:**
+
 1. Click **Experiments** tab (top of the project page)
 2. You'll see a list of experiment runs
 3. Click on one to see:
@@ -187,6 +192,7 @@ When you run A/B tests, each batch is saved as an "experiment" for comparison.
 Uses Claude Opus to judge creative quality.
 
 **Dimensions scored (0-100 each):**
+
 - Conceptual Originality
 - Character Specificity
 - Prose Voice
@@ -198,6 +204,7 @@ Uses Claude Opus to judge creative quality.
 - Unexpected Choices
 
 **Slop Indicators (red flags):**
+
 - "heart pounding" clichés
 - "breath caught" clichés
 - Generic emotional descriptions
@@ -208,6 +215,7 @@ Uses Claude Opus to judge creative quality.
 Checks if the output matches the world bible.
 
 **What it checks:**
+
 - Character names are correct
 - Locations exist in the world
 - Timeline makes sense
@@ -218,6 +226,7 @@ Checks if the output matches the world bible.
 Checks story structure quality.
 
 **What it checks:**
+
 - Plot progression (does each scene cause the next?)
 - Character arcs (do characters change?)
 - Setup/payoff (are Chekhov's guns fired?)
@@ -232,6 +241,7 @@ Checks story structure quality.
 **Problem:** Too many API calls too fast.
 
 **Solution:** Wait 1-2 minutes and try again with fewer samples:
+
 ```bash
 npx tsx src/evaluation/experiments/extended-thinking-ab-test.ts --samples=3
 ```
@@ -247,6 +257,7 @@ npx tsx src/evaluation/experiments/extended-thinking-ab-test.ts --samples=3
 **Problem:** Tracing isn't enabled.
 
 **Solution:** Check these are set:
+
 ```bash
 export LANGCHAIN_TRACING_V2=true
 export LANGCHAIN_API_KEY=lsv2_your-key
@@ -258,6 +269,7 @@ export LANGCHAIN_PROJECT=storyteller-eval
 **Problem:** TypeScript compiler running out of memory.
 
 **Solution:** Run tests directly with `npx tsx` instead of building first:
+
 ```bash
 npx tsx src/evaluation/experiments/extended-thinking-ab-test.ts --mode=direct
 ```
@@ -317,12 +329,12 @@ await runABTest(
 
 ### File Locations
 
-| File | Purpose |
-|------|---------|
-| `src/evaluation/experiments/extended-thinking-ab-test.ts` | Main A/B test runner |
-| `src/evaluation/evaluators/magic-score.ts` | Quality scoring logic |
-| `src/evaluation/evaluators/narrative-coherence.ts` | Story structure checks |
-| `src/domains/storyteller/prompts/extended-thinking.ts` | GRRM quality standards |
+| File                                                      | Purpose                |
+| --------------------------------------------------------- | ---------------------- |
+| `src/evaluation/experiments/extended-thinking-ab-test.ts` | Main A/B test runner   |
+| `src/evaluation/evaluators/magic-score.ts`                | Quality scoring logic  |
+| `src/evaluation/evaluators/narrative-coherence.ts`        | Story structure checks |
+| `src/domains/storyteller/prompts/extended-thinking.ts`    | GRRM quality standards |
 
 ### Environment Variables
 

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { TransformControls } from '@react-three/drei'
 import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
 import * as THREE from 'three'

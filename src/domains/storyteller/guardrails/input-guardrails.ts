@@ -5,7 +5,7 @@
  * Includes content moderation, prompt injection detection, and length limits.
  */
 
-import { WritersRoomState, Phase } from '../graph/state'
+import { WritersRoomState, Phase } from '../types'
 import {
   InputValidationResult,
   GuardrailIssue,

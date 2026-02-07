@@ -7,15 +7,7 @@
 
 import { DynamicStructuredTool } from '@langchain/core/tools'
 import { z } from 'zod'
-import {
-  MarketAnalysisReport,
-  ReferenceGameScores,
-  MarketSizeData,
-  CompetitorData,
-  AudienceFitData,
-  TrendData,
-  PatternMatch,
-} from '../types'
+import { MarketAnalysisReport, ReferenceGameScores } from '../types'
 
 /**
  * Report generator tool

@@ -8,7 +8,7 @@
  * - Adaptive side walls that update on sculpt
  */
 
-import React, { useRef, useEffect, useCallback, useMemo, useState } from 'react'
+import React, { useRef, useEffect, useMemo, useState } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import {

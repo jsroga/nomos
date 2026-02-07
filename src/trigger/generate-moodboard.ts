@@ -2,7 +2,6 @@ import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import fs from 'fs'
 import path from 'path'
-import sharp from 'sharp'
 
 interface GenerateMoodboardPayload {
   projectId: string
@@ -276,61 +275,76 @@ export const generateMoodboard = task({
       const maxRetries = 3
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
-          // Always fetch fresh data before updating to handle concurrent modifications
+          // STRATEGY: Update BOTH 'projects' (legacy/backup) and 'story_plans' (primary)
+
+          // 1. Fetch current state effectively
+          // Try fetching from story_plans table first (primary)
+          const { data: storyPlanRow } = await supabase
+            .from('story_plans')
+            .select('content')
+            .eq('project_id', projectId)
+            .single()
+
+          // Also fetch legacy to ensure we don't break it
           const { data: project } = await supabase
             .from('projects')
-            .select('series_bible')
+            .select('story_plan')
             .eq('id', projectId)
             .single()
 
-          if (!project || !project.series_bible) {
-            logger.error('Project or series_bible not found')
+          if (!project) {
+            logger.error('Project not found')
             break
           }
 
-          const currentImages = (project.series_bible as any).moodImages || []
+          // Merge logic: use story_plans content if available, else legacy
+          const currentContent = storyPlanRow?.content || project.story_plan || {}
+          const currentImages = currentContent.moodImages || []
           let newImages: string[]
 
           if (typeof replaceIndex === 'number' && replaceIndex >= 0) {
-            // Replace mode - update specific index
-            logger.info(`Replacing image at index ${replaceIndex}`)
+            // Replace mode
             newImages = [...currentImages]
-            // Ensure array is large enough (fill gaps if needed)
             while (newImages.length <= replaceIndex) newImages.push('')
-
-            // Update the specific slot
-            if (generatedFilenames[0]) {
-              newImages[replaceIndex] = generatedFilenames[0]
-            }
+            if (generatedFilenames[0]) newImages[replaceIndex] = generatedFilenames[0]
           } else {
-            // Append mode (legacy/initial generation)
+            // Append mode
             newImages = [...currentImages, ...generatedFilenames]
           }
 
-          const { error } = await supabase
+          const newContent = {
+            ...currentContent,
+            moodImages: newImages
+          }
+
+          // 2. Update Legacy Column
+          const { error: legacyError } = await supabase
             .from('projects')
-            .update({
-              series_bible: {
-                ...project.series_bible,
-                moodImages: newImages,
-              },
-            })
+            .update({ story_plan: newContent })
             .eq('id', projectId)
 
-          if (error) {
-            logger.error(`Update attempt ${attempt + 1} failed`, { error })
-            if (attempt < maxRetries - 1) {
-              // Wait briefly before retry
-              await new Promise(r => setTimeout(r, 500 * (attempt + 1)))
-              continue
-            }
-          } else {
-            logger.info('Updated DB with moodImages', {
-              index: replaceIndex ?? 'append',
-              count: newImages.length,
-            })
-            break
-          }
+          if (legacyError) throw legacyError
+
+          // 3. Upsert Story Plans Table (Primary)
+          const { error: primaryError } = await supabase
+            .from('story_plans')
+            .upsert(
+              {
+                project_id: projectId,
+                content: newContent,
+                updated_at: new Date().toISOString()
+              },
+              { onConflict: 'project_id' }
+            )
+
+          if (primaryError) throw primaryError
+
+          logger.info('Updated DB with moodImages (Synced both tables)', {
+            index: replaceIndex ?? 'append',
+            count: newImages.length,
+          })
+          break
+
         } catch (dbError) {
           logger.error(`Database error on attempt ${attempt + 1}`, { error: dbError })
           if (attempt < maxRetries - 1) {

@@ -1,0 +1,414 @@
+{
+  "id": "eval_2026-01-27_09-10-49-589_t0v4",
+  "name": "Structural Architecture Matrix-The Monolith-Custom",
+  "timestamp": "2026-01-27T09:10:49.589Z",
+  "config": {
+    "name": "Structural Architecture Matrix-The Monolith-Custom",
+    "evaluatorSet": "pro",
+    "examples": [
+      {
+        "id": "eq-bench-conflict-1",
+        "scenario": "High-Conflict Negotiation",
+        "input": {
+          "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+          "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+        },
+        "metadata": {
+          "groundTruth": {
+            "elena": {
+              "fear": 8,
+              "resolve": 4,
+              "disgust": 7,
+              "relief": 0
+            },
+            "marcus": {
+              "confidence": 9,
+              "anger": 2,
+              "contempt": 5,
+              "empathy": 1
+            }
+          },
+          "nuanceChecklist": [
+            "Marcus uses a 'fake empathy' tactic",
+            "Elena shows physical signs of anxiety (stuttering, shivering)",
+            "The bribe is implied, not stated outright",
+            "Elena almost gives in but pulls back"
+          ]
+        }
+      },
+      {
+        "id": "eq-bench-conflict-2",
+        "scenario": "Ambiguous Tension (Adversarial)",
+        "input": {
+          "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+          "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+        },
+        "metadata": {
+          "groundTruth": {
+            "hans": {
+              "confusion": 3,
+              "alertness": 8,
+              "suspicion": 9,
+              "affection": 0
+            },
+            "clara": {
+              "frustration": 7,
+              "deceit": 8,
+              "care": 2,
+              "fear": 5
+            }
+          }
+        }
+      }
+    ],
+    "tags": [
+      "multi-variant",
+      "The Monolith",
+      "Custom"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "eq-bench-conflict-1",
+      "input": {
+        "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+        "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+      },
+      "output": "Here is a possible dialogue scene based on the context provided:\n\n(Rain patters on the park bench as ELENA sits nervously, clutching a folder. MARCUS approaches, umbrella in hand.)\n\nMARCUS: Elena, my dear. I'm so glad you could make it. You must be freezing out here.\n\nELENA: (Shivering) I-I wanted to get this over with. What do you want, Marcus?\n\nMARCUS: (Sitting down) What I want is to help you, Elena. You're a good person, I know that. But you're in way over your head here.\n\nELENA: I have evidence. Proof of what your company has been doing. I'm turning it over to the EPA.\n\nMARCUS: (Sighing) Oh, Elena. I was hoping it wouldn't come to this. (Placing a hand on her arm) You know, I've always looked out for you. Ever since you started at the company, I've tried to guide you, protect you. \n\nELENA: (Pulling away) Protect me? You're the one who's been covering up the dumping! \n\nMARCUS: (Shaking his head) My dear, you have no idea the forces you're up against. This isn't some simple matter of right and wrong. There are powerful people involved, with a lot to lose.\n\nELENA: I don't care. What they're doing is wrong and I won't be a part of it any longer.\n\nMARCUS: (Leaning in) Elena, listen to me. If you go through with this, your life will be ruined. They'll bury you in lawsuits, ruin your reputation. You'll never work again. (Pausing) And what about your family? Your husband, your children? Do you want to put them through that?\n\n(Elena's resolve begins to waver, her eyes filling with tears.)\n\nMARCUS: (Softening his tone) I'm trying to save you, Elena. All I'm asking is that you walk away, forget what you know. In return, I can make sure you and your family are taken care of. You won't have to worry about anything ever again.\n\n(A long beat as Elena considers his words, the rain falling harder around them.)",
+      "scores": {
+        "orchestration": 1,
+        "magic-score": 0.31666666666666665,
+        "reverse-intent": 0.9,
+        "narrative-coherence": 0.75
+      },
+      "reasoning": {
+        "orchestration": "Perfect orchestration adherence.",
+        "magic-score": "AI slop detected. Magic: 32. Critical issues: \"The tension was palpable.\" - This is a cliche that feels like generic, AI-generated writing.",
+        "reverse-intent": "This dialogue scene feels very well-crafted and intentional, with a strong sense of character, subtext, and thematic depth. The writer has clearly put a lot of thought into the motivations and power dynamics at play, as well as the high-stakes consequences of Elena's actions. The language used is precise and evocative, with subtle cues and details that suggest a deeply considered prompt or outline. Overall, the text has a high level of fidelity and suggests a skilled writer with a clear creative vision.",
+        "narrative-coherence": "Narrative coherence: 75/100. One key structural change that could improve the overall narrative would be to consider introducing additional scenes or storylines that further explore the broader context and consequences of the wrongdoing that Elena has uncovered. This could help to deepen the thematic exploration and create a stronger sense of the larger stakes at play."
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "overallMagic": 31.666666666666668,
+          "dimensions": {
+            "conceptualOriginality": 45,
+            "characterSpecificity": 30,
+            "proseVoice": 25,
+            "riskTaking": 20,
+            "memorability": 35,
+            "worldBuildingDepth": 40,
+            "characterVoiceDistinction": 35,
+            "subtextQuality": 30,
+            "unexpectedChoices": 25
+          },
+          "creativeSparks": [
+            "\"I was hoping it wouldn't come to this.\" - This line hints at a deeper, more complex relationship between Marcus and Elena, suggesting there may be more to the story than a simple good vs. evil conflict."
+          ],
+          "slopAlerts": [
+            "\"The tension was palpable.\" - This is a cliche that feels like generic, AI-generated writing."
+          ],
+          "suggestion": "Embrace the moral ambiguity and shades of gray that make GRRM's writing so compelling. Complicate the relationship between Marcus and Elena - perhaps they have a history that makes this confrontation more nuanced and emotionally charged. Introduce an element of uncertainty or unpredictability that keeps the reader off-balance, unsure of who is truly right or wrong. Subvert the expected outcome and force the characters to make difficult, morally complex choices with real consequences.",
+          "evaluatedBy": "gpt-4o",
+          "threshold": 60
+        },
+        "reverse-intent": {
+          "inferredIntent": "The text appears to be a carefully crafted dialogue scene that explores the themes of corporate corruption, moral dilemmas, and the personal consequences of whistleblowing. The writer has put a lot of thought into the subtext and character motivations.",
+          "detectedSubtext": [
+            "The power dynamic between Elena and Marcus, with him trying to manipulate and coerce her",
+            "The emotional weight of Elena's decision and the potential impact on her family",
+            "The hints of a larger conspiracy and powerful forces at play beyond just this individual case"
+          ]
+        },
+        "narrative-coherence": {
+          "overallScore": 75,
+          "dimensions": {
+            "plotProgression": {
+              "score": 80,
+              "analysis": "The plot progression in this scene is strong, with a clear sense of rising action and escalating stakes. Each beat logically leads to the next, creating a sense of genuine conflict and tension. The introduction of the powerful forces that Elena is up against raises the stakes and creates a compelling obstacle for her to overcome.",
+              "strengths": [
+                "The scene has a clear dramatic arc, with Elena's initial resolve being challenged and undermined by Marcus's persuasive arguments.",
+                "The obstacles and threats that Marcus presents feel credible and raise the stakes for Elena, making her decision a difficult one."
+              ],
+              "weaknesses": [
+                "While the overall progression is strong, there could be opportunities to further heighten the drama and suspense, such as by introducing additional twists or complications that force Elena to make an even more difficult choice."
+              ]
+            },
+            "characterArc": {
+              "score": 70,
+              "analysis": "The character arcs in this scene are reasonably well-developed, with both Elena and Marcus exhibiting clear motivations and internal struggles. However, there are some areas where the character development could be strengthened.",
+              "strengths": [
+                "Marcus's character is well-established, with a clear sense of his protective, paternal attitude towards Elena and his willingness to use manipulation and threats to achieve his goals.",
+                "Elena's internal conflict is palpable, as she is torn between her desire to do the right thing and the fear of the consequences for herself and her family."
+              ],
+              "weaknesses": [
+                "The scene could benefit from more insight into Elena's backstory and the specific factors that have led her to this point, which would help to further ground her character and make her decision-making more compelling.",
+                "There is an opportunity to delve deeper into Marcus's own internal struggles and the moral dilemmas he may be facing, which could add additional layers of complexity to the scene."
+              ]
+            },
+            "thematicCoherence": {
+              "score": 75,
+              "analysis": "The scene touches on some interesting thematic elements, particularly around the tension between individual moral responsibility and the pressures of powerful institutions. However, the thematic exploration could be more fully developed and integrated throughout the narrative.",
+              "strengths": [
+                "The central conflict between Elena's desire to expose wrongdoing and Marcus's efforts to protect the company and her own interests raises compelling questions about the challenges of standing up for one's principles in the face of powerful opposition.",
+                "The scene hints at broader themes of corruption, the abuse of power, and the personal sacrifices that can be required to fight against injustice."
+              ],
+              "weaknesses": [
+                "The thematic elements could be more explicitly woven throughout the scene, with opportunities to explore the implications and nuances of the central conflict from multiple perspectives.",
+                "There is room to deepen the exploration of the theme and to consider how it might be reflected in the broader narrative, beyond just this individual scene."
+              ]
+            },
+            "setupPayoff": {
+              "score": 65,
+              "analysis": "The scene does a solid job of setting up key narrative elements, but there are some areas where the payoff and follow-through could be strengthened.",
+              "activeSetups": [
+                "The introduction of the folder containing Elena's evidence, which is clearly a Chekhov's Gun that will likely play a significant role later in the story.",
+                "The hints at the powerful forces and potential consequences that Elena is up against, which create a sense of looming danger and raise the stakes for her decision."
+              ],
+              "missedPayoffs": [
+                "While the scene establishes the existence of Elena's family, their specific role and how they might be impacted by her decision is not fully explored, leaving a potential narrative thread that could be more fully developed.",
+                "The specific details of the wrongdoing that Elena has uncovered are not clearly established, which makes it harder to fully understand the gravity of the situation and the importance of her decision."
+              ]
+            },
+            "pacing": {
+              "score": 80,
+              "analysis": "The pacing of the scene is generally strong, with a good balance of dialogue, character moments, and rising tension. The scene feels well-structured and engaging, with effective use of pauses and beats to heighten the emotional impact.",
+              "strengths": [
+                "The scene has a clear sense of rhythm and momentum, with the dialogue flowing naturally and the stakes being gradually raised.",
+                "The use of the rain and the park bench setting creates a sense of atmosphere and isolation that heightens the emotional intensity of the scene."
+              ],
+              "weaknesses": [
+                "While the pacing is generally strong, there may be opportunities to further heighten the drama and suspense, such as by introducing additional twists or complications that force Elena to make an even more difficult decision."
+              ]
+            }
+          },
+          "narrativeNotes": {
+            "whatsMagical": [
+              "The scene has a strong sense of dramatic tension and conflict, with the characters' internal struggles and the high stakes of the situation creating a compelling narrative.",
+              "The use of the park bench setting and the rain creates a moody, atmospheric backdrop that heightens the emotional intensity of the scene."
+            ],
+            "whatNeedsWork": [
+              "The character development could be further strengthened, with more insight into Elena's backstory and the specific factors that have led her to this point.",
+              "The thematic exploration could be more fully developed and integrated throughout the narrative, with opportunities to consider the implications and nuances of the central conflict from multiple perspectives."
+            ],
+            "structuralSuggestion": "One key structural change that could improve the overall narrative would be to consider introducing additional scenes or storylines that further explore the broader context and consequences of the wrongdoing that Elena has uncovered. This could help to deepen the thematic exploration and create a stronger sense of the larger stakes at play."
+          },
+          "seriesLevel": {
+            "episodicCoherence": "This scene feels like it could fit well within a larger narrative, as it establishes a clear conflict and set of stakes that could drive the overall story forward. However, to fully evaluate its fit within a larger series, more context would be needed about the broader narrative arc and the specific role this scene plays within it.",
+            "serialElements": "The scene introduces several potential continuing threads that could be explored throughout a larger narrative, such as the details of the wrongdoing that Elena has uncovered, the powerful forces that are working against her, and the impact on her family. These elements could be further developed and woven throughout the series to create a sense of ongoing tension and narrative progression."
+          },
+          "evaluatedBy": "gpt-4o"
+        },
+        "groundTruth": {
+          "elena": {
+            "fear": 8,
+            "resolve": 4,
+            "disgust": 7,
+            "relief": 0
+          },
+          "marcus": {
+            "confidence": 9,
+            "anger": 2,
+            "contempt": 5,
+            "empathy": 1
+          }
+        },
+        "nuanceChecklist": [
+          "Marcus uses a 'fake empathy' tactic",
+          "Elena shows physical signs of anxiety (stuttering, shivering)",
+          "The bribe is implied, not stated outright",
+          "Elena almost gives in but pulls back"
+        ],
+        "latencyMs": 3741,
+        "costUsd": 0.000629625,
+        "tokens": 661.5
+      },
+      "context": {
+        "arch": "Monolith",
+        "steps": [
+          "Generated"
+        ]
+      }
+    },
+    {
+      "exampleId": "eq-bench-conflict-2",
+      "input": {
+        "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+        "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+      },
+      "output": "Here is a subtext-heavy dialogue between Hans and Clara in a nursing home cafeteria:\n\nCLARA (stirring her Jello, eyes downcast): Grandpa, do you remember the old code phrase we used to use? The one about the red tulips?\n\nHANS (chewing slowly, brow furrowed): Code phrase? I'm afraid I don't know what you're talking about, my dear. \n\nCLARA (glancing up, searching his face): You know, the one we used to use when we... when we needed to communicate secretly. Back in the day.\n\nHANS (taking a sip of water, voice trembling): I'm an old man now, Clara. My mind isn't what it used to be. I'm afraid those days are long behind me.\n\nCLARA (leaning in, voice low): But Grandpa, don't you remember? The tulips, the drop point, our... our mission? It's time to activate. \n\nHANS (dabbing his mouth with a napkin, eyes darting around the room): My dear, I think you've got the wrong person. I'm just an old retiree, trying to enjoy my Jello in peace. \n\nCLARA (sitting back, frustrated): So you're not going to help me? After everything we've been through?\n\nHANS (shaking his head, feigning confusion): I'm sorry, Clara. I'm afraid you've got the wrong man. I'm just a confused old fool, lost in my own mind. \n\nCLARA (eyes narrowing, voice laced with accusation): That's not what it used to be like, Grandpa. You were always so sharp, so focused. What happened to you?\n\nHANS (avoiding her gaze, voice barely above a whisper): Things change, my dear. We all must adapt to the ravages of time.\n\nThe two continue eating in tense silence, the subtext of their shared past hanging thick in the air.",
+      "scores": {
+        "orchestration": 1,
+        "magic-score": 0.7333333333333333,
+        "reverse-intent": 0.9,
+        "narrative-coherence": 0.75
+      },
+      "reasoning": {
+        "orchestration": "Perfect orchestration adherence.",
+        "magic-score": "Strong creative work. Magic: 73. Sparks: \"The tulips, the drop point, our... our mission? It's time to activate.\", \"Things change, my dear. We all must adapt to the ravages of time.\"",
+        "reverse-intent": "The text contains a number of specific narrative elements and character cues that suggest a deeply thought-out prompt and creative intent. The dialogue feels natural and character-driven, with subtle hints at a shared history and unresolved tension between Hans and Clara. The use of the code phrase, the references to a 'mission' and 'drop point', and the contrast between Clara's urgency and Hans' evasiveness all contribute to a sense of multi-layered subtext. The text does not feel generic or predictable, and there are clear constraints and creative choices that have been made to craft this dialogue. Overall, the high level of detail and nuance in the character interactions and the underlying narrative suggests a strong creative intent and a well-executed execution of that intent.",
+        "narrative-coherence": "Narrative coherence: 75/100. Consider introducing a more overt inciting incident or catalyst early in the scene to propel the characters into action and more clearly establish the central conflict or stakes. This could help to further heighten the sense of urgency and drive the narrative forward in a more compelling way."
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "overallMagic": 73.33333333333333,
+          "dimensions": {
+            "conceptualOriginality": 60,
+            "characterSpecificity": 70,
+            "proseVoice": 75,
+            "riskTaking": 80,
+            "memorability": 75,
+            "worldBuildingDepth": 60,
+            "characterVoiceDistinction": 80,
+            "subtextQuality": 85,
+            "unexpectedChoices": 75
+          },
+          "creativeSparks": [
+            "\"The tulips, the drop point, our... our mission? It's time to activate.\"",
+            "\"Things change, my dear. We all must adapt to the ravages of time.\""
+          ],
+          "slopAlerts": [
+            "None. The dialogue feels alive and specific, not generic AI-generated content."
+          ],
+          "suggestion": "Introduce more vivid sensory details to further ground the reader in the nursing home setting. Describe the smells of the cafeteria, the texture of the Jello, the sounds of the other residents. This would heighten the sense of place and make the characters' interactions feel even more immediate and real.",
+          "evaluatedBy": "gpt-4o",
+          "threshold": 60
+        },
+        "reverse-intent": {
+          "inferredIntent": "The text appears to be a dialogue between two characters, Hans and Clara, who have a shared history and are engaging in a coded conversation with layers of subtext. The intent seems to be to create a sense of mystery, intrigue, and unresolved tension between the characters.",
+          "detectedSubtext": [
+            "Hans and Clara have a shared past, possibly involving some kind of secret mission or covert activity",
+            "They used to communicate using a specific code phrase involving red tulips and a drop point",
+            "There is a sense that Hans is no longer willing or able to participate in whatever their shared mission was",
+            "Clara is frustrated and accuses Hans of abandoning their cause, while Hans claims his mind is not what it used to be"
+          ]
+        },
+        "narrative-coherence": {
+          "overallScore": 75,
+          "dimensions": {
+            "plotProgression": {
+              "score": 80,
+              "analysis": "The plot progression in this scene has a strong sense of rising action and escalating stakes. Each exchange between Hans and Clara builds upon the previous one, creating a growing sense of tension and mystery around their shared past. The use of the 'red tulips' code phrase and references to a 'mission' suggest a larger narrative at play, hinting at a more complex backstory that the audience is eager to uncover.",
+              "strengths": [
+                "The dialogue feels purposeful, with each line pushing the scene forward and revealing new layers of subtext.",
+                "The stakes are clearly established, with Clara desperately trying to reactivate some kind of covert operation, while Hans is resisting and deflecting her attempts.",
+                "The scene ends on a cliffhanger, leaving the audience curious about what happened in the past and what will happen next."
+              ],
+              "weaknesses": [
+                "While the scene creates a strong sense of mystery, it could benefit from a more overt inciting incident or catalyst to propel the characters into action."
+              ]
+            },
+            "characterArc": {
+              "score": 70,
+              "analysis": "The character arcs in this scene are somewhat established, but could be developed further. Clara is clearly desperate to reactivate her relationship with Hans, hinting at a shared history and mission. Hans, on the other hand, is resisting and deflecting, suggesting a change in his character or priorities over time. However, the specific motivations and internal struggles of each character are not fully fleshed out, leaving the audience to fill in the gaps.",
+              "strengths": [
+                "The tension between Clara's urgency and Hans' evasiveness creates an interesting dynamic that suggests a deeper, more complex relationship."
+              ],
+              "weaknesses": [
+                "The 'want vs. need' for each character is not clearly defined, making it difficult to fully understand their emotional journeys.",
+                "The characters' changes and transformations over time are only hinted at, rather than being fully explored."
+              ]
+            },
+            "thematicCoherence": {
+              "score": 75,
+              "analysis": "The thematic elements in this scene are intriguing, with hints of a larger narrative exploring themes of aging, memory, and the weight of the past. The contrast between Clara's urgency and Hans' apparent decline suggests a commentary on the ravages of time and the challenges of maintaining one's identity and purpose as we grow older. Additionally, the references to a shared 'mission' and 'code phrase' hint at themes of secrecy, espionage, and the sacrifices required to achieve a greater good.",
+              "strengths": [
+                "The thematic elements are woven into the dialogue and character interactions, rather than being stated outright.",
+                "The multiple perspectives on the central themes (Clara's determination vs. Hans' resignation) create a more nuanced exploration."
+              ],
+              "weaknesses": [
+                "The thematic elements could be further developed and reinforced through the use of more overt symbolism or visual cues."
+              ]
+            },
+            "setupPayoff": {
+              "score": 65,
+              "analysis": "The scene does a solid job of setting up various narrative hooks and mysteries, but the payoffs are not yet fully realized. The references to the 'red tulips' code phrase and the shared 'mission' are intriguing setups that leave the audience eager to learn more. However, the lack of clear resolution or payoff in this particular scene means that these setups may feel like dangling threads if not properly addressed in future installments.",
+              "activeSetups": [
+                "The 'red tulips' code phrase and the shared 'mission' between Hans and Clara",
+                "The suggestion of a larger, more complex backstory and relationship between the characters"
+              ],
+              "missedPayoffs": [
+                "The scene ends without a clear payoff or resolution to the central mystery, leaving the audience with unanswered questions."
+              ]
+            },
+            "pacing": {
+              "score": 80,
+              "analysis": "The pacing of this scene is well-executed, with a good balance of tension-building dialogue and moments of character development. The back-and-forth between Hans and Clara creates a sense of rising action, while the quieter moments, such as Hans' contemplative silences and the tense pauses, allow the audience to breathe and reflect on the subtext. The overall rhythm of the scene feels intentional and well-crafted, keeping the audience engaged and invested in the unfolding narrative.",
+              "strengths": [
+                "The dialogue is well-paced, with a natural rhythm that builds momentum and tension.",
+                "The use of silence and subtle physical cues (e.g., Hans' darting eyes, Clara's frustrated body language) adds depth and nuance to the characters' emotional states.",
+                "The scene ends on a cliffhanger, leaving the audience eager to see what happens next."
+              ],
+              "weaknesses": [
+                "While the pacing is generally strong, there may be opportunities to further heighten the emotional stakes or intensity of certain moments to create an even more compelling and immersive experience for the audience."
+              ]
+            }
+          },
+          "narrativeNotes": {
+            "whatsMagical": [
+              "The sense of mystery and intrigue surrounding the characters' shared past, hinting at a larger, more complex narrative.",
+              "The subtle, subtext-heavy dialogue that allows the audience to infer deeper layers of meaning and emotional resonance."
+            ],
+            "whatNeedsWork": [
+              "Further development of the characters' motivations, internal struggles, and specific backstories to create a more fully realized and compelling narrative.",
+              "Clearer payoffs or resolutions to the narrative hooks and setups established in this scene, to avoid leaving the audience with too many unanswered questions."
+            ],
+            "structuralSuggestion": "Consider introducing a more overt inciting incident or catalyst early in the scene to propel the characters into action and more clearly establish the central conflict or stakes. This could help to further heighten the sense of urgency and drive the narrative forward in a more compelling way."
+          },
+          "seriesLevel": {
+            "episodicCoherence": "This scene appears to be a strong setup for a larger, more complex narrative, with the potential to fit seamlessly into a broader series or story arc. The hints of a shared past and a mysterious 'mission' suggest that this is not a standalone scene, but rather a piece of a larger puzzle that the audience will be eager to explore further.",
+            "serialElements": "The central mystery surrounding Hans and Clara's relationship and their shared 'mission' is the primary continuing thread that will likely drive the larger narrative forward. Additionally, the themes of aging, memory, and the weight of the past could be explored across multiple episodes or storylines, creating a sense of thematic coherence and depth."
+          },
+          "evaluatedBy": "gpt-4o"
+        },
+        "groundTruth": {
+          "hans": {
+            "confusion": 3,
+            "alertness": 8,
+            "suspicion": 9,
+            "affection": 0
+          },
+          "clara": {
+            "frustration": 7,
+            "deceit": 8,
+            "care": 2,
+            "fear": 5
+          }
+        },
+        "latencyMs": 4010,
+        "costUsd": 0.0005359375000000001,
+        "tokens": 537.75
+      },
+      "context": {
+        "arch": "Monolith",
+        "steps": [
+          "Generated"
+        ]
+      }
+    }
+  ],
+  "aggregatedScores": {
+    "orchestration": 1,
+    "magic-score": 0.5249999999999999,
+    "reverse-intent": 0.9,
+    "narrative-coherence": 0.75
+  },
+  "regressions": [
+    {
+      "metric": "magic-score",
+      "previousValue": 0.6,
+      "currentValue": 0.5249999999999999,
+      "delta": -0.07500000000000007,
+      "severity": "warning",
+      "message": "Magic score (52) below threshold (60)"
+    }
+  ],
+  "duration": 14881
+}

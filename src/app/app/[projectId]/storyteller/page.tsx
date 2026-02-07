@@ -4,18 +4,19 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { TOUR_STEP_IDS } from '@/lib/tour-constants'
 import { useSearchParams, useRouter, useParams } from 'next/navigation'
+import { toast } from 'sonner'
 import { CorkBoard } from '@/domains/storyteller/components/CorkBoard'
 import { CharacterPanel } from '@/domains/storyteller/components/CharacterPanel'
 // Consolidated Chat & Storyteller Imports
 import { ActionHistoryEntry, AgentAction, AgentQuestion } from '@/domains/storyteller/actions/types'
-import { ActionStatus } from '@/domains/storyteller/enums'
-import { QuestionSession, createQuestionSession } from '@/domains/storyteller/questions/types'
+import { ActionStatus, BibleSection } from '@/domains/storyteller/enums'
 import {
-  ChatInterface,
-  ChatInput,
-  SmartQuickActions,
-  createQuickActions,
-} from '@/domains/chat/components'
+  actionRequiresApproval,
+  getSectionForActionType,
+  applyUpdatesToStoryPlan
+} from '@/domains/storyteller/config/action-config'
+import { QuestionSession } from '@/domains/storyteller/questions/types'
+import { ChatInterface, SmartQuickActions } from '@/domains/chat/components'
 import { useChatStream } from '@/domains/chat/hooks/useChatStream'
 import { Message, AgentConfigMap } from '@/domains/chat/types'
 import {
@@ -26,11 +27,11 @@ import { getGameEntityProvider } from '@/domains/chat/mentions/game-entity-provi
 // Import action UI components to pass to ChatInterface
 import {
   ActionCommitted,
-  ActionToastContainer,
   ActionSuggestion,
 } from '@/domains/storyteller/components/ActionToast'
+import { ActionApprovalModal } from '@/domains/storyteller/components/ActionApprovalModal'
 import { QuestionCard } from '@/domains/storyteller/components/QuestionCard'
-import { Bot, User, Sparkles, Brain, Lightbulb, Scale, Eye, Pen, Loader2, Lock } from 'lucide-react'
+import { Bot, User, Sparkles, Brain, Lightbulb, Scale, Eye, Pen, Loader2, Lock, Network } from 'lucide-react'
 
 // Define Storyteller Agent Config - Minimalist
 const STORYTELLER_AGENT_CONFIG: AgentConfigMap = {
@@ -82,21 +83,15 @@ const STORYTELLER_AGENT_CONFIG: AgentConfigMap = {
   },
 }
 
-import {
-  StreamingContent,
-  StreamingSection,
-} from '@/domains/storyteller/components/StreamingContent'
 import { EpisodeManager } from '@/domains/storyteller/components/EpisodeManager'
 import { MasterPromptEditor } from '@/domains/storyteller/components/MasterPromptEditor'
-import { PendingActions } from '@/domains/storyteller/components/PendingActions'
+import { useLoadingStates } from '@/domains/storyteller/hooks/useLoadingStates'
+import { PhaseNavigatorCompact } from '@/domains/storyteller/components/PhaseNavigator'
 import dynamic from 'next/dynamic'
 
 // Dynamic imports for heavy components to reduce initial bundle size
-const ScriptEditor = dynamic(
-  () =>
-    import('@/domains/storyteller/components/ScriptEditor').then(m => ({
-      default: m.ScriptEditor,
-    })),
+const ScriptEditor = dynamic<any>(
+  () => import('@/domains/storyteller/components/ScriptEditor').then(m => m.default),
   {
     ssr: false,
     loading: () => (
@@ -106,61 +101,44 @@ const ScriptEditor = dynamic(
     ),
   }
 )
-const Timeline = dynamic(
-  () => import('@/domains/storyteller/components/Timeline').then(m => ({ default: m.Timeline })),
-  { ssr: false }
-)
-const StoryPlanBoard = dynamic(
-  () =>
-    import('@/domains/storyteller/components/StoryPlanBoard').then(m => ({
-      default: m.StoryPlanBoard,
-    })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex-1 flex items-center justify-center">
-        <Loader2 className="animate-spin" />
-      </div>
-    ),
-  }
-)
-const WorldBiblePanel = dynamic(
-  () =>
-    import('@/domains/storyteller/components/WorldBiblePanel').then(m => ({
-      default: m.WorldBiblePanel,
-    })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex-1 flex items-center justify-center">
-        <Loader2 className="animate-spin" />
-      </div>
-    ),
-  }
-)
+const Timeline = dynamic<any>(() => import('@/domains/storyteller/components/Timeline'), {
+  ssr: false,
+})
+const StoryPlanBoard = dynamic<any>(() => import('@/domains/storyteller/components/StoryPlanBoard'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex-1 flex items-center justify-center">
+      <Loader2 className="animate-spin" />
+    </div>
+  ),
+})
+const WorldBiblePanel = dynamic<any>(() => import('@/domains/storyteller/components/WorldBiblePanel'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex-1 flex items-center justify-center">
+      <Loader2 className="animate-spin" />
+    </div>
+  ),
+})
+const CharacterWeb = dynamic<any>(() => import('@/domains/storyteller/components/CharacterWeb').then(m => m.CharacterWeb), {
+  ssr: false,
+  loading: () => (
+    <div className="flex-1 flex items-center justify-center">
+      <Loader2 className="animate-spin" />
+    </div>
+  ),
+})
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
 import { posterGenerationService } from '@/domains/storyteller/services/PosterGenerationService'
 import {
-  Settings,
-  Layout,
   FileText,
-  X,
   Users,
-  Zap,
-  History,
   BookOpen,
-  StopCircle,
   AlertCircle,
-  ChevronLeft,
-  ChevronRight,
-  Map,
   Scroll,
   Film,
-  Send,
   Check,
-  Activity,
-  Palette,
   FilePlus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -170,13 +148,20 @@ import {
   SidebarEmptyState,
   SidebarHeader,
 } from '@/components/ui/domain-sidebar'
-import { regenerateText } from '@/domains/storyteller/services/script-operations'
+// regenerateText moved to API call to fix client-side bundle issues
 import { StoryPlan, StorySequence } from '@/domains/storyteller/schemas/agent-schemas'
 
-import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
+// import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
 import { useConfirmDialog } from '@/components/ui/confirm-dialog'
+
+
 import { LocalStorageKeys } from '@/constants/localStorage'
 import { moodboardGenerationService } from '@/domains/storyteller/services/MoodboardGenerationService'
+import { cachedFetch, clearFetchCache } from '@/lib/fetch-cache'
+import { isAdminUser } from '@/lib/admin-users'
+
+// Module-level tracking removed in favor of useRef
+// const hydratedProjects = new Set<string>()
 
 const MAX_ROUNDS = 15 // Hard stop after this many rounds
 
@@ -238,6 +223,21 @@ interface Character {
   resilience?: number
   agency?: number
   image?: string
+  psychology?: {
+    goals?: string[]
+    fears?: string[]
+    selfDelusion?: string
+    actualMotivation?: string
+  }
+  currentGoals?: string[]
+  fears?: string[]
+  selfDelusion?: string
+  actualMotivation?: string
+  // Added for missing props
+  power?: number
+  morality?: number
+  hope?: number
+  isolation?: number
 }
 
 interface Beat {
@@ -248,6 +248,13 @@ interface Beat {
   status: string
   content?: string
   imagePrompt?: string
+  // Added for BeatCard compatibility
+  episodeId?: string
+  charactersInvolved?: string[]
+  emotionalShifts?: Record<string, { from: string; to: string }>
+  visualHook?: string
+  causalDependencies?: string[]
+  setupsPayoffs?: { setupId?: string; payoffFor?: string }
 }
 
 export default function StorytellerPage() {
@@ -259,13 +266,134 @@ export default function StorytellerPage() {
     }
   }, [])
 
-  // Load project from URL
-  useProjectFromUrl()
+  // Load project from URL - REMOVED (Handled by ProjectLoader in layout)
+  // useProjectFromUrl()
   const searchParams = useSearchParams()
   const params = useParams()
   const router = useRouter()
 
   const currentProject = useWorldStore(state => state.currentProject)
+  const setCurrentProject = useWorldStore(state => state.setCurrentProject)
+
+  // Hydrate state from project on load (fixes refresh issue)
+  // Uses module-level Set to persist across component remounts and prevent infinite loops
+  useEffect(() => {
+    const projectId = currentProject?.id
+    if (!projectId) {
+      return
+    }
+
+    // Handle both snake_case (DB row) and camelCase (optimistic updates)
+    const rawBible = (currentProject as any)?.series_bible || (currentProject as any)?.seriesBible
+    // IMPORTANT: Also get storyPlan from the separate storyPlans table
+    const rawStoryPlan = (currentProject as any)?.story_plan || (currentProject as any)?.storyPlan
+
+    console.log('🔍 [StorytellerPage] Hydration Check:', {
+      hasRawBible: !!rawBible,
+      hasRawStoryPlan: !!rawStoryPlan,
+      rawStoryPlanKeys: rawStoryPlan ? Object.keys(rawStoryPlan) : [],
+      rawStoryPlanWorldRules: rawStoryPlan?.worldRules?.length || 0,
+      rawBibleKeys: rawBible ? Object.keys(rawBible) : [],
+      rawBibleUpdatedFieldsWorldRules: rawBible?.updatedFields?.worldRules?.length || 0,
+    })
+
+    if (rawBible || rawStoryPlan) {
+      console.log('🔄 [StorytellerPage] Hydrating state from project...')
+      // Hydration logic removed isHydratedRef
+      const bible = (rawBible || {}) as any
+
+      // 1. Sync Decisions
+      if (bible.userDecisions) {
+        setStoryDecisions(prev => ({ ...prev, ...bible.userDecisions }))
+      }
+
+      // 2. Sync StoryPlan
+      const planFields = [
+        'soundtracks', 'worldRules', 'factions', 'keyCharacters',
+        'plotTwists', 'inspirations', 'worldDescription', 'genre',
+        'tone', 'sequences', 'seasonStructure', 'centralTheme',
+        'masterPrompt', 'moodImages', 'executiveSummary'
+      ]
+
+      // Start with storyPlan from the storyPlans table (PRIMARY source for worldRules etc)
+      // FIX: rawStoryPlan (new table) must come LAST to overwrite any stale data in bible.storyPlan
+      const initialPlan = { ...(bible.storyPlan || {}), ...(rawStoryPlan || {}) }
+
+      // Merge top-level fields AND nested categories (General, Setting, etc.)
+      const categories = ['General', 'Setting', 'History', 'Magic', 'Factions', 'Technology', 'Culture', 'updatedFields']
+
+      // Helper to merge fields from a source object
+      // onlyIfMissing: if true, only merge fields that don't already exist in initialPlan
+      const mergeFromSource = (source: any, onlyIfMissing = false) => {
+        if (!source) return
+        for (const field of planFields) {
+          if (source[field] !== undefined && source[field] !== null) {
+            // If onlyIfMissing is true, skip fields that already exist
+            if (onlyIfMissing && initialPlan[field] !== undefined && initialPlan[field] !== null) {
+              continue
+            }
+            initialPlan[field] = source[field]
+          }
+        }
+
+        // Alias mapping for characters
+        const charAliases = ['characters', 'cast', 'keyPlayers', 'key_players']
+        for (const alias of charAliases) {
+          if (source[alias] && Array.isArray(source[alias]) && source[alias].length > 0) {
+            // Only merge if keyCharacters is empty or we want to append
+            initialPlan.keyCharacters = [...(initialPlan.keyCharacters || []), ...source[alias]]
+          }
+        }
+
+        // Alias mapping for world rules
+        if (source.rules && Array.isArray(source.rules)) {
+          initialPlan.worldRules = [...(initialPlan.worldRules || []), ...source.rules]
+        }
+      }
+
+      // 1. Merge from storyPlan table first (highest priority - this is where actions save)
+      mergeFromSource(rawStoryPlan, false)
+
+      // 2. Merge from bible categories (only if missing from storyPlan)
+      for (const cat of categories) {
+        mergeFromSource(bible[cat], true)
+      }
+
+      // 3. Merge from top-level bible (only if missing - for backward compat)
+      mergeFromSource(bible, true)
+
+      // Deduplicate key characters by name after merging all sources
+      if (initialPlan.keyCharacters) {
+        const unique = new Map()
+        initialPlan.keyCharacters.forEach((c: any) => {
+          if (c && c.name) unique.set(c.name, c)
+        })
+        initialPlan.keyCharacters = Array.from(unique.values())
+      }
+
+      // Deduplicate worldRules by rule text after merging all sources
+      if (initialPlan.worldRules) {
+        const unique = new Map()
+        initialPlan.worldRules.forEach((r: any) => {
+          if (r && r.rule) unique.set(r.rule, r)
+        })
+        initialPlan.worldRules = Array.from(unique.values())
+      }
+
+      setStoryPlan(initialPlan)
+      console.log('✅ [StorytellerPage] Hydrated storyPlan keys:', Object.keys(initialPlan))
+      console.log('✅ [StorytellerPage] worldRules count:', initialPlan.worldRules?.length || 0)
+      console.log('✅ [StorytellerPage] worldRules:', initialPlan.worldRules)
+      console.log('✅ [StorytellerPage] worldDescription (first 100 chars):', initialPlan.worldDescription?.slice(0, 100))
+    }
+  }, [
+    currentProject?.id,
+    (currentProject as any)?.story_plan?.worldDescription,
+    (currentProject as any)?.story_plan?.worldRules?.length,
+    (currentProject as any)?.series_bible?.worldDescription,
+    (currentProject as any)?.storyPlan?.worldDescription,
+    (currentProject as any)?.storyPlan?.worldRules?.length,
+  ])
 
   // Initialize episode from URL param
   const episodeParam = searchParams.get('episodeId')
@@ -301,6 +429,10 @@ export default function StorytellerPage() {
 
   const [selectedBeatId, setSelectedBeatId] = useState<string | null>(null)
 
+  // Bible State - Derived from URL
+  const bibleParamValue = searchParams.get('bible')
+  const isWorldBibleOpen = bibleParamValue === 'open'
+
   // Character State
   const [characters, setCharacters] = useState<Character[]>([])
 
@@ -313,10 +445,45 @@ export default function StorytellerPage() {
   const [currentPhase, setCurrentPhase] = useState<string>('premise')
   const [activeTab, setActiveTab] = useState<string>('plan')
   const [lastEpisodeTab, setLastEpisodeTab] = useState<string>('plan') // Remember last non-bible tab
+  const [focusEntityId, setFocusEntityId] = useState<string | null>(null)
 
-  // Bible State - Derived from URL
-  const bibleParamValue = searchParams.get('bible')
-  const isWorldBibleOpen = bibleParamValue === 'open'
+  // Listen for entity navigation events (from clicking entity references)
+  useEffect(() => {
+    const handleNavigateToEntity = (e: Event) => {
+      const { refId } = (e as CustomEvent).detail || {}
+      if (!refId) return
+
+      console.log(`[StorytellerPage] Navigating to entity: ${refId}`)
+      setFocusEntityId(refId)
+
+      // Switch to relationships tab (in Bible panel if open, or workspace)
+      if (isWorldBibleOpen) {
+        // Bible panel has its own tab system - dispatch event to switch tab
+        window.dispatchEvent(new CustomEvent('bible-switch-tab', { detail: { tab: 'relationships' } }))
+      } else if (currentEpisodeId) {
+        setActiveTab('relationships')
+      }
+    }
+
+    window.addEventListener('navigate-to-entity', handleNavigateToEntity)
+    return () => window.removeEventListener('navigate-to-entity', handleNavigateToEntity)
+  }, [isWorldBibleOpen, currentEpisodeId])
+
+  // Sync activeTab with currentPhase - ONE navigation, not two
+  useEffect(() => {
+    const phaseToTab: Record<string, string> = {
+      premise: 'plan',
+      breaking: 'board',
+      writing: 'script',
+      complete: 'script',
+    }
+    const newTab = phaseToTab[currentPhase] || 'plan'
+    if (activeTab !== newTab) {
+      setActiveTab(newTab)
+    }
+  }, [currentPhase])
+
+
 
   // Bible Lock State
   const [isBibleLocked, setIsBibleLocked] = useState(false)
@@ -335,29 +502,36 @@ export default function StorytellerPage() {
     fetchUser()
   }, [])
 
-  // Fetch Bible lock status
+  // Fetch Bible lock status - using cachedFetch to prevent infinite loops on remount
   useEffect(() => {
     let isMounted = true
+    const projectId = currentProject?.id
+    if (!projectId) return
 
-    const fetchLockStatus = async () => {
-      if (!currentProject?.id) return
-
-      try {
-        const response = await fetch(`/api/storyteller/bible/lock?projectId=${currentProject.id}`)
-        if (response.ok && isMounted) {
-          const data = await response.json()
+    cachedFetch(
+      `bible-lock:${projectId}`,
+      async () => {
+        const response = await fetch(`/api/storyteller/bible/lock?projectId=${projectId}`)
+        if (response.ok) {
+          return response.json()
+        }
+        return { isLocked: false, lockedBy: null }
+      },
+      { ttlMs: 60_000 } // Cache for 1 minute
+    )
+      .then(data => {
+        if (isMounted) {
           setIsBibleLocked(data.isLocked || false)
           setBibleLockedBy(data.lockedBy || null)
         }
-      } catch (error) {
+      })
+      .catch(() => {
         // Silently fail - table might not exist yet
         if (isMounted) {
           setIsBibleLocked(false)
           setBibleLockedBy(null)
         }
-      }
-    }
-    fetchLockStatus()
+      })
 
     return () => {
       isMounted = false
@@ -414,17 +588,36 @@ export default function StorytellerPage() {
   const [isPlanApproved, setIsPlanApproved] = useState(false)
   const [isFetchingPlan, setIsFetchingPlan] = useState(!!episodeParam)
 
+  // Undo state - stores previous storyPlan for undo functionality
+  const [undoStack, setUndoStack] = useState<{ storyPlan: StoryPlan | null; actionId: string }[]>([])
+
+  // Review modal state
+  const [reviewModalAction, setReviewModalAction] = useState<{ action: AgentAction; agentName: string; messageIndex: number; actionIndex: number } | null>(null)
+
+  // Section pending actions - for blur overlay with accept/reject on Bible sections
+  const [sectionPendingActions, setSectionPendingActions] = useState<Record<string, {
+    section: string
+    preview: any
+    action: any
+    onAccept: () => void
+    onReject: () => void
+    onReview?: () => void
+  }>>({})
+
   const [isGeneratingPoster, setIsGeneratingPoster] = useState(false)
   const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false)
   const [primaryMoodboardUrl, setPrimaryMoodboardUrl] = useState<string | null>(null)
   const [isActivityPanelOpen, setIsActivityPanelOpen] = useState(false)
 
+  // Loading states for verbose "active" mode - tracks all concurrent operations
+  const loadingStates = useLoadingStates()
+
   // Derive if project has a bible foundation
   const hasBible = useMemo(() => {
     return !!(
       storyPlan?.worldDescription ||
-      (storyPlan?.genre && storyPlan.genre !== 'Unknown') ||
-      (storyPlan?.tone && storyPlan.tone !== 'Unknown') ||
+      (storyPlan?.genre && storyPlan.genre !== 'Unknown' && storyPlan.genre !== '') ||
+      (storyPlan?.tone && storyPlan.tone !== 'Unknown' && storyPlan.tone !== '') ||
       (storyPlan?.themes && storyPlan.themes.length > 0)
     )
   }, [storyPlan])
@@ -439,6 +632,33 @@ export default function StorytellerPage() {
     { question: string; answer: string }[]
   >([])
   const [actionHistory, setActionHistory] = useState<ActionHistoryEntry[]>([])
+
+  // Load Action History from LocalStorage
+  useEffect(() => {
+    if (currentProject?.id) {
+      try {
+        const key = `actionHistory_${currentProject.id}`
+        const saved = localStorage.getItem(key)
+        if (saved) {
+          setActionHistory(JSON.parse(saved))
+        }
+      } catch (e) {
+        console.error('Failed to load action history:', e)
+      }
+    }
+  }, [currentProject?.id])
+
+  // Save Action History to LocalStorage
+  useEffect(() => {
+    if (currentProject?.id) {
+      try {
+        const key = `actionHistory_${currentProject.id}`
+        localStorage.setItem(key, JSON.stringify(actionHistory))
+      } catch (e) {
+        console.error('Failed to save action history:', e)
+      }
+    }
+  }, [actionHistory, currentProject?.id])
   const [showToasts, setShowToasts] = useState<ActionHistoryEntry[]>([])
   const [generatingSection, setGeneratingSection] = useState<string | null>(null)
 
@@ -526,48 +746,55 @@ export default function StorytellerPage() {
                 ...(bible.userDecisions || {}),
               }))
 
-              // Update storyPlan with all relevant fields from bible
-              // Bible can have: storyPlan (nested), or fields at top level (soundtracks, worldRules, etc.)
               setStoryPlan(prev => {
-                const updated = { ...prev }
+                // Merge storyPlan fields if present
+                const storyPlanUpdates = bible.storyPlan || {}
+                const directUpdates = { ...bible }
+                delete directUpdates.storyPlan
 
-                // If bible has storyPlan nested, merge it
-                if (bible.storyPlan) {
-                  Object.assign(updated, bible.storyPlan)
-                }
+                // Combine all updates
+                const allUpdates = { ...storyPlanUpdates, ...directUpdates }
 
-                // Also merge top-level fields that belong to storyPlan
-                const planFields = [
-                  'soundtracks',
-                  'worldRules',
-                  'factions',
-                  'keyCharacters',
-                  'plotTwists',
-                  'inspirations',
-                  'worldDescription',
-                  'genre',
-                  'tone',
-                  'sequences',
-                  'seasonStructure',
-                ]
-                for (const field of planFields) {
-                  if (bible[field] !== undefined) {
-                    ;(updated as any)[field] = bible[field]
-                  }
-                }
+                // Use centralized utility for consistent merging
+                const updated = applyUpdatesToStoryPlan(prev, allUpdates)
 
-                console.log(
-                  '📚 [executeAction] StoryPlan updated fields:',
-                  planFields.filter(f => bible[f] !== undefined)
-                )
-
+                console.log('📚 [executeAction] bible_updated - Applied fields:', Object.keys(updated).filter(k => (updated as any)[k]))
                 return updated
               })
-              // Note: We intentionally don't call setCurrentProject here
-              // The data is already saved to DB via the API call, and local state
-              // (storyPlan, storyDecisions) is already updated above.
-              // Calling setCurrentProject would trigger cascading useEffects that
-              // could reset chat state.
+            }
+          } else if (action.type === 'UPDATE_SERIES_BIBLE' || action.type.startsWith('UPDATE_')) {
+            // Handle all UPDATE_* action types by applying payload directly to state
+            const payload = (action.payload || {}) as any
+            const payloadFields = payload.updatedFields || payload
+
+            console.log(
+              `📚 [executeAction] Applying ${action.type} update to state:`,
+              Object.keys(payloadFields)
+            )
+
+            setStoryDecisions(prev => ({
+              ...prev,
+              ...(payloadFields.userDecisions || {}),
+            }))
+
+            setStoryPlan(prev => {
+              // Use centralized utility for consistent merging
+              const updated = applyUpdatesToStoryPlan(prev, payloadFields)
+
+              console.log('📚 [executeAction] Updated storyPlan fields:', Object.keys(updated).filter(k => (updated as any)[k]))
+              return updated
+            })
+
+            // Update local currentProject to stay in sync
+            if (currentProject) {
+              const mergedBible = {
+                ...((currentProject.series_bible as any) || {}),
+                ...payloadFields,
+              }
+              setCurrentProject({
+                ...currentProject,
+                series_bible: mergedBible,
+              })
             }
           } else if (data.result?.type === 'script_updated') {
             if (data.result.script) {
@@ -576,6 +803,7 @@ export default function StorytellerPage() {
               setScript(data.result.seriesBible.script)
             }
           } else if (data.result?.type === 'episode_updated') {
+            console.log('📺 [executeAction] Episode updated, applying premise to state')
             if (data.result.storyPlan) {
               setStoryPlan(
                 prev =>
@@ -612,11 +840,17 @@ export default function StorytellerPage() {
     setIsAwaitingInput,
     abortControllerRef,
     updateActionStatus,
+    loadingSections, // Section-specific loading states for granular shimmer
+    setLoadingSections, // To set loading state immediately on button click
   } = useChatStream({
     // Use project + episode as persist key
     persistKey: currentProject?.id
       ? `storyteller-${currentProject.id}-${currentEpisodeId || 'global'}`
       : undefined,
+    // Langfuse session tracking - groups all chat interactions for this project/episode
+    projectId: currentProject?.id,
+    episodeId: currentEpisodeId || undefined,
+    userId: userEmail || undefined,
     initialMessages: [
       {
         sender: 'Showrunner',
@@ -626,9 +860,122 @@ export default function StorytellerPage() {
       },
     ],
     onAction: async action => {
-      // Actions are now rendered inline via ActionComponent using the ID from AgentLog
-      // No need to store separately - just let them pass through
-      console.log('[Action received]', action.type)
+      // Handle action events from tool results
+      // CRITICAL: Don't block the stream - use fire-and-forget pattern
+      console.log('[Action received]', action.type, action.payload)
+
+        // Fire and forget - don't await to prevent blocking/crashing the stream
+        ; (async () => {
+          try {
+            // Use centralized approval check
+            const requiresApproval = actionRequiresApproval(action.type, action.status)
+
+            if (requiresApproval) {
+              console.log(`[Action received] ${action.type} - awaiting user approval`, {
+                payload: action.payload ? Object.keys(action.payload) : 'no payload',
+                status: action.status,
+              })
+              // Do NOT auto-apply to local state. 
+              // Wait for user to click "Approve" which will call handleApprove -> executeAction
+
+              // Set section pending action for Bible sections (for blur overlay)
+              const section = getSectionForActionType(action.type)
+              console.log(`[Action] Mapped action type '${action.type}' to section '${section}'`)
+
+              // For 'full' section or no section, we don't blur a specific Bible panel
+              // but the action is still shown as a pending action in the chat interface
+              if (section && section !== 'full') {
+                console.log(`[Action] Setting section pending overlay for ${section}`)
+                // Create handlers that will execute/reject the action
+                const handleSectionAccept = async () => {
+                  console.log(`[Section Accept] Approving ${action.type} for section ${section}`)
+                  // Set processing state
+                  setSectionPendingActions(prev => {
+                    if (!prev[section]) return prev
+                    return {
+                      ...prev,
+                      [section]: { ...prev[section], isProcessing: true }
+                    }
+                  })
+
+                  try {
+                    await executeAction(action as any)
+                    // Clear pending action on success
+                    setSectionPendingActions(prev => {
+                      const { [section]: _, ...rest } = prev
+                      return rest
+                    })
+                    // Add to history
+                    setActionHistory((prevHistory: any) => [
+                      {
+                        id: `${Date.now()}`,
+                        type: action.type,
+                        status: 'committed',
+                        timestamp: Date.now(),
+                        payload: action.payload,
+                      },
+                      ...prevHistory.slice(0, 49),
+                    ])
+                  } catch (e) {
+                    console.error('[Section Accept] Failed:', e)
+                    // Reset processing state on failure
+                    setSectionPendingActions(prev => {
+                      if (!prev[section]) return prev
+                      return {
+                        ...prev,
+                        [section]: { ...prev[section], isProcessing: false }
+                      }
+                    })
+                  }
+                }
+
+                const handleSectionReject = () => {
+                  console.log(`[Section Reject] Rejecting ${action.type} for section ${section}`)
+                  // Clear pending action
+                  setSectionPendingActions(prev => {
+                    const { [section]: _, ...rest } = prev
+                    return rest
+                  })
+                }
+
+                setSectionPendingActions(prev => ({
+                  ...prev,
+                  [section]: {
+                    section,
+                    preview: action.payload,
+                    action: action as AgentAction,
+                    onAccept: handleSectionAccept,
+                    onReject: handleSectionReject,
+                    onReview: () => setReviewModalAction({
+                      action: action as AgentAction,
+                      agentName: 'Storyteller',
+                      messageIndex: -1,
+                      actionIndex: -1
+                    }),
+                  }
+                }))
+              }
+            } else {
+              // For non-approval actions, execute immediately
+              await executeAction(action as any)
+
+              // Add to history for UI feedback
+              setActionHistory((prev: any) => [
+                {
+                  id: `stream-${Date.now()}`,
+                  action: action as any,
+                  agentName: 'Storyteller',
+                  status: ActionStatus.COMMITTED,
+                  timestamp: new Date(),
+                },
+                ...prev,
+              ])
+              console.log('[Action committed]', action.type)
+            }
+          } catch (err) {
+            console.error('[Action failed]', action.type, err)
+          }
+        })()
     },
     onQuestion: questionSession => {
       setPendingQuestions(prev => {
@@ -663,15 +1010,91 @@ export default function StorytellerPage() {
         useGlobalStatusStore.getState().updateOperation('story-session', {
           details: data.node || data.message?.node,
         })
-      } else if (data.type === 'done' || data.type === 'terminated' || data.type === 'error') {
+      } else if (data.type === 'done' || data.type === 'terminated' || data.type === 'error' || data.type === 'complete') {
         useGlobalStatusStore.getState().removeOperation('story-session')
+      } else if (data.type === 'tool_result' && data.toolName === 'create_character') {
+        console.log('🔄 [Storyteller] Character created by agent, syncing sidebar...')
+        if (currentProject?.id) {
+          clearFetchCache(`characters:${currentProject.id}`)
+          // If the tool returned the character, add it to state immediately after mapping
+          if (data.result?.character) {
+            const raw = data.result.character
+            const newChar = {
+              ...raw,
+              // Match the mapping logic from the fetch effect (lines ~1714)
+              stress: raw.stressLevel ?? raw.stress_level ?? 30,
+              trust: raw.trustLevel ?? raw.trust_level ?? 50,
+              power: raw.powerLevel ?? raw.power_level ?? 30,
+              morality: raw.moralityLevel ?? raw.morality_level ?? 50,
+              hope: raw.hopeLevel ?? raw.hope_level ?? 60,
+              isolation: raw.isolationLevel ?? raw.isolation_level ?? 20,
+              transformation: raw.transformationProgress ?? raw.transformation_progress ?? raw.arcStatus?.transformation ?? 0,
+              id: raw.id || raw.characterId,
+              role: raw.role || '',
+              // Ensure portraitUrl is preserved
+              portraitUrl: raw.portraitUrl || raw.portrait_url,
+            }
+
+            setCharacters(prev => {
+              // Robust deduplication: Remove existing char if same ID or same Name
+              const filtered = prev.filter(c =>
+                c.id !== newChar.id &&
+                c.name.toLowerCase() !== newChar.name.toLowerCase()
+              )
+              return [newChar, ...filtered]
+            })
+          } else {
+            // Fallback: trigger refetch
+            fetch(`/api/storyteller/characters?projectId=${currentProject.id}`)
+              .then(res => res.json())
+              .then(data => {
+                if (Array.isArray(data)) {
+                  const mapped = data.map((c: any) => ({
+                    ...c,
+                    stress: c.stressLevel ?? c.stress_level ?? 30,
+                    trust: c.trustLevel ?? c.trust_level ?? 50,
+                    power: c.powerLevel ?? c.power_level ?? 30,
+                    morality: c.moralityLevel ?? c.morality_level ?? 50,
+                    hope: c.hopeLevel ?? c.hope_level ?? 60,
+                    isolation: c.isolationLevel ?? c.isolation_level ?? 20,
+                    transformation: c.transformationProgress ?? c.transformation_progress ?? c.arcStatus?.transformation ?? 0,
+                    id: c.id || c.characterId,
+                    role: c.role || '',
+                  }))
+                  setCharacters(mapped)
+                }
+              })
+              .catch(e => console.error('Failed to refetch characters', e))
+          }
+        }
+      } else if (data.type === 'tool_result' && data.toolName === 'update_world_bible') {
+        // NOTE: Don't call loadProject here - it causes a heavy refresh that disrupts UI
+        // The action event handler (onAction -> executeAction) already updates the Bible state
+        console.log('🔄 [Storyteller] World Bible updated by agent tool')
+      } else if (data.type === 'tool_result' && data.toolName === 'update_story_phase') {
+        // Automatically switch phase when triggered by agent
+        if (data.result?.phase) {
+          console.log('🎬 [Storyteller] Story phase updated to:', data.result.phase)
+          setCurrentPhase(data.result.phase)
+        }
       }
+    },
+    onComplete: () => {
+      // Reset section-specific generation state when stream completes
+      setGeneratingSection(null)
+      // Clear all section loading states
+      setLoadingSections({})
     },
   })
 
   // Derived state
   const showThinking = !!thinkingAgent
   const roundCount = 0 // Placeholder
+
+  // Map action types to Bible section names (using centralized config)
+  const getActionSection = useCallback((actionType: string): BibleSection | null => {
+    return getSectionForActionType(actionType)
+  }, [])
 
   // Memoized ActionComponent to prevent re-renders on every streaming token
   const MemoizedActionComponent = useMemo(() => {
@@ -688,14 +1111,46 @@ export default function StorytellerPage() {
     }) {
       const status = action.status || 'pending'
 
+      const actionId = `${messageIndex}-${actionIndex}`
+      const section = getActionSection(action.type)
+
       const handleApprove = async () => {
         updateActionStatus(messageIndex, actionIndex, 'executing')
+
+        // Set processing state on section pending action (so overlay shows loading)
+        if (section) {
+          setSectionPendingActions(prev => {
+            if (!prev[section]) return prev
+            return {
+              ...prev,
+              [section]: {
+                ...prev[section],
+                isProcessing: true,
+              }
+            }
+          })
+        }
+
+        // Save current state for undo (only for UPDATE_* actions)
+        if (action.type.startsWith('UPDATE_')) {
+          setUndoStack(prev => [...prev.slice(-4), { storyPlan: storyPlan ? { ...storyPlan } : null, actionId }])
+        }
+
         try {
           await executeAction(action as any)
           updateActionStatus(messageIndex, actionIndex, 'committed')
+
+          // Clear section pending action on success
+          if (section) {
+            setSectionPendingActions(prev => {
+              const { [section]: _, ...rest } = prev
+              return rest
+            })
+          }
+
           setActionHistory(prev => [
             {
-              id: `${messageIndex}-${actionIndex}`,
+              id: actionId,
               action,
               agentName,
               status: ActionStatus.COMMITTED,
@@ -706,24 +1161,81 @@ export default function StorytellerPage() {
         } catch (e) {
           console.error('Approval failed', e)
           updateActionStatus(messageIndex, actionIndex, 'pending')
+
+          // Reset processing state on failure
+          if (section) {
+            setSectionPendingActions(prev => {
+              if (!prev[section]) return prev
+              return {
+                ...prev,
+                [section]: {
+                  ...prev[section],
+                  isProcessing: false,
+                }
+              }
+            })
+          }
+
+          // Remove from undo stack on failure
+          setUndoStack(prev => prev.filter(u => u.actionId !== actionId))
         }
       }
 
       const handleReject = () => {
         updateActionStatus(messageIndex, actionIndex, 'rejected')
+        // Clear section pending action
+        if (section) {
+          setSectionPendingActions(prev => {
+            const { [section]: _, ...rest } = prev
+            return rest
+          })
+        }
       }
+
+      const handleUndo = async () => {
+        const undoEntry = undoStack.find(u => u.actionId === actionId)
+
+        // Handle StoryPlan Undo
+        if (undoEntry && undoEntry.storyPlan) {
+          setStoryPlan(undoEntry.storyPlan)
+          setUndoStack(prev => prev.filter(u => u.actionId !== actionId))
+          updateActionStatus(messageIndex, actionIndex, 'rejected')
+          console.log('↩️ [Undo] Reverted to previous state for action:', actionId)
+        }
+
+        // Handle Character Creation Undo
+        if (action.type === 'create_character' || (action.type === 'tool_use' && action.tool === 'create_character')) {
+          const charName = action.payload?.name || (action.payload as any)?.character?.name
+          if (charName) {
+            console.log('↩️ [Undo] Removing character:', charName)
+            setCharacters(prev => prev.filter(c => c.name.toLowerCase() !== charName.toLowerCase()))
+            // Optionally trigger a delete API call? 
+            // Ideally we would, but for now let's just clean the UI as the user rejected it.
+            // If we really want to "Undo", we should delete it.
+            // But "Reject" usually means "Don't do it". If it's already done (tool_result), we need to undo it.
+            // For now, removing from UI is the primary request ("should only appear in sidebar if approved").
+          }
+          updateActionStatus(messageIndex, actionIndex, 'rejected')
+        }
+      }
+
+      const canUndo = (action.type.startsWith('UPDATE_') && undoStack.some(u => u.actionId === actionId)) ||
+        action.type === 'create_character' ||
+        (action.type === 'tool_use' && action.tool === 'create_character')
 
       if (status === 'committed') {
         return (
           <ActionCommitted
             entry={{
-              id: `${messageIndex}-${actionIndex}`,
+              id: actionId,
               action,
               agentName,
               timestamp: new Date(),
               status: ActionStatus.COMMITTED,
             }}
             compact
+            onUndo={handleUndo}
+            canUndo={canUndo}
           />
         )
       }
@@ -734,17 +1246,25 @@ export default function StorytellerPage() {
           </div>
         )
       }
+      const handleReview = () => {
+        setReviewModalAction({ action, agentName, messageIndex, actionIndex })
+      }
+
+      // Note: Section pending actions are now set via the stream handler when actions are received
+      // This avoids the React hooks conditional call issue
+
       return (
         <ActionSuggestion
           action={action}
           agentName={agentName}
-          onApprove={handleApprove}
+          onAccept={handleApprove}
+          onReview={handleReview}
           onReject={handleReject}
           isProcessing={status === 'executing'}
         />
       )
     })
-  }, [updateActionStatus, executeAction, setActionHistory])
+  }, [updateActionStatus, executeAction, setActionHistory, storyPlan, undoStack, setUndoStack, setStoryPlan, setReviewModalAction, getActionSection, setSectionPendingActions])
 
   const handleApproveAllActions = useCallback(
     async (messageIndex: number) => {
@@ -772,9 +1292,11 @@ export default function StorytellerPage() {
   )
 
   const handleSendMessage = useCallback(
-    async (e?: React.FormEvent, msgOverride?: string) => {
+    async (e?: React.FormEvent, msgOverride?: string, section?: string) => {
       e?.preventDefault()
       const content = msgOverride || input
+
+      console.log(`[handleSendMessage] Called with section: ${section}, content: ${content?.slice(0, 50)}...`)
 
       if (!content.trim()) return
 
@@ -782,6 +1304,20 @@ export default function StorytellerPage() {
       if (isSending) {
         console.warn('[Storyteller] Blocked send - already processing a message')
         return
+      }
+
+      // IMMEDIATE SHIMMER: Set loading state for section right away (no waiting for tool call)
+      if (section) {
+        console.log(`[Storyteller] ✨ Setting IMMEDIATE shimmer for section: ${section}`)
+        setLoadingSections(prev => {
+          console.log('[setLoadingSections] Previous state:', prev)
+          const newState = {
+            ...prev,
+            [section]: { loading: true, message: 'Generating...' }
+          }
+          console.log('[setLoadingSections] New state:', newState)
+          return newState
+        })
       }
 
       setInput('')
@@ -811,7 +1347,7 @@ export default function StorytellerPage() {
         currentPhase: effectivePhase,
         seriesBible: {
           ...((currentProject?.series_bible as any) || {}),
-          masterPrompt: currentProject?.project_prompt || '',
+          masterPrompt: currentProject?.master_prompt || '',
           userDecisions: storyDecisions,
         },
         characters: characters.map((c: any) => ({
@@ -842,6 +1378,7 @@ export default function StorytellerPage() {
       activeTab,
       useEnhancedStreaming,
       isSending,
+      setLoadingSections,
     ]
   )
 
@@ -1083,12 +1620,13 @@ export default function StorytellerPage() {
             const bible = data.seriesBible || data.series_bible
             if (bible?.moodImages) {
               setStoryPlan(prev => (prev ? { ...prev, moodImages: bible.moodImages } : prev))
-              // Also update the store
-              if (currentProject) {
+              // Also update the store - get fresh reference from store
+              const latestProject = useWorldStore.getState().currentProject
+              if (latestProject) {
                 useWorldStore.getState().setCurrentProject({
-                  ...currentProject,
+                  ...latestProject,
                   series_bible: {
-                    ...((currentProject.series_bible as any) || {}),
+                    ...((latestProject.series_bible as any) || {}),
                     moodImages: bible.moodImages,
                   },
                 })
@@ -1100,7 +1638,7 @@ export default function StorytellerPage() {
         }
       })
     },
-    [currentProject]
+    [currentProject?.id]
   )
 
   // Listeners
@@ -1129,13 +1667,19 @@ export default function StorytellerPage() {
     const savedPrimary = localStorage.getItem(`moodboard-primary-${currentProject.id}`)
     const primaryIdx = savedPrimary !== null ? parseInt(savedPrimary) : null
     if (primaryIdx !== null && storyPlan?.moodImages?.[primaryIdx]) {
-      setPrimaryMoodboardUrl(`/projects/${currentProject.id}/${storyPlan.moodImages[primaryIdx]}`)
+      const img = storyPlan.moodImages[primaryIdx]
+      // Handle both local filenames and absolute URLs
+      if (img.startsWith('http')) {
+        setPrimaryMoodboardUrl(img)
+      } else {
+        setPrimaryMoodboardUrl(`/projects/${currentProject.id}/${img}`)
+      }
     } else {
       setPrimaryMoodboardUrl(null)
     }
-  }, [currentProject?.id, storyPlan?.moodImages])
+  }, [currentProject, storyPlan?.moodImages])
 
-  // Listen for primary moodboard changes
+  // Listen for primary moodboard changes and generation completion
   useEffect(() => {
     updatePrimaryMoodboard()
     const handleStorageChange = (e: StorageEvent) => {
@@ -1144,56 +1688,119 @@ export default function StorytellerPage() {
       }
     }
     const handleCustomEvent = () => updatePrimaryMoodboard()
+
+    // Handle moodboard generation completion from the service
+    const handleMoodboardComplete = async (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      if (!detail || detail.projectId !== currentProject?.id) return
+
+      console.log('📸 [Moodboard] Generation complete, updating UI:', detail)
+
+      // Update UI with new images
+      if (detail.images && detail.images.length > 0) {
+        setStoryPlan(prev => {
+          if (!prev) return prev
+          const currentImages = (prev as any).moodImages || []
+
+          // If promptIndex specified, update that specific image
+          if (detail.promptIndex !== undefined) {
+            const updated = [...currentImages]
+            updated[detail.promptIndex] = detail.images[0]
+            return { ...prev, moodImages: updated }
+          }
+
+          // Otherwise append new images
+          return { ...prev, moodImages: [...currentImages, ...detail.images] }
+        })
+      }
+
+      // Also refetch full data to ensure sync
+      try {
+        const response = await fetch(`/api/storyteller/projects/${detail.projectId}`)
+        if (response.ok) {
+          const data = await response.json()
+          const bible = data.seriesBible || data.series_bible
+          if (bible?.moodImages) {
+            setStoryPlan(prev => (prev ? { ...prev, moodImages: bible.moodImages } : prev))
+          }
+        }
+      } catch (error) {
+        console.error('Failed to refetch moodboard data:', error)
+      }
+
+      updatePrimaryMoodboard()
+    }
+
     window.addEventListener('storage', handleStorageChange)
     window.addEventListener('moodboard-primary-changed', handleCustomEvent)
+    window.addEventListener('moodboard-generation-complete', handleMoodboardComplete)
     return () => {
       window.removeEventListener('storage', handleStorageChange)
       window.removeEventListener('moodboard-primary-changed', handleCustomEvent)
+      window.removeEventListener('moodboard-generation-complete', handleMoodboardComplete)
     }
-  }, [updatePrimaryMoodboard])
+  }, [updatePrimaryMoodboard, currentProject?.id])
 
   const [isFetchingCharacters, setIsFetchingCharacters] = useState(false)
+  const [isDeletingCharacter, setIsDeletingCharacter] = useState(false)
+  const [characterWebVersion, setCharacterWebVersion] = useState(0)
 
-  // Fetch characters
+  // Fetch characters - using cachedFetch to prevent infinite loops on remount
   useEffect(() => {
-    if (currentProject?.id) {
-      setIsFetchingCharacters(true)
-      fetch(`/api/storyteller/characters?projectId=${currentProject.id}`)
-        .then(res => res.json())
-        .then(data => {
-          if (Array.isArray(data)) {
-            const mapped = data.map((c: any) => ({
-              ...c,
-              stress: c.stressLevel ?? c.stress_level ?? 30,
-              trust: c.trustLevel ?? c.trust_level ?? 50,
-              power: c.powerLevel ?? c.power_level ?? 30,
-              morality: c.moralityLevel ?? c.morality_level ?? 50,
-              hope: c.hopeLevel ?? c.hope_level ?? 60,
-              isolation: c.isolationLevel ?? c.isolation_level ?? 20,
-              transformation:
-                c.transformationProgress ??
-                c.transformation_progress ??
-                c.arcStatus?.transformation ??
-                0,
-              // Ensure id maps to id, and role is present
-              id: c.id || c.characterId,
-              role: c.role || '',
-            }))
-            setCharacters(mapped)
-          }
-        })
-        .catch(err => console.error('Failed to fetch characters:', err))
-        .finally(() => setIsFetchingCharacters(false))
+    let isMounted = true
+    const projectId = currentProject?.id
+    if (!projectId) return
+
+    setIsFetchingCharacters(true)
+
+    cachedFetch(
+      `characters:${projectId}`,
+      async () => {
+        const res = await fetch(`/api/storyteller/characters?projectId=${projectId}`)
+        return res.json()
+      },
+      { ttlMs: 60_000 } // Cache for 1 minute
+    )
+      .then(data => {
+        if (!isMounted) return
+        if (Array.isArray(data)) {
+          const mapped = data.map((c: any) => ({
+            ...c,
+            stress: c.stressLevel ?? c.stress_level ?? 30,
+            trust: c.trustLevel ?? c.trust_level ?? 50,
+            power: c.powerLevel ?? c.power_level ?? 30,
+            morality: c.moralityLevel ?? c.morality_level ?? 50,
+            hope: c.hopeLevel ?? c.hope_level ?? 60,
+            isolation: c.isolationLevel ?? c.isolation_level ?? 20,
+            transformation:
+              c.transformationProgress ??
+              c.transformation_progress ??
+              c.arcStatus?.transformation ??
+              0,
+            id: c.id || c.characterId,
+            role: c.role || '',
+          }))
+          setCharacters(mapped)
+        }
+      })
+      .catch(err => console.error('Failed to fetch characters:', err))
+      .finally(() => {
+        if (isMounted) setIsFetchingCharacters(false)
+      })
+
+    return () => {
+      isMounted = false
     }
   }, [currentProject?.id])
 
   // Resume any pending moodboard generations on mount
   useEffect(() => {
-    if (currentProject?.id) {
-      moodboardGenerationService.resumePendingGenerations(currentProject.id, async () => {
+    const projectId = currentProject?.id
+    if (projectId) {
+      moodboardGenerationService.resumePendingGenerations(projectId, async () => {
         // Refetch project data when generation completes
         try {
-          const response = await fetch(`/api/storyteller/projects/${currentProject.id}`)
+          const response = await fetch(`/api/storyteller/projects/${projectId}`)
           if (response.ok) {
             const data = await response.json()
             const bible = data.seriesBible || data.series_bible
@@ -1237,12 +1844,24 @@ export default function StorytellerPage() {
   useEffect(() => {
     // Stability Check: If we already have the right data for the current context, skip
     const isEpisodeContext = !!currentEpisodeId
-    const isGlobalContext = !currentEpisodeId && !!currentProject?.series_bible
+    // Check for BOTH series_bible AND story_plan - worldRules are stored in story_plan!
+    const projectAny = currentProject as any
+    const hasSeriesBible = !!projectAny?.series_bible || !!projectAny?.seriesBible
+    const hasStoryPlan = !!projectAny?.story_plan || !!projectAny?.storyPlan
+    const isGlobalContext = !currentEpisodeId && (hasSeriesBible || hasStoryPlan)
 
-    // Skip if no context at all
-    if (!currentEpisodeId && !currentProject?.series_bible) {
-      console.log('❌ [Debug] No Episode selected and No Series Bible found.')
-      setStoryPlan(null)
+    // Skip if no context at all - but DON'T wipe existing storyPlan if we have it from hydration
+    if (!currentEpisodeId && !hasSeriesBible && !hasStoryPlan) {
+      console.log('❌ [Debug] No Episode selected and No Series Bible/Story Plan found.')
+      // ONLY set to null if we don't already have storyPlan from hydration
+      // This prevents wiping out worldRules that were loaded during hydration
+      setStoryPlan(prev => {
+        if (prev && (prev.worldRules?.length || prev.plotTwists?.length || prev.factions?.length)) {
+          console.log('🛡️ [Debug] Preserving existing storyPlan with', prev.worldRules?.length, 'worldRules')
+          return prev
+        }
+        return null
+      })
       return
     }
 
@@ -1275,7 +1894,17 @@ export default function StorytellerPage() {
             // 2. Season Plan (Global Arc: Sequences, Summary)
             // 3. Episode Specifics (Overrides if any)
 
-            const bible = projectAny?.seriesBible || projectAny?.series_bible || {}
+            let bible = projectAny?.seriesBible || projectAny?.series_bible || {}
+
+            // Unpack nested categories if present
+            const categories = ['General', 'Setting', 'History', 'Magic', 'Factions', 'Technology', 'Culture']
+            const processedInit = { ...bible }
+            for (const cat of categories) {
+              if (bible[cat]) {
+                Object.assign(processedInit, bible[cat])
+              }
+            }
+            bible = processedInit
             const seasonPlan = projectAny?.storyPlan || projectAny?.story_plan || {}
             const episodePlan = (data.storyPlan || {}) as any
 
@@ -1284,14 +1913,26 @@ export default function StorytellerPage() {
               ...seasonPlan,
               ...episodePlan,
               // Explicitly ensure critical fields are not lost if they are missing in one layer
+              // Priority: episode > seasonPlan (storyPlan table) > bible > updatedFields
               sequences: episodePlan.sequences || seasonPlan.sequences || [],
-              factions: episodePlan.factions || bible.factions || [],
-              worldRules: episodePlan.worldRules || bible.worldRules || [],
+              factions: episodePlan.factions || seasonPlan.factions || bible.factions || bible.updatedFields?.factions || [],
+              worldRules: episodePlan.worldRules || seasonPlan.worldRules || bible.worldRules || bible.updatedFields?.worldRules || [],
+              plotTwists: episodePlan.plotTwists || seasonPlan.plotTwists || bible.plotTwists || bible.updatedFields?.plotTwists || [],
+              keyCharacters: episodePlan.keyCharacters || seasonPlan.keyCharacters || bible.keyCharacters || bible.updatedFields?.characters || [],
+              soundtracks: episodePlan.soundtracks || seasonPlan.soundtracks || bible.soundtracks || [],
               moodImages: episodePlan.moodImages || bible.moodImages || [],
               imagePrompts: episodePlan.imagePrompts || bible.imagePrompts || {},
+              seasonStructure: episodePlan.seasonStructure || seasonPlan.seasonStructure || bible.seasonStructure || {},
               // Ensure we keep the project info
               projectId: currentProject?.id,
             }
+
+            console.log('📊 [Debug] Merged plan worldRules:', newPlan.worldRules?.length, 'from sources:', {
+              episode: episodePlan.worldRules?.length,
+              season: seasonPlan.worldRules?.length,
+              bible: bible.worldRules?.length,
+              updatedFields: bible.updatedFields?.worldRules?.length,
+            })
 
             setStoryPlan(newPlan)
             setIsPlanApproved(data.planApproved)
@@ -1314,10 +1955,36 @@ export default function StorytellerPage() {
               setScript(data.script)
             }
           } else {
-            // No episode-specific plan - fall back to global series bible
-            if (currentProject?.series_bible) {
-              console.log('📖 [Debug] No episode plan, using Global Series Bible')
-              setStoryPlan(currentProject.series_bible as StoryPlan)
+            // No episode-specific plan - fall back to global series bible + story_plan
+            const projectAnyFallback = currentProject as any
+            const rawBible = projectAnyFallback?.series_bible || projectAnyFallback?.seriesBible || {}
+            const rawStoryPlan = projectAnyFallback?.story_plan || projectAnyFallback?.storyPlan || {}
+
+            if (rawBible || Object.keys(rawStoryPlan).length > 0) {
+              console.log('📖 [Debug] No episode plan, using Global Series Bible + Story Plan (Unpacking...)')
+
+              // Start with storyPlan data (has worldRules, plotTwists, etc.)
+              const processedBible: any = { ...rawStoryPlan }
+
+              // Merge known categories from bible
+              const categories = ['General', 'Setting', 'History', 'Magic', 'Factions', 'Technology', 'Culture', 'updatedFields']
+              for (const cat of categories) {
+                if (rawBible[cat]) {
+                  Object.assign(processedBible, rawBible[cat])
+                }
+              }
+
+              // Ensure critical fields from both sources
+              processedBible.worldRules = rawStoryPlan.worldRules || rawBible.worldRules || rawBible.updatedFields?.worldRules || []
+              processedBible.plotTwists = rawStoryPlan.plotTwists || rawBible.plotTwists || rawBible.updatedFields?.plotTwists || []
+              processedBible.keyCharacters = rawStoryPlan.keyCharacters || rawBible.keyCharacters || rawBible.updatedFields?.characters || []
+              processedBible.factions = rawStoryPlan.factions || rawBible.factions || rawBible.updatedFields?.factions || []
+              processedBible.soundtracks = rawStoryPlan.soundtracks || rawBible.soundtracks || []
+              processedBible.sequences = rawStoryPlan.sequences || rawBible.sequences || []
+              processedBible.seasonStructure = rawStoryPlan.seasonStructure || rawBible.seasonStructure || {}
+
+              console.log('📊 [Debug] Fallback plan worldRules:', processedBible.worldRules?.length)
+              setStoryPlan(processedBible)
             } else {
               setStoryPlan(null)
             }
@@ -1327,12 +1994,61 @@ export default function StorytellerPage() {
         })
         .catch(err => console.error('Failed to fetch plan:', err))
         .finally(() => setIsFetchingPlan(false))
-    } else if (currentProject?.series_bible) {
-      console.log('📖 [Debug] Loading Global Series Bible')
-      // Load Series Bible if no episode selected
-      setStoryPlan(currentProject.series_bible as StoryPlan)
+    } else if (hasSeriesBible || hasStoryPlan) {
+      console.log('📖 [Debug] Loading Global Series Bible/Story Plan (DELEGATED TO MAIN HYDRATION LOOP)')
+      // DO NOT setStoryPlan here. It overwrites the robust parsing at the top of the file.
+      // The top-level useEffect now handles merging General/Setting/etc.
+      // However, if storyPlan is still null, trigger a re-hydration
+      if (!storyPlan) {
+        console.log('🔄 [Debug] storyPlan is null, manually triggering hydration...')
+        const rawBible = projectAny?.series_bible || projectAny?.seriesBible || {}
+        const rawStoryPlan = projectAny?.story_plan || projectAny?.storyPlan || {}
+
+        // Merge from both sources - storyPlan table has highest priority
+        const initialPlan: any = { ...rawStoryPlan }
+
+        // Unpack nested categories including updatedFields
+        const categories = ['General', 'Setting', 'History', 'Magic', 'Factions', 'Technology', 'Culture', 'updatedFields']
+        for (const cat of categories) {
+          if (rawBible[cat]) Object.assign(initialPlan, rawBible[cat])
+        }
+
+        // Apply plan fields - rawStoryPlan has highest priority
+        const planFields = ['soundtracks', 'worldRules', 'factions', 'keyCharacters', 'plotTwists', 'inspirations', 'worldDescription', 'genre', 'tone', 'sequences', 'seasonStructure', 'centralTheme', 'masterPrompt', 'moodImages']
+        for (const field of planFields) {
+          // Priority: rawStoryPlan > rawBible.updatedFields > rawBible
+          if (!initialPlan[field] || (Array.isArray(initialPlan[field]) && initialPlan[field].length === 0)) {
+            if (rawStoryPlan[field] !== undefined && rawStoryPlan[field] !== null) {
+              initialPlan[field] = rawStoryPlan[field]
+            } else if (rawBible.updatedFields?.[field] !== undefined) {
+              initialPlan[field] = rawBible.updatedFields[field]
+            } else if (rawBible[field] !== undefined) {
+              initialPlan[field] = rawBible[field]
+            }
+          }
+        }
+
+        // Also check for characters alias in updatedFields
+        if (rawBible.updatedFields?.characters && (!initialPlan.keyCharacters || initialPlan.keyCharacters.length === 0)) {
+          initialPlan.keyCharacters = rawBible.updatedFields.characters
+        }
+
+        if (Object.keys(initialPlan).length > 0) {
+          console.log('✅ [Debug] Manually hydrated storyPlan with keys:', Object.keys(initialPlan))
+          console.log('✅ [Debug] worldRules count:', initialPlan.worldRules?.length || 0)
+          console.log('✅ [Debug] worldRules sources:', {
+            fromStoryPlan: rawStoryPlan?.worldRules?.length,
+            fromUpdatedFields: rawBible?.updatedFields?.worldRules?.length,
+            fromBible: rawBible?.worldRules?.length,
+          })
+          setStoryPlan(initialPlan)
+        }
+      }
     }
-  }, [currentEpisodeId, currentProject?.id])
+    // Use stable dependencies to prevent infinite loops - only re-run when IDs change, not object refs
+    // We include hasStoryPlan to re-run when story_plan becomes available (contains worldRules!)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentEpisodeId, currentProject?.id, !!(currentProject as any)?.series_bible, !!(currentProject as any)?.story_plan, !!(currentProject as any)?.storyPlan])
 
   // Save phase to DB when it changes
   const savePhaseToDb = useCallback(
@@ -1374,6 +2090,8 @@ export default function StorytellerPage() {
       })
       const newChar = await res.json()
       if (newChar.id) {
+        // Clear cache so future fetches get updated data
+        clearFetchCache(`characters:${currentProject.id}`)
         setCharacters(prev => [
           {
             ...newChar,
@@ -1406,18 +2124,18 @@ export default function StorytellerPage() {
           prev.map(c =>
             c.id === id
               ? {
-                  ...updated,
-                  stress: updated.stressLevel ?? updated.stress_level ?? c.stress,
-                  trust: updated.trustLevel ?? updated.trust_level ?? c.trust,
-                  power: updated.powerLevel ?? updated.power_level ?? c.power,
-                  morality: updated.moralityLevel ?? updated.morality_level ?? c.morality,
-                  hope: updated.hopeLevel ?? updated.hope_level ?? c.hope,
-                  isolation: updated.isolationLevel ?? updated.isolation_level ?? c.isolation,
-                  transformation:
-                    updated.transformationProgress ??
-                    updated.transformation_progress ??
-                    c.transformation,
-                }
+                ...updated,
+                stress: updated.stressLevel ?? updated.stress_level ?? c.stress,
+                trust: updated.trustLevel ?? updated.trust_level ?? c.trust,
+                power: updated.powerLevel ?? updated.power_level ?? c.power,
+                morality: updated.moralityLevel ?? updated.morality_level ?? c.morality,
+                hope: updated.hopeLevel ?? updated.hope_level ?? c.hope,
+                isolation: updated.isolationLevel ?? updated.isolation_level ?? c.isolation,
+                transformation:
+                  updated.transformationProgress ??
+                  updated.transformation_progress ??
+                  c.transformation,
+              }
               : c
           )
         )
@@ -1429,14 +2147,20 @@ export default function StorytellerPage() {
 
   const handleDeleteCharacter = async (id: string) => {
     try {
+      setIsDeletingCharacter(true)
       const res = await fetch(`/api/storyteller/characters?id=${id}`, {
         method: 'DELETE',
       })
       if (res.ok) {
+        // Clear cache so future fetches get updated data
+        if (currentProject?.id) clearFetchCache(`characters:${currentProject.id}`)
         setCharacters(prev => prev.filter(c => c.id !== id))
+        setCharacterWebVersion(prev => prev + 1)
       }
     } catch (error) {
       console.error('Failed to delete character:', error)
+    } finally {
+      setIsDeletingCharacter(false)
     }
   }
 
@@ -1538,7 +2262,7 @@ export default function StorytellerPage() {
         setTimeout(() => {
           handleSendMessage(
             undefined,
-            "Let's draft the first episode. Start by generating a compelling premise for 'Episode 1: The Beginning'."
+            'Let\'s draft the first episode. Start by generating a compelling premise for \'Episode 1: The Beginning\'.'
           )
         }, 100)
       }
@@ -1557,7 +2281,7 @@ export default function StorytellerPage() {
     setTimeout(() => {
       handleSendMessage(
         undefined,
-        "Let's build the series foundation. Help me define the genre, tone, and core rules for this world."
+        'Let\'s build the series foundation. Help me define the genre, tone, and core rules for this world.'
       )
     }, 100)
   }, [searchParams, router, handleSendMessage])
@@ -1611,6 +2335,54 @@ export default function StorytellerPage() {
     }
   }, [currentPhase, savePhaseToDb, confirmPhaseBack])
 
+  // Direct phase navigation - allows clicking on any previous phase
+  const handlePhaseChange = useCallback(async (targetPhase: string) => {
+    const currentIdx = PHASE_ORDER.indexOf(currentPhase)
+    const targetIdx = PHASE_ORDER.indexOf(targetPhase)
+
+    // Only allow going to previous phases or staying on current
+    if (targetIdx >= currentIdx) return
+
+    const phaseNames: Record<string, string> = {
+      premise: 'Premise',
+      breaking: 'Story Beats',
+      writing: 'Script',
+      complete: 'Complete',
+    }
+
+    // Confirm if we're skipping phases (e.g., writing -> premise)
+    const phasesToClear = PHASE_ORDER.slice(targetIdx + 1, currentIdx + 1)
+    const clearingMultiple = phasesToClear.length > 1
+
+    const confirmed = await confirmPhaseBack({
+      title: `Go to ${phaseNames[targetPhase]}?`,
+      description: clearingMultiple
+        ? `This will clear data from: ${phasesToClear.map(p => phaseNames[p]).join(', ')}. This cannot be undone.`
+        : `Going back will clear "${phaseNames[currentPhase]}" phase data. This cannot be undone.`,
+      confirmLabel: `Go to ${phaseNames[targetPhase]}`,
+      cancelLabel: 'Cancel',
+      variant: 'destructive',
+    })
+
+    if (!confirmed) return
+
+    // Clear phases between target and current
+    for (const phase of phasesToClear) {
+      if (phase === 'writing') {
+        setScript('')
+      } else if (phase === 'breaking') {
+        setBeats([])
+      }
+    }
+
+    setCurrentPhase(targetPhase)
+    if (targetPhase === 'premise') setActiveTab('plan')
+    else if (targetPhase === 'writing') setActiveTab('script')
+    else setActiveTab('board')
+
+    await savePhaseToDb(targetPhase)
+  }, [currentPhase, savePhaseToDb, confirmPhaseBack])
+
   // Note: Forward navigation removed - use AI to advance phases naturally
   const canGoBack = PHASE_ORDER.indexOf(currentPhase) > 0
 
@@ -1647,14 +2419,18 @@ export default function StorytellerPage() {
   )
 
   // Legacy mentions for backwards compatibility
+  // Use Array.isArray to handle cases where worldRules/factions might be non-array values
+  const worldRulesArray = Array.isArray(storyPlan?.worldRules) ? storyPlan.worldRules : []
+  const factionsArray = Array.isArray(storyPlan?.factions) ? storyPlan.factions : []
+
   const mentionItems: any[] = [
     ...characters.map(c => ({ id: c.id, name: c.name, type: 'character' as const })),
-    ...(storyPlan?.worldRules || []).map((r: any, idx: number) => ({
+    ...worldRulesArray.map((r: any, idx: number) => ({
       id: `rule-${idx}`,
       name: r.rule,
       type: 'world_rule' as const,
     })),
-    ...(storyPlan?.factions || []).map((f: any, idx: number) => ({
+    ...factionsArray.map((f: any, idx: number) => ({
       id: `faction-${idx}`,
       name: f.name,
       type: 'faction' as const,
@@ -1721,7 +2497,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           ...((currentProject?.series_bible as any) || {}),
           // Include answered decisions in series bible
           userDecisions: { ...storyDecisions, [decisionKey]: answerText },
-          masterPrompt: currentProject?.project_prompt || '',
+          masterPrompt: currentProject?.master_prompt || '',
         },
         characters: characters.map(c => ({
           characterId: c.id,
@@ -1793,7 +2569,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           currentPhase: 'premise',
           seriesBible: {
             ...((currentProject?.series_bible as any) || {}),
-            masterPrompt: currentProject?.project_prompt || '',
+            masterPrompt: currentProject?.master_prompt || '',
           },
           characters: characters,
           modelConfig: getModelConfigFromStorage(),
@@ -1839,7 +2615,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           currentPhase: 'premise',
           seriesBible: {
             ...((currentProject?.series_bible as any) || {}),
-            masterPrompt: currentProject?.project_prompt || '',
+            masterPrompt: currentProject?.master_prompt || '',
           },
           characters: characters,
           modelConfig: getModelConfigFromStorage(),
@@ -1875,7 +2651,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           currentPhase: 'world_building',
           seriesBible: {
             ...((currentProject?.series_bible as any) || {}),
-            masterPrompt: currentProject?.project_prompt || '',
+            masterPrompt: currentProject?.master_prompt || '',
           },
           characters: characters,
           modelConfig: getModelConfigFromStorage(),
@@ -1939,6 +2715,11 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
     }
   }, [currentProject?.id, currentEpisodeId, characters])
 
+  // Dismiss action toast
+  const handleDismissToast = useCallback((entryId: string) => {
+    setShowToasts(prev => prev.filter(e => e.id !== entryId))
+  }, [])
+
   const handleSaveEpisodePrompt = useCallback(
     async (prompt: string) => {
       if (!currentEpisodeId) return
@@ -1973,16 +2754,18 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
 
   // Legacy processStream removed (handled by hook)
 
-  const handleUpdateGlobalBible = async (updates: Partial<StoryPlan>) => {
-    if (!currentProject?.id) return
+  const handleUpdateGlobalBible = useCallback(async (updates: Partial<StoryPlan>) => {
+    // Access latest state directly to avoid dependency on currentProject changing
+    const latestProject = useWorldStore.getState().currentProject
+    if (!latestProject?.id) return
 
     // Use current project's series bible as base
-    const currentBible = (currentProject.series_bible as StoryPlan) || {}
+    const currentBible = (latestProject.series_bible as StoryPlan) || {}
     const newBible = { ...currentBible, ...updates }
 
     // 1. Update Store immediately
     useWorldStore.getState().setCurrentProject({
-      ...currentProject,
+      ...latestProject,
       series_bible: newBible,
     })
 
@@ -1994,7 +2777,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
 
     // 2. Persist to DB
     try {
-      await fetch(`/api/storyteller/projects/${currentProject.id}`, {
+      await fetch(`/api/storyteller/projects/${latestProject.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ series_bible: newBible }),
@@ -2002,7 +2785,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
     } catch (e) {
       console.error('Failed to save global bible:', e)
     }
-  }
+  }, [currentEpisodeId])
 
   const handleUpdateBible = async (updates: Partial<StoryPlan>) => {
     // 1. Optimistic Update
@@ -2037,10 +2820,6 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
     }
   }
 
-  // Dismiss action toast
-  const handleDismissToast = (entryId: string) => {
-    setShowToasts(prev => prev.filter(e => e.id !== entryId))
-  }
 
   return (
     <div className="flex flex-col h-full bg-background text-foreground overflow-hidden font-sans">
@@ -2065,14 +2844,14 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 }}
                 disabled={isSending}
                 className={cn(
-                  'h-7 px-3 gap-1.5 text-[10px] font-black border-2 transition-all rounded-full uppercase tracking-widest relative overflow-hidden',
+                  'h-7 px-3 gap-1.5 text-[10px] font-black border-2 transition-all rounded-md uppercase tracking-widest relative overflow-hidden',
                   isWorldBibleOpen && isBibleLocked
-                    ? 'bg-gradient-to-r from-red-500 via-orange-500 to-red-600 text-white border-red-400 shadow-[0_0_15px_rgba(239,68,68,0.5)] scale-105'
+                    ? 'bg-transparent text-white border-red-400 shadow-[0_0_15px_rgba(239,68,68,0.5)] scale-105' // Locked & Open
                     : isWorldBibleOpen && !isBibleLocked
-                      ? 'bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-white border-yellow-300 shadow-[0_0_15px_rgba(245,158,11,0.5)] scale-105'
+                      ? 'bg-transparent text-white border-yellow-300 shadow-[0_0_15px_rgba(245,158,11,0.5)] scale-105' // Open
                       : isBibleLocked
-                        ? 'border-red-500/50 text-red-500 hover:bg-red-500/10 hover:border-red-500 shadow-[0_0_5px_rgba(239,68,68,0.2)]'
-                        : 'border-amber-500/40 hover:bg-amber-500/10 hover:border-amber-500 text-amber-500 shadow-[0_0_5px_rgba(245,158,11,0.2)]',
+                        ? 'bg-transparent border-red-500/50 text-red-500 hover:border-red-500 shadow-[0_0_5px_rgba(239,68,68,0.2)]' // Locked & Closed
+                        : 'bg-transparent border-amber-500/40 hover:border-amber-500 text-amber-500 shadow-[0_0_5px_rgba(245,158,11,0.2)]', // Closed
                   isSending && 'opacity-50 cursor-not-allowed'
                 )}
                 title={
@@ -2129,34 +2908,27 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 <SidebarSection icon={<Scroll size={12} />}>
                   <MasterPromptEditor
                     scope="Project"
-                    initialPrompt={currentProject.project_prompt || ''}
+                    initialPrompt={currentProject.master_prompt || ''}
                     onSave={async prompt => {
                       try {
-                        await fetch(`/api/storyteller/projects/${currentProject.id}`, {
+                        // 1. Persist to DB
+                        const res = await fetch(`/api/storyteller/projects/${currentProject.id}`, {
                           method: 'PATCH',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ project_prompt: prompt }),
+                          body: JSON.stringify({ master_prompt: prompt }),
                         })
+
+                        // 2. Update Store
+                        if (res.ok) {
+                          useWorldStore.getState().setCurrentProject({
+                            ...currentProject,
+                            master_prompt: prompt,
+                          })
+                        }
                       } catch (err) {
                         console.error('Failed to save master prompt:', err)
                       }
                     }}
-                  />
-                </SidebarSection>
-              </div>
-
-              {/* 2. Cast/Characters */}
-              <div id={TOUR_STEP_IDS.STORYTELLER_CHARACTERS}>
-                <SidebarSection separator>
-                  <CharacterPanel
-                    characters={characters}
-                    onUpdate={handleUpdateCharacter}
-                    onCreate={handleCreateCharacter}
-                    onDelete={handleDeleteCharacter}
-                    projectId={currentProject.id}
-                    selectedBeatId={selectedBeatId}
-                    episodeId={currentEpisodeId}
-                    isLoading={isFetchingCharacters}
                   />
                 </SidebarSection>
               </div>
@@ -2196,6 +2968,21 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                   />
                 </SidebarSection>
               )}
+
+              {/* 5. Cast List - Characters displayed directly in sidebar */}
+              <SidebarSection separator icon={<Users size={12} />}>
+                <CharacterPanel
+                  characters={characters}
+                  onUpdate={handleUpdateCharacter}
+                  onCreate={handleCreateCharacter}
+                  onDelete={handleDeleteCharacter}
+                  projectId={currentProject?.id || ''}
+                  selectedBeatId={selectedBeatId}
+                  episodeId={currentEpisodeId}
+                  isLoading={isFetchingCharacters || isDeletingCharacter}
+                  isDeleting={isDeletingCharacter}
+                />
+              </SidebarSection>
             </div>
           ) : (
             <SidebarEmptyState
@@ -2227,9 +3014,9 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 storyPlan={
                   storyPlan || {
                     title: currentProject?.name || 'Untitled',
-                    genre: 'Unknown',
-                    tone: 'Unknown',
-                    centralQuestion: 'Unknown',
+                    genre: '', // Empty triggers placeholder in UI
+                    tone: '', // Empty triggers placeholder in UI
+                    centralQuestion: '', // Empty triggers placeholder in UI
                     themes: [],
                     worldRules: [],
                     factions: [],
@@ -2240,10 +3027,12 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 }
                 projectId={currentProject?.id || ''}
                 onUpdate={handleUpdateGlobalBible}
-                onSendMessage={msg => handleSendMessage(undefined, msg)}
+                onSendMessage={(msg, section) => handleSendMessage(undefined, msg, section)}
                 isReadOnly={isSending}
                 onConvertToCast={handleCreateCharacter}
                 isLoading={isFetchingPlan}
+                loadingSections={loadingSections}
+                pendingActions={sectionPendingActions}
                 onClose={() => {
                   const params = new URLSearchParams(searchParams.toString())
                   params.delete('bible')
@@ -2260,109 +3049,38 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                     {currentEpisodeTitle || `Ep. ${currentEpisodeId?.slice(0, 6) || ''}...`}
                   </h1>
 
-                  {/* Phase indicator with back button only */}
-                  <div className="flex items-center gap-1 shrink-0 bg-background/50 p-1 rounded-lg border border-border/50">
-                    <button
-                      onClick={handlePreviousPhase}
-                      disabled={!canGoBack || isSending}
-                      className="p-1 rounded-md border border-border hover:bg-muted/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      title={
-                        canGoBack
-                          ? 'Go back (will erase current phase data)'
-                          : 'Already at first phase'
-                      }
-                    >
-                      <ChevronLeft size={12} />
-                    </button>
+                  {/* Unified Phase Navigator */}
+                  <PhaseNavigatorCompact
+                    currentPhase={currentPhase as any}
+                    isWorking={isSending}
+                    onGoBack={handlePreviousPhase}
+                    onPhaseChange={handlePhaseChange}
+                  />
 
-                    {/* Phase indicators - display only, not clickable */}
-                    <div className="flex items-center">
-                      <span
-                        className={`text-[10px] px-1.5 py-0.5 rounded-l-full border transition-colors select-none ${
-                          currentPhase === 'premise'
-                            ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
-                            : 'bg-muted/30 text-muted-foreground border-border'
-                        }`}
-                      >
-                        PREMISE
-                      </span>
-                      <span
-                        className={`text-[10px] px-1.5 py-0.5 border-y border-l transition-colors select-none ${
-                          currentPhase === 'breaking'
-                            ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-                            : 'bg-muted/30 text-muted-foreground border-border'
-                        }`}
-                      >
-                        BREAK
-                      </span>
-                      <span
-                        className={`text-[10px] px-1.5 py-0.5 rounded-r-full border transition-colors select-none ${
-                          currentPhase === 'writing'
-                            ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                            : 'bg-muted/30 text-muted-foreground border-border'
-                        }`}
-                      >
-                        WRITE
-                      </span>
-                    </div>
-                  </div>
+                  {/* Relationships View Toggle */}
+                  <button
+                    onClick={() => setActiveTab(activeTab === 'relationships' ? 'plan' : 'relationships')}
+                    className={cn(
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 border',
+                      activeTab === 'relationships'
+                        ? 'bg-purple-500/20 border-purple-500/50 text-purple-300'
+                        : 'bg-zinc-800/50 text-zinc-400 hover:bg-zinc-700/50 border-transparent'
+                    )}
+                    title="View character & faction relationships"
+                  >
+                    <Network size={12} />
+                    <span>Web</span>
+                  </button>
                 </div>
 
-                {/* Plan/Beats/Script tabs - enabled/disabled based on current phase */}
-                <div className="flex items-center gap-0.5 bg-muted/50 rounded-lg p-0.5 shrink-0">
-                  {/* Plan tab - always available */}
-                  <button
-                    onClick={() => {
-                      if (isWorldBibleOpen && !currentEpisodeId) return
-                      setActiveTab('plan')
-                    }}
-                    className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-colors ${
-                      activeTab === 'plan'
-                        ? 'bg-background shadow-sm text-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                    } ${isWorldBibleOpen && !currentEpisodeId ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    <Map size={12} />
-                    Plan
-                  </button>
-                  {/* Beats tab */}
-                  <button
-                    onClick={() => {
-                      if (isWorldBibleOpen && !currentEpisodeId) return
-                      setActiveTab('board')
-                    }}
-                    className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-colors ${
-                      activeTab === 'board'
-                        ? 'bg-background shadow-sm text-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                    } ${isWorldBibleOpen && !currentEpisodeId ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    <Layout size={12} />
-                    Beats
-                  </button>
-                  {/* Script tab */}
-                  <button
-                    onClick={() => {
-                      if (isWorldBibleOpen && !currentEpisodeId) return
-                      setActiveTab('script')
-                    }}
-                    className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-colors ${
-                      activeTab === 'script'
-                        ? 'bg-background shadow-sm text-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                    } ${isWorldBibleOpen && !currentEpisodeId ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    <FileText size={12} />
-                    Script
-                  </button>
-                </div>
+                {/* Tabs removed - phase now controls the view automatically */}
               </div>
               {/* Main Content Area */}
               <div className="flex-1 relative overflow-hidden">
                 {activeTab === 'plan' && (
                   <StoryPlanBoard
                     storyPlan={storyPlan}
-                    globalBible={currentProject?.series_bible}
+                    globalBible={currentProject?.series_bible as any}
                     onApprove={handleApprovePlan}
                     isGenerating={isSending}
                     isGeneratingPoster={isGeneratingPoster}
@@ -2377,9 +3095,10 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                   <div className="flex-1 overflow-hidden relative h-full">
                     <div className="absolute inset-0 overflow-y-auto p-4">
                       <CorkBoard
-                        beats={beats}
+                        beats={beats as any}
                         episodeId={currentEpisodeId || undefined}
                         onAddMessage={msg => setMessages(prev => [...prev, msg as any])}
+                        onSendMessage={(msg) => handleSendMessage(undefined, msg)}
                         // Combined Storyboard Props
                         storyboardUrl={(storyPlan as any)?.storyboardUrl}
                         isGeneratingCombined={isGeneratingStoryboard}
@@ -2396,7 +3115,14 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                       onChange={setScript}
                       onRegenerateSelection={async (selection, instruction) => {
                         try {
-                          return await regenerateText(selection, instruction)
+                          const res = await fetch('/api/storyteller/script/edit', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ selection, instruction })
+                          })
+                          const data = await res.json()
+                          if (data.error) throw new Error(data.error)
+                          return data.result
                         } catch (e) {
                           console.error('Regeneration failed:', e)
                           return selection
@@ -2412,9 +3138,9 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                       storyPlan={
                         storyPlan || {
                           title: currentProject?.name || 'Untitled',
-                          genre: 'Unknown',
-                          tone: 'Unknown',
-                          centralQuestion: 'Unknown',
+                          genre: '',
+                          tone: '',
+                          centralQuestion: '',
                           themes: [],
                           worldRules: [],
                           factions: [],
@@ -2425,10 +3151,26 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                       }
                       projectId={currentProject?.id || ''}
                       onUpdate={handleUpdateBible}
-                      onSendMessage={msg => handleSendMessage(undefined, msg)}
+                      onSendMessage={(msg, section) => handleSendMessage(undefined, msg, section)}
                       isReadOnly={isSending}
                       isLoading={isFetchingPlan}
+                      loadingSections={loadingSections}
+                      pendingActions={sectionPendingActions}
                       onConvertToCast={handleCreateCharacter}
+                    />
+                  </div>
+                )}
+                {activeTab === 'relationships' && (
+                  <div className="flex-1 overflow-hidden relative h-full">
+                    <CharacterWeb
+                      projectId={currentProject?.id || (params?.projectId as string) || ''}
+                      className="h-full"
+                      focusEntityId={focusEntityId}
+                      onNodeClick={(nodeId, type) => {
+                        console.log('Character web node clicked:', nodeId, type)
+                        setFocusEntityId(null) // Clear focus after manual click
+                      }}
+                      key={characterWebVersion}
                     />
                   </div>
                 )}
@@ -2441,9 +3183,9 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 storyPlan={
                   storyPlan || {
                     title: currentProject?.name || 'Untitled',
-                    genre: 'Unknown',
-                    tone: 'Unknown',
-                    centralQuestion: 'Unknown',
+                    genre: '',
+                    tone: '',
+                    centralQuestion: '',
                     themes: [],
                     worldRules: [],
                     factions: [],
@@ -2454,8 +3196,11 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 }
                 projectId={currentProject?.id || ''}
                 onUpdate={handleUpdateGlobalBible}
-                onSendMessage={msg => handleSendMessage(undefined, msg)}
+                onSendMessage={(msg, section) => handleSendMessage(undefined, msg, section)}
                 isReadOnly={isSending}
+                isLoading={isFetchingPlan}
+                loadingSections={loadingSections}
+                pendingActions={sectionPendingActions}
                 onConvertToCast={handleCreateCharacter}
               />
             </div>
@@ -2472,12 +3217,12 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                   <h2 className="text-3xl font-bold text-foreground">
                     {hasBible
                       ? 'Ready to Create Your First Episode?'
-                      : "Let's Built Your World Bible First"}
+                      : 'Let\'s Built Your World Bible First'}
                   </h2>
                   <p className="text-muted-foreground text-lg leading-relaxed">
                     {hasBible
                       ? 'Use the AI to draft your first episode, or manually create one in the sidebar.'
-                      : "Before we dive into episodes, let's establish the foundation of your world—the rules, themes, and characters that make it unique."}
+                      : 'Before we dive into episodes, let\'s establish the foundation of your world—the rules, themes, and characters that make it unique.'}
                   </p>
                 </div>
 
@@ -2577,38 +3322,24 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
             <ChatInterface
               isActivityPanelOpen={isActivityPanelOpen}
               onActivityToggle={() => setIsActivityPanelOpen(!isActivityPanelOpen)}
+              isAdmin={isAdminUser(userEmail)}
               messages={messages}
               agentConfig={STORYTELLER_AGENT_CONFIG}
               mentions={mentionItems}
               mentionProviders={mentionProviders}
               projectContext={projectContextForMentions}
+              projectId={currentProject?.id}
               thinkingAgent={thinkingAgent}
+              streamingTokens={streamingTokens}
+              activeOperations={loadingStates.operations.map(op => ({
+                id: op.id,
+                type: op.section,
+                label: op.label,
+                startTime: op.startTime,
+                tool: op.details,
+              }))}
               onSendMessage={msg =>
-                sendMessage('/api/storyteller/chat/stream', {
-                  message: msg,
-                  projectId: currentProject?.id,
-                  threadId: currentEpisodeId || 'general',
-                  episodeId: currentEpisodeId,
-                  currentPhase: currentPhase,
-                  seriesBible: {
-                    ...((currentProject?.series_bible as any) || {}),
-                    masterPrompt: currentProject?.project_prompt || '',
-                    userDecisions: storyDecisions,
-                  },
-                  characters: characters.map(c => ({
-                    id: c.id,
-                    name: c.name,
-                    currentGoals: c.psychology?.goals || [],
-                    fears: c.psychology?.fears || [],
-                    selfDelusion: c.psychology?.selfDelusion || '',
-                    actualMotivation: c.psychology?.actualMotivation || '',
-                    transformationProgress: c.transformation || 0,
-                    knowledgeState: [],
-                    stressLevel: c.stress || 30,
-                  })),
-                  modelConfig: getModelConfigFromStorage(),
-                  streamMode: 'events',
-                })
+                handleSendMessage(undefined, msg)
               }
               onStopStream={handleStopStream}
               onQuestionAnswer={(id, answer) => handleQuestionAnswer(id, answer)}
@@ -2616,6 +3347,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
               onApproveAllActions={handleApproveAllActions}
               isSending={isSending}
               showThinking={showThinking}
+              currentPhase={currentPhase}
               ActionComponent={MemoizedActionComponent}
               QuestionComponent={({ question, onAnswer, onSkip }) => (
                 <QuestionCard
@@ -2694,7 +3426,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                   </div>
                   <SmartQuickActions
                     currentPhase={currentPhase as any}
-                    onSendMessage={msg => handleSendMessage(undefined, msg)}
+                    onSendMessage={(msg) => { handleSendMessage(undefined, msg) }}
                   />
                 </div>
               )}
@@ -2703,8 +3435,8 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
         </DomainSidebar>
       </div>
 
-      {/* Action Toasts */}
-      <ActionToastContainer entries={showToasts} onDismiss={handleDismissToast} />
+      {/* Action Toasts - DISABLED (User prefers inline approvals only) */}
+      {/* <ActionToastContainer entries={showToasts} onDismiss={handleDismissToast} /> */}
 
       {/* Timeline at Bottom */}
       <Timeline
@@ -2717,6 +3449,79 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
 
       {/* Phase Back Confirmation Dialog */}
       {PhaseBackConfirmDialog}
+
+      {/* Cast Modal removed - Cast is now in left sidebar */}
+
+      {/* Action Review Modal */}
+      {reviewModalAction && (
+        <ActionApprovalModal
+          action={reviewModalAction.action}
+          agentName={reviewModalAction.agentName}
+          isOpen={!!reviewModalAction}
+          onClose={() => setReviewModalAction(null)}
+          onApprove={async () => {
+            const { action, messageIndex, actionIndex } = reviewModalAction
+            updateActionStatus(messageIndex, actionIndex, 'executing')
+
+            // Save current state for undo
+            if (action.type.startsWith('UPDATE_')) {
+              const actionId = `${messageIndex}-${actionIndex}`
+              setUndoStack(prev => [...prev.slice(-4), { storyPlan: storyPlan ? { ...storyPlan } : null, actionId }])
+            }
+
+            try {
+              // Execute the action (calls the backend)
+              await executeAction(action as any)
+
+              // MANUAL STATE UPDATE:
+              // For bible updates, we must update the local state immediately so the UI reflects it
+              // and the entity extractor sees the new data for tooltips.
+              if (action.type === 'UPDATE_FACTIONS') {
+                const factions = (action.payload as any).factions
+                if (factions) {
+                  setStoryPlan(prev => prev ? { ...prev, factions: factions } : prev)
+                  // Also update store to be safe
+                  const latest = useWorldStore.getState().currentProject
+                  if (latest) {
+                    useWorldStore.getState().setCurrentProject({
+                      ...latest,
+                      series_bible: { ...(latest.series_bible as any), factions }
+                    })
+                  }
+                  toast.success('Factions updated')
+                }
+              } else if (action.type === 'UPDATE_WORLD_RULES') {
+                const rules = (action.payload as any).worldRules
+                if (rules) {
+                  setStoryPlan(prev => prev ? { ...prev, worldRules: rules } : prev)
+                  toast.success('World rules updated')
+                }
+              }
+
+              updateActionStatus(messageIndex, actionIndex, 'committed')
+              setActionHistory(prev => [
+                {
+                  id: `${messageIndex}-${actionIndex}`,
+                  action,
+                  agentName: reviewModalAction.agentName,
+                  status: ActionStatus.COMMITTED,
+                  timestamp: new Date(),
+                },
+                ...prev,
+              ])
+            } catch (e) {
+              console.error('Approval failed', e)
+              updateActionStatus(messageIndex, actionIndex, 'pending')
+            }
+            setReviewModalAction(null)
+          }}
+          onReject={() => {
+            const { messageIndex, actionIndex } = reviewModalAction
+            updateActionStatus(messageIndex, actionIndex, 'rejected')
+            setReviewModalAction(null)
+          }}
+        />
+      )}
     </div>
   )
 }

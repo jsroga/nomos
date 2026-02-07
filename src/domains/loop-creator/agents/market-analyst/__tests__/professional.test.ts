@@ -10,16 +10,13 @@
  * - Snapshot testing
  */
 
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
+import { describe, it, expect, afterAll } from 'vitest'
 import * as fc from 'fast-check'
 
 // Tool imports
 import { competitorFinderTool } from '../tools/competitor-finder'
 import { metricsPlannerTool } from '../tools/metrics-planner'
 import { patternMatcherTool } from '../tools/pattern-matcher'
-import { marketSizeEstimatorTool } from '../tools/market-size'
-import { audienceAnalyzerTool } from '../tools/audience-analyzer'
-import { trendAnalyzerTool } from '../tools/trend-analyzer'
 import { discoElysiumScorerTool } from '../tools/scorers/disco-elysium'
 import { vampireSurvivorsScorerTool } from '../tools/scorers/vampire-survivors'
 import { counterStrikeScorerTool } from '../tools/scorers/counter-strike'

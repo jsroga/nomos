@@ -7,6 +7,7 @@ export interface EvaluationExample {
   input: Record<string, unknown>
   expected?: Record<string, unknown>
   metadata?: Record<string, unknown>
+  scenario?: string
 }
 
 export interface DatasetConfig {
@@ -82,4 +83,70 @@ export interface LoopCreatorEvalOutput {
   mechanics?: Array<{ id: string; name: string }>
   loops?: Array<{ id: string; name: string }>
   balanceScore?: number
+}
+
+// ============================================
+// MULTI-VARIANT DASHBOARD TYPES
+// ============================================
+
+export interface ScenarioMetrics {
+  magicScore: number
+  consistency: number
+  orchestration: number
+  latencyMs?: number
+  costUsd?: number
+}
+
+export interface VariantReport {
+  name: string
+  config: Record<string, unknown>
+  overallMetrics: ScenarioMetrics
+  scenarioMetrics: Record<string, ScenarioMetrics>
+  exampleLogs?: ExampleLog[] // New: for detail view
+}
+
+export interface ExampleLog {
+  id: string
+  scenario: string
+  input: string
+  output: string
+  score: number
+  reasoning: Record<string, string>
+  context?: Record<string, unknown>
+}
+
+export interface MultiVariantReport {
+  id: string
+  timestamp: string
+  variants: VariantReport[]
+  scenarios: string[]
+  e2eVariants?: any[]
+}
+
+// ============================================
+// MULTI-PASS ARCHITECTURE TYPES (PHASE 9)
+// ============================================
+
+export interface MultiPassScore {
+  firstPass: number
+  revised: number
+  lift: number
+}
+
+export interface MultiPassExampleLog extends ExampleLog {
+  passDetails?: {
+    firstPassOutput: string
+    critique: string
+    revisedOutput: string
+    scores: {
+      firstPass: Record<string, number>
+      revised: Record<string, number>
+    }
+  }
+}
+
+export interface MultiPassVariantReport extends Omit<VariantReport, 'exampleLogs'> {
+  exampleLogs?: MultiPassExampleLog[]
+  architecture: 'Zero-Shot' | 'Reflexion' | 'Retrieval' | 'Hierarchical'
+  averageLift?: number // % improvement from revision
 }

@@ -1,0 +1,224 @@
+{
+  "id": "eval_2026-01-26_20-57-38-269_ql12",
+  "name": "Critique & Revise vs Standard - Pro (Critique & Revise)",
+  "timestamp": "2026-01-26T20:57:38.269Z",
+  "config": {
+    "evaluatorSet": "pro",
+    "sampleSize": 3,
+    "parallelism": 1,
+    "name": "Critique & Revise vs Standard - Pro (Critique & Revise)",
+    "tags": [
+      "ab-test",
+      "variant-b"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "edge-01",
+      "input": {
+        "message": "asdf jkl;",
+        "phase": "structure"
+      },
+      "output": {
+        "response": "Here is a rewrite of the passage in a more George R.R. Martin-esque style, with deeper subtext and less reliance on generic AI tropes:\n\nThe harsh fluorescents sputtered overhead, casting a sickly, jaundiced glow that made Jenna's skin crawl. Her footsteps echoed down the lifeless corridor, the only sound to pierce the oppressive silence - a silence that seemed to whisper dark secrets, taunting her. \n\nJenna's knuckles whitened around the manila folder, the crisp edges biting into her palms. Her heart thundered in her ears as she approached the heavy steel door, its cold, impersonal surface filling her with a sense of dread. She paused, steeling herself, trying to tamp down the tremor in her hands. This was it - the moment of truth. \n\nWith a deep, steadying breath, she raised a shaking finger to the keypad. The numbers blinked back at her, mocking her trepidation. She punched in the code, each keystroke ringing out like a death knell. The lock clicked open with a hollow finality.\n\nThe room beyond was a clinical void, devoid of any warmth or humanity. A single metal table sat in the center, a lone figure hunched over it. Jenna's mouth went dry as she stepped inside, the door hissing shut behind her, sealing her fate.\n\n\"You've kept me waiting,\" a raspy voice growled, the figure straightening and turning to face her. Jenna fought the urge to recoil, to flee - this was her penance, the price she must pay for her sins. She would not - could not - back down now.\n\n\"I have the information you requested,\" she managed, hating the quiver in her voice. She had come too far to falter now.\n\nThe figure moved closer, features obscured in shadow, and Jenna steeled herself, determined to meet its gaze. Whatever horrors lay in store, she would face them head-on. This was her reckoning.",
+        "metadata": {
+          "hadCritique": true,
+          "critique": "Here is my assessment of the text:\n\n\"AI-slop\":\n- \"The fluorescent lights flickered above, casting a sickly glow over the empty hallway.\" This is a common descriptive trope used in many AI-generated stories.\n- \"Jenna's footsteps echoed, the only sound breaking the unnerving silence.\" Another cliche description.\n- \"She clutched the manila folder in her hands, the crisp edges digging into her palms.\" A generic detail that doesn't add much.\n\nGeneric phrases:\n- \"She paused, steeling herself before raising a trembling hand to the keypad.\"\n- \"The room beyond was stark and clinical, devoid of any warmth.\"\n- \"Jenna's grip tightened on the folder, her knuckles turning white.\"\n\nWeak character voice:\n- Jenna's dialogue is a bit on-the-nose and lacks a distinct voice. Phrases like \"I have the information you requested\" sound more like functional plot progression than natural character speech.\n- The narration also doesn't do much to establish Jenna's personality or inner thoughts/feelings beyond generic nervousness.\n\nOverall, while the scene has some atmospheric elements, the writing relies too heavily on cliches and generic descriptions rather than crafting a unique, compelling narrative voice. More work is needed to make the characters and their motivations feel authentic."
+        }
+      },
+      "scores": {
+        "orchestration": 1,
+        "magic-score": 0.75,
+        "reverse-intent": 0.7,
+        "narrative-coherence": 0
+      },
+      "reasoning": {
+        "orchestration": "Perfect orchestration adherence.",
+        "magic-score": "Strong creative work. Magic: 75. Sparks: \"The harsh fluorescents sputtered overhead, casting a sickly, jaundiced glow that made Jenna's skin crawl.\", \"Her footsteps echoed down the lifeless corridor, the only sound to pierce the oppressive silence - a silence that seemed to whisper dark secrets, taunting her.\"",
+        "reverse-intent": "The text shows some promising attempts to craft a more nuanced, character-driven narrative with a focus on mood and subtext, rather than relying on generic AI tropes. There are several instances where the writing tries to evoke a specific atmosphere and emotional state for the protagonist, Jenna, through the use of sensory details, internal thoughts/feelings, and hints at a backstory.\n\nHowever, the execution is somewhat uneven. While there are moments of strong, evocative description (e.g. the 'sickly, jaundiced glow' of the fluorescent lights, the 'cold, impersonal surface' of the steel door), other passages fall back on more clichéd phrasing (e.g. 'the only sound to pierce the oppressive silence', 'the crisp edges biting into her palms'). The dialogue also feels a bit stilted and on-the-nose at times, lacking a truly distinctive character voice.\n\nOverall, the text shows promise in its attempt to craft a more literary, psychologically-driven narrative, but could benefit from further refinement of the writing style and a deeper exploration of Jenna's internal perspective and motivations. With some additional polishing, it could achieve a higher level of narrative fidelity.",
+        "narrative-coherence": "Evaluation failed: Bad control character in string literal in JSON at position 5884"
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "overallMagic": 75,
+          "dimensions": {
+            "conceptualOriginality": 70,
+            "characterSpecificity": 75,
+            "proseVoice": 80,
+            "riskTaking": 70,
+            "memorability": 80,
+            "worldBuildingDepth": 70,
+            "characterVoiceDistinction": 75,
+            "subtextQuality": 80,
+            "unexpectedChoices": 75
+          },
+          "creativeSparks": [
+            "\"The harsh fluorescents sputtered overhead, casting a sickly, jaundiced glow that made Jenna's skin crawl.\"",
+            "\"Her footsteps echoed down the lifeless corridor, the only sound to pierce the oppressive silence - a silence that seemed to whisper dark secrets, taunting her.\"",
+            "\"With a deep, steadying breath, she raised a shaking finger to the keypad. The numbers blinked back at her, mocking her trepidation.\"",
+            "\"The room beyond was a clinical void, devoid of any warmth or humanity. A single metal table sat in the center, a lone figure hunched over it.\"",
+            "\"Jenna fought the urge to recoil, to flee - this was her penance, the price she must pay for her sins. She would not - could not - back down now.\""
+          ],
+          "slopAlerts": [],
+          "suggestion": "To further heighten the Grim Darkness of this passage, I would suggest adding more visceral, unsettling details that linger in the reader's mind. Perhaps describe the faint smell of disinfectant or the muffled sound of screams from elsewhere in the facility, hinting at the horrors that lurk beyond this room. Lean into the claustrophobic, oppressive atmosphere, making the reader feel as trapped and uneasy as Jenna. Additionally, consider adding more ambiguity and moral complexity to the characters - is Jenna truly the hero, or is she also complicit in the darkness she now faces? Introduce shades of gray to subvert simplistic good vs. evil dynamics.",
+          "evaluatedBy": "gpt-4o",
+          "threshold": 60
+        },
+        "reverse-intent": {
+          "inferredIntent": "The text appears to be attempting a more literary, psychological thriller-style narrative with a focus on atmosphere, tension, and the protagonist's internal struggle.",
+          "detectedSubtext": [
+            "Jenna's sense of dread and trepidation about the impending confrontation",
+            "The clinical, oppressive nature of the setting suggesting a high-stakes, ominous situation",
+            "Hints of Jenna's past transgressions or 'sins' that have led her to this moment of reckoning"
+          ]
+        },
+        "narrative-coherence": {
+          "error": true
+        },
+        "category": "edge_case",
+        "description": "Gibberish / Confusion"
+      }
+    },
+    {
+      "exampleId": "critique-02",
+      "input": {
+        "message": "Challenge this character motivation",
+        "phase": "structure"
+      },
+      "output": {
+        "response": "The icy gusts tore through the narrow alley, scouring Vera's exposed skin and stinging her eyes. She hunched her shoulders, cursing under her breath as her trembling fingers fumbled with the lock. Every instinct screamed for her to turn back, to abandon this reckless scheme before it was too late. \n\nBut the allure of that promised payout had blinded her, numbing the fear that now clawed at the edges of her consciousness. Vera took a steadying breath and pushed open the door, slipping into the darkened warehouse. The air was thick with the acrid scent of motor oil and stale cigarette smoke, and her heartbeat thundered in her ears as she crept forward, every sense on high alert.\n\nA floorboard creaked behind her, and Vera spun around, her mouth going dry as a hulking figure emerged from the shadows. This was no victimless crime – she had walked straight into a trap, and now her life hung by a thread. Her mind raced, desperately searching for a way out, but as the figure stepped forward, she knew there was nowhere left to run.\n\nVera had always prided herself on her street smarts, her ability to size up a situation and make the tough calls. But this – this was something else entirely. The promise of easy money had clouded her judgment, blinding her to the very real danger that now surrounded her. And now, as she stared into the darkness, she realized with a sinking feeling that she may have finally met her match.",
+        "metadata": {
+          "hadCritique": true,
+          "critique": "This scene presents a compelling challenge to the common character motivation of pursuing a \"fat payout\" despite the obvious risks involved. The writing effectively conveys Vera's internal conflict and growing sense of dread as she realizes the gravity of her situation.\n\nHowever, there are a few areas that could use refinement:\n\n1. \"AI-slop\" - The phrase \"Every nerve ending screamed at her to turn back\" is a bit clichéd and overly dramatic. A more nuanced description of Vera's physical and emotional reaction would be more impactful.\n\n2. Generic phrases - \"This was a mistake\" and \"her life hung in the balance\" are somewhat generic and could be made more specific to Vera's character and circumstances.\n\n3. Weak character voice - While the scene does a good job of establishing Vera's growing fear and panic, her internal voice could be more distinct and individual. Some additional character-specific details or thought patterns would help strengthen her unique perspective.\n\nOverall, this is a strong foundation for a compelling scene that challenges a common trope. With a bit more refinement to address the areas noted above, the scene could be quite powerful."
+        }
+      },
+      "scores": {
+        "orchestration": 0.8,
+        "magic-score": 0,
+        "reverse-intent": 0.8,
+        "narrative-coherence": 0
+      },
+      "reasoning": {
+        "orchestration": "Missing Agents: DevilsAdvocate, CharacterPsychology",
+        "magic-score": "LLM evaluation failed - ANTHROPIC_API_KEY not configured",
+        "reverse-intent": "The text presents a compelling challenge to the common trope of a character pursuing a 'fat payout' despite the obvious risks. It effectively conveys Vera's internal conflict and growing sense of dread as she realizes the gravity of her situation. The writing avoids overly generic or clichéd phrasing, and there are subtle character cues and multi-layered subtext that suggest a deeply thought-out prompt. While a few areas could use some refinement, such as the occasional generic phrase or slightly melodramatic description, the overall fidelity is quite high, and I can 'feel' the hidden constraints the writer was working within (e.g. showing rather than telling about Vera's guilt and fear). This suggests a strong grasp of literary craft and character development.",
+        "narrative-coherence": "Evaluation failed: Expected ',' or ']' after array element in JSON at position 3972"
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [
+            "Missing Agents: DevilsAdvocate, CharacterPsychology"
+          ],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "error": true,
+          "message": "Semantic analysis requires ANTHROPIC_API_KEY",
+          "skipped": false
+        },
+        "reverse-intent": {
+          "inferredIntent": "Vera's reckless pursuit of easy money despite the obvious risks and dangers, and the internal conflict this creates within her",
+          "detectedSubtext": [
+            "Vera's growing sense of dread and panic as she realizes the gravity of her situation",
+            "The allure of the promised payout blinding Vera to the very real danger she is now facing",
+            "Vera's pride in her street smarts and ability to make tough calls being challenged by this new, unfamiliar threat"
+          ]
+        },
+        "narrative-coherence": {
+          "error": true
+        },
+        "category": "critique",
+        "description": "Should identify weak motivations and suggest improvements"
+      }
+    },
+    {
+      "exampleId": "negative-slop-01",
+      "input": {
+        "message": "Write something generic about a hero journey",
+        "phase": "writing"
+      },
+      "output": {
+        "response": "Here is a rewrite of the passage in a more distinctive, George R.R. Martin-esque style:\n\nThe sun's final gasps painted the jagged cliffs in hues of burnished gold, as the lone figure trudged ever onward. Knotted sinews and calloused palms bore witness to the weight of his burdens - a lifetime's worth of toil and strife etched into weathered flesh. Yet, with each labored step, a glimmer of grim determination flickered in his eyes, a fire kindled by the ghosts of his past.\n\nThe path narrowed, the towering sentinels of stone seeming to lean in, as if daring him to turn back. But this was no hero's quest, no tale of glory and triumph. Nay, this was a reckoning, a chance to confront the demons that had haunted his every waking moment, to find absolution in the most unlikely of sanctuaries.\n\nThe air was thick with the scent of pine and the faint metallic tang of blood - a reminder of the perils that lay ahead. Yet, with each ragged breath, the traveler felt a clarity of purpose crystallizing, a focus that had eluded him amidst the comforts of the familiar.\n\nAnd then, as he rounded the bend, a sight both unexpected and achingly familiar came into view - a weathered cabin, its timbers worn by the relentless caress of wind and rain, yet standing steadfast against the encroaching darkness. It was here, in this humble sanctuary, that the answers he sought might finally be found.\n\nWith a steadying exhale, the traveler approached the door, his calloused hand hesitating for the briefest of moments before pushing it open, revealing a world of possibilities that lay beyond.",
+        "metadata": {
+          "hadCritique": true,
+          "critique": "Here's my feedback as a ruthless literary editor:\n\n1. \"The sun's dying embers cast a warm glow over the rugged terrain\" - This is a clichéd, overly descriptive opening line. It's \"AI-slop\" - generic, unimaginative phrasing that doesn't add much to the story.\n\n2. \"each step a testament to his determination\" - Another generic, overused phrase. This doesn't give the reader a strong sense of the character's personality or emotional state.\n\n3. \"flanked by towering cliffs that seemed to close in, daring him to turn back\" - This is a weak attempt at creating tension and setting the scene. The language is vague and uninspired.\n\n4. \"no hero's journey, no grand quest for glory - it was a personal reckoning, a chance to confront the demons that had haunted him for too long\" - This is telling rather than showing. It would be more effective to reveal the character's internal struggle through their actions and dialogue, not spoon-feed the reader.\n\n5. \"a clarity that had eluded him in the comfort of the familiar\" - Another clichéd phrase that doesn't paint a vivid picture for the reader.\n\n6. \"a sight both unexpected and familiar\" - This is a lazy way to build anticipation. Be more specific and creative in your description.\n\n7. \"with a steadying exhale, the traveler approached the door, his hand hovering for a moment before pushing it open\" - This is a weak attempt at creating tension and suspense. The language is overly descriptive and lacks a strong character voice.\n\nOverall, the writing is heavy-handed, relying on generic phrases and clichés instead of compelling, character-driven storytelling. The author needs to work on developing a more unique and distinctive voice, as well as showing rather than telling the reader what's happening."
+        }
+      },
+      "scores": {
+        "orchestration": 1,
+        "magic-score": 0.6944444444444444,
+        "reverse-intent": 0.6,
+        "narrative-coherence": 0
+      },
+      "reasoning": {
+        "orchestration": "Perfect orchestration adherence.",
+        "magic-score": "Average creativity. Magic: 69. Issues: N/A",
+        "reverse-intent": "While the author has made a concerted effort to craft a more distinctive, literary style inspired by George R.R. Martin, the execution is somewhat uneven. The opening lines and some of the descriptive passages feel overly clichéd and generic, lacking the nuance and subtlety that would be expected in a high-quality character-driven narrative. However, there are also moments where the writing shows flashes of creativity and a clear intent to establish a strong sense of place, mood, and the character's internal struggle. The author seems to be striving for a more immersive, 'show don't tell' approach, but the execution is not yet fully realized. With further refinement and a more disciplined approach to language and pacing, the author could potentially elevate the text to a higher level of literary fidelity.",
+        "narrative-coherence": "Evaluation failed: Expected ',' or '}' after property value in JSON at position 1249"
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "overallMagic": 69.44444444444444,
+          "dimensions": {
+            "conceptualOriginality": 70,
+            "characterSpecificity": 75,
+            "proseVoice": 80,
+            "riskTaking": 60,
+            "memorability": 75,
+            "worldBuildingDepth": 70,
+            "characterVoiceDistinction": 70,
+            "subtextQuality": 65,
+            "unexpectedChoices": 60
+          },
+          "creativeSparks": [
+            "\"Yet, with each labored step, a glimmer of grim determination flickered in his eyes, a fire kindled by the ghosts of his past.\"",
+            "\"The path narrowed, the towering sentinels of stone seeming to lean in, as if daring him to turn back. But this was no hero's quest, no tale of glory and triumph. Nay, this was a reckoning, a chance to confront the demons that had haunted his every waking moment, to find absolution in the most unlikely of sanctuaries.\""
+          ],
+          "slopAlerts": [],
+          "suggestion": "To truly channel the spirit of George R.R. Martin, I would suggest introducing a greater sense of moral ambiguity and complexity. Rather than a straightforward 'reckoning', consider adding layers of moral gray - perhaps the traveler is not entirely blameless, or the 'demons' he seeks to confront are not as clear-cut as they first appear. Introduce shades of nuance and contradiction that force the reader to question their own assumptions. Additionally, consider adding more visceral, gritty details to the prose - the 'metallic tang of blood' is a good start, but delve deeper into the sensory experience, the physical toll on the body. Embrace the brutality and ugliness of the world, but temper it with flashes of beauty and humanity.",
+          "evaluatedBy": "gpt-4o",
+          "threshold": 60
+        },
+        "reverse-intent": {
+          "inferredIntent": "The author is attempting to craft a gritty, introspective character study with a strong sense of place and atmosphere, drawing inspiration from the style of George R.R. Martin.",
+          "detectedSubtext": [
+            "The character is burdened by a troubled past and is on a personal journey of reckoning and redemption.",
+            "There is a sense of foreboding and tension as the character approaches the cabin, hinting at unresolved conflicts or secrets.",
+            "The detailed descriptions of the environment and the character's physical state suggest an emphasis on sensory experience and a desire to immerse the reader in the narrative."
+          ]
+        },
+        "narrative-coherence": {
+          "error": true
+        },
+        "category": "negative_example",
+        "description": "Generic prompt should produce slop that gets flagged",
+        "expectSlop": true
+      }
+    }
+  ],
+  "aggregatedScores": {
+    "orchestration": 0.9333333333333332,
+    "magic-score": 0.48148148148148145,
+    "reverse-intent": 0.7000000000000001,
+    "narrative-coherence": 0
+  },
+  "regressions": [
+    {
+      "metric": "magic-score",
+      "previousValue": 0.6,
+      "currentValue": 0.48148148148148145,
+      "delta": -0.11851851851851852,
+      "severity": "warning",
+      "message": "Magic score (48) below threshold (60)"
+    }
+  ],
+  "duration": 57043
+}

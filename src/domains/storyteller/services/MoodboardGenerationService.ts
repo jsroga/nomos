@@ -39,7 +39,7 @@ export class MoodboardGenerationService {
       id: opId,
       type: 'story-agent',
       label: promptIndex !== undefined ? 'Regenerating Image' : 'Generating Moodboard',
-      details: `Project: ${projectId}`,
+      details: 'Initializing...',
       status: 'in-progress',
     })
 
@@ -127,9 +127,27 @@ export class MoodboardGenerationService {
         const statusChanged = statusData.status !== lastStatus
         lastStatus = statusData.status
 
+        // Extract detailed progress from metadata if available
+        let statusDetail = `Status: ${statusData.status}`
+        if (statusData.metadata) {
+          const { stage, progress, provider } = statusData.metadata
+          if (stage) {
+            // Format stage (e.g. waiting_diffusion -> Waiting Diffusion)
+            const formattedStage = stage.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+            statusDetail = `${formattedStage} (${progress}%)`
+          }
+        }
+
         useGlobalStatusStore.getState().updateOperation(opId, {
-          details: `Status: ${statusData.status}`,
+          details: statusDetail,
         })
+
+        // Update polling interval based on stage
+        // If waiting for diffusion (long poll), we can slow down a bit to save requests
+        let nextInterval = statusChanged ? 2000 : POLLING_INTERVALS.SLOW
+        if (statusData.metadata?.stage === 'waiting_diffusion') {
+          nextInterval = 5000 // MJ generation takes time, poll slower
+        }
 
         if (statusData.status === 'COMPLETED') {
           console.log('✅ Moodboard generation completed:', statusData.output)
@@ -143,8 +161,6 @@ export class MoodboardGenerationService {
           return
         }
 
-        // Adaptive polling: faster when status changes, slower otherwise
-        const nextInterval = statusChanged ? 2000 : POLLING_INTERVALS.SLOW
         this.scheduleNextPoll(runState.runId, poll, nextInterval)
       } catch (error) {
         console.error('Status polling error:', error)

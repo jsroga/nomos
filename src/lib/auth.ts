@@ -1,6 +1,5 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies, headers } from 'next/headers'
-import { NextResponse } from 'next/server'
 
 import { Session } from '@supabase/supabase-js'
 
@@ -28,15 +27,16 @@ const DEV_MOCK_SESSION: Session = {
 }
 
 export async function getUserSession() {
-  // Check for E2E test bypass in development
-  if (process.env.NODE_ENV === 'development') {
+  // Check for E2E test bypass in development or test environments
+  if (['development', 'test'].includes(process.env.NODE_ENV || '')) {
     const headersList = await headers()
-    const e2eHeader = headersList.get('x-e2e-test')
+    const e2eHeader = headersList.get('x-bypass-auth')
     if (e2eHeader === 'true') {
       return { session: DEV_MOCK_SESSION, supabase: null as any, error: null }
     }
   }
 
+  // Next.js 15+ requires awaiting cookies()
   const cookieStore = await cookies()
   const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
   const {

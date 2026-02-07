@@ -1,14 +1,5 @@
 import React, { useState } from 'react'
-import {
-  Film,
-  ChevronRight,
-  Users,
-  Sparkles,
-  AlertTriangle,
-  Notebook,
-  Crown,
-  Zap,
-} from 'lucide-react'
+import { ChevronRight, Users, Sparkles, AlertTriangle, Notebook, Crown, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface EpisodeRoadmapCardProps {

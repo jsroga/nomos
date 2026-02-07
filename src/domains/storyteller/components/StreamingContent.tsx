@@ -11,7 +11,6 @@ import {
   Lightbulb,
   FileText,
   Check,
-  Circle,
   Search,
   Brain,
   Pen,

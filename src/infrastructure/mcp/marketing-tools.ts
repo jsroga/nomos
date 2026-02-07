@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { db } from '@/db'
-import { marketAnalyses, marketAnalysisMomentum, marketAnalysisSocialBuzz } from '@/db/schema'
+import { marketAnalyses, marketAnalysisMomentum } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 
 /**

@@ -9,7 +9,6 @@ import {
   Edit3,
   Plus,
   Sparkles,
-  ChevronRight,
   Lightbulb,
   Music,
   Users,
@@ -312,4 +311,3 @@ export const SmartQuickActions: React.FC<SmartQuickActionsProps> = ({
 
   return <QuickActions actions={getActionsForPhase()} className={className} />
 }
-

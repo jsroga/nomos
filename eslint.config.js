@@ -5,6 +5,7 @@ const react = require('eslint-plugin-react')
 const reactHooks = require('eslint-plugin-react-hooks')
 const reactCompiler = require('eslint-plugin-react-compiler')
 const prettier = require('eslint-config-prettier')
+const unusedImports = require('eslint-plugin-unused-imports')
 
 module.exports = [
   {
@@ -87,6 +88,7 @@ module.exports = [
       react: react,
       'react-hooks': reactHooks,
       'react-compiler': reactCompiler,
+      'unused-imports': unusedImports,
     },
     rules: {
       ...typescript.configs.recommended.rules,
@@ -94,7 +96,9 @@ module.exports = [
       ...reactHooks.configs.recommended.rules,
       ...prettier.rules,
       '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': [
+      '@typescript-eslint/no-unused-vars': 'off',
+      'unused-imports/no-unused-imports': 'error',
+      'unused-imports/no-unused-vars': [
         'warn',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],

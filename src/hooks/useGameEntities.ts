@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 export type EntityType = 'character' | 'location' | 'mechanic' | 'faction' | 'item' | 'quest'
 export type SourceDomain = 'storyteller' | 'loop-creator' | 'interior-designer' | 'world-building'
@@ -50,8 +50,29 @@ export function useGameEntities(options: UseGameEntitiesOptions = {}) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchEntities = useCallback(async () => {
+  // Track if initial fetch has been done to prevent duplicate fetches
+  const hasFetchedRef = useRef(false)
+  const abortControllerRef = useRef<AbortController | null>(null)
+
+  // Store previous values to detect actual changes
+  const prevOptionsRef = useRef<string>('')
+
+  const fetchEntities = useCallback(async (forceRefresh = false) => {
     if (!projectId && autoFetch) return
+
+    // Create a key for the current options to compare
+    const optionsKey = JSON.stringify({ projectId, entityType, sourceDomain, search })
+
+    // Skip if nothing changed and not forcing refresh
+    if (!forceRefresh && hasFetchedRef.current && prevOptionsRef.current === optionsKey) {
+      return
+    }
+
+    // Cancel any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    abortControllerRef.current = new AbortController()
 
     setLoading(true)
     setError(null)
@@ -63,7 +84,9 @@ export function useGameEntities(options: UseGameEntitiesOptions = {}) {
       if (sourceDomain) params.append('sourceDomain', sourceDomain)
       if (search) params.append('search', search)
 
-      const response = await fetch(`/api/entities?${params.toString()}`)
+      const response = await fetch(`/api/entities?${params.toString()}`, {
+        signal: abortControllerRef.current.signal,
+      })
 
       if (!response.ok) {
         throw new Error('Failed to fetch entities')
@@ -71,7 +94,13 @@ export function useGameEntities(options: UseGameEntitiesOptions = {}) {
 
       const data = await response.json()
       setEntities(data.entities || [])
+      hasFetchedRef.current = true
+      prevOptionsRef.current = optionsKey
     } catch (err) {
+      // Ignore abort errors
+      if (err instanceof Error && err.name === 'AbortError') {
+        return
+      }
       setError(err instanceof Error ? err.message : 'Failed to fetch entities')
       console.error('[useGameEntities] Error:', err)
     } finally {
@@ -227,17 +256,37 @@ export function useGameEntities(options: UseGameEntitiesOptions = {}) {
     [entities]
   )
 
+  // Initial fetch - only run once when projectId is available
   useEffect(() => {
-    if (autoFetch) {
+    if (autoFetch && projectId) {
       fetchEntities()
     }
-  }, [fetchEntities, autoFetch])
+
+    // Cleanup on unmount
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, []) // Empty deps - only run on mount
+
+  // Re-fetch when options change (with debounce for search)
+  useEffect(() => {
+    if (!autoFetch || !projectId) return
+
+    // Debounce search changes
+    const timeoutId = setTimeout(() => {
+      fetchEntities()
+    }, search !== undefined ? 300 : 0) // Debounce only for search
+
+    return () => clearTimeout(timeoutId)
+  }, [projectId, entityType, sourceDomain, search, autoFetch, fetchEntities])
 
   return {
     entities,
     loading,
     error,
-    fetchEntities,
+    fetchEntities: () => fetchEntities(true), // Force refresh when called manually
     createEntity,
     updateEntity,
     deleteEntity,
@@ -255,9 +304,16 @@ export function useEntityRelationships(entityId?: string, projectId?: string) {
   const [relationships, setRelationships] = useState<EntityRelationship[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const hasFetchedRef = useRef(false)
+  const prevEntityIdRef = useRef<string | undefined>(undefined)
 
   const fetchRelationships = useCallback(async () => {
     if (!entityId) return
+
+    // Skip if already fetched for this entity
+    if (hasFetchedRef.current && prevEntityIdRef.current === entityId) {
+      return
+    }
 
     setLoading(true)
     setError(null)
@@ -275,6 +331,8 @@ export function useEntityRelationships(entityId?: string, projectId?: string) {
 
       const data = await response.json()
       setRelationships(data.relationships || [])
+      hasFetchedRef.current = true
+      prevEntityIdRef.current = entityId
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch relationships')
       console.error('[useEntityRelationships] Error:', err)
@@ -359,7 +417,7 @@ export function useEntityRelationships(entityId?: string, projectId?: string) {
     if (entityId) {
       fetchRelationships()
     }
-  }, [fetchRelationships, entityId])
+  }, [entityId, fetchRelationships])
 
   return {
     relationships,

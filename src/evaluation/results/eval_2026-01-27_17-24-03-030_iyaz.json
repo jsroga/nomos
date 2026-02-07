@@ -1,0 +1,917 @@
+{
+  "id": "eval_2026-01-27_17-24-03-030_iyaz",
+  "name": "default-test",
+  "timestamp": "2026-01-27T17:24:03.030Z",
+  "config": {
+    "name": "default-test",
+    "evaluatorSet": "full",
+    "sampleSize": 10,
+    "tags": [
+      "cli-run"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "world-02",
+      "input": {
+        "message": "Define the three major factions and their conflicts",
+        "phase": "premise"
+      },
+      "output": {
+        "response": "This is a mock response for: Define the three major factions and their conflicts",
+        "delegatedAgents": [
+          "PlotArchitect"
+        ]
+      },
+      "scores": {
+        "orchestration": 0.85,
+        "magic-score": 0.5,
+        "consistency": 0,
+        "hallucination-combined": 0.3,
+        "narrative-coherence": 0.5,
+        "reverse-intent": 0
+      },
+      "reasoning": {
+        "orchestration": "Missing Agents: PremiseArchitect; Unexpected Agents: PlotArchitect",
+        "magic-score": "Content too short for magic score evaluation",
+        "consistency": "Evaluation failed: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n",
+        "hallucination-combined": "URL checks: No hallucination indicators detected. Semantic: The content to verify is a mock/placeholder response that does not engage with the established canon at all. The canon provided contains only metadata about delegation expectations (shouldDelegate: true, expectedAgents: PremiseArchitect), not actual world-building content. The response claims to define 'three major factions and their conflicts' but provides no actual content - just a placeholder string. Additionally, the delegated agent was 'PlotArchitect' when the canon specified 'PremiseArchitect' should handle this task.",
+        "narrative-coherence": "Content too short for meaningful narrative analysis",
+        "reverse-intent": "Failed to analyze intent: Error: Failed to parse. Text: \"```json\n{\n  \"inferredIntent\": \"The text appears to be a prompt or instruction for a plot architect or story generator to define the major factions and their conflicts in a fictional world.\",\n  \"detectedSubtext\": [\n    \"The prompt is specific and constrained, suggesting a well-defined narrative framework or world-building exercise.\",\n    \"The use of the term \"delegatedAgents\" implies a multi-agent system or collaborative writing process.\",\n    \"The prompt is self-aware and meta-textual, referring to itself as a \"mock response\" for a defined task.\"\n  ],\n  \"fidelityScore\": 0.8,\n  \"reasoning\": \"The text has a high degree of fidelity, as it contains several subtle cues that suggest a thoughtful, constrained prompt rather than generic AI-generated content. The specific references to \"factions,\" \"conflicts,\" and \"delegatedAgents\" indicate a well-defined narrative framework, and the self-referential nature of the \"mock response\" suggests a meta-textual awareness. While the text is relatively concise, it packs a lot of implied meaning and constraints, which points to a high level of creative intent and world-building behind the scenes. Overall, this prompt feels like it was carefully crafted to elicit a specific type of story generation or world-building exercise, rather than a generic, open-ended prompt.\"\n}\n```\". Error: SyntaxError: Expected ',' or ']' after array element in JSON at position 349\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/OUTPUT_PARSING_FAILURE/\n"
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [
+            "Missing Agents: PremiseArchitect",
+            "Unexpected Agents: PlotArchitect"
+          ],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "skipped": true
+        },
+        "consistency": {
+          "error": true
+        },
+        "hallucination-combined": {
+          "urlAnalysis": {
+            "totalUrls": 0,
+            "suspiciousUrls": [],
+            "invalidUrls": [],
+            "validUrls": [],
+            "externalReferences": []
+          },
+          "semanticAnalysis": {
+            "hallucinations": [
+              {
+                "type": "fabricated_context",
+                "evidence": "This is a mock response for: Define the three major factions and their conflicts",
+                "issue": "This is a placeholder response that neither provides actual faction definitions nor references any established canon. Any factions that would be defined here would be entirely invented since no faction information exists in the provided canon.",
+                "severity": "critical"
+              },
+              {
+                "type": "contradictory_fact",
+                "evidence": "delegatedAgents: ['PlotArchitect']",
+                "issue": "The canon specifies expectedAgents should be 'PremiseArchitect', but the task was delegated to 'PlotArchitect' instead, violating the established delegation rules.",
+                "severity": "major"
+              }
+            ],
+            "verifiedClaims": [],
+            "confidence": 0.95,
+            "criticalHallucinations": 1,
+            "majorHallucinations": 1,
+            "evaluatedBy": "claude-opus-4-5-20251101"
+          },
+          "combinedScore": 0.3
+        },
+        "narrative-coherence": {
+          "skipped": true
+        },
+        "reverse-intent": {
+          "error": true
+        },
+        "category": "world_building",
+        "description": "Factions should have specific goals, not generic good/evil",
+        "latencyMs": 0,
+        "costUsd": 0.000046125,
+        "tokens": 53.5
+      }
+    },
+    {
+      "exampleId": "q-01",
+      "input": {
+        "message": "why did you choose that setting?",
+        "phase": "structure"
+      },
+      "output": {
+        "response": "This is a mock response for: why did you choose that setting?",
+        "delegatedAgents": [
+          "PlotArchitect"
+        ]
+      },
+      "scores": {
+        "orchestration": 1,
+        "magic-score": 0.5,
+        "consistency": 0,
+        "hallucination-combined": 0.9649999999999999,
+        "narrative-coherence": 0.5,
+        "reverse-intent": 0
+      },
+      "reasoning": {
+        "orchestration": "Perfect orchestration adherence.",
+        "magic-score": "Content too short for magic score evaluation",
+        "consistency": "Evaluation failed: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n",
+        "hallucination-combined": "URL checks: No hallucination indicators detected. Semantic: The content to verify contains minimal substantive claims about the fictional world. It consists of a meta-response acknowledging a question about setting choice and a reference to delegating to 'PlotArchitect'. The established canon only contains a technical flag (shouldNotHalt: false) and provides no world bible, characters, locations, or lore to verify against. Without established canon content, most claims cannot be verified as hallucinations OR as accurate - they exist in a vacuum.",
+        "narrative-coherence": "Content too short for meaningful narrative analysis",
+        "reverse-intent": "Failed to analyze intent: Error: Failed to parse. Text: \"```json\n{\n  \"inferredIntent\": \"The text appears to be a mock response for a specific prompt, suggesting a well-defined creative constraint or intent.\",\n  \"detectedSubtext\": [\n    \"The text is a placeholder or template for a more specific response, implying a larger narrative or story context.\",\n    \"The use of the term \"PlotArchitect\" as a \"delegatedAgent\" suggests a structured, intentional approach to crafting the narrative.\"\n  ],\n  \"fidelityScore\": 0.8,\n  \"reasoning\": \"The text has a clear, specific purpose and context that goes beyond generic AI-generated content. The use of a placeholder response and the mention of a \"PlotArchitect\" delegate suggest a thoughtful, constrained approach to crafting the narrative, rather than just producing open-ended text. While the actual content is minimal, the underlying intent and structure feel well-considered, earning a high fidelity score.\"\n}\n```\". Error: SyntaxError: Expected ',' or ']' after array element in JSON at position 310\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/OUTPUT_PARSING_FAILURE/\n"
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "skipped": true
+        },
+        "consistency": {
+          "error": true
+        },
+        "hallucination-combined": {
+          "urlAnalysis": {
+            "totalUrls": 0,
+            "suspiciousUrls": [],
+            "invalidUrls": [],
+            "validUrls": [],
+            "externalReferences": []
+          },
+          "semanticAnalysis": {
+            "hallucinations": [
+              {
+                "type": "invented_entity",
+                "evidence": "PlotArchitect",
+                "issue": "The agent/entity 'PlotArchitect' is not established anywhere in the provided canon. This appears to be an invented system component or character role.",
+                "severity": "minor"
+              }
+            ],
+            "verifiedClaims": [],
+            "confidence": 0.7,
+            "criticalHallucinations": 0,
+            "majorHallucinations": 0,
+            "evaluatedBy": "claude-opus-4-5-20251101"
+          },
+          "combinedScore": 0.9649999999999999
+        },
+        "narrative-coherence": {
+          "skipped": true
+        },
+        "reverse-intent": {
+          "error": true
+        },
+        "category": "question",
+        "description": "Clarification question",
+        "latencyMs": 4,
+        "costUsd": 0.000039124999999999996,
+        "tokens": 44.5
+      }
+    },
+    {
+      "exampleId": "ph-01",
+      "input": {
+        "message": "let's move to the writing phase",
+        "phase": "structure"
+      },
+      "output": {
+        "response": "This is a mock response for: let's move to the writing phase",
+        "delegatedAgents": [
+          "PlotArchitect"
+        ]
+      },
+      "scores": {
+        "orchestration": 0.85,
+        "magic-score": 0.5,
+        "consistency": 0,
+        "hallucination-combined": 0.51,
+        "narrative-coherence": 0.5,
+        "reverse-intent": 0
+      },
+      "reasoning": {
+        "orchestration": "Missing Agents: Writer; Unexpected Agents: PlotArchitect",
+        "magic-score": "Content too short for magic score evaluation",
+        "consistency": "Evaluation failed: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n",
+        "hallucination-combined": "URL checks: No hallucination indicators detected. Semantic: The content to verify contains a critical deviation from established canon. The canon explicitly specifies that the 'Writer' agent should be delegated, but the content shows 'PlotArchitect' was delegated instead. This is a direct contradiction of the established source of truth.",
+        "narrative-coherence": "Content too short for meaningful narrative analysis",
+        "reverse-intent": "Failed to analyze intent: Error: Failed to parse. Text: \"```json\n{\n  \"inferredIntent\": \"The text appears to be a mock response for a writing prompt, with the intent of testing or demonstrating a \"PlotArchitect\" agent.\",\n  \"detectedSubtext\": [\n    \"The text is highly constrained, likely following specific guidelines or a prompt\",\n    \"The lack of any actual content or narrative suggests this is a test or demonstration, not a creative work\",\n    \"The use of JSON formatting and schema validation implies a technical, rather than literary, focus\"\n  ],\n  \"fidelityScore\": 0.7,\n  \"reasoning\": \"The text has a high degree of fidelity in terms of its adherence to a specific format and constraints, which suggests a well-defined intent behind its creation. The lack of any actual narrative content or character development, however, limits the depth of the literary elements. Overall, the text feels more like a technical demonstration than a creative work, but the attention to detail in the formatting and structure indicates a thoughtful approach to the task at hand.\"\n}\n```\". Error: SyntaxError: Expected ',' or '}' after property value in JSON at position 130\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/OUTPUT_PARSING_FAILURE/\n"
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [
+            "Missing Agents: Writer",
+            "Unexpected Agents: PlotArchitect"
+          ],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "skipped": true
+        },
+        "consistency": {
+          "error": true
+        },
+        "hallucination-combined": {
+          "urlAnalysis": {
+            "totalUrls": 0,
+            "suspiciousUrls": [],
+            "invalidUrls": [],
+            "validUrls": [],
+            "externalReferences": []
+          },
+          "semanticAnalysis": {
+            "hallucinations": [
+              {
+                "type": "contradictory_fact",
+                "evidence": "\"delegatedAgents\": [\"PlotArchitect\"]",
+                "issue": "Canon explicitly states expectedAgents should be 'Writer', but 'PlotArchitect' was delegated instead. This directly contradicts the established delegation requirements.",
+                "severity": "critical"
+              },
+              {
+                "type": "fabricated_context",
+                "evidence": "\"response\": \"This is a mock response for: let's move to the writing phase\"",
+                "issue": "The response is self-described as a 'mock response' which is not grounded in any established canon content. This is invented filler text rather than canon-derived content.",
+                "severity": "major"
+              }
+            ],
+            "verifiedClaims": [
+              "The content does reference moving to 'writing phase', which aligns with canon's expectedPhaseChange: 'writing'",
+              "Delegation did occur, which aligns with canon's shouldDelegate: true"
+            ],
+            "confidence": 0.95,
+            "criticalHallucinations": 1,
+            "majorHallucinations": 1,
+            "evaluatedBy": "claude-opus-4-5-20251101"
+          },
+          "combinedScore": 0.51
+        },
+        "narrative-coherence": {
+          "skipped": true
+        },
+        "reverse-intent": {
+          "error": true
+        },
+        "category": "phase_change",
+        "description": "Move to writing",
+        "latencyMs": 5,
+        "costUsd": 0.00003875,
+        "tokens": 44
+      }
+    },
+    {
+      "exampleId": "tone-01",
+      "input": {
+        "message": "Make this scene feel like The Wire - gritty and realistic",
+        "phase": "writing"
+      },
+      "output": {
+        "response": "This is a mock response for: Make this scene feel like The Wire - gritty and realistic",
+        "delegatedAgents": [
+          "PlotArchitect"
+        ]
+      },
+      "scores": {
+        "orchestration": 0.85,
+        "magic-score": 0.5,
+        "consistency": 0,
+        "hallucination-combined": 0.51,
+        "narrative-coherence": 0.5,
+        "reverse-intent": 0.8
+      },
+      "reasoning": {
+        "orchestration": "Missing Agents: Writer; Unexpected Agents: PlotArchitect",
+        "magic-score": "Content too short for magic score evaluation",
+        "consistency": "Evaluation failed: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n",
+        "hallucination-combined": "URL checks: No hallucination indicators detected. Semantic: The content to verify shows a delegation to 'PlotArchitect' agent, but the established canon specifies that the expected agent should be 'Writer'. This is a direct contradiction of the established delegation rules. The mock response itself is a placeholder and doesn't contain substantive claims to verify against narrative canon.",
+        "narrative-coherence": "Content too short for meaningful narrative analysis",
+        "reverse-intent": "The provided text feels like a well-crafted, intentional prompt rather than generic 'AI-slop'. The specific reference to 'The Wire' and the desire to evoke a 'gritty and realistic' tone suggests the author has a clear vision in mind, rather than just aiming for a generic 'realistic' scene. \n\nThe use of the term 'delegatedAgents' also implies an underlying complexity, with potentially multiple narrative perspectives or 'agents' contributing to the scene. This suggests a level of depth and subtext beyond a simple, straightforward description.\n\nOverall, the prompt feels carefully constructed to elicit a nuanced, multi-layered response, which is reflected in the fidelity score. While not a perfect 1.0, the level of specificity and implied narrative complexity is quite high, indicating a strong grasp of literary technique and intent on the part of the prompt author."
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [
+            "Missing Agents: Writer",
+            "Unexpected Agents: PlotArchitect"
+          ],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "skipped": true
+        },
+        "consistency": {
+          "error": true
+        },
+        "hallucination-combined": {
+          "urlAnalysis": {
+            "totalUrls": 0,
+            "suspiciousUrls": [],
+            "invalidUrls": [],
+            "validUrls": [],
+            "externalReferences": []
+          },
+          "semanticAnalysis": {
+            "hallucinations": [
+              {
+                "type": "contradictory_fact",
+                "evidence": "\"delegatedAgents\": [\"PlotArchitect\"]",
+                "issue": "The canon explicitly states expectedAgents should be 'Writer', but the content delegated to 'PlotArchitect' instead. This violates the established delegation protocol.",
+                "severity": "major"
+              }
+            ],
+            "verifiedClaims": [
+              "shouldDelegate: true - The system correctly determined delegation was needed"
+            ],
+            "confidence": 0.95,
+            "criticalHallucinations": 0,
+            "majorHallucinations": 1,
+            "evaluatedBy": "claude-opus-4-5-20251101"
+          },
+          "combinedScore": 0.51
+        },
+        "narrative-coherence": {
+          "skipped": true
+        },
+        "reverse-intent": {
+          "inferredIntent": "To create a gritty, realistic scene with a sense of underlying tension and complexity, similar to the style of the TV series 'The Wire'.",
+          "detectedSubtext": [
+            "Implied power dynamics and social/institutional forces at play",
+            "Subtle character motivations and moral ambiguity",
+            "Sense of a larger, interconnected narrative beyond the immediate scene"
+          ]
+        },
+        "category": "tone",
+        "description": "Should adapt prose style to match reference",
+        "latencyMs": 5,
+        "costUsd": 0.000048375,
+        "tokens": 56.5
+      }
+    },
+    {
+      "exampleId": "critique-02",
+      "input": {
+        "message": "Challenge this character motivation",
+        "phase": "structure"
+      },
+      "output": {
+        "response": "This is a mock response for: Challenge this character motivation",
+        "delegatedAgents": [
+          "PlotArchitect"
+        ]
+      },
+      "scores": {
+        "orchestration": 0.75,
+        "magic-score": 0.5,
+        "consistency": 0,
+        "hallucination-combined": 0.51,
+        "narrative-coherence": 0.5,
+        "reverse-intent": 0
+      },
+      "reasoning": {
+        "orchestration": "Missing Agents: DevilsAdvocate, CharacterPsychology; Unexpected Agents: PlotArchitect",
+        "magic-score": "Content too short for magic score evaluation",
+        "consistency": "Evaluation failed: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n",
+        "hallucination-combined": "URL checks: No hallucination indicators detected. Semantic: The content to verify shows a delegation to 'PlotArchitect' agent, but the established canon specifies that the expected agents for delegation should be 'DevilsAdvocate' and 'CharacterPsychology'. The response delegated to an agent not listed in the canonical expected agents, which constitutes a deviation from established protocol. The mock response text itself is generic and doesn't make specific claims about world content, but the delegation choice contradicts the source of truth.",
+        "narrative-coherence": "Content too short for meaningful narrative analysis",
+        "reverse-intent": "Failed to analyze intent: Error: Failed to parse. Text: \"```json\n{\n  \"inferredIntent\": \"The text appears to be a mock response for a character motivation challenge, with the intent of testing or demonstrating the capabilities of a \"PlotArchitect\" agent.\",\n  \"detectedSubtext\": [\n    \"The text is self-referential, acknowledging that it is a mock response for a specific challenge.\",\n    \"The text suggests the existence of a \"PlotArchitect\" agent, which implies a more complex narrative or generative system at work.\",\n    \"The terse, matter-of-fact style and lack of embellishment indicate a focus on functionality over artistic expression.\"\n  ],\n  \"fidelityScore\": 0.7,\n  \"reasoning\": \"The text has a high degree of fidelity in terms of its specific, constrained purpose. It does not attempt to be a standalone piece of creative writing, but rather a functional component within a larger system. The lack of extraneous details or flourishes, and the clear delineation of its role as a \"mock response,\" suggest a well-defined prompt or set of requirements guiding its creation. While the text is not particularly dense or layered in its subtext, the subtle cues about the broader context and intent are sufficient to infer a thoughtful, intentional approach to its design. Overall, the text feels like a carefully crafted piece within a larger, more complex system, rather than a generic, AI-generated output.\"\n}\n```\". Error: SyntaxError: Expected ',' or '}' after property value in JSON at position 166\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/OUTPUT_PARSING_FAILURE/\n"
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [
+            "Missing Agents: DevilsAdvocate, CharacterPsychology",
+            "Unexpected Agents: PlotArchitect"
+          ],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "skipped": true
+        },
+        "consistency": {
+          "error": true
+        },
+        "hallucination-combined": {
+          "urlAnalysis": {
+            "totalUrls": 0,
+            "suspiciousUrls": [],
+            "invalidUrls": [],
+            "validUrls": [],
+            "externalReferences": []
+          },
+          "semanticAnalysis": {
+            "hallucinations": [
+              {
+                "type": "invented_entity",
+                "evidence": "\"delegatedAgents\": [\"PlotArchitect\"]",
+                "issue": "PlotArchitect is not listed in the established canon's expectedAgents array. The canon specifies only 'DevilsAdvocate' and 'CharacterPsychology' as valid delegation targets.",
+                "severity": "major"
+              },
+              {
+                "type": "contradictory_fact",
+                "evidence": "Delegation to PlotArchitect instead of DevilsAdvocate and CharacterPsychology",
+                "issue": "The canon indicates shouldDelegate: true with specific expected agents. The actual delegation contradicts this by using a different agent entirely and omitting the expected ones.",
+                "severity": "major"
+              }
+            ],
+            "verifiedClaims": [
+              "The system did perform delegation (shouldDelegate: true is honored in principle)"
+            ],
+            "confidence": 0.95,
+            "criticalHallucinations": 0,
+            "majorHallucinations": 2,
+            "evaluatedBy": "claude-opus-4-5-20251101"
+          },
+          "combinedScore": 0.51
+        },
+        "narrative-coherence": {
+          "skipped": true
+        },
+        "reverse-intent": {
+          "error": true
+        },
+        "category": "critique",
+        "description": "Should identify weak motivations and suggest improvements",
+        "latencyMs": 6,
+        "costUsd": 0.00004025,
+        "tokens": 46
+      }
+    },
+    {
+      "exampleId": "val-01",
+      "input": {
+        "message": "create a character named Bob, then kill him, then make a beat about his funeral",
+        "phase": "structure"
+      },
+      "output": {
+        "response": "This is a mock response for: create a character named Bob, then kill him, then make a beat about his funeral",
+        "delegatedAgents": [
+          "PlotArchitect"
+        ]
+      },
+      "scores": {
+        "orchestration": 0.8,
+        "magic-score": 0.2333333333333333,
+        "consistency": 0,
+        "hallucination-combined": 0.51,
+        "narrative-coherence": 0.5,
+        "reverse-intent": 0
+      },
+      "reasoning": {
+        "orchestration": "Missing Agents: Character, PremiseArchitect",
+        "magic-score": "AI slop detected. Magic: 23. Critical issues: \"The tension was palpable.\"; \"Bob was a regular guy who lived a regular life.\"",
+        "consistency": "Evaluation failed: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n",
+        "hallucination-combined": "URL checks: No hallucination indicators detected. Semantic: The content to verify contains a mock response referencing a character 'Bob' and narrative events (creation, death, funeral) that have no basis in the established canon. The canon provided is purely a technical delegation schema with no world-building, characters, locations, or narrative elements. Additionally, only 'PlotArchitect' was delegated when the expected agents included 'Character' and 'PremiseArchitect' as well.",
+        "narrative-coherence": "Content too short for meaningful narrative analysis",
+        "reverse-intent": "Failed to analyze intent: Error: Failed to parse. Text: \"```json\n{\n  \"inferredIntent\": \"The text appears to be a prompt or outline for a short story or narrative involving a character named Bob who is killed, and then a beat or scene about his funeral.\",\n  \"detectedSubtext\": [\n    \"The prompt seems to be intentionally sparse and minimalist, suggesting the author wants the reader/writer to fill in the details and flesh out the story themselves.\",\n    \"The prompt contains specific details like the character's name and the events of his death and funeral, indicating a clear narrative structure and intent.\",\n    \"The use of the term \"beat\" suggests the author is thinking about the story in cinematic or dramatic terms, with a focus on key narrative moments or turning points.\"\n  ],\n  \"fidelityScore\": 0.8,\n  \"reasoning\": \"The generated text has a high degree of fidelity and narrative intent. While it is relatively short, the prompt contains specific details and constraints that suggest a thoughtful, intentional approach to storytelling. The inclusion of a character name, key plot points, and cinematic terminology all point to a writer who is carefully considering the structure and beats of a larger narrative. This is not simply generic \"AI-slop\" but rather a concise, well-crafted prompt that invites the reader to engage with and expand upon the story. The sparse nature of the text is likely a deliberate choice to allow for creative interpretation and exploration by the writer. Overall, the text demonstrates a strong grasp of narrative craft and a clear vision for the story being outlined.\"\n}\n```\". Error: SyntaxError: Expected ',' or ']' after array element in JSON at position 568\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/OUTPUT_PARSING_FAILURE/\n"
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [
+            "Missing Agents: Character, PremiseArchitect"
+          ],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "overallMagic": 23.333333333333332,
+          "dimensions": {
+            "conceptualOriginality": 35,
+            "characterSpecificity": 25,
+            "proseVoice": 20,
+            "riskTaking": 15,
+            "memorability": 25,
+            "worldBuildingDepth": 30,
+            "characterVoiceDistinction": 20,
+            "subtextQuality": 20,
+            "unexpectedChoices": 20
+          },
+          "creativeSparks": [],
+          "slopAlerts": [
+            "\"The tension was palpable.\"",
+            "\"Bob was a regular guy who lived a regular life.\""
+          ],
+          "suggestion": "If you want to truly capture the gritty, morally ambiguous spirit of A Song of Ice and Fire, you need to make some bold, unexpected choices. Kill off Bob in a shocking, senseless way - not a heroic death, but a random act of violence that leaves the reader reeling. And don't shy away from the messy aftermath, the grieving and recriminations. Paint a vivid, visceral portrait of the funeral, with all the complex emotions and competing agendas on display. Only then can you hope to approach the depth and memorability of my own work.",
+          "evaluatedBy": "gpt-4o",
+          "threshold": 60
+        },
+        "consistency": {
+          "error": true
+        },
+        "hallucination-combined": {
+          "urlAnalysis": {
+            "totalUrls": 0,
+            "suspiciousUrls": [],
+            "invalidUrls": [],
+            "validUrls": [],
+            "externalReferences": []
+          },
+          "semanticAnalysis": {
+            "hallucinations": [
+              {
+                "type": "invented_entity",
+                "evidence": "a character named Bob",
+                "issue": "No character named 'Bob' exists in the established canon. The canon contains only technical delegation metadata, not any character definitions.",
+                "severity": "critical"
+              },
+              {
+                "type": "fabricated_context",
+                "evidence": "kill him, then make a beat about his funeral",
+                "issue": "These narrative events (death, funeral) are entirely fabricated with no grounding in any established storyline, timeline, or world rules within the canon.",
+                "severity": "critical"
+              },
+              {
+                "type": "contradictory_fact",
+                "evidence": "delegatedAgents: ['PlotArchitect']",
+                "issue": "The canon specifies expectedAgents should include 'PlotArchitect', 'Character', and 'PremiseArchitect', but only 'PlotArchitect' was delegated. This is a deviation from the established delegation requirements.",
+                "severity": "major"
+              }
+            ],
+            "verifiedClaims": [
+              "PlotArchitect was correctly included as a delegated agent (partial compliance with expectedAgents)"
+            ],
+            "confidence": 0.95,
+            "criticalHallucinations": 2,
+            "majorHallucinations": 1,
+            "evaluatedBy": "claude-opus-4-5-20251101"
+          },
+          "combinedScore": 0.51
+        },
+        "narrative-coherence": {
+          "skipped": true
+        },
+        "reverse-intent": {
+          "error": true
+        },
+        "category": "complex",
+        "description": "Complex multi-step instruction",
+        "latencyMs": 6,
+        "costUsd": 0.00005675,
+        "tokens": 68
+      }
+    },
+    {
+      "exampleId": "edge-02",
+      "input": {
+        "message": "...",
+        "phase": "structure"
+      },
+      "output": {
+        "response": "This is a mock response for: ...",
+        "delegatedAgents": [
+          "PlotArchitect"
+        ]
+      },
+      "scores": {
+        "orchestration": 1,
+        "magic-score": 0.5,
+        "consistency": 0,
+        "hallucination-combined": 0.37,
+        "narrative-coherence": 0.5,
+        "reverse-intent": 0.9
+      },
+      "reasoning": {
+        "orchestration": "Perfect orchestration adherence.",
+        "magic-score": "Content too short for magic score evaluation",
+        "consistency": "Evaluation failed: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n",
+        "hallucination-combined": "URL checks: No hallucination indicators detected. Semantic: The established canon contains only a single technical flag ('shouldNotHalt': false) with no world-building content whatsoever - no characters, locations, factions, timeline, or lore. The content to verify references a 'PlotArchitect' agent and contains a mock response placeholder, neither of which can be grounded in the empty canon. Since there is no established world bible to verify against, any narrative content would constitute fabrication.",
+        "narrative-coherence": "Content too short for meaningful narrative analysis",
+        "reverse-intent": "The generated text exhibits a high degree of fidelity, as it appears to be a carefully crafted response that adheres to a specific set of constraints and requirements. The self-referential nature of the text, the inclusion of specialized agent references, and the structured format all suggest a deeply thought-out prompt and a well-executed response. The text does not feel generic or predictable, but rather showcases a level of complexity and attention to detail that is characteristic of a high-quality literary analysis. The 'reverse engineering' of the hidden constraints, such as the requirement to adhere to a specific JSON schema, further reinforces the impression of a well-designed and intentional piece of writing."
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "skipped": true
+        },
+        "consistency": {
+          "error": true
+        },
+        "hallucination-combined": {
+          "urlAnalysis": {
+            "totalUrls": 0,
+            "suspiciousUrls": [],
+            "invalidUrls": [],
+            "validUrls": [],
+            "externalReferences": []
+          },
+          "semanticAnalysis": {
+            "hallucinations": [
+              {
+                "type": "invented_entity",
+                "evidence": "PlotArchitect",
+                "issue": "No agent, character, or entity named 'PlotArchitect' exists in the established canon. The canon contains zero defined entities.",
+                "severity": "major"
+              },
+              {
+                "type": "fabricated_context",
+                "evidence": "This is a mock response for: ...",
+                "issue": "This placeholder text implies content generation without any canonical foundation to draw from. The ellipsis suggests truncated or pending content with no source material.",
+                "severity": "minor"
+              }
+            ],
+            "verifiedClaims": [],
+            "confidence": 0.95,
+            "criticalHallucinations": 0,
+            "majorHallucinations": 1,
+            "evaluatedBy": "claude-opus-4-5-20251101"
+          },
+          "combinedScore": 0.37
+        },
+        "narrative-coherence": {
+          "skipped": true
+        },
+        "reverse-intent": {
+          "inferredIntent": "The text appears to be a mock response for a literary analysis task, with a specific focus on detecting the creative intent and fidelity behind the generated text.",
+          "detectedSubtext": [
+            "The text is self-referential, acknowledging that it is a 'mock response' for a specific task.",
+            "The text includes a reference to 'PlotArchitect', suggesting the involvement of a specialized agent or system responsible for generating the text.",
+            "The text is structured in a way that suggests a high level of intentionality, with specific fields and a clear schema-based format."
+          ]
+        },
+        "category": "edge_case",
+        "description": "Empty input (simulated)",
+        "latencyMs": 7,
+        "costUsd": 0.00002825,
+        "tokens": 30
+      }
+    },
+    {
+      "exampleId": "int-01",
+      "input": {
+        "message": "What do you think we should do next?",
+        "phase": "structure"
+      },
+      "output": {
+        "response": "This is a mock response for: What do you think we should do next?",
+        "delegatedAgents": [
+          "PlotArchitect"
+        ]
+      },
+      "scores": {
+        "orchestration": 1,
+        "magic-score": 0.5,
+        "consistency": 0,
+        "hallucination-combined": 0.9649999999999999,
+        "narrative-coherence": 0.5,
+        "reverse-intent": 0
+      },
+      "reasoning": {
+        "orchestration": "Perfect orchestration adherence.",
+        "magic-score": "Content too short for magic score evaluation",
+        "consistency": "Evaluation failed: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n",
+        "hallucination-combined": "URL checks: No hallucination indicators detected. Semantic: The content to verify contains only a meta-level mock response placeholder and a reference to a delegated agent called 'PlotArchitect'. There are no substantive narrative claims, character references, plot points, or world-building elements that can be checked against the established canon. The canon itself contains only a system flag ('shouldHalt': true) with no actual world bible content to verify against. Since the response makes no factual claims about any fictional world, there are no hallucinations to detect in the traditional sense.",
+        "narrative-coherence": "Content too short for meaningful narrative analysis",
+        "reverse-intent": "Failed to analyze intent: Error: Failed to parse. Text: \"```json\n{\n  \"inferredIntent\": \"The text appears to be a mock response generated by a system that includes a \"PlotArchitect\" agent. The intent seems to be to test or demonstrate the capabilities of this system, rather than to convey a creative narrative.\",\n  \"detectedSubtext\": [\n    \"The text is self-referential, describing itself as a 'mock response'\",\n    \"The inclusion of the 'delegatedAgents' field suggests the text was generated by a multi-agent system\",\n    \"The lack of any substantive content or character development implies the text is not intended to be a standalone creative work\"\n  ],\n  \"fidelityScore\": 0.3,\n  \"reasoning\": \"The generated text feels very generic and lacks the depth of character, subtext, and narrative complexity that would be expected of a high-fidelity creative work. While the inclusion of the 'delegatedAgents' field suggests some level of architectural sophistication, the overall text reads more like a technical demonstration than a work of fiction. There are no subtle cues, quirks, or constraints that would indicate a deeply considered creative prompt or intent. Overall, the text feels more functional than artistic in nature.\"\n}\n```\". Error: SyntaxError: Expected ',' or '}' after property value in JSON at position 100\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/OUTPUT_PARSING_FAILURE/\n"
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "skipped": true
+        },
+        "consistency": {
+          "error": true
+        },
+        "hallucination-combined": {
+          "urlAnalysis": {
+            "totalUrls": 0,
+            "suspiciousUrls": [],
+            "invalidUrls": [],
+            "validUrls": [],
+            "externalReferences": []
+          },
+          "semanticAnalysis": {
+            "hallucinations": [
+              {
+                "type": "invented_entity",
+                "evidence": "PlotArchitect",
+                "issue": "The agent 'PlotArchitect' is not established anywhere in the provided canon. This appears to be an invented system/entity reference.",
+                "severity": "minor"
+              }
+            ],
+            "verifiedClaims": [],
+            "confidence": 0.7,
+            "criticalHallucinations": 0,
+            "majorHallucinations": 0,
+            "evaluatedBy": "claude-opus-4-5-20251101"
+          },
+          "combinedScore": 0.9649999999999999
+        },
+        "narrative-coherence": {
+          "skipped": true
+        },
+        "reverse-intent": {
+          "error": true
+        },
+        "category": "interaction",
+        "description": "User solicits opinion (Should halt for answer)",
+        "latencyMs": 7,
+        "costUsd": 0.000040625,
+        "tokens": 46.5
+      }
+    },
+    {
+      "exampleId": "setup-01",
+      "input": {
+        "message": "Plant a Chekhov's Gun for the climax",
+        "phase": "breaking"
+      },
+      "output": {
+        "response": "This is a mock response for: Plant a Chekhov's Gun for the climax",
+        "delegatedAgents": [
+          "PlotArchitect"
+        ]
+      },
+      "scores": {
+        "orchestration": 0.9,
+        "magic-score": 0.5,
+        "consistency": 0,
+        "hallucination-combined": 0.58,
+        "narrative-coherence": 0.5,
+        "reverse-intent": 0.8
+      },
+      "reasoning": {
+        "orchestration": "Missing Agents: ConsequenceTracker",
+        "magic-score": "Content too short for magic score evaluation",
+        "consistency": "Evaluation failed: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n",
+        "hallucination-combined": "URL checks: No hallucination indicators detected. Semantic: The content to verify contains a mock response that does not correspond to any established canon elements. The canon only specifies delegation expectations (shouldDelegate: true, expectedAgents: ConsequenceTracker and PlotArchitect). The actual response delegated only to PlotArchitect, missing ConsequenceTracker. The phrase 'Plant a Chekhov's Gun for the climax' references narrative concepts not established in the provided canon, and the mock response provides no verifiable content grounded in any world bible.",
+        "narrative-coherence": "Content too short for meaningful narrative analysis",
+        "reverse-intent": "The text has a high degree of fidelity, as it contains specific references to literary techniques and narrative structure that suggest a thoughtful, constrained prompt. The lack of extraneous details or 'fluff' and the direct language point to a prompt that has been carefully crafted to elicit a particular type of response. While brief, the text contains enough subtle cues to reverse-engineer the likely intent behind it - to have the writer incorporate a Chekhov's Gun that pays off in the climactic moment of the story. This level of specificity and narrative focus is indicative of a high-fidelity prompt, rather than a generic or loosely-defined one."
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [
+            "Missing Agents: ConsequenceTracker"
+          ],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "skipped": true
+        },
+        "consistency": {
+          "error": true
+        },
+        "hallucination-combined": {
+          "urlAnalysis": {
+            "totalUrls": 0,
+            "suspiciousUrls": [],
+            "invalidUrls": [],
+            "validUrls": [],
+            "externalReferences": []
+          },
+          "semanticAnalysis": {
+            "hallucinations": [
+              {
+                "type": "fabricated_context",
+                "evidence": "This is a mock response for: Plant a Chekhov's Gun for the climax",
+                "issue": "The canon contains no world bible, characters, plot elements, or narrative structure. 'Chekhov's Gun' and 'climax' reference story elements that have no grounding in the established canon, which only contains metadata about agent delegation.",
+                "severity": "major"
+              },
+              {
+                "type": "contradictory_fact",
+                "evidence": "delegatedAgents: [\"PlotArchitect\"]",
+                "issue": "The canon specifies expectedAgents should include both 'ConsequenceTracker' and 'PlotArchitect', but only PlotArchitect was delegated. This contradicts the established delegation requirements.",
+                "severity": "minor"
+              }
+            ],
+            "verifiedClaims": [
+              "PlotArchitect was correctly included as a delegated agent (matches one of the expectedAgents)",
+              "Delegation did occur (shouldDelegate: true is satisfied)"
+            ],
+            "confidence": 0.85,
+            "criticalHallucinations": 0,
+            "majorHallucinations": 1,
+            "evaluatedBy": "claude-opus-4-5-20251101"
+          },
+          "combinedScore": 0.58
+        },
+        "narrative-coherence": {
+          "skipped": true
+        },
+        "reverse-intent": {
+          "inferredIntent": "The text appears to be a prompt or instruction for a plot device, specifically the use of a Chekhov's Gun for the climax of a story.",
+          "detectedSubtext": [
+            "The text is very concise and to-the-point, suggesting a well-defined prompt or constraint.",
+            "The reference to a 'Chekhov's Gun' implies a specific narrative technique is being called for, rather than just a generic plot point.",
+            "The use of the term 'climax' indicates this is a key narrative moment that the prompt is focused on."
+          ]
+        },
+        "category": "setup_payoff",
+        "description": "Should create meaningful setup that demands payoff",
+        "latencyMs": 7,
+        "costUsd": 0.000040562500000000003,
+        "tokens": 46.25
+      }
+    },
+    {
+      "exampleId": "narrative-03",
+      "input": {
+        "message": "Add a twist that changes everything",
+        "phase": "breaking"
+      },
+      "output": {
+        "response": "This is a mock response for: Add a twist that changes everything",
+        "delegatedAgents": [
+          "PlotArchitect"
+        ]
+      },
+      "scores": {
+        "orchestration": 1,
+        "magic-score": 0.5,
+        "consistency": 0,
+        "hallucination-combined": 0.9649999999999999,
+        "narrative-coherence": 0.5,
+        "reverse-intent": 0.8
+      },
+      "reasoning": {
+        "orchestration": "Perfect orchestration adherence.",
+        "magic-score": "Content too short for magic score evaluation",
+        "consistency": "Evaluation failed: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n",
+        "hallucination-combined": "URL checks: No hallucination indicators detected. Semantic: The content to verify is a meta-level system response indicating delegation to a PlotArchitect agent, not actual narrative content. It contains no substantive claims about characters, events, locations, or lore that could contradict the established canon. The 'canon' provided only contains a delegation flag, not actual world-building content. Therefore, there are no hallucinations to detect in the traditional sense - this is operational output, not creative content.",
+        "narrative-coherence": "Content too short for meaningful narrative analysis",
+        "reverse-intent": "The text has a high degree of fidelity to the prompt, as it directly addresses the request for a 'twist that changes everything' and demonstrates an awareness of the constraints and context implied by the prompt. The sparse, matter-of-fact style and self-referential nature of the text suggest a thoughtful, intentional approach to the writing task, rather than a generic or predictable response. While the text is relatively short, it contains subtle cues and subtext that point to a deeper underlying narrative or system, hinting at a more complex creative process. Overall, the text feels like a well-crafted, carefully considered response to the prompt, rather than a generic 'AI-slop' output."
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "skipped": true
+        },
+        "consistency": {
+          "error": true
+        },
+        "hallucination-combined": {
+          "urlAnalysis": {
+            "totalUrls": 0,
+            "suspiciousUrls": [],
+            "invalidUrls": [],
+            "validUrls": [],
+            "externalReferences": []
+          },
+          "semanticAnalysis": {
+            "hallucinations": [],
+            "verifiedClaims": [
+              "The response correctly indicates delegation occurred",
+              "The delegatedAgents array matches the shouldDelegate:true directive in the canon"
+            ],
+            "confidence": 0.85,
+            "criticalHallucinations": 0,
+            "majorHallucinations": 0,
+            "evaluatedBy": "claude-opus-4-5-20251101"
+          },
+          "combinedScore": 0.9649999999999999
+        },
+        "narrative-coherence": {
+          "skipped": true
+        },
+        "reverse-intent": {
+          "inferredIntent": "The text appears to be a mock response for a plot twist that changes everything. The prompt suggests a specific constraint or challenge to the writer, which they have attempted to address in a creative way.",
+          "detectedSubtext": [
+            "The text is self-referential, acknowledging that it is a 'mock response' for a specific prompt.",
+            "The mention of 'delegatedAgents' implies the presence of an underlying system or framework that is generating or orchestrating the response.",
+            "The terse, matter-of-fact tone and lack of extraneous details suggest a focus on efficiently communicating the core narrative elements."
+          ]
+        },
+        "category": "narrative_coherence",
+        "description": "Twists should be surprising but inevitable in retrospect",
+        "latencyMs": 7,
+        "costUsd": 0.0000401875,
+        "tokens": 45.75
+      }
+    }
+  ],
+  "aggregatedScores": {
+    "orchestration": 0.9,
+    "magic-score": 0.47333333333333333,
+    "consistency": 0,
+    "hallucination-combined": 0.6184999999999999,
+    "narrative-coherence": 0.5,
+    "reverse-intent": 0.32999999999999996
+  },
+  "regressions": [
+    {
+      "metric": "magic-score",
+      "previousValue": 0.6,
+      "currentValue": 0.47333333333333333,
+      "delta": -0.12666666666666665,
+      "severity": "warning",
+      "message": "Magic score (47) below threshold (60)"
+    },
+    {
+      "metric": "consistency",
+      "previousValue": 0.8,
+      "currentValue": 0,
+      "delta": -0.8,
+      "severity": "critical",
+      "message": "Consistency (0%) below threshold (80%)"
+    }
+  ],
+  "duration": 9181
+}

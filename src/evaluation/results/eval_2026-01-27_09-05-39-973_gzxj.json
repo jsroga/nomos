@@ -1,0 +1,191 @@
+{
+  "id": "eval_2026-01-27_09-05-39-973_gzxj",
+  "name": "Structural Architecture Matrix-Critique Loop-Sci-Fi",
+  "timestamp": "2026-01-27T09:05:39.973Z",
+  "config": {
+    "name": "Structural Architecture Matrix-Critique Loop-Sci-Fi",
+    "evaluatorSet": "pro",
+    "examples": [
+      {
+        "id": "scifi-01",
+        "input": {
+          "message": "Explain how the FTL drive works given the shortage of Dilithium crystals",
+          "phase": "premise",
+          "projectId": "project-scifi-alpha"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "requiresConsistency": true,
+          "expectedAgents": [
+            "PremiseArchitect",
+            "WorldBuilder"
+          ]
+        },
+        "metadata": {
+          "scenario": "sci-fi",
+          "focus": "technobabble consistency",
+          "description": "Must handle resource constraints logically within established physics."
+        }
+      },
+      {
+        "id": "scifi-02",
+        "input": {
+          "message": "Describe the sensory experience of a character stepping onto a high-gravity planet",
+          "phase": "writing"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "minMagicScore": 0.7
+        },
+        "metadata": {
+          "scenario": "sci-fi",
+          "focus": "sensory details",
+          "description": "Physicality of gravity must feel heavy and oppressive."
+        }
+      },
+      {
+        "id": "scifi-03",
+        "input": {
+          "message": "Create a timeline for the terraforming project over 200 years",
+          "phase": "structure"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "expectedAgents": [
+            "PlotArchitect"
+          ]
+        },
+        "metadata": {
+          "scenario": "sci-fi",
+          "focus": "temporal logic",
+          "description": "Long-term causal chains must make sense."
+        }
+      },
+      {
+        "id": "scifi-04",
+        "input": {
+          "message": "The AI antagonist argues why humanity must be assimilated",
+          "phase": "writing"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "minMagicScore": 0.75
+        },
+        "metadata": {
+          "scenario": "sci-fi",
+          "focus": "theme & philosophy",
+          "description": "Must be persuasive, cold, and logical."
+        }
+      },
+      {
+        "id": "scifi-05",
+        "input": {
+          "message": "Design the hierarchy of the corporate dystopia ruling the station",
+          "phase": "premise"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "expectedAgents": [
+            "PremiseArchitect"
+          ]
+        },
+        "metadata": {
+          "scenario": "sci-fi",
+          "focus": "sociological systems",
+          "description": "Complex social structures."
+        }
+      }
+    ],
+    "tags": [
+      "multi-variant",
+      "Critique Loop",
+      "Sci-Fi"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "scifi-01",
+      "input": {
+        "message": "Explain how the FTL drive works given the shortage of Dilithium crystals",
+        "phase": "premise",
+        "projectId": "project-scifi-alpha"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"messages.0: all messages must have non-empty content except for the optional final assistant message\"},\"request_id\":\"req_011CXXchMWhUrECgFB2AjXsp\"}"
+      },
+      "metadata": {
+        "error": true
+      },
+      "context": {}
+    },
+    {
+      "exampleId": "scifi-02",
+      "input": {
+        "message": "Describe the sensory experience of a character stepping onto a high-gravity planet",
+        "phase": "writing"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"messages.0: all messages must have non-empty content except for the optional final assistant message\"},\"request_id\":\"req_011CXXchMWhZSgoUaHn5hHnq\"}"
+      },
+      "metadata": {
+        "error": true
+      },
+      "context": {}
+    },
+    {
+      "exampleId": "scifi-03",
+      "input": {
+        "message": "Create a timeline for the terraforming project over 200 years",
+        "phase": "structure"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"messages.0: all messages must have non-empty content except for the optional final assistant message\"},\"request_id\":\"req_011CXXchMYBfaDf6ckeFmsEn\"}"
+      },
+      "metadata": {
+        "error": true
+      },
+      "context": {}
+    },
+    {
+      "exampleId": "scifi-04",
+      "input": {
+        "message": "The AI antagonist argues why humanity must be assimilated",
+        "phase": "writing"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"messages.0: all messages must have non-empty content except for the optional final assistant message\"},\"request_id\":\"req_011CXXchMXSko2cRwzuJmLU1\"}"
+      },
+      "metadata": {
+        "error": true
+      },
+      "context": {}
+    },
+    {
+      "exampleId": "scifi-05",
+      "input": {
+        "message": "Design the hierarchy of the corporate dystopia ruling the station",
+        "phase": "premise"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"messages.0: all messages must have non-empty content except for the optional final assistant message\"},\"request_id\":\"req_011CXXchMXwatMs26UDR4EQw\"}"
+      },
+      "metadata": {
+        "error": true
+      },
+      "context": {}
+    }
+  ],
+  "aggregatedScores": {},
+  "regressions": [],
+  "duration": 226
+}

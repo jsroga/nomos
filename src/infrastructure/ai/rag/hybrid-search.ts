@@ -7,7 +7,7 @@
 
 import { db } from '@/lib/db'
 import { documentEmbeddings } from '@/domains/storyteller/db/schema'
-import { sql, and, eq, desc } from 'drizzle-orm'
+import { sql, and, desc } from 'drizzle-orm'
 import { getVoyageEmbeddings } from '../embeddings/voyage-embeddings'
 
 export interface SearchResult {
@@ -178,8 +178,10 @@ export class HybridSearchEngine {
       const conditions = [sql`${documentEmbeddings.projectId} = ${projectId}`]
 
       if (filters?.documentTypes && filters.documentTypes.length > 0) {
+        // Convert JS array to PostgreSQL array literal format: {val1,val2,...}
+        const pgArray = `{${filters.documentTypes.join(',')}}`
         conditions.push(
-          sql`${documentEmbeddings.metadata}->>'documentType' = ANY(${filters.documentTypes})`
+          sql`${documentEmbeddings.metadata}->>'documentType' = ANY(${pgArray}::text[])`
         )
       }
 
@@ -232,8 +234,10 @@ export class HybridSearchEngine {
       const conditions = [sql`${documentEmbeddings.projectId} = ${projectId}`]
 
       if (filters?.documentTypes && filters.documentTypes.length > 0) {
+        // Convert JS array to PostgreSQL array literal format: {val1,val2,...}
+        const pgArray = `{${filters.documentTypes.join(',')}}`
         conditions.push(
-          sql`${documentEmbeddings.metadata}->>'documentType' = ANY(${filters.documentTypes})`
+          sql`${documentEmbeddings.metadata}->>'documentType' = ANY(${pgArray}::text[])`
         )
       }
 

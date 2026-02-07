@@ -5,14 +5,10 @@ import {
   ReactFlow,
   Controls,
   Background,
-  applyNodeChanges,
-  applyEdgeChanges,
   addEdge,
   Node,
   Edge,
   Connection,
-  NodeChange,
-  EdgeChange,
   BackgroundVariant,
   useNodesState,
   useEdgesState,
@@ -20,7 +16,6 @@ import {
 import '@xyflow/react/dist/style.css'
 
 import { LogicNode } from './nodes/LogicNode'
-import { usePuzzleStore } from '../../store/puzzle-store'
 
 const nodeTypes = {
   logicNode: LogicNode,

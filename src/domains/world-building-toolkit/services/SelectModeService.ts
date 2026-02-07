@@ -1,5 +1,4 @@
 import { Tile } from '@/domains/world-building-toolkit/store/useWorldStore'
-import { ReplicateClient } from '@/infrastructure/ai/replicate'
 import { LocalStorageKeys } from '@/constants/localStorage'
 
 export interface SelectBox {

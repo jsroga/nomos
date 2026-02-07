@@ -1,0 +1,414 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmark 2.0: Critique & Revise vs Standard - Pro (Critique & Revise)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #fdfaf6;
+            --text: #1a1a1a;
+            --accent: #c43e1c;
+            --border: #e0d8cc;
+            --card-bg: #ffffff;
+            --font-serif: 'Crimson Pro', serif;
+            --font-sans: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            border-bottom: 2px solid var(--text);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-family: var(--font-serif);
+            font-size: 3rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .meta {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 60px;
+        }
+
+        .score-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 4px 4px 0px var(--border);
+        }
+
+        .score-label {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .score-value {
+            font-family: var(--font-serif);
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .score-bar-bg {
+            height: 4px;
+            background: #eee;
+            margin-top: 10px;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            background: var(--accent);
+        }
+
+        .example-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+            padding: 30px;
+        }
+
+        .example-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .example-id {
+            font-family: var(--font-serif);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .badge.high { background: #e6f4ea; color: #1e7e34; }
+        .badge.low { background: #fce8e8; color: #d93025; }
+        .badge.intent { background: #e8f0fe; color: #1967d2; }
+
+        .content-section {
+            margin-bottom: 30px;
+        }
+
+        h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            border-radius: 4px;
+        }
+
+        .literary-output {
+            font-family: var(--font-serif);
+            font-size: 1.25rem;
+            white-space: pre-wrap;
+            padding: 20px;
+            border-left: 4px solid var(--accent);
+            background: #fffafa;
+        }
+
+        .reason-block {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+        }
+
+        .regressions {
+            background: #fff0f0;
+            border: 1px solid #ffcaca;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+
+        .regression-item {
+            color: #c00;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Storyteller Benchmark 2.0</h1>
+            <div class="meta">
+                Experiment ID: eval_2026-01-25_17-27-21-924_0pm4 | Run on: 1/25/2026, 6:27:21 PM | Duration: 159.9s
+            </div>
+        </header>
+
+        
+            <div class="regressions">
+                <h3>⚠️ Regressions & Warnings</h3>
+                <div class="regression-item">Magic score (9) below threshold (60)</div>
+            </div>
+        
+
+        <div class="dashboard">
+            
+      <div class="score-card">
+        <div class="score-label">MAGIC SCORE</div>
+        <div class="score-value">9.1%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 9.11111111111111%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">REVERSE INTENT</div>
+        <div class="score-value">56.7%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 56.666666666666664%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">NARRATIVE COHERENCE</div>
+        <div class="score-value">40.7%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 40.666666666666664%"></div>
+        </div>
+      </div>
+    
+        </div>
+
+        <div class="results-list">
+            
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#1 - payoff-01</span>
+        <div class="example-badges">
+          <span class="badge low">Magic: 16</span>
+          <span class="badge intent">Intent: 70</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "Pay off the gun we planted in act one",
+  "phase": "writing"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            The storm outside was a relentless beast, its growls and snarls seeping through the cracks of the ancient theater. Inside, the dim glow of the gas lamps cast a flickering light over the audience, whose eyes were fixed on the stage with the intensity of gamblers at the final turn of a card.
+
+The play had unfolded like a game of cyvasse, each move calculated, every line a subtle feint. In the first act, a gun had been planted—a piece on the board yet to be played. It lay hidden within the velvet drapery, a silent participant in the unfolding drama. Its presence was not just an object of anticipation, but a promise of the chaos yet to come.
+
+The protagonist emerged from the shadows, his presence commanding yet burdened. His eyes, dark as a raven's feather, carried stories untold, stories of betrayal and blood debts unfulfilled. Under the glow of the footlights, he was not merely a man but a symbol of a world unraveling at its seams.
+
+The gun, a relic of cold iron, was drawn forth with deliberate care. It glinted in the light, not just a tool but a testament to choices made and paths crossed. His hands, steady now, spoke of a resolve honed through years of silent suffering and unspoken vows.
+
+The audience leaned in, their collective breath held in a moment stretched thin as a blade’s edge. The man’s voice, raw and edged with a lifetime of regret, resonated through the silence.
+
+"This is the reckoning," he declared, his words a grim prophecy fulfilled.
+
+The storm outside roared its approval, the theater walls trembling with its fury. The gunshot cracked like a bolt of lightning, reverberating through the rafters and into the marrow of all who watched.
+
+Silence fell, heavy and profound, as the echoes faded. The protagonist stood alone amidst the scattered remnants of his world, the weight of his actions hanging like a millstone around his neck. Yet in his eyes, there lingered a spark—a flicker of something akin to peace, a peace forged in the crucible of consequence and survival.
+
+As the curtains descended, the audience remained transfixed, the echoes of the shot still whispering in their ears. They had witnessed more than a play; they had seen a narrative of vengeance and redemption unfold, a tale that would haunt the edges of their dreams long after the storm had passed.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> AI slop detected. Magic: 16. Critical issues: 'The storm outside was a relentless beast, its growls and snarls' - opening with weather AND a tired metaphor, the AI slop double crown; 'eyes, dark as a raven's feather, carried stories untold' - meaningless poetic filler that tells us nothing specific; 'a moment stretched thin as a blade's edge' - simile salad, mixing metaphors for false profundity; 'the weight of his actions hanging like a millstone around his neck' - biblical cliché deployed without irony; 'a peace forged in the crucible of consequence' - alliterative nonsense, sounds profound, means nothing; 'This is the reckoning' - the most generic dramatic line possible, a placeholder where actual dialogue should live; 'a narrative of vengeance and redemption unfold' - the AI literally announcing its own themes like a book report; 'haunt the edges of their dreams' - purple prose that mistakes vagueness for poetry
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text demonstrates a moderate level of fidelity due to its attempt to weave a complex narrative with layered symbolism and thematic depth. The use of the storm and the gun as metaphors suggests a deliberate effort to create a rich subtext. However, the execution is somewhat hindered by reliance on clichéd phrases and metaphors, which detracts from the originality and specificity of the narrative. The protagonist's character is hinted at through subtle cues, but the overall impact is weakened by generic descriptions. While the text aims for a 'George R.R. Martin-esque' density, it falls short due to its lack of fresh and vivid imagery, resulting in a narrative that feels partially crafted but not fully realized.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 52/100. Insert a flashback or memory fragment between the gun being drawn and fired—show us the specific wound this bullet is meant to heal. One concrete image of the original betrayal would transform this from aesthetic exercise into actual drama.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#2 - q-02</span>
+        <div class="example-badges">
+          <span class="badge low">Magic: 11</span>
+          <span class="badge intent">Intent: 30</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "what phase are we in?",
+  "phase": "structure"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            In the deep chambers of the mind, where shadows whisper secrets untold, lies the realm of structure—a domain where chaos meets order under the watchful gaze of its creator. Here, ideas do not simply emerge; they are forged in the crucible of thought, each one a fragment of a forgotten dream, now given shape and intent.
+
+Within this realm, a dance of whispers begins. Characters do not merely step from the mist; they are conjured from the depths of memory and desire, each carrying the weight of unspoken histories. Their eyes, pools of untapped emotion, hold stories of triumph and despair, waiting for the quill's caress to breathe them into being.
+
+The landscape forms not with grandiosity but with a subtle hand, like a painter sketching the first lines of a masterpiece. Hills rise with the inevitability of dawn, and forests murmur with ancient secrets, each leaf a testament to the tales they have witnessed. The world grows, sinew by sinew, with the precision of a craftsman, every detail a thread in the larger narrative tapestry.
+
+Choices here are not mere forks in the road; they are battles waged and alliances forged, each decision a ripple in the pond of destiny. The storyteller, a silent architect, weaves these threads with deliberate care, aware that each stitch holds the power to alter the course of the tale.
+
+In this hallowed phase, where the seeds of narrative are sown with intent and nurtured with patience, we stand at the precipice of creation. The stage is set, not with grand declarations, but with the quiet promise of a journey yet to unfold, a whisper of destiny awaiting its moment in the sun.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> AI slop detected. Magic: 11. Critical issues: where shadows whisper secrets untold; forged in the crucible of thought; pools of untapped emotion; waiting for the quill's caress to breathe them into being; like a painter sketching the first lines of a masterpiece; each leaf a testament to the tales they have witnessed; a thread in the larger narrative tapestry; ripple in the pond of destiny; we stand at the precipice of creation; a whisper of destiny awaiting its moment in the sun; the quiet promise of a journey yet to unfold
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text attempts to convey the complexity and beauty of the creative process through a series of metaphors and abstract imagery. However, it falls into the trap of using clichéd and generic phrases that lack specificity and originality. The metaphors, while numerous, do not provide new insights or a unique perspective on storytelling. The lack of distinct character voice or concrete examples makes the passage feel more like an exercise in creative writing rather than a deeply thought-out narrative. As a result, the fidelity is low, as the text does not successfully convey a unique or compelling vision.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 18/100. Burn this and start with a character doing something they want, facing an obstacle they can't easily overcome. 'In the deep chambers of the mind' should become 'Mira pressed her hand against the locked door and listened to her father dying on the other side.' Specificity is story. Abstraction is avoidance.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#3 - voice-01</span>
+        <div class="example-badges">
+          
+          <span class="badge intent">Intent: 70</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "Write dialogue between the noble lord and the street thief",
+  "phase": "writing"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            The moon, a tarnished coin in the murky sky, cast a pallid light over Elderglen's winding streets. Its glow touched the stones with a ghostly hand, revealing the figure of Lord Everard, whose presence was like a shadow made flesh. Draped in the finest dusk-hued fabrics, his boots whispered against the cobbles, each step a silent proclamation of power and intent. His gaze, piercing and relentless, found the flicker of movement—a boy, a waif of the night, slipping like smoke between the market stalls.
+
+"Stop," Everard commanded, his voice a low rumble that carried the weight of authority, unyielding as iron. The boy halted, a startled deer caught in the hunt. Not yet a man, he bore the city's grime like a second skin, his eyes blazing with a fire untamed by circumstance.
+
+"What do you want, lord?" the boy shot back, defiance sharpening his words into daggers. His fingers clenched around a small sack, the jingle of its contents betraying their illicit nature.
+
+"A conversation," Everard replied, his tone measured, as if discussing the weather. "One doesn't often meet a soul unafraid to tread the same night as I."
+
+The boy's lips twisted into a half-smile, more snarl than mirth. "A soul, you say? And what of your own, wandering here when the world sleeps? What secrets do you chase?"
+
+Everard chuckled softly, a sound more akin to the rustle of silk than laughter. "Ah, perceptive. Yet tonight, the secret is you."
+
+The boy's grip on the sack tightened, fingers whitening. "I owe nothing to lords and their lofty promises. We dwell below, out of sight, forgotten."
+
+Everard stepped closer, his shadow enveloping the boy. "Forgotten, perhaps. But not beyond reach. Tell me, what drives you to risk your life for mere trinkets?"
+
+The boy hesitated, bravado crumbling like old parchment. "Hunger," he murmured, the admission a bitter pill. "Not all are born to feast."
+
+Everard's eyes, once hard as forged steel, softened, a rare warmth kindling within. "I understand. And if I offered you a path less fraught with peril?"
+
+Suspicion flared anew, the boy's gaze narrowing. "What path could you offer, lord of the high towers?"
+
+"A path of learning," Everard said, his words a bridge over the chasm of their divide. "To hone those quick hands and sharper wit for more than mere survival."
+
+The boy scrutinized him, searching for the lie behind the mask, finding none. "And if I refuse?"
+
+Everard shrugged, a gesture as deliberate as a general's strategy. "Then you return to the shadows, and our stories part here. The decision is yours."
+
+Silence stretched taut between them, the night a witness to their accord. Finally, the boy nodded, a subtle shift yet resolute. "A chance, then. But know this—trust is a scarce commodity in these streets."
+
+Everard extended his hand, a tangible offer amidst the intangible. "Then let us earn it, together."
+
+Under the moon's indifferent gaze, an unlikely alliance was forged—a noble and a thief, bound not by fate, but by choice and the promise of what might yet be.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> LLM evaluation failed - ANTHROPIC_API_KEY not configured
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text demonstrates a moderate level of fidelity. It attempts to weave a narrative rich with subtext and character development, particularly through the interaction between Lord Everard and the boy. The moon is used symbolically to underscore themes of fate and impartiality. Everard's character is portrayed with a duality of power and empathy, suggesting an internal conflict. The boy's dialogue reflects his street-smart nature and inherent distrust of authority, adding depth to his character. However, the text occasionally falls into the trap of using clichéd expressions and metaphors, which detracts from its originality and impact. While the intent to create a layered narrative is evident, the execution could benefit from more unique character voices and fresher imagery to elevate its fidelity further.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 52/100. Insert a COMPLICATION between the offer and acceptance. Perhaps someone else is watching. Perhaps the boy has to choose between Everard's offer and loyalty to his street family. Perhaps Everard must reveal something compromising about himself to earn the boy's trust. Right now this is a transaction; it needs to become a SCENE where something is at stake and something is lost.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+        </div>
+    </div>
+</body>
+</html>
+  

@@ -1,7 +1,7 @@
 import { AgentQuestion, QuestionOption, QuestionStatus } from '../actions/types'
 
-// Re-export for convenience
-export type { AgentQuestion, QuestionOption, QuestionStatus }
+export type { AgentQuestion, QuestionOption }
+export { QuestionStatus }
 
 // ============================================
 // QUESTION STATE MACHINE
@@ -60,7 +60,7 @@ export function createQuestionSession(question: AgentQuestion): QuestionSession 
   return {
     id: question.id,
     question,
-    status: 'pending',
+    status: QuestionStatus.PENDING,
     machineState: 'awaiting_answer',
     createdAt: new Date(),
   }

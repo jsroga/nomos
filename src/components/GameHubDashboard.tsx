@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useGameEntities } from '@/hooks/useGameEntities'
 import {
@@ -15,16 +15,12 @@ import {
   TrendingUp,
   ArrowRight,
   Grid3x3,
-  FileText,
   Layers,
   Search,
-  BookOpen,
   Tv,
   Map,
   Home,
   Brush,
-  Layout,
-  Pencil,
   Activity,
 } from 'lucide-react'
 import { EntityPicker } from './EntityPicker'

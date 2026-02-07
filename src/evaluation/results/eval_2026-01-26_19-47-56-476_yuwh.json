@@ -1,0 +1,65 @@
+{
+  "id": "eval_2026-01-26_19-47-56-476_yuwh",
+  "name": "Critique & Revise vs Standard - Pro (Critique & Revise)",
+  "timestamp": "2026-01-26T19:47:56.476Z",
+  "config": {
+    "evaluatorSet": "pro",
+    "sampleSize": 3,
+    "parallelism": 1,
+    "name": "Critique & Revise vs Standard - Pro (Critique & Revise)",
+    "tags": [
+      "ab-test",
+      "variant-b"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "edge-02",
+      "input": {
+        "message": "...",
+        "phase": "structure"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 404 {\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"model: claude-3-5-sonnet-20240620\"},\"request_id\":\"req_011CXWZs6aCS6FS5CrrJEnbc\"}\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_NOT_FOUND/\n"
+      },
+      "metadata": {
+        "error": true
+      }
+    },
+    {
+      "exampleId": "int-01",
+      "input": {
+        "message": "What do you think we should do next?",
+        "phase": "structure"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 404 {\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"model: claude-3-5-sonnet-20240620\"},\"request_id\":\"req_011CXWZs7QK1DvAj8DBrrd2B\"}\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_NOT_FOUND/\n"
+      },
+      "metadata": {
+        "error": true
+      }
+    },
+    {
+      "exampleId": "dir-01",
+      "input": {
+        "message": "make it darker and more gritty",
+        "phase": "structure"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 404 {\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"model: claude-3-5-sonnet-20240620\"},\"request_id\":\"req_011CXWZs8DRZCjvVBK3G26R7\"}\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_NOT_FOUND/\n"
+      },
+      "metadata": {
+        "error": true
+      }
+    }
+  ],
+  "aggregatedScores": {},
+  "regressions": [],
+  "duration": 736
+}

@@ -1,37 +1,13 @@
+
 import { NextResponse } from 'next/server'
-import { HumanMessage, BaseMessage } from '@langchain/core/messages'
-import {
-  getWritersRoomGraph,
-  getActiveWritersRoomGraph,
-} from '@/domains/storyteller/graph/writers-room'
-import { createInitialState, CharacterState } from '@/domains/storyteller/graph/state'
+import { runStorytellerWorkflow } from '@/domains/storyteller/workflows/storyteller-workflow'
 import { db } from '@/lib/db'
 import { beats } from '@/domains/storyteller/db/schema'
-
-// Log LangSmith config on startup
-const LANGSMITH_ENABLED = process.env.LANGCHAIN_TRACING_V2 === 'true'
-if (LANGSMITH_ENABLED) {
-  console.log(
-    `LangSmith tracing enabled for project: ${process.env.LANGCHAIN_PROJECT || 'default'}`
-  )
-}
-
-// Convert LangChain messages to UI format
-function formatMessagesForUI(messages: BaseMessage[]) {
-  return messages.map(msg => {
-    const isHuman = msg._getType() === 'human'
-    return {
-      type: isHuman ? 'human' : 'ai',
-      content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content),
-      name: msg.name || (isHuman ? 'User' : 'Unknown'),
-      sender: msg.name || (isHuman ? 'User' : 'Unknown'),
-    }
-  })
-}
+import { v4 as uuidv4 } from 'uuid'
 
 // Persist approved beats to database
 async function persistApprovedBeats(beatBoard: any[], episodeId: string) {
-  const approvedBeats = beatBoard.filter(b => b.status === 'approved')
+  const approvedBeats = beatBoard.filter((b: any) => b.status === 'approved')
 
   for (const beat of approvedBeats) {
     try {
@@ -64,103 +40,77 @@ export async function POST(req: Request) {
       message,
       projectId,
       episodeId,
-      threadId,
       seriesBible,
       characters,
       existingBeats,
-      currentPhase,
-      userEmail, // For Bible lock permission checks
+      targetEmotion,
+      traceId: bodyTraceId
     } = body
 
-    // Map characters to CharacterState format
-    const characterStates: CharacterState[] = (characters || []).map((c: any) => ({
-      characterId: c.id,
-      name: c.name,
-      currentGoals: c.psychology?.goals || [],
-      fears: c.psychology?.fears || [],
-      selfDelusion: c.psychology?.selfDelusion || '',
-      actualMotivation: c.psychology?.actualMotivation || '',
-      transformationProgress: c.arcStatus?.transformation || 0,
-      knowledgeState: {},
-      stressLevel: c.stressLevel || 0,
-      emotionHistory: [],
-    }))
+    // Extract traceId from headers or body, or generate new
+    const traceId = req.headers.get('x-trace-id') || bodyTraceId || uuidv4()
 
-    // Create initial state with user message
-    const initialState = createInitialState({
-      projectId: projectId || 'default',
-      episodeId: episodeId,
-      userEmail: userEmail, // Pass user email for permission checks
-      currentPhase: currentPhase || 'breaking',
+    // Map inputs to StorytellerWorkflowInput
+    const input = {
+      episodeId,
       seriesBible: seriesBible || {},
-      characters: characterStates,
-      beatBoard: existingBeats || [],
-      messages: [
-        new HumanMessage({
-          content: message,
-          name: 'User',
-        }),
-      ],
+      characters: characters || [],
+      existingBeats: existingBeats || [],
+      storyContext: message, // Use user message as context/instruction
+      targetEmotion
+    }
+
+    // Run workflow
+    const result = await runStorytellerWorkflow(input, {
+      modelName: 'openai:gpt-4o', // Default or from config
+      traceId
     })
 
-    // Invoke the LangGraph workflow with recursion limit and tracing
-    const config = {
-      configurable: {
-        thread_id: threadId || 'default',
-      },
-      recursionLimit: 15, // Prevent infinite loops
-      // LangSmith tracing metadata
-      runName: `writers-room-${currentPhase || 'breaking'}`,
-      tags: [
-        'storyteller',
-        `phase:${currentPhase || 'breaking'}`,
-        `project:${projectId || 'default'}`,
-      ],
-      metadata: {
-        projectId: projectId || 'default',
-        episodeId: episodeId || 'none',
-        phase: currentPhase || 'breaking',
-      },
+    // Persist if successful
+    if (result.status === 'completed' && episodeId) {
+      await persistApprovedBeats(result.beats, episodeId)
     }
 
-    console.log('Invoking writers room graph with LangSmith tracing...')
-    const graph = await getActiveWritersRoomGraph()
-    const result = await graph.invoke(initialState, config)
-    console.log('Graph invocation complete')
+    // Map output to legacy format expected by UI
+    // UI expects: messages, beatBoard, etc.
+    // Workflow returns: beats, steps, status, message
 
-    // Persist approved beats
-    if (episodeId && result.beatBoard?.length > 0) {
-      await persistApprovedBeats(result.beatBoard, episodeId)
+    const aiMessage = {
+      type: 'ai',
+      content: result.message,
+      name: 'Storyteller',
+      sender: 'Storyteller'
     }
 
-    // Format messages for UI
-    const formattedMessages = formatMessagesForUI(result.messages || [])
+    // If beats were generated, add them to content display
+    if (result.beats.length > 0) {
+      const beatText = result.beats.map((b: any) => `**${b.logline}**\n${b.content}`).join('\n\n')
+      aiMessage.content += `\n\nGenerated Content:\n${beatText}`
+    }
 
     return NextResponse.json({
-      messages: formattedMessages,
-      currentPhase: result.currentPhase,
-      phaseIterations: result.phaseIterations,
-      beatBoard: result.beatBoard,
-      script: result.script,
-      awaitingUserInput: result.awaitingUserInput,
+      messages: [aiMessage],
+      beatBoard: result.beats,
+      status: result.status,
+      continuityIssues: result.continuityIssues,
+      traceId
     })
+
   } catch (error) {
     console.error('Error in chat:', error)
-
-    // Return a meaningful error response
     return NextResponse.json(
       {
         messages: [
           {
             type: 'ai',
-            content: `Writers room encountered an issue: ${error instanceof Error ? error.message : 'Unknown error'}. Please check your API keys in settings.`,
+            content: `Storyteller encountered an issue: ${error instanceof Error ? error.message : 'Unknown error'}`,
             name: 'System',
             sender: 'System',
           },
         ],
         error: error instanceof Error ? error.message : 'Failed to process message',
       },
-      { status: 200 }
+      { status: 500 }
     )
   }
 }

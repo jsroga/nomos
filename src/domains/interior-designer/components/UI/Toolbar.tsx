@@ -12,7 +12,6 @@ import {
   Redo2,
   Sparkles,
   Focus,
-  Droplets,
   GitCommit,
   Mountain,
 } from 'lucide-react'

@@ -5,15 +5,14 @@
  * and follows proper delegation patterns.
  */
 
-import { ValidationResult, Validator } from '../runnable-guard'
-import { WritersRoomState } from '../../graph/state'
-import { GuardrailIssue } from '../types'
+import { WritersRoomState } from '../../types'
+import { Phase, BeatStatus } from '../../enums'
 
 // ============================================
 // TYPES
 // ============================================
 
-type ProjectPhase = 'premise' | 'outline' | 'script' | 'unknown'
+type ProjectPhase = 'premise' | 'breaking' | 'cardlock' | 'writing' | 'complete' | 'unknown'
 
 interface RoutingDecision {
   targetAgent: string
@@ -170,10 +169,59 @@ function detectRequestType(content: string): string[] {
 }
 
 function detectPhase(state: Partial<WritersRoomState>): ProjectPhase {
-  // Check state for phase indicators
-  // This would need to be connected to actual state
-  // For now, return unknown
-  return 'unknown'
+  // If explicit phase is set, use it
+  if (state.currentPhase) {
+    switch (state.currentPhase) {
+      case Phase.PREMISE:
+        return 'premise'
+      case Phase.BREAKING:
+        return 'breaking'
+      case Phase.CARDLOCK:
+        return 'cardlock'
+      case Phase.WRITING:
+        return 'writing'
+      case Phase.COMPLETE:
+        return 'complete'
+    }
+  }
+
+  // Detect phase based on state indicators
+  const beatBoard = state.beatBoard || []
+  const characters = state.characters || []
+  const seriesBible = state.seriesBible || {}
+  const script = state.script || ''
+  const episodePremise = state.episodePremise
+
+  // COMPLETE: Has substantial script content (finished product)
+  if (script.length > 1000) {
+    return 'complete'
+  }
+
+  // WRITING: Has some script content or all beats are locked
+  if (script.length > 100) {
+    return 'writing'
+  }
+
+  // CARDLOCK: All beats are approved or locked
+  const allBeatsApproved = beatBoard.length > 0 && beatBoard.every(
+    beat => beat.status === BeatStatus.APPROVED || beat.status === BeatStatus.LOCKED
+  )
+  if (allBeatsApproved) {
+    return 'cardlock'
+  }
+
+  // BREAKING: Has some beats defined
+  if (beatBoard.length > 0) {
+    return 'breaking'
+  }
+
+  // PREMISE: Has episode premise or working on world bible
+  if (episodePremise || Object.keys(seriesBible).length > 2 || characters.length > 0) {
+    return 'premise'
+  }
+
+  // Default to premise if nothing else matches
+  return 'premise'
 }
 
 // ============================================

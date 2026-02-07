@@ -2,20 +2,7 @@
 
 import React from 'react'
 import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
-import {
-  Layers,
-  Square,
-  Trash2,
-  Eye,
-  EyeOff,
-  GitCommit,
-  BrickWall,
-  Box,
-  Mountain,
-  Droplets,
-  ChevronDown,
-  Map,
-} from 'lucide-react'
+import { Layers, Square, Trash2, GitCommit, BrickWall, Box, Mountain, Droplets } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'

@@ -3,7 +3,7 @@
 
 import React from 'react'
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Grid, Environment, OrthographicCamera } from '@react-three/drei'
+import { OrbitControls, Grid, OrthographicCamera } from '@react-three/drei'
 import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing'
 import { WallManager } from './WallManager'
 import { WallTool } from './tools/WallTool'

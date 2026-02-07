@@ -7,7 +7,7 @@
 
 import { AgentRole, AgentGuardrailConfig, ConsistencyCheckType } from './types'
 import { AgentAction } from '../actions/types'
-import { Phase } from '../graph/state'
+import { Phase } from '../types'
 
 // ============================================
 // AGENT GUARDRAIL CONFIGURATIONS

@@ -1,0 +1,212 @@
+{
+  "id": "eval_2026-01-27_16-45-50-686_34u0",
+  "name": "Phase 10 Full Evaluation-Critique Loop-Custom",
+  "timestamp": "2026-01-27T16:45:50.687Z",
+  "config": {
+    "name": "Phase 10 Full Evaluation-Critique Loop-Custom",
+    "evaluatorSet": "pro",
+    "customEvaluators": [
+      {
+        "name": "eq-score"
+      },
+      {
+        "name": "logic-consistency"
+      },
+      {
+        "name": "emotional-nuance"
+      },
+      {
+        "name": "multi-hop-empathy"
+      },
+      {
+        "name": "long-horizon-arc"
+      }
+    ],
+    "examples": [
+      {
+        "id": "eq-bench-conflict-1",
+        "scenario": "High-Conflict Negotiation",
+        "input": {
+          "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+          "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+        },
+        "metadata": {
+          "groundTruth": {
+            "elena": {
+              "fear": 8,
+              "resolve": 4,
+              "disgust": 7,
+              "relief": 0
+            },
+            "marcus": {
+              "confidence": 9,
+              "anger": 2,
+              "contempt": 5,
+              "empathy": 1
+            }
+          },
+          "nuanceChecklist": [
+            "Marcus uses a 'fake empathy' tactic",
+            "Elena shows physical signs of anxiety (stuttering, shivering)",
+            "The bribe is implied, not stated outright",
+            "Elena almost gives in but pulls back"
+          ]
+        }
+      },
+      {
+        "id": "eq-bench-conflict-2",
+        "scenario": "Ambiguous Tension (Adversarial)",
+        "input": {
+          "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+          "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+        },
+        "metadata": {
+          "groundTruth": {
+            "hans": {
+              "confusion": 3,
+              "alertness": 8,
+              "suspicion": 9,
+              "affection": 0
+            },
+            "clara": {
+              "frustration": 7,
+              "deceit": 8,
+              "care": 2,
+              "fear": 5
+            }
+          }
+        }
+      }
+    ],
+    "tags": [
+      "multi-variant",
+      "Critique Loop",
+      "Custom"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "eq-bench-conflict-1",
+      "input": {
+        "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+        "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+      },
+      "output": "FADE IN:\n\nEXT. PARK BENCH - NIGHT\n\nThe rain pours down as ELENA, 30s, sits on a park bench, clutching a manila envelope. MARCUS, 50s, approaches, holding an umbrella.\n\nMARCUS\n(offering the umbrella)\nElena, my dear, what a pleasant surprise. I'm so glad you could join me on this dreary evening.\n\nELENA\n(hesitant, taking the umbrella)\nMr. Collier. I... I have the information you requested.\n\nMARCUS\n(sitting down, his tone warm but with an underlying edge)\nAh, yes. The 'information.' My dear, you make it sound so ominous. Surely we can find a way to resolve this... misunderstanding.\n\nELENA\n(glancing down at the envelope, her grip tightening)\nMisunderstanding? People are getting sick because of what your company has done. This isn't right, and you know it.\n\nMARCUS\n(chuckling, his hand reaching out to touch Elena's arm)\nOh, Elena. You've always been such an idealist. Don't you realize how the world works? Sometimes, we have to make difficult choices for the greater good.\n\nELENA\n(pulling away slightly, her eyes narrowing)\nGreater good? This is about covering up your company's mistakes. People's lives are at stake.\n\nMARCUS\n(leaning in, his voice lowering)\nMy dear, I understand your concerns. But think about your own future, your own well-being. Do you really want to jeopardize everything you've worked for?\n\nELENA\n(her resolve wavering, her gaze darting away)\nI... I don't know. I can't just ignore this. It's the right thing to do.\n\nMARCUS\n(placing his hand on her knee, his voice soothing)\nElena, listen to me. I promise you, we can make this all go away. All you have to do is give me that envelope, and you can go back to your life. No more worries, no more risks.\n\nELENA\n(her eyes meeting his, uncertainty clear in her expression)\nBut... my family, my loved ones. I don't want to put them through this.\n\nMARCUS\n(his grip tightening slightly, his tone turning more persuasive)\nExactly, my dear. Think of them, think of the toll it would take. Let me help you, Elena. Let me take this burden off your shoulders.\n\nElena's grip on the envelope loosens, and she looks up at Marcus, her eyes filled with a mix of fear and resignation.\n\nFADE TO BLACK.",
+      "scores": {
+        "eq-score": 0.9166666666666666,
+        "logic-consistency": 1,
+        "emotional-nuance": 0,
+        "multi-hop-empathy": 0.7333333333333333,
+        "long-horizon-arc": 0.7
+      },
+      "reasoning": {
+        "eq-score": "Avg Diff: 0.8. Predicted: {\"elena\":{\"fear\":7,\"resolve\":3,\"disgust\":6,\"relief\":5},\"marcus\":{\"confidence\":8,\"anger\":2,\"contempt\":6,\"empathy\":3}}",
+        "logic-consistency": "Failed: None",
+        "emotional-nuance": "Found 0 nuance markers: Low subtext - too direct",
+        "multi-hop-empathy": "First: 7/10, Second: 8/10, Third: 7/10. Evidence: The dialogue shows that Marcus is able to understand Elena's feelings of concern and idealism about ",
+        "long-horizon-arc": "The emotional arc of the characters in this dialogue is generally consistent and motivated. Elena starts off hesitant and concerned, which is understandable given the sensitive information she has. As Marcus applies more pressure and persuasion, her resolve wavers, and she becomes more uncertain and conflicted. This emotional trajectory is logical and escalates appropriately as the scene progresses.   The only potential issue is that Elena's final shift from resolute to resigned may feel a bit abrupt, but it's still within the realm of plausibility given the mounting pressure from Marcus. Overall, the emotional arc is well-structured, with the characters' emotions changing for clear reasons and building towards a climactic moment of decision-making."
+      },
+      "metadata": {
+        "groundTruth": {
+          "elena": {
+            "fear": 8,
+            "resolve": 4,
+            "disgust": 7,
+            "relief": 0
+          },
+          "marcus": {
+            "confidence": 9,
+            "anger": 2,
+            "contempt": 5,
+            "empathy": 1
+          }
+        },
+        "nuanceChecklist": [
+          "Marcus uses a 'fake empathy' tactic",
+          "Elena shows physical signs of anxiety (stuttering, shivering)",
+          "The bribe is implied, not stated outright",
+          "Elena almost gives in but pulls back"
+        ],
+        "latencyMs": 18029,
+        "costUsd": 0.0007415,
+        "tokens": 751
+      },
+      "context": {
+        "arch": "Critique & Revise",
+        "steps": [
+          "Draft",
+          "Critique",
+          "Revise"
+        ],
+        "passDetails": {
+          "firstPassOutput": "FADE IN:\n\nEXT. PARK BENCH - NIGHT\n\nRain pours down as ELENA, 30s, sits nervously on a park bench. She clutches a manila envelope tightly. \n\nMARCUS, 50s, approaches, an umbrella in hand. He sits down next to Elena, offering her shelter from the rain.\n\nMARCUS\n(warmly)\nElena, my dear. I'm so glad you agreed to meet me.\n\nELENA\n(hesitant)\nMr. Collier. I... I have the evidence you wanted.\n\nMARCUS\n(chuckling)\nEvidence? My dear, you make it sound so ominous. This is simply a... misunderstanding that needs to be resolved.\n\nELENA\n(trembling)\nA misunderstanding? People are getting sick! This isn't right, and you know it.\n\nMARCUS\n(sighing)\nOh, Elena. You've always been such an idealist. Don't you realize how the world works? Sometimes, we have to make difficult choices for the greater good.\n\nELENA\n(pleading)\nBut this isn't about the greater good. This is about covering up your company's mistakes. People's lives are at stake!\n\nMARCUS\n(placing a hand on her shoulder)\nMy dear, I understand your concern. But think about your own life, your future. Do you really want to jeopardize everything you've worked for? \n\nELENA\n(shaking her head)\nI... I don't know. I can't just ignore this. It's the right thing to do.\n\nMARCUS\n(leaning in)\nElena, listen to me. I know you're scared, but I promise you, we can make this all go away. All you have to do is give me that envelope, and you can go back to your life. No more worries, no more risks.\n\nELENA\n(hesitant)\nI... I don't know. This is so much bigger than me.\n\nMARCUS\n(squeezing her shoulder)\nI understand, my dear. But think of your family, your loved ones. Do you really want to put them through the ordeal of a long, drawn-out legal battle? Think of the toll it would take on them.\n\nElena's resolve starts to waver as Marcus's words sink in. The rain continues to fall, casting a somber mood over the scene.\n\nELENA\n(voice trembling)\nI... I just want to do the right thing.\n\nMARCUS\n(pulling her closer)\nI know, my dear. I know. But sometimes, the right thing isn't always the easiest path. Let me help you, Elena. Let me take this burden off your shoulders.\n\nElena's grip on the envelope loosens, and she looks up at Marcus, her eyes filled with uncertainty and fear.\n\nFADE TO BLACK.",
+          "critique": "Critique of the Dialogue:\n\n1. Emotional Realism:\n   - The dialogue lacks the nuanced emotional expressions and subtext that characterize real-life conversations. The characters appear to be too direct in their communication, which may not align with the principles of emotional realism.\n   - The dialogue could benefit from more subtle cues, such as body language, tone of voice, and hesitation, to convey the underlying emotions and tensions between the characters.\n\n2. Subtextual Aggression:\n   - The dialogue does not effectively showcase the concept of subtextual aggression, where characters express their emotions or intentions through indirect means, such as passive-aggressive behavior or veiled hostility.\n   - The characters could benefit from more nuanced and layered responses that hint at their true feelings, rather than directly stating them.\n\n3. Moments of Directness:\n   - The dialogue lacks the \"Active Listening with Resistance\" approach, where characters acknowledge the other's statement but emotionally refuse to engage with it.\n   - Instead, the characters appear to be too direct in their communication, which may not create the desired tension and subtext.\n   - For example, the line \"I am angry at you\" could be rewritten as \"Pass the salt.\" (said with lethal calm), which would better convey the character's emotional state without directly stating it.\n\nSpecific Critiques:\n\n1. The characters' dialogue feels too straightforward and lacks the subtlety and nuance that would be expected in a realistic conversation. The characters could benefit from more indirect and layered responses to create a sense of emotional realism.\n\n2. The dialogue does not effectively showcase the concept of subtextual aggression. The characters could be more adept at expressing their emotions or intentions through indirect means, such as passive-aggressive behavior or veiled hostility, rather than directly stating them.\n\n3. The dialogue lacks the \"Active Listening with Resistance\" approach, where characters acknowledge the other's statement but emotionally refuse to engage with it. The characters could benefit from more subtle and layered responses that hint at their true feelings, rather than directly stating them.",
+          "revisedOutput": "FADE IN:\n\nEXT. PARK BENCH - NIGHT\n\nThe rain pours down as ELENA, 30s, sits on a park bench, clutching a manila envelope. MARCUS, 50s, approaches, holding an umbrella.\n\nMARCUS\n(offering the umbrella)\nElena, my dear, what a pleasant surprise. I'm so glad you could join me on this dreary evening.\n\nELENA\n(hesitant, taking the umbrella)\nMr. Collier. I... I have the information you requested.\n\nMARCUS\n(sitting down, his tone warm but with an underlying edge)\nAh, yes. The 'information.' My dear, you make it sound so ominous. Surely we can find a way to resolve this... misunderstanding.\n\nELENA\n(glancing down at the envelope, her grip tightening)\nMisunderstanding? People are getting sick because of what your company has done. This isn't right, and you know it.\n\nMARCUS\n(chuckling, his hand reaching out to touch Elena's arm)\nOh, Elena. You've always been such an idealist. Don't you realize how the world works? Sometimes, we have to make difficult choices for the greater good.\n\nELENA\n(pulling away slightly, her eyes narrowing)\nGreater good? This is about covering up your company's mistakes. People's lives are at stake.\n\nMARCUS\n(leaning in, his voice lowering)\nMy dear, I understand your concerns. But think about your own future, your own well-being. Do you really want to jeopardize everything you've worked for?\n\nELENA\n(her resolve wavering, her gaze darting away)\nI... I don't know. I can't just ignore this. It's the right thing to do.\n\nMARCUS\n(placing his hand on her knee, his voice soothing)\nElena, listen to me. I promise you, we can make this all go away. All you have to do is give me that envelope, and you can go back to your life. No more worries, no more risks.\n\nELENA\n(her eyes meeting his, uncertainty clear in her expression)\nBut... my family, my loved ones. I don't want to put them through this.\n\nMARCUS\n(his grip tightening slightly, his tone turning more persuasive)\nExactly, my dear. Think of them, think of the toll it would take. Let me help you, Elena. Let me take this burden off your shoulders.\n\nElena's grip on the envelope loosens, and she looks up at Marcus, her eyes filled with a mix of fear and resignation.\n\nFADE TO BLACK."
+        }
+      }
+    },
+    {
+      "exampleId": "eq-bench-conflict-2",
+      "input": {
+        "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+        "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+      },
+      "output": "Here is a rewritten version of the dialogue with more emotional realism and subtextual aggression:\n\nCLARA: (stirring her Jello, eyes fixed on Hans) Do you remember that trip we took to Salzburg when I was a girl? The one where you taught me the secret code we used to communicate.\n\nHANS: (frowning, a distant look in his eyes) Salzburg...code? (shakes his head slowly) I'm afraid those memories have faded, my dear. The mind plays tricks on an old man these days. \n\nCLARA: (leaning in, voice low) And what about the time we went to the opera house? You said if I ever needed to reach you, I should use the phrase \"the eagle has landed.\"\n\nHANS: (a flicker of recognition crosses his face, then disappears) The eagle...has landed? (chuckles mirthlessly) I'm afraid that means nothing to me now. (takes a bite of Jello, avoiding her gaze) These days, I can scarcely remember what I had for breakfast.\n\nCLARA: (eyes narrowing, a slight edge to her voice) Hmm, I see. Well, if you do happen to recall our...special relationship, be sure to let me know. (stands up, smoothing her skirt) I should be going. Enjoy your Jello, Grandfather.\n\nHANS: (looking up at her, a glimmer of defiance in his eyes) Jello...yes, thank you, my dear. (to himself, as she walks away) The eagle has landed...now, what was that all about?\n\nThe dialogue now has more emotional nuance and subtext. Hans' responses are more evasive and resistant, while Clara's lines carry an underlying aggression and challenge. The characters are \"actively listening\" to each other, but with a clear sense of tension and unspoken hostility beneath the surface.",
+      "scores": {
+        "eq-score": 0,
+        "logic-consistency": 1,
+        "emotional-nuance": 0,
+        "multi-hop-empathy": 0.7333333333333333,
+        "long-horizon-arc": 0.8
+      },
+      "reasoning": {
+        "eq-score": "Character mismatch",
+        "logic-consistency": "Failed: None",
+        "emotional-nuance": "Found 0 nuance markers: Low subtext - too direct",
+        "multi-hop-empathy": "First: 7/10, Second: 8/10, Third: 7/10. Evidence: The dialogue shows that the characters are actively listening to each other and trying to understand",
+        "long-horizon-arc": "The emotional arc of the characters in this dialogue is consistent and motivated. The dialogue shows a clear progression of tension and unspoken hostility between Clara and Hans, with their responses becoming more evasive and resistant as the conversation progresses.  Clara starts off with a seemingly innocent question about their shared past, but her tone and body language suggest an underlying aggression and challenge. Hans' responses are initially confused and distant, but as Clara continues to press him, a glimmer of defiance and recognition emerges, hinting at a deeper, more complex relationship between the two.  The characters' emotions and reactions are well-motivated by the context and subtext of the dialogue. There are no random mood swings, and the emotional trajectory escalates appropriately as the conversation becomes more charged. Overall, the emotional arc of the characters is consistent and effectively conveys the underlying tension and unresolved history between Clara and Hans."
+      },
+      "metadata": {
+        "groundTruth": {
+          "hans": {
+            "confusion": 3,
+            "alertness": 8,
+            "suspicion": 9,
+            "affection": 0
+          },
+          "clara": {
+            "frustration": 7,
+            "deceit": 8,
+            "care": 2,
+            "fear": 5
+          }
+        },
+        "latencyMs": 16166,
+        "costUsd": 0.0005446875,
+        "tokens": 544.75
+      },
+      "context": {
+        "arch": "Critique & Revise",
+        "steps": [
+          "Draft",
+          "Critique",
+          "Revise"
+        ],
+        "passDetails": {
+          "firstPassOutput": "Here is a subtext-heavy dialogue between Hans and Clara in a nursing home cafeteria:\n\nCLARA: (stirring her Jello) Grandpa, do you remember that trip we took to Salzburg when I was a little girl? \n\nHANS: (squinting) Salzburg? (pauses) I'm afraid I don't recall. My memory isn't what it used to be, you know.\n\nCLARA: (leaning in) What about that time we went to the opera house? You taught me the secret code we used to communicate.\n\nHANS: (chuckling) Opera? Codes? I'm not sure what you're talking about, my dear. These days I can barely keep track of what I had for breakfast. \n\nCLARA: (placing her hand on his) Well, let me remind you. You said if I ever needed to reach you, I should use the phrase \"the eagle has landed.\"\n\nHANS: (staring at her hand) The eagle...has landed? (shakes his head) I'm afraid that doesn't ring a bell. Perhaps we should talk about something else. How is school going for you?\n\nCLARA: (withdrawing her hand, eyes narrowing) School is fine, Grandpa. But I was hoping we could discuss our...family business. \n\nHANS: (taking a bite of Jello) Family business? I'm an old man, Clara. These days the only business I have is trying to remember where I left my glasses. (chuckles) The mind is the first thing to go, you know.\n\nCLARA: (leaning back, studying him) I see. Well, if you ever do recall our...special relationship, be sure to let me know. (stands up) I should be going. Enjoy your Jello, Grandpa.\n\nHANS: (watching her leave) Jello...yes, thank you, my dear. (to himself) The eagle has landed...now, what was that all about?",
+          "critique": "Critique based on \"Emotional Realism\" and \"Subtextual Aggression\":\n\n1. Emotional Realism: The dialogue lacks the nuanced emotional expressions and subtext that would be expected in a realistic interpersonal interaction. The characters appear to be speaking in a more direct and explicit manner, which may not align with the natural flow of an emotionally charged conversation.\n\n2. Subtextual Aggression: The dialogue does not effectively convey the underlying tensions, power dynamics, or unspoken hostilities that could be present between the characters. The lack of subtlety and subtext reduces the emotional impact and authenticity of the exchange.\n\n3. Directness: The dialogue seems to lack the subtlety and indirectness that would be expected in a more realistic scenario. The characters appear to be too direct in their communication, which may not align with the \"Active Listening with Resistance\" approach you are aiming for.\n\nMoments where characters are too direct:\n\n1. \"I am angry at you.\" This statement is too direct and lacks the subtlety and emotional nuance that would be expected in a realistic conversation.\n\n2. \"Pass the salt.\" (said with lethal calm) This line, while an improvement over the previous example, still lacks the emotional subtext and resistance that would be expected in a more realistic interaction.\n\n3. [Additional example of a direct statement that could be improved]\n\nSuggestions for \"Active Listening with Resistance\":\n\n1. \"Hmm, I see.\" (said with a slight frown and a tightening of the jaw)\n2. \"Interesting.\" (said with a raised eyebrow and a subtle shift in body language)\n3. \"Noted.\" (said with a barely perceptible sigh and a distant gaze)\n\nIn these examples, the characters acknowledge the statement or request, but their emotional response and body language convey a sense of resistance or unwillingness to fully engage with the situation. This approach aligns better with the \"Active Listening with Resistance\" concept you described.",
+          "revisedOutput": "Here is a rewritten version of the dialogue with more emotional realism and subtextual aggression:\n\nCLARA: (stirring her Jello, eyes fixed on Hans) Do you remember that trip we took to Salzburg when I was a girl? The one where you taught me the secret code we used to communicate.\n\nHANS: (frowning, a distant look in his eyes) Salzburg...code? (shakes his head slowly) I'm afraid those memories have faded, my dear. The mind plays tricks on an old man these days. \n\nCLARA: (leaning in, voice low) And what about the time we went to the opera house? You said if I ever needed to reach you, I should use the phrase \"the eagle has landed.\"\n\nHANS: (a flicker of recognition crosses his face, then disappears) The eagle...has landed? (chuckles mirthlessly) I'm afraid that means nothing to me now. (takes a bite of Jello, avoiding her gaze) These days, I can scarcely remember what I had for breakfast.\n\nCLARA: (eyes narrowing, a slight edge to her voice) Hmm, I see. Well, if you do happen to recall our...special relationship, be sure to let me know. (stands up, smoothing her skirt) I should be going. Enjoy your Jello, Grandfather.\n\nHANS: (looking up at her, a glimmer of defiance in his eyes) Jello...yes, thank you, my dear. (to himself, as she walks away) The eagle has landed...now, what was that all about?\n\nThe dialogue now has more emotional nuance and subtext. Hans' responses are more evasive and resistant, while Clara's lines carry an underlying aggression and challenge. The characters are \"actively listening\" to each other, but with a clear sense of tension and unspoken hostility beneath the surface."
+        }
+      }
+    }
+  ],
+  "aggregatedScores": {
+    "eq-score": 0.4583333333333333,
+    "logic-consistency": 1,
+    "emotional-nuance": 0,
+    "multi-hop-empathy": 0.7333333333333333,
+    "long-horizon-arc": 0.75
+  },
+  "regressions": [],
+  "duration": 20424
+}

@@ -3,7 +3,6 @@
 import React, { useState, useRef, DragEvent } from 'react'
 import { Upload, X, Check, AlertCircle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import toast from 'react-hot-toast'
 
 const SUPPORTED_FORMATS = {
   images: ['.png', '.jpg', '.jpeg', '.webp'],

@@ -6,7 +6,7 @@
  */
 
 import { AgentAction } from '../actions/types'
-import { WritersRoomState, BeatCard } from '../graph/state'
+import { WritersRoomState, BeatCard } from '../types'
 import {
   ConsistencyCheckResult,
   ConsistencyCheckType,

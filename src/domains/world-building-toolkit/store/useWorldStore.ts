@@ -250,34 +250,45 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   setUser: user => set({ user }),
 
   loadProject: async (projectId: string) => {
-    const supabase = getSupabaseClient()
-    const { data: project, error: projectError } = await supabase
-      .from('projects')
-      .select('*')
-      .eq('id', projectId)
-      .single()
+    try {
+      // Use API route instead of direct Supabase to allow backend auth bypass (x-bypass-auth)
+      // cache: 'no-store' ensures we always get fresh data from the server (fixes stale data after refresh)
+      const response = await fetch(`/api/storyteller/projects/${projectId}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      })
+      if (!response.ok) {
+        console.error('API error loading project:', response.statusText)
+        // Fallback or handle error
+        return
+      }
 
-    if (projectError || !project) {
-      console.error('Error loading project:', projectError)
-      return
+      const projectData = await response.json()
+
+      // Map API response to store state (handling snake/camel case)
+      const project = {
+        ...projectData,
+        series_bible: projectData.seriesBible || projectData.series_bible || {},
+        story_plan: projectData.storyPlan || projectData.story_plan || {},
+      }
+
+      // Fetch tiles separately (this might still need RLS bypass if we want full E2E, 
+      // but for World Bible heading, project record is enough)
+      const supabase = getSupabaseClient()
+      const { data: tiles, error: tilesError } = await supabase
+        .from('tiles')
+        .select('*')
+        .eq('project_id', projectId)
+
+      const tileMap: Record<string, Tile> = {}
+      tiles?.forEach(tile => {
+        tileMap[`${tile.x},${tile.y}`] = tile
+      })
+
+      set({ currentProject: project, tiles: tileMap })
+    } catch (err) {
+      console.error('Failed to load project via API:', err)
     }
-
-    const { data: tiles, error: tilesError } = await supabase
-      .from('tiles')
-      .select('*')
-      .eq('project_id', projectId)
-
-    if (tilesError) {
-      console.error('Error loading tiles:', tilesError)
-      return
-    }
-
-    const tileMap: Record<string, Tile> = {}
-    tiles?.forEach(tile => {
-      tileMap[`${tile.x},${tile.y}`] = tile
-    })
-
-    set({ currentProject: project, tiles: tileMap })
   },
 
   fetchAllProjects: async () => {
@@ -304,7 +315,7 @@ export const useWorldStore = create<WorldState>((set, get) => ({
       .from('projects')
       .insert({
         name,
-        project_prompt: prompt,
+        master_prompt: prompt,
         user_id: user.id,
       })
       .select()

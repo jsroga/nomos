@@ -1,5 +1,4 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
-import { createClient } from '@supabase/supabase-js'
 import { MeshyClient } from '@/infrastructure/ai/meshy'
 import { storageService } from '@/infrastructure/storage/StorageService'
 import { v4 as uuidv4 } from 'uuid'

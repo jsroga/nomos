@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
-import { Plus, FolderOpen, ArrowRight, Loader2, LogOut, Trash2 } from 'lucide-react'
+import { Plus, FolderOpen, Loader2, LogOut, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'

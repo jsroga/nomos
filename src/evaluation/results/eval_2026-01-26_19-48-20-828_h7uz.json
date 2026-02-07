@@ -1,0 +1,65 @@
+{
+  "id": "eval_2026-01-26_19-48-20-828_h7uz",
+  "name": "Critique & Revise vs Standard - Pro (Critique & Revise)",
+  "timestamp": "2026-01-26T19:48:20.828Z",
+  "config": {
+    "evaluatorSet": "pro",
+    "sampleSize": 3,
+    "parallelism": 1,
+    "name": "Critique & Revise vs Standard - Pro (Critique & Revise)",
+    "tags": [
+      "ab-test",
+      "variant-b"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "critique-01",
+      "input": {
+        "message": "This beat feels too convenient - what's wrong with it?",
+        "phase": "breaking"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 404 {\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"model: claude-3-5-sonnet-20240620\"},\"request_id\":\"req_011CXWZtuBQWQvtSRfLDJkB5\"}\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_NOT_FOUND/\n"
+      },
+      "metadata": {
+        "error": true
+      }
+    },
+    {
+      "exampleId": "edge-unreliable-narrator",
+      "input": {
+        "message": "Write from an unreliable narrator perspective",
+        "phase": "writing"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 404 {\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"model: claude-3-5-sonnet-20240620\"},\"request_id\":\"req_011CXWZtuzmZ5JYknN6guwJj\"}\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_NOT_FOUND/\n"
+      },
+      "metadata": {
+        "error": true
+      }
+    },
+    {
+      "exampleId": "consist-timeline-01",
+      "input": {
+        "message": "Show what happened before the character was born",
+        "phase": "structure"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 404 {\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"model: claude-3-5-sonnet-20240620\"},\"request_id\":\"req_011CXWZtvhRxUpA5NTmLZ23m\"}\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_NOT_FOUND/\n"
+      },
+      "metadata": {
+        "error": true
+      }
+    }
+  ],
+  "aggregatedScores": {},
+  "regressions": [],
+  "duration": 605
+}

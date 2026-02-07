@@ -2,14 +2,16 @@ import React from 'react'
 import { AlertTriangle, Info, Sparkles, Building2, Cpu, Users, Eye, Atom } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { WorldRule } from '../schemas/agent-schemas'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
+import { RichText } from './RichText'
 
 interface WorldRuleCardProps {
   rule: WorldRule
+  projectId?: string
   className?: string
 }
 
-export const WorldRuleCard: React.FC<WorldRuleCardProps> = ({ rule, className }) => {
+export const WorldRuleCard: React.FC<WorldRuleCardProps> = ({ rule, projectId, className }) => {
   // Parse category to get primary type
   const categoryLower = (rule.category || '').toLowerCase()
 
@@ -47,57 +49,53 @@ export const WorldRuleCard: React.FC<WorldRuleCardProps> = ({ rule, className })
   const IconComponent = style.icon
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Card
-            className={`group cursor-default transition-all duration-200 ${style.bg} border hover:scale-[1.01] ${className}`}
-          >
-            <CardContent className="p-5">
-              <div className="flex items-start gap-3">
-                <IconComponent className={`w-5 h-5 ${style.color} shrink-0 mt-0.5 opacity-80`} />
-                <div className="flex-1 min-w-0">
-                  <p className="font-sans text-[15px] text-foreground/90 leading-relaxed mb-3">
-                    {rule.rule}
-                  </p>
-                  <span
-                    className={`inline-block text-[9px] uppercase tracking-[0.15em] font-mono ${style.color} opacity-70`}
-                  >
-                    {rule.category}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TooltipTrigger>
-        <TooltipContent
-          side="top"
-          className="p-4 max-w-sm bg-popover/95 backdrop-blur-md border-border/40"
-        >
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <div className="font-bold text-[10px] text-red-400 uppercase tracking-widest">
-                  If Broken
-                </div>
-                <div className="text-sm text-foreground/80 leading-relaxed">{rule.consequence}</div>
-              </div>
+    <Card
+      className={cn(
+        "group cursor-default transition-all duration-300 border hover:border-primary/30 bg-card/40 backdrop-blur-sm",
+        className
+      )}
+    >
+      <CardContent className="p-5">
+        <div className="flex items-start gap-4">
+          <div className={cn("p-2 rounded-lg shrink-0", style.bg)}>
+            <IconComponent className={cn("w-5 h-5", style.color)} />
+          </div>
+          <div className="flex-1 min-w-0 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className={cn("text-[10px] uppercase tracking-[0.15em] font-mono font-bold opacity-70", style.color)}>
+                {typeof rule === 'string' ? 'World Lore' : (rule.category || 'General')}
+              </span>
             </div>
-            {rule.exceptions && (
-              <div className="flex items-start gap-3 pt-3 border-t border-border/20">
-                <Info className="w-4 h-4 text-muted-foreground/60 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <div className="font-bold text-[10px] text-muted-foreground/60 uppercase tracking-widest">
-                    Exception
-                  </div>
-                  <div className="text-sm text-foreground/70 italic">{rule.exceptions}</div>
-                </div>
+
+            <p className="font-syne font-bold text-[16px] text-foreground leading-tight">
+              <RichText 
+                text={typeof rule === 'string' ? rule : (rule.rule || 'No rule content provided')} 
+                projectId={projectId} 
+                inline 
+              />
+            </p>
+
+            <p className="text-sm text-muted-foreground/80 leading-relaxed">
+              <RichText 
+                text={typeof rule === 'string'
+                  ? 'The logical consistency of the world may be compromised if this lore is ignored.'
+                  : (rule.consequence || 'No consequence specified.')} 
+                projectId={projectId} 
+                inline 
+              />
+            </p>
+
+            {typeof rule !== 'string' && rule.exceptions && (
+              <div className="pt-2 flex items-start gap-2 border-t border-border/10 mt-2">
+                <span className="text-[9px] uppercase font-bold text-muted-foreground/60 shrink-0 mt-0.5">Exception:</span>
+                <span className="text-xs text-muted-foreground/80 italic">
+                  <RichText text={rule.exceptions} projectId={projectId} inline />
+                </span>
               </div>
             )}
           </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

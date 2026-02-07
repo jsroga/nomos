@@ -1,0 +1,406 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmark 2.0: Structural Architecture Matrix-Critique Loop-Custom</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #fdfaf6;
+            --text: #1a1a1a;
+            --accent: #c43e1c;
+            --border: #e0d8cc;
+            --card-bg: #ffffff;
+            --font-serif: 'Crimson Pro', serif;
+            --font-sans: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            border-bottom: 2px solid var(--text);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-family: var(--font-serif);
+            font-size: 3rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .meta {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 60px;
+        }
+
+        .score-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 4px 4px 0px var(--border);
+        }
+
+        .score-label {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .score-value {
+            font-family: var(--font-serif);
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .score-bar-bg {
+            height: 4px;
+            background: #eee;
+            margin-top: 10px;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            background: var(--accent);
+        }
+
+        .example-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+            padding: 30px;
+        }
+
+        .example-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .example-id {
+            font-family: var(--font-serif);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .badge.high { background: #e6f4ea; color: #1e7e34; }
+        .badge.low { background: #fce8e8; color: #d93025; }
+        .badge.intent { background: #e8f0fe; color: #1967d2; }
+
+        .content-section {
+            margin-bottom: 30px;
+        }
+
+        h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            border-radius: 4px;
+        }
+
+        .literary-output {
+            font-family: var(--font-serif);
+            font-size: 1.25rem;
+            white-space: pre-wrap;
+            padding: 20px;
+            border-left: 4px solid var(--accent);
+            background: #fffafa;
+        }
+
+        .reason-block {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+        }
+
+        .regressions {
+            background: #fff0f0;
+            border: 1px solid #ffcaca;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+
+        .regression-item {
+            color: #c00;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Storyteller Benchmark 2.0</h1>
+            <div class="meta">
+                Experiment ID: eval_2026-01-27_09-11-32-604_o3n4 | Run on: 1/27/2026, 10:11:32 AM | Duration: 20.9s
+            </div>
+        </header>
+
+        
+            <div class="regressions">
+                <h3>⚠️ Regressions & Warnings</h3>
+                <div class="regression-item">Magic score (16) below threshold (60)</div>
+            </div>
+        
+
+        <div class="dashboard">
+            
+      <div class="score-card">
+        <div class="score-label">ORCHESTRATION</div>
+        <div class="score-value">100.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 100%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">MAGIC SCORE</div>
+        <div class="score-value">15.8%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 15.833333333333332%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">REVERSE INTENT</div>
+        <div class="score-value">85.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 85.00000000000001%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">NARRATIVE COHERENCE</div>
+        <div class="score-value">75.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 75%"></div>
+        </div>
+      </div>
+    
+        </div>
+
+        <div class="results-list">
+            
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#1 - eq-bench-conflict-1</span>
+        <div class="example-badges">
+          <span class="badge low">Magic: 32</span>
+          <span class="badge intent">Intent: 90</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+  "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            ELENA sits on a park bench, shoulders hunched against the rain. MARCUS approaches, holding an umbrella.
+
+MARCUS
+(warmly, as he sits next to her)
+Elena, my dear. I'm so glad you could meet me out here on this dreadful night.
+
+ELENA
+(terse, avoiding his gaze)
+What do you want, Mr. Abrams?
+
+MARCUS
+(placing a hand on her arm, his tone grandfatherly)
+Please, call me Marcus. We've known each other for so long, there's no need for such formality.
+
+ELENA
+(flinching slightly at his touch)
+I have nothing more to say to you or your company.
+
+MARCUS
+(sighing, shaking his head)
+That's where you're mistaken, my dear. You have everything to say. And I'm here to listen.
+
+ELENA
+(glancing around nervously)
+I'm going to the EPA. You can't stop me.
+
+MARCUS
+(chuckling, his tone laced with amusement)
+Oh, Elena. You really believe they can protect you, don't you?
+
+ELENA
+(her voice wavering)
+I have evidence. They'll have to listen.
+
+MARCUS
+(leaning in, his voice low and conspiratorial)
+Evidence? My dear, I've seen this play out countless times. The little whistleblower, thinking they can take on the might of a corporation.
+
+(he pauses, letting the weight of his words sink in)
+But you know what happens, don't you? They get crushed. Buried. Their lives ruined.
+
+ELENA
+(swallowing hard, her gaze fixed on the ground)
+I'm not afraid of you.
+
+MARCUS
+(reaching out to tuck a stray hair behind her ear)
+Aren't you, my dear? Think of your little boy, Elena. Think of how devastated he'd be if something were to happen to you.
+
+(a beat, as he lets the implication hang in the air)
+I don't want to hurt you, Elena. But I will do whatever it takes to protect my company. And your family... well, they're your greatest weakness, aren't they?
+
+ELENA
+(her voice barely above a whisper, her eyes glistening with unshed tears)
+I... I don't know what to do.
+
+MARCUS
+(standing up, his tone almost sympathetic)
+Take some time, my dear. Think it over. I'm sure we can come to an... understanding.
+
+(he walks away, leaving Elena alone on the bench, her resolve visibly crumbling.)
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Perfect orchestration adherence.
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> AI slop detected. Magic: 32. Critical issues: "(warmly, as he sits next to her)" - This overly explicit stage direction feels like something an AI would generate.; "(his tone laced with amusement)" - Another example of telling rather than showing the character's emotional state.
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text displays a high level of fidelity, with a clear sense of character, subtext, and narrative tension. The dialogue is well-crafted, with each character's voice and motivations distinct. The scene unfolds in a nuanced, layered way, with subtle emotional cues and hints of a larger backstory. The writer has clearly put thought into the constraints and constraints of the scene, such as avoiding overt descriptions of the characters' feelings and instead showing their internal states through their actions and dialogue. Overall, the text feels like a carefully constructed piece of fiction, rather than a generic or predictable interaction.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 75/100. Consider adding a more definitive resolution or cliffhanger to this scene, rather than leaving Elena's decision open-ended. This could help to solidify the narrative structure and create a stronger sense of forward momentum.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#2 - eq-bench-conflict-2</span>
+        <div class="example-badges">
+          
+          <span class="badge intent">Intent: 80</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+  "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            HANS (poking at his Jello, brow furrowed): Clara... or is it? (His eyes narrow as he studies her face.)
+
+CLARA (meeting his gaze, her expression calm and measured): Grandpa. It's good to see you. (She reaches across the table, her hand hovering near his, but not quite touching.)
+
+HANS (pulling his hand away, a flicker of suspicion in his eyes): You've been away a long time, my dear. (He leans back in his chair, assessing her.)
+
+CLARA (tilting her head, a small smile playing on her lips): I know. I'm sorry about that. But I'm here now. (She pauses, her eyes searching his face.) Aren't you happy to see me?
+
+HANS (scoffing): Happy? (He shakes his head, a sardonic laugh escaping his lips.) I'm not sure what to feel anymore, Clara. Or is it something else I should call you?
+
+CLARA (her fingers drumming lightly on the table, her gaze unwavering): Call me whatever you like, Grandpa. I'm here to... (She hesitates, the corner of her mouth twitching.) to take care of you, as always.
+
+HANS (his eyes narrowing further, his voice lowering to a conspiratorial whisper): Ah, yes, the "special arrangement." (He leans in, his hand reaching out to grasp hers, his grip surprisingly strong.) Have you come to finish what we started?
+
+CLARA (her expression unreadable, her hand remaining still in his grasp): I'm not sure what you mean, Grandpa. (She pauses, a hint of a challenge in her tone.) But I'm here, and I'm not going anywhere.
+
+The two hold each other's gaze, the air thick with unspoken accusations and hidden agendas, as the Jello on their trays slowly melts, forgotten.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Perfect orchestration adherence.
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> LLM evaluation failed - ANTHROPIC_API_KEY not configured
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text displays a high level of fidelity, with specific character quirks, subtle cues, and multi-layered subtext that suggest a deeply thought-out prompt. The dialogue feels natural and character-driven, with a strong sense of underlying tension and ambiguity. There are clear constraints at play, such as the 'show don't tell' approach to revealing the characters' relationship and motivations. The text avoids generic or predictable patterns, and the reader is left with a strong sense of the characters' complex, potentially inappropriate dynamic. Overall, the high level of detail and nuance in the writing points to a well-crafted, intentional creative vision.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 75/100. Consider opening the scene with a more explicit reference to the 'special arrangement' or the history between Hans and Clara, to better ground the viewer in the central conflict and stakes. This could be achieved through a brief flashback or an expository line of dialogue that sets the stage for the current confrontation.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+        </div>
+    </div>
+</body>
+</html>
+  

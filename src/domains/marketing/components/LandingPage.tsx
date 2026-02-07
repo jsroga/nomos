@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { motion, useScroll, useTransform, useSpring, AnimatePresence } from 'framer-motion'
 import {
@@ -9,14 +9,12 @@ import {
   Brain,
   Boxes,
   Zap,
-  Skull,
   ArrowRight,
   Play,
   Plus,
   Flame,
   Shield,
   X,
-  Check,
   Users,
   Sparkles,
 } from 'lucide-react'

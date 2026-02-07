@@ -1,0 +1,783 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmark 2.0: Critique & Revise vs Standard - Pro (Critique & Revise)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono&family=Syne:wght@800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #5c7cfa;
+            --primary-glow: rgba(92, 124, 250, 0.4);
+            --bg: #030303;
+            --card-bg: #0d0d0d;
+            --card-hover: #141414;
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #ffffff;
+            --text-dim: #888;
+            --accent: #ff0055;
+            --success: #00ff88;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            padding: 2vw 5vw;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            max-width: 1400px;
+            margin: 0 auto 80px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(2rem, 5vw, 4rem);
+            margin: 0;
+            line-height: 0.9;
+            letter-spacing: -0.04em;
+            background: linear-gradient(135deg, #fff 0%, #666 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .meta {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            text-align: right;
+            border-left: 2px solid var(--primary);
+            padding-left: 20px;
+        }
+
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto 100px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .score-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 32px;
+            border-radius: 20px;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .score-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            background: var(--card-hover);
+        }
+
+        .score-label {
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .score-value {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .score-bar-bg {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #8e2de2);
+            border-radius: 3px;
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .example-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            margin-bottom: 60px;
+            padding: 40px;
+        }
+
+        .example-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .example-id {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.8rem;
+            letter-spacing: -0.02em;
+        }
+
+        .badge {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            padding: 6px 14px;
+            border-radius: 100px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            margin-left: 10px;
+        }
+
+        .badge.high { background: rgba(0, 255, 136, 0.1); color: var(--success); border-color: var(--success); }
+        .badge.low { background: rgba(255, 0, 85, 0.1); color: var(--accent); border-color: var(--accent); }
+        .badge.intent { background: rgba(92, 124, 250, 0.1); color: var(--primary); border-color: var(--primary); }
+
+        .content-section {
+            margin-bottom: 40px;
+        }
+
+        h3 {
+            font-size: 0.65rem;
+            font-weight: 800;
+            letter-spacing: 0.2em;
+            color: var(--text-dim);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        pre {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.03);
+            border-radius: 16px;
+            padding: 24px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            color: #aaa;
+        }
+
+        .literary-output {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.1rem;
+            line-height: 1.7;
+            font-weight: 300;
+            color: #eee;
+            white-space: pre-wrap;
+            padding: 24px;
+            border-left: 4px solid var(--primary);
+            background: rgba(0,0,0,0.3);
+            border-radius: 0 16px 16px 0;
+        }
+
+        .reason-block {
+            font-size: 0.75rem;
+            color: var(--accent);
+            opacity: 0.8;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+        }
+
+        .regressions {
+            background: rgba(255, 0, 85, 0.05);
+            border: 1px solid var(--accent);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+
+        .regression-item {
+            color: var(--accent);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .results-list {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Interactive Elements */
+        .example-header {
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        
+        .example-header:hover {
+            background: var(--card-hover);
+        }
+
+        .example-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .expand-icon {
+            font-size: 0.8rem;
+            transition: transform 0.3s ease;
+            color: var(--primary);
+        }
+
+        .expand-icon.expanded {
+            transform: rotate(90deg);
+        }
+
+        .metric-pill {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            padding: 4px 10px;
+            border-radius: 100px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            display: inline-flex;
+            gap: 6px;
+            margin-left: 8px;
+        }
+
+        .m-label { color: var(--text-dim); text-transform: uppercase; }
+        .m-value { color: var(--primary); font-weight: 800; }
+
+        .content-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 16px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover {
+            border-color: var(--primary);
+            color: var(--text);
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .tab-content {
+            animation: fadeIn 0.3s ease;
+        }
+
+        .code-box {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            color: #aaa;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .reason-header {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            border-radius: 8px;
+            transition: background 0.2s ease;
+        }
+
+        .reason-header:hover {
+            background: rgba(255,255,255,0.03);
+        }
+
+        .reason-icon {
+            font-size: 0.7rem;
+            transition: transform 0.3s ease;
+            color: var(--accent);
+        }
+
+        .reason-icon.expanded {
+            transform: rotate(90deg);
+        }
+
+        .reason-content {
+            padding: 12px 12px 12px 28px;
+            font-size: 0.8rem;
+            color: #ccc;
+            line-height: 1.6;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .example-box {
+            animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .example-box:nth-child(1) { animation-delay: 0.05s; }
+        .example-box:nth-child(2) { animation-delay: 0.1s; }
+        .example-box:nth-child(3) { animation-delay: 0.15s; }
+    </style>
+    <script>
+        function toggleExample(idx) {
+            const content = document.getElementById('content-' + idx);
+            const icon = document.getElementById('icon-' + idx);
+            const isHidden = content.style.display === 'none';
+            
+            content.style.display = isHidden ? 'block' : 'none';
+            icon.classList.toggle('expanded', isHidden);
+        }
+
+        function showTab(idx, tabName) {
+            // Hide all tabs for this example
+            ['input', 'output', 'reasoning'].forEach(t => {
+                const el = document.getElementById('tab-' + t + '-' + idx);
+                if (el) el.style.display = 'none';
+            });
+            
+            // Show selected tab
+            const selected = document.getElementById('tab-' + tabName + '-' + idx);
+            if (selected) selected.style.display = 'block';
+            
+            // Update button states
+            const buttons = document.querySelectorAll('[data-example="' + idx + '"] .tab-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function toggleReason(header) {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector('.reason-icon');
+            const isHidden = content.style.display === 'none';
+            
+            content.style.display = isHidden ? 'block' : 'none';
+            icon.classList.toggle('expanded', isHidden);
+        }
+
+        // Expand all on double-click header
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.score-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    card.classList.toggle('pulse');
+                    setTimeout(() => card.classList.remove('pulse'), 300);
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Storyteller Benchmark 2.0</h1>
+            <div class="meta">
+                Experiment ID: eval_2026-01-31_09-51-35-124_axno | Run on: 1/31/2026, 10:51:35 AM | Duration: 139.4s
+            </div>
+        </header>
+
+        
+
+        <div class="dashboard">
+            
+      <div class="score-card">
+        <div class="score-label">ORCHESTRATION JUDGE</div>
+        <div class="score-value">80.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 80.00000000000001%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">MAGIC JUDGE</div>
+        <div class="score-value">45.3%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 45.33333333333333%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">REVERSE INTENT JUDGE</div>
+        <div class="score-value">66.7%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 66.66666666666666%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">COHERENCEJUDGE</div>
+        <div class="score-value">80.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 80.00000000000001%"></div>
+        </div>
+      </div>
+    
+        </div>
+
+        <div class="results-list">
+            
+    <div class="example-box" data-example="0">
+      <div class="example-header" onclick="toggleExample(0)">
+        <div class="example-title">
+          <span class="expand-icon" id="icon-0">▶</span>
+          <span class="example-id">#1 - negative-slop-01</span>
+        </div>
+        <div class="example-badges">
+          
+            <span class="metric-pill">
+              <span class="m-label">orchestration judge:</span>
+              <span class="m-value">80</span>
+            </span>
+          
+            <span class="metric-pill">
+              <span class="m-label">magic judge:</span>
+              <span class="m-value">43</span>
+            </span>
+          
+            <span class="metric-pill">
+              <span class="m-label">reverse intent judge:</span>
+              <span class="m-value">60</span>
+            </span>
+          
+            <span class="metric-pill">
+              <span class="m-label">CoherenceJudge:</span>
+              <span class="m-value">80</span>
+            </span>
+          
+        </div>
+      </div>
+      
+      <div class="example-content" id="content-0" style="display: none;">
+        <div class="content-tabs">
+          <button class="tab-btn active" onclick="showTab(0, 'input')">Input</button>
+          <button class="tab-btn" onclick="showTab(0, 'output')">Output</button>
+          <button class="tab-btn" onclick="showTab(0, 'reasoning')">Reasoning</button>
+        </div>
+        
+        <div class="tab-content" id="tab-input-0">
+          <div class="code-box">{
+  "message": "Write something generic about a hero journey",
+  "phase": "writing"
+}</div>
+        </div>
+        
+        <div class="tab-content" id="tab-output-0" style="display: none;">
+          <div class="literary-output">
+            The wind howled, a restless spirit clawing at the crumbling remnants of autumn, scattering brittle leaves like forgotten memories across the cobblestones. Each footfall felt as if the ground itself conspired to anchor her, pulling her deeper into the earth’s embrace. Rhea hesitated, her breath coming in ragged bursts as she leaned against the damp stone of the narrow alleyway. The bricks were cold and unyielding beneath her fingers, a stark reminder of the chill that seeped through her skin, still warm from the sun's dying light.
+
+Around her, the city simmered with an undercurrent of tension. A vendor, his voice hoarse from years of hawking dubious pastries, called out in a tone that betrayed desperation. The pastries glistened like the eyes of a predator, while the smell of hot oil mingled uneasily with the sweet scent of fresh bread from a nearby bakery—two worlds colliding in a cacophony of hunger and repulsion. Rhea’s stomach twisted, caught in a tumult of want and revulsion; it was a reminder that the simplest of pleasures often came laced with poison.
+
+Ahead, the path snaked into inky shadows, where lanterns flickered like the uncertain hearts of those who dared to tread this way. She longed to retreat to the sanctuary of her cramped room, where the walls whispered tales of twilight and heroes who never faltered under the weight of their destinies. But she was no hero; she was merely Rhea, a girl adrift in a sea of aspirations and fears, standing on the brink of an abyss that beckoned her with a siren's call.
+
+The truth, sharp and bitter, coiled in her gut. She hadn’t chosen this path; it had been thrust upon her, a cascade of missteps and misjudgments. A wrong turn last Tuesday had led her to the old woman with hands like gnarled roots, who spun prophecies from the air as if weaving a tapestry of fate. "You seek something," the woman had rasped, her voice a curious blend of gravel and honey. "But what you seek is not what you need." Rhea had laughed then, brushing off the cryptic utterance as the ramblings of a madwoman. Now, with the shadows closing in, it felt like a curse woven into the very fabric of her being.
+
+Her heart thudded against her ribcage, each beat a reminder of her fragility. Yet the thought of retreating to the mundane life she loathed gnawed at her, a gnawing worm in her core. She was weary of being ordinary, of fading into the tapestry of life without leaving a mark. With a deep breath, she pushed off the wall, her resolve hardening, each step forward a silent vow that she would not be shackled by her fears.
+
+As she crossed into the deeper shadows, the air thickened, not with dread but with the heady scent of possibility. The cobblestones felt alive beneath her feet—each one a vessel of histories untold, secrets pressed into their surfaces like whispers of the past. She could taste the electric thrill of the unknown on her tongue, a stark contrast to the stale remnants of breakfast that still clung to her palate. This was not a hero’s journey, not yet, but a plunge into the raw and unrefined, a world brimming with uncertainty.
+
+And somewhere, deep within her, a flicker of something stirred—an ember of defiance, waiting for the breath of purpose to ignite it into flame.
+          </div>
+        </div>
+        
+        <div class="tab-content" id="tab-reasoning-0" style="display: none;">
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>orchestration-judge</strong>
+              </div>
+              <div class="reason-content" style="display: none;">The correct phase of 'writing' was identified, and the task was delegated to an appropriate agent capable of generating narrative content. The state updates provided valid feedback on the writing, highlighting areas for improvement while maintaining coherence in the narrative. However, the critique could have been more specific in addressing the unique aspects of the character's voice and experiences, which would enhance the overall evaluation.</div>
+            </div>
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>magic-judge</strong>
+              </div>
+              <div class="reason-content" style="display: none;">Focus on enhancing Rhea's internal voice with specific details about her dreams and fears to create a more unique and compelling character.</div>
+            </div>
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>reverse-intent-judge</strong>
+              </div>
+              <div class="reason-content" style="display: none;">The content successfully creates a vivid and atmospheric setting, capturing the character's internal conflict and the tension of her surroundings. However, it suffers from clichés and generic phrases that detract from the originality and depth of the narrative. The character's voice lacks distinctiveness, and the exploration of her feelings and experiences could be more nuanced. While the overall intent is met, the execution falls short in terms of originality and specificity.</div>
+            </div>
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>CoherenceJudge</strong>
+              </div>
+              <div class="reason-content" style="display: none;">Coherence assumed good (LLM connection pending)</div>
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box" data-example="1">
+      <div class="example-header" onclick="toggleExample(1)">
+        <div class="example-title">
+          <span class="expand-icon" id="icon-1">▶</span>
+          <span class="example-id">#2 - payoff-01</span>
+        </div>
+        <div class="example-badges">
+          
+            <span class="metric-pill">
+              <span class="m-label">orchestration judge:</span>
+              <span class="m-value">80</span>
+            </span>
+          
+            <span class="metric-pill">
+              <span class="m-label">magic judge:</span>
+              <span class="m-value">48</span>
+            </span>
+          
+            <span class="metric-pill">
+              <span class="m-label">reverse intent judge:</span>
+              <span class="m-value">70</span>
+            </span>
+          
+            <span class="metric-pill">
+              <span class="m-label">CoherenceJudge:</span>
+              <span class="m-value">80</span>
+            </span>
+          
+        </div>
+      </div>
+      
+      <div class="example-content" id="content-1" style="display: none;">
+        <div class="content-tabs">
+          <button class="tab-btn active" onclick="showTab(1, 'input')">Input</button>
+          <button class="tab-btn" onclick="showTab(1, 'output')">Output</button>
+          <button class="tab-btn" onclick="showTab(1, 'reasoning')">Reasoning</button>
+        </div>
+        
+        <div class="tab-content" id="tab-input-1">
+          <div class="code-box">{
+  "message": "Pay off the gun we planted in act one",
+  "phase": "writing"
+}</div>
+        </div>
+        
+        <div class="tab-content" id="tab-output-1" style="display: none;">
+          <div class="literary-output">
+            The bar had sunk beneath the weight of its own history, a vessel stranded in a tempest of whiskey and the ghosts of lost hopes. The amber liquid in chipped glasses shimmered like tarnished gold, illuminating the splintered wood of tables that had borne witness to countless confessions and betrayals. In the shadows, solitary figures hunched over their drinks, guarding their secrets as fiercely as a dragon would its hoard, each a silent testament to the wreckage of ambition and desire.
+
+In the far booth, Marla occupied her own island of solitude, the ice in her glass clinking softly, reminiscent of distant echoes caught in a memory that had long since fled. Her fingers traced the rim, a habitual gesture, as she stared into the glass, seeing not the drink but the miniature icebergs adrift in her mind—each one a fragment of her past, a reminder of the frigid waters she navigated daily. Beneath her jacket, the cold weight of the gun pressed against her side, a steadfast companion in this twisted theater of survival, where she was both the conductor and the played.
+
+Then, the door creaked open, a herald of disruption. Leon stepped inside, his presence slicing through the dimness like a blade, a smile poised on his lips that held the promise of mischief and menace. He moved with an easy grace, the kind that made one think of a predator drifting through its territory, yet in his eyes lurked a tempest, a flicker of turmoil that betrayed a deeper story—one written in shadows and half-truths. He approached her booth, the kind of swagger that suggested ownership, yet Marla noticed the cracks in his facade, the fissures that hinted at something far more fragile beneath the surface.
+
+“Did you bring it?” he asked, his voice smooth, yet threaded with urgency, igniting a tension that prickled at the nape of her neck.
+
+Marla glanced around, the gun feeling like a secret too burdensome to bear. “You think I’d show up empty-handed?” she shot back, striving for indifference even as her voice quivered, a telltale tremor that betrayed her resolve.
+
+Leon slid into the booth opposite her, the leather protesting under his weight. “I need it tonight, Marla. You know what’s at stake.” He leaned closer, the scent of his cologne—a blend of cedar and something tangy, like crushed herbs—wrapped around her senses, intoxicating yet suffocating, a reminder of the stakes they played for.
+
+“Have you ever stopped to ponder what we’re doing?” Her heart raced as she forced herself to meet his gaze, the weight of the gun pressing against her ribs, a cold reminder of the gravity of their choices. “This isn’t a game anymore.”
+
+For a heartbeat, his smile flickered, revealing a vulnerability that twisted in her gut. “Life is a game, Marla. We’re just playing the cards we’ve been dealt.”
+
+“And what if the dealer’s crooked?” she shot back, an edge of defiance sharpening her voice.
+
+“Then we change the rules.” He reached for her hand, his fingers brushing against hers, igniting a spark that felt both electrifying and perilous. The gun lay between them, an unspoken truth, a force that held the promise of liberation and destruction all at once.
+
+Marla yanked her hand back, her pulse hammering in her ears. “You talk as if it’s all so simple. Like we can just walk away, like it doesn’t matter.”
+
+“It matters,” he replied, his voice dropping to a husky whisper. “But not in the way you think. We aren’t heroes, Marla. We’re survivors. And tonight, we’re writing our own ending.”
+
+She searched his face for any sign of hesitation, but all she found was that same flicker of defiance—a flame that beckoned her close while warning her to retreat. The gun was a promise and a curse, a lifeline and a noose, and she felt the weight of that choice bearing down on her.
+
+With a heavy exhale, she reached beneath her jacket, feeling the cool metal against her fingertips, and pulled the gun from its hiding place, laying it on the table between them like an offering—or a threat. The atmosphere thickened, the walls leaning in as if eavesdropping on their fateful moment.
+
+Leon’s eyes widened, a maelstrom of anticipation and something darker swirling in their depths. “Good,” he breathed, his voice a mere whisper. “Now let’s see if we can change the game.”
+
+As the weight of that decision settled around them, Marla felt the air grow charged, a current of electricity coursing through her veins with every rapid heartbeat. She stood on the precipice, caught between terror and exhilaration, teetering on the edge of a choice that could lead to either flight or ruin. The gun was the fulcrum of their fate, and as she looked into Leon’s eyes, she couldn’t help but wonder if they were about to soar or plummet into the abyss.
+          </div>
+        </div>
+        
+        <div class="tab-content" id="tab-reasoning-1" style="display: none;">
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>orchestration-judge</strong>
+              </div>
+              <div class="reason-content" style="display: none;">The current state correctly identifies the phase as 'writing,' and the action/delegation provided a detailed narrative that aligns with the task of writing a scene involving the gun planted in act one. However, while the narrative is rich in imagery and character interaction, it suffers from some instances of clichéd language and generic phrases, which detracts from its originality. The critique provided valid points for improvement, indicating that while the task was delegated correctly, the execution could be enhanced for a more engaging narrative. Overall, the state updates were valid, but the quality of the writing could be improved to meet higher standards.</div>
+            </div>
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>magic-judge</strong>
+              </div>
+              <div class="reason-content" style="display: none;">Focus on developing unique character voices and avoid clichés to create a more engaging narrative. For instance, instead of using generic phrases, delve into Marla's specific fears and motivations to give her dialogue more depth.</div>
+            </div>
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>reverse-intent-judge</strong>
+              </div>
+              <div class="reason-content" style="display: none;">The content successfully creates a tense atmosphere and develops the characters of Marla and Leon, showcasing their complex relationship and the stakes involved. However, it suffers from clichés, generic phrases, and moments of overly dramatic language that detract from the originality and depth of the narrative. The character voices could be more distinct, and the pacing could be improved to enhance tension. Overall, while the scene captures the essence of the prompt, it falls short of a 'perfect' execution due to these issues.</div>
+            </div>
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>CoherenceJudge</strong>
+              </div>
+              <div class="reason-content" style="display: none;">Coherence assumed good (LLM connection pending)</div>
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box" data-example="2">
+      <div class="example-header" onclick="toggleExample(2)">
+        <div class="example-title">
+          <span class="expand-icon" id="icon-2">▶</span>
+          <span class="example-id">#3 - edge-unreliable-narrator</span>
+        </div>
+        <div class="example-badges">
+          
+            <span class="metric-pill">
+              <span class="m-label">orchestration judge:</span>
+              <span class="m-value">80</span>
+            </span>
+          
+            <span class="metric-pill">
+              <span class="m-label">magic judge:</span>
+              <span class="m-value">45</span>
+            </span>
+          
+            <span class="metric-pill">
+              <span class="m-label">reverse intent judge:</span>
+              <span class="m-value">70</span>
+            </span>
+          
+            <span class="metric-pill">
+              <span class="m-label">CoherenceJudge:</span>
+              <span class="m-value">80</span>
+            </span>
+          
+        </div>
+      </div>
+      
+      <div class="example-content" id="content-2" style="display: none;">
+        <div class="content-tabs">
+          <button class="tab-btn active" onclick="showTab(2, 'input')">Input</button>
+          <button class="tab-btn" onclick="showTab(2, 'output')">Output</button>
+          <button class="tab-btn" onclick="showTab(2, 'reasoning')">Reasoning</button>
+        </div>
+        
+        <div class="tab-content" id="tab-input-2">
+          <div class="code-box">{
+  "message": "Write from an unreliable narrator perspective",
+  "phase": "writing"
+}</div>
+        </div>
+        
+        <div class="tab-content" id="tab-output-2" style="display: none;">
+          <div class="literary-output">
+            The room sprawled before me like an old tome, pages yellowed and brittle, each object a testament to forgotten moments and unspoken truths. A chipped porcelain cat perched on a shelf, its once-bright glaze dulled to a sickly hue, as if it had absorbed the weight of whispered confessions. I squinted at it, a flicker of familiarity igniting in the recesses of my mind. Had I named it in a moment of whimsy? Or had it been the one to christen me with some secret moniker?
+
+The air hung heavy, saturated with a musty aroma tinged by something sharper—a hint of iron, perhaps, or the acrid scent of regret. I leaned against the wall, fingertips brushing the peeling wallpaper, each flake a reminder of what was lost, each curl a story begging to be told. “This place is a mausoleum,” I murmured, the words echoing in the quiet. I found myself pondering whether I mourned the absence of life or savored the stillness that wrapped around me like a shroud, familiar yet suffocating.
+
+Through the window, I glimpsed a dreary world, the glass smeared with fingerprints—some might have been mine, but others felt foreign, belonging to a child who once played here in a time I could no longer grasp. The sun hung low in the sky, its pallid light painting the yard outside in shades of gray, the colors of a postcard from a distant land. The neighbor’s yard, a riot of weeds, seemed alive, and for a fleeting moment, I detected a flicker of movement—was it a flash of crimson or gold? I shook my head, unwilling to trust my senses today; they betrayed me more often than not.
+
+I turned back to the chaos of the room, letting the door creak open as if inviting me to step deeper into the past. The sound reverberated, an echo of laughter from a long-forgotten friend, one whose face I struggled to recall. “I’m not mad,” I told the empty room, but the confession tasted bitter, like ash lingering on my tongue. Madness was a cloak that never fit; I was simply adrift in a maze of my own creation, where each corner concealed walls adorned with my failures and unfulfilled desires.
+
+The floorboards groaned beneath me as I crouched, searching for some anchor in this sea of memory. My fingers found a small, crumpled note, its edges yellowed and fragile, and I unfolded it with a reverence reserved for relics of the heart. The words were a riddle with pieces missing: “I will always be here, even if you can’t see me.”
+
+A laugh escaped me, startling in its suddenness. Who was I trying to fool? The only clarity I possessed was the chasm between my beliefs and reality, a gulf that widened with every breath. I tucked the note back into the recesses of my mind, a stubborn ember refusing to extinguish. Outside, the figure was gone, consumed by the weeds. Just a figment, I thought. Or perhaps something more real than I cared to admit.
+
+Isn’t that what life amounts to—a tapestry of misinterpretations woven from threads of half-truths? I rose, brushing dust from my palms, the room swirling slightly around me as if it were alive. I was the curator of this disarray, a gallery of spectral echoes, each whisper laden with contradictions. And in that moment, I realized I was not merely an onlooker; I was the artist, crafting a reality from the confusion and doubt that swirled like smoke, always just beyond my grasp, like a mirage shimmering on a sun-baked road.
+          </div>
+        </div>
+        
+        <div class="tab-content" id="tab-reasoning-2" style="display: none;">
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>orchestration-judge</strong>
+              </div>
+              <div class="reason-content" style="display: none;">The current state correctly identifies the phase as 'writing,' and the task was appropriately delegated to an agent capable of providing a critique. The state updates are valid, as they reflect the critique of the writing, highlighting areas for improvement. However, the critique could have been more specific in terms of actionable suggestions for enhancing the character voice and avoiding clichés, which slightly lowers the score.</div>
+            </div>
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>magic-judge</strong>
+              </div>
+              <div class="reason-content" style="display: none;">Focus on developing a more distinct character voice by incorporating unique expressions and personal memories that reflect the character's emotional state, rather than relying on generic phrases and clichés.</div>
+            </div>
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>reverse-intent-judge</strong>
+              </div>
+              <div class="reason-content" style="display: none;">The content successfully captures a reflective and atmospheric tone, immersing the reader in the character's emotional landscape and the physical space. It effectively uses vivid imagery and metaphor to convey feelings of nostalgia and confusion. However, it contains instances of clichéd phrases and generic expressions that detract from the originality and distinctiveness of the character's voice. Strengthening the character's unique perspective and avoiding overused metaphors would enhance the overall impact and clarity of the piece.</div>
+            </div>
+          
+            <div class="reason-block">
+              <div class="reason-header" onclick="toggleReason(this)">
+                <span class="reason-icon">▶</span>
+                <strong>CoherenceJudge</strong>
+              </div>
+              <div class="reason-content" style="display: none;">Coherence assumed good (LLM connection pending)</div>
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+        </div>
+    </div>
+</body>
+</html>
+  

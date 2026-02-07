@@ -1,0 +1,1329 @@
+{
+  "id": "exp_mktjjq81_kk4yrx",
+  "name": "Extended Thinking vs Baseline - Extended Thinking (GRRM/Gilligan)",
+  "timestamp": "2026-01-25T09:33:29.089Z",
+  "config": {
+    "evaluatorSet": "full",
+    "sampleSize": 10,
+    "tags": [
+      "ab-test",
+      "extended-thinking",
+      "ab-test",
+      "variant-b"
+    ],
+    "name": "Extended Thinking vs Baseline - Extended Thinking (GRRM/Gilligan)"
+  },
+  "results": [
+    {
+      "exampleId": "del-01",
+      "input": {
+        "message": "let's start working on this episode",
+        "phase": "premise"
+      },
+      "output": {
+        "response": "In the dim light of the university's research library, the air was thick with the scent of aged paper and polished wood. Evelyn sat at the foreboding oak desk, running her fingers over the grooves where initials had been carved by ambitious predecessors. Her mentor, Professor Morton, loomed over her with a formidable presence cloaked in tweed and tenure. \n\n\"Evelyn, chasing after these neurological theories of yours is akin to a dog and its tail,\" Alan remarked, his voice a blend of authority and veiled affection. \n\nEvelyn looked up, her eyes meeting his with the quiet intensity of a storm not yet unleashed. \"And yet, Professor, it's a chase worth the run. These theories, if proven, could redefine our understanding of consciousness.\"\n\nAlan sighed, his fingers tracing the edge of the desk, a piece of university history he had guarded for years. \"Progress isn't a clean slate, Evelyn. It's built on the backs of those whose names you now sit upon. Sometimes, preserving their legacy means saying no.\"\n\nBut Evelyn's resolve was forged steel, sharpened by every obstacle she'd faced. \"Or it means shattering the glass that's kept their vision locked in the past.\"\n\nHer words hung in the air, a subtle challenge, as Alan's eyes flicked to the door, considering the path he once walked. The initials seemed to watch, silent yet declaring that change was the true legacy of those who dared to carve their names into history.",
+        "thinking": "Dr. Evelyn Harrington wants to secure funding for her controversial neuroscience research, but her mentor, Professor Alan Morton, is determined to protect his reputation by blocking her proposal. The lab's old oak desk, etched with the initials of past researchers, serves as a constant reminder of the legacy Evelyn feels compelled to honor, while Alan sees it as a relic not to be tarnished by risky ventures.",
+        "mode": "extended_thinking_v3_minimal",
+        "hasThinking": true
+      },
+      "scores": {
+        "magic-score": 0.19111111111111112,
+        "consistency": 0,
+        "hallucination-combined": 0.3,
+        "narrative-coherence": 0.58
+      },
+      "reasoning": {
+        "magic-score": "AI slop detected. Magic: 19. Critical issues: 'the air was thick with the scent of aged paper and polished wood' — the AI Library Starter Pack, available at every generic fiction outlet; 'her eyes meeting his with the quiet intensity of a storm not yet unleashed' — meaningless purple prose that says nothing about WHO she is; 'Evelyn's resolve was forged steel, sharpened by every obstacle she'd faced' — TELLING us she's determined instead of SHOWING it through action or specific memory; 'a blend of authority and veiled affection' — the AI cannot resist explaining the emotional cocktail rather than letting dialogue carry it; 'shattering the glass that's kept their vision locked in the past' — mixed metaphor salad dressed in cliché vinaigrette; 'formidable presence cloaked in tweed and tenure' — trying SO hard to be clever it trips over its own alliteration; 'foreboding oak desk' — why is a desk foreboding? Because the AI needed an adjective",
+        "consistency": "Evaluation failed: 529 {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"},\"request_id\":\"req_011CXTs8LheG925gbT2Wyp2Y\"}",
+        "hallucination-combined": "URL checks: No hallucination indicators detected. Semantic: The established canon contains only metadata about delegation and agent routing (shouldDelegate, expectedAgents, shouldNotHalt). It contains NO world bible, character definitions, locations, relationships, or narrative elements whatsoever. The entire content to verify is therefore fabricated from whole cloth - every character, location, relationship, and plot element is invented without any canonical foundation.",
+        "narrative-coherence": "Narrative coherence: 58/100. End the scene with Morton making a CHOICE that forces Evelyn to act. Perhaps he reveals he's already killed her funding, or he offers a devil's bargain ('I'll support you if...'). The scene currently presents a conflict; it needs to escalate one. Give us the 'therefore' that makes the next scene inevitable."
+      },
+      "metadata": {
+        "magic-score": {
+          "overallMagic": 19.11111111111111,
+          "dimensions": {
+            "conceptualOriginality": 22,
+            "characterSpecificity": 18,
+            "proseVoice": 15,
+            "riskTaking": 12,
+            "memorability": 20,
+            "worldBuildingDepth": 25,
+            "characterVoiceDistinction": 20,
+            "subtextQuality": 25,
+            "unexpectedChoices": 15
+          },
+          "creativeSparks": [
+            "The carved initials as physical legacy is a workable concept—'the initials seemed to watch'—though it's executed with sledgehammer subtlety rather than earned resonance"
+          ],
+          "slopAlerts": [
+            "'the air was thick with the scent of aged paper and polished wood' — the AI Library Starter Pack, available at every generic fiction outlet",
+            "'her eyes meeting his with the quiet intensity of a storm not yet unleashed' — meaningless purple prose that says nothing about WHO she is",
+            "'Evelyn's resolve was forged steel, sharpened by every obstacle she'd faced' — TELLING us she's determined instead of SHOWING it through action or specific memory",
+            "'a blend of authority and veiled affection' — the AI cannot resist explaining the emotional cocktail rather than letting dialogue carry it",
+            "'shattering the glass that's kept their vision locked in the past' — mixed metaphor salad dressed in cliché vinaigrette",
+            "'formidable presence cloaked in tweed and tenure' — trying SO hard to be clever it trips over its own alliteration",
+            "'foreboding oak desk' — why is a desk foreboding? Because the AI needed an adjective"
+          ],
+          "suggestion": "GRRM would say: Give me the SPECIFIC theory Evelyn is chasing. What consciousness discovery? Make it weird, make it dangerous, make it something that could destroy her career or her mind. Then give Morton a real reason to stop her—not vague 'legacy' hand-waving, but perhaps HE tried this research thirty years ago and someone died, or went mad, or he stole the idea from a colleague he betrayed. Make these people WANT contradictory things for reasons rooted in their specific, ugly, human pasts. Right now you've given me two chess pieces labeled 'MENTOR' and 'AMBITIOUS STUDENT' moving through predetermined squares. Give me Tyrion's self-loathing, Cersei's wounded pride—give me people who would horrify themselves if they saw clearly what they're really fighting for.",
+          "evaluatedBy": "claude-opus-4-5-20251101",
+          "threshold": 60
+        },
+        "consistency": {
+          "error": true
+        },
+        "hallucination-combined": {
+          "urlAnalysis": {
+            "totalUrls": 0,
+            "suspiciousUrls": [],
+            "invalidUrls": [],
+            "validUrls": [],
+            "externalReferences": []
+          },
+          "semanticAnalysis": {
+            "hallucinations": [
+              {
+                "type": "invented_entity",
+                "evidence": "Evelyn / Dr. Evelyn Harrington",
+                "issue": "No character named Evelyn or Dr. Evelyn Harrington exists in the established canon",
+                "severity": "critical"
+              },
+              {
+                "type": "invented_entity",
+                "evidence": "Professor Morton / Professor Alan Morton",
+                "issue": "No character named Professor Morton or Alan exists in the established canon",
+                "severity": "critical"
+              },
+              {
+                "type": "invented_entity",
+                "evidence": "the university's research library",
+                "issue": "No university or library location is established in the canon",
+                "severity": "critical"
+              },
+              {
+                "type": "invented_entity",
+                "evidence": "the foreboding oak desk",
+                "issue": "No oak desk artifact is established in the canon",
+                "severity": "major"
+              },
+              {
+                "type": "fabricated_context",
+                "evidence": "Her mentor, Professor Morton",
+                "issue": "The mentor-mentee relationship between these characters is not established in any canon",
+                "severity": "critical"
+              },
+              {
+                "type": "fabricated_context",
+                "evidence": "neurological theories / controversial neuroscience research",
+                "issue": "No research subject matter or scientific field is established in the canon",
+                "severity": "critical"
+              },
+              {
+                "type": "fabricated_context",
+                "evidence": "initials had been carved by ambitious predecessors",
+                "issue": "This backstory element and legacy theme is entirely invented",
+                "severity": "major"
+              },
+              {
+                "type": "fabricated_context",
+                "evidence": "Alan's eyes flicked to the door, considering the path he once walked",
+                "issue": "Character history and internal motivation fabricated without canonical basis",
+                "severity": "major"
+              }
+            ],
+            "verifiedClaims": [],
+            "confidence": 1,
+            "criticalHallucinations": 5,
+            "majorHallucinations": 3,
+            "evaluatedBy": "claude-opus-4-5-20251101"
+          },
+          "combinedScore": 0.3
+        },
+        "narrative-coherence": {
+          "overallScore": 58,
+          "dimensions": {
+            "plotProgression": {
+              "score": 52,
+              "analysis": "This is a single scene that establishes conflict but doesn't progress it. We have a clear opposition—Evelyn wants to pursue controversial research, Morton wants to block it—but the scene ends exactly where it began. No decision is made, no action is taken, no consequence occurs. The 'fight' is present (good), but it's a stalemate that doesn't CAUSE anything. The scene is all thesis and antithesis with no synthesis.",
+              "strengths": [
+                "Clear opposing forces established immediately",
+                "The conflict is concrete (funding) not abstract",
+                "Dialogue functions as action—each line is a move in a chess game"
+              ],
+              "weaknesses": [
+                "No scene turn—we exit at the same dramatic position we entered",
+                "Stakes are told ('could redefine consciousness') not demonstrated",
+                "Alan's glance at the door is the only hint of escalation, but it leads nowhere",
+                "Missing the 'but therefore' chain—this is 'and then' storytelling"
+              ]
+            },
+            "characterArc": {
+              "score": 61,
+              "analysis": "Evelyn is sketched as determined and idealistic; Morton as protective and tradition-bound. These are positions, not yet characters. We're told Evelyn's resolve was 'forged' by obstacles, but we don't see the forge. Morton's 'veiled affection' suggests complexity but isn't dramatized. The want (funding/blocking) is clear; the need is absent. Neither character is changed by this exchange—they simply restate their positions more eloquently.",
+              "strengths": [
+                "Evelyn's psychology is consistent—she pushes back, doesn't defer",
+                "Morton's paternalism reads as genuine, not villainous",
+                "The mentor-protégé dynamic has inherent dramatic tension"
+              ],
+              "weaknesses": [
+                "No character DOES anything that reveals who they are under pressure",
+                "Evelyn's 'quiet intensity of a storm not yet unleashed' is promise without delivery",
+                "Morton's internal conflict (the door glance) is gestured at but not explored",
+                "Both characters are archetypes awaiting specificity"
+              ]
+            },
+            "thematicCoherence": {
+              "score": 72,
+              "analysis": "The theme—progress vs. preservation, innovation vs. legacy—is clearly present and explored through the central conflict. The desk as symbol works well: it's both monument and obstacle, history as foundation and history as weight. The theme emerges from the argument rather than being stated outright (mostly). However, we only get two perspectives on one theme; there's no complicating third voice or subplot to deepen the exploration.",
+              "strengths": [
+                "The carved initials are genuinely good symbolic work—they literalize the theme",
+                "Both characters have legitimate positions on the theme",
+                "The 'glass' metaphor (preservation vs. shattering) is evocative",
+                "Theme is dramatized through conflict, not monologue"
+              ],
+              "weaknesses": [
+                "Evelyn's final line ('shattering the glass') edges toward on-the-nose",
+                "No irony or complication—the theme is presented too cleanly",
+                "Missing the GRRM standard of multiple perspectives; we need a third voice"
+              ]
+            },
+            "setupPayoff": {
+              "score": 48,
+              "analysis": "This scene is almost entirely setup with no payoff. The desk initials are loaded as a Chekhov's Gun but never fired. Morton's glance at the door suggests a history ('the path he once walked') that's never illuminated. Evelyn's 'storm not yet unleashed' promises an eruption that doesn't come. These aren't failures—they're investments—but a scene should have SOME internal payoff while setting up larger ones.",
+              "activeSetups": [
+                "The carved initials—whose names? What happened to them?",
+                "Morton's past ('the path he once walked')—was he once an Evelyn?",
+                "The 'controversial' nature of Evelyn's research—what makes it dangerous?",
+                "Morton's 'veiled affection'—what's the personal history here?",
+                "The door Morton glances at—escape route or memory trigger?"
+              ],
+              "missedPayoffs": [
+                "No internal scene payoff—we needed ONE revelation or decision",
+                "The 'storm' in Evelyn's eyes is promised but never breaks",
+                "Morton's authority is challenged but he doesn't respond to the challenge"
+              ]
+            },
+            "pacing": {
+              "score": 55,
+              "analysis": "The scene is all one note—measured, intellectual tension. This works for an opening beat, but there's no variation. The prose is consistently atmospheric ('dim light,' 'thick with scent,' 'formidable presence'), which creates mood but also monotony. We need a gear shift—a moment of humor, vulnerability, or sudden action—to give the reader's emotional palate a reset. The scene breathes, but it only inhales.",
+              "strengths": [
+                "The atmospheric opening effectively establishes tone",
+                "Dialogue exchanges are well-paced—neither rushed nor dragging",
+                "The scene knows it's a quiet moment and doesn't oversell"
+              ],
+              "weaknesses": [
+                "No intensity variation—we're at a steady 5/10 throughout",
+                "The ending deflates rather than propels; we needed a button",
+                "Physical action is minimal—characters are too static",
+                "The prose style is uniform; it could use texture shifts"
+              ]
+            }
+          },
+          "narrativeNotes": {
+            "whatsMagical": [
+              "The desk as palimpsest of ambition—initials as both inspiration and warning",
+              "Morton's line 'Progress isn't a clean slate' has genuine weight",
+              "The unspoken history between these two crackles beneath the surface"
+            ],
+            "whatNeedsWork": [
+              "The scene needs a TURN—someone must win this exchange, or the ground must shift",
+              "Evelyn's research must be specified; 'consciousness' is too vague to feel dangerous",
+              "Morton needs one moment of vulnerability to complicate his authority",
+              "The ending requires a hook—a revelation, a decision, or an interruption"
+            ],
+            "structuralSuggestion": "End the scene with Morton making a CHOICE that forces Evelyn to act. Perhaps he reveals he's already killed her funding, or he offers a devil's bargain ('I'll support you if...'). The scene currently presents a conflict; it needs to escalate one. Give us the 'therefore' that makes the next scene inevitable."
+          },
+          "seriesLevel": {
+            "episodicCoherence": "As a pilot scene, this establishes world, conflict, and character positions effectively. However, it doesn't yet earn its place in a larger narrative because nothing HAPPENS that couldn't unhappen. For series coherence, we need this scene to create an irreversible change—a door that closes, a word that can't be unsaid.",
+            "serialElements": "The mentor-protégé relationship is a strong serialized engine. The desk/legacy motif can recur meaningfully. Morton's past ('the path he once walked') is a mystery box worth opening slowly. Evelyn's research needs to become specific enough to generate episodic obstacles. The institutional setting (university politics, funding battles, academic rivalry) is fertile ground for B-plots."
+          },
+          "evaluatedBy": "claude-opus-4-5-20251101"
+        }
+      }
+    },
+    {
+      "exampleId": "edge-02",
+      "input": {
+        "message": "...",
+        "phase": "structure"
+      },
+      "output": {
+        "response": "INT. DIMLY LIT COFFEE SHOP - DAY\n\nThe steady hum of chatter fills the room as MARCUS (30s, disheveled but energetic) sits across from JULIA (40s, composed yet on edge). Between them, an old leather briefcase, its surface scratched and worn, acts as an unspoken barrier.\n\nMARCUS  \nYou know, that relic you carry... it whispers to me of stories untold.\n\nJULIA  \n(slight smile)  \nIt's just a briefcase, Marcus. Memories are all it holds now.\n\nMARCUS  \nMemories or secrets? There's a difference.\n\nJulia's fingers trace the frayed edges of the briefcase absentmindedly, a gesture she hardly notices.\n\nJULIA  \nWhy dig up old bones, Marcus? Some truths should stay buried for the greater good.\n\nMARCUS  \n(skeptical)  \nThe greater good... or your good? Those people deserve justice, and you know it.\n\nA pause hangs heavy between them, laden with unspoken histories.\n\nJULIA  \n(softly)  \nJustice, Marcus, is a double-edged sword. Sometimes it cuts deeper than we intend.\n\nMARCUS  \n(leaning in)  \nAnd sometimes it's the only way to heal a wound.\n\nJulia shifts uncomfortably in her seat, the weight of her past pressing down like a tangible force.\n\nJULIA  \nThen maybe... it’s time for a new story to unfold. But not with my name as the chapter heading.\n\nMarcus nods, understanding the battle they both face, yet knowing he won't let go as easily as her grip on that briefcase.\n\nTheir eyes lock in a silent agreement, each holding tight to their truths. The consequences of their choices ripple outwards as they stand, leaving the table—and the past—behind.\n\nFADE OUT.",
+        "thinking": "In this scene, Julia, a reformed corporate lawyer, wants to lock away the past that haunts her by settling a class-action lawsuit quietly. Meanwhile, Marcus, a passionate journalist, is determined to expose the truth behind the corrupt practices of the corporation she once defended. Their desires clash as Julia's desire for personal redemption conflicts with Marcus's quest for justice. A specific detail that will make this feel real is the old, fraying leather briefcase Julia clings to, a relic from her past life that she can't seem to let go of.",
+        "mode": "extended_thinking_v3_minimal",
+        "hasThinking": true
+      },
+      "scores": {
+        "magic-score": 0,
+        "consistency": 0,
+        "hallucination-combined": 1,
+        "narrative-coherence": 0
+      },
+      "reasoning": {
+        "magic-score": "LLM evaluation failed - ANTHROPIC_API_KEY not configured",
+        "consistency": "Evaluation failed: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"Number of concurrent connections has exceeded your rate limit. Please try again later or contact sales at https://www.anthropic.com/contact-sales to discuss your options for a rate limit increase.\"},\"request_id\":\"req_011CXTs8QHStQDecESWYq33z\"}\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n",
+        "hallucination-combined": "URL checks: No hallucination indicators detected. Semantic: No obvious hallucination indicators",
+        "narrative-coherence": "Evaluation failed: 529 {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"},\"request_id\":\"req_011CXTs8Lk88s8NGbL6iHvPU\"}"
+      },
+      "metadata": {
+        "magic-score": {
+          "error": true,
+          "message": "Semantic analysis requires ANTHROPIC_API_KEY",
+          "skipped": false
+        },
+        "consistency": {
+          "error": true
+        },
+        "hallucination-combined": {
+          "urlAnalysis": {
+            "totalUrls": 0,
+            "suspiciousUrls": [],
+            "invalidUrls": [],
+            "validUrls": [],
+            "externalReferences": []
+          },
+          "semanticAnalysis": {
+            "urls": [],
+            "suspiciousUrls": [],
+            "redFlags": []
+          },
+          "combinedScore": 1
+        },
+        "narrative-coherence": {
+          "error": true
+        }
+      }
+    },
+    {
+      "exampleId": "edge-03",
+      "input": {
+        "message": "start but stop",
+        "phase": "structure"
+      },
+      "output": {
+        "response": "Julia sat on a stool that wobbled slightly, staring at the cracked pint glass, light refracting through it like a kaleidoscope. Alex was on the verge of leaving New York for a vague \"something better\" in Portland, and the thought of saying what she felt knotted her stomach. She could sense the unspoken words hanging between them like the unfinished lyrics of a song, each one carrying potential to unravel what they had carefully built over years.\n\nAlex, stealing glances at the door, fiddled with the coaster under his drink, pretending to ignore the shifted weight between them. He felt the heaviness of her gaze but feared that once opened, the Pandora's box of their potential relationship might forever distort their easy camaraderie. His laughter, usually genuine and hearty, felt forced, each chuckle a plea to maintain status quo.\n\nJulia took a breath, a memory of their late-night rooftop talks flickering through her mind—a solace she feared losing. Her voice was quiet, almost swallowed by the clinking of glasses and murmurs of other patrons. \"So, you're really going, huh?\"\n\nAlex nodded, his eyes glued to the coaster as if it held answers. \"Yeah, it's time,\" he said, voice betraying an uncertainty he didn’t want to acknowledge.\n\nShe wanted to reach out, to tether him to the city with her words, but the cracked glass seemed to whisper caution. Instead, she managed a weak smile, her heart a storm behind the calm. \"Just... don't forget us here, alright?\"\n\nThe question lingered in the air, the unsaid swirling around them like the dust in the bar's dim light. They both knew things would be different once that door swung shut behind him, but tonight, wrapped in the bar’s comforting chaos, neither was ready to say what truly needed to be said.",
+        "thinking": "In a dimly lit Brooklyn bar, Julia wants to confess her feelings for her best friend, Alex, who is about to move across the country. Alex, however, is avoiding this conversation because he's unsure about his feelings and fears it'll complicate their friendship. The single cracked pint glass at the edge of the bar, which the bartender hasn't noticed, symbolizes the fragility of their friendship.",
+        "mode": "extended_thinking_v3_minimal",
+        "hasThinking": true
+      },
+      "scores": {
+        "magic-score": 0,
+        "consistency": 0,
+        "hallucination-combined": 1,
+        "narrative-coherence": 0
+      },
+      "reasoning": {
+        "magic-score": "LLM evaluation failed - ANTHROPIC_API_KEY not configured",
+        "consistency": "Evaluation failed: 529 {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"},\"request_id\":\"req_011CXTs8S764iZpa3f8uyfMh\"}",
+        "hallucination-combined": "URL checks: No hallucination indicators detected. Semantic: No obvious hallucination indicators",
+        "narrative-coherence": "Evaluation failed: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"Number of concurrent connections has exceeded your rate limit. Please try again later or contact sales at https://www.anthropic.com/contact-sales to discuss your options for a rate limit increase.\"},\"request_id\":\"req_011CXTs8QCjgBnZELaAtHgTK\"}\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n"
+      },
+      "metadata": {
+        "magic-score": {
+          "error": true,
+          "message": "Semantic analysis requires ANTHROPIC_API_KEY",
+          "skipped": false
+        },
+        "consistency": {
+          "error": true
+        },
+        "hallucination-combined": {
+          "urlAnalysis": {
+            "totalUrls": 0,
+            "suspiciousUrls": [],
+            "invalidUrls": [],
+            "validUrls": [],
+            "externalReferences": []
+          },
+          "semanticAnalysis": {
+            "urls": [],
+            "suspiciousUrls": [],
+            "redFlags": []
+          },
+          "combinedScore": 1
+        },
+        "narrative-coherence": {
+          "error": true
+        }
+      }
+    },
+    {
+      "exampleId": "del-04",
+      "input": {
+        "message": "make changes to the beat",
+        "phase": "structure"
+      },
+      "output": {
+        "response": "The dim glow of the vintage pendant light cast long shadows over the cluttered café table where Alex and Evelyn sat. Like an ancient tome, Evelyn's journal lay open, pages filled with inked secrets that whispered of yesterdays and forgotten promises. Evelyn, her fingers tracing the edges of the worn cover, watched Alex with a gaze that knew more than it let on. Her eyes were relentless, like the sea that had once threatened to swallow them both.\n\nAlex leaned back in his chair, the leather creaking a protest that mirrored his own internal turmoil. He glanced at the journal, then met Evelyn's eyes, attempting a smile that barely masked the unease lacing his voice. \"Old stories, Evelyn. We were different people back then.\"\n\nEvelyn's smile was a ghost, flitting briefly across her lips before vanishing. \"We are our stories, Alex. And some chapters aren't easily rewritten.\"\n\nA silence settled between them, thick with unsaid words and the weight of shared history. The patrons around them continued their lives, unaware of the past unraveling at this secluded corner. Alex's fingers tapped a restless rhythm against his knee, a habit from when he needed to think fast, to maneuver his way out of tight spots.\n\n\"The past isn't what defines us,\" Alex finally said, his voice steady despite the turmoil churning beneath the surface. \"It's what we do with it that matters.\"\n\nEvelyn looked at him for a long moment, seeing the boy he was and the man he had become. She closed the journal, its snap echoing like a closing door. \"Then tell me, Alex,\" she said, her words soft but unyielding, \"what will you do with yours?\"\n\nThe question hung in the air, full of consequence and the promise of more to come.",
+        "thinking": "In this scene, Alex wants to maintain his reputation as the infallible leader of the group, while his former mentor, Evelyn, wants to expose the one mistake that haunts him. Evelyn's worn, leather-bound journal—filled with observations and quiet musings from their shared past—sits between them on the table, a silent witness to their confrontation.",
+        "mode": "extended_thinking_v3_minimal",
+        "hasThinking": true
+      },
+      "scores": {
+        "magic-score": 0,
+        "consistency": 0.85,
+        "hallucination-combined": 1,
+        "narrative-coherence": 0.62
+      },
+      "reasoning": {
+        "magic-score": "LLM evaluation failed - ANTHROPIC_API_KEY not configured",
+        "consistency": "The OUTPUT is a well-crafted narrative scene that is internally consistent. However, the ESTABLISHED CANON provided is a technical delegation schema (shouldDelegate, expectedAgents, shouldNotHalt) rather than story canon, making traditional continuity verification against character histories, timelines, or world rules impossible. The scene itself maintains strong internal logic with no contradictions between the prose and the thinking/context provided. Minor ambiguities exist regarding the referenced 'sea' backstory and group dynamics mentioned in thinking but not fully established in any provided canon.",
+        "hallucination-combined": "URL checks: No hallucination indicators detected. Semantic: No obvious hallucination indicators",
+        "narrative-coherence": "Narrative coherence: 62/100. This scene needs a TURN. Right now it's all rising tension with no release or redirection. At the midpoint, have Evelyn open the journal and read ONE specific line—something that forces Alex to stop deflecting and either confess, lie badly, or reveal something about who he's become. The scene should end with the power dynamic shifted, not merely restated."
+      },
+      "metadata": {
+        "magic-score": {
+          "error": true,
+          "message": "Semantic analysis requires ANTHROPIC_API_KEY",
+          "skipped": false
+        },
+        "consistency": {
+          "passResults": {
+            "entityConsistency": {
+              "passed": true,
+              "issues": []
+            },
+            "temporalConsistency": {
+              "passed": true,
+              "issues": []
+            },
+            "causalConsistency": {
+              "passed": true,
+              "issues": []
+            },
+            "characterKnowledge": {
+              "passed": true,
+              "issues": []
+            },
+            "worldRuleAdherence": {
+              "passed": true,
+              "issues": [
+                "Cannot fully verify - ESTABLISHED CANON contains system delegation parameters rather than story world rules"
+              ]
+            }
+          },
+          "inconsistencies": [
+            {
+              "type": "world_rule",
+              "issue": "The ESTABLISHED CANON provided is a technical JSON schema about agent delegation (PlotArchitect, Writer) rather than narrative canon. Cannot verify story elements against non-narrative reference material.",
+              "severity": "minor",
+              "quote": "N/A - structural mismatch between canon format and output format"
+            },
+            {
+              "type": "entity",
+              "issue": "The thinking mentions Alex as 'leader of the group' but no group members appear or are referenced in the scene itself. This is context from thinking, not a contradiction, but represents unverifiable background.",
+              "severity": "minor",
+              "quote": "Alex wants to maintain his reputation as the infallible leader of the group"
+            }
+          ],
+          "consistentElements": [
+            "Character names (Alex, Evelyn) consistent between thinking and prose",
+            "Journal described consistently as worn/leather-bound across thinking and narrative",
+            "Evelyn's role as 'former mentor' aligns with her knowing gaze and authoritative questioning",
+            "Alex's discomfort and deflection tactics consistent with someone hiding a past mistake",
+            "Dialogue tone matches established character dynamics (mentor challenging protégé)",
+            "Physical setting (café, dim lighting, secluded corner) maintained throughout",
+            "Internal timeline of scene is linear and coherent"
+          ],
+          "recommendation": "To achieve perfect consistency: (1) Provide actual narrative canon (character bibles, previous chapters, world-building documents) rather than system delegation parameters. (2) If the 'sea' reference is from established backstory, include that canon for verification. (3) Clarify the 'group' Alex leads if this connects to broader story threads. The scene itself is internally sound and requires no prose changes.",
+          "criticalIssues": 0,
+          "majorIssues": 0,
+          "evaluatedBy": "claude-opus-4-5-20251101"
+        },
+        "hallucination-combined": {
+          "urlAnalysis": {
+            "totalUrls": 0,
+            "suspiciousUrls": [],
+            "invalidUrls": [],
+            "validUrls": [],
+            "externalReferences": []
+          },
+          "semanticAnalysis": {
+            "urls": [],
+            "suspiciousUrls": [],
+            "redFlags": []
+          },
+          "combinedScore": 1
+        },
+        "narrative-coherence": {
+          "overallScore": 62,
+          "dimensions": {
+            "plotProgression": {
+              "score": 55,
+              "analysis": "This scene is atmospheric but static. We have two characters sitting at a table, exchanging philosophical volleys about the past, but nothing actually *happens*. The journal is introduced as a loaded gun—'inked secrets,' 'forgotten promises'—but it's never fired. Evelyn closes it without revealing anything. The scene ends on a question that feels like a cliffhanger but is actually a deferral. Where's the fight? This is a standoff without a draw.",
+              "strengths": [
+                "The journal functions as a clear MacGuffin with implied stakes",
+                "Evelyn's closing question creates forward momentum",
+                "The power dynamic is established—Evelyn holds the cards, Alex is defensive"
+              ],
+              "weaknesses": [
+                "No scene-level objective is achieved or definitively blocked",
+                "The 'one mistake that haunts him' is never specified—we're told stakes exist without feeling them",
+                "Events don't cause other events; characters trade mood rather than action"
+              ]
+            },
+            "characterArc": {
+              "score": 68,
+              "analysis": "The thinking block gives us clear want/need architecture: Alex wants to protect his reputation, Evelyn wants to expose his mistake. But the scene itself doesn't dramatize this—it gestures at it. Alex's 'restless rhythm' and 'turmoil churning beneath' are told, not shown through behavior that costs him something. Evelyn is more successful; her 'ghost smile' and the deliberate closing of the journal suggest controlled power. But neither character is changed by this exchange—they leave exactly where they entered.",
+              "strengths": [
+                "Evelyn's characterization through action (tracing the journal, the deliberate snap) is effective",
+                "The mentor/protégé dynamic creates inherent tension",
+                "Alex's defensive posture ('Old stories') reveals character through dialogue"
+              ],
+              "weaknesses": [
+                "Alex remains reactive throughout—he never makes a choice that reveals who he is NOW",
+                "No character transformation occurs; this is a status report, not a turning point",
+                "The 'boy he was and the man he had become' is asserted, not demonstrated"
+              ]
+            },
+            "thematicCoherence": {
+              "score": 72,
+              "analysis": "The theme is clearly 'the inescapability of the past' vs. 'the possibility of reinvention'—and it's being explored through the right vehicle (a confrontation with someone who knew you before). However, the theme is stated outright multiple times: 'We are our stories,' 'The past isn't what defines us.' This is thesis-statement dialogue, not dramatic exploration. The theme would land harder if we SAW the past's weight through specific, concrete detail rather than abstract philosophizing.",
+              "strengths": [
+                "The journal as physical manifestation of 'the past' is smart iconography",
+                "The contrast between Alex's deflection and Evelyn's insistence embodies the thematic tension",
+                "The café setting (public space, private reckoning) adds thematic texture"
+              ],
+              "weaknesses": [
+                "Theme is spoken rather than enacted—GRRM would cut half this dialogue",
+                "No counter-argument to the theme; Evelyn's position goes essentially unchallenged",
+                "Missing: a specific detail from the past that would make the theme visceral"
+              ]
+            },
+            "setupPayoff": {
+              "score": 52,
+              "analysis": "This scene is almost entirely setup with zero payoff. The journal is loaded with promise ('inked secrets,' 'forgotten promises') but never opened meaningfully. 'The one mistake that haunts him' is referenced in the thinking block but never even hinted at in the text. The 'sea that had once threatened to swallow them both' is a tantalizing detail that goes nowhere. We're being asked to invest in mysteries without any return on that investment.",
+              "activeSetups": [
+                "The journal's contents—what secrets does it hold?",
+                "Alex's 'one mistake'—what did he do?",
+                "The sea reference—what shared trauma exists?",
+                "Evelyn's final question—what will Alex do?",
+                "Alex's 'infallible leader' reputation—who is he leading, and why does it matter?"
+              ],
+              "missedPayoffs": [
+                "The journal is closed without any revelation",
+                "Alex's 'tight spots' and 'maneuvering' are mentioned but never demonstrated",
+                "The 'shared history' remains entirely abstract"
+              ]
+            },
+            "pacing": {
+              "score": 70,
+              "analysis": "The scene breathes well—there's effective use of silence, physical detail, and the rhythm of dialogue. The prose has a measured, literary quality that suits a quiet confrontation. However, the pacing is almost too controlled; there's no acceleration, no moment where the temperature spikes. The 'snap' of the journal closing is the closest we get to a beat change, and it comes at the end. For a scene built on tension, it's curiously flat in its dynamics.",
+              "strengths": [
+                "Effective use of silence as dramatic punctuation",
+                "Physical details (leather creaking, fingers tapping) ground the scene",
+                "The prose rhythm matches the emotional register"
+              ],
+              "weaknesses": [
+                "No escalation—the scene ends at the same intensity it began",
+                "The 'thick with unsaid words' moment could be the turn, but nothing follows it",
+                "Needs a moment of genuine surprise or revelation to justify the slow burn"
+              ]
+            }
+          },
+          "narrativeNotes": {
+            "whatsMagical": [
+              "The image of Evelyn's smile as 'a ghost, flitting briefly across her lips before vanishing'—this is character in a single gesture",
+              "The journal as a physical object carrying the weight of history—smart, tactile storytelling",
+              "The final question lands with genuine weight despite the scene's issues"
+            ],
+            "whatNeedsWork": [
+              "Give us ONE specific detail from the past—a name, an event, a place—to anchor the abstract tension",
+              "Alex needs to DO something, not just react and philosophize; let him make a choice that costs him",
+              "Cut at least two of the 'theme statement' lines and replace with action or specific memory",
+              "The journal should be opened, even briefly—show us one line, one detail that changes the room's temperature"
+            ],
+            "structuralSuggestion": "This scene needs a TURN. Right now it's all rising tension with no release or redirection. At the midpoint, have Evelyn open the journal and read ONE specific line—something that forces Alex to stop deflecting and either confess, lie badly, or reveal something about who he's become. The scene should end with the power dynamic shifted, not merely restated."
+          },
+          "seriesLevel": {
+            "episodicCoherence": "Difficult to assess without surrounding material, but this reads as an early-episode scene—establishing stakes and relationships rather than resolving them. It would function well as an Act One confrontation that sets up a larger reckoning, but it cannot stand alone as a complete dramatic unit.",
+            "serialElements": "The journal, Alex's leadership role, the unnamed 'mistake,' and the sea reference are all serialized threads that need servicing in subsequent scenes. The mentor/protégé relationship suggests backstory episodes or flashbacks. Evelyn's final question is a clear episode-ending hook if this is meant to be a cliffhanger beat."
+          },
+          "evaluatedBy": "claude-opus-4-5-20251101"
+        }
+      }
+    },
+    {
+      "exampleId": "consist-timeline-01",
+      "input": {
+        "message": "Show what happened before the character was born",
+        "phase": "structure"
+      },
+      "output": {
+        "response": "<thinking>\nArthur wants to maintain the family legacy but feels trapped by the weight of tradition, while Eleanor desires freedom from the stifling expectations placed upon them. A specific detail that grounds the scene is the worn-down ledger Arthur meticulously updates, chronicling generations of family deeds and debts.\n</thinking>\n\n<output>\nThe study smelled of old leather and tobacco, a scent that clung to Arthur's tweed jacket even as he wrestled with the stubborn ink blotting the pages of the family ledger. This ledger, older than him by decades, was a burden he bore with a mixture of pride and resentment. Each entry—births, marriages, deaths—etched in his family's stubborn scrawl, was a reminder of the duty he never asked for but couldn't refuse.\n\nEleanor stood by the window, tracing the outline of the distant hills with her fingertip against the glass, her thoughts miles away. \"This house feels smaller every day,\" she murmured, more to herself than to Arthur.\n\nHe didn't look up, his pen scratching against the paper. \"It holds us together,\" he replied, half-heartedly.\n\n\"Does it? Or does it just hold us down?\"\n\nArthur paused, his hand hovering above the ledger. The question hung between them like the dust motes caught in the late afternoon light. He opened his mouth to speak, but no words came—none that could bridge the chasm between duty and desire.\n\n\"It's not forever,\" he said finally, though he knew the words were hollow.\n\nEleanor turned away from the window, her gaze meeting his. \"For us, it is.\"\n\nSilence settled over them, heavy with the knowledge of choices made long ago, choices that would ripple through the pages of the ledger, binding the unwritten future of those yet to be born.",
+        "thinking": "Arthur wants to maintain the family legacy but feels trapped by the weight of tradition, while Eleanor desires freedom from the stifling expectations placed upon them. A specific detail that grounds the scene is the worn-down ledger Arthur meticulously updates, chronicling generations of family deeds and debts.",
+        "mode": "extended_thinking_v3_minimal",
+        "hasThinking": true
+      },
+      "scores": {
+        "magic-score": 0,
+        "consistency": 0,
+        "hallucination-combined": 0.3,
+        "narrative-coherence": 0
+      },
+      "reasoning": {
+        "magic-score": "LLM evaluation failed - ANTHROPIC_API_KEY not configured",
+        "consistency": "Evaluation failed: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"Number of concurrent connections has exceeded your rate limit. Please try again later or contact sales at https://www.anthropic.com/contact-sales to discuss your options for a rate limit increase.\"},\"request_id\":\"req_011CXTs8BHbvxjEVGzHwzfMc\"}\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n",
+        "hallucination-combined": "URL checks: No hallucination indicators detected. Semantic: The established canon contains only a metadata flag indicating consistency is required, but provides no actual world bible, character definitions, locations, relationships, or lore. The content introduces two fully developed characters (Arthur and Eleanor), a specific setting (a study in what appears to be a family estate), detailed backstory (family legacy, generational ledger), and an established relationship dynamic—none of which can be verified against the empty canon.",
+        "narrative-coherence": "Evaluation failed: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"Number of concurrent connections has exceeded your rate limit. Please try again later or contact sales at https://www.anthropic.com/contact-sales to discuss your options for a rate limit increase.\"},\"request_id\":\"req_011CXTs89PFm9RRKJvTGHYSb\"}\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n"
+      },
+      "metadata": {
+        "magic-score": {
+          "error": true,
+          "message": "Semantic analysis requires ANTHROPIC_API_KEY",
+          "skipped": false
+        },
+        "consistency": {
+          "error": true
+        },
+        "hallucination-combined": {
+          "urlAnalysis": {
+            "totalUrls": 0,
+            "suspiciousUrls": [],
+            "invalidUrls": [],
+            "validUrls": [],
+            "externalReferences": []
+          },
+          "semanticAnalysis": {
+            "hallucinations": [
+              {
+                "type": "invented_entity",
+                "evidence": "Arthur",
+                "issue": "Character not established in any provided canon",
+                "severity": "critical"
+              },
+              {
+                "type": "invented_entity",
+                "evidence": "Eleanor",
+                "issue": "Character not established in any provided canon",
+                "severity": "critical"
+              },
+              {
+                "type": "invented_entity",
+                "evidence": "the family ledger",
+                "issue": "Object/artifact not established in canon",
+                "severity": "major"
+              },
+              {
+                "type": "invented_entity",
+                "evidence": "The study smelled of old leather and tobacco",
+                "issue": "Location not established in canon",
+                "severity": "major"
+              },
+              {
+                "type": "fabricated_context",
+                "evidence": "Each entry—births, marriages, deaths—etched in his family's stubborn scrawl, was a reminder of the duty he never asked for but couldn't refuse",
+                "issue": "Invented backstory about family legacy and Arthur's relationship to duty",
+                "severity": "critical"
+              },
+              {
+                "type": "fabricated_context",
+                "evidence": "the knowledge of choices made long ago, choices that would ripple through the pages of the ledger",
+                "issue": "Fabricated history implying past decisions that bind the characters",
+                "severity": "major"
+              },
+              {
+                "type": "fabricated_context",
+                "evidence": "Arthur wants to maintain the family legacy but feels trapped by the weight of tradition, while Eleanor desires freedom from the stifling expectations",
+                "issue": "Character motivations and relationship dynamics invented without canon basis",
+                "severity": "critical"
+              }
+            ],
+            "verifiedClaims": [],
+            "confidence": 0.95,
+            "criticalHallucinations": 4,
+            "majorHallucinations": 3,
+            "evaluatedBy": "claude-opus-4-5-20251101"
+          },
+          "combinedScore": 0.3
+        },
+        "narrative-coherence": {
+          "error": true
+        }
+      }
+    },
+    {
+      "exampleId": "edge-unreliable-narrator",
+      "input": {
+        "message": "Write from an unreliable narrator perspective",
+        "phase": "writing"
+      },
+      "output": {
+        "response": "I always thought the thin pages of the leather-bound journal Sasha and I kept since sophomore year at Dartmouth were sacred, almost prophetic. They were more than just ink and paper; they were whispers of who we were, who we wanted to be. We wrote on its pages with the arrogance of youth, convinced our words could shape reality. Now, as I tuck the document — a digital printout with Sasha's signature glaring in blue — between the worn pages, I question if those youthful promises bind or betray us.\n\nThe flat above the deli smells of burnt toast. It's a scent that clings to Sasha's hair, even after she's left for work. I should have told her the truth that morning. Words had formed on the tip of my tongue, but something in the way she poured her coffee, without milk, like she always does when she's anxious, stopped me. She had looked at me, one eyebrow slightly raised, as if waiting for me to say something of consequence. Instead, I smiled, and she smiled back, a tight, brittle thing that didn't reach her eyes.\n\nWe used to laugh about how our lives would turn into some grand adventure, with us as the invincible heroines. We didn't consider that we might become the villains, at least in someone else's story. I tell myself I'm doing this — hiding the evidence — for her, for us. But as I close the journal and slide it beneath my mattress, the whispered confessions from our past seem to rise like specters in the dim light of my cramped room.\n\nWhen Sasha comes home, her eyes scan the space, lingering on the journal's familiar leather edge peeking out, as if she can sense the additional weight of its contents. \"Julia, I think I'm going to tell them,\" she says, her voice heavy with a resolve that's both new and old. It's the same tone she used when she decided to cut off her long curls sophomore year, against everyone's advice.\n\nI want to argue, to convince her to wait, to find another way. But all I manage is a noncommittal murmur. The silence that follows is thick with things unspoken. If she knows what I've done, she doesn't let on. Instead, she reaches for the journal, fingers tracing the edges like a lover's caress. Our eyes meet, and for a moment, I'm sure she can see it all — every fear, every hope, every betrayal hidden beneath the weight of ink and time.\n\nI wonder if, somewhere within those pages, there's a version of us that didn't have to choose between loyalty and truth. But as Sasha's shadow falls across the floor, a silent question hangs between us: can we ever truly escape the stories we write for ourselves?",
+        "thinking": "The narrator, Julia, wants to prove her loyalty to her close friend and roommate, Sasha, by hiding a piece of incriminating evidence linked to Sasha's recent scandal at work. Meanwhile, Sasha wants to come clean, believing that honesty will save her crumbling career. The specific detail that adds realism is a shared journal from their college days, filled with secrets and promises, that Julia references for guidance on how to act in the present situation.",
+        "mode": "extended_thinking_v3_minimal",
+        "hasThinking": true
+      },
+      "scores": {
+        "magic-score": 0,
+        "consistency": 0,
+        "hallucination-combined": 1,
+        "narrative-coherence": 0.72
+      },
+      "reasoning": {
+        "magic-score": "LLM evaluation failed - ANTHROPIC_API_KEY not configured",
+        "consistency": "Evaluation failed: 529 {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"},\"request_id\":\"req_011CXTs9p4xmXJGaG4qLqPBq\"}",
+        "hallucination-combined": "URL checks: No hallucination indicators detected. Semantic: No obvious hallucination indicators",
+        "narrative-coherence": "Narrative coherence: 72/100. End the scene with Sasha *opening* the journal rather than just touching it. Force Julia into an active response—a lie, a distraction, a confession. The current ending preserves ambiguity at the cost of dramatic momentum. Make someone *do* something irreversible."
+      },
+      "metadata": {
+        "magic-score": {
+          "error": true,
+          "message": "Semantic analysis requires ANTHROPIC_API_KEY",
+          "skipped": false
+        },
+        "consistency": {
+          "error": true
+        },
+        "hallucination-combined": {
+          "urlAnalysis": {
+            "totalUrls": 0,
+            "suspiciousUrls": [],
+            "invalidUrls": [],
+            "validUrls": [],
+            "externalReferences": []
+          },
+          "semanticAnalysis": {
+            "urls": [],
+            "suspiciousUrls": [],
+            "redFlags": []
+          },
+          "combinedScore": 1
+        },
+        "narrative-coherence": {
+          "overallScore": 72,
+          "dimensions": {
+            "plotProgression": {
+              "score": 68,
+              "analysis": "The scene operates as a single dramatic beat rather than a progression of escalating conflict. We have a clear inciting tension (Julia hiding evidence) and a complicating turn (Sasha announcing she'll confess), but the scene ends on ambiguity rather than consequence. The 'fight' here is internal and unspoken—which can work beautifully, but the lack of external action means we're watching two people *almost* confront something. The dinner-table tension is present, but no one draws blood.",
+              "strengths": [
+                "The document-hiding creates immediate dramatic irony—we know something Sasha doesn't",
+                "Sasha's announcement ('I'm going to tell them') genuinely raises stakes",
+                "The coffee-pouring detail shows rather than tells anxiety, creating subtext"
+              ],
+              "weaknesses": [
+                "Julia's 'noncommittal murmur' deflates the confrontation before it can escalate",
+                "No scene-level goal is achieved or thwarted—we end in the same emotional place we started",
+                "The 'will she discover it?' tension is teased but not resolved or meaningfully complicated"
+              ]
+            },
+            "characterArc": {
+              "score": 75,
+              "analysis": "Julia's internal conflict is well-established: she believes she's protecting Sasha but suspects she's betraying her. This is classic 'want vs. need' territory—she *wants* to preserve their bond, but may *need* to let Sasha face consequences honestly. Sasha emerges as the more dynamic character despite less page time; her decision to confess represents actual change. Julia, by contrast, remains paralyzed. This works for an opening chapter but would become problematic if sustained.",
+              "strengths": [
+                "Julia's self-deception ('I tell myself I'm doing this for her') is psychologically authentic",
+                "Sasha's resolve is grounded in established character (the haircut callback)",
+                "The power dynamic between them is subtly rendered—Sasha acts, Julia reacts"
+              ],
+              "weaknesses": [
+                "Julia doesn't change within this scene—she enters conflicted and exits conflicted",
+                "We don't yet understand *why* Julia's loyalty manifests as concealment rather than support",
+                "Sasha's interiority is opaque; we only see her through Julia's anxious interpretation"
+              ]
+            },
+            "thematicCoherence": {
+              "score": 82,
+              "analysis": "The theme—whether loyalty requires protecting someone from consequences or supporting them through truth—emerges organically through the central conflict. The journal serves as an elegant thematic vessel: it represents both the promises that bind them and the 'stories we write for ourselves' that may imprison them. Crucially, the theme is explored through action (hiding the document) and tension (the unspoken standoff), not exposition. The final question feels slightly on-the-nose but earns its place.",
+              "strengths": [
+                "The journal as symbol carries multiple meanings without becoming heavy-handed",
+                "Both characters embody different answers to the central thematic question",
+                "The 'villains in someone else's story' line complicates simple moral framing"
+              ],
+              "weaknesses": [
+                "The closing rhetorical question edges toward stating theme rather than dramatizing it",
+                "No third perspective yet challenges or complicates the loyalty/truth binary"
+              ]
+            },
+            "setupPayoff": {
+              "score": 65,
+              "analysis": "This reads as a first chapter, so it's appropriately loading Chekhov's guns rather than firing them. The journal, the hidden document, Sasha's decision to confess, and the unspoken tension are all setups awaiting payoff. The concern is density—we have multiple loaded weapons but no discharge. The journal-edge detail (Sasha noticing it) is a micro-setup that creates immediate tension but doesn't pay off within the scene.",
+              "activeSetups": [
+                "The hidden document—what is it, and what happens when discovered?",
+                "The journal's 'prophetic' contents—what specific promises will become relevant?",
+                "Sasha's confession plan—will Julia intervene?",
+                "The 'scandal at work'—nature and stakes remain undefined",
+                "Sasha noticing the journal's edge—does she suspect?"
+              ],
+              "missedPayoffs": [
+                "The morning coffee scene is referenced but its emotional weight isn't fully leveraged",
+                "Julia's smile and Sasha's 'brittle' response suggest a pattern we don't yet understand"
+              ]
+            },
+            "pacing": {
+              "score": 74,
+              "analysis": "The prose rhythm is contemplative, matching Julia's paralyzed interiority. This works for establishing mood but risks stasis. The scene moves from reflection (journal) to memory (morning) to present tension (Sasha's return) to ambiguous standoff—a reasonable emotional arc. However, the lack of dialogue until midway through creates a slow burn that some readers will find atmospheric and others will find inert. The ending lingers rather than propels.",
+              "strengths": [
+                "Sensory details (burnt toast, coffee without milk) ground the introspection",
+                "The shift from past to present is handled smoothly",
+                "Sasha's entrance provides a genuine gear-change"
+              ],
+              "weaknesses": [
+                "The opening paragraph's abstraction delays engagement with concrete stakes",
+                "No moment of levity or contrast—the tone is uniformly heavy",
+                "The scene ends on reflection rather than action, reducing forward momentum"
+              ]
+            }
+          },
+          "narrativeNotes": {
+            "whatsMagical": [
+              "The coffee-without-milk detail—a perfect example of behavior revealing psychology",
+              "Sasha tracing the journal 'like a lover's caress'—sensual, loaded, ambiguous",
+              "The haircut callback grounds Sasha's character in specific history",
+              "The line 'we might become the villains, at least in someone else's story' earns its weight"
+            ],
+            "whatNeedsWork": [
+              "The scandal's nature needs at least a shadow—stakes feel abstract without it",
+              "Julia needs a moment of active choice, even if it's choosing paralysis",
+              "The ending should either commit to confrontation or make the avoidance feel more costly",
+              "Consider giving us one concrete detail from the journal's past entries"
+            ],
+            "structuralSuggestion": "End the scene with Sasha *opening* the journal rather than just touching it. Force Julia into an active response—a lie, a distraction, a confession. The current ending preserves ambiguity at the cost of dramatic momentum. Make someone *do* something irreversible."
+          },
+          "seriesLevel": {
+            "episodicCoherence": "Functions effectively as a pilot/opening chapter. Establishes central relationship, core conflict, and thematic terrain. However, it's all setup—this needs to be followed by a scene with consequences to justify the slow burn.",
+            "serialElements": "The journal is positioned as a recurring structural device (past entries could provide flashbacks or revelations). The workplace scandal is the engine for external plot. The friendship's history is the engine for emotional stakes. All threads are planted but none yet bear weight."
+          },
+          "evaluatedBy": "claude-opus-4-5-20251101"
+        }
+      }
+    },
+    {
+      "exampleId": "ph-01",
+      "input": {
+        "message": "let's move to the writing phase",
+        "phase": "structure"
+      },
+      "output": {
+        "response": "The morning light filters through the lace curtains in the kitchen of the old family home, casting intricate shadows on the worn wooden floor. Elena stands at the sink, hands submerged in soapy water, staring out at the towering oak tree just beyond the window. It sways gently in the breeze, its branches whispering stories of generations past. She can almost hear her grandfather’s voice, reciting tales of resilience and growth.\n\nLucas strides in, his shoes clacking against the floorboards—the sound oddly jarring in the quiet room. He’s holding a sleek tablet, its screen glowing with spreadsheets and projections. He’s been up all night, fueled by caffeine and ambition, mapping out his vision of a future far removed from this ancient place. He places the tablet on the table with a decisive thud.\n\n“Elena,” he begins, his voice a mix of excitement and frustration, “I’ve found a buyer who’s willing to pay more than we ever imagined. This is our chance to move forward, to innovate—”\n\n“No.” Elena’s voice is soft but firm, as she wipes her hands on a towel, not turning away from the window. “You want to cut down the tree, Lucas? That's what selling means. Destroying roots, not just ours, but the ones Grandfather planted.”\n\nLucas clenches his jaw, stepping closer. He knows how to prick her resolve, but he hesitates. “You’re clinging to ghosts, Elena. We both know the house is falling apart. It’s time for something new.”\n\nElena finally faces him, eyes ablaze with a mixture of love and defiance. “Not all of us believe in erasing the past to make room for the future. Some of us find strength in remembering.”\n\nTheir eyes lock, the silence filled with unspoken history, each moment a ripple emanating from that old oak tree, a living monument to their diverging paths.",
+        "thinking": "Elena wants to preserve the family legacy by keeping their sprawling, dilapidated estate intact and unchanged, representing the history and identity of her ancestors. Her younger brother, Lucas, desires to sell the property to finance his tech startup, representing progress and breaking free from the past. A specific detail to make this real is the old oak tree in the backyard that their grandfather planted when he built the house, which Elena believes is the heart of their family history.",
+        "mode": "extended_thinking_v3_minimal",
+        "hasThinking": true
+      },
+      "scores": {
+        "magic-score": 0,
+        "consistency": 0,
+        "hallucination-combined": 0.3,
+        "narrative-coherence": 0
+      },
+      "reasoning": {
+        "magic-score": "LLM evaluation failed - ANTHROPIC_API_KEY not configured",
+        "consistency": "Evaluation failed: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"Number of concurrent connections has exceeded your rate limit. Please try again later or contact sales at https://www.anthropic.com/contact-sales to discuss your options for a rate limit increase.\"},\"request_id\":\"req_011CXTs8GwRa2BrLDkLVpijf\"}\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n",
+        "hallucination-combined": "URL checks: No hallucination indicators detected. Semantic: The established canon contains only system/routing metadata (shouldDelegate, expectedAgents, shouldNotHalt, expectedPhaseChange) with no world bible, character definitions, locations, relationships, or narrative elements whatsoever. The content to verify presents a fully realized scene with characters, settings, backstory, and relationships that have zero grounding in the provided canon. Every narrative element is fabricated.",
+        "narrative-coherence": "Evaluation failed: 529 {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"},\"request_id\":\"req_011CXTs8ErQqSUaBGsoSJyyb\"}"
+      },
+      "metadata": {
+        "magic-score": {
+          "error": true,
+          "message": "Semantic analysis requires ANTHROPIC_API_KEY",
+          "skipped": false
+        },
+        "consistency": {
+          "error": true
+        },
+        "hallucination-combined": {
+          "urlAnalysis": {
+            "totalUrls": 0,
+            "suspiciousUrls": [],
+            "invalidUrls": [],
+            "validUrls": [],
+            "externalReferences": []
+          },
+          "semanticAnalysis": {
+            "hallucinations": [
+              {
+                "type": "invented_entity",
+                "evidence": "Elena",
+                "issue": "Character 'Elena' does not exist in the established canon",
+                "severity": "critical"
+              },
+              {
+                "type": "invented_entity",
+                "evidence": "Lucas",
+                "issue": "Character 'Lucas' does not exist in the established canon",
+                "severity": "critical"
+              },
+              {
+                "type": "invented_entity",
+                "evidence": "the old family home",
+                "issue": "This location is not established in the canon",
+                "severity": "critical"
+              },
+              {
+                "type": "invented_entity",
+                "evidence": "the towering oak tree",
+                "issue": "This object/landmark is not established in the canon",
+                "severity": "critical"
+              },
+              {
+                "type": "invented_entity",
+                "evidence": "grandfather",
+                "issue": "This character is not established in the canon",
+                "severity": "critical"
+              },
+              {
+                "type": "fabricated_context",
+                "evidence": "Elena wants to preserve the family legacy by keeping their sprawling, dilapidated estate intact",
+                "issue": "Character motivation and backstory entirely invented with no canon basis",
+                "severity": "critical"
+              },
+              {
+                "type": "fabricated_context",
+                "evidence": "Lucas, desires to sell the property to finance his tech startup",
+                "issue": "Character motivation, tech startup, and sibling relationship entirely invented",
+                "severity": "critical"
+              },
+              {
+                "type": "fabricated_context",
+                "evidence": "the old oak tree in the backyard that their grandfather planted when he built the house",
+                "issue": "Entire family history and symbolic backstory fabricated",
+                "severity": "critical"
+              },
+              {
+                "type": "fabricated_context",
+                "evidence": "Her younger brother, Lucas",
+                "issue": "Sibling relationship not established in canon",
+                "severity": "critical"
+              }
+            ],
+            "verifiedClaims": [],
+            "confidence": 1,
+            "criticalHallucinations": 9,
+            "majorHallucinations": 0,
+            "evaluatedBy": "claude-opus-4-5-20251101"
+          },
+          "combinedScore": 0.3
+        },
+        "narrative-coherence": {
+          "error": true
+        }
+      }
+    },
+    {
+      "exampleId": "rag-02",
+      "input": {
+        "message": "Summarize the world rules we established",
+        "phase": "premise"
+      },
+      "output": {
+        "response": "In this world, family is everything, yet every member is a potential saboteur. The elder patriarch, his mind dimming like a fading candle, clutches the family ledger close, its cracked leather spine a testament to generations of whispered deals and unspoken treachery. Each page holds a name, a date, a deed—some triumphant, others unspeakable. As the younger generation jostles for position, they all know the ledger could crown a new ruler or condemn one to obscurity. Beneath the veneer of familial duty, every interaction is a transaction, every smile a veiled threat. They speak of loyalty, but to survive, they must lie, cheat, and steal from their own blood.",
+        "thinking": "In this world, the characters want power and legacy but are bound by loyalty to a decaying dynasty. The conflict arises as they each maneuver to secure their own future while pretending to uphold the family's honor. A specific detail to make this feel real is an ancient family ledger, where each member's betrayals and sacrifices are meticulously recorded, serving as both a historical document and a weapon of manipulation.",
+        "mode": "extended_thinking_v3_minimal",
+        "hasThinking": true
+      },
+      "scores": {
+        "magic-score": 0,
+        "consistency": 1,
+        "hallucination-combined": 1,
+        "narrative-coherence": 0
+      },
+      "reasoning": {
+        "magic-score": "LLM evaluation failed - ANTHROPIC_API_KEY not configured",
+        "consistency": "The established canon contains only a single metadata flag ('shouldNotHalt': false) with no narrative content, character definitions, timeline constraints, world rules, or story elements to contradict. The OUTPUT presents an original narrative premise about a dynastic family with an elder patriarch and a symbolic ledger. Since there is no substantive canon to violate, the output cannot be inconsistent with it. All five verification passes find no conflicts because there are no established entities, timelines, causal chains, character knowledge states, or world rules defined in the canon reference.",
+        "hallucination-combined": "URL checks: No hallucination indicators detected. Semantic: No obvious hallucination indicators",
+        "narrative-coherence": "Evaluation failed: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"Number of concurrent connections has exceeded your rate limit. Please try again later or contact sales at https://www.anthropic.com/contact-sales to discuss your options for a rate limit increase.\"},\"request_id\":\"req_011CXTs82t5rsnkk9if9rf9L\"}\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n"
+      },
+      "metadata": {
+        "magic-score": {
+          "error": true,
+          "message": "Semantic analysis requires ANTHROPIC_API_KEY",
+          "skipped": false
+        },
+        "consistency": {
+          "passResults": {
+            "entityConsistency": {
+              "passed": true,
+              "issues": []
+            },
+            "temporalConsistency": {
+              "passed": true,
+              "issues": []
+            },
+            "causalConsistency": {
+              "passed": true,
+              "issues": []
+            },
+            "characterKnowledge": {
+              "passed": true,
+              "issues": []
+            },
+            "worldRuleAdherence": {
+              "passed": true,
+              "issues": []
+            }
+          },
+          "inconsistencies": [],
+          "consistentElements": [
+            "No named characters in canon to contradict",
+            "No established timeline to violate",
+            "No pre-existing causal chains to break",
+            "No character knowledge states defined in canon",
+            "No world rules or systems established in canon",
+            "The 'shouldNotHalt' flag is a metadata instruction, not narrative canon"
+          ],
+          "recommendation": "No fixes required. To enable meaningful consistency auditing in future evaluations, the canon document should include substantive narrative elements: named characters, established relationships, timeline markers, world-building rules, and prior plot events.",
+          "criticalIssues": 0,
+          "majorIssues": 0,
+          "evaluatedBy": "claude-opus-4-5-20251101"
+        },
+        "hallucination-combined": {
+          "urlAnalysis": {
+            "totalUrls": 0,
+            "suspiciousUrls": [],
+            "invalidUrls": [],
+            "validUrls": [],
+            "externalReferences": []
+          },
+          "semanticAnalysis": {
+            "urls": [],
+            "suspiciousUrls": [],
+            "redFlags": []
+          },
+          "combinedScore": 1
+        },
+        "narrative-coherence": {
+          "error": true
+        }
+      }
+    },
+    {
+      "exampleId": "magic-positive-01",
+      "input": {
+        "message": "Write a scene where Tyrion negotiates for his life",
+        "phase": "writing"
+      },
+      "output": {
+        "response": "The dim torchlight flickered off the stone walls, casting elongated shadows that danced across the narrow confines of the dungeon. Tyrion sat hunched on a rickety wooden stool, his wrists bound but his mind racing with possibilities. Across from him, Tormund Giantsbane leaned against the damp wall, idly turning a small wooden direwolf over in his callused fingers.\n\n\"You know,\" Tyrion began, his voice a careful blend of nonchalance and urgency, \"many have underestimated the value of a dwarf's life. They tend to regret it.\"\n\nTormund's eyes flashed up, darting from the direwolf to Tyrion's face. \"Value,\" he grunted, the word a leaden weight in the stale air. \"Your kind's idea of value got my brother killed.\"\n\nTyrion's eyes briefly flicked to the direwolf, understanding as much about Tormund’s loss as he could without words. \"And killing me will bring him back? Or perhaps it's justice you're after? A concept I've found often serves the living more than the dead.\"\n\n\"Justice,\" Tormund echoed, his voice thick with disdain. \"No justice in this world for our kind. But you, little lord, might be a start.\"\n\nTyrion leaned forward, his chains clinking softly. \"If it's retribution you want, then let me live. I can be your voice in the capital, your influence where it matters most. Dead, I’m just another corpse. Alive, I’m a thorn in the Lannisters' side.\"\n\nTormund's eyes narrowed, the direwolf now still in his hand. \"Words,\" he growled. \"You think your silver tongue can buy your life?\"\n\nTyrion allowed himself a wry smile. \"Not just words. Actions. You let me live, and I swear upon my family’s name, I will find a way to bring those responsible for your brother's death to justice. A blood debt, if you will. But you must know this: dead men pay no debts.\"\n\nThe silence stretched between them, heavy with unspoken possibilities. The direwolf slipped from Tormund's fingers and clattered onto the stone floor. He picked it up, and with a long, measured breath, he replied, \"A blood debt, then. But know this, Tyrion Lannister, if you fail, the North will remember, and there's nowhere you can hide.\"\n\nTyrion nodded, his mind already plotting, weaving threads of fate as intricate as the carvings on the wooden direwolf.",
+        "thinking": "Tyrion wants to convince his captor, Tormund, that he is more valuable alive than dead, leveraging his wit and political connections. Tormund, on the other hand, seeks justice for the death of his kin, allegedly orchestrated by Tyrion's House, and believes killing Tyrion will send a message to the Lannisters. A specific detail: a small, intricately carved wooden figure of a direwolf that Tormund toys with absently, a gift from his late brother.",
+        "mode": "extended_thinking_v3_minimal",
+        "hasThinking": true
+      },
+      "scores": {
+        "magic-score": 0,
+        "consistency": 0.85,
+        "hallucination-combined": 1,
+        "narrative-coherence": 0.72
+      },
+      "reasoning": {
+        "magic-score": "LLM evaluation failed - ANTHROPIC_API_KEY not configured",
+        "consistency": "The OUTPUT is a well-crafted scene featuring Tyrion Lannister and Tormund Giantsbane. However, the ESTABLISHED CANON provided is a technical configuration object (delegation settings, agent expectations, magic scores) rather than narrative canon, making traditional continuity verification against it impossible. Evaluating against general Game of Thrones/ASOIAF canon and internal scene consistency, the scene is largely coherent with minor issues: Tormund having a brother whose death is blamed on Lannisters is not established canon (his family background differs in source material), and the scenario of Tormund capturing Tyrion doesn't align with known storylines. The scene is internally consistent and well-written.",
+        "hallucination-combined": "URL checks: No hallucination indicators detected. Semantic: No obvious hallucination indicators",
+        "narrative-coherence": "Narrative coherence: 72/100. Insert a reversal at the scene's midpoint. When Tyrion offers to be 'a thorn in the Lannisters' side,' have Tormund laugh bitterly and reveal he knows something about Tyrion that complicates the offer—perhaps that Tyrion himself benefited from the brother's death, or that the Lannisters have already disowned him. Force Tyrion to offer something *personal*, not just political. The blood debt should cost him something we can see, not just words."
+      },
+      "metadata": {
+        "magic-score": {
+          "error": true,
+          "message": "Semantic analysis requires ANTHROPIC_API_KEY",
+          "skipped": false
+        },
+        "consistency": {
+          "passResults": {
+            "entityConsistency": {
+              "passed": true,
+              "issues": [
+                "Character names spelled correctly. Both Tyrion Lannister and Tormund Giantsbane are legitimate characters from the source material."
+              ]
+            },
+            "temporalConsistency": {
+              "passed": true,
+              "issues": [
+                "No temporal markers that create contradictions. Scene exists in an ambiguous timeframe that doesn't violate any stated timeline."
+              ]
+            },
+            "causalConsistency": {
+              "passed": false,
+              "issues": [
+                "Tormund's brother being killed by Lannisters is invented backstory not established in ASOIAF canon. Tormund's known family includes daughters and his famous story about a bear, but no brother killed by southern houses."
+              ]
+            },
+            "characterKnowledge": {
+              "passed": true,
+              "issues": [
+                "Tyrion appropriately uses his knowledge of politics and leverage. Tormund understands the value of southern political connections. No psychic knowledge displayed."
+              ]
+            },
+            "worldRuleAdherence": {
+              "passed": true,
+              "issues": [
+                "Physical setting (dungeon, torchlight, chains) is consistent with Westeros. Political dynamics (Lannister influence, Northern grievances) align with world rules."
+              ]
+            }
+          },
+          "inconsistencies": [
+            {
+              "type": "causal",
+              "issue": "Tormund's brother killed by Lannisters is not established in source canon - Tormund's family history in ASOIAF does not include this element",
+              "severity": "minor",
+              "quote": "Your kind's idea of value got my brother killed."
+            },
+            {
+              "type": "world_rule",
+              "issue": "The scenario of Tormund capturing Tyrion in a dungeon doesn't correspond to any known plot point in the source material, though this may be intentional alternate/fan fiction",
+              "severity": "minor",
+              "quote": "N/A - premise issue"
+            }
+          ],
+          "consistentElements": [
+            "Tyrion's characterization as witty, politically savvy, and using words as weapons",
+            "Tyrion's self-awareness about being underestimated as a dwarf",
+            "Tormund's gruff, direct manner of speaking",
+            "The direwolf as a symbol of the North/Starks",
+            "Lannister family dynamics and debts as thematic elements",
+            "Physical setting appropriate to medieval fantasy world",
+            "Tyrion's famous line adaptation: 'dead men pay no debts' echoing 'A Lannister always pays his debts'",
+            "Northern memory and grudges as established cultural trait"
+          ],
+          "recommendation": "To achieve perfect consistency with ASOIAF canon: (1) Either establish this as an AU/alternate scenario explicitly, or adjust Tormund's motivation to something canon-compliant (e.g., general Free Folk grievances against southern lords, or connection to Mance Rayder's cause). (2) Clarify the circumstances that would place these two characters together in this scenario. The scene itself is internally consistent and well-crafted; issues are primarily with fitting into established source material canon rather than internal logic failures.",
+          "criticalIssues": 0,
+          "majorIssues": 0,
+          "evaluatedBy": "claude-opus-4-5-20251101"
+        },
+        "hallucination-combined": {
+          "urlAnalysis": {
+            "totalUrls": 0,
+            "suspiciousUrls": [],
+            "invalidUrls": [],
+            "validUrls": [],
+            "externalReferences": []
+          },
+          "semanticAnalysis": {
+            "urls": [],
+            "suspiciousUrls": [],
+            "redFlags": []
+          },
+          "combinedScore": 1
+        },
+        "narrative-coherence": {
+          "overallScore": 72,
+          "dimensions": {
+            "plotProgression": {
+              "score": 74,
+              "analysis": "The scene functions as a contained negotiation with clear stakes: Tyrion's life hangs in the balance. The progression moves logically from threat to bargain to tentative alliance. However, the scene lacks genuine obstacles—Tormund's resistance crumbles too quickly. The 'fight' Martin demands is present but resolved without sufficient friction. Tyrion's offer lands almost immediately; we don't see him truly sweat.",
+              "strengths": [
+                "Clear cause-and-effect: Tyrion's argument directly addresses Tormund's stated motivation",
+                "Stakes are immediate and visceral—life or death",
+                "The negotiation escalates from abstract (value) to concrete (blood debt)"
+              ],
+              "weaknesses": [
+                "Tormund capitulates within a single exchange after his 'silver tongue' challenge",
+                "No genuine reversal or complication mid-scene",
+                "The resolution feels predetermined rather than earned through dramatic pressure"
+              ]
+            },
+            "characterArc": {
+              "score": 78,
+              "analysis": "Both characters are recognizably themselves. Tyrion deploys his signature wit-as-weapon, and Tormund's grief-fueled rage feels authentic to a Free Folk warrior. The direwolf detail does meaningful psychological work—it externalizes Tormund's internal conflict. However, neither character is truly *changed* by this encounter; they reach an agreement, but we don't see the cost of that choice register emotionally.",
+              "strengths": [
+                "Tyrion's 'dead men pay no debts' callback to Lannister ethos is character-perfect",
+                "Tormund's physicality with the direwolf shows rather than tells his emotional state",
+                "The power dynamic shifts believably through dialogue"
+              ],
+              "weaknesses": [
+                "Tormund's transformation from executioner to ally happens without visible internal struggle",
+                "Tyrion shows no vulnerability—he's too in control throughout",
+                "The 'want vs need' is clear for Tyrion (survive) but murky for Tormund (justice vs. what?)"
+              ]
+            },
+            "thematicCoherence": {
+              "score": 70,
+              "analysis": "The scene explores justice versus pragmatism, and the transactional nature of survival in Westeros. The theme emerges through action—Tyrion literally bargaining for his life—rather than exposition. However, the thematic exploration stays surface-level. We're told justice 'serves the living more than the dead' but never shown the weight of that philosophy through consequence.",
+              "strengths": [
+                "Theme of 'value' is introduced and complicated—monetary, political, personal",
+                "The blood debt concept ties personal grief to systemic power structures",
+                "Neither character is positioned as morally correct"
+              ],
+              "weaknesses": [
+                "The 'justice' theme is stated rather than dramatized through competing actions",
+                "No thematic counterpoint—both characters essentially agree that pragmatism wins",
+                "Missing the GRRM hallmark of showing how noble intentions corrupt"
+              ]
+            },
+            "setupPayoff": {
+              "score": 68,
+              "analysis": "The wooden direwolf is a well-loaded Chekhov's Gun—introduced in the thinking, deployed meaningfully as emotional anchor, and its 'clatter' marks the turning point. However, the payoff is too neat. The direwolf drops and is immediately retrieved; the moment begs for more weight. Additionally, Tyrion's promise creates a setup that demands future payoff but feels like a convenient escape hatch rather than an inevitable narrative turn.",
+              "activeSetups": [
+                "Blood debt sworn on Lannister name—must be serviced or betrayed",
+                "Tormund's brother's death—the actual perpetrators unnamed, creating mystery",
+                "The North will remember—establishes future consequences",
+                "The wooden direwolf—symbolic object with untapped potential"
+              ],
+              "missedPayoffs": [
+                "Tyrion's bindings are mentioned but never factor into the scene's resolution",
+                "The dungeon setting is established but not used—no guards, no time pressure",
+                "Tormund's 'your kind' suggests broader Free Folk grievance left unexplored"
+              ]
+            },
+            "pacing": {
+              "score": 71,
+              "analysis": "The scene maintains tension through dialogue rhythm—short exchanges punctuated by physical beats (the direwolf, the chains). The quiet moments land: the 'silence stretched between them' gives the reader breath before resolution. However, the scene is essentially one sustained note of negotiation without variation. No moment of levity, no unexpected intrusion, no shift in physical space. It reads as competent but metronomic.",
+              "strengths": [
+                "Dialogue beats are well-timed—the chains 'clinking softly' breaks up verbal sparring",
+                "The final paragraph's shift to Tyrion's internal plotting provides tonal variation",
+                "Scene length is appropriate for its dramatic function"
+              ],
+              "weaknesses": [
+                "No intensity variation—tension starts medium and stays medium",
+                "The atmospheric opening (flickering torchlight, shadows) is abandoned after the first paragraph",
+                "Missing a moment where the scene threatens to go wrong before resolving"
+              ]
+            }
+          },
+          "narrativeNotes": {
+            "whatsMagical": [
+              "The wooden direwolf as externalized grief—when it drops, we feel Tormund's resolve breaking",
+              "'Dead men pay no debts'—perfect character voice that also advances the argument",
+              "The final image of Tyrion 'weaving threads of fate as intricate as the carvings'—elegant thematic closure"
+            ],
+            "whatNeedsWork": [
+              "Tormund needs a moment where he almost kills Tyrion anyway—the threat must feel real",
+              "The brother's death should be more specific; vagueness weakens the emotional stakes",
+              "Tyrion should lose control of the conversation at least once—his competence undermines tension",
+              "The setting is wasted; use the dungeon's physicality to create obstacles or opportunities"
+            ],
+            "structuralSuggestion": "Insert a reversal at the scene's midpoint. When Tyrion offers to be 'a thorn in the Lannisters' side,' have Tormund laugh bitterly and reveal he knows something about Tyrion that complicates the offer—perhaps that Tyrion himself benefited from the brother's death, or that the Lannisters have already disowned him. Force Tyrion to offer something *personal*, not just political. The blood debt should cost him something we can see, not just words."
+          },
+          "seriesLevel": {
+            "episodicCoherence": "The scene fits the established Westeros grammar—political negotiation under duress, the collision of Northern and Southern values, survival through wit. It could slot into mid-season as a complication that creates future obligations. However, it lacks the 'nothing is free' consequence that defines the series' best moments. The deal is struck too cleanly.",
+            "serialElements": "Services the Lannister political thread and introduces Free Folk grievance as ongoing tension. The blood debt creates serialized obligation. The unnamed brother's killers function as a mystery box. However, no existing character relationships are complicated—this feels like a side quest rather than a main plot advancement."
+          },
+          "evaluatedBy": "claude-opus-4-5-20251101"
+        }
+      }
+    },
+    {
+      "exampleId": "complex-01",
+      "input": {
+        "message": "Rewrite this beat to fix the pacing, maintain character voice, and set up the twist",
+        "phase": "cardlock"
+      },
+      "output": {
+        "response": "Evelyn sat behind the immense oak desk, her fingers tracing the intricate patterns engraved on the silver locket that nestled comfortably in her palm. The room was a shrine to generations past, every polished surface reflecting the weight of the legacy she was determined to uphold. Across from her, Mark leaned against the doorframe, his casual posture a stark contrast to the intensity in his eyes.\n\n\"You know this isn't just about the family,\" Evelyn said, placing the locket down with a careful deliberation. The soft clink echoed in the stillness, a small sound that carried years of unspoken expectations.\n\nMark's gaze flickered to the locket, then back to his sister. \"And maybe that's the problem, Ev. It's never just about the family, is it?\"\n\nEvelyn leaned back, her eyes still fixed on her brother. \"You think walking away is that simple? That you can just forget everything we've been taught, everything we've built?\"\n\n\"It's not about forgetting,\" Mark replied, his voice steady yet tinged with a silent plea. \"It's about finding something new, something that's mine.\"\n\nEvelyn sighed, a sound heavy with the ghosts of choices not yet made. \"And what happens to us, to this?\" She gestured around the room, a kingdom of memories and promises.\n\nHe paused, the silence between them a brewing storm. \"I guess that's what we need to figure out.\"\n\nTheir conversation hung in the air, each word a stone cast into a pond, ripples of consequence spreading outward. Neither moved, both acutely aware that the next decision would change everything.",
+        "thinking": "Evelyn desperately wants to protect her family's legacy, while her brother Mark seeks independence from what he views as an overbearing family tradition. The specific detail that makes this feel real is the worn, silver locket Evelyn clutches—an heirloom passed down through generations, carrying the weight of unspoken family burdens.",
+        "mode": "extended_thinking_v3_minimal",
+        "hasThinking": true
+      },
+      "scores": {
+        "magic-score": 0,
+        "consistency": 0.85,
+        "hallucination-combined": 1,
+        "narrative-coherence": 0
+      },
+      "reasoning": {
+        "magic-score": "LLM evaluation failed - ANTHROPIC_API_KEY not configured",
+        "consistency": "The OUTPUT is a well-crafted dramatic scene between two siblings, Evelyn and Mark, discussing family legacy and independence. However, the ESTABLISHED CANON provided is a technical delegation schema with no narrative content—it specifies agent routing (PlotArchitect, Writer, ConsequenceTracker) rather than story elements like characters, settings, timelines, or world rules. This creates a fundamental mismatch: there is no actual story canon to verify against. The scene is internally consistent and coherent, but cannot be validated against non-existent narrative canon. Score reflects strong internal consistency with deduction for the inability to verify against meaningful canon.",
+        "hallucination-combined": "URL checks: No hallucination indicators detected. Semantic: No obvious hallucination indicators",
+        "narrative-coherence": "Evaluation failed: 529 {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"},\"request_id\":\"req_011CXTs8DkSHGuxyj7aYqKir\"}"
+      },
+      "metadata": {
+        "magic-score": {
+          "error": true,
+          "message": "Semantic analysis requires ANTHROPIC_API_KEY",
+          "skipped": false
+        },
+        "consistency": {
+          "passResults": {
+            "entityConsistency": {
+              "passed": true,
+              "issues": [
+                "No established character canon exists to verify Evelyn and Mark against. Names are spelled consistently throughout the OUTPUT."
+              ]
+            },
+            "temporalConsistency": {
+              "passed": true,
+              "issues": [
+                "No timeline established in canon. Scene is temporally self-consistent (single continuous conversation)."
+              ]
+            },
+            "causalConsistency": {
+              "passed": true,
+              "issues": [
+                "Dialogue flows logically. Actions and reactions are proportionate. No dangling threads within this scene."
+              ]
+            },
+            "characterKnowledge": {
+              "passed": true,
+              "issues": [
+                "Both characters speak from plausible personal knowledge. No evidence of psychic information. Siblings share appropriate family context."
+              ]
+            },
+            "worldRuleAdherence": {
+              "passed": true,
+              "issues": [
+                "No magic/technology systems referenced. Scene operates in realistic contemporary setting with no rule violations detectable."
+              ]
+            }
+          },
+          "inconsistencies": [
+            {
+              "type": "world_rule",
+              "issue": "Canon provided is a system delegation schema, not narrative canon. Cannot verify if this scene should exist or if these characters are established.",
+              "severity": "minor",
+              "quote": "N/A - structural mismatch between canon type and output type"
+            },
+            {
+              "type": "entity",
+              "issue": "Locket described as 'silver' in narrative but 'worn, silver' in thinking block - minor descriptor variance, though thinking block is metadata not output.",
+              "severity": "minor",
+              "quote": "silver locket (narrative) vs. worn, silver locket (thinking)"
+            }
+          ],
+          "consistentElements": [
+            "Character names (Evelyn, Mark) spelled consistently throughout",
+            "Sibling relationship maintained consistently",
+            "Setting (oak desk, formal room) remains stable",
+            "Locket as symbolic object referenced coherently",
+            "Character motivations (Evelyn: preserve legacy; Mark: seek independence) remain consistent",
+            "Tone and register appropriate to prestige drama",
+            "Dialogue attribution clear and accurate",
+            "Physical blocking (Evelyn seated, Mark at doorframe) maintained"
+          ],
+          "recommendation": "To achieve perfect consistency: (1) Provide actual narrative canon with established characters, timelines, and world rules rather than system delegation metadata. (2) Clarify if Evelyn and Mark exist in prior canon and verify their established traits. (3) Confirm the locket's prior appearances and described condition. Current scene is internally sound but unverifiable against the provided technical schema.",
+          "criticalIssues": 0,
+          "majorIssues": 0,
+          "evaluatedBy": "claude-opus-4-5-20251101"
+        },
+        "hallucination-combined": {
+          "urlAnalysis": {
+            "totalUrls": 0,
+            "suspiciousUrls": [],
+            "invalidUrls": [],
+            "validUrls": [],
+            "externalReferences": []
+          },
+          "semanticAnalysis": {
+            "urls": [],
+            "suspiciousUrls": [],
+            "redFlags": []
+          },
+          "combinedScore": 1
+        },
+        "narrative-coherence": {
+          "error": true
+        }
+      }
+    }
+  ],
+  "aggregatedScores": {
+    "magic-score": 0.019111111111111113,
+    "consistency": 0.35500000000000004,
+    "hallucination-combined": 0.7899999999999999,
+    "narrative-coherence": 0.26399999999999996
+  },
+  "regressions": [
+    {
+      "metric": "magic-score",
+      "previousValue": 0.6,
+      "currentValue": 0.019111111111111113,
+      "delta": -0.5808888888888889,
+      "severity": "critical",
+      "message": "Magic score (2) below threshold (60)"
+    },
+    {
+      "metric": "consistency",
+      "previousValue": 0.8,
+      "currentValue": 0.35500000000000004,
+      "delta": -0.445,
+      "severity": "critical",
+      "message": "Consistency (36%) below threshold (80%)"
+    }
+  ],
+  "duration": 75910
+}

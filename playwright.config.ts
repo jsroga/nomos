@@ -39,6 +39,11 @@ export default defineConfig({
 
     // Video on failure
     video: 'retain-on-failure',
+
+    // Bypass auth in development for E2E tests
+    extraHTTPHeaders: {
+      'x-bypass-auth': 'true',
+    },
   },
 
   // Configure projects for major browsers
@@ -63,7 +68,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: true, // Always reuse if already running
     timeout: 120 * 1000, // 2 minutes to start dev server
   },
 })

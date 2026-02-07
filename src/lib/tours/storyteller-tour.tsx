@@ -1,7 +1,7 @@
 import React from 'react'
 import { TourStep } from '@/components/tour'
 import { TOUR_STEP_IDS } from '@/lib/tour-constants'
-import { Sparkles, BookOpen, PenTool, Layout, Users } from 'lucide-react'
+import { Sparkles, BookOpen, Layout, Users } from 'lucide-react'
 
 export const storytellerTourSteps: TourStep[] = [
   {

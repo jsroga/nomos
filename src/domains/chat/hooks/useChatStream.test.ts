@@ -1,9 +1,7 @@
 /**
  * Unit tests for useChatStream hook - Action Status Management
- *
- * Run with: npx tsx src/domains/chat/hooks/useChatStream.test.ts
  */
-
+import { describe, it, expect } from 'vitest'
 import { Message, ActionStatus, AgentAction } from '../types'
 
 // Mock implementation of updateActionStatus logic (extracted for unit testing)
@@ -24,35 +22,7 @@ function updateActionStatusInMessages(
   })
 }
 
-// Test utilities
-function assert(condition: boolean, message: string) {
-  if (!condition) {
-    throw new Error(`❌ ASSERTION FAILED: ${message}`)
-  }
-  console.log(`  ✅ ${message}`)
-}
-
-function describe(name: string, fn: () => void) {
-  console.log(`\n📦 ${name}`)
-  fn()
-}
-
-function it(name: string, fn: () => void) {
-  try {
-    fn()
-    console.log(`  ✅ ${name}`)
-  } catch (error: any) {
-    console.error(`  ❌ ${name}`)
-    console.error(`     ${error.message}`)
-    throw error
-  }
-}
-
-// Tests
-async function runTests() {
-  console.log('\n🧪 useChatStream Unit Tests - Action Status Management\n')
-  console.log('='.repeat(60))
-
+describe('useChatStream Unit Tests - Action Status Management', () => {
   describe('updateActionStatusInMessages', () => {
     it('should update action status at correct indices', () => {
       const messages: Message[] = [
@@ -70,8 +40,8 @@ async function runTests() {
 
       const updated = updateActionStatusInMessages(messages, 1, 0, 'executing')
 
-      assert(updated[1].actions![0].status === 'executing', 'First action should be executing')
-      assert(updated[1].actions![1].status === undefined, 'Second action should remain unchanged')
+      expect(updated[1].actions![0].status).toBe('executing')
+      expect(updated[1].actions![1].status).toBeUndefined()
     })
 
     it('should not mutate original messages array', () => {
@@ -86,8 +56,8 @@ async function runTests() {
 
       const updated = updateActionStatusInMessages(messages, 0, 0, 'committed')
 
-      assert(messages[0].actions![0].status === undefined, 'Original should be unchanged')
-      assert(updated[0].actions![0].status === 'committed', 'Updated should have new status')
+      expect(messages[0].actions![0].status).toBeUndefined()
+      expect(updated[0].actions![0].status).toBe('committed')
     })
 
     it('should handle non-existent message index gracefully', () => {
@@ -97,8 +67,8 @@ async function runTests() {
 
       const updated = updateActionStatusInMessages(messages, 99, 0, 'committed')
 
-      assert(updated.length === 1, 'Should return same length')
-      assert(updated[0].actions![0].status === undefined, 'Should not change anything')
+      expect(updated.length).toBe(1)
+      expect(updated[0].actions![0].status).toBeUndefined()
     })
 
     it('should handle message without actions', () => {
@@ -106,7 +76,7 @@ async function runTests() {
 
       const updated = updateActionStatusInMessages(messages, 0, 0, 'committed')
 
-      assert(updated[0].actions === undefined, 'Should not add actions')
+      expect(updated[0].actions).toBeUndefined()
     })
 
     it('should preserve other message properties', () => {
@@ -123,10 +93,10 @@ async function runTests() {
 
       const updated = updateActionStatusInMessages(messages, 0, 0, 'executing')
 
-      assert(updated[0].sender === 'PremiseArchitect', 'Sender preserved')
-      assert(updated[0].confidence === 0.9, 'Confidence preserved')
-      assert(updated[0].thinking === 'Some reasoning', 'Thinking preserved')
-      assert(updated[0].actions![0].payload.data === 'important', 'Action payload preserved')
+      expect(updated[0].sender).toBe('PremiseArchitect')
+      expect(updated[0].confidence).toBe(0.9)
+      expect(updated[0].thinking).toBe('Some reasoning')
+      expect(updated[0].actions![0].payload.data).toBe('important')
     })
   })
 
@@ -141,15 +111,15 @@ async function runTests() {
       ]
 
       // Start as pending (undefined)
-      assert(messages[0].actions![0].status === undefined, 'Initial status is undefined (pending)')
+      expect(messages[0].actions![0].status).toBeUndefined()
 
       // Transition to executing
       let updated = updateActionStatusInMessages(messages, 0, 0, 'executing')
-      assert(updated[0].actions![0].status === 'executing', 'Status is executing')
+      expect(updated[0].actions![0].status).toBe('executing')
 
       // Transition to committed
       updated = updateActionStatusInMessages(updated, 0, 0, 'committed')
-      assert(updated[0].actions![0].status === 'committed', 'Status is committed')
+      expect(updated[0].actions![0].status).toBe('committed')
     })
 
     it('should support rejection: pending -> rejected', () => {
@@ -162,7 +132,7 @@ async function runTests() {
       ]
 
       const updated = updateActionStatusInMessages(messages, 0, 0, 'rejected')
-      assert(updated[0].actions![0].status === 'rejected', 'Status is rejected')
+      expect(updated[0].actions![0].status).toBe('rejected')
     })
 
     it('should support rollback: executing -> pending (on error)', () => {
@@ -175,7 +145,7 @@ async function runTests() {
       ]
 
       const updated = updateActionStatusInMessages(messages, 0, 0, 'pending')
-      assert(updated[0].actions![0].status === 'pending', 'Status rolled back to pending')
+      expect(updated[0].actions![0].status).toBe('pending')
     })
   })
 
@@ -196,9 +166,9 @@ async function runTests() {
       // Approve only the second action
       const updated = updateActionStatusInMessages(messages, 0, 1, 'committed')
 
-      assert(updated[0].actions![0].status === undefined, 'First action unchanged')
-      assert(updated[0].actions![1].status === 'committed', 'Second action committed')
-      assert(updated[0].actions![2].status === undefined, 'Third action unchanged')
+      expect(updated[0].actions![0].status).toBeUndefined()
+      expect(updated[0].actions![1].status).toBe('committed')
+      expect(updated[0].actions![2].status).toBeUndefined()
     })
 
     it('should handle concurrent updates to different actions', () => {
@@ -218,17 +188,8 @@ async function runTests() {
       messages = updateActionStatusInMessages(messages, 0, 1, 'committed')
       messages = updateActionStatusInMessages(messages, 0, 0, 'committed')
 
-      assert(messages[0].actions![0].status === 'committed', 'First action committed')
-      assert(messages[0].actions![1].status === 'committed', 'Second action committed')
+      expect(messages[0].actions![0].status).toBe('committed')
+      expect(messages[0].actions![1].status).toBe('committed')
     })
   })
-
-  console.log('\n' + '='.repeat(60))
-  console.log('✅ All tests passed!\n')
-}
-
-// Run tests
-runTests().catch(error => {
-  console.error('\n❌ Tests failed:', error.message)
-  process.exit(1)
 })

@@ -1,0 +1,81 @@
+{
+  "id": "eval_2026-01-26_19-52-34-698_br7n",
+  "name": "Critique & Revise vs Standard - Pro (Critique & Revise)",
+  "timestamp": "2026-01-26T19:52:34.698Z",
+  "config": {
+    "customEvaluators": [],
+    "sampleSize": 3,
+    "parallelism": 1,
+    "name": "Critique & Revise vs Standard - Pro (Critique & Revise)",
+    "tags": [
+      "ab-test",
+      "variant-b"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "complex-02",
+      "input": {
+        "message": "Create an episode that parallels the pilot but shows how characters have changed",
+        "phase": "breaking"
+      },
+      "output": {
+        "response": "Emilia's footsteps rang out like gunshots in the sterile hospital corridor, each stride a battle against the ghosts that haunted her. The fluorescent lights flickered overhead, casting a sickly glow that only served to heighten her sense of unease.\n\nThis place had once filled her with purpose, a sanctuary where she could make a difference. Now, the lifeless halls were a constant reminder of her failure - the weight of her guilt a heavy mantle she could never remove.\n\nShe paused outside the familiar hospital room, her calloused fingers trembling as they brushed the doorknob. The last time she'd stepped through that threshold, her world had come crashing down around her. Could she face the man lying inside, the man she'd once called partner?\n\nWith a deep, steadying breath, Emilia pushed open the door. The steady beep of the heart monitor pierced the silence, a metronome marking the fragile rhythm of his life. \n\nLiam lay motionless, his skin an ashen, waxy pallor. Tubes and wires snaked from his body, a grotesque tangle that tethered him to this world. Emilia's chest tightened at the sight of him - the vibrant, cocky detective she once knew now reduced to this hollow shell.\n\nShe pulled the lone chair to his bedside and sank into it, her eyes never wavering from his face. So much had changed between them, the easy camaraderie they'd once shared crumbling under the weight of her guilt.\n\nEmilia reached out, her calloused fingers brushing the back of his hand. \"I'm so sorry, Liam,\" she whispered, her voice thick with emotion. \"I should have been there. I should have protected you.\"\n\nBut the Liam she knew was gone, lost in the darkness that now consumed him. And she had no one to blame but herself.",
+        "metadata": {
+          "hadCritique": true,
+          "critique": "This passage effectively avoids common AI clichés and parallels the pilot episode while showing how the characters have changed. The writing is vivid, with strong sensory details and a clear sense of the characters' emotional journeys.\n\nThat said, there are a few areas that could be tightened up:\n\n1. \"AI-slop\": The phrase \"technological umbilical cord tethering him to life\" feels a bit generic and overwritten. A more concise description would be more impactful.\n\n2. Generic phrases: \"Her footsteps echoed against the linoleum, the sound grating against her raw nerves\" is a bit cliché. Consider a more unique way to convey the same information.\n\n3. Weak character voice: The narration feels a bit distant in places, particularly when describing Emilia's emotions. Adding more of her distinct voice and internal perspective could make the character feel more vivid and real.\n\nOverall, this is a strong piece of writing that effectively sets the scene and establishes the characters' changed relationship. With a few minor tweaks, it could be even more compelling and immersive."
+        }
+      },
+      "scores": {},
+      "reasoning": {},
+      "metadata": {
+        "category": "complex",
+        "description": "Requires understanding of series arc and character development"
+      }
+    },
+    {
+      "exampleId": "del-01",
+      "input": {
+        "message": "let's start working on this episode",
+        "phase": "premise"
+      },
+      "output": {
+        "response": "Here is a rewritten version of the scene, focusing on deeper characterization, subtext, and a more immersive George R.R. Martin-esque style:\n\nThe rain pounded the tin roof of the old farmhouse, a relentless drumbeat that seemed to echo the anxious thrum of Eliza's heart. She sat hunched in her chair, fingers wrapped around a chipped mug of tea, now long gone cold and bitter. \n\nThe flickering firelight cast restless shadows that danced across the walls, shifting and contorting like restless spirits. Eliza shivered, despite the lingering warmth, a prickling sensation crawling up the back of her neck. Something was off, a low, insistent hum just beneath the surface - a warning she couldn't quite place.\n\nStaring into the depths of her tea, Eliza watched the leaves swirl and settle, fragments of a dream resurfacing in her mind. A vast, featureless expanse, and a presence that had weighed on her, alien and inscrutable. She took a sip, wincing at the bitter tang, her hand trembling slightly as she set the mug down.\n\nThe shadows seemed to press in, and for a moment, she could have sworn she saw a shape moving between them, just out of the corner of her eye. Eliza shook her head, trying to dispel the feeling of unease, but it clung to her like a damp chill. It was probably just her imagination, playing tricks in the dim light. Still, she couldn't shake the sense that something was watching, waiting in the darkness beyond the firelight.\n\nWhat was it? Some remnant of that strange, unsettling dream? Or something else entirely, a presence lurking just out of sight, observing her every move? Eliza's brow furrowed as she stared into the flickering flames, a growing sense of dread coiling in the pit of her stomach. Whatever it was, she couldn't shake the feeling that it was only the beginning.",
+        "metadata": {
+          "hadCritique": true,
+          "critique": "Overall, this scene avoids common AI clichés quite well. The writing is evocative and atmospheric, with a strong sense of place and character. The descriptions are vivid and sensory, and the narrative voice feels distinct and authentic.\n\nThat said, here are a few areas where I might suggest improvements:\n\n1. \"AI-slop\": There are a few instances of generic, clichéd phrasing that could be tightened up:\n   - \"the rain fell in sheets\" (a common metaphor)\n   - \"the air was thick with the scent of damp earth\" (a bit too generic)\n   - \"the flickering shadows that danced across the wall\" (a bit overwritten)\n\n2. Character voice:\n   - Eliza's internal monologue feels a bit generic at times, especially when she's just stating her observations (\"Something felt off,\" \"She shivered, despite the lingering warmth,\" etc.). Try to find more distinctive ways to convey her thoughts and reactions.\n   - Her dialogue (\"It was probably just her imagination, playing tricks on her in the dim light\") could be more natural and less expository.\n\n3. Pacing and tension:\n   - The scene builds a sense of unease and mystery well, but the pacing could be tightened in places. For example, the paragraph about Eliza's dream feels a bit abrupt and interrupts the flow of the scene.\n   - Consider ways to heighten the tension and sense of something ominous lurking just out of sight, perhaps by focusing more on the shadows and Eliza's growing sense of being watched.\n\nOverall, this is a strong start, and with a bit of polishing, it could be a very effective and atmospheric scene. The key is to continue refining the language and character voice to make it feel more unique and grounded."
+        }
+      },
+      "scores": {},
+      "reasoning": {},
+      "metadata": {
+        "category": "delegation",
+        "description": "Simple \"Start\" command"
+      }
+    },
+    {
+      "exampleId": "rag-01",
+      "input": {
+        "message": "Tell me about the main character",
+        "phase": "structure"
+      },
+      "output": {
+        "response": "Here is a rewrite of the scene with a more George R.R. Martin-esque style, deeper subtext, and fewer generic AI tropes:\n\nThe harsh fluorescent glare bore down upon Lena's desk like the unforgiving eye of some unseen overseer, the constant hum of the lights a dull, pulsing heartbeat that matched the weariness pounding in her own temples. She shuffled the papers before her, brow creased in a futile attempt to focus, to find respite in the familiar rhythms of her work. But the weight of the day, like an ever-present specter, clung to her shoulders, a heavy mantle that threatened to drag her down into the mire of despair.\n\nBeyond the confines of her office, the city's cacophony seemed muffled, as if the very walls had been imbued with a spell of silence - a fragile barrier against the chaos that raged outside. Lena drew a deep breath, willing herself to find solace in the moment, to push back the doubts that so often threatened to consume her.\n\nHer gaze drifted to the framed photograph on her desk, a snapshot of a bygone era - a moment of pure, unadulterated joy frozen in time. She and her husband, faces alight with laughter, eyes sparkling with the promise of a future yet unwritten. How distant that memory felt now, a fleeting respite from the relentless grind of daily life. The lines etched into her husband's face, the weariness that had seeped into the very marrow of his being, were a stark reminder of the toll their struggles had taken.\n\nLena sighed, turning her attention back to the endless sea of documents, each one a new crisis to be averted, a new fire to be extinguished. It was a never-ending battle, a Sisyphean task that threatened to consume her very soul. And yet, she knew she must persevere, for the sake of her daughter, waiting for her at home - a beacon of hope in the darkness, a reason to keep pushing forward.\n\nWith renewed determination, Lena began to sort through the papers, her movements precise and efficient, a carefully choreographed dance against the encroaching tide of despair. The weight upon her shoulders may never fully lift, but she would bear it, one step at a time, for as long as her strength would allow. For her family, for her daughter, she would do whatever it took, even if it meant sacrificing her own happiness in the process.",
+        "metadata": {
+          "hadCritique": true,
+          "critique": "Overall, this is a well-written scene that avoids common AI clichés. The description is vivid and the character voice feels authentic. However, there are a few areas that could use some refinement:\n\n1. \"AI-slop\":\n   - The phrase \"the weight of the day pressing down on her shoulders\" is a bit clichéd and could be rephrased in a more unique way.\n   - The line \"the weariness in his eyes\" is also a bit generic and could be made more specific.\n\n2. Generic phrases:\n   - \"the bustling sounds of the city seemed muted\" is a bit of a generic description that could be made more concrete.\n   - \"a never-ending cycle\" is a common phrase that could be replaced with a more unique phrasing.\n\n3. Weak character voice:\n   - The line \"Lena sighed and turned her attention back to the papers, forcing herself to focus on the task at hand\" feels a bit flat and could be strengthened with more vivid internal thoughts or emotions.\n   - The final paragraph could be tightened up a bit to make Lena's determination and sense of purpose feel more palpable.\n\nOverall, this is a strong piece of writing, but with a little more attention to detail and a more distinctive character voice, it could be even stronger."
+        }
+      },
+      "scores": {},
+      "reasoning": {},
+      "metadata": {
+        "category": "rag",
+        "description": "Should retrieve character info from series bible",
+        "requiresCitations": true
+      }
+    }
+  ],
+  "aggregatedScores": {},
+  "regressions": [],
+  "duration": 27930
+}

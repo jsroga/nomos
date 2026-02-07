@@ -2,23 +2,22 @@ import React, { useState } from 'react'
 import {
   Sparkles,
   Book,
-  AlertCircle,
   Edit2,
   Save,
-  X,
   Target,
   Zap,
   Skull,
   TrendingUp,
   Anchor,
-  Image as ImageIcon,
   RefreshCw,
+  Loader2,
 } from 'lucide-react'
 import { EpisodePremise, StoryPlan, Faction, WorldRule } from '../schemas/agent-schemas'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StorytellerImage } from './StorytellerImage'
 import { ImageVariantSelector } from './ImageVariantSelector'
+import { cn } from '@/lib/utils'
 
 interface EpisodePremisePanelProps {
   premise: EpisodePremise | null
@@ -30,7 +29,7 @@ interface EpisodePremisePanelProps {
   onGeneratePoster?: () => void
   onGenerateStoryboard?: () => void
   onGenerateSection?: (
-    section: 'protagonistHook' | 'fatalFlaw' | 'stakes' | 'inevitableConsequence'
+    section: 'protagonistHook' | 'fatalFlaw' | 'stakes' | 'inevitableConsequence' | 'logline'
   ) => void
   isGenerating?: boolean
   isGeneratingPoster?: boolean
@@ -272,11 +271,15 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
                         placeholder="THEME UNDEFINED"
                       />
                     ) : (
-                      <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-bold uppercase tracking-wider">
-                        {localPremise.thematicFocus || 'Theme Undefined'}
-                      </span>
+                      localPremise.thematicFocus && (
+                        <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-bold uppercase tracking-wider">
+                          {localPremise.thematicFocus}
+                        </span>
+                      )
                     )}
-                    {localPremise.logline && (
+                    {generatingSection === 'logline' ? (
+                      <Skeleton className="h-5 w-64 bg-primary/10" />
+                    ) : localPremise.logline && (
                       <span className="text-sm italic border-l-2 border-border pl-2">
                         "{localPremise.logline}"
                       </span>
@@ -284,15 +287,19 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
                   </div>
                 </div>
                 <div className="flex items-center gap-2 self-start">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowBibleContext(!showBibleContext)}
-                    className="gap-2"
-                  >
-                    <Book className="w-4 h-4" />
-                    {showBibleContext ? 'Hide Context' : 'View Bible'}
-                  </Button>
+                  {!isEditing && onGenerateSection && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onGenerateSection('logline')}
+                      disabled={isGenerating}
+                      className="gap-2"
+                      title="Regenerate Description (Logline)"
+                    >
+                      <RefreshCw className={cn("w-4 h-4", generatingSection === 'logline' && "animate-spin")} />
+                      {generatingSection === 'logline' ? 'Generating...' : localPremise.logline ? 'Regenerate Description' : 'Generate Description'}
+                    </Button>
+                  )}
                   {isEditing ? (
                     <>
                       <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>
@@ -337,8 +344,7 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
                   >
                     <RefreshCw
                       className={
-                        isGenerating &&
-                        (!generatingSection || generatingSection === 'protagonistHook')
+                        generatingSection === 'protagonistHook'
                           ? 'w-3 h-3 animate-spin'
                           : 'w-3 h-3'
                       }
@@ -346,7 +352,7 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
                   </Button>
                 )}
               </div>
-              {isGenerating && (!generatingSection || generatingSection === 'protagonistHook') ? (
+              {generatingSection === 'protagonistHook' ? (
                 <div className="p-6 bg-card border border-border rounded-xl shadow-sm h-[120px] space-y-2">
                   <Skeleton className="h-4 w-3/4" />
                   <Skeleton className="h-4 w-full" />
@@ -393,7 +399,7 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
                   >
                     <RefreshCw
                       className={
-                        isGenerating && (!generatingSection || generatingSection === 'fatalFlaw')
+                        generatingSection === 'fatalFlaw'
                           ? 'w-3 h-3 animate-spin'
                           : 'w-3 h-3'
                       }
@@ -401,7 +407,7 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
                   </Button>
                 )}
               </div>
-              {isGenerating && (!generatingSection || generatingSection === 'fatalFlaw') ? (
+              {generatingSection === 'fatalFlaw' ? (
                 <div className="p-6 bg-card border border-red-500/20 rounded-xl shadow-sm h-[120px] space-y-2">
                   <Skeleton className="h-4 w-2/3 bg-red-500/10" />
                   <Skeleton className="h-4 w-full bg-red-500/10" />
@@ -450,7 +456,7 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
                   >
                     <RefreshCw
                       className={
-                        isGenerating && (!generatingSection || generatingSection === 'stakes')
+                        generatingSection === 'stakes'
                           ? 'w-3 h-3 animate-spin'
                           : 'w-3 h-3'
                       }
@@ -458,7 +464,7 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
                   </Button>
                 )}
               </div>
-              {isGenerating && (!generatingSection || generatingSection === 'stakes') ? (
+              {generatingSection === 'stakes' ? (
                 <div className="p-6 bg-card border border-orange-500/20 rounded-xl shadow-sm h-[120px] space-y-2">
                   <Skeleton className="h-4 w-3/4 bg-orange-500/10" />
                   <Skeleton className="h-4 w-full bg-orange-500/10" />
@@ -504,8 +510,7 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
                   >
                     <RefreshCw
                       className={
-                        isGenerating &&
-                        (!generatingSection || generatingSection === 'inevitableConsequence')
+                        generatingSection === 'inevitableConsequence'
                           ? 'w-3 h-3 animate-spin'
                           : 'w-3 h-3'
                       }
@@ -513,8 +518,7 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
                   </Button>
                 )}
               </div>
-              {isGenerating &&
-              (!generatingSection || generatingSection === 'inevitableConsequence') ? (
+              {generatingSection === 'inevitableConsequence' ? (
                 <div className="p-6 bg-card border border-purple-500/20 rounded-xl shadow-sm h-[120px] space-y-2">
                   <Skeleton className="h-4 w-2/3 bg-purple-500/10" />
                   <Skeleton className="h-4 w-full bg-purple-500/10" />

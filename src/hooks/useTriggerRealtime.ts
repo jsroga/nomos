@@ -2,7 +2,7 @@
  * React hook for subscribing to Trigger.dev run updates in realtime
  * Replaces polling-based status checking with SSE-based subscriptions
  */
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRealtimeRun } from '@trigger.dev/react-hooks'
 
 type RunStatus =

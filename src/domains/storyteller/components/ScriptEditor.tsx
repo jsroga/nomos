@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { Wand2, RotateCcw, Sparkles, ChevronDown } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 
 interface ScriptEditorProps {
   content: string
@@ -260,3 +259,6 @@ export const ScriptEditor: React.FC<ScriptEditorProps> = ({
     </div>
   )
 }
+
+export default ScriptEditor
+

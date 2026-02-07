@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { cn } from '@/lib/utils'

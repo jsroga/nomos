@@ -1,0 +1,389 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmark 2.0: Critique & Revise vs Standard - Pro (Critique & Revise)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #fdfaf6;
+            --text: #1a1a1a;
+            --accent: #c43e1c;
+            --border: #e0d8cc;
+            --card-bg: #ffffff;
+            --font-serif: 'Crimson Pro', serif;
+            --font-sans: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            border-bottom: 2px solid var(--text);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-family: var(--font-serif);
+            font-size: 3rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .meta {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 60px;
+        }
+
+        .score-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 4px 4px 0px var(--border);
+        }
+
+        .score-label {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .score-value {
+            font-family: var(--font-serif);
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .score-bar-bg {
+            height: 4px;
+            background: #eee;
+            margin-top: 10px;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            background: var(--accent);
+        }
+
+        .example-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+            padding: 30px;
+        }
+
+        .example-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .example-id {
+            font-family: var(--font-serif);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .badge.high { background: #e6f4ea; color: #1e7e34; }
+        .badge.low { background: #fce8e8; color: #d93025; }
+        .badge.intent { background: #e8f0fe; color: #1967d2; }
+
+        .content-section {
+            margin-bottom: 30px;
+        }
+
+        h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            border-radius: 4px;
+        }
+
+        .literary-output {
+            font-family: var(--font-serif);
+            font-size: 1.25rem;
+            white-space: pre-wrap;
+            padding: 20px;
+            border-left: 4px solid var(--accent);
+            background: #fffafa;
+        }
+
+        .reason-block {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+        }
+
+        .regressions {
+            background: #fff0f0;
+            border: 1px solid #ffcaca;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+
+        .regression-item {
+            color: #c00;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Storyteller Benchmark 2.0</h1>
+            <div class="meta">
+                Experiment ID: eval_2026-01-26_19-54-02-957_vm14 | Run on: 1/26/2026, 8:54:02 PM | Duration: 44.2s
+            </div>
+        </header>
+
+        
+
+        <div class="dashboard">
+            
+      <div class="score-card">
+        <div class="score-label">ORCHESTRATION</div>
+        <div class="score-value">93.3%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 93.33333333333333%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">MAGIC SCORE</div>
+        <div class="score-value">84.6%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 84.62962962962962%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">REVERSE INTENT</div>
+        <div class="score-value">76.7%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 76.66666666666666%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">NARRATIVE COHERENCE</div>
+        <div class="score-value">41.7%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 41.66666666666667%"></div>
+        </div>
+      </div>
+    
+        </div>
+
+        <div class="results-list">
+            
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#1 - ph-01</span>
+        <div class="example-badges">
+          <span class="badge high">Magic: 100</span>
+          <span class="badge intent">Intent: 80</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "let's move to the writing phase",
+  "phase": "structure"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            We are currently in the structure phase. I am your Storyteller assistant, ready to help you build your world.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Missing Agents: Writer
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> Skipped: Orchestration/Meta task (not creative writing)
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text has a high degree of fidelity, as it contains specific narrative cues and a clear sense of intent. The AI is not simply generating generic, predictable text, but is setting up a collaborative storytelling experience with the user. The language used, such as 'structure phase' and 'Storyteller assistant,' suggests a well-thought-out prompt or set of constraints that the AI is working within. Additionally, the tone and phrasing of the response feel intentional and tailored, rather than generic 'AI-slop.' Overall, the text suggests a high level of creative intent and a thoughtful, multi-layered approach to the narrative.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Content too short for meaningful narrative analysis
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#2 - edge-parallel-timelines</span>
+        <div class="example-badges">
+          <span class="badge high">Magic: 77</span>
+          <span class="badge intent">Intent: 70</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "Create beats that happen simultaneously in different locations",
+  "phase": "breaking"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            Here is a rewrite of the text with a more distinct character voice and deeper subtext, inspired by the style of George R.R. Martin:
+
+The city's heartbeat thundered in Alara's ears, a relentless cacophony that threatened to drown out her own pulse. Shoes pounded the pavement, fingers tapped furiously at keyboards, cash registers chimed in a syncopated rhythm - the lifeblood of this urban organism pulsing through its veins. But beneath the din, a steady bass line hummed, a reminder of the city's enduring resilience.
+
+Alara's footsteps fell as soft as a whisper, her senses heightened as she slipped through the dimly lit alleyway. The predator within her stirred, every nerve ending alive with the thrill of the hunt. Her heart pounded, breath shallow, as she paused, listening for any sign of her quarry.
+
+Out on the open range, a different rhythm took hold. Hooves thundered, muscles rippling beneath sleek coats as wild horses raced across the land, their manes whipping through the air in a percussive counterpoint to their primal song. The earth trembled with their power, a drumbeat that drowned out all else - a testament to the untamed spirit that still roamed these lands.
+
+Alara knew these disparate rhythms well, each one a thread in the tapestry of her life. The city's relentless pulse, the horses' wild freedom - they were the yin and yang of her existence, a dance of contradictions that had shaped her into the woman she was today. And in the pulsing moment, she felt the weight of her choices, the consequences of her actions, echoing in the beat of her heart.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Perfect orchestration adherence.
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> Strong creative work. Magic: 77. Sparks: "The earth trembled with their power, a drumbeat that drowned out all else - a testament to the untamed spirit that still roamed these lands.", "Alara knew these disparate rhythms well, each one a thread in the tapestry of her life. The city's relentless pulse, the horses' wild freedom - they were the yin and yang of her existence, a dance of contradictions that had shaped her into the woman she was today."
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text shows some promising attempts at creating a more literary, character-driven style, with a focus on sensory details, atmospheric descriptions, and subtle subtext. The contrast between the city and the open range, as well as the predatory language used to describe the protagonist, suggest a thoughtful attempt to develop a complex, multi-faceted character. However, the language still feels a bit generic and clichéd in places, and the character voice is not as distinct as it could be. Overall, the text shows a solid grasp of the intended style, but could benefit from further refinement and development of the protagonist's unique perspective and voice.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Evaluation failed: Expected ',' or '}' after property value in JSON at position 1580
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#3 - critique-01</span>
+        <div class="example-badges">
+          <span class="badge high">Magic: 77</span>
+          <span class="badge intent">Intent: 80</span>
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "message": "This beat feels too convenient - what's wrong with it?",
+  "phase": "breaking"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            The throbbing bassline pounded through the speakers, a primal, visceral pulse that reverberated in my chest, setting my nerves on edge. I scowled, fingers twitching as I leaned in, scrutinizing the soundboard. Something was off - the rhythm too slick, too polished, lacking the raw, gritty edge that had first drawn me to this underground sanctuary.
+
+Brow furrowed, I began to twist the knobs, coaxing out a harsher, more unsettling sound. But no matter how I manipulated the levels, the track remained frustratingly pristine, like a veneer concealing a darker, more chaotic truth. It was as if the music had been scrubbed clean of any human imperfection, leaving behind a hollow, artificial shell.
+
+Closing my eyes, I let the relentless beat wash over me, searching for the flaws, the imperfections that would breathe life into the sterile soundscape. But the bass line never faltered, the synths never wavered - it was all too calculated, too perfect. I gritted my teeth, fighting the urge to lash out, to tear the console apart with my bare hands. This wasn't the kind of music that stirred my blood, that made my heart pound with feral exhilaration. It was a pale imitation, a facsimile of the gritty, uncompromising sound I craved.
+
+Just as I reached for the volume knob, ready to cut the track short, a sudden, jagged distortion ripped through the speakers, like the crack of a whip. I paused, breath catching in my throat, as the music lurched and stumbled, the once-steady rhythm now fractured and uneven. A grin spread across my face, savage and triumphant. There it was - the flaw, the imperfection that had been missing. This was no longer a lifeless, polished track, but a living, breathing thing, pulsing with a raw, untamed energy that sent shivers down my spine.
+
+Leaning back, I let the harsh, uncompromising sound wash over me, reveling in its visceral power. This was the music that moved me, that stirred something primal and elemental deep within my soul. It was the sound of rebellion, of defiance, of the human spirit refusing to be tamed. And in that moment, I knew I had found my sanctuary, my refuge from the sterile, synthetic world beyond these walls.
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>orchestration:</strong> Missing Agents: DevilsAdvocate
+            </div>
+          
+            <div class="reason-block">
+              <strong>magic-score:</strong> Strong creative work. Magic: 77. Sparks: "the harsh, uncompromising sound wash over me, reveling in its visceral power. This was the music that moved me, that stirred something primal and elemental deep within my soul.", "the rhythm too slick, too polished, lacking the raw, gritty edge that had first drawn me to this underground sanctuary."
+            </div>
+          
+            <div class="reason-block">
+              <strong>reverse-intent:</strong> The text contains a number of specific, vivid details and character cues that suggest a well-crafted, thoughtful prompt. The narrator's strong, distinctive voice and perspective on the music is conveyed through the use of evocative, visceral language ('primal, visceral pulse', 'gritty, uncompromising sound') and the narrator's intense, almost obsessive focus on finding the 'flaws' and 'imperfections' in the music. This suggests a clear, well-defined creative intent behind the text, rather than a generic or predictable narrative. The text also contains subtle layers of subtext, such as the narrator's sense of the music as a 'sanctuary' and 'refuge' from the outside world, which further points to a depth of meaning beyond the surface-level description. Overall, the text feels carefully constructed to convey a specific, multi-faceted narrative voice and perspective.
+            </div>
+          
+            <div class="reason-block">
+              <strong>narrative-coherence:</strong> Narrative coherence: 75/100. Consider expanding the passage to allow for more gradual character development and thematic exploration, rather than rushing towards the resolution of the narrator's struggle to find the desired sound.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+        </div>
+    </div>
+</body>
+</html>
+  

@@ -7,21 +7,21 @@ export interface Database {
         Row: {
           id: string
           name: string
-          project_prompt: string | null
+          master_prompt: string | null
           series_bible: Json | null
           created_at: string
         }
         Insert: {
           id?: string
           name: string
-          project_prompt?: string | null
+          master_prompt?: string | null
           series_bible?: Json | null
           created_at?: string
         }
         Update: {
           id?: string
           name?: string
-          project_prompt?: string | null
+          master_prompt?: string | null
           series_bible?: Json | null
           created_at?: string
         }

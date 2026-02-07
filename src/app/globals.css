@@ -39,6 +39,18 @@
     --ring: 235 88% 65%;
 
     --radius: 0.5rem;
+
+    /* Chart Colors */
+    --chart-1: 220 70% 50%;
+    /* Blue */
+    --chart-2: 160 60% 45%;
+    /* Green */
+    --chart-3: 30 80% 55%;
+    /* Orange */
+    --chart-4: 280 65% 60%;
+    /* Purple */
+    --chart-5: 340 75% 55%;
+    /* Pink */
   }
 }
 

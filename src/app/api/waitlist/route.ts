@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 
 // Simple waitlist implementation.
 // Can be expanded to save to Supabase 'waitlist' table later.

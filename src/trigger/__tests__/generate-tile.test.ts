@@ -3,6 +3,10 @@
  * Run with: npx tsx src/trigger/__tests__/generate-tile.test.ts
  */
 
+import { config } from 'dotenv'
+import path from 'path'
+config({ path: path.resolve(process.cwd(), '.env.local') })
+
 import { generateTileTask } from '../generate-tile'
 
 // Test configuration validation

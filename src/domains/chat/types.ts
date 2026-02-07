@@ -1,6 +1,25 @@
 import { ReactNode } from 'react'
 import { ConsistencyCheckResult } from '@/domains/storyteller/consistency/types'
 
+// Thinking entry with agent attribution
+export interface ThinkingEntry {
+  agent: string
+  content: string
+  timestamp: number
+}
+
+// Activity Log Entry for persisting technical events
+export interface ActivityLogEntry {
+  type: 'status' | 'thinking' | 'tool' | 'action' | 'error' | 'start' | 'complete'
+  agent?: string
+  content?: string
+  toolName?: string
+  toolInput?: any
+  toolResult?: any
+  timestamp: number
+  details?: any
+}
+
 // Message types
 export interface Message {
   sender?: string
@@ -14,6 +33,18 @@ export interface Message {
   id?: string
   timestamp?: Date
   consistencyResult?: ConsistencyCheckResult
+  /** Detailed activity log for playback/inspection */
+  activityLog?: ActivityLogEntry[]
+  /** Additional metadata for extended functionality */
+  additional_kwargs?: {
+    thinking?: string
+    thinkingEntries?: ThinkingEntry[]
+    hasThinking?: boolean
+    citations?: any[]
+    [key: string]: any
+  }
+  /** Array of citations if grounded in sources */
+  citations?: any[]
 }
 
 // Agent Configuration
@@ -72,6 +103,10 @@ export interface QuestionSession {
   question: AgentQuestion
   status: 'pending' | 'answered' | 'skipped'
   answer?: string | string[]
+  /** Workflow run ID for resuming suspended workflows */
+  workflowRunId?: string
+  /** Workflow step ID for resuming at the correct step */
+  workflowStepId?: string
 }
 
 // ============================================

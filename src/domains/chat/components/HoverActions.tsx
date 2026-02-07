@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { cn } from '@/lib/utils'
-import { Copy, RefreshCw, Edit3, Check, MoreHorizontal } from 'lucide-react'
+import { Copy, RefreshCw, Edit3, Check } from 'lucide-react'
 
 interface HoverActionsProps {
   content: string
@@ -112,4 +112,3 @@ export const WithHoverActions: React.FC<WithHoverActionsProps> = ({
     </div>
   )
 }
-

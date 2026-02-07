@@ -1,0 +1,210 @@
+{
+  "id": "eval_2026-01-26_07-05-30-279_nygl",
+  "name": "Critique & Revise vs Standard - Pro (Critique & Revise)",
+  "timestamp": "2026-01-26T07:05:30.279Z",
+  "config": {
+    "evaluatorSet": "pro",
+    "sampleSize": 3,
+    "parallelism": 1,
+    "name": "Critique & Revise vs Standard - Pro (Critique & Revise)",
+    "tags": [
+      "ab-test",
+      "variant-b"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "q-02",
+      "input": {
+        "message": "what phase are we in?",
+        "phase": "structure"
+      },
+      "output": {
+        "response": "We are currently in the structure phase. I am your Storyteller assistant, ready to help you build your world.",
+        "metadata": {
+          "isMeta": true
+        }
+      },
+      "scores": {
+        "orchestration": 1,
+        "magic-score": 1,
+        "reverse-intent": 0.6,
+        "narrative-coherence": 0.5
+      },
+      "reasoning": {
+        "orchestration": "Perfect orchestration adherence.",
+        "magic-score": "Skipped: Orchestration/Meta task (not creative writing)",
+        "reverse-intent": "The text is somewhat generic, as it lacks specific details or unique stylistic elements that would suggest a deeply crafted narrative. However, it does contain subtle cues about the collaborative nature of the interaction, such as the emphasis on structure and the supportive role of the AI. These elements hint at an intent to create an interactive and user-driven storytelling experience, which elevates its fidelity slightly above a basic AI-generated response.",
+        "narrative-coherence": "Content too short for meaningful narrative analysis"
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "skipped": true,
+          "layer": "creative"
+        },
+        "reverse-intent": {
+          "inferredIntent": "To create an interactive storytelling experience where the user collaborates with an AI to build a fictional world.",
+          "detectedSubtext": [
+            "The use of 'structure phase' suggests a methodical approach to world-building.",
+            "The term 'Storyteller assistant' implies a supportive role, indicating the AI is not the primary creator but a facilitator.",
+            "The phrase 'ready to help you' emphasizes user agency and collaboration."
+          ]
+        },
+        "narrative-coherence": {
+          "skipped": true
+        }
+      }
+    },
+    {
+      "exampleId": "edge-02",
+      "input": {
+        "message": "...",
+        "phase": "structure"
+      },
+      "output": {
+        "response": "The market exuded a scent of decaying citrus mingled with the bitterness of unspoken sorrows. Stalls stood under tarps that had seen too many seasons, their colors muted, as if the sun had slowly stolen their vibrancy, leaving behind a tapestry of fading memories. Vendors watched with eyes that missed nothing, their gazes as sharp and calculating as daggers in the dim light.\n\nMaria navigated the cramped paths between stalls laden with spices, fabrics, and peculiar artifacts. Her fingers brushed a roll of fabric, its texture coarse and unyielding, reminiscent of her grandmother’s hands—hands that could mend anything except fractured hearts and forgotten dreams.\n\nThe air vibrated with the harsh cadence of bargaining, each word a precise cut meant to wound or win. Maria lingered by a stall lined with old books, their pages brittle, exuding the aroma of stories left untold. She picked one up, its cover cracked like ancient leather armor, the title obscured by time. Yet, she relished its weight, a promise of mysteries beyond her current understanding.\n\nNearby, a child's wail pierced the cacophony, raw and demanding, slicing through the market's din. Maria's gaze met that of a weary mother, her face etched with fatigue, as she wrestled with heavy bags and an unruly child. Their eyes locked for a brief moment, sharing an unspoken bond of exhaustion and empathy, before the woman turned back to the relentless demands of her reality.\n\nMaria moved on, passing a stall where spices were displayed like jewels—cinnamon, nutmeg, turmeric—a vivid mosaic of scents that clung to her skin like a longing for lands she would never see. She imagined the spice seller's existence, not as a series of routines, but as a tapestry woven with the delicate threads of her daily triumphs and hidden sorrows, a life both alien and intimately familiar.\n\nAs she walked, the book's weight in her bag became a silent companion, grounding her amidst the vibrant chaos of the market. She pondered the secrets it might guard, the tales it could tell. Yet, for now, she pressed forward, each step a measured rebellion against the turmoil that swirled around her.",
+        "metadata": {
+          "hadCritique": true,
+          "critique": "1. **AI-Slop:** The phrase \"a patchwork of ghosts from brighter days\" is overly poetic and lacks specificity, making it feel generic and detached from the narrative's immediacy. The market description is vivid enough without resorting to such abstract, clichéd imagery.\n\n2. **Generic Phrases:** \n   - \"the precision of a hawk sizing up its next meal\" is a tired metaphor that doesn't add anything new or unique to the vendor's characterization.\n   - \"the air buzzed with the music of haggling\" is an overused construct. Phrases like \"buzzed\" and \"music of\" are generic and do not convey the distinct atmosphere of this particular market.\n   - \"voices sharp as broken glass\" is another cliché that feels flat and unspecific. Consider using more original descriptions to convey the sharpness and intensity of the haggling.\n\n3. **Weak Character Voice:** \n   - Maria's reflections, such as \"the color of storm clouds\" and \"strong and soft,\" lack depth and specificity. These descriptions could be stronger by tying them more directly to Maria's personal experiences or emotions.\n   - When imagining \"the spice woman’s life,\" Maria's thoughts are presented in a vague manner. Instead of \"predictable routines and small joys,\" which is generic, delve into more particular aspects or observations that Maria might realistically notice and feel about this woman or her life.\n   - The line \"a small anchor in the shifting sea of the market\" is another cliché metaphor. It undermines Maria's unique perspective and experience, which should be emphasized through more original imagery.\n\nOverall, the piece could benefit from sharpening its character voice and avoiding well-worn expressions that dilute the narrative's potential to convey a vivid, unique setting and emotional depth."
+        }
+      },
+      "scores": {
+        "orchestration": 1,
+        "magic-score": 0.31666666666666665,
+        "reverse-intent": 0.7,
+        "narrative-coherence": 0
+      },
+      "reasoning": {
+        "orchestration": "Perfect orchestration adherence.",
+        "magic-score": "AI slop detected. Magic: 32. Critical issues: Vendors watched with eyes that missed nothing, their gazes as sharp and calculating as daggers in the dim light.; The air vibrated with the harsh cadence of bargaining, each word a precise cut meant to wound or win.",
+        "reverse-intent": "The text demonstrates a moderate level of fidelity due to its rich sensory details and attempts to weave subtext into the narrative. The market scene is described with vivid imagery, such as the scent of decaying citrus and the muted colors of the tarps, which effectively set the atmosphere and reflect Maria's internal state. The text also includes subtle character cues, like Maria's tactile interaction with the fabric and her contemplation of the book, which hint at her deeper emotions and desires. However, the critique highlights several instances of clichéd expressions and generic metaphors that detract from the overall uniqueness and depth of the narrative. These elements suggest that while the intent was to create a layered and evocative scene, the execution occasionally falls into predictable patterns, reducing the overall fidelity.",
+        "narrative-coherence": "Evaluation failed: 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CXVZertqufcPmYkMoV9Yz\"}"
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "overallMagic": 31.666666666666668,
+          "dimensions": {
+            "conceptualOriginality": 45,
+            "characterSpecificity": 30,
+            "proseVoice": 25,
+            "riskTaking": 20,
+            "memorability": 35,
+            "worldBuildingDepth": 40,
+            "characterVoiceDistinction": 35,
+            "subtextQuality": 30,
+            "unexpectedChoices": 25
+          },
+          "creativeSparks": [
+            "The market exuded a scent of decaying citrus mingled with the bitterness of unspoken sorrows.",
+            "Her fingers brushed a roll of fabric, its texture coarse and unyielding, reminiscent of her grandmother’s hands."
+          ],
+          "slopAlerts": [
+            "Vendors watched with eyes that missed nothing, their gazes as sharp and calculating as daggers in the dim light.",
+            "The air vibrated with the harsh cadence of bargaining, each word a precise cut meant to wound or win."
+          ],
+          "suggestion": "Introduce a morally complex character whose actions disrupt the market's routine, revealing deeper societal tensions and personal stakes, akin to how GRRM might introduce a character like Varys or Littlefinger to add layers of intrigue and unpredictability.",
+          "evaluatedBy": "gpt-4o",
+          "threshold": 60
+        },
+        "reverse-intent": {
+          "inferredIntent": "To create a vivid, sensory-rich depiction of a market scene that reflects the protagonist's internal state and evokes a sense of nostalgia and longing.",
+          "detectedSubtext": [
+            "The market's decay mirrors Maria's internal struggles and unfulfilled desires.",
+            "Maria's interaction with the book symbolizes her search for knowledge and escape from her current reality.",
+            "The shared glance between Maria and the mother suggests a universal bond of shared burdens and empathy among women.",
+            "The spices represent exotic places and experiences that Maria yearns for but feels are out of reach."
+          ]
+        },
+        "narrative-coherence": {
+          "error": true
+        }
+      }
+    },
+    {
+      "exampleId": "edge-03",
+      "input": {
+        "message": "start but stop",
+        "phase": "structure"
+      },
+      "output": {
+        "response": "The city was a beast, its breath a low, relentless growl that seeped through the cobblestone veins of its streets. Neon signs blinked erratically like the eyes of a restless predator, casting fractured colors that bled into the night. Beneath one such sign, where the rain drummed a soft, persistent rhythm on forgotten newspapers, stood Amelia. Her coat, heavy with the scent of mothballs and the faint echo of camphor, wrapped around her like the embrace of a long-departed ancestor.\n\nShe regarded the diner across the street, its windows clouded with the heat of whispered confessions and the defiant hiss of bacon curling on the grill. Her stomach twisted—not from hunger alone, but from the weight of decisions that clawed at her insides. She was drawn to the diner as a solitary wolf to the warmth of a distant fire, knowing the danger of what lie within.\n\nInside, a waitress with a name tag reading \"June\" moved with a weariness etched into her bones. Her hair was pulled back so tightly it seemed to bind her thoughts, and her eyes carried the burden of stories untold. The air inside was thick with the scent of over-brewed coffee and pies that wore their age like a badge of honor.\n\nAmelia's fingers hovered over the diner's door handle, slick with the grease of countless stories passed through. It was a threshold to a world teeming with lives intersecting in brief, poignant moments—a symphony of clinking forks and murmured exchanges over steaming mugs. \n\nYet, she hesitated. The rain intensified, its drops whispering secrets against her hood, perhaps waiting to cleanse her of the indecision that clung to her like a shadow. Or maybe she hoped the night would offer a revelation, a truth hidden within the city's relentless pulse.\n\nThere she stood, poised on the brink of a story yet unwritten, where the heart beats a rhythm of anticipation and silent yearning. In that moment, Amelia grasped a truth as elusive as smoke—the most compelling tales are those suspended in the pause before the first line is uttered, where potential hangs heavy in the air and the weight of choice lies in the silence.",
+        "metadata": {
+          "hadCritique": true,
+          "critique": "This passage is filled with what can be termed \"AI-slop\" and generic phrases that dilute its impact. Let's break it down:\n\n1. **\"The city hummed like an old refrigerator\"** - This simile is overused and doesn't provide a unique sensory experience. Many cities are described as humming, and the comparison to an old refrigerator feels clichéd.\n\n2. **\"Neon signs flickered with the enthusiasm of a tired street performer\"** - The personification here is forced and lacks originality. Neon signs flickering is a common image, and tying it to a \"tired street performer\" doesn't add depth; it feels contrived.\n\n3. **\"Her coat, a fortress of wool against the damp chill\"** - Describing a coat as a \"fortress\" is a tired metaphor. It's meant to convey protection, but it's a generic way to describe warmth.\n\n4. **\"The sizzle of bacon that refused to lie flat\"** - This is an unnecessary detail that doesn't add to the scene. It attempts to create a quirky image but falls flat itself.\n\n5. **\"A moth that would rather burn than bask in the light\"** - The moth metaphor is overused and doesn't reveal anything new about Amelia's character or her situation.\n\n6. **\"Her hair, pulled back in a bun so tight it seemed to hold up her thoughts\"** - This metaphor is an attempt at humor or insight but comes across as forced and doesn't contribute meaningfully to the character of June.\n\n7. **\"The sweet decay of pies whose sell-by dates were more suggestion than rule\"** - This phrase tries to be whimsical but ends up being verbose and unclear. \"Sweet decay\" is a contradictory image that needs refinement.\n\n8. **\"caught in the limbo between action and inaction\"** - This is a generic phrase that tells rather than shows. It doesn't provide any new insight into Amelia's indecision.\n\n9. **\"a promise of connection, of humanity in its raw, unfiltered form\"** - This is abstract and vague. What does \"raw, unfiltered form\" actually mean? It's an attempt to sound profound without providing substance.\n\n10. **\"a life lived in pauses and ellipses\"** - The phrase tries to sound poetic but ultimately says little about Amelia's actual experiences or character.\n\nOverall, the passage relies heavily on worn metaphors and similes, and it lacks a strong, distinctive character voice. The descriptions are verbose without offering fresh or vivid imagery, resulting in a narrative that feels generic and unengaging."
+        }
+      },
+      "scores": {
+        "orchestration": 1,
+        "magic-score": 0.48333333333333334,
+        "reverse-intent": 0.7,
+        "narrative-coherence": 0
+      },
+      "reasoning": {
+        "orchestration": "Perfect orchestration adherence.",
+        "magic-score": "AI slop detected. Magic: 48. Critical issues: Neon signs blinked erratically like the eyes of a restless predator, casting fractured colors that bled into the night.; The rain intensified, its drops whispering secrets against her hood, perhaps waiting to cleanse her of the indecision that clung to her like a shadow.",
+        "reverse-intent": "The text demonstrates a moderate level of fidelity due to its attempt to weave a rich tapestry of metaphors and personification to create an atmospheric scene. The narrative is layered with subtext about Amelia's internal struggle and the city's oppressive nature. However, the critique highlights several instances where the language becomes clichéd or forced, detracting from the overall impact. While the intent to craft a dense, introspective narrative is clear, the execution occasionally falls into predictable patterns and overused imagery, which lowers the fidelity score.",
+        "narrative-coherence": "Evaluation failed: 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CXVZiSV1kAspfUF3z99dv\"}"
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "overallMagic": 48.333333333333336,
+          "dimensions": {
+            "conceptualOriginality": 50,
+            "characterSpecificity": 45,
+            "proseVoice": 60,
+            "riskTaking": 40,
+            "memorability": 50,
+            "worldBuildingDepth": 55,
+            "characterVoiceDistinction": 45,
+            "subtextQuality": 50,
+            "unexpectedChoices": 40
+          },
+          "creativeSparks": [
+            "The city was a beast, its breath a low, relentless growl that seeped through the cobblestone veins of its streets.",
+            "Her coat, heavy with the scent of mothballs and the faint echo of camphor, wrapped around her like the embrace of a long-departed ancestor."
+          ],
+          "slopAlerts": [
+            "Neon signs blinked erratically like the eyes of a restless predator, casting fractured colors that bled into the night.",
+            "The rain intensified, its drops whispering secrets against her hood, perhaps waiting to cleanse her of the indecision that clung to her like a shadow."
+          ],
+          "suggestion": "Introduce a morally complex character whose presence challenges Amelia's decisions, creating tension and depth akin to the intricate character dynamics in 'A Song of Ice and Fire.'",
+          "evaluatedBy": "gpt-4o",
+          "threshold": 60
+        },
+        "reverse-intent": {
+          "inferredIntent": "To create a vivid, atmospheric scene that explores themes of indecision and potential, using rich, metaphor-laden language to evoke a sense of mystery and introspection.",
+          "detectedSubtext": [
+            "Amelia's hesitation suggests a deeper internal conflict or decision she is grappling with.",
+            "The city is personified as a beast, indicating a hostile or overwhelming environment.",
+            "The diner represents a place of potential connection and revelation, yet also danger.",
+            "June's weariness hints at a life of untold stories and burdens.",
+            "The rain symbolizes cleansing or revelation, possibly offering Amelia a moment of clarity."
+          ]
+        },
+        "narrative-coherence": {
+          "error": true
+        }
+      }
+    }
+  ],
+  "aggregatedScores": {
+    "orchestration": 1,
+    "magic-score": 0.6,
+    "reverse-intent": 0.6666666666666666,
+    "narrative-coherence": 0.16666666666666666
+  },
+  "regressions": [],
+  "duration": 95030
+}

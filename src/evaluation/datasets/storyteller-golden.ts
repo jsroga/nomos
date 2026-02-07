@@ -659,7 +659,8 @@ const examples: StorytellerExample[] = [
   {
     id: 'complex-01',
     input: {
-      message: 'Rewrite this beat to fix the pacing, maintain character voice, and set up the twist',
+      message:
+        'Rewrite this beat to fix the pacing, maintain character voice, and set up the twist',
       phase: 'cardlock',
     },
     expected: {

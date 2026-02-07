@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { AIModel, AIModelConfig, TileContext } from './types'
 
 export class MockAIModel implements AIModel {

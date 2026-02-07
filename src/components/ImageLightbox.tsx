@@ -2,7 +2,6 @@ import React, { useEffect, useCallback } from 'react'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { cn } from '@/lib/utils'
 
 interface ImageLightboxProps {
   isOpen: boolean

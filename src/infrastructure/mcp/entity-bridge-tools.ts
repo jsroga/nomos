@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { db } from '@/db'
-import { gameEntities, entityRelationships } from '@/db/schema'
-import { eq, and, or, ilike } from 'drizzle-orm'
+import { gameEntities } from '@/db/schema'
+import { eq } from 'drizzle-orm'
 
 /**
  * Entity Bridge MCP Tools (Cross-Domain Orchestration)

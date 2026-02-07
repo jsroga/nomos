@@ -10,12 +10,7 @@
 import { ChatOpenAI } from '@langchain/openai'
 import { createReactAgent } from '@langchain/langgraph/prebuilt'
 import { HumanMessage, SystemMessage, AIMessage } from '@langchain/core/messages'
-import {
-  LoopAnalysisInput,
-  MarketAnalystState,
-  MarketAnalysisReport,
-  createInitialAnalystState,
-} from './types'
+import { LoopAnalysisInput, MarketAnalystState, MarketAnalysisReport } from './types'
 import { MARKET_ANALYST_SYSTEM_PROMPT, buildLoopContext } from './prompts'
 
 // Import all tools

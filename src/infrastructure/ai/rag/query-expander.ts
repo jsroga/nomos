@@ -11,7 +11,6 @@
  */
 
 import { ChatOpenAI } from '@langchain/openai'
-import { getModel } from '@/domains/storyteller/config/model-config'
 
 // ============================================
 // TYPES
@@ -97,6 +96,12 @@ export function expandQueryHeuristic(
   config: Partial<QueryExpanderConfig> = {}
 ): QueryExpansion {
   const fullConfig = { ...DEFAULT_CONFIG, ...config }
+
+  // Guard against null/undefined query
+  if (!query) {
+    return { original: '', expanded: [], strategy: 'synonym', metadata: {} }
+  }
+
   const expanded: string[] = [query] // Always include original
   const metadata: QueryExpansion['metadata'] = {}
 

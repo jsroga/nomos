@@ -10,7 +10,7 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { Message, AgentAction, AgentQuestion, QuestionSession, ActionStatus } from '../types'
+import { Message, AgentAction, AgentQuestion, QuestionSession, ActionStatus, ActivityLogEntry } from '../types'
 import { AgentStatusInfo, AgentStatus } from '../components/AgentLog'
 import { Citation } from '../components/CitationDisplay'
 import { ProgressSection } from '../components/SectionProgress'
@@ -19,8 +19,9 @@ import {
   loadChatState,
   saveInterruptedStream,
   loadInterruptedStream,
-  clearChatState,
+  clearInterruptedStream,
 } from '@/lib/chat-persistence'
+import { generateSessionId } from '@/lib/langfuse-session'
 
 interface UseChatStreamProps {
   initialMessages?: Message[]
@@ -29,8 +30,20 @@ interface UseChatStreamProps {
   onStreamingUpdate?: (data: any) => void
   onCitationsUpdate?: (citations: Citation[]) => void
   onGroundingUpdate?: (score: number, details: any) => void
+  /** Called when a specific bible section starts/stops loading */
+  onSectionLoading?: (section: string, loading: boolean, message?: string) => void
+  /** Called when streaming completes (success or error) */
+  onComplete?: () => void
   /** Optional key for sessionStorage persistence (e.g., project/episode ID) */
   persistKey?: string
+  /** Langfuse session ID for grouping traces. If not provided, one will be generated */
+  sessionId?: string
+  /** Project ID for session context */
+  projectId?: string
+  /** Episode ID for session context */
+  episodeId?: string
+  /** User ID for session context */
+  userId?: string
 }
 
 export interface StreamState {
@@ -56,6 +69,9 @@ export interface StreamState {
 
   // Round tracking
   roundCount: number
+
+  // Section-specific loading states (for bible sections like soundtracks, factions, etc.)
+  loadingSections: Record<string, { loading: boolean; message?: string }>
 }
 
 export function useChatStream({
@@ -65,8 +81,16 @@ export function useChatStream({
   onStreamingUpdate,
   onCitationsUpdate,
   onGroundingUpdate,
+  onSectionLoading,
+  onComplete,
   persistKey,
+  sessionId: propSessionId,
+  projectId,
+  episodeId,
+  userId,
 }: UseChatStreamProps = {}) {
+  // Generate or use provided session ID for Langfuse tracing
+  const sessionId = propSessionId || generateSessionId(projectId, episodeId, userId)
   // Get initial messages from sessionStorage if persistKey is provided
   const getInitialMessages = (): Message[] => {
     if (persistKey && typeof window !== 'undefined') {
@@ -122,19 +146,35 @@ export function useChatStream({
   // Track round count
   const [roundCount, setRoundCount] = useState(0)
 
-  // Restore streaming state on mount
+  // Section-specific loading states (for bible sections)
+  const [loadingSections, setLoadingSections] = useState<Record<string, { loading: boolean; message?: string }>>({})
+
+  // Restore streaming state on mount or when key changes
   useEffect(() => {
     if (persistKey && typeof window !== 'undefined') {
+      // 1. Restore Messages
+      try {
+        const storedMessages = sessionStorage.getItem(`chat-messages-${persistKey}`)
+        if (storedMessages) {
+          const parsed = JSON.parse(storedMessages)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            console.log(`📦 [useChatStream] Restored ${parsed.length} messages for key: ${persistKey}`)
+            setMessagesInternal(parsed)
+          }
+        }
+      } catch (e) {
+        console.error('[useChatStream] Failed to restore messages:', e)
+      }
+
+      // 2. Restore Streaming State (existing logic)
       const savedState = loadChatState(persistKey)
       if (savedState) {
         console.log('[useChatStream] Restored streaming state from storage')
 
-        // Check if was streaming when page reloaded
         if (savedState.isSending) {
           setWasStreamingOnLoad(true)
           console.log('[useChatStream] Stream was interrupted by page reload')
 
-          // Save interrupted stream info
           const interrupted = loadInterruptedStream(persistKey)
           if (!interrupted) {
             saveInterruptedStream(persistKey, {
@@ -217,6 +257,37 @@ export function useChatStream({
   /**
    * Update agent status
    */
+  // Helper to append activity log entries to the current/last AI message
+  const appendActivityLog = useCallback((entry: ActivityLogEntry) => {
+    setMessages(prev => {
+      // Find the last AI message (even if it's not the absolute last item, though it should be)
+      const lastAiMsgIndex = [...prev].reverse().findIndex(m => m && m.type === 'ai')
+      const actualIndex = lastAiMsgIndex === -1 ? -1 : prev.length - 1 - lastAiMsgIndex
+
+      if (actualIndex !== -1) {
+        const updatedMessages = [...prev]
+        const lastMsg = updatedMessages[actualIndex]
+        const currentLog = lastMsg.activityLog || []
+        updatedMessages[actualIndex] = {
+          ...lastMsg,
+          activityLog: [...currentLog, entry]
+        }
+        return updatedMessages
+      }
+
+      // Fallback: This shouldn't happen with the 'start' event fix, but for safety:
+      return [
+        ...prev,
+        {
+          sender: 'Storyteller',
+          content: '',
+          type: 'ai',
+          activityLog: [entry]
+        }
+      ]
+    })
+  }, [])
+
   const updateAgentStatus = useCallback(
     (agent: string, status: AgentStatus, message?: string, details?: string) => {
       setActiveAgents(prev => {
@@ -304,11 +375,11 @@ export function useChatStream({
         prev.map(s =>
           s.id === data.section
             ? {
-                ...s,
-                status: 'completed' as const,
-                endTime: Date.now(),
-                details: data.preview || data.details,
-              }
+              ...s,
+              status: 'completed' as const,
+              endTime: Date.now(),
+              details: data.preview || data.details,
+            }
             : s
         )
       )
@@ -317,11 +388,11 @@ export function useChatStream({
         prev.map(s =>
           s.id === data.section
             ? {
-                ...s,
-                status: 'error' as const,
-                endTime: Date.now(),
-                details: data.error,
-              }
+              ...s,
+              status: 'error' as const,
+              endTime: Date.now(),
+              details: data.error,
+            }
             : s
         )
       )
@@ -404,6 +475,29 @@ export function useChatStream({
                   setIsTokenStreaming(data.streamMode === 'events')
                   setCitations([])
                   setGroundingScore(null)
+
+                  // Initialize an empty AI message immediately so we can start logging activity to it
+                  setMessages(prev => {
+                    const lastMsg = prev[prev.length - 1]
+
+                    console.log('[useChatStream] Stream Start - Last Msg:', {
+                      sender: lastMsg?.sender,
+                      type: lastMsg?.type,
+                      content: lastMsg?.content?.slice(0, 20)
+                    })
+
+                    // If last message is already AI and empty, reuse it
+                    if (lastMsg && lastMsg.type === 'ai' && !lastMsg.content && !lastMsg.activityLog) {
+                      return prev
+                    }
+                    // Add new placeholder AI message
+                    return [...prev, {
+                      sender: 'Storyteller',
+                      content: '',
+                      type: 'ai',
+                      activityLog: []
+                    }]
+                  })
                 } else if (data.type === 'token') {
                   setStreamingTokens(prev => {
                     const next = prev + (data.token || '')
@@ -428,6 +522,71 @@ export function useChatStream({
                   processCitationEvent(data)
                 } else if (data.type === 'agent_status') {
                   updateAgentStatus(data.agent, data.status, data.message, data.details)
+
+                  // Persist status to Activity Log
+                  const entry: ActivityLogEntry = {
+                    type: 'status',
+                    agent: data.agent,
+                    content: data.message,
+                    timestamp: Date.now(),
+                    details: data.details
+                  }
+                  appendActivityLog(entry)
+
+                } else if (data.type === 'tool_result' || data.type === 'tool_call') {
+                  // Handle explicit tool events if they come through stream
+                  const entry: ActivityLogEntry = {
+                    type: 'tool',
+                    toolName: data.toolName || data.tool,
+                    toolInput: data.args || data.input,
+                    toolResult: data.result,
+                    timestamp: Date.now()
+                  }
+                  appendActivityLog(entry)
+
+                } else if (data.type === 'thinking') {
+                  // Extended thinking/reasoning from agent - attach to current message and activity log
+                  const thinking = data.thinking || ''
+                  const agentName = data.agent || thinkingAgent || 'Agent'
+
+                  if (thinking) {
+                    // 1. Add to persistent activity log for timeline view
+                    appendActivityLog({
+                      type: 'thinking',
+                      agent: agentName,
+                      content: thinking,
+                      timestamp: data.timestamp || Date.now()
+                    })
+
+                    // 2. Add to message thinking entries for the dedicated thinking UI
+                    setMessages(prev => {
+                      const lastMsg = prev[prev.length - 1]
+                      if (lastMsg && lastMsg.type === 'ai') {
+                        const existingThinkingEntries = lastMsg.additional_kwargs?.thinkingEntries || []
+                        const newEntry = { agent: agentName, content: thinking, timestamp: data.timestamp || Date.now() }
+                        const updatedEntries = [...existingThinkingEntries, newEntry]
+
+                        const formattedThinking = updatedEntries
+                          .map(entry => `[${entry.agent}]\n${entry.content}`)
+                          .join('\n\n---\n\n')
+
+                        return [
+                          ...prev.slice(0, -1),
+                          {
+                            ...lastMsg,
+                            thinking: formattedThinking,
+                            additional_kwargs: {
+                              ...lastMsg.additional_kwargs,
+                              thinking: formattedThinking,
+                              thinkingEntries: updatedEntries,
+                              hasThinking: true,
+                            }
+                          }
+                        ]
+                      }
+                      return prev
+                    })
+                  }
                 } else if (data.type === 'message') {
                   setThinkingAgent(data.node || data.agent)
                   setMessages(prev => {
@@ -455,14 +614,48 @@ export function useChatStream({
                     setRoundCount(localRoundCount)
                   }
                 } else if (data.type === 'action') {
+                  const actionObj = data.action
+                  console.log(
+                    '[useChatStream] Action received:',
+                    actionObj?.type,
+                    actionObj?.payload?.label || actionObj?.payload?.id
+                  )
+
+                  // Persist action to Activity Log
+                  const entry: ActivityLogEntry = {
+                    type: 'action',
+                    agent: thinkingAgent || data.node || data.agent,
+                    content: actionObj.reasoning || 'Proposed Action',
+                    details: actionObj,
+                    timestamp: Date.now()
+                  }
+                  appendActivityLog(entry)
+
+                  // 1. Add action to the current message state so it persists
+                  setMessages(prev => {
+                    const lastMsg = prev[prev.length - 1]
+                    // If last message is from this agent, attach action
+                    if (lastMsg && lastMsg.type === 'ai' && lastMsg.sender === (thinkingAgent || data.node || data.agent)) {
+                      const updatedActions = [...(lastMsg.actions || []), { ...actionObj, status: 'pending' }]
+                      return [
+                        ...prev.slice(0, -1),
+                        { ...lastMsg, actions: updatedActions }
+                      ]
+                    }
+                    // Otherwise create a new message for the action
+                    return [
+                      ...prev,
+                      {
+                        sender: thinkingAgent || data.node || data.agent || 'System',
+                        content: '', // Action-only message
+                        type: 'ai',
+                        actions: [{ ...actionObj, status: 'pending' }]
+                      }
+                    ]
+                  })
+
+                  // 2. Still call onAction for side effects, allowing manual handling if needed
                   if (onAction) {
-                    // data.action is the full action object with { type, payload, confidence, reasoning }
-                    const actionObj = data.action
-                    console.log(
-                      '[useChatStream] Action received:',
-                      actionObj?.type,
-                      actionObj?.payload?.label || actionObj?.payload?.id
-                    )
                     const promise = onAction(actionObj)
                     if (pendingActionsRef) pendingActionsRef.current++
                     promise.finally(() => {
@@ -476,6 +669,9 @@ export function useChatStream({
                         id: q.id,
                         question: q,
                         status: 'pending',
+                        // Include workflow context for resume
+                        workflowRunId: data.workflowRunId,
+                        workflowStepId: data.workflowStepId,
                       })
                     })
 
@@ -488,10 +684,31 @@ export function useChatStream({
                   setThinkingAgent(null)
                   setIsTokenStreaming(false)
                   setStreamingTokens('')
+                } else if (data.type === 'info') {
+                  // Info notification (e.g., episode created)
+                  console.log(`[useChatStream] Info:`, data.message)
+                  if (onStreamingUpdate) onStreamingUpdate(data)
+                } else if (data.type === 'navigation') {
+                  // Navigation signal (e.g., open beat board)
+                  console.log(`[useChatStream] Navigation:`, data.action, data.episodeId)
+                  if (onStreamingUpdate) onStreamingUpdate(data)
+                  // Could trigger router.push() here if we have access to router
                 } else if (data.type === 'state') {
                   // State update from loop creator or similar
                   // Could emit this to external handler
                   if (onStreamingUpdate) onStreamingUpdate(data)
+                } else if (data.type === 'section_loading') {
+                  // Section-specific loading state (soundtracks, factions, etc.)
+                  const { section, loading, message } = data
+                  console.log(`[useChatStream] Section loading: ${section} = ${loading}`)
+
+                  setLoadingSections(prev => ({
+                    ...prev,
+                    [section]: { loading, message }
+                  }))
+
+                  // Notify external handler
+                  onSectionLoading?.(section, loading, message)
                 } else if (
                   data.type === 'complete' ||
                   data.type === 'done' ||
@@ -506,8 +723,14 @@ export function useChatStream({
                   setIsSending(false)
                   setActiveAgents([])
                   setIsAwaitingInput(false)
+                  // Call onComplete callback
+                  onComplete?.()
                 } else if (data.type === 'error') {
-                  const errorMsg = data.message || data.error || 'Unknown error'
+                  // Extract error message from various formats
+                  const errorMsg = data.error?.message || data.message || data.error || 'Unknown error'
+                  const errorCode = data.error?.code || 'ERROR'
+
+                  console.error(`[useChatStream] Error received: ${errorCode} - ${errorMsg}`)
 
                   // Special handling for tool chain corruption
                   if (errorMsg.includes('tool') && errorMsg.includes('must be')) {
@@ -528,12 +751,24 @@ export function useChatStream({
                       },
                     ])
                   } else {
+                    // Format error message nicely for display
+                    let displayMessage = `❌ **Error:** ${errorMsg}`
+
+                    // Add helpful context for known errors
+                    if (errorCode === 'QUOTA_EXCEEDED' || errorMsg.includes('quota')) {
+                      displayMessage = '⚠️ **API Quota Exceeded**\n\nThe AI service has reached its usage limit. Please:\n- Check your OpenAI billing settings\n- Wait a few minutes and try again\n- Contact support if the issue persists'
+                    } else if (errorMsg.includes('rate limit')) {
+                      displayMessage = '⏳ **Rate Limited**\n\nToo many requests. Please wait a moment and try again.'
+                    } else if (errorMsg.includes('network') || errorMsg.includes('timeout')) {
+                      displayMessage = '🌐 **Connection Error**\n\nCouldn\'t reach the AI service. Please check your internet connection and try again.'
+                    }
+
                     setMessages(prev => [
                       ...prev,
                       {
                         sender: 'System',
-                        content: `Error: ${errorMsg}`,
-                        type: 'ai',
+                        content: displayMessage,
+                        type: 'system', // Changed from 'error' to 'system' to match Message type
                       },
                     ])
                   }
@@ -546,6 +781,8 @@ export function useChatStream({
                   setIsSending(false)
                   setActiveAgents([])
                   setIsAwaitingInput(false)
+                  // Call onComplete callback
+                  onComplete?.()
                 }
               } catch (e) {
                 // ignore parse error
@@ -582,7 +819,7 @@ export function useChatStream({
             if (text.startsWith('{')) {
               // More robust regex: look for "message" key and capture the string value,
               // handling escaped quotes and cross-line content.
-              const messageMatch = text.match(/"message"\s*:\s*"((?:[^"\\]|\\.)*)"?/s)
+              const messageMatch = text.match(/"message"\s*:\s*"((?:[^"\\]|\\.)*)"?/)
               if (messageMatch) {
                 // Unescape the captured string
                 finalContent = messageMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
@@ -620,12 +857,15 @@ export function useChatStream({
         setIsSending(false)
         setActiveAgents([])
         setIsAwaitingInput(false)
+        // Call onComplete callback
+        onComplete?.()
       }
     },
     [
       onAction,
       onQuestion,
       onStreamingUpdate,
+      onComplete,
       updateAgentStatus,
       processSectionEvent,
       processCitationEvent,
@@ -638,10 +878,17 @@ export function useChatStream({
       abortControllerRef.current = new AbortController()
 
       try {
+        // Inject session context into payload for Langfuse session tracking
+        const payloadWithSession = {
+          ...payload,
+          sessionId,
+          ...(userId && { userId }),
+        }
+
         const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...customHeaders },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(payloadWithSession),
           signal: abortControllerRef.current.signal,
         })
         await processStream(res, abortControllerRef.current.signal, roundCount)
@@ -673,7 +920,7 @@ export function useChatStream({
         setActiveAgents([])
       }
     },
-    [processStream, roundCount]
+    [processStream, roundCount, sessionId, userId]
   )
 
   /**
@@ -692,6 +939,47 @@ export function useChatStream({
     }
   }, [persistKey])
 
+  /**
+   * Resume a suspended workflow with user's choice
+   * Called when user answers a question from the Writers Room
+   */
+  const resumeWorkflow = useCallback(
+    async (
+      runId: string,
+      selectedOption: string,
+      additionalFeedback?: string
+    ): Promise<boolean> => {
+      try {
+        const response = await fetch('/api/storyteller/workflow/resume', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            runId,
+            selectedOption,
+            additionalFeedback,
+          }),
+        })
+
+        if (!response.ok) {
+          console.error('[useChatStream] Failed to resume workflow:', await response.text())
+          return false
+        }
+
+        const result = await response.json()
+        console.log('[useChatStream] Workflow resumed:', result)
+
+        // Clear awaiting input state
+        setIsAwaitingInput(false)
+
+        return true
+      } catch (error) {
+        console.error('[useChatStream] Error resuming workflow:', error)
+        return false
+      }
+    },
+    []
+  )
+
   return {
     // Core state
     messages,
@@ -706,6 +994,7 @@ export function useChatStream({
     processStream,
     clearCitations,
     dismissInterruptedWarning,
+    resumeWorkflow,
 
     // Streaming state
     streamingTokens,
@@ -731,6 +1020,12 @@ export function useChatStream({
 
     // Round tracking
     roundCount,
+
+    // Section-specific loading states
+    loadingSections,
+    setLoadingSections,
+
+    // Session tracking (for Langfuse)
+    sessionId,
   }
 }
-

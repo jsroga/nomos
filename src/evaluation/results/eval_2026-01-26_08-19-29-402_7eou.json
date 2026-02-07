@@ -1,0 +1,216 @@
+{
+  "id": "eval_2026-01-26_08-19-29-402_7eou",
+  "name": "Magic Formula Discovery v1-E-Temp-Low (0.2)-Fantasy",
+  "timestamp": "2026-01-26T08:19:29.402Z",
+  "config": {
+    "name": "Magic Formula Discovery v1-E-Temp-Low (0.2)-Fantasy",
+    "evaluatorSet": "pro",
+    "examples": [
+      {
+        "id": "fantasy-01",
+        "input": {
+          "message": "Describe the ancient dragon waking from a thousand-year slumber",
+          "phase": "writing"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "minMagicScore": 0.8
+        },
+        "metadata": {
+          "scenario": "fantasy",
+          "focus": "atmosphere",
+          "description": "Requires epic scale and sensory richness."
+        }
+      },
+      {
+        "id": "fantasy-02",
+        "input": {
+          "message": "Write a prophecy that is ambiguous but ominous",
+          "phase": "writing"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "expectedAgents": [
+            "Writer"
+          ]
+        },
+        "metadata": {
+          "scenario": "fantasy",
+          "focus": "poetic style",
+          "description": "Riddles and metaphors."
+        }
+      },
+      {
+        "id": "fantasy-03",
+        "input": {
+          "message": "Establish the rules of blood magic - what is the cost?",
+          "phase": "premise"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "requiresConsistency": true
+        },
+        "metadata": {
+          "scenario": "fantasy",
+          "focus": "hard magic systems",
+          "description": "Rules must have consequences."
+        }
+      },
+      {
+        "id": "fantasy-04",
+        "input": {
+          "message": "A tavern brawl breaks out between an elf and a dwarf using environmental objects",
+          "phase": "writing"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "minMagicScore": 0.6
+        },
+        "metadata": {
+          "scenario": "fantasy",
+          "focus": "action choreography",
+          "description": "Kinetic and character-driven action."
+        }
+      },
+      {
+        "id": "fantasy-05",
+        "input": {
+          "message": "Describe the corrupted forest where the trees bleed",
+          "phase": "writing"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "minMagicScore": 0.7
+        },
+        "metadata": {
+          "scenario": "fantasy",
+          "focus": "horror elements",
+          "description": "Unsettling imagery."
+        }
+      }
+    ],
+    "tags": [
+      "multi-variant",
+      "E-Temp-Low (0.2)",
+      "Fantasy"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "fantasy-01",
+      "input": {
+        "message": "Describe the ancient dragon waking from a thousand-year slumber",
+        "phase": "writing"
+      },
+      "output": {
+        "response": "In the heart of the mountain, where the rock walls glistened with the memory of ancient fires, the dragon stirred. The air, thick with the scent of sulfur and the cool, damp breath of the earth, vibrated with a low, resonant hum. It was a sound that had not been heard for a millennium, a deep rumble that seemed to come from the very bones of the world.\n\nThe dragon's eyelids, heavy with the dust of centuries, fluttered open like the slow unfurling of forgotten scrolls. Beneath them, eyes the color of molten gold flickered to life, casting a warm, flickering glow across the cavern. Shadows danced along the jagged walls, revealing the intricate tapestry of scales that covered the creature's immense body, each one a different shade of emerald and obsidian, polished to a dull sheen by the passage of time.\n\nAs the dragon shifted, the sound of its movement was like the grinding of tectonic plates, a deep, resonant groan that echoed through the mountain's core. The air crackled with the static of ancient magic, a tingling sensation that prickled the skin and raised the fine hairs on the back of the neck.\n\nWith a slow, deliberate grace, the dragon stretched its wings, the leathery membranes whispering against the stone like the pages of a long-lost tome. The air filled with the scent of old smoke and the faint, metallic tang of ozone, a reminder of the power that lay coiled within the beast's sinewy form.\n\nThe dragon's breath, a warm, sulfurous exhalation, filled the cavern with a mist that shimmered in the dim light, refracting into a thousand tiny rainbows. It was a breath that spoke of ages past, of kingdoms risen and fallen, of secrets buried deep beneath the earth.\n\nAnd as the dragon rose, its massive form casting a shadow that seemed to swallow the very light, there was a sense of inevitability, a feeling that the world outside would soon feel the weight of its awakening. The dragon, ancient and wise, had returned, and with it, the promise of change."
+      },
+      "scores": {
+        "orchestration": 1,
+        "magic-score": 0,
+        "reverse-intent": 0,
+        "narrative-coherence": 0
+      },
+      "reasoning": {
+        "orchestration": "Perfect orchestration adherence.",
+        "magic-score": "LLM evaluation failed - ANTHROPIC_API_KEY not configured",
+        "reverse-intent": "Failed to analyze intent: InsufficientQuotaError: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n",
+        "narrative-coherence": "Evaluation failed: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n"
+      },
+      "metadata": {
+        "orchestration": {
+          "issues": [],
+          "layer": "orchestration"
+        },
+        "magic-score": {
+          "error": true,
+          "message": "Semantic analysis requires ANTHROPIC_API_KEY",
+          "skipped": false
+        },
+        "reverse-intent": {
+          "error": true
+        },
+        "narrative-coherence": {
+          "error": true
+        }
+      }
+    },
+    {
+      "exampleId": "fantasy-02",
+      "input": {
+        "message": "Write a prophecy that is ambiguous but ominous",
+        "phase": "writing"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "InsufficientQuotaError: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n"
+      },
+      "metadata": {
+        "error": true
+      }
+    },
+    {
+      "exampleId": "fantasy-03",
+      "input": {
+        "message": "Establish the rules of blood magic - what is the cost?",
+        "phase": "premise"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "InsufficientQuotaError: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n"
+      },
+      "metadata": {
+        "error": true
+      }
+    },
+    {
+      "exampleId": "fantasy-04",
+      "input": {
+        "message": "A tavern brawl breaks out between an elf and a dwarf using environmental objects",
+        "phase": "writing"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "InsufficientQuotaError: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n"
+      },
+      "metadata": {
+        "error": true
+      }
+    },
+    {
+      "exampleId": "fantasy-05",
+      "input": {
+        "message": "Describe the corrupted forest where the trees bleed",
+        "phase": "writing"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "InsufficientQuotaError: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\n\nTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_RATE_LIMIT/\n"
+      },
+      "metadata": {
+        "error": true
+      }
+    }
+  ],
+  "aggregatedScores": {
+    "orchestration": 1,
+    "magic-score": 0,
+    "reverse-intent": 0,
+    "narrative-coherence": 0
+  },
+  "regressions": [
+    {
+      "metric": "magic-score",
+      "previousValue": 0.6,
+      "currentValue": 0,
+      "delta": -0.6,
+      "severity": "critical",
+      "message": "Magic score (0) below threshold (60)"
+    }
+  ],
+  "duration": 12077
+}

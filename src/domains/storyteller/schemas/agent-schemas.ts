@@ -47,8 +47,9 @@ export const WorldRuleSchema = z.object({
 })
 
 export const FactionSchema = z.object({
-  id: z.string(),
+  id: z.string().optional(),
   name: z.string(),
+  description: z.string().describe('Brief summary of the faction'),
   ideology: z.string().describe('Core belief or philosophy'),
   goals: z.array(z.string()).describe('What they want'),
   resources: z.string().describe('What power/assets they control'),

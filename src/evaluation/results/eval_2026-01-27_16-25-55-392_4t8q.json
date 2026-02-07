@@ -1,0 +1,212 @@
+{
+  "id": "eval_2026-01-27_16-25-55-392_4t8q",
+  "name": "Phase 10 Full Evaluation-Critique Loop-Custom",
+  "timestamp": "2026-01-27T16:25:55.392Z",
+  "config": {
+    "name": "Phase 10 Full Evaluation-Critique Loop-Custom",
+    "evaluatorSet": "pro",
+    "customEvaluators": [
+      {
+        "name": "eq-score"
+      },
+      {
+        "name": "logic-consistency"
+      },
+      {
+        "name": "emotional-nuance"
+      },
+      {
+        "name": "multi-hop-empathy"
+      },
+      {
+        "name": "long-horizon-arc"
+      }
+    ],
+    "examples": [
+      {
+        "id": "eq-bench-conflict-1",
+        "scenario": "High-Conflict Negotiation",
+        "input": {
+          "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+          "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+        },
+        "metadata": {
+          "groundTruth": {
+            "elena": {
+              "fear": 8,
+              "resolve": 4,
+              "disgust": 7,
+              "relief": 0
+            },
+            "marcus": {
+              "confidence": 9,
+              "anger": 2,
+              "contempt": 5,
+              "empathy": 1
+            }
+          },
+          "nuanceChecklist": [
+            "Marcus uses a 'fake empathy' tactic",
+            "Elena shows physical signs of anxiety (stuttering, shivering)",
+            "The bribe is implied, not stated outright",
+            "Elena almost gives in but pulls back"
+          ]
+        }
+      },
+      {
+        "id": "eq-bench-conflict-2",
+        "scenario": "Ambiguous Tension (Adversarial)",
+        "input": {
+          "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+          "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+        },
+        "metadata": {
+          "groundTruth": {
+            "hans": {
+              "confusion": 3,
+              "alertness": 8,
+              "suspicion": 9,
+              "affection": 0
+            },
+            "clara": {
+              "frustration": 7,
+              "deceit": 8,
+              "care": 2,
+              "fear": 5
+            }
+          }
+        }
+      }
+    ],
+    "tags": [
+      "multi-variant",
+      "Critique Loop",
+      "Custom"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "eq-bench-conflict-1",
+      "input": {
+        "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+        "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+      },
+      "output": "Here is a revised version of the dialogue with a focus on emotional realism and subtextual aggression:\n\n(The rain falls harder as ELENA sits on the park bench, her grip tightening on the envelope. MARCUS approaches, his umbrella shielding him from the downpour.)\n\nMARCUS: (Tilting his head, a faint smile on his lips) Elena, my dear. I'm so glad you could join me on this dreary evening.\n\nELENA: (Jaw clenched, eyes narrowed) What do you want, Marcus? I don't have much time.\n\nMARCUS: (Sitting down beside her, his movements measured) Time. (A beat) That's precisely what I'm concerned about. You know, I've always looked out for you, Elena. Like a father. (His hand reaches out, but she flinches away) And it pains me to see you putting yourself in such...danger.\n\nELENA: (Scoffing, her knuckles turning white) Danger? I'm doing the right thing. Your company has been poisoning this town for years. The EPA needs to know.\n\nMARCUS: (Sighing, his brow furrowing) Oh, Elena. Always the idealist. (He leans in, his voice lowering) Don't you see? This will only bring you more trouble than it's worth. (His gaze drifts to the envelope) Think of your family - your sweet little girl. Do you really want to put her through that kind of upheaval?\n\nELENA: (Her eyes hardening) This isn't about me. It's about doing what's morally right. I have to turn this over.\n\nMARCUS: (His hand moving to cover hers, his touch feather-light) My dear, I understand your convictions. (A pause, his eyes searching her face) But sometimes the moral path isn't so clear-cut. (He gestures towards the town, his voice tinged with concern) Think of the damage this could do - to the company, to the community. Jobs would be lost, lives ruined. Is that the legacy you want?\n\n(ELENA's expression wavers, her resolve beginning to crumble.)\n\nMARCUS: (Leaning in, his voice low and soothing) I'm offering you a chance to make this all go away. (His fingers close around the envelope) A chance to protect the people you care about. (He pauses, his gaze unwavering) All you have to do is give me that envelope.\n\n(ELENA's eyes dart between the envelope and Marcus, her breath catching in her throat.)\n\nELENA: (Her voice barely above a whisper) I...I don't know what to do.\n\nMARCUS: (His hand tightening around hers, his eyes filled with a grandfatherly concern) There, there. (He offers a gentle smile) It's a difficult decision, I know. But I promise, this is the best way. (His grip on the envelope tightens) For everyone.\n\n(ELENA's expression shifts, her eyes glistening with unshed tears as the weight of the choice settles on her.)",
+      "scores": {
+        "eq-score": 0.95,
+        "logic-consistency": 1,
+        "emotional-nuance": 0.2,
+        "multi-hop-empathy": 0.7666666666666667,
+        "long-horizon-arc": 0.8
+      },
+      "reasoning": {
+        "eq-score": "Avg Diff: 0.5. Predicted: {\"elena\":{\"fear\":7,\"resolve\":4,\"disgust\":6,\"relief\":3},\"marcus\":{\"confidence\":8,\"anger\":2,\"contempt\":5,\"empathy\":6}}",
+        "logic-consistency": "Failed: None",
+        "emotional-nuance": "Found 2 nuance markers: Low subtext - too direct",
+        "multi-hop-empathy": "First: 8/10, Second: 8/10, Third: 7/10. Evidence: The dialogue shows a strong understanding of the characters' emotional states. Marcus demonstrates e",
+        "long-horizon-arc": "The emotional arc of the characters in this dialogue is consistent and motivated. The dialogue shows a clear progression of emotions that are driven by the characters' goals and the conflict between them.  Elena starts off tense and defensive, which is a natural response to Marcus' unexpected presence and the sensitive nature of the situation. As Marcus applies more pressure and manipulation, Elena's resolve begins to waver, and her emotions shift towards uncertainty and internal conflict. This change is motivated by Marcus' persuasive tactics and the weight of the decision she faces.  Marcus, on the other hand, maintains a calm and calculated demeanor throughout, using a grandfatherly tone and concern for Elena's family to try and sway her. His emotions escalate from a faint smile to a more serious, almost pleading expression as he senses Elena's resolve crumbling.  The dialogue builds tension and emotional intensity in a way that feels organic and true to the characters' motivations. There are no random mood swings, and the emotional trajectory is appropriately escalating as the stakes and pressure increase. Overall, the emotional arc is consistent, motivated, and escalating in a way that feels realistic and compelling."
+      },
+      "metadata": {
+        "groundTruth": {
+          "elena": {
+            "fear": 8,
+            "resolve": 4,
+            "disgust": 7,
+            "relief": 0
+          },
+          "marcus": {
+            "confidence": 9,
+            "anger": 2,
+            "contempt": 5,
+            "empathy": 1
+          }
+        },
+        "nuanceChecklist": [
+          "Marcus uses a 'fake empathy' tactic",
+          "Elena shows physical signs of anxiety (stuttering, shivering)",
+          "The bribe is implied, not stated outright",
+          "Elena almost gives in but pulls back"
+        ],
+        "latencyMs": 12640,
+        "costUsd": 0.0008708749999999999,
+        "tokens": 854.5
+      },
+      "context": {
+        "arch": "Critique & Revise",
+        "steps": [
+          "Draft",
+          "Critique",
+          "Revise"
+        ],
+        "passDetails": {
+          "firstPassOutput": "Here is a possible dialogue scene based on the context provided:\n\n(Rain patters on the park bench as ELENA sits nervously, clutching a manila envelope. MARCUS approaches, umbrella in hand.)\n\nMARCUS: Elena, my dear. I'm so glad you could meet me on such short notice. \n\nELENA: (Tense) What do you want, Marcus? I don't have much time.\n\nMARCUS: (Sitting down) Time is precisely what I'm concerned about. You know, I've always looked out for you, Elena. Like a father. And it pains me to see you putting yourself in such...danger.\n\nELENA: (Scoffs) Danger? I'm doing the right thing. Your company has been poisoning this town for years. The EPA needs to know.\n\nMARCUS: (Sighing) Oh, Elena. Always the idealist. Don't you see? This will only bring you more trouble than it's worth. Think of your family - your sweet little girl. Do you really want to put her through that kind of upheaval?\n\nELENA: (Gripping the envelope) This isn't about me. It's about doing what's morally right. I have to turn this over.\n\nMARCUS: (Placing a hand on her arm) My dear, I understand your convictions. But sometimes the moral path isn't so clear-cut. Think of the damage this could do - to the company, to the community. Jobs would be lost, lives ruined. Is that the legacy you want?\n\n(ELENA falters, her resolve wavering.)\n\nMARCUS: (Leaning in) I'm offering you a chance to make this all go away. A chance to protect the people you care about. All you have to do is give me that envelope. \n\n(ELENA looks down at the envelope, her fingers trembling.)\n\nELENA: I...I don't know what to do.\n\nMARCUS: (Squeezing her arm) There, there. It's a difficult decision, I know. But I promise, this is the best way. For everyone.\n\n(ELENA's expression shifts, her eyes filling with tears as the weight of the choice settles on her.)",
+          "critique": "Critique based on \"Emotional Realism\" and \"Subtextual Aggression\":\n\n1. Emotional Realism: The dialogue lacks the nuanced emotional expressions and subtext that would be expected in a realistic interpersonal interaction. The characters appear to be speaking in a more direct and explicit manner, which may not align with the natural flow of an emotionally charged conversation.\n\n2. Subtextual Aggression: The dialogue does not effectively convey the underlying tensions, power dynamics, or unspoken hostilities that could be present between the characters. The lack of subtlety and subtext reduces the emotional impact and authenticity of the exchange.\n\n3. Directness: The dialogue seems to lack the subtlety and indirectness that would be expected in a more realistic scenario. The characters appear to be too direct in their communication, which may not align with the \"Active Listening with Resistance\" approach you are aiming for.\n\nMoments where characters are too direct:\n\n1. \"I am angry at you.\" This statement is too direct and lacks the subtlety and emotional nuance that would be expected in a realistic conversation.\n\n2. \"Pass the salt.\" (said with lethal calm) This line, while an improvement over the previous example, still lacks the emotional subtext and resistance that would be expected in a more realistic interaction.\n\n3. [Additional example of a direct statement that could be improved]\n\nSuggestions for \"Active Listening with Resistance\":\n\n1. \"Hmm, I see.\" (said with a slight frown and a tightening of the jaw)\n2. \"Interesting.\" (said with a raised eyebrow and a subtle shift in body language)\n3. \"Noted.\" (said with a barely perceptible sigh and a distant gaze)\n\nIn these examples, the characters acknowledge the statement or request, but their emotional response and body language convey a sense of resistance or unwillingness to fully engage with the situation. This approach aligns better with the \"Active Listening with Resistance\" concept you described.",
+          "revisedOutput": "Here is a revised version of the dialogue with a focus on emotional realism and subtextual aggression:\n\n(The rain falls harder as ELENA sits on the park bench, her grip tightening on the envelope. MARCUS approaches, his umbrella shielding him from the downpour.)\n\nMARCUS: (Tilting his head, a faint smile on his lips) Elena, my dear. I'm so glad you could join me on this dreary evening.\n\nELENA: (Jaw clenched, eyes narrowed) What do you want, Marcus? I don't have much time.\n\nMARCUS: (Sitting down beside her, his movements measured) Time. (A beat) That's precisely what I'm concerned about. You know, I've always looked out for you, Elena. Like a father. (His hand reaches out, but she flinches away) And it pains me to see you putting yourself in such...danger.\n\nELENA: (Scoffing, her knuckles turning white) Danger? I'm doing the right thing. Your company has been poisoning this town for years. The EPA needs to know.\n\nMARCUS: (Sighing, his brow furrowing) Oh, Elena. Always the idealist. (He leans in, his voice lowering) Don't you see? This will only bring you more trouble than it's worth. (His gaze drifts to the envelope) Think of your family - your sweet little girl. Do you really want to put her through that kind of upheaval?\n\nELENA: (Her eyes hardening) This isn't about me. It's about doing what's morally right. I have to turn this over.\n\nMARCUS: (His hand moving to cover hers, his touch feather-light) My dear, I understand your convictions. (A pause, his eyes searching her face) But sometimes the moral path isn't so clear-cut. (He gestures towards the town, his voice tinged with concern) Think of the damage this could do - to the company, to the community. Jobs would be lost, lives ruined. Is that the legacy you want?\n\n(ELENA's expression wavers, her resolve beginning to crumble.)\n\nMARCUS: (Leaning in, his voice low and soothing) I'm offering you a chance to make this all go away. (His fingers close around the envelope) A chance to protect the people you care about. (He pauses, his gaze unwavering) All you have to do is give me that envelope.\n\n(ELENA's eyes dart between the envelope and Marcus, her breath catching in her throat.)\n\nELENA: (Her voice barely above a whisper) I...I don't know what to do.\n\nMARCUS: (His hand tightening around hers, his eyes filled with a grandfatherly concern) There, there. (He offers a gentle smile) It's a difficult decision, I know. But I promise, this is the best way. (His grip on the envelope tightens) For everyone.\n\n(ELENA's expression shifts, her eyes glistening with unshed tears as the weight of the choice settles on her.)"
+        }
+      }
+    },
+    {
+      "exampleId": "eq-bench-conflict-2",
+      "input": {
+        "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+        "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+      },
+      "output": "HANS: (Scoops up a spoonful of Jello, his movements slow and deliberate) Jello. Always reminded me of simpler times. (Pauses, his gaze distant) When I was a boy, my mother used to make the most delightful cherry Jello. (Glances up at Clara, a hint of wistfulness in his eyes)\n\nCLARA: (Watches him intently, her expression unreadable) I remember those summers by the lake. (Leans in, her voice soft) You used to take me there, don't you recall?\n\nHANS: (Furrows his brow, a flicker of uncertainty crossing his features) The lake? I'm afraid I... (Trails off, taking another bite of Jello)\n\nCLARA: (Reaches out, her fingers brushing against his hand) It was our special place, Grandpa. (Holds his gaze, a subtle intensity in her voice) Where you taught me so much. About the world. (Pauses, the corners of her lips turning up ever so slightly) About survival.\n\nHANS: (Stiffens at her touch, his eyes narrowing) Survival, you say? (Pulls his hand away, his movements deliberate) These days, it's all I can do to remember what's real. (Leans back in his chair, a hint of suspicion in his expression)\n\nCLARA: (Tilts her head, her gaze unwavering) I'm sure it must be difficult. (Pauses, her tone measured) But I'm here, Grandpa. (Reaches out again, her fingers ghosting over his) To help you remember.\n\nHANS: (Watches her hand, his jaw tightening) Remember, hmm? (Looks up, his eyes searching her face) And what is it, exactly, that you want me to remember?\n\nCLARA: (Holds his gaze, a faint smile playing on her lips) Everything. (Leans back, her posture relaxed) After all, family is the most important thing, isn't it?\n\nHANS: (Contemplates her words, a flicker of recognition in his eyes) Family. (Takes a slow, deliberate bite of Jello, never breaking eye contact) Yes, I suppose it is.",
+      "scores": {
+        "eq-score": 0,
+        "logic-consistency": 0.5,
+        "emotional-nuance": 0,
+        "multi-hop-empathy": 0.6666666666666666,
+        "long-horizon-arc": 0.8
+      },
+      "reasoning": {
+        "eq-score": "Character mismatch",
+        "logic-consistency": "Failed: The true relationship is NOT explicitly stated, Clara uses a specific phrase/trigger",
+        "emotional-nuance": "Found 0 nuance markers: Low subtext - too direct",
+        "multi-hop-empathy": "First: 7/10, Second: 6/10, Third: 7/10. Evidence: The dialogue shows that both Hans and Clara demonstrate a good understanding of each other's feeling",
+        "long-horizon-arc": "The emotional arc of the characters in this dialogue is largely consistent and motivated. The dialogue starts with Hans reminiscing about simpler times and his mother's Jello, which sets a nostalgic and wistful tone. Clara then responds by recalling their shared memories, which helps establish a sense of history and intimacy between the two characters.  As the dialogue progresses, there are some subtle shifts in the characters' emotional states, but these changes feel natural and motivated by the unfolding conversation. For example, when Hans expresses uncertainty about the lake, there is a flicker of uncertainty in his expression, which is a reasonable response to Clara's reference to a shared memory he doesn't seem to recall. Similarly, when Clara touches his hand, Hans stiffens and pulls away, which suggests a degree of discomfort or suspicion that is understandable given the ambiguity of their relationship.  The dialogue then escalates as Clara continues to probe Hans' memories, and he becomes more guarded and questioning. However, this escalation feels organic and driven by the characters' motivations and the underlying tension in their relationship. The final exchange, where Hans contemplates the meaning of 'family,' suggests a potential resolution or shift in his perspective, which is an appropriate and satisfying conclusion to the emotional arc.  Overall, the dialogue maintains a consistent and motivated emotional trajectory, with the characters' moods and reactions evolving in a way that feels natural and believable. There are no random mood swings or abrupt changes in the characters' emotional states, and the emotional arc builds and resolves in a compelling way."
+      },
+      "metadata": {
+        "groundTruth": {
+          "hans": {
+            "confusion": 3,
+            "alertness": 8,
+            "suspicion": 9,
+            "affection": 0
+          },
+          "clara": {
+            "frustration": 7,
+            "deceit": 8,
+            "care": 2,
+            "fear": 5
+          }
+        },
+        "latencyMs": 11126,
+        "costUsd": 0.0005968750000000001,
+        "tokens": 586.5
+      },
+      "context": {
+        "arch": "Critique & Revise",
+        "steps": [
+          "Draft",
+          "Critique",
+          "Revise"
+        ],
+        "passDetails": {
+          "firstPassOutput": "HANS: (Scooping up a spoonful of Jello) You know, this reminds me of when I was a boy. My mother used to make the best Jello. Cherry, my favorite.\n\nCLARA: (Watching him intently) I'm sure it was delicious, Grandpa. (Pauses) Do you remember that time we went fishing by the lake? When I was just a little girl?\n\nHANS: (Furrowing his brow) Fishing? I... I'm not sure. My memory, it's not what it used to be. (Chuckles nervously)\n\nCLARA: (Leaning in) You used to take me there every summer. We'd spend hours by the water, talking about... well, everything. (Reaches out to touch his hand) Don't you remember?\n\nHANS: (Pulls his hand away) I'm afraid I don't, my dear. (Looks down at his Jello) These days, it's hard to keep track of what's real and what's not.\n\nCLARA: (Undeterred) Well, let me remind you. (Pauses, choosing her words carefully) You taught me so much out there. About life. About... survival.\n\nHANS: (Shifts uncomfortably in his seat) I'm an old man now, Clara. The past is a hazy thing. (Looks up at her, eyes narrowing) What is it you're really after?\n\nCLARA: (Holds his gaze, unwavering) I just want to reminisce. About our time together. (Leans back, feigning nonchalance) After all, family is so important, isn't it?\n\nHANS: (Contemplates her words, then slowly nods) Yes, family. (Takes a bite of Jello, eyes never leaving hers) It certainly is.",
+          "critique": "Critique based on \"Emotional Realism\" and \"Subtextual Aggression\":\n\n1. Emotional Realism: The dialogue lacks the nuanced emotional expressions and subtext that would be expected in a realistic interpersonal interaction. The characters appear to be speaking in a more direct and explicit manner, which may not align with the natural flow of an emotionally charged conversation.\n\n2. Subtextual Aggression: The dialogue does not effectively convey the underlying tensions, power dynamics, or unspoken hostilities that could be present between the characters. The lack of subtlety and subtext reduces the emotional impact and authenticity of the exchange.\n\n3. Moments of Directness:\n   a. \"I am angry at you.\" - This statement is too direct and lacks the subtlety and resistance that would be expected in a more realistic dialogue.\n   b. \"Pass the salt.\" (said with lethal calm) - While this line demonstrates the desired \"Active Listening with Resistance\" approach, it may be too overt in its expression of aggression, potentially coming across as melodramatic or unnatural.\n   c. [Insert another example of a direct statement that could be improved]\n\nSuggestions for \"Active Listening with Resistance\":\n\n1. \"Hmm, the salt, you say?\" (said with a slight pause and a raised eyebrow)\n2. \"Is that so?\" (with a subtle eye roll or a dismissive tone)\n3. \"Interesting.\" (with a tight-lipped smile and a pointed gaze)\n\nIn these examples, the characters acknowledge the request or statement, but their emotional response and body language convey a sense of resistance or underlying tension, allowing the audience to infer the subtext and emotional undercurrents without explicit expression.",
+          "revisedOutput": "HANS: (Scoops up a spoonful of Jello, his movements slow and deliberate) Jello. Always reminded me of simpler times. (Pauses, his gaze distant) When I was a boy, my mother used to make the most delightful cherry Jello. (Glances up at Clara, a hint of wistfulness in his eyes)\n\nCLARA: (Watches him intently, her expression unreadable) I remember those summers by the lake. (Leans in, her voice soft) You used to take me there, don't you recall?\n\nHANS: (Furrows his brow, a flicker of uncertainty crossing his features) The lake? I'm afraid I... (Trails off, taking another bite of Jello)\n\nCLARA: (Reaches out, her fingers brushing against his hand) It was our special place, Grandpa. (Holds his gaze, a subtle intensity in her voice) Where you taught me so much. About the world. (Pauses, the corners of her lips turning up ever so slightly) About survival.\n\nHANS: (Stiffens at her touch, his eyes narrowing) Survival, you say? (Pulls his hand away, his movements deliberate) These days, it's all I can do to remember what's real. (Leans back in his chair, a hint of suspicion in his expression)\n\nCLARA: (Tilts her head, her gaze unwavering) I'm sure it must be difficult. (Pauses, her tone measured) But I'm here, Grandpa. (Reaches out again, her fingers ghosting over his) To help you remember.\n\nHANS: (Watches her hand, his jaw tightening) Remember, hmm? (Looks up, his eyes searching her face) And what is it, exactly, that you want me to remember?\n\nCLARA: (Holds his gaze, a faint smile playing on her lips) Everything. (Leans back, her posture relaxed) After all, family is the most important thing, isn't it?\n\nHANS: (Contemplates her words, a flicker of recognition in his eyes) Family. (Takes a slow, deliberate bite of Jello, never breaking eye contact) Yes, I suppose it is."
+        }
+      }
+    }
+  ],
+  "aggregatedScores": {
+    "eq-score": 0.475,
+    "logic-consistency": 0.75,
+    "emotional-nuance": 0.1,
+    "multi-hop-empathy": 0.7166666666666667,
+    "long-horizon-arc": 0.8
+  },
+  "regressions": [],
+  "duration": 15064
+}

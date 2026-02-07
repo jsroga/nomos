@@ -4,27 +4,9 @@
  * Handles AI-powered script editing operations similar to how Cursor edits code.
  */
 
-import { HumanMessage, SystemMessage } from '@langchain/core/messages'
+import { createStorytellerAgent } from '../agents/v2'
 
-// Lazy model getter - only creates model when actually called (server-side only)
-let _model: ReturnType<typeof import('../config/model-config').getModel> | null = null
-async function getModelLazy() {
-  if (!_model) {
-    // Dynamic import to avoid bundling model-config on client
-    const { getModel } = await import('../config/model-config')
-    _model = getModel('writer')
-  }
-  return _model
-}
-
-export interface EditProposal {
-  id: string
-  originalText: string
-  newText: string
-  instruction: string
-  status: 'pending' | 'accepted' | 'rejected'
-  timestamp: number
-}
+// ... existing code ...
 
 const SCRIPT_EDITOR_PROMPT = `You are a screenplay editor. Your task is to edit the selected text according to the user's instruction.
 
@@ -57,36 +39,22 @@ SURROUNDING CONTEXT:
 Before: "${context.beforeText?.slice(-200) || ''}"
 After: "${context.afterText?.slice(0, 200) || ''}"
 
-${
-  context.characterVoices
-    ? `CHARACTER VOICES:\n${Object.entries(context.characterVoices)
+${context.characterVoices
+      ? `CHARACTER VOICES:\n${Object.entries(context.characterVoices)
         .map(([name, voice]) => `- ${name}: ${voice}`)
         .join('\n')}`
-    : ''
-}
+      : ''
+    }
 `
     : ''
 
-  const messages = [
-    new SystemMessage(SCRIPT_EDITOR_PROMPT),
-    new HumanMessage(`${contextInfo}
-
-SELECTED TEXT TO EDIT:
-"""
-${selection}
-"""
-
-INSTRUCTION: ${instruction}
-
-Return only the edited text:`),
-  ]
-
   try {
-    const model = await getModelLazy()
-    const response = await model.invoke(messages)
-    const content =
-      typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
-    return content.trim()
+    const agent = await createStorytellerAgent()
+    const result = await agent.run(
+      "Edit script",
+      `${SCRIPT_EDITOR_PROMPT}\n\n${contextInfo}\n\nSELECTED TEXT TO EDIT:\n"""\n${selection}\n"""\n\nINSTRUCTION: ${instruction}\n\nReturn only the edited text:`
+    )
+    return result.trim()
   } catch (error) {
     console.error('Script regeneration failed:', error)
     throw error

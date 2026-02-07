@@ -3,6 +3,25 @@ import { db } from '@/lib/db'
 import { episodes } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'
 
+export async function GET(req: Request, props: { params: Promise<{ episodeId: string }> }) {
+  const params = await props.params
+  try {
+    const { episodeId } = params
+    const episode = await db.query.episodes.findFirst({
+      where: eq(episodes.id, episodeId),
+    })
+
+    if (!episode) {
+      return NextResponse.json({ error: 'Episode not found' }, { status: 404 })
+    }
+
+    return NextResponse.json(episode)
+  } catch (error) {
+    console.error('Error fetching episode:', error)
+    return NextResponse.json({ error: 'Failed to fetch episode' }, { status: 500 })
+  }
+}
+
 export async function PATCH(req: Request, props: { params: Promise<{ episodeId: string }> }) {
   const params = await props.params
   try {

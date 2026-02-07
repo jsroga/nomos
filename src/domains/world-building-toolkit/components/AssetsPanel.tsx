@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { getSupabaseClient } from '@/infrastructure/storage/supabaseClient'
-import { Loader2, Trash2, Eye, EyeOff, AlertTriangle } from 'lucide-react'
+import { Loader2, Trash2, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,

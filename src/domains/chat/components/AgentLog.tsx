@@ -11,6 +11,7 @@ import {
   ThinkingMessagesConfig,
   DEFAULT_THINKING_MESSAGES,
   getThinkingMessage,
+  ActivityLogEntry,
 } from '../types'
 import {
   Bot,
@@ -26,6 +27,8 @@ import {
   Check,
 } from 'lucide-react'
 import { ConsistencyMessage } from '@/domains/storyteller/components/ConsistencyMessage'
+import { ReferenceText } from '@/domains/storyteller/components/ReferenceText'
+import { hasReferences } from '@/domains/storyteller/utils/reference-parser'
 import { motion, AnimatePresence } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
 
@@ -80,6 +83,9 @@ const getAgentDisplayName = (agentName: string): string => {
 const isDelegationMessage = (msg: Message): boolean => {
   const content = msg.content?.toLowerCase() || ''
   const sender = (msg.sender || msg.name || '').toLowerCase()
+
+  // NEVER treat user messages as delegation
+  if (msg.type === 'human' || sender === 'user') return false
 
   // If the message is substantial, it's not just a technical delegation step
   if (content.length > 100 || content.split(' ').length > 15) return false
@@ -239,6 +245,155 @@ export const AgentStatusIndicator: React.FC<AgentStatusIndicatorProps> = ({
 }
 
 /**
+ * Activity Log Viewer
+ * Renders a persistent timeline of technical agent activities
+ */
+const ActivityEntryItem: React.FC<{ entry: ActivityLogEntry }> = ({ entry }) => {
+  const time = new Date(entry.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+
+  if (entry.type === 'tool') {
+    let resultDisplay = entry.toolResult
+    let isJson = false
+
+    // Try to parse JSON result string for better displaying
+    if (typeof entry.toolResult === 'string' && (entry.toolResult.startsWith('{') || entry.toolResult.startsWith('['))) {
+      try {
+        const parsed = JSON.parse(entry.toolResult)
+        resultDisplay = parsed
+        isJson = true
+      } catch (e) {
+        // keep as string 
+      }
+    }
+
+    return (
+      <div className="flex gap-3 text-xs font-mono border-l-2 border-purple-500/30 pl-3 py-2 ml-1 relative group hover:bg-white/5 transition-colors rounded-r">
+        <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-purple-500/50" />
+        <span className="text-muted-foreground/50 w-16 shrink-0 pt-0.5">{time}</span>
+        <div className="flex-1 space-y-2">
+          {/* Header */}
+          <div className="flex items-center gap-2">
+            <span className="text-purple-400 font-bold uppercase tracking-wider bg-purple-500/10 px-1.5 py-0.5 rounded text-[10px]">TOOL</span>
+            <span className="text-foreground/90 font-semibold">{entry.toolName}</span>
+          </div>
+
+          {/* Inputs */}
+          {entry.toolInput && (
+            <div className="text-xs text-muted-foreground/70 bg-muted/10 p-2 rounded border border-white/5">
+              <span className="uppercase text-[9px] opacity-70 block mb-1 tracking-wider">Input</span>
+              <span className="font-mono text-purple-300/80 break-words whitespace-pre-wrap">
+                {typeof entry.toolInput === 'string' ? entry.toolInput : JSON.stringify(entry.toolInput, null, 2)}
+              </span>
+            </div>
+          )}
+
+          {/* Result */}
+          {resultDisplay && (
+            <div className="text-xs bg-black/40 p-2 rounded text-muted-foreground/80 overflow-x-auto border border-white/5">
+              <span className="uppercase text-[9px] opacity-50 block mb-1 tracking-wider">Result</span>
+              {isJson ? (
+                <pre className="whitespace-pre-wrap text-green-400/80 font-mono text-[10px]">
+                  {JSON.stringify(resultDisplay, null, 2)}
+                </pre>
+              ) : (
+                <div className="whitespace-pre-wrap max-h-48 overflow-y-auto scrollbar-thin text-green-400/80">
+                  {typeof resultDisplay === 'string' ? resultDisplay.slice(0, 500) + (resultDisplay.length > 500 ? '...' : '') : JSON.stringify(resultDisplay)}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  if (entry.type === 'thinking') {
+    return (
+      <div className="flex gap-3 text-xs font-mono border-l-2 border-amber-500/30 pl-3 py-1 ml-1 transition-colors hover:bg-white/5 rounded-r">
+        <span className="opacity-50 w-16 shrink-0">{time}</span>
+        <div className="flex-1">
+          <span className="font-bold mr-2 uppercase text-[10px] text-amber-500">
+            {entry.agent || 'Agent'} Thinking:
+          </span>
+          <span className="text-amber-100/60 italic">
+            {entry.content?.length && entry.content.length > 200
+              ? entry.content.slice(0, 200) + '...'
+              : entry.content}
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  if (entry.type === 'action') {
+    return (
+      <div className="flex gap-3 text-xs font-mono border-l-2 border-blue-500/30 pl-3 py-2 ml-1 relative hover:bg-white/5 transition-colors rounded-r">
+        <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-blue-500/50" />
+        <span className="text-muted-foreground/50 w-16 shrink-0 pt-0.5">{time}</span>
+        <div className="flex-1 space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-blue-400 font-bold uppercase tracking-wider bg-blue-500/10 px-1.5 py-0.5 rounded text-[10px]">ACTION</span>
+            <span className="text-foreground/90 font-semibold">{entry.content}</span>
+          </div>
+          {entry.details && (
+            <div className="text-[10px] text-muted-foreground/60 italic pl-1 border-l-2 border-white/10 ml-1">
+              {JSON.stringify(entry.details).slice(0, 150)}...
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  if (entry.type === 'status') {
+    const isThinking = entry.content?.toLowerCase().includes('thinking') || entry.content?.toLowerCase().includes('processing')
+    return (
+      <div
+        className={cn(
+          'flex gap-3 text-xs font-mono border-l-2 pl-3 py-1 ml-1 transition-colors hover:bg-white/5 rounded-r',
+          isThinking ? 'border-amber-500/30 text-amber-200/80' : 'border-border/30 text-muted-foreground'
+        )}
+      >
+        <span className="opacity-50 w-16 shrink-0">{time}</span>
+        <div className="flex-1">
+          <span
+            className={cn(
+              'font-bold mr-2 uppercase text-[10px]',
+              isThinking ? 'text-amber-500' : 'text-foreground/60'
+            )}
+          >
+            {entry.agent || 'System'}:
+          </span>
+          {entry.content}
+        </div>
+      </div>
+    )
+  }
+
+
+
+
+  return null
+}
+
+const ActivityLogViewer: React.FC<{ logs: ActivityLogEntry[] }> = ({ logs }) => {
+  if (!logs || logs.length === 0) return null
+
+  return (
+    <div className="mt-4 mb-2 pt-2 border-t border-dashed border-border/30">
+      <div className="text-[10px] uppercase font-bold text-muted-foreground/60 mb-2 pl-1 tracking-widest">
+        Activity Log
+      </div>
+      <div className="space-y-2">
+        {logs.map((entry, idx) => (
+          <ActivityEntryItem key={idx} entry={entry} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
  * Active Agents Panel
  * Shows all currently active agents
  */
@@ -349,6 +504,20 @@ interface AgentLogProps {
   thinkingAgent?: string | null // Current agent that's processing
   /** Customizable thinking messages - defaults to DEFAULT_THINKING_MESSAGES */
   thinkingMessagesConfig?: ThinkingMessagesConfig
+  /** Real-time streaming tokens for activity visualization */
+  streamingTokens?: string
+  /** Current phase for context */
+  currentPhase?: string
+  /** Active operations being tracked */
+  activeOperations?: Array<{
+    id: string
+    type: string
+    label: string
+    startTime?: number
+    tool?: string
+  }>
+  /** Project ID for entity reference resolution */
+  projectId?: string
 }
 
 export const AgentLog: React.FC<AgentLogProps> = ({
@@ -365,9 +534,13 @@ export const AgentLog: React.FC<AgentLogProps> = ({
   activeAgents = [],
   showActiveAgents = true,
   isActivityPanelOpen = false,
+  currentPhase,
+  activeOperations = [],
   isSending = false,
   thinkingAgent,
   thinkingMessagesConfig = DEFAULT_THINKING_MESSAGES,
+  streamingTokens,
+  projectId,
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null)
   const [hasProcessed, setHasProcessed] = useState(false)
@@ -494,8 +667,8 @@ export const AgentLog: React.FC<AgentLogProps> = ({
       onScroll={handleScroll}
       className="flex-1 overflow-y-auto space-y-6 pr-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent pb-4"
     >
-      {/* Active Agents Panel */}
-      {showActiveAgents && activeAgents.length > 0 && (
+      {/* Active Agents Panel - JSON/Debug View only */}
+      {showActiveAgents && isActivityPanelOpen && activeAgents.length > 0 && (
         <ActiveAgentsPanel activeAgents={activeAgents} agentConfig={agentConfig} />
       )}
 
@@ -600,6 +773,7 @@ export const AgentLog: React.FC<AgentLogProps> = ({
                 content={msg.content}
                 isActivityPanelOpen={isActivityPanelOpen}
                 hasActions={!!(msg.actions && msg.actions.length > 0)}
+                projectId={projectId}
               />
               {/* Hover Actions */}
               {!isHuman && <MessageHoverActions content={msg.content} />}
@@ -661,6 +835,13 @@ export const AgentLog: React.FC<AgentLogProps> = ({
                 <ConsistencyMessage result={msg.consistencyResult} canUndo={true} />
               </div>
             )}
+
+            {/* Persistent Activity Log for this message */}
+            {isActivityPanelOpen && msg.activityLog && msg.activityLog.length > 0 && (
+              <div className="w-full max-w-[85%] mt-4 animate-in fade-in zoom-in-95 duration-300 origin-top-left">
+                <ActivityLogViewer logs={msg.activityLog} />
+              </div>
+            )}
           </div>
         )
       })}
@@ -669,8 +850,68 @@ export const AgentLog: React.FC<AgentLogProps> = ({
       <div className="mt-4 border-t border-border/10 pt-3 px-2">
         {isSending ? (
           <div className="space-y-2">
-            {/* Current Agent Indicator */}
-            {currentAgent && (
+            {/* Enhanced Activity Details Panel (Activity ON) */}
+            {isActivityPanelOpen && (
+              <div className="mb-3 space-y-2">
+                {/* Phase & Status Header */}
+                <div className="flex items-center gap-2 px-2 py-1.5 bg-muted/30 rounded-md border border-border/30">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                      {currentPhase || 'Processing'}
+                    </span>
+                  </div>
+                  {activeOperations.length > 0 && (
+                    <span className="text-[9px] text-muted-foreground ml-auto">
+                      {activeOperations.length} active operation{activeOperations.length > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+
+                {/* Active Operations List */}
+                {activeOperations.length > 0 && (
+                  <div className="space-y-1 pl-2 border-l-2 border-primary/30">
+                    {activeOperations.map((op) => (
+                      <div key={op.id} className="flex items-center gap-2 text-[10px] py-1">
+                        <Loader2 className="w-3 h-3 animate-spin text-primary/70" />
+                        <span className="text-foreground/80 font-medium">{op.label}</span>
+                        {op.tool && (
+                          <span className="text-muted-foreground font-mono text-[9px]">
+                            → {op.tool}
+                          </span>
+                        )}
+                        {op.startTime && (
+                          <span className="text-muted-foreground/60 ml-auto font-mono text-[9px]">
+                            {Math.round((Date.now() - op.startTime) / 1000)}s
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Live Streaming Tokens (Activity ON) */}
+            {isActivityPanelOpen && streamingTokens && (
+              <div className="mb-2 p-3 rounded-md bg-black/90 border border-green-500/30 text-[10px] font-mono shadow-inner animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex items-center gap-2 mb-1.5 border-b border-white/10 pb-1">
+                  <span className="text-green-500 font-bold uppercase tracking-widest animate-pulse">
+                    ● Live Stream
+                  </span>
+                  <span className="ml-auto text-muted-foreground/50">
+                    {(streamingTokens.length / 1024).toFixed(1)}kb
+                  </span>
+                </div>
+                <div className="text-green-400/90 whitespace-pre-wrap break-words leading-relaxed max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-green-900/50 scrollbar-track-transparent">
+                  {streamingTokens}
+                  <span className="inline-block w-1.5 h-3 ml-0.5 bg-green-500 animate-pulse align-middle" />
+                </div>
+              </div>
+            )}
+
+            {/* Current Agent Indicator - Only show details if Activity ON */}
+            {currentAgent && isActivityPanelOpen ? (
               <div className="flex items-center gap-2 animate-in slide-in-from-bottom-2 duration-300">
                 <div className="flex items-center gap-2 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-lg px-3 py-2 shadow-sm flex-1">
                   <div className="relative">
@@ -693,16 +934,24 @@ export const AgentLog: React.FC<AgentLogProps> = ({
                   </div>
                 </div>
               </div>
-            )}
-
-            {/* Generic processing indicator (fallback) */}
-            {!currentAgent && (
+            ) : (
+              /* Simplified processing indicator when Activity OFF or generic */
               <div className="flex items-center gap-2 text-primary/70 text-[10px] uppercase tracking-widest font-medium">
-                <Loader2 className="w-3 h-3 animate-spin" />
-                <span>
-                  {getThinkingMessage(thinkingMessagesConfig, thinkingTime, false)}
-                  {thinkingTime < 15 && ` (${thinkingTime}s)`}
-                </span>
+                {currentAgent ? (
+                  // If we have an agent but Activity OFF, just show "Storyteller is thinking..." or agent name
+                  <>
+                    {getAgentConfigLocal(currentAgent).icon}
+                    <span>{getAgentDisplayName(currentAgent)} is thinking...</span>
+                  </>
+                ) : (
+                  // Fallback generic
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <span>
+                      {getThinkingMessage(thinkingMessagesConfig, thinkingTime, false)}
+                    </span>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -789,9 +1038,23 @@ const MessageContent: React.FC<{
   content: string
   isActivityPanelOpen?: boolean
   hasActions?: boolean
-}> = ({ content, isActivityPanelOpen = false, hasActions = false }) => {
+  projectId?: string
+}> = ({ content, isActivityPanelOpen = false, hasActions = false, projectId }) => {
   // Check if content is JSON and extract message field
   let displayContent = content
+
+  // Debug content rendering
+  /*
+  useEffect(() => {
+    if (content.trim().startsWith('{') || !content) {
+      console.log('[MessageContent] Processing content:', {
+        contentPreview: content?.slice(0, 50),
+        isJSON: content.trim().startsWith('{'),
+        isActivityPanelOpen
+      })
+    }
+  }, [content, isActivityPanelOpen])
+  */
 
   // Try to parse JSON if it looks like it
   if (content.trim().startsWith('{')) {
@@ -815,7 +1078,7 @@ const MessageContent: React.FC<{
         if (isActivityPanelOpen && hasActions) {
           return (
             <>
-              <div className="mb-3">{parseMessageContent(displayContent)}</div>
+              <div className="mb-3">{parseMessageContent(displayContent, projectId)}</div>
               <CollapsibleJSON data={parsedData} defaultExpanded={true} />
             </>
           )
@@ -829,11 +1092,30 @@ const MessageContent: React.FC<{
     }
   }
 
-  return parseMessageContent(displayContent)
+  return parseMessageContent(displayContent, projectId)
+}
+
+// Helper component that wraps text with entity reference support
+const TextWithReferences: React.FC<{ children: React.ReactNode; projectId?: string }> = ({
+  children,
+  projectId
+}) => {
+  // Convert children to string if possible
+  const text = React.Children.toArray(children)
+    .map(child => (typeof child === 'string' ? child : ''))
+    .join('')
+
+  // If no references or no projectId, render as-is
+  if (!text || !hasReferences(text)) {
+    return <>{children}</>
+  }
+
+  // Use ReferenceText for content with entity references
+  return <ReferenceText text={text} projectId={projectId} inline />
 }
 
 // Helper to parse message content with markdown
-function parseMessageContent(content: string) {
+function parseMessageContent(content: string, projectId?: string) {
   // Custom rendering for delegation messages (shouldn't show normally due to collapsing)
   if (content.includes('Delegating to')) {
     const toolName = content.replace('Delegating to', '').trim().replace('...', '')
@@ -849,26 +1131,41 @@ function parseMessageContent(content: string) {
     )
   }
 
+  // Check if content has entity references
+  const contentHasRefs = hasReferences(content)
+
   // Use react-markdown for proper markdown rendering
   return (
     <ReactMarkdown
       components={{
         // Headers
         h1: ({ children }) => (
-          <h1 className="font-bold text-xl text-foreground mt-4 mb-2">{children}</h1>
+          <h1 className="font-bold text-xl text-foreground mt-4 mb-2">
+            {contentHasRefs ? <TextWithReferences projectId={projectId}>{children}</TextWithReferences> : children}
+          </h1>
         ),
         h2: ({ children }) => (
-          <h2 className="font-bold text-lg text-foreground mt-3 mb-1.5">{children}</h2>
+          <h2 className="font-bold text-lg text-foreground mt-3 mb-1.5">
+            {contentHasRefs ? <TextWithReferences projectId={projectId}>{children}</TextWithReferences> : children}
+          </h2>
         ),
         h3: ({ children }) => (
-          <h3 className="font-semibold text-base text-foreground mt-2 mb-1">{children}</h3>
+          <h3 className="font-semibold text-base text-foreground mt-2 mb-1">
+            {contentHasRefs ? <TextWithReferences projectId={projectId}>{children}</TextWithReferences> : children}
+          </h3>
         ),
         h4: ({ children }) => (
-          <h4 className="font-medium text-sm text-foreground/90 mt-1.5">{children}</h4>
+          <h4 className="font-medium text-sm text-foreground/90 mt-1.5">
+            {contentHasRefs ? <TextWithReferences projectId={projectId}>{children}</TextWithReferences> : children}
+          </h4>
         ),
 
         // Paragraphs
-        p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+        p: ({ children }) => (
+          <p className="mb-2 last:mb-0">
+            {contentHasRefs ? <TextWithReferences projectId={projectId}>{children}</TextWithReferences> : children}
+          </p>
+        ),
 
         // Lists
         ul: ({ children }) => <ul className="space-y-1 pl-1 mb-2">{children}</ul>,
@@ -876,13 +1173,23 @@ function parseMessageContent(content: string) {
         li: ({ children }) => (
           <li className="flex gap-2">
             <span className="text-primary shrink-0">•</span>
-            <span className="flex-1">{children}</span>
+            <span className="flex-1">
+              {contentHasRefs ? <TextWithReferences projectId={projectId}>{children}</TextWithReferences> : children}
+            </span>
           </li>
         ),
 
         // Inline formatting
-        strong: ({ children }) => <strong className="font-bold">{children}</strong>,
-        em: ({ children }) => <em className="italic text-muted-foreground">{children}</em>,
+        strong: ({ children }) => (
+          <strong className="font-bold">
+            {contentHasRefs ? <TextWithReferences projectId={projectId}>{children}</TextWithReferences> : children}
+          </strong>
+        ),
+        em: ({ children }) => (
+          <em className="italic text-muted-foreground">
+            {contentHasRefs ? <TextWithReferences projectId={projectId}>{children}</TextWithReferences> : children}
+          </em>
+        ),
 
         // Links
         a: ({ href, children }) => (
@@ -897,7 +1204,7 @@ function parseMessageContent(content: string) {
         ),
 
         // Code
-        code: ({ children, className }) => {
+        code: ({ children, className, inline, ...props }: any) => {
           const isBlock = className?.includes('language-')
           return isBlock ? (
             <pre className="bg-muted/50 rounded p-2 overflow-x-auto my-2">
@@ -912,7 +1219,7 @@ function parseMessageContent(content: string) {
         // Blockquote
         blockquote: ({ children }) => (
           <blockquote className="border-l-2 border-primary/50 pl-3 italic text-muted-foreground my-2">
-            {children}
+            {contentHasRefs ? <TextWithReferences projectId={projectId}>{children}</TextWithReferences> : children}
           </blockquote>
         ),
 

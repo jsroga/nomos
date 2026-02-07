@@ -1,6 +1,5 @@
 'use client'
 
-import { motion } from 'framer-motion'
 import { Shield, Zap, Code, Terminal, CheckCircle, Circle } from 'lucide-react'
 
 const DOMAIN_STATUS = [

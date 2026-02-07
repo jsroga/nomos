@@ -1,5 +1,4 @@
 import React from 'react'
-import { Card } from '@/components/ui/card'
 import { Maximize2 } from 'lucide-react'
 
 export function ScenePreview() {

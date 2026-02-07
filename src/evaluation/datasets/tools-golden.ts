@@ -14,7 +14,7 @@ import {
   CharacterState,
   Setup,
 } from '../../domains/storyteller/graph/state'
-import { BeatType, BeatStatus, Phase } from '../../domains/storyteller/enums'
+import { BeatType, BeatStatus } from '../../domains/storyteller/enums'
 import { DEFAULT_CHARACTER_METRICS } from '../../domains/storyteller/graph/state'
 
 // Tool-specific input type

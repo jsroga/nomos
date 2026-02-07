@@ -3,8 +3,11 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { AgentAction, AgentQuestion } from '../actions/types'
-import { ActionCommitted } from './ActionToast'
+import { ActionCommitted, ActionSuggestion } from './ActionToast'
+import { ActionStatus } from '../enums'
 import { QuestionCard } from './QuestionCard'
+import { ReferenceText } from './ReferenceText'
+import { hasReferences } from '../utils/reference-parser'
 import {
   Bot,
   User,
@@ -36,6 +39,11 @@ export interface Message {
     taskComplete?: boolean
     nextSteps?: string
     artifacts?: string[]
+    thinkingEntries?: Array<{
+      agent: string
+      content: string
+      timestamp: number
+    }>
   }
 }
 
@@ -43,9 +51,14 @@ interface AgentLogProps {
   messages: Message[]
   onQuestionAnswer?: (questionId: string, answer: string | string[]) => void
   onQuestionSkip?: (questionId: string) => void
+  onActionAccept?: (messageIndex: number, actionIndex: number) => void
+  onActionReject?: (messageIndex: number, actionIndex: number) => void
+  onActionReview?: (messageIndex: number, actionIndex: number) => void
   showThinking?: boolean
   isActivityPanelOpen?: boolean
   children?: React.ReactNode
+  /** Project ID for entity reference resolution */
+  projectId?: string
 }
 
 // Friendly display name mapping for agents
@@ -54,8 +67,8 @@ const AGENT_DISPLAY_NAMES: Record<string, string> = {
   Showrunner: 'Showrunner',
   PlotArchitect: 'Plot Architect',
   CharacterPsychology: 'Character Expert',
-  ConsequenceTracker: 'Story Tracker',
-  DevilsAdvocate: "Devil's Advocate",
+  ConsequenceTracker: 'Logic Guardian',
+  DevilsAdvocate: 'Devil\'s Advocate',
   VisualMoment: 'Visual Designer',
   Writer: 'Writer',
   User: 'You',
@@ -76,6 +89,15 @@ const AGENT_DISPLAY_NAMES: Record<string, string> = {
   EpisodePremiseArchitect: 'Premise Architect',
   episodePremiseArchitect: 'Premise Architect',
   ScriptEditor: 'Script Editor',
+  // Specialized Council Agents (v2)
+  Psychologist: 'Character Psychologist',
+  Gardener: 'The Gardener',
+  Storyteller: 'Storyteller',
+  // Creative Directors
+  CreativeDirector_GRRM: 'GRRM (Creative Director)',
+  CreativeDirector_Gilligan: 'Vince Gilligan (Creative Director)',
+  GRRM: 'George R.R. Martin',
+  Gilligan: 'Vince Gilligan',
 }
 
 // Get friendly display name for an agent
@@ -99,7 +121,7 @@ const getAgentDisplayName = (agentName: string): string => {
 // Agent configuration with colors and icons - Minimalist version
 const AGENT_CONFIG: Record<string, { color: string; icon: React.ReactNode }> = {
   Showrunner: {
-    color: 'text-primary/80',
+    color: 'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full transition-all duration-300 bg-primary/10 border border-primary/30 text-primary',
     icon: <Sparkles className="w-3.5 h-3.5" />,
   },
   PlotArchitect: {
@@ -136,8 +158,38 @@ const AGENT_CONFIG: Record<string, { color: string; icon: React.ReactNode }> = {
     icon: <Lightbulb className="w-3.5 h-3.5" />,
   },
   Supervisor: {
-    color: 'text-primary/80',
+    color: 'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full transition-all duration-300 bg-primary/10 border border-primary/30 text-primary',
     icon: <Sparkles className="w-3.5 h-3.5" />,
+  },
+  // Specialized Council Agents (v2)
+  Psychologist: {
+    color: 'text-pink-400/80',
+    icon: <Brain className="w-3.5 h-3.5" />,
+  },
+  Gardener: {
+    color: 'text-emerald-400/80',
+    icon: <Pen className="w-3.5 h-3.5" />,
+  },
+  Storyteller: {
+    color: 'text-amber-400/80',
+    icon: <Sparkles className="w-3.5 h-3.5" />,
+  },
+  // Creative Directors (GRRM & Gilligan style meta-agents)
+  CreativeDirector_GRRM: {
+    color: 'text-rose-500/90',
+    icon: <Sparkles className="w-3.5 h-3.5" />,
+  },
+  CreativeDirector_Gilligan: {
+    color: 'text-yellow-500/90',
+    icon: <Eye className="w-3.5 h-3.5" />,
+  },
+  GRRM: {
+    color: 'text-rose-500/90',
+    icon: <Sparkles className="w-3.5 h-3.5" />,
+  },
+  Gilligan: {
+    color: 'text-yellow-500/90',
+    icon: <Eye className="w-3.5 h-3.5" />,
   },
 }
 
@@ -221,15 +273,22 @@ export const AgentLog: React.FC<AgentLogProps> = ({
   messages,
   onQuestionAnswer,
   onQuestionSkip,
+  onActionAccept,
+  onActionReject,
+  onActionReview,
   showThinking = false,
   isActivityPanelOpen = false,
   children,
+  projectId,
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+
+
 
   // Group messages: collect consecutive delegation messages into chains
   const groupedMessages: Array<{ type: 'message' | 'delegation'; messages: Message[] }> = []
@@ -304,26 +363,81 @@ export const AgentLog: React.FC<AgentLogProps> = ({
               )}
             </div>
 
-            {/* Thinking (if enabled and Activity is ON) - Enhanced for extended thinking */}
+            {/* Thinking (if enabled and Activity is ON) - Enhanced multi-agent thinking display */}
             {(() => {
-              // Get thinking from either direct field or additional_kwargs (extended thinking)
+              // Get thinking entries from additional_kwargs for multi-agent attribution
+              const thinkingEntries = msg.additional_kwargs?.thinkingEntries as Array<{
+                agent: string
+                content: string
+                timestamp: number
+              }> | undefined
               const thinkingContent = msg.thinking || msg.additional_kwargs?.thinking
-              const hasExtendedThinking = msg.additional_kwargs?.hasThinking || msg.additional_kwargs?.extendedThinkingEnabled
+              const hasExtendedThinking =
+                msg.additional_kwargs?.hasThinking || msg.additional_kwargs?.extendedThinkingEnabled
 
-              if (!showThinking || !isActivityPanelOpen || !thinkingContent) return null
+              if (!showThinking || !isActivityPanelOpen || (!thinkingContent && !thinkingEntries?.length)) return null
 
+              // If we have structured thinking entries, render them individually
+              if (thinkingEntries && thinkingEntries.length > 0) {
+                return (
+                  <div className="mb-3 space-y-2">
+                    {thinkingEntries.map((entry, entryIdx) => {
+                      const entryConfig = getAgentConfig(entry.agent)
+                      const entryDisplayName = getAgentDisplayName(entry.agent)
+                      return (
+                        <div
+                          key={entryIdx}
+                          className="rounded-lg border border-border/30 bg-gradient-to-br from-muted/10 to-transparent overflow-hidden"
+                        >
+                          {/* Agent Header */}
+                          <div className={cn(
+                            'flex items-center gap-2 px-3 py-2 border-b border-border/20 bg-muted/5',
+                            entryConfig.color
+                          )}>
+                            <div className="p-1 rounded bg-background/50">
+                              {entryConfig.icon}
+                            </div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider">
+                              {entryDisplayName}
+                            </span>
+                            <span className="ml-auto text-[9px] text-muted-foreground/50 font-mono">
+                              thinking...
+                            </span>
+                          </div>
+                          {/* Thinking Content */}
+                          <div className="p-3 text-[11px] text-muted-foreground/80 leading-relaxed">
+                            <div className="whitespace-pre-wrap font-mono">
+                              {entry.content.length > 600
+                                ? entry.content.slice(0, 600) + '...'
+                                : entry.content}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              }
+
+              // Fallback to legacy single thinking block
               return (
-                <div className="mb-3 p-2.5 rounded border border-dashed border-border/40 text-[11px] text-muted-foreground leading-relaxed bg-muted/5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Brain className="w-3 h-3 text-purple-400/70" />
-                    <span className="font-semibold text-[10px] uppercase tracking-wider text-purple-400/70">
-                      {hasExtendedThinking ? 'Extended Thinking (GRRM/Gilligan Analysis)' : 'Thinking'}
+                <div className="mb-3 rounded-lg border border-border/30 bg-gradient-to-br from-purple-500/5 to-transparent overflow-hidden">
+                  <div className="flex items-center gap-2 px-3 py-2 border-b border-border/20 bg-muted/5">
+                    <div className="p-1 rounded bg-purple-500/10">
+                      <Brain className="w-3 h-3 text-purple-400/70" />
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400/70">
+                      {hasExtendedThinking
+                        ? 'Extended Thinking'
+                        : 'Thinking'}
                     </span>
                   </div>
-                  <div className="text-muted-foreground/80 italic whitespace-pre-wrap">
-                    {typeof thinkingContent === 'string' && thinkingContent.length > 800
-                      ? thinkingContent.slice(0, 800) + '...'
-                      : thinkingContent}
+                  <div className="p-3 text-[11px] text-muted-foreground/80 leading-relaxed">
+                    <div className="whitespace-pre-wrap font-mono">
+                      {typeof thinkingContent === 'string' && thinkingContent.length > 800
+                        ? thinkingContent.slice(0, 800) + '...'
+                        : thinkingContent}
+                    </div>
                   </div>
                 </div>
               )
@@ -338,25 +452,44 @@ export const AgentLog: React.FC<AgentLogProps> = ({
                   : 'text-foreground border-l-2 border-border/30 pl-4 py-0.5'
               )}
             >
-              <MessageContent content={msg.content} />
+              <MessageContent content={msg.content} projectId={projectId} />
             </div>
 
-            {/* Actions - using compact mode */}
+            {/* Actions - show pending for approval or committed */}
             {msg.actions && msg.actions.length > 0 && (
-              <div className={cn('mt-3 flex flex-wrap gap-2', isHuman ? 'justify-end' : 'pl-4')}>
-                {msg.actions.map((action, actionIdx) => (
-                  <ActionCommitted
-                    key={actionIdx}
-                    entry={{
-                      id: `${groupIdx}-${actionIdx}`,
-                      timestamp: new Date(),
-                      agentName: displayName,
-                      action,
-                      status: 'committed',
-                    }}
-                    compact={true}
-                  />
-                ))}
+              <div className={cn('mt-3 space-y-2', isHuman ? 'items-end' : 'pl-4')}>
+                {msg.actions.map((action, actionIdx) => {
+                  // Get original message index for callbacks
+                  const originalMsgIndex = messages.findIndex(m => m === msg)
+
+                  // Show ActionSuggestion for pending actions, ActionCommitted for committed
+                  if (action.status === 'pending' && (onActionAccept || onActionReject)) {
+                    return (
+                      <ActionSuggestion
+                        key={actionIdx}
+                        action={action}
+                        agentName={displayName}
+                        onAccept={() => onActionAccept?.(originalMsgIndex, actionIdx)}
+                        onReject={() => onActionReject?.(originalMsgIndex, actionIdx)}
+                        onReview={() => onActionReview?.(originalMsgIndex, actionIdx)}
+                      />
+                    )
+                  }
+
+                  return (
+                    <ActionCommitted
+                      key={actionIdx}
+                      entry={{
+                        id: `${groupIdx}-${actionIdx}`,
+                        timestamp: new Date(),
+                        agentName: displayName,
+                        action,
+                        status: ActionStatus.COMMITTED,
+                      }}
+                      compact={true}
+                    />
+                  )
+                })}
               </div>
             )}
 
@@ -454,7 +587,7 @@ const parseInlineFormatting = (text: string, keyPrefix: string = ''): React.Reac
   return parts.length > 0 ? parts : [text]
 }
 
-const MessageContent: React.FC<{ content: string }> = ({ content }) => {
+const MessageContent: React.FC<{ content: string; projectId?: string }> = ({ content, projectId }) => {
   // Check if content is JSON and extract message field
   let displayContent = content
 
@@ -484,8 +617,31 @@ const MessageContent: React.FC<{ content: string }> = ({ content }) => {
     )
   }
 
+  // Check if content contains entity references - if so, use ReferenceText
+  const contentHasReferences = hasReferences(displayContent)
+
   // Simple markdown-like rendering
   const lines = displayContent.split('\n')
+
+  // Helper to render text with entity references
+  const renderWithReferences = (text: string, key: string) => {
+    if (contentHasReferences && hasReferences(text)) {
+      return (
+        <ReferenceText
+          key={key}
+          text={text}
+          projectId={projectId}
+          inline={true}
+          renderText={(plainText, idx) => (
+            <React.Fragment key={idx}>
+              {parseInlineFormatting(plainText, `${key}-${idx}`)}
+            </React.Fragment>
+          )}
+        />
+      )
+    }
+    return parseInlineFormatting(text, key)
+  }
 
   return (
     <div className="space-y-1.5">
@@ -496,7 +652,7 @@ const MessageContent: React.FC<{ content: string }> = ({ content }) => {
         if (line.startsWith('**') && line.endsWith('**')) {
           return (
             <p key={lineKey} className="font-bold text-foreground">
-              {parseInlineFormatting(line.slice(2, -2), lineKey)}
+              {renderWithReferences(line.slice(2, -2), lineKey)}
             </p>
           )
         }
@@ -511,7 +667,7 @@ const MessageContent: React.FC<{ content: string }> = ({ content }) => {
           return (
             <div key={lineKey} className="flex gap-2 pl-1">
               <span className="text-primary shrink-0">•</span>
-              <span className="flex-1">{parseInlineFormatting(line.slice(2), lineKey)}</span>
+              <span className="flex-1">{renderWithReferences(line.slice(2), lineKey)}</span>
             </div>
           )
         }
@@ -522,15 +678,14 @@ const MessageContent: React.FC<{ content: string }> = ({ content }) => {
           return (
             <div key={lineKey} className="flex gap-2 pl-1">
               <span className="text-primary font-medium shrink-0 w-5">{numberedMatch[1]}.</span>
-              <span className="flex-1">{parseInlineFormatting(numberedMatch[2], lineKey)}</span>
+              <span className="flex-1">{renderWithReferences(numberedMatch[2], lineKey)}</span>
             </div>
           )
         }
 
         // Regular paragraph with inline formatting
-        return <p key={lineKey}>{parseInlineFormatting(line, lineKey)}</p>
+        return <p key={lineKey}>{renderWithReferences(line, lineKey)}</p>
       })}
     </div>
   )
 }
-

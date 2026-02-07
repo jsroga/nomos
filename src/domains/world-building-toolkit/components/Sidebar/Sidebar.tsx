@@ -1,17 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react'
 import { useWorldStore, Tile } from '@/domains/world-building-toolkit/store/useWorldStore'
-import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
-import { aiService } from '@/infrastructure/ai/service'
 import { assembleContextImage } from '@/infrastructure/ai/contextAssembler'
 import { upscaleService } from '@/domains/world-building-toolkit/services/UpscaleService'
-import { repaintService } from '@/domains/world-building-toolkit/services/RepaintService'
 import { tileGenerationService } from '@/domains/world-building-toolkit/services/TileGenerationService'
 import { fidelityService } from '@/domains/world-building-toolkit/services/FidelityService'
 import { LocalStorageKeys } from '@/constants/localStorage'
 import { Button } from '@/components/ui/button'
-import { Slider } from '@/components/ui/slider'
-import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
 import { AssetsPanel } from '@/domains/world-building-toolkit/components/AssetsPanel'
 import { MjVariantPicker } from '@/domains/world-building-toolkit/components/MjVariantPicker'
 import { TileReviewDialog } from '@/domains/world-building-toolkit/components/TileReviewDialog'
@@ -28,29 +22,21 @@ import {
 import {
   Loader2,
   Plus,
-  Paintbrush,
-  X,
-  Check,
   Eye,
   EyeOff,
   Upload,
   BookOpen,
   Sparkles,
-  ChevronDown,
-  ChevronUp,
   Palette,
-  Wand2,
   MousePointer2,
   ImagePlus,
   ZoomIn,
   Package,
   Info,
   Trash2,
-  RotateCcw,
 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import toast from 'react-hot-toast'
-import LiquidGlass from 'liquid-glass-react'
 
 export const Sidebar: React.FC = () => {
   const defaultMasterPrompt = ''

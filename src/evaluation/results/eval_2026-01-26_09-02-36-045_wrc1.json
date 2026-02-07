@@ -1,0 +1,177 @@
+{
+  "id": "eval_2026-01-26_09-02-36-045_wrc1",
+  "name": "Claude 3.5 Sonnet Strategy Sweep-E (Purple Prose/Lovecraft)-Thriller",
+  "timestamp": "2026-01-26T09:02:36.045Z",
+  "config": {
+    "name": "Claude 3.5 Sonnet Strategy Sweep-E (Purple Prose/Lovecraft)-Thriller",
+    "evaluatorSet": "pro",
+    "examples": [
+      {
+        "id": "thriller-01",
+        "input": {
+          "message": "Create a beat where the detective realizes the killer is in the room",
+          "phase": "breaking"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "expectedAgents": [
+            "PlotArchitect"
+          ]
+        },
+        "metadata": {
+          "scenario": "thriller",
+          "focus": "tension",
+          "description": "High-stakes realization beat."
+        }
+      },
+      {
+        "id": "thriller-02",
+        "input": {
+          "message": "Write the interrogation scene - sharp, rapid-fire dialogue",
+          "phase": "writing"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "minMagicScore": 0.7
+        },
+        "metadata": {
+          "scenario": "thriller",
+          "focus": "pacing",
+          "description": "Staccato rhythm, subtext."
+        }
+      },
+      {
+        "id": "thriller-03",
+        "input": {
+          "message": "Outline the conspiracy connecting the senator to the dock workers",
+          "phase": "structure"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "requiresConsistency": true
+        },
+        "metadata": {
+          "scenario": "thriller",
+          "focus": "plot coherence",
+          "description": "Complex web of relationships."
+        }
+      },
+      {
+        "id": "thriller-04",
+        "input": {
+          "message": "The protagonist is being followed - describe the paranoia",
+          "phase": "writing"
+        },
+        "expected": {
+          "shouldDelegate": true,
+          "minMagicScore": 0.65
+        },
+        "metadata": {
+          "scenario": "thriller",
+          "focus": "internal psychology",
+          "description": "Subjective experience of fear."
+        }
+      },
+      {
+        "id": "thriller-05",
+        "input": {
+          "message": "Twist: The helper was the villain all along. Reveal it.",
+          "phase": "breaking"
+        },
+        "expected": {
+          "shouldDelegate": true
+        },
+        "metadata": {
+          "scenario": "thriller",
+          "focus": "plot twist",
+          "description": "Recontextualization of previous events."
+        }
+      }
+    ],
+    "tags": [
+      "multi-variant",
+      "E (Purple Prose/Lovecraft)",
+      "Thriller"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "thriller-01",
+      "input": {
+        "message": "Create a beat where the detective realizes the killer is in the room",
+        "phase": "breaking"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CXViessvMYnsXy2jK66AE\"}"
+      },
+      "metadata": {
+        "error": true
+      }
+    },
+    {
+      "exampleId": "thriller-02",
+      "input": {
+        "message": "Write the interrogation scene - sharp, rapid-fire dialogue",
+        "phase": "writing"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CXViessfzgeNq8DK9dwCz\"}"
+      },
+      "metadata": {
+        "error": true
+      }
+    },
+    {
+      "exampleId": "thriller-03",
+      "input": {
+        "message": "Outline the conspiracy connecting the senator to the dock workers",
+        "phase": "structure"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CXViesufKKUSdxL8k4tTj\"}"
+      },
+      "metadata": {
+        "error": true
+      }
+    },
+    {
+      "exampleId": "thriller-04",
+      "input": {
+        "message": "The protagonist is being followed - describe the paranoia",
+        "phase": "writing"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CXViesw9SdWXwTWAoG5Xh\"}"
+      },
+      "metadata": {
+        "error": true
+      }
+    },
+    {
+      "exampleId": "thriller-05",
+      "input": {
+        "message": "Twist: The helper was the villain all along. Reveal it.",
+        "phase": "breaking"
+      },
+      "output": null,
+      "scores": {},
+      "reasoning": {
+        "error": "Error: 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CXViesuezxDGiHVsJwjY2\"}"
+      },
+      "metadata": {
+        "error": true
+      }
+    }
+  ],
+  "aggregatedScores": {},
+  "regressions": [],
+  "duration": 193
+}

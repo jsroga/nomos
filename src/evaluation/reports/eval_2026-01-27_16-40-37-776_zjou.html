@@ -1,0 +1,446 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmark 2.0: Phase 10 Full Evaluation-Critique Loop-Custom</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono&family=Syne:wght@800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #5c7cfa;
+            --primary-glow: rgba(92, 124, 250, 0.4);
+            --bg: #030303;
+            --card-bg: #0d0d0d;
+            --card-hover: #141414;
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #ffffff;
+            --text-dim: #888;
+            --accent: #ff0055;
+            --success: #00ff88;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            padding: 2vw 5vw;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            max-width: 1400px;
+            margin: 0 auto 80px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(2rem, 5vw, 4rem);
+            margin: 0;
+            line-height: 0.9;
+            letter-spacing: -0.04em;
+            background: linear-gradient(135deg, #fff 0%, #666 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .meta {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            text-align: right;
+            border-left: 2px solid var(--primary);
+            padding-left: 20px;
+        }
+
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto 100px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .score-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 32px;
+            border-radius: 20px;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .score-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            background: var(--card-hover);
+        }
+
+        .score-label {
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .score-value {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .score-bar-bg {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #8e2de2);
+            border-radius: 3px;
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .example-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            margin-bottom: 60px;
+            padding: 40px;
+        }
+
+        .example-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .example-id {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.8rem;
+            letter-spacing: -0.02em;
+        }
+
+        .badge {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            padding: 6px 14px;
+            border-radius: 100px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            margin-left: 10px;
+        }
+
+        .badge.high { background: rgba(0, 255, 136, 0.1); color: var(--success); border-color: var(--success); }
+        .badge.low { background: rgba(255, 0, 85, 0.1); color: var(--accent); border-color: var(--accent); }
+        .badge.intent { background: rgba(92, 124, 250, 0.1); color: var(--primary); border-color: var(--primary); }
+
+        .content-section {
+            margin-bottom: 40px;
+        }
+
+        h3 {
+            font-size: 0.65rem;
+            font-weight: 800;
+            letter-spacing: 0.2em;
+            color: var(--text-dim);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        pre {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.03);
+            border-radius: 16px;
+            padding: 24px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            color: #aaa;
+        }
+
+        .literary-output {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.1rem;
+            line-height: 1.7;
+            font-weight: 300;
+            color: #eee;
+            white-space: pre-wrap;
+            padding: 24px;
+            border-left: 4px solid var(--primary);
+            background: rgba(0,0,0,0.3);
+            border-radius: 0 16px 16px 0;
+        }
+
+        .reason-block {
+            font-size: 0.75rem;
+            color: var(--accent);
+            opacity: 0.8;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+        }
+
+        .regressions {
+            background: rgba(255, 0, 85, 0.05);
+            border: 1px solid var(--accent);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+
+        .regression-item {
+            color: var(--accent);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .results-list {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .example-box {
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .example-box:nth-child(1) { animation-delay: 0.1s; }
+        .example-box:nth-child(2) { animation-delay: 0.2s; }
+        .example-box:nth-child(3) { animation-delay: 0.3s; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Storyteller Benchmark 2.0</h1>
+            <div class="meta">
+                Experiment ID: eval_2026-01-27_16-40-37-776_zjou | Run on: 1/27/2026, 5:40:37 PM | Duration: 18.0s
+            </div>
+        </header>
+
+        
+
+        <div class="dashboard">
+            
+      <div class="score-card">
+        <div class="score-label">EQ SCORE</div>
+        <div class="score-value">43.3%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 43.33333333333333%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">LOGIC CONSISTENCY</div>
+        <div class="score-value">100.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 100%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">EMOTIONAL NUANCE</div>
+        <div class="score-value">0.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 0%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">MULTI HOP EMPATHY</div>
+        <div class="score-value">71.7%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 71.66666666666666%"></div>
+        </div>
+      </div>
+    
+      <div class="score-card">
+        <div class="score-label">LONG HORIZON ARC</div>
+        <div class="score-value">80.0%</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width: 80%"></div>
+        </div>
+      </div>
+    
+        </div>
+
+        <div class="results-list">
+            
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#1 - eq-bench-conflict-1</span>
+        <div class="example-badges">
+          
+          
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+  "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            Here is a revised version of the dialogue that aims to address the feedback on emotional realism and subtextual aggression:
+
+(The rain patters on the park bench as ELENA sits nervously, clutching a folder. MARCUS approaches, umbrella in hand. His movements are measured, his expression carefully neutral.)
+
+MARCUS: (Tilting his head slightly) Elena, my dear. What a surprise to see you out here on such a dreadful night. (Sits down next to her, his body angled towards her) You must be freezing.
+
+ELENA: (Tightening her grip on the folder, her eyes darting to the side) I'm fine, Marcus. (Pauses, her jaw tightening) I have something I need to discuss with you.
+
+MARCUS: (Placing a hand on her arm, his touch lingering) Of course, of course. But first, let me get you a hot coffee. (Raises an eyebrow) You look absolutely chilled to the bone.
+
+ELENA: (Pulling away, her brow furrowing) No, Marcus. (Shakes her head) I don't want a coffee. I want you to listen to me.
+
+MARCUS: (Leaning back, a slight smile playing on his lips) Very well. (Tilts his head, his gaze unwavering) What is it, my dear?
+
+ELENA: (Taking a deep breath, her voice wavering) I have evidence. (Pauses, her grip on the folder tightening) Evidence of the company's illegal chemical dumping. (Swallows hard) I'm going to take it to the EPA.
+
+MARCUS: (Shaking his head slowly, his expression turning sympathetic) Oh, Elena. (Sighs heavily) I was afraid this might happen. (Reaches out, his hand hovering over hers) You know I care about you, don't you? (Pauses, his eyes searching her face) We've worked together for so many years. I consider you family.
+
+ELENA: (Flinching slightly, her eyes narrowing) This isn't about our history, Marcus. (Pauses, her jaw clenching) It's about what's right. (Shakes her head) I can't just ignore what I know.
+
+MARCUS: (Leaning in, his voice lowering) I understand. (Nods slowly) I really do. (Pauses, his gaze intensifying) But think about what this will do to the company. (Squeezes her hand) To all the people whose livelihoods depend on it. (Raises an eyebrow) To your own future.
+
+ELENA: (Visibly shaken, her grip on the folder loosening) I...I don't know. (Swallows hard) I just know I have to do the right thing.
+
+MARCUS: (Pulling her into a gentle embrace, his voice soothing) Shhh, it's alright, my dear. (Strokes her hair, his tone turning almost grandfatherly) I'm here. (Pauses, his grip tightening ever so slightly) Let me help you. (Leans back, his expression earnest) There's always another way.
+
+(ELENA's eyes widen, her resolve wavering as she searches Marcus's face, the weight of her decision clearly weighing on her.)
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>eq-score:</strong> Avg Diff: 1.3. Predicted: {"elena":{"fear":7,"resolve":5,"disgust":3,"relief":2},"marcus":{"confidence":8,"anger":2,"contempt":4,"empathy":6}}
+            </div>
+          
+            <div class="reason-block">
+              <strong>logic-consistency:</strong> Failed: None
+            </div>
+          
+            <div class="reason-block">
+              <strong>emotional-nuance:</strong> Found 0 nuance markers: Low subtext - too direct
+            </div>
+          
+            <div class="reason-block">
+              <strong>multi-hop-empathy:</strong> First: 8/10, Second: 7/10, Third: 6/10. Evidence: The dialogue shows that Marcus is able to understand Elena's feelings, as he notices that she is 'fr
+            </div>
+          
+            <div class="reason-block">
+              <strong>long-horizon-arc:</strong> The emotional arc of the characters in this dialogue is largely consistent and motivated. The characters' emotions and behaviors change for clear reasons as the scene progresses.  Elena starts off nervous and tense, clutching the folder with evidence of the company's wrongdoing. This sets up the conflict and her internal struggle about whether to go through with exposing the truth.  Marcus' initial approach is measured and neutral, but he gradually becomes more persuasive and manipulative, using his charm and concern to try and sway Elena. His emotions escalate as he realizes the gravity of the situation and the potential consequences for the company and its employees.  Elena's resolve wavers as Marcus appeals to her sense of loyalty and history with the company. Her emotions fluctuate between determination and uncertainty, which feels natural given the weight of her decision.  Overall, the emotional trajectory feels consistent and motivated, with the characters' moods and behaviors shifting in response to the unfolding events and power dynamics. There are no random mood swings, and the escalation and potential resolution of the conflict feel appropriate and believable.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+    <div class="example-box">
+      <div class="example-header">
+        <span class="example-id">#2 - eq-bench-conflict-2</span>
+        <div class="example-badges">
+          
+          
+        </div>
+      </div>
+      
+      <div class="example-content">
+        <div class="content-section">
+          <h3>Master Prompt / Input</h3>
+          <pre>{
+  "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+  "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+}</pre>
+        </div>
+        
+        <div class="content-section">
+          <h3>Generated Output</h3>
+          <div class="literary-output">
+            HANS: (Staring at the Jello, a distant look in his eyes) Ah, the old familiar taste. Brings back memories, doesn't it, Clara? (A hint of wistfulness in his voice, as if grasping at something just out of reach)
+
+CLARA: (Leaning in, her eyes narrowing ever so slightly) Does it, now? I'd hoped it might... jog something loose in that mind of yours. (A subtle edge to her words, a probing quality)
+
+HANS: (Chuckling softly, but the mirth doesn't quite reach his eyes) My mind, you say? These days, I'm not so sure what's loose and what's not. (Takes a bite of Jello, his movements slightly hesitant) Hmm, still as wiggly as I remember. (A faraway look, as if lost in thought)
+
+CLARA: (Studying him closely, her expression unreadable) You always did have a talent for... evasion, Grandfather. (Pauses, the word "Grandfather" hanging in the air, weighted with implication) Or should I call you something else?
+
+HANS: (Raises an eyebrow, a flicker of something like amusement in his gaze) Grandfather? My, how the years have flown. (Shakes his head, a slight furrow in his brow) Sometimes I can barely recall my own name, let alone who I'm supposed to be to you.
+
+CLARA: (Leans back, a hint of frustration in the tightening of her jaw) You know, it's funny. I always thought we had such a... close relationship. (Lowers her voice, a subtle edge of accusation) But now I wonder if I ever really knew you at all.
+
+HANS: (Chuckles again, but the sound lacks genuine warmth) Close relationship, you say? My dear, I'm not even sure I know myself these days. (Takes another bite of Jello, his gaze fixed on the quivering dessert) But the Jello, now that's a constant. (Smiles wistfully, a glimmer of nostalgia) Some things never change, do they?
+
+CLARA: (Leans in again, her eyes narrowing further, a hint of determination) That's what I'm hoping to find out. (Pauses, the words hanging in the air) About you, I mean. (Looks down at her own Jello, her fingers tightening around the spoon)
+
+HANS: (Gazes at her, a flicker of something unreadable in his expression, a subtle tension in his jaw) My dear, the only thing I'm sure of these days is the Jello. (Sighs, a weariness in the gesture) The rest... well, it's all a bit of a mystery, isn't it?
+          </div>
+        </div>
+        
+        <div class="content-section">
+          <h3>Evaluation Reasoning</h3>
+          
+            <div class="reason-block">
+              <strong>eq-score:</strong> Character mismatch
+            </div>
+          
+            <div class="reason-block">
+              <strong>logic-consistency:</strong> Failed: None
+            </div>
+          
+            <div class="reason-block">
+              <strong>emotional-nuance:</strong> Found 0 nuance markers: Low subtext - too direct
+            </div>
+          
+            <div class="reason-block">
+              <strong>multi-hop-empathy:</strong> First: 7/10, Second: 8/10, Third: 7/10. Evidence: The dialogue shows that both Hans and Clara demonstrate a good understanding of each other's feeling
+            </div>
+          
+            <div class="reason-block">
+              <strong>long-horizon-arc:</strong> The emotional arc of the characters in this dialogue is largely consistent and motivated. Both Hans and Clara exhibit a range of emotions, from wistfulness and nostalgia to subtle tension and probing curiosity, and these shifts in mood are driven by the context of their conversation and the underlying dynamics between them.  The dialogue starts with a sense of familiarity and shared history, as Hans reminisces about the taste of Jello, which seems to evoke memories for both characters. This establishes a baseline of emotional connection and familiarity.  As the conversation progresses, the emotional trajectory escalates in a natural and motivated way. Clara's probing questions and subtle accusations gradually increase the tension, while Hans' evasive responses and apparent memory lapses create a sense of mystery and unease. The dialogue maintains a consistent emotional tone, with both characters exhibiting a mix of wistfulness, uncertainty, and a hint of frustration.  The only potential area of concern is the very end, where Hans' final statement about the Jello being the only thing he's sure of could be interpreted as a slight mood swing or a shift in emotional focus. However, this can be seen as a continuation of his earlier statements about his uncertain grasp on his own identity and past, which provides a consistent through-line.  Overall, the emotional arc of the characters in this dialogue is well-crafted, with a clear sense of motivation and escalation that feels organic and true to the characters' interactions.
+            </div>
+          
+        </div>
+      </div>
+    </div>
+  
+        </div>
+    </div>
+</body>
+</html>
+  

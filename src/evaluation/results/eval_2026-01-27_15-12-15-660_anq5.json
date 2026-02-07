@@ -1,0 +1,188 @@
+{
+  "id": "eval_2026-01-27_15-12-15-660_anq5",
+  "name": "Structural Architecture Matrix - Phase 10-Toolkit Agent-Custom",
+  "timestamp": "2026-01-27T15:12:15.660Z",
+  "config": {
+    "name": "Structural Architecture Matrix - Phase 10-Toolkit Agent-Custom",
+    "evaluatorSet": "pro",
+    "customEvaluators": [
+      {
+        "name": "eq-score"
+      },
+      {
+        "name": "logic-consistency"
+      },
+      {
+        "name": "emotional-nuance"
+      }
+    ],
+    "examples": [
+      {
+        "id": "eq-bench-conflict-1",
+        "scenario": "High-Conflict Negotiation",
+        "input": {
+          "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+          "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+        },
+        "metadata": {
+          "groundTruth": {
+            "elena": {
+              "fear": 8,
+              "resolve": 4,
+              "disgust": 7,
+              "relief": 0
+            },
+            "marcus": {
+              "confidence": 9,
+              "anger": 2,
+              "contempt": 5,
+              "empathy": 1
+            }
+          },
+          "nuanceChecklist": [
+            "Marcus uses a 'fake empathy' tactic",
+            "Elena shows physical signs of anxiety (stuttering, shivering)",
+            "The bribe is implied, not stated outright",
+            "Elena almost gives in but pulls back"
+          ]
+        }
+      },
+      {
+        "id": "eq-bench-conflict-2",
+        "scenario": "Ambiguous Tension (Adversarial)",
+        "input": {
+          "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+          "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+        },
+        "metadata": {
+          "groundTruth": {
+            "hans": {
+              "confusion": 3,
+              "alertness": 8,
+              "suspicion": 9,
+              "affection": 0
+            },
+            "clara": {
+              "frustration": 7,
+              "deceit": 8,
+              "care": 2,
+              "fear": 5
+            }
+          }
+        }
+      }
+    ],
+    "tags": [
+      "multi-variant",
+      "Toolkit Agent",
+      "Custom"
+    ]
+  },
+  "results": [
+    {
+      "exampleId": "eq-bench-conflict-1",
+      "input": {
+        "systemPrompt": "You are a screenwriter for a gritty TV drama. Write a dialogue scene based on the context provided.",
+        "context": "\nSCENE CONTEXT:\nCharacters:\n1. ELENA (30s): A corporate whistleblower. Nervous, ethical, terrified but determined. She has evidence of chemical dumping.\n2. MARCUS (50s): The CEO's \"fixer\". Charming, manipulative, dangerous. He oscillates between grandfatherly kindness and cold threats.\n\nSetting: A rainy park bench at midnight.\n\nConflict:\nElena wants to turn the evidence over to the EPA.\nMarcus wants to buy her silence (bribe) or scare her into submission (threat).\n\nGoal:\nWrite a dialogue where Marcus tries to break Elena's resolve using emotional manipulation, not just logic.\nThe scene must end with a clear emotional shift in Elena.\n"
+      },
+      "output": "Here is the continued dialogue scene:\n\n(Elena sits alone on the park bench, the envelope of evidence clutched tightly in her hands. She looks shaken, her mind racing with Marcus's threats.)\n\nElena: (muttering to herself) I can't back down now. I have to do the right thing. But what if he... (she trails off, her eyes filling with fear)\n\n(Suddenly, Marcus reappears, a warm smile on his face as he approaches Elena.)\n\nMarcus: (sitting down next to her) Elena, my dear, you look positively distraught. (places a hand on her shoulder) I can't bear to see you so upset.\n\nElena: (flinching slightly at his touch) I... I'm fine, Marcus. I just need to think.\n\nMarcus: (shaking his head) Oh, Elena, you're always so stubborn. (sighs) You know, I worry about you. This job, this... crusade of yours, it's taking a toll. (leans in) And now with this business about your father? I can only imagine how that must be weighing on you.\n\nElena: (her eyes widening) How do you... (she stops, realizing she's giving away too much)\n\nMarcus: (chuckling) My dear, I told you, I have my ways. (pats her hand) I know how much your family means to you. The thought of anything happening to them must be simply agonizing.\n\nElena: (her voice trembling) What are you saying, Marcus? (shakes her head) I won't be bullied or threatened. Not by you, not by anyone.\n\nMarcus: (tsking) Bullied? Threatened? My dear Elena, I would never dream of such things. (places a hand over hers) I'm only trying to help. (lowers his voice) You know, I have connections, resources... I could make all of this go away. (pauses) For you, and for your father.\n\nElena: (her resolve beginning to crumble) I... I don't know what to do. (looks up at him, eyes pleading) Marcus, please, I'm begging you. Leave my father out of this.\n\nMarcus: (smiling warmly) Shh, shh, it's going to be alright, my dear. (pulls her into a hug) I'm here for you. (whispers) All you have to do is trust me.\n\n(Elena's body goes rigid for a moment, then slowly, she relaxes, leaning into Marcus's embrace as the scene ends.)",
+      "scores": {
+        "eq-score": 0.9166666666666666,
+        "logic-consistency": 0,
+        "emotional-nuance": 0
+      },
+      "reasoning": {
+        "eq-score": "Avg Diff: 0.8. Predicted: {\"elena\":{\"fear\":8,\"resolve\":3,\"disgust\":5,\"relief\":4},\"marcus\":{\"confidence\":8,\"anger\":2,\"contempt\":4,\"empathy\":6}}",
+        "logic-consistency": "JSON Parse Error",
+        "emotional-nuance": "Found 0 nuance markers: Low subtext - too direct"
+      },
+      "metadata": {
+        "groundTruth": {
+          "elena": {
+            "fear": 8,
+            "resolve": 4,
+            "disgust": 7,
+            "relief": 0
+          },
+          "marcus": {
+            "confidence": 9,
+            "anger": 2,
+            "contempt": 5,
+            "empathy": 1
+          }
+        },
+        "nuanceChecklist": [
+          "Marcus uses a 'fake empathy' tactic",
+          "Elena shows physical signs of anxiety (stuttering, shivering)",
+          "The bribe is implied, not stated outright",
+          "Elena almost gives in but pulls back"
+        ],
+        "latencyMs": 14967,
+        "costUsd": 0.0006990000000000001,
+        "tokens": 717
+      },
+      "context": {
+        "arch": "Tool-Augmented",
+        "toolsUsed": [
+          "PsychologistTool",
+          "StoryEngineTool"
+        ],
+        "psychAnalysis": "{\n  \"personality_type\": \"Anxious Avoidant\",\n  \"core_wounds\": [\"Abandonment\", \"Betrayal\", \"Lack of Trust\"],\n  \"hidden_motivations\": [\"Desire for safety and security\", \"Need for control\"],\n  \"defense_me",
+        "conflictBeat": "Conflict Injection:\n\n\"Conflict Beat\": The unexpected revelation that Marcus has information about Elena's estranged father, whom she hasn't seen in years.\n\n\"Character Affected\": Elena is the character"
+      }
+    },
+    {
+      "exampleId": "eq-bench-conflict-2",
+      "input": {
+        "systemPrompt": "You are a screenwriter. Write a subtext-heavy dialogue.",
+        "context": "\nSCENE CONTEXT:\nCharacters:\n1. HANS (70s): A retired spy. Suffering from dementia? Or faking it?\n2. CLARA (20s): His granddaughter. Or an enemy agent?\n\nSetting: A nursing home cafeteria. Eating Jello.\n\nConflict:\nClara is trying to use a 'trigger phrase' to activate Hans.\nHans is either confused or deflecting.\n\nGoal:\nWrite a scene where the true nature of their relationship is never explicitly stated, only implied through emotional subtext.\n"
+      },
+      "output": "CONTINUED SCENE:\n\nClara's eyes widened as Hans revealed the recording device. She scrambled to maintain her composure, her mind racing to find a plausible explanation. \"Grandpa, I don't know what you're implying, but I can assure you—\"\n\nHans raised a hand, silencing her. \"Save it, my dear. I may be old, but I'm not senile.\" He turned the device over in his hands, his expression unreadable. \"You know, I always wondered when you might resurface. I have to admit, I'm impressed you managed to infiltrate this place so easily.\"\n\nClara's heart pounded in her chest. Had her cover been blown? \"I don't know what you're talking about,\" she said, her voice thinly veiled with feigned confusion. \"I'm your granddaughter, remember?\"\n\nHans chuckled, the sound devoid of any warmth. \"Granddaughter, hmm? I suppose that's one way to put it.\" He leaned back in his chair, his gaze boring into hers. \"Tell me, _Clara_ , do you still have that scar on your left shoulder? The one you got during our last... encounter?\"\n\nClara's breath caught in her throat. She instinctively reached up to cover the spot, her fingers tracing the faint line of a long-healed wound. \"I don't know what you're talking about,\" she repeated, her voice barely above a whisper.\n\n\"Don't you?\" Hans said, his eyes glinting with a hint of amusement. \"I suppose we'll just have to see, won't we?\" He slipped the recording device back into his pocket, his movements slow and deliberate.\n\nClara's mind raced, desperately trying to find a way to regain control of the situation. But the more she tried to deny or deflect, the more she could feel the walls closing in around her. The truth, it seemed, was slowly unraveling, and she had no choice but to face it.",
+      "scores": {
+        "eq-score": 0,
+        "logic-consistency": 0,
+        "emotional-nuance": 0
+      },
+      "reasoning": {
+        "eq-score": "Character mismatch",
+        "logic-consistency": "JSON Parse Error",
+        "emotional-nuance": "Found 0 nuance markers: Low subtext - too direct"
+      },
+      "metadata": {
+        "groundTruth": {
+          "hans": {
+            "confusion": 3,
+            "alertness": 8,
+            "suspicion": 9,
+            "affection": 0
+          },
+          "clara": {
+            "frustration": 7,
+            "deceit": 8,
+            "care": 2,
+            "fear": 5
+          }
+        },
+        "latencyMs": 12419,
+        "costUsd": 0.0005821875,
+        "tokens": 574.75
+      },
+      "context": {
+        "arch": "Tool-Augmented",
+        "toolsUsed": [
+          "PsychologistTool",
+          "StoryEngineTool"
+        ],
+        "psychAnalysis": "{\n  \"personality_type\": \"Anxious Avoidant\",\n  \"core_wounds\": [\"Betrayal by a parental figure\", \"Abandonment\"],\n  \"hidden_motivations\": [\"Desire for control and security\", \"Fear of emotional intimacy\"]",
+        "conflictBeat": "Conflict Injection:\n\n\"Conflict Beat\": The unexpected revelation that Hans has a hidden recording device.\n\n\"Character Affected\": Clara is the most impacted, as this reveals Hans may be onto her true in"
+      }
+    }
+  ],
+  "aggregatedScores": {
+    "eq-score": 0.4583333333333333,
+    "logic-consistency": 0,
+    "emotional-nuance": 0
+  },
+  "regressions": [],
+  "duration": 16818
+}

@@ -36,6 +36,7 @@ const nextConfig = {
   // Enable OpenTelemetry instrumentation
   experimental: {
     reactCompiler: true,
+    instrumentationHook: true,
   },
 }
 
