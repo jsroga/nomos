@@ -13,41 +13,41 @@ The module uses a dual-store architecture for performance:
 
 ## Core Systems
 
-### Vertex-Based Sculpting (`SculptableSurface`)
+### 1. Surface Manager & Sculpting
+The `SurfaceManager` (`src/domains/interior-designer/components/SurfaceManager.tsx`) handles the rendering and interaction of different surface types.
 
-The primary natural terrain system. It uses a dynamic heightmap to displace vertices of a plane geometry.
+**Surface Configuration:**
+Each surface type (Grass, Water, Dirt, Road, Pavement, Mars, Rock) has specific rendering properties:
+*   `depth`: Extrusion height.
+*   `verticalOffset`: To prevent Z-fighting between layered surfaces.
+*   `roughness/metalness`: PBR material properties.
 
-- **Brushes**: Supports raising, lowering, flattening, and smoothing.
-- **Performance**: Uses in-place mutation of the heightmap and a version flag (`heightmapVersion`) to efficiently signal geometry updates to the GPU.
+**SculptableSurface:**
+Ground surfaces (like Grass, Dirt, Mars) are rendered as `SculptableSurface`.
+-   **Vertex Manipulation**: Uses a dynamic heightmap to displace vertices of the plane geometry.
+-   **Brushes**: Supports Raise, Lower, Flatten, and Smooth operations.
+-   **Performance**: Updates are optimized using in-place heightmap mutation and version flags.
 
-### Voxel System (`VoxelTerrainMesh`)
+### 2. Voxel System
+A secondary terrain system for block-based construction, suitable for mechanical or structured environments.
 
-A secondary terrain system for block-based construction, suitable for mechanical or structured environments. It uses a 3D grid of voxel data to generate meshes.
+### 3. Material Painting
+Materials are painted onto the terrain using a splat-mapping approach via `TerrainShaderMaterial`.
 
-### Material Painting
-
-Materials (grass, dirt, rock, etc.) are painted onto the terrain using a `materialMap`. This map is processed in the custom `TerrainShaderMaterial`.
-
-## Shaders
-
-### `TerrainShaderMaterial`
-
+## Shaders: `TerrainShaderMaterial`
 A custom GLSL material that handles:
-
-- **Splat Mapping**: Blending multiple textures based on the `materialMap`.
-- **Dynamic Lighting**: Calculations for sun angle and shadows on the displaced terrain geometry.
-- **Normal Calculation**: Real-time generation of normals based on the heightmap for correct lighting.
+-   **Splat Mapping**: Blending textures based on `materialMap`.
+-   **Dynamic Lighting**: Shadows and sun angle calculations.
+-   **Normal Calculation**: Real-time normal generation from the heightmap.
 
 ## Architecture & Managers
 
 The scene is orchestrated by several managers within the `InteriorCanvas`:
-
-- **`ObjectManager`**: Renders and manages the lifecycle of 3D GLTF/OBJ assets.
-- **`WallManager` / `FloorManager`**: Generates procedural architectural geometry based on user-defined points.
-- **`TransformManager`**: Provides gizmos for moving, rotating, and scaling objects.
-- **`DesignManager`**: Handles persistence, allowing users to save and load complex designs from the database.
+-   **`ObjectManager`**: Renders 3D GLTF/OBJ assets.
+-   **`WallManager` / `FloorManager`**: Generates procedural geometry.
+-   **`TransformManager`**: Gizmos for moving/rotating/scaling.
+-   **`DesignManager`**: Persistence (Save/Load).
 
 ## Exporters
-
-- **`Exporter.tsx`**: Specialized tool for exporting the generated 3D scene.
-- **`RetextureExporter.tsx`**: Handles exporting modified assets with custom material/texture assignments.
+-   **`Exporter.tsx`**: Standard scene export.
+-   **`RetextureExporter.tsx`**: Export with custom materials.
