@@ -522,3 +522,73 @@ export function getKnownFactionNames(state: WritersRoomState): string[] {
   const bible = extractBibleRef(state)
   return bible.factions.map(f => f.name)
 }
+
+// ============================================
+// R3: RELATIONSHIP CONSISTENCY VALIDATION
+// ============================================
+
+export interface RelationshipSnapshot {
+  sourceCharacterId: string
+  targetCharacterId: string
+  relationshipType: string
+  trust: number
+  conflict: number
+  tension: number
+}
+
+/**
+ * Check relationship consistency for a beat.
+ * Flags contradictory relationship changes based on established dynamics.
+ */
+export function checkRelationshipConsistency(
+  beat: {
+    logline: string
+    content?: string
+    charactersInvolved?: string[]
+  },
+  relationships: RelationshipSnapshot[],
+): GuardrailIssue[] {
+  const issues: GuardrailIssue[] = []
+  const text = `${beat.logline} ${beat.content || ''}`.toLowerCase()
+  const involved = beat.charactersInvolved || []
+
+  for (const rel of relationships) {
+    const sourceInvolved = involved.some(c => c.toLowerCase().includes(rel.sourceCharacterId.toLowerCase()))
+    const targetInvolved = involved.some(c => c.toLowerCase().includes(rel.targetCharacterId.toLowerCase()))
+
+    if (!sourceInvolved || !targetInvolved) continue
+
+    // Check: Enemies suddenly cooperating without explanation
+    if (rel.conflict > 70 && rel.trust < 30) {
+      const cooperationWords = /\b(ally|allies|cooperat|team up|work together|join forces|trust)\b/i
+      if (cooperationWords.test(text)) {
+        const hasJustification = /\b(despite|reluctant|grudging|forced|no choice|survival|common enemy)\b/i.test(text)
+        if (!hasJustification) {
+          issues.push({
+            code: 'RELATIONSHIP_CONTRADICTION',
+            message: `${rel.sourceCharacterId} and ${rel.targetCharacterId} are enemies (conflict: ${rel.conflict}, trust: ${rel.trust}) but scene shows cooperation without explanation`,
+            severity: 'warning',
+            field: 'relationships',
+            suggestion: 'Add context for why enemies are cooperating (mutual threat, forced alliance, etc.)',
+          })
+        }
+      }
+    }
+
+    // Check: Characters who distrust each other sharing secrets
+    if (rel.trust < 25) {
+      const trustActions = /\b(confide|share secret|reveal|open up|vulnerable|honest)\b/i
+      if (trustActions.test(text)) {
+        issues.push({
+          code: 'TRUST_VIOLATION',
+          message: `${rel.sourceCharacterId} and ${rel.targetCharacterId} have very low trust (${rel.trust}) but scene shows trust-dependent behavior`,
+          severity: 'warning',
+          field: 'relationships',
+          suggestion: 'Characters with low trust should not freely share secrets without setup',
+        })
+      }
+    }
+  }
+
+  return issues
+}

@@ -63,7 +63,7 @@ export interface RunnerResult {
  * Create the standard storyteller judge suite
  */
 export function createStorytellerJudges(config?: { model?: string }): Judge[] {
-  const baseConfig = { model: config?.model || 'gpt-4o' }
+  const baseConfig = { model: config?.model || 'gpt-4o-mini' }
 
   return [
     // Magic & Beauty
@@ -100,7 +100,7 @@ export function createSpecializedJudges(
   focus: 'magic' | 'slop' | 'consistency' | 'all',
   config?: { model?: string }
 ): Judge[] {
-  const baseConfig = { model: config?.model || 'gpt-4o' }
+  const baseConfig = { model: config?.model || 'gpt-4o-mini' }
 
   switch (focus) {
     case 'magic':

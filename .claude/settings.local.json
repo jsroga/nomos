@@ -34,7 +34,12 @@
       "Bash(git fetch:*)",
       "Bash(grep:*)",
       "WebFetch(domain:mastra.ai)",
-      "Bash(node --check:*)"
+      "Bash(node --check:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(npx next:*)",
+      "Bash(npm run test:e2e:*)",
+      "Bash(wc:*)",
+      "Bash(find:*)"
     ]
   }
 }

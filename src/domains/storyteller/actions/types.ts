@@ -17,10 +17,29 @@ export { ActionType, MergeMode }
 // AGENT ACTIONS - Operations agents can commit
 // ============================================
 
+/** Relationship changes caused by a beat - used for R2 persistent tracking */
+export interface RelationshipShift {
+  sourceCharacterId: string
+  targetCharacterId: string
+  trustDelta: number        // e.g., -30 (betrayal discovered)
+  conflictDelta: number     // e.g., +40
+  tensionDelta: number
+  reason: string            // "Aldric discovered Theron's funding of the rebellion"
+}
+
+/** Beat readiness indicators - used for A6 completion tracking */
+export interface BeatReadiness {
+  hasLogline: boolean
+  hasScript: boolean
+  hasQualityScore: boolean
+  qualityScore?: number     // 0-1 from prose quality scorer
+  hasImage: boolean
+}
+
 export type AgentAction = // Beat Operations
   (
-    | { type: 'CREATE_BEAT'; payload: Partial<BeatCard> & { logline: string } }
-    | { type: 'UPDATE_BEAT'; payload: { beatId: string; updates: Partial<BeatCard> } }
+    | { type: 'CREATE_BEAT'; payload: Partial<BeatCard> & { logline: string; relationshipShifts?: RelationshipShift[]; readiness?: BeatReadiness } }
+    | { type: 'UPDATE_BEAT'; payload: { beatId: string; updates: Partial<BeatCard>; relationshipShifts?: RelationshipShift[] } }
     | { type: 'DELETE_BEAT'; payload: { beatId: string } }
     | { type: 'REORDER_BEATS'; payload: { beatIds: string[] } }
     | { type: 'LOCK_BEAT_BOARD'; payload: { episodeId: string } }

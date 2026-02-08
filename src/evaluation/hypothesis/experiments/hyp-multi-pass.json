@@ -1,0 +1,29 @@
+{
+  "hypothesis": {
+    "id": "hyp-multi-pass-001",
+    "name": "Multi-pass refinement improves output quality",
+    "description": "Adding a scored critique + conditional refinement loop should improve Magic Score and reduce slop compared to single-pass generation",
+    "variable": {
+      "type": "flow",
+      "baseline": "Single-pass story workflow (creativeDecision always approves)",
+      "variant": "Multi-pass workflow with prose scoring and conditional refinement"
+    },
+    "prediction": "Magic Score improves by >= 10%, Anti-Slop improves by >= 20%",
+    "targetMetrics": ["EQ-Bench Magic Score", "Anti-Slop Score", "Gilligan-Martin Quality"]
+  },
+  "messageFlow": [
+    {
+      "role": "user",
+      "content": "Create a medieval kingdom where a civil war is brewing between two noble houses.",
+      "phase": "premise",
+      "expectedToolCalls": ["update_world_bible"]
+    },
+    {
+      "role": "user",
+      "content": "Write the CLIMACTIC scene where the young heir confronts the regent with proof of treason. This is the emotional peak of the story.",
+      "phase": "writing",
+      "expectedToolCalls": ["consult_gardener"]
+    }
+  ],
+  "outputScope": ["beats", "messages"]
+}

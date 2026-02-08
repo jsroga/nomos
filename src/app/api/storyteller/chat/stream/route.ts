@@ -10,6 +10,7 @@ import {
   processToolResultToAction,
   getActionTypeForSection
 } from '@/domains/storyteller/config/action-config'
+import { budgetContext, type RawContextParts } from '@/domains/storyteller/context/token-budget'
 
 // Node.js Runtime required for Mastra core dependencies
 export const runtime = 'nodejs'
@@ -177,125 +178,87 @@ export async function POST(req: Request) {
         const characters = serviceData.characters || []
         const beats = serviceData.beats || []
 
-        // 2. Build RICH Context String
-        contextPrompt = `
-=== CRITICAL SYSTEM CONTEXT ===
+        // 2. Build context with token budget enforcement
+        // Assemble each section separately, then run through budgetContext()
+        const systemCtx = `=== CRITICAL SYSTEM CONTEXT ===
 projectId: ${projectId}
 ${episodeId ? `episodeId: ${episodeId}` : ''}
 currentPhase: ${currentPhase || 'premise'}
-
 IMPORTANT: When calling tools that require projectId, you MUST use: "${projectId}"
 ${episodeId ? `When calling tools that require episodeId, you MUST use: "${episodeId}"` : ''}
-
 CURRENT STORY PHASE: ${currentPhase || 'premise'}
 - premise: Planning the story concept, world building, episode premise
-- breaking: Breaking story into beats on the beat board  
+- breaking: Breaking story into beats on the beat board
 - writing: Writing the actual script/prose
 - complete: Story is finished
-To advance to the next phase, call 'update_story_phase' with the appropriate phase value.
+⚠️ EXISTING content below is REFERENCE ONLY. When asked to GENERATE/REGENERATE, create COMPLETELY NEW content.
+${masterPrompt ? `\n=== MASTER PROMPT ===\n${masterPrompt}` : ''}`
 
-⚠️ CRITICAL WARNING: The data below is EXISTING content. When asked to GENERATE or REGENERATE anything:
-- CREATE COMPLETELY NEW AND DIFFERENT content
-- Do NOT copy or slightly modify existing data
-- Use existing data as STYLE REFERENCE only, not as source to copy
-- Your output should be FRESH and CREATIVE, not a rehash of what's already there
+        const projectCtx = `=== PROJECT ===
+Title: ${projectData?.name || 'Untitled'} | Genre: ${Array.isArray(storyPlan.genre) ? storyPlan.genre.join(', ') : storyPlan.genre || bible.genre || 'Not set'} | Tone: ${Array.isArray(storyPlan.tone) ? storyPlan.tone.join(', ') : storyPlan.tone || bible.tone || 'Not set'} | Theme: ${storyPlan.centralTheme || bible.centralTheme || 'Not set'}
 
-${masterPrompt ? `
-=== MASTER PROMPT (User's creative direction - FOLLOW STRICTLY) ===
-${masterPrompt}
-` : ''}
+=== EPISODE PREMISE ===
+${storyPlan.premise || storyPlan.episodePremise || bible.episodePremise
+            ? JSON.stringify(storyPlan.premise || storyPlan.episodePremise || bible.episodePremise)
+            : 'No episode premise yet'}
 
-=== PROJECT METADATA ===
-Title: ${projectData?.name || 'Untitled'}
-Genre: ${Array.isArray(storyPlan.genre) ? storyPlan.genre.join(', ') : storyPlan.genre || bible.genre || 'Not set'}
-Tone: ${Array.isArray(storyPlan.tone) ? storyPlan.tone.join(', ') : storyPlan.tone || bible.tone || 'Not set'}
-Central Theme: ${storyPlan.centralTheme || bible.centralTheme || 'Not set'}
+=== WORLD ===
+${storyPlan.worldDescription || bible.worldDescription || 'No world description yet'}
 
-=== EXISTING EPISODE PREMISE (REQUIRED FOR SECTION REGENERATION) ===
-${storyPlan.premise || storyPlan.episodePremise || bible.episodePremise ? `
-${JSON.stringify(storyPlan.premise || storyPlan.episodePremise || bible.episodePremise, null, 2)}
-
-IMPORTANT: When asked to regenerate ONLY a specific section (e.g., "regenerate only the fatal flaw"):
-- Use 'consult_premise_architect' with task='regenerate_section'
-- Set section='fatalFlaw' (or the appropriate section name)
-- Pass the FULL existing premise above as 'existingPremise'
-- Valid sections: protagonistHook, fatalFlaw, stakes, inevitableConsequence, theHook, theTurn, theAftermath, transformation, thematicFocus, logline, title
-` : 'No episode premise yet - generate full premise first'}
-
-=== EXISTING WORLD DESCRIPTION (REFERENCE ONLY - GENERATE NEW IF ASKED) ===
-${storyPlan.worldDescription || bible.worldDescription || 'No world description yet - generate fresh if asked'}
-
-=== EXISTING WORLD RULES (REFERENCE ONLY - DO NOT COPY WHEN GENERATING NEW) ===
+=== WORLD RULES ===
 ${Array.isArray(storyPlan.worldRules) && storyPlan.worldRules.length > 0
             ? storyPlan.worldRules.map((r: any) => `- [${r.category || 'General'}] ${r.rule}${r.consequence ? ` → ${r.consequence}` : ''}`).join('\n')
-            : 'No world rules defined yet - generate fresh ones if asked'}
+            : '(none)'}
 
-=== EXISTING FACTIONS (REFERENCE ONLY - DO NOT COPY WHEN GENERATING NEW) ===
+=== FACTIONS ===
 ${Array.isArray(storyPlan.factions) && storyPlan.factions.length > 0
             ? storyPlan.factions.map((f: any) => {
               const factionId = `faction-${f.id?.slice(0, 8) || f.name.toLowerCase().replace(/\s+/g, '-')}`
               return `- [${f.name}][${factionId}]: ${f.ideology || f.description || 'No description'}`
             }).join('\n')
-            : 'No factions defined yet - generate fresh ones if asked'}
+            : '(none)'}
 
-=== KEY CHARACTERS (${characters.length}) ===
-${characters.slice(0, 15).map((c: any) => {
-              const traits = c.traits ? ` [${Array.isArray(c.traits) ? c.traits.join(', ') : c.traits}]` : ''
-              const charId = `char-${c.id?.slice(0, 8) || c.name.toLowerCase().replace(/\s+/g, '-')}`
-              return `- [${c.name}][${charId}] (${c.role || 'Unknown role'})${traits}: ${c.description || 'No description'}`
-            }).join('\n') || 'No characters yet'}
+=== INSPIRATIONS ===
+${storyPlan.inspirations ? `Movies: ${Array.isArray(storyPlan.inspirations.movies) ? storyPlan.inspirations.movies.map((m: any) => typeof m === 'string' ? m : m.title).join(', ') : 'None'} | Books: ${Array.isArray(storyPlan.inspirations.books) ? storyPlan.inspirations.books.map((b: any) => typeof b === 'string' ? b : b.title).join(', ') : 'None'} | Games: ${Array.isArray(storyPlan.inspirations.games) ? storyPlan.inspirations.games.map((g: any) => typeof g === 'string' ? g : g.title).join(', ') : 'None'}` : '(none)'}
 
-=== ENTITY REFERENCE IDS (Use these when mentioning entities) ===
-CHARACTERS:
-${characters.slice(0, 15).map((c: any) => {
-              const charId = `char-${c.id?.slice(0, 8) || c.name.toLowerCase().replace(/\s+/g, '-')}`
-              return `  ${c.name} → [${c.name}][${charId}]`
-            }).join('\n') || '  (none)'}
-FACTIONS:
-${Array.isArray(storyPlan.factions) && storyPlan.factions.length > 0
-            ? storyPlan.factions.map((f: any, i: number) => {
-              const factionId = `faction-${f.id?.slice(0, 8) || f.name.toLowerCase().replace(/\s+/g, '-')}`
-              return `  ${f.name} → [${f.name}][${factionId}]`
-            }).join('\n')
-            : '  (none)'}
-STORY BEATS:
-${beats.length > 0
-            ? beats.slice(-8).map((b: any) => {
-              const beatId = `beat-${b.id?.slice(0, 8)}`
-              const beatName = b.logline?.slice(0, 30) || `Beat ${b.sequence}`
-              return `  ${beatName} → [${beatName}][${beatId}]`
-            }).join('\n')
-            : '  (none)'}
-
-IMPORTANT: When mentioning ANY named entity in your response, use the entity reference format:
-- Format: [Display Name][entity-type-id]
-- Example: [Marcus][char-abc123] traveled to [The Citadel][place-def456]
-- If entity doesn't exist in list above, generate a new ID: [New Entity Name][type-${uuidv4().slice(0, 8)}]
-- Type prefixes: char-, place-, event-, faction-, rule-, beat-
-
-=== EXISTING INSPIRATIONS (REFERENCE ONLY) ===
-${storyPlan.inspirations ? `
-Movies: ${Array.isArray(storyPlan.inspirations.movies) ? storyPlan.inspirations.movies.map((m: any) => typeof m === 'string' ? m : m.title).join(', ') : 'None'}
-Books: ${Array.isArray(storyPlan.inspirations.books) ? storyPlan.inspirations.books.map((b: any) => typeof b === 'string' ? b : b.title).join(', ') : 'None'}
-Games: ${Array.isArray(storyPlan.inspirations.games) ? storyPlan.inspirations.games.map((g: any) => typeof g === 'string' ? g : g.title).join(', ') : 'None'}
-` : 'No inspirations set - generate fresh if asked'}
-
-=== EXISTING STORY SEQUENCES / ROADMAP (REFERENCE ONLY - GENERATE NEW IF ASKED) ===
+=== SEQUENCES ===
 ${Array.isArray(storyPlan.sequences) && storyPlan.sequences.length > 0
-            ? storyPlan.sequences.map((s: any, i: number) => `${i + 1}. ${s.name}: ${s.description || 'No description'}`).join('\n')
-            : 'No sequences defined yet - generate fresh if asked'}
+            ? storyPlan.sequences.map((s: any, i: number) => `${i + 1}. ${s.name}: ${s.description || ''}`).join('\n')
+            : '(none)'}`
 
-=== RECENT STORY BEATS (${beats.length}) ===
-${beats.length > 0 ? beats.slice(-8).map((b: any) => {
+        // Characters: reduced from 15 to 5, with entity reference IDs inline (no separate duplicate section)
+        const charsCtx = characters.length > 0
+          ? `=== CHARACTERS (${characters.length}) ===\n` + characters.slice(0, 5).map((c: any) => {
+              const charId = `char-${c.id?.slice(0, 8) || c.name.toLowerCase().replace(/\s+/g, '-')}`
+              return `- [${c.name}][${charId}] (${c.role || '?'}): ${c.description || 'No description'}`
+            }).join('\n')
+          : ''
+
+        // Beats: reduced from 8 to 3
+        const beatsCtx = beats.length > 0
+          ? `=== RECENT BEATS (${beats.length}) ===\n` + beats.slice(-3).map((b: any) => {
               const beatId = `beat-${b.id?.slice(0, 8)}`
               return `- [${b.logline || `Beat ${b.sequence}`}][${beatId}]`
-            }).join('\n') : 'No beats yet'}
-${ragContext ? `
-=== RAG-RETRIEVED CONTEXT ===
-${ragContext}
-` : ''}
-=== END CONTEXT ===
-`
+            }).join('\n')
+          : ''
+
+        // Apply token budget enforcement — truncates any section that exceeds its limit
+        const rawParts: RawContextParts = {
+          systemPrompt: systemCtx,
+          projectContext: projectCtx,
+          characters: charsCtx,
+          beats: beatsCtx,
+          rag: ragContext || undefined,
+          userMessage: message,
+        }
+        const budgeted = budgetContext(rawParts)
+
+        if (budgeted.trimmed.length > 0) {
+          console.log(`[Stream] Token budget trimmed sections:`, budgeted.trimmed)
+        }
+        console.log(`[Stream] Context tokens: ~${budgeted.totalTokens}`)
+
+        contextPrompt = budgeted.context
       } catch (err) {
         console.warn('Failed to load context for stream:', err)
         try {
@@ -410,7 +373,6 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
       // The agent prompt already instructs to use tools for generation
       toolChoice: 'auto',
       // Allow up to 5 steps for complex multi-tool workflows
-      // Deduplication logic below prevents the same tool being called with same data
       maxSteps: 5,
       telemetry: {
         isEnabled: true,

@@ -4,112 +4,112 @@ overview: Improve Storyteller quality through extended thinking, multi-pass gene
 todos:
   - id: a2-thinking-framework
     content: "A2: Create EXTENDED_THINKING_FRAMEWORK constant and inject into Gardener + Storyteller agent system prompts"
-    status: pending
+    status: completed
   - id: a3-antislop-scorer
     content: "A3: Create prose-quality-scorer.ts with anti-slop pattern detection and 0-1 scoring"
-    status: pending
+    status: completed
   - id: a5-scene-necessity
     content: "A5: Add scene necessity validator - every beat must have a clear before/after state change"
-    status: pending
+    status: completed
   - id: a4-self-critique-tool
     content: "A4: Create self_critique Mastra tool via createTool(), register in Gardener + Storyteller toolsMap"
-    status: pending
+    status: completed
   - id: a1-multipass-pipeline
     content: "A1: Add scored critique + conditional refinement loop to story-workflow.ts with circuit breaker (MAX_REFINEMENT_PASSES=1)"
-    status: pending
+    status: completed
   - id: a6-beat-readiness
     content: "A6: Add beat readiness indicators to BeatCard/CorkBoard (inklewriter completion tracking)"
-    status: pending
+    status: completed
   - id: a7-creative-audit-trail
     content: "A7: Add reasoning field to StorytellerAction type and render in AgentLog component"
-    status: pending
+    status: completed
   - id: a8-thinking-budget
     content: "A8: Extend inferEffortFromContext with inferEffortFromBeat to scale model + pass count by beat importance"
-    status: pending
+    status: completed
   - id: q1-mazur-quality-gate
     content: "Q1: Wire Mazur Framework scoring into story-workflow.ts as a quality gate (not just premise-level)"
-    status: pending
+    status: completed
   - id: q2-grrm-consequence-scoring
     content: "Q2: Extend ConsequenceAgent to score consequence quality (0-1) not just track structures"
-    status: pending
+    status: completed
   - id: q3-gilligan-visual-hook
     content: "Q3: Add visual hook validator - every scene must have a concrete opening image (Gilligan cold-open principle)"
-    status: pending
+    status: completed
   - id: r1-relationship-context-injection
     content: "R1: Inject relationship context into beat/scene generation prompts from CharacterWeb data"
-    status: pending
+    status: completed
   - id: r2-relationship-evolution
     content: "R2: Track relationship changes per beat (tension, trust, power shifts) and persist to DB"
-    status: pending
+    status: completed
   - id: r3-relationship-consistency-guard
     content: "R3: Add relationship validation to consistency guardrails - flag contradictory relationship changes"
-    status: pending
+    status: completed
   - id: e1-golden-dataset
     content: "E1: Create 15-example human-curated golden dataset with expected quality scores and reference outputs"
-    status: pending
+    status: completed
   - id: e2-deepeval-metrics
     content: "E2: Add Scene Necessity + Thinking Quality + Relationship Coherence DeepEval metrics"
-    status: pending
+    status: completed
   - id: e3-confident-multi-step
     content: "E3: Enable multi-step evals in Confident AI - update metrics to multiTurn:true, use ConversationalTestCase"
-    status: pending
+    status: completed
   - id: e4-e2e-smoke
     content: "E4: Add e2e smoke tests for multi-pass pipeline, self-critique tool, quality scoring, and relationship context"
-    status: pending
+    status: completed
   - id: e5-hypothesis-experiments
     content: "E5: Create 3 hypothesis experiment configs: extended-thinking, relationship-context, multi-pass-refinement"
-    status: pending
+    status: completed
   - id: e6-regression-baseline
     content: "E6: Run baseline evaluation and save scores as regression floor for CI"
-    status: pending
+    status: completed
   - id: m1-agent-model-matrix
     content: "M1: Create agent-model assignment matrix - map each agent to optimal model (gpt-4o-mini for analysis, gpt-4o for writing, claude-sonnet for climax)"
-    status: pending
+    status: completed
   - id: m2-context-budget
     content: "M2: Implement context window budget manager - cap total tokens per agent call, prioritize by relevance"
-    status: pending
+    status: completed
   - id: m3-memory-compression
     content: "M3: Compress memory from last-50-messages to rolling summary + last-10 - reduce ~15K tokens to ~4K"
-    status: pending
+    status: completed
   - id: m4-smart-context-default
     content: "M4: Switch default context assembly from full-dump to assembleContextWithSmartEntities (only relevant entities)"
-    status: pending
+    status: completed
   - id: m5-child-agent-pooling
     content: "M5: Cache and reuse child agent instances instead of recreating per tool call"
-    status: pending
+    status: completed
   - id: m6-output-token-caps
     content: "M6: Enforce per-agent maxTokens in generate() calls matching agent-guardrails limits"
-    status: pending
+    status: completed
   - id: m7-token-tracking
     content: "M7: Add per-request token tracking and cost estimation to Langfuse traces"
-    status: pending
+    status: completed
   - id: m8-mazur-loop-cap
     content: "M8: Reduce premise architect Mazur loop from 20 to 5 max iterations with early exit on plateau"
-    status: pending
+    status: completed
   - id: t1-toon-install
     content: "T1: Install @toon-format/toon and create toon-encoder.ts wrapper for context serialization"
-    status: pending
+    status: completed
   - id: t2-toon-context
     content: "T2: Encode context assembly output (characters, beats, world rules, factions) as TOON instead of JSON/text"
-    status: pending
+    status: completed
   - id: t3-toon-memory
     content: "T3: Encode memory messages and RAG results as TOON for agent input"
-    status: pending
+    status: completed
   - id: t4-toon-benchmark
     content: "T4: Benchmark TOON vs current format on actual project data - measure real token savings with long-text fields"
-    status: pending
+    status: completed
   - id: s1-autocomplete-engine
     content: "S1: Create ScriptAutocomplete engine with screenplay-aware completion providers (characters, locations, transitions)"
-    status: pending
+    status: completed
   - id: s2-autocomplete-ui
     content: "S2: Build lightweight autocomplete popup component for ScriptEditor (keyboard nav, fuzzy filter)"
-    status: pending
+    status: completed
   - id: s3-ai-ghost-text
     content: "S3: Add AI ghost-text inline completion (gpt-4o-mini streaming, Tab to accept, dimmed preview)"
-    status: pending
+    status: completed
   - id: s4-screenplay-rules
     content: "S4: Create screenplay format rules engine (scene heading, character, parenthetical, transition detection)"
-    status: pending
+    status: completed
 isProject: false
 ---
 

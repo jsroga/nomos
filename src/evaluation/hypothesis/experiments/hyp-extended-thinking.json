@@ -1,0 +1,42 @@
+{
+  "hypothesis": {
+    "id": "hyp-extended-thinking-001",
+    "name": "Extended thinking framework improves scene quality",
+    "description": "Adding structured pre-generation reasoning (character audit, consequence trace, voice verification) should improve Magic Score and reduce slop",
+    "variable": {
+      "type": "prompt",
+      "baseline": "Standard agent prompts without thinking framework",
+      "variant": "Agent prompts with EXTENDED_THINKING_FRAMEWORK injected"
+    },
+    "prediction": "Magic Score improves by >= 10%, Anti-Slop improves by >= 15%",
+    "targetMetrics": ["EQ-Bench Magic Score", "Anti-Slop Score", "Mazur Character Voice", "Gilligan-Martin Quality"]
+  },
+  "messageFlow": [
+    {
+      "role": "user",
+      "content": "Create a dark fantasy world. A kingdom where magic is powered by human memory - every spell erases a memory from the caster. The ruling class hoards illiterate peasants as 'fuel'. Use update_world_bible.",
+      "phase": "premise",
+      "expectedToolCalls": ["update_world_bible"]
+    },
+    {
+      "role": "user",
+      "content": "Create two characters: 1) Magistrate Venn, who runs the memory farms but has been secretly shielding a child from harvesting. 2) The child, Pip, 12 years old, who has started to learn forbidden reading in secret.",
+      "phase": "premise",
+      "expectedToolCalls": ["create_character"]
+    },
+    {
+      "role": "user",
+      "content": "Write the scene where Pip accidentally casts a spell using a word she read, and Venn must decide whether to report her or hide the evidence. This is a decision beat.",
+      "phase": "writing",
+      "expectedToolCalls": ["consult_gardener"]
+    },
+    {
+      "role": "user",
+      "content": "Now write the consequence: someone witnessed what happened. Write the next scene.",
+      "phase": "writing",
+      "expectedToolCalls": ["consult_gardener"]
+    }
+  ],
+  "outputScope": ["worldBible", "beats", "messages"],
+  "multiTurn": true
+}

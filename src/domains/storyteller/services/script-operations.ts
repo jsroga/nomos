@@ -24,6 +24,8 @@ SCREENPLAY FORMAT REFERENCE:
 - Dialogue: Regular case, centered conceptually
 - Parentheticals: (in parentheses), for delivery notes only`
 
+const CONTEXT_LIMIT = 5000
+
 export async function regenerateText(
   selection: string,
   instruction: string,
@@ -36,8 +38,8 @@ export async function regenerateText(
   const contextInfo = context
     ? `
 SURROUNDING CONTEXT:
-Before: "${context.beforeText?.slice(-200) || ''}"
-After: "${context.afterText?.slice(0, 200) || ''}"
+Before: "${context.beforeText?.slice(-CONTEXT_LIMIT) || ''}"
+After: "${context.afterText?.slice(0, CONTEXT_LIMIT) || ''}"
 
 ${context.characterVoices
       ? `CHARACTER VOICES:\n${Object.entries(context.characterVoices)
@@ -61,42 +63,61 @@ ${context.characterVoices
   }
 }
 
-export async function expandScene(selection: string): Promise<string> {
+export async function expandScene(
+  selection: string,
+  context?: { beforeText?: string; afterText?: string }
+): Promise<string> {
   return regenerateText(
     selection,
-    'Expand this section with more visual detail, sensory descriptions, and beat-by-beat action. Add subtext to any dialogue. Make it more cinematic.'
+    'Expand this section with more visual detail, sensory descriptions, and beat-by-beat action. Add subtext to any dialogue. Make it more cinematic.',
+    context
   )
 }
 
-export async function condenseScene(selection: string): Promise<string> {
+export async function condenseScene(
+  selection: string,
+  context?: { beforeText?: string; afterText?: string }
+): Promise<string> {
   return regenerateText(
     selection,
-    'Condense this to its essential elements. Remove redundant action lines, tighten dialogue, but keep the core dramatic beats.'
+    'Condense this to its essential elements. Remove redundant action lines, tighten dialogue, but keep the core dramatic beats.',
+    context
   )
 }
 
 export async function improveDialogue(
   selection: string,
   characterName: string,
-  voiceNotes?: string
+  voiceNotes?: string,
+  context?: { beforeText?: string; afterText?: string }
 ): Promise<string> {
   return regenerateText(
     selection,
-    `Improve this dialogue for ${characterName}. ${voiceNotes ? `Voice notes: ${voiceNotes}.` : ''} Make it more natural, add subtext, and ensure it reveals character while advancing the scene.`
+    `Improve this dialogue for ${characterName}. ${voiceNotes ? `Voice notes: ${voiceNotes}.` : ''} Make it more natural, add subtext, and ensure it reveals character while advancing the scene.`,
+    context
   )
 }
 
-export async function addVisualHook(selection: string): Promise<string> {
+export async function addVisualHook(
+  selection: string,
+  context?: { beforeText?: string; afterText?: string }
+): Promise<string> {
   return regenerateText(
     selection,
-    "Add a strong visual hook to open this scene. What's the first, most striking image we see? Make it iconic and meaningful."
+    "Add a strong visual hook to open this scene. What's the first, most striking image we see? Make it iconic and meaningful.",
+    context
   )
 }
 
-export async function shiftTone(selection: string, targetTone: string): Promise<string> {
+export async function shiftTone(
+  selection: string,
+  targetTone: string,
+  context?: { beforeText?: string; afterText?: string }
+): Promise<string> {
   return regenerateText(
     selection,
-    `Shift the tone of this section to be more ${targetTone}. Maintain the core story beats but adjust language, pacing, and imagery.`
+    `Shift the tone of this section to be more ${targetTone}. Maintain the core story beats but adjust language, pacing, and imagery.`,
+    context
   )
 }
 

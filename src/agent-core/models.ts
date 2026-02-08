@@ -46,10 +46,14 @@ export const MODELS = {
 // =============================================================================
 
 export const IMPROVEMENT_LOOP = {
-  maxIterations: Number(process.env.IMPROVEMENT_MAX_ITERATIONS) || 20,
+  maxIterations: Number(process.env.IMPROVEMENT_MAX_ITERATIONS) || 5,
   qualityThreshold: Number(process.env.IMPROVEMENT_QUALITY_THRESHOLD) || 0.85,
   minImprovementDelta: 0.02,
   earlyExitOnRegression: true,
+  /** Exit if score doesn't improve by minDelta for this many consecutive iterations */
+  earlyExitOnPlateau: true,
+  /** How many flat iterations before plateau exit */
+  plateauWindow: 2,
 } as const
 
 // =============================================================================

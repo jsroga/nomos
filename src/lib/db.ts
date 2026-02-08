@@ -1,9 +1,16 @@
-import { drizzle } from 'drizzle-orm/postgres-js'
-import postgres from 'postgres'
+import { drizzle } from 'drizzle-orm/node-postgres'
+import { Pool } from 'pg'
 import * as schema from '../domains/storyteller/db/schema'
 
 const connectionString = process.env.DATABASE_URL!
 
-// Disable prefetch as it is not supported for "Transaction" pool mode
-const client = postgres(connectionString, { prepare: false })
-export const db = drizzle(client, { schema })
+// SSL disabled for Supabase pooler
+const pool = new Pool({
+    connectionString,
+    ssl: false,
+    max: 5,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+})
+
+export const db = drizzle(pool, { schema })

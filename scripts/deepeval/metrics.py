@@ -18,6 +18,10 @@ Based on:
 
 from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCaseParams
+from deepeval.models import GPTModel
+
+# Use gpt-4o-mini for all evaluations to save costs/avoid 429s
+eval_model = GPTModel(model="gpt-4o-mini")
 
 # ============================================
 # 1. EQ-Bench Magic Score
@@ -59,6 +63,7 @@ Calculate weighted average:
 Score 0-1 where 0-0.4=competent, 0.5-0.6=flashes of magic, 0.7-0.8=genuine magic, 0.9-1.0=masterwork.""",
     evaluation_params=[LLMTestCaseParams.ACTUAL_OUTPUT, LLMTestCaseParams.CONTEXT],
     threshold=0.7,
+    model=eval_model,
 )
 
 # ============================================
@@ -117,6 +122,7 @@ Score 0-1 where:
 - 0.0-0.4: Heavy slop, clearly AI content""",
     evaluation_params=[LLMTestCaseParams.ACTUAL_OUTPUT],
     threshold=0.7,
+    model=eval_model,
 )
 
 # ============================================
@@ -171,6 +177,7 @@ Score 0-1 where:
 - 0.0-0.5: Critical inconsistencies""",
     evaluation_params=[LLMTestCaseParams.ACTUAL_OUTPUT, LLMTestCaseParams.CONTEXT, LLMTestCaseParams.EXPECTED_OUTPUT],
     threshold=0.7,
+    model=eval_model,
 )
 
 # ============================================
@@ -228,6 +235,7 @@ Score 0-1 where:
 - 0.0-0.5: All characters sound the same""",
     evaluation_params=[LLMTestCaseParams.ACTUAL_OUTPUT, LLMTestCaseParams.CONTEXT],
     threshold=0.7,
+    model=eval_model,
 )
 
 # ============================================
@@ -289,6 +297,7 @@ Score 0-1 where:
 - 0.0-0.5: Disconnected, incoherent narrative""",
     evaluation_params=[LLMTestCaseParams.ACTUAL_OUTPUT, LLMTestCaseParams.CONTEXT],
     threshold=0.7,
+    model=eval_model,
 )
 
 # ============================================
@@ -351,6 +360,7 @@ Score 0-1 where:
 - 0.0-0.5: Below broadcast standards""",
     evaluation_params=[LLMTestCaseParams.ACTUAL_OUTPUT, LLMTestCaseParams.CONTEXT],
     threshold=0.7,
+    model=eval_model,
 )
 
 # ============================================

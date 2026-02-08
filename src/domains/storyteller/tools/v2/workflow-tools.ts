@@ -20,14 +20,15 @@ export const runStoryCreationWorkflowTool = createTool({
         narrativeContext: z.string().describe('The narrative context required for the agents to understand the situation.'),
         projectId: z.string().describe('The project ID.'),
     }),
-    execute: async (args: any) => { const context = args?.context || args;
+    execute: async (args: any) => {
+        const context = args?.context || args;
         try {
             const { goal, narrativeContext: storyContext, projectId } = context
             const traceId = getWorkflowTraceId()
             const runId = uuidv4()
 
             // Execute the Mastra workflow via formal run mechanism
-            const run = await storyCreationWorkflow.createRunAsync({
+            const run = await storyCreationWorkflow.createRun({
                 runId
             })
 

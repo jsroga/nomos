@@ -85,7 +85,7 @@ export function determineVerdict(
   targetMetrics: string[]
 ): 'confirmed' | 'rejected' | 'inconclusive' {
   // Filter to target metrics only
-  const targetComparisons = comparisons.filter(c => 
+  const targetComparisons = comparisons.filter(c =>
     targetMetrics.length === 0 || targetMetrics.includes(c.metricName)
   )
 
@@ -178,7 +178,7 @@ export async function generateRecommendations(
 
   const prompt = RECOMMENDATION_PROMPT
     .replace('{hypothesis}', JSON.stringify(hypothesis, null, 2))
-    .replace('{comparisons}', comparisons.map(c => 
+    .replace('{comparisons}', comparisons.map(c =>
       `- ${c.metricName}: ${c.baselineScore.toFixed(2)} → ${c.variantScore.toFixed(2)} (${c.deltaPercent > 0 ? '+' : ''}${c.deltaPercent.toFixed(1)}%) ${c.significant ? '⚠️ SIGNIFICANT' : ''}`
     ).join('\n'))
     .replace('{verdict}', verdict.toUpperCase())
@@ -187,7 +187,7 @@ export async function generateRecommendations(
 
   try {
     const response = await generateText({
-      model: openai('gpt-4o'),
+      model: openai('gpt-4o-mini'),
       prompt,
       temperature: 0.3,
     })
@@ -286,11 +286,11 @@ export function renderReportAsMarkdown(report: RecommendationReport): string {
   const { hypothesis, verdict, metricsAnalysis, recommendations, nextSteps, rawData, generatedAt } = report
 
   const verdictEmoji = verdict === 'confirmed' ? '✅' : verdict === 'rejected' ? '❌' : '❓'
-  const verdictText = verdict === 'confirmed' 
+  const verdictText = verdict === 'confirmed'
     ? 'HYPOTHESIS CONFIRMED - Variant outperformed baseline'
     : verdict === 'rejected'
-    ? 'HYPOTHESIS REJECTED - Baseline outperformed variant'
-    : 'INCONCLUSIVE - No significant difference detected'
+      ? 'HYPOTHESIS REJECTED - Baseline outperformed variant'
+      : 'INCONCLUSIVE - No significant difference detected'
 
   let md = `# Hypothesis Evaluation Report
 

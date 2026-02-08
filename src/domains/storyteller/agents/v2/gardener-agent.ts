@@ -12,7 +12,8 @@ import {
     improveDialogueTool,
     addVisualHookTool,
     condenseSceneTool,
-    regenerateTextTool
+    regenerateTextTool,
+    selfCritiqueTool,
 } from '../../tools/v2'
 import { getMastraInstance } from './mastra-instance'
 
@@ -34,10 +35,11 @@ export class GardenerAgent {
         this.traceId = config.traceId || getWorkflowTraceId() || uuidv4()
 
         const tools = [
+            selfCritiqueTool,
             improveDialogueTool,
             addVisualHookTool,
             condenseSceneTool,
-            regenerateTextTool
+            regenerateTextTool,
         ]
 
         this.toolsMap = tools.reduce((acc, tool) => ({ ...acc, [tool.id]: tool }), {})
@@ -69,7 +71,7 @@ export class GardenerAgent {
     }
 
     static async create(
-        modelName: string = 'openai:gpt-4o',
+        modelName: string = 'openai:gpt-4o-mini',
         options?: { traceId?: string; projectId?: string; episodeId?: string }
     ): Promise<GardenerAgent> {
         return new GardenerAgent({
@@ -93,6 +95,7 @@ export class GardenerAgent {
         return withSpan(id, 'GardenerAgent.writeScene', async (span) => {
             const prompt = `Goal: ${goal}\n\nContext:\n${context}`
             const response = await this.agent.generate(prompt, {
+                maxSteps: 5,
                 tracingOptions: {
                     traceId: id,
                 }

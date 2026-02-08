@@ -138,39 +138,16 @@ const ConceptToCarnageTile = () => {
   return (
     <motion.div
       onClick={() => setState(prev => (prev === 'concept' ? 'carnage' : 'concept'))}
-      className="group relative h-full min-h-[280px] border border-white/10 cursor-pointer overflow-hidden rounded-xl bg-black/40 backdrop-blur-sm transition-all duration-500 hover:border-primary/50"
+      className="group relative h-full min-h-[280px] border border-white/10 cursor-pointer overflow-hidden rounded-xl bg-black/40 backdrop-blur-sm transition-all duration-500 hover:border-primary/50 hover:scale-[1.01] hover:shadow-2xl hover:shadow-primary/10"
     >
-      {/* Subtle grid in background for clean look */}
-      <div
+      {/* Subtle grid in background for clean look - REMOVED per request */}
+      {/* <div
         className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{
           backgroundImage: 'radial-gradient(white 1px, transparent 1px)',
           backgroundSize: '16px 16px',
         }}
-      />
-
-      {/* Screenshot Frame */}
-      <div className="absolute inset-4 bottom-24 flex items-center justify-center overflow-hidden rounded-lg border border-white/5 bg-black/20">
-        <AnimatePresence mode="wait">
-          <motion.img
-            key={state}
-            src={
-              state === 'concept'
-                ? '/projects/01c5deda-c654-4576-89f9-860ff545f2dd/assets/asset_1764677757871.png'
-                : '/projects/01c5deda-c654-4576-89f9-860ff545f2dd/0_0_1764510993677_upscaled_gemini_upscaled_gemini_upscaled_4k.png'
-            }
-            alt={state === 'concept' ? 'Concept sketch' : 'Final game'}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.05 }}
-            transition={{ duration: 0.5 }}
-            className="w-full h-full object-cover"
-          />
-        </AnimatePresence>
-
-        {/* Glow behind screenshot */}
-        <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-      </div>
+      /> */}
 
       {/* Content footer */}
       <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/80 to-transparent">
@@ -353,6 +330,8 @@ const FeatureDeepDive = ({
   modelScale = 0.5,
   modelOffsetX = 0,
   modelOffsetY = 0,
+  density,
+  glowScale,
 }: {
   title: string
   subtitle: string
@@ -366,6 +345,8 @@ const FeatureDeepDive = ({
   modelScale?: number
   modelOffsetX?: number
   modelOffsetY?: number
+  density?: number
+  glowScale?: number
 }) => {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
   const layoutId = `screenshot-${index}`
@@ -393,6 +374,8 @@ const FeatureDeepDive = ({
                 color={color}
                 scale={modelScale}
                 offset={[modelOffsetX, modelOffsetY]}
+                density={density}
+                glowScale={glowScale}
               />
             </div>
 
@@ -556,6 +539,14 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   // Background darkening overlay - fades to 50% black as user scrolls
   const bgOverlayOpacity = useTransform(smoothProgress, [0, 0.3], [0, 0.5])
 
+  // Lightbox State
+  const [selectedFeature, setSelectedFeature] = useState<{
+    title: string
+    subtitle: string
+    description: string
+    icon: any
+  } | null>(null)
+
   return (
     <TurbulentBackground
       zoom={0.05}
@@ -576,6 +567,66 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
           style={{ opacity: bgOverlayOpacity }}
           className="fixed inset-0 bg-black pointer-events-none z-0"
         />
+
+        {/* Feature Lightbox */}
+        <AnimatePresence>
+          {selectedFeature && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md"
+              onClick={() => setSelectedFeature(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative max-w-2xl w-full bg-[#111] border border-white/10 rounded-2xl overflow-hidden shadow-2xl"
+              >
+                <div className="absolute top-0 right-0 p-4 z-10">
+                  <button
+                    onClick={() => setSelectedFeature(null)}
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="p-8 md:p-12">
+                  <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center mb-6 text-primary border border-primary/20">
+                    {selectedFeature.icon && <selectedFeature.icon size={32} />}
+                  </div>
+
+                  <div className="mb-8">
+                    <span className="text-xs font-mono text-primary uppercase tracking-widest mb-2 block">
+                      {selectedFeature.subtitle}
+                    </span>
+                    <h3 className="text-3xl md:text-4xl font-black text-white font-syne mb-4">
+                      {selectedFeature.title}
+                    </h3>
+                    <p className="text-lg text-white/70 font-mono leading-relaxed">
+                      {selectedFeature.description}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => setSelectedFeature(null)}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-black font-bold rounded-lg hover:bg-white/90 transition-colors uppercase tracking-wide text-sm font-syne"
+                  >
+                    Close Details
+                  </button>
+                </div>
+
+                {/* Decorative background icon */}
+                <div className="absolute -right-12 -bottom-12 opacity-[0.03] pointer-events-none">
+                  {selectedFeature.icon && <selectedFeature.icon size={300} />}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Navigation */}
         <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-black/40 backdrop-blur-xl">
@@ -725,26 +776,31 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="md:col-span-2 lg:col-span-2 row-span-1 rounded-lg border border-white/10 overflow-hidden group relative bg-gradient-to-br from-black/60 to-black/40 backdrop-blur-xl"
+                onClick={() =>
+                  setSelectedFeature({
+                    title: 'Scene Simulator',
+                    subtitle: 'PHYSICS_ENGINE',
+                    description: 'Real-time physics simulation for combat, environmental hazards, and object interactions. Test your world mechanics without writing a single line of code.',
+                    icon: Sparkles,
+                  })
+                }
+                className="md:col-span-2 lg:col-span-2 row-span-1 rounded-lg border border-white/10 overflow-hidden group relative bg-black/40 backdrop-blur-xl hover:border-primary/50 hover:scale-[1.02] transition-all duration-300 cursor-pointer"
               >
-                <div
-                  className="absolute inset-0 opacity-[0.04]"
-                  style={{
-                    backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)',
-                    backgroundSize: '12px 12px',
-                  }}
-                />
-                <div className="absolute top-0 right-0 w-24 h-24 opacity-30">
-                  <ThreeDIcon type="STR_TST" />
+                <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
+                  <Sparkles size={180} strokeWidth={1} />
                 </div>
-                <div className="absolute inset-0 flex flex-col justify-end p-5">
-                  <div className="flex items-center gap-2 mb-1">
+
+                <div className="absolute inset-0 flex flex-col justify-end p-6">
+                  <div className="flex items-center gap-2 mb-2">
                     <Sparkles className="w-4 h-4 text-cyan-400" />
                     <span className="font-mono text-[9px] text-cyan-400/80 tracking-widest uppercase">
                       Scene_Sim
                     </span>
                   </div>
-                  <h3 className="text-lg font-black text-white font-syne">Scene Simulator</h3>
+                  <h3 className="text-xl font-black text-white font-syne mb-2">Scene Simulator</h3>
+                  <p className="text-white/50 font-mono text-xs leading-relaxed max-w-[90%]">
+                    Simulate combat & chaos before you code.
+                  </p>
                 </div>
               </motion.div>
 
@@ -753,16 +809,27 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 }}
-                className="md:col-span-1 lg:col-span-1 row-span-1 rounded-lg border border-white/10 overflow-hidden group relative bg-gradient-to-br from-violet-950/30 to-black/40 backdrop-blur-xl"
+                onClick={() =>
+                  setSelectedFeature({
+                    title: 'Team Collaboration',
+                    subtitle: 'MULTI_USER',
+                    description: 'Real-time multiplayer editing for your entire team. Role-based access control, version history, and instant syncing across all connected clients.',
+                    icon: Users,
+                  })
+                }
+                className="md:col-span-1 lg:col-span-1 row-span-1 rounded-lg border border-white/10 overflow-hidden group relative bg-black/40 backdrop-blur-xl hover:border-primary/50 hover:scale-[1.02] transition-all duration-300 cursor-pointer"
               >
-                <div className="absolute inset-0 flex items-center justify-center opacity-20 group-hover:opacity-40 transition-opacity">
-                  <Users size={48} strokeWidth={1} />
+                <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] group-hover:opacity-[0.1] transition-opacity">
+                  <Users size={80} strokeWidth={1} />
                 </div>
                 <div className="absolute inset-0 flex flex-col justify-end p-4">
                   <span className="font-mono text-[8px] text-violet-400/80 tracking-widest uppercase mb-1">
                     Team
                   </span>
-                  <h3 className="text-sm font-black text-white font-syne">Collab</h3>
+                  <h3 className="text-sm font-black text-white font-syne mb-1">Collab</h3>
+                  <p className="text-white/50 font-mono text-[10px] leading-tight">
+                    Multiplayer editing.
+                  </p>
                 </div>
               </motion.div>
 
@@ -771,31 +838,32 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="md:col-span-3 lg:col-span-3 row-span-1 rounded-lg border border-white/10 overflow-hidden group relative bg-gradient-to-r from-green-950/30 via-black/40 to-black/60 backdrop-blur-xl"
+                onClick={() =>
+                  setSelectedFeature({
+                    title: 'Loop Designer',
+                    subtitle: 'GAMEPLAY_LOOPS',
+                    description: 'Visual node-based editor for designing core gameplay loops. Analyze player retention mechanics and optimize reward schedules with AI-driven suggestions.',
+                    icon: Zap,
+                  })
+                }
+                className="md:col-span-3 lg:col-span-3 row-span-1 rounded-lg border border-white/10 overflow-hidden group relative bg-black/40 backdrop-blur-xl hover:border-primary/50 hover:scale-[1.02] transition-all duration-300 cursor-pointer"
               >
-                <div
-                  className="absolute inset-0 opacity-[0.03]"
-                  style={{
-                    backgroundImage: 'radial-gradient(#22c55e 1px, transparent 1px)',
-                    backgroundSize: '14px 14px',
-                  }}
-                />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-20 h-20 opacity-40">
-                  <ThreeDIcon type="LOP_DES" />
+                <div className="absolute right-[-20px] top-1/2 -translate-y-1/2 opacity-[0.05] group-hover:opacity-[0.1] transition-opacity">
+                  <Zap size={200} strokeWidth={1} />
                 </div>
-                <div className="absolute inset-0 flex items-center p-5">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
+                <div className="absolute inset-0 flex items-center p-6">
+                  <div className="max-w-md">
+                    <div className="flex items-center gap-2 mb-2">
                       <Zap className="w-4 h-4 text-green-400" />
                       <span className="font-mono text-[9px] text-green-400/80 tracking-widest uppercase">
                         Loop_Designer
                       </span>
                     </div>
-                    <h3 className="text-lg font-black text-white font-syne">
+                    <h3 className="text-xl font-black text-white font-syne mb-2">
                       Addictive Game Loops
                     </h3>
-                    <p className="text-white/50 font-mono text-xs mt-1 max-w-xs">
-                      "Just one more turn" — engineered, not guessed.
+                    <p className="text-white/50 font-mono text-xs max-w-sm leading-relaxed">
+                      "Just one more turn" — engineered, not guessed. Visualise and optimize your core engagement cycles.
                     </p>
                   </div>
                 </div>
@@ -826,7 +894,9 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                 description="Generate entire continents in milliseconds. Biomes, caves, cities—all procedurally crafted. The foundation of your reality, infinitely scalable."
                 type3d="WORLD_GEN"
                 align="right"
-                modelScale={5}
+                modelScale={20}
+                glowScale={0.2}
+                density={0.5}
                 modelOffsetX={-0.5}
                 modelOffsetY={-0.2}
                 pngIcon="/images/icons/world-gen.png"
@@ -1007,7 +1077,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
               className="hidden lg:block lg:w-1/2 relative h-[800px] -ml-20"
             >
               <div className="absolute inset-0 flex items-center justify-center">
-                <ThreeDIcon type="STR_TST" color="#5c7cfa" size={700} />
+                <ThreeDIcon type="STR_TST" color="#5c7cfa" size={700} mouseRotation={0.15} />
               </div>
             </motion.div>
 

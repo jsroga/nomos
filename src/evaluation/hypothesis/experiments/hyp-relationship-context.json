@@ -1,0 +1,42 @@
+{
+  "hypothesis": {
+    "id": "hyp-relationship-context-001",
+    "name": "Relationship context injection improves character consistency",
+    "description": "Injecting explicit relationship state (trust, conflict, history) into generation context should improve character voice and consistency across scenes",
+    "variable": {
+      "type": "flow",
+      "baseline": "Standard context assembly without relationship data",
+      "variant": "Context assembly with relationship matrix injected"
+    },
+    "prediction": "Consistency improves by >= 15%, Character Voice improves by >= 10%",
+    "targetMetrics": ["EQ-Bench Consistency", "Mazur Character Voice", "Mazur Narrative Coherence"]
+  },
+  "messageFlow": [
+    {
+      "role": "user",
+      "content": "Create character: King Aldric, paranoid ruler who trusts no one after surviving an assassination.",
+      "phase": "premise",
+      "expectedToolCalls": ["create_character"]
+    },
+    {
+      "role": "user",
+      "content": "Create character: Sera, Aldric's spymaster. She saved his life during the assassination but Aldric suspects she orchestrated it.",
+      "phase": "premise",
+      "expectedToolCalls": ["create_character"]
+    },
+    {
+      "role": "user",
+      "content": "Write a scene where Aldric gives Sera a new assignment. He must rely on her but doesn't trust her.",
+      "phase": "writing",
+      "expectedToolCalls": ["consult_gardener"]
+    },
+    {
+      "role": "user",
+      "content": "Now write the scene where Sera reports back. She succeeded but found evidence that changes everything between them.",
+      "phase": "writing",
+      "expectedToolCalls": ["consult_gardener"]
+    }
+  ],
+  "outputScope": ["beats", "messages"],
+  "multiTurn": true
+}

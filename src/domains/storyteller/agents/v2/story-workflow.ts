@@ -6,6 +6,11 @@ import { createGardenerAgent } from './gardener-agent'
 import { createDevilsAdvocateAgent } from './devils-advocate-agent'
 import { createStorytellerAgent } from './storyteller-agent'
 import { langfuse } from '../../../../agent-core/observability'
+import { getAgentModelConfig } from './model-config'
+import { scoreProseQuality } from '../../guardrails/agent-validators/prose-quality-scorer'
+
+/** Circuit breaker: max refinement passes inside synthesisStep */
+const MAX_REFINEMENT_PASSES = 1
 
 /**
  * Story Creation Workflow with Full Langfuse Tracing
@@ -58,7 +63,7 @@ const psychologyStep = createStep({
             const traceId = inputData.traceId || getWorkflowTraceId()
             const span = createStepSpan('psychological_analysis', 'Psychologist', { goal: inputData.goal })
             emitStepEvent('Psychological Analysis', 'start', { agent: 'Psychologist' })
-            const agent = await createPsychologistAgent('openai:gpt-4o', {
+            const agent = await createPsychologistAgent(getAgentModelConfig('psychologist').model, {
                 traceId: traceId || undefined,
                 projectId: inputData.projectId,
                 episodeId: inputData.episodeId
@@ -82,7 +87,7 @@ const consequenceStep = createStep({
             const traceId = inputData.traceId || getWorkflowTraceId()
             const span = createStepSpan('consequence_check', 'ConsequenceTracker', { goal: inputData.goal })
             emitStepEvent('Consequence Check', 'start', { agent: 'Consequence Tracker' })
-            const agent = await createConsequenceAgent('openai:gpt-4o', {
+            const agent = await createConsequenceAgent(getAgentModelConfig('consequence').model, {
                 traceId: traceId || undefined,
                 projectId: inputData.projectId,
                 episodeId: inputData.episodeId
@@ -110,7 +115,7 @@ const draftingStep = createStep({
             const span = createStepSpan('drafting', 'Gardener', { goal: input?.goal })
             emitStepEvent('Drafting', 'start', { agent: 'The Gardener' })
 
-            const agent = await createGardenerAgent('openai:gpt-4o', {
+            const agent = await createGardenerAgent(getAgentModelConfig('gardener-standard').model, {
                 traceId: traceId || undefined,
                 projectId: input?.projectId,
                 episodeId: input?.episodeId
@@ -145,7 +150,7 @@ const critiqueStep = createStep({
             const draft = draftRes?.draft || ''
             const span = createStepSpan('critique', 'DevilsAdvocate', { draftPreview: draft.slice(0, 100) })
             emitStepEvent('Critique', 'start', { agent: "Devil's Advocate" })
-            const agent = await createDevilsAdvocateAgent('openai:gpt-4o', {
+            const agent = await createDevilsAdvocateAgent(getAgentModelConfig('devils-advocate').model, {
                 traceId: traceId || undefined,
                 projectId: input?.projectId
             })
@@ -162,9 +167,61 @@ const critiqueStep = createStep({
 const creativeDecisionStep = createStep({
     id: 'creative_decision',
     inputSchema: z.any(),
-    outputSchema: z.object({ approved: z.boolean(), direction: z.string() }),
-    execute: async () => {
-        return { approved: true, direction: 'proceed' }
+    outputSchema: z.object({
+        approved: z.boolean(),
+        direction: z.string(),
+        critiqueScore: z.number(),
+        proseScore: z.number(),
+        refinementFocus: z.string().optional(),
+    }),
+    execute: async (params: any) => {
+        try {
+            const { getStepResult } = params
+            const critiqueRes = getStepResult('critique')
+            const draftRes = getStepResult('drafting')
+            const draft = draftRes?.draft || ''
+            const critiqueText = critiqueRes?.critique || ''
+
+            // Score prose quality locally (no LLM call)
+            const proseResult = scoreProseQuality(draft)
+
+            // Parse critique JSON for structured score (if Devil's Advocate returned JSON)
+            let critiqueScore = 0.7 // default if unparseable
+            try {
+                const parsed = JSON.parse(critiqueText)
+                if (parsed.overallScore !== undefined) critiqueScore = parsed.overallScore
+                else if (parsed.assessment === 'PASS') critiqueScore = 0.85
+                else if (parsed.assessment === 'CHALLENGE') critiqueScore = 0.5
+            } catch {
+                // Critique wasn't JSON, estimate from keywords
+                const hasPass = /\bPASS\b/i.test(critiqueText)
+                critiqueScore = hasPass ? 0.85 : 0.6
+            }
+
+            const proseOk = proseResult.score >= 0.6
+            const critiqueOk = critiqueScore >= 0.7
+
+            const approved = proseOk && critiqueOk
+            const refinementFocus = !proseOk
+                ? `Prose quality issues: ${proseResult.flags.slice(0, 3).map(f => f.match).join(', ')}`
+                : !critiqueOk
+                    ? `Critique concerns: ${critiqueText.slice(0, 200)}`
+                    : undefined
+
+            emitStepEvent('Creative Decision', 'complete', {
+                approved, proseScore: proseResult.score, critiqueScore
+            })
+
+            return {
+                approved,
+                direction: approved ? 'proceed' : 'refine',
+                critiqueScore,
+                proseScore: proseResult.score,
+                refinementFocus,
+            }
+        } catch {
+            return { approved: true, direction: 'proceed', critiqueScore: 0.7, proseScore: 0.7 }
+        }
     }
 })
 
@@ -180,11 +237,35 @@ const synthesisStep = createStep({
             const span = createStepSpan('synthesis', 'Storyteller', { goal: input?.goal })
             emitStepEvent('Final Synthesis', 'start', { agent: 'Storyteller' })
 
-            const agent = await createStorytellerAgent('openai:gpt-4o')
+            const agent = await createStorytellerAgent(getAgentModelConfig('storyteller').model)
             const draftRes = getStepResult('drafting');
             const critiqueRes = getStepResult('critique');
-            const draft = draftRes?.draft || ''
+            const decisionRes = getStepResult('creative_decision');
+            let draft = draftRes?.draft || ''
             const critique = critiqueRes?.critique || ''
+
+            // === REFINEMENT LOOP (circuit breaker: MAX_REFINEMENT_PASSES) ===
+            if (decisionRes && !decisionRes.approved) {
+                const refinementFocus = decisionRes.refinementFocus || 'Address the critique feedback'
+                emitStepEvent('Refinement', 'start', { pass: 1, focus: refinementFocus })
+
+                try {
+                    const gardener = await createGardenerAgent(
+                        getAgentModelConfig('gardener-refinement').model,
+                        { traceId: traceId || undefined, projectId: input?.projectId, episodeId: input?.episodeId }
+                    )
+                    const refined = await gardener.writeScene(
+                        `REVISE this draft based on specific feedback:\n\nORIGINAL DRAFT:\n${draft}\n\nFEEDBACK TO ADDRESS:\n${refinementFocus}\n\nCRITIQUE:\n${critique}\n\nFix the specific issues raised. Keep what works.`,
+                        input?.narrativeContext || '',
+                        traceId || undefined
+                    )
+                    draft = refined.text
+                    emitStepEvent('Refinement', 'complete', { pass: 1, improved: true })
+                } catch (error: any) {
+                    emitStepEvent('Refinement', 'complete', { pass: 1, improved: false, error: error.message })
+                    // Use original draft if refinement fails
+                }
+            }
 
             const isStructural = input?.goal?.toLowerCase().includes('rule') ||
                 input?.goal?.toLowerCase().includes('lore') ||

@@ -73,8 +73,21 @@ export const updateWorldBibleTool = createTool({
         const finalUpdates = normalizeUpdates(parseResult.data)
 
         try {
-            // Fetch existing project
-            const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
+            // Fetch existing project with retry logic for connection stability
+            let project;
+            let retries = 3;
+            while (retries > 0) {
+                try {
+                    const result = await db.select().from(projects).where(eq(projects.id, projectId));
+                    project = result[0];
+                    break;
+                } catch (err: any) {
+                    retries--;
+                    if (retries === 0) throw err;
+                    console.log(`[update_world_bible] DB error (retrying... ${retries} left):`, err.message);
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1s
+                }
+            }
 
             if (!project) {
                 throw new Error(`Project ${projectId} not found`)

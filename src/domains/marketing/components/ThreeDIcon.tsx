@@ -29,10 +29,36 @@ interface ThreeDIconProps {
   size?: number
   scale?: number
   offset?: [number, number]
+  density?: number
+  glowScale?: number
+  mouseRotation?: number
+  distortion?: number
+  speed?: number
 }
 
 // Scale context
 const ScaleContext = React.createContext(1)
+
+// Mouse position context for passing mouse data into Canvas
+const MousePositionContext = React.createContext<React.RefObject<{ x: number; y: number }> | null>(null)
+
+function MouseRotationGroup({ children, intensity = 0 }: { children: React.ReactNode; intensity?: number }) {
+  const groupRef = useRef<THREE.Group>(null)
+  const mouseRef = React.useContext(MousePositionContext)
+  const currentRotation = useRef({ x: 0, y: 0 })
+
+  useFrame(() => {
+    if (!intensity || !groupRef.current || !mouseRef?.current) return
+    const targetX = -mouseRef.current.y * intensity
+    const targetY = mouseRef.current.x * intensity
+    currentRotation.current.x += (targetX - currentRotation.current.x) * 0.05
+    currentRotation.current.y += (targetY - currentRotation.current.y) * 0.05
+    groupRef.current.rotation.x = currentRotation.current.x
+    groupRef.current.rotation.y = currentRotation.current.y
+  })
+
+  return <group ref={groupRef}>{children}</group>
+}
 
 // ═══════════════════════════════════════════════════════════════════
 // LIGHTWEIGHT ORGANIC TUBE
@@ -76,15 +102,38 @@ function GlowingSphere({
   position = [0, 0, 0] as [number, number, number],
   radius = 0.12,
   color = '#a855f7',
+  distortion = 0,
+  speed = 1,
 }: {
   position?: [number, number, number]
   radius?: number
   color?: string
+  distortion?: number
+  speed?: number
 }) {
   const meshRef = useRef<THREE.Mesh>(null)
 
+  // Lazy load MeshDistortMaterial if possible, or just use it from drei
+  // Since we are inside ThreeDIcon, we can try to use standard material if distortion is 0
+  // But for better effect, let's use MeshDistortMaterial when available.
+  // Note: We need to import MeshDistortMaterial dynamically or assume it's available.
+  // Given we are lazy loading drei, we might need a way to access it.
+  // However, simpler approach for now: standard material with manual vertex displacement if we can't get DistortMaterial easily
+  // OR, we can try to use a simple custom shader.
+  // ACTUALLY, checking imports: we lazy load 'useGLTF' from drei.
+  // Let's modify the lazy loader to also export MeshDistortMaterial.
+
+  const [distortMaterial, setDistortMaterial] = useState<any>(null)
+
+  useEffect(() => {
+    import('@react-three/drei').then((mod) => {
+      setDistortMaterial(() => mod.MeshDistortMaterial)
+    })
+  }, [])
+
   useFrame((state: any) => {
-    if (meshRef.current) {
+    if (meshRef.current && distortion === 0) {
+      // Only pulse if no distortion logic handles movement
       const pulse = 1 + Math.sin(state.clock.elapsedTime * 2) * 0.15
       meshRef.current.scale.setScalar(pulse)
     }
@@ -93,13 +142,26 @@ function GlowingSphere({
   return (
     <group position={position}>
       <mesh ref={meshRef}>
-        <sphereGeometry args={[radius, 16, 16]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={3}
-          toneMapped={false}
-        />
+        <sphereGeometry args={[radius, 64, 64]} />
+        {/* Increased segments for better distortion */}
+
+        {distortMaterial && distortion > 0 ? (
+          React.createElement(distortMaterial, {
+            color: color,
+            emissive: color,
+            emissiveIntensity: 2,
+            toneMapped: false,
+            distort: distortion, // Strength, 0 disables
+            speed: speed, // Speed (default 1)
+          })
+        ) : (
+          <meshStandardMaterial
+            color={color}
+            emissive={color}
+            emissiveIntensity={3}
+            toneMapped={false}
+          />
+        )}
       </mesh>
       <mesh>
         <sphereGeometry args={[radius * 2.2, 12, 12]} />
@@ -245,9 +307,19 @@ interface GLTFModelProps {
   scale?: number
   dotsColor?: string
   dotsDensity?: number
+  glowScale?: number
 }
 
-function GLTFModel({ url, scale = 1, dotsColor = '#ffffff', dotsDensity = 0.25 }: GLTFModelProps) {
+function GLTFModel({
+  url,
+  scale = 1,
+  dotsColor = '#ffffff',
+  dotsDensity = 0.25,
+  dotsDensity = 0.25,
+  glowScale = 1,
+  distortion = 0,
+  speed = 2,
+}: GLTFModelProps) {
   const groupRef = useRef<THREE.Group>(null)
   const gltf = useGLTF(url)
 
@@ -283,7 +355,7 @@ function GLTFModel({ url, scale = 1, dotsColor = '#ffffff', dotsDensity = 0.25 }
       {geometries.map((geo, i) => (
         <PointCloudDots key={i} geometry={geo} color={dotsColor} density={dotsDensity} />
       ))}
-      <GlowingSphere position={[0.2, 0.1, 0.3]} radius={0.15} />
+      <GlowingSphere position={[0.2, 0.1, 0.3]} radius={0.15 * glowScale} distortion={distortion} speed={speed} />
     </group>
   )
 }
@@ -652,9 +724,31 @@ function SecAstSculpture() {
 // ═══════════════════════════════════════════════════════════════════
 // ICON SCENE WRAPPER - Using GLB models from public/3d-models
 // ═══════════════════════════════════════════════════════════════════
-function IconScene({ type }: { type: string }) {
+function IconScene({
+  type,
+  density,
+  glowScale,
+}: {
+  type: string
+  density?: number
+  type: string
+  density?: number
+  glowScale?: number
+  distortion?: number
+  speed?: number
+}) {
   // Map icon types to GLB models
   // AI_NARRATIVE keeps low density (0.04), others get higher fidelity (0.15)
+  // If density is provided via props, it overrides the defaults
+  const lowDensity = density ?? 0.04
+  const highDensity = density ?? 0.15
+
+  const commonProps = {
+    glowScale,
+    distortion,
+    speed,
+  }
+
   switch (type) {
     case 'WORLD_GEN':
     case 'GENERATOR':
@@ -663,7 +757,8 @@ function IconScene({ type }: { type: string }) {
         <GLTFModel
           url="/3d-models/Meshy_AI_Generate_the_cosmos__0120111501_texture.glb"
           scale={0.5}
-          dotsDensity={0.15}
+          dotsDensity={highDensity}
+          {...commonProps}
         />
       )
     case 'AI_NARRATIVE':
@@ -673,7 +768,8 @@ function IconScene({ type }: { type: string }) {
         <GLTFModel
           url="/3d-models/Meshy_AI_Neural_Connections_0120093533_texture.glb"
           scale={0.5}
-          dotsDensity={0.04}
+          dotsDensity={lowDensity}
+          {...commonProps}
         />
       )
     case 'SCULPT_SIM':
@@ -682,7 +778,8 @@ function IconScene({ type }: { type: string }) {
         <GLTFModel
           url="/3d-models/Meshy_AI_Enchanted_Cosmos_Code_0120111422_texture.glb"
           scale={0.5}
-          dotsDensity={0.15}
+          dotsDensity={highDensity}
+          {...commonProps}
         />
       )
     case 'EXPORT_SEC':
@@ -692,7 +789,8 @@ function IconScene({ type }: { type: string }) {
         <GLTFModel
           url="/3d-models/Meshy_AI_Predator_of_the_Cosmo_0120111442_texture.glb"
           scale={0.5}
-          dotsDensity={0.15}
+          dotsDensity={highDensity}
+          {...commonProps}
         />
       )
     case 'LOP_DES':
@@ -701,7 +799,8 @@ function IconScene({ type }: { type: string }) {
         <GLTFModel
           url="/3d-models/Meshy_AI_Oceanic_Cosmos_Predat_0120111415_texture.glb"
           scale={0.5}
-          dotsDensity={0.15}
+          dotsDensity={highDensity}
+          {...commonProps}
         />
       )
     case 'STR_TST':
@@ -710,7 +809,8 @@ function IconScene({ type }: { type: string }) {
         <GLTFModel
           url="/3d-models/Meshy_AI_Realistic_14k_textur_0120110958_texture.glb"
           scale={0.5}
-          dotsDensity={0.15}
+          dotsDensity={highDensity}
+          {...commonProps}
         />
       )
     case 'SEC_AST':
@@ -719,7 +819,8 @@ function IconScene({ type }: { type: string }) {
         <GLTFModel
           url="/3d-models/Meshy_AI_Enchanted_Cosmos_Code_0120111422_texture.glb"
           scale={0.5}
-          dotsDensity={0.15}
+          dotsDensity={highDensity}
+          {...commonProps}
         />
       )
     default:
@@ -727,7 +828,8 @@ function IconScene({ type }: { type: string }) {
         <GLTFModel
           url="/3d-models/Meshy_AI_Generate_the_cosmos__0120111501_texture.glb"
           scale={0.5}
-          dotsDensity={0.15}
+          dotsDensity={highDensity}
+          {...commonProps}
         />
       )
   }
@@ -742,7 +844,13 @@ export function ThreeDIcon({
   scale: propScale,
   offset = [0, 0],
   color,
-}: ThreeDIconProps) {
+  color,
+  density,
+  glowScale,
+  distortion,
+  speed,
+  mouseRotation,
+}: ThreeDIconProps & { speed?: number }) {
   const [isLoaded, setIsLoaded] = useState(false)
   const [hasError, setHasError] = useState(false)
 
@@ -766,6 +874,18 @@ export function ThreeDIcon({
     }
     loadThree()
   }, [])
+
+  const mousePosition = useRef({ x: 0, y: 0 })
+
+  useEffect(() => {
+    if (!mouseRotation) return
+    const handleMouseMove = (e: MouseEvent) => {
+      mousePosition.current.x = (e.clientX / window.innerWidth) * 2 - 1
+      mousePosition.current.y = (e.clientY / window.innerHeight) * 2 - 1
+    }
+    window.addEventListener('mousemove', handleMouseMove)
+    return () => window.removeEventListener('mousemove', handleMouseMove)
+  }, [mouseRotation])
 
   if (hasError) {
     return (
@@ -799,9 +919,13 @@ export function ThreeDIcon({
         <directionalLight position={[2, 2, 2]} intensity={1} />
         <React.Suspense fallback={null}>
           <ScaleContext.Provider value={scale}>
-            <group position={[offset[0], offset[1], 0]}>
-              <IconScene type={type} />
-            </group>
+            <MousePositionContext.Provider value={mousePosition}>
+              <MouseRotationGroup intensity={mouseRotation}>
+                <group position={[offset[0], offset[1], 0]}>
+                  <IconScene type={type} density={density} glowScale={glowScale} distortion={distortion} speed={speed} />
+                </group>
+              </MouseRotationGroup>
+            </MousePositionContext.Provider>
           </ScaleContext.Provider>
         </React.Suspense>
       </Canvas>

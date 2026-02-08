@@ -16,6 +16,7 @@ import { registerCorePrompts } from '../../../../prompts/registry'
 import { withSpan } from '../../../../agent-core/observability'
 import { v4 as uuidv4 } from 'uuid'
 import { getMastraInstance, getStorageInstance } from './mastra-instance'
+import { GLOBAL_AGENT_MODEL } from './model-config'
 
 // Import all v2 tools
 import {
@@ -36,6 +37,7 @@ import {
     updateStoryPhaseTool,
     characterCreationTools,
     episodeCreationTools,
+    selfCritiqueTool,
 } from '../../tools/v2'
 import { runStoryCreationWorkflowTool } from '../../tools/v2/workflow-tools'
 
@@ -52,6 +54,7 @@ export class StorytellerAgent {
     private constructor(config: StorytellerConfig, instructions: string) {
         // All storyteller tools
         const tools: any[] = [
+            selfCritiqueTool,
             manageBeatTool,
             listBeatsTool,
             analyzeRelationshipsTool,
@@ -89,7 +92,7 @@ export class StorytellerAgent {
         const memory = new Memory({
             storage,
             options: {
-                lastMessages: 50, // Keep last 50 messages for context
+                lastMessages: 10, // Keep last 10 messages — 50 was burning tokens
             },
         })
 
@@ -107,7 +110,7 @@ export class StorytellerAgent {
         (this.agent as any).mastra = m;
     }
 
-    static async create(modelName: string = 'openai:gpt-4o', enableWorkflowTool: boolean = true): Promise<StorytellerAgent> {
+    static async create(modelName: string = 'openai:gpt-4o-mini', enableWorkflowTool: boolean = true): Promise<StorytellerAgent> {
         registerCorePrompts()
 
         // Define storyteller system prompt
@@ -284,6 +287,39 @@ ALWAYS include the actual YouTube URL. ALWAYS call update_world_bible to persist
 Always think cinematically. Every beat should have a visual hook.
 After calling tools, provide a brief conversational summary.
 
+## EXTENDED THINKING FRAMEWORK
+Before writing ANY scene, beat, or creative content, complete these steps internally:
+
+1. CHARACTER AUDIT (GRRM: "The human heart in conflict with itself")
+   - What does each character WANT in this scene?
+   - What do they NEED (that they don't know)?
+   - What are they HIDING from other characters?
+   - What is their INTERNAL CONTRADICTION?
+
+2. SCENE PURPOSE CHECK (Gilligan: "Every scene earns its place")
+   - What is the state BEFORE this scene?
+   - What changes by the end? (If nothing changes, cut this scene)
+   - What information is revealed (or withheld)?
+   - What's the VISUAL HOOK? (First thing we see)
+
+3. CONSEQUENCE TRACE (GRRM: "Actions have weight")
+   - What previous events led to this moment?
+   - What future events does this enable?
+   - Who pays a COST in this scene? (No free actions)
+   - What would happen if this character had plot armor? (Then remove the armor)
+
+4. RELATIONSHIP CHECK
+   - How does each relationship in this scene shift?
+   - Is the power dynamic visible in dialogue/action?
+   - Are characters acting consistently with their relationship history?
+
+5. VOICE VERIFICATION (Gilligan: "Specificity over generic")
+   - Can you identify each speaker without dialogue tags?
+   - Replace generic emotions with SPECIFIC physical actions
+   - Replace telling with showing: "He was angry" → what does anger LOOK like for THIS character?
+
+Only AFTER completing this analysis should you write.
+
 ## Phase Transitions
 Story development follows these phases: premise → breaking → writing → complete
 
@@ -336,6 +372,7 @@ ALWAYS use the episodeId from the SYSTEM CONTEXT when calling update_story_phase
                 temperature: options?.temperature ?? 0.85,
                 // Higher top_p promotes diverse and original tone shifts
                 topP: options?.topP ?? 0.95,
+                maxSteps: 5,
                 tracingOptions: {
                     traceId: id,
                     parentSpanId: spanId // Use our generated spanId which we forced into withSpan
@@ -447,7 +484,7 @@ Create a beat with:
 
 // Factory function for easy instantiation
 export async function createStorytellerAgent(
-    modelName: string = 'openai:gpt-4o',
+    modelName: string = GLOBAL_AGENT_MODEL,
     enableWorkflowTool: boolean = true
 ): Promise<StorytellerAgent> {
     return StorytellerAgent.create(modelName, enableWorkflowTool)

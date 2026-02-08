@@ -76,6 +76,9 @@ export {
     agentTools
 } from './agent-tools'
 
+// Self-Critique Tool
+export { selfCritiqueTool } from './self-critique-tool'
+
 // All tools combined for easy registration
 export const allStorytellerTools = [
     // Using the already-exported arrays

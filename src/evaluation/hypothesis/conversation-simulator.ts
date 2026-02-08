@@ -46,12 +46,18 @@ interface SimulatorConfig {
 }
 
 const DEFAULT_CONFIG: SimulatorConfig = {
-  model: 'openai:gpt-4o',
+  model: 'openai:gpt-4o-mini',
   temperature: 0.85,
   topP: 0.95,
   enableTracing: true,
   verbose: false,
+  // Use existing project so DB calls succeed
+  projectId: 'd3fd7ace-3a7d-4b29-9fd6-1f4ddc7a7973',
 }
+
+// Circuit breaker: max consecutive errors before aborting
+const MAX_CONSECUTIVE_ERRORS = 3;
+let consecutiveErrors = 0;
 
 // ============================================
 // Conversation Simulator
@@ -74,7 +80,7 @@ async function executeTurn(
 
   try {
     // Build the full prompt with context
-    const prompt = turn.role === 'user' 
+    const prompt = turn.role === 'user'
       ? `${context}\n\nUser: ${turn.content}`
       : turn.content
 
@@ -91,6 +97,7 @@ async function executeTurn(
     )
 
     response = result
+    consecutiveErrors = 0 // Reset circuit breaker on success
 
     // Extract tool calls from the result
     // Note: In a real implementation, we'd need to intercept tool calls during execution
@@ -106,6 +113,14 @@ async function executeTurn(
 
   } catch (err) {
     error = err instanceof Error ? err.message : String(err)
+    consecutiveErrors++
+
+    // Circuit breaker: abort if too many consecutive errors
+    if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+      console.error(`\n🛑 CIRCUIT BREAKER: ${consecutiveErrors} consecutive errors. Aborting to prevent cost overrun.`)
+      throw new Error(`Circuit breaker triggered: ${consecutiveErrors} consecutive errors`)
+    }
+
     if (config.verbose) {
       console.error(`  Error in turn: ${error}`)
     }
@@ -253,7 +268,7 @@ export async function runSimulation(
       .filter(t => t.planned.role === 'user' && t.planned.content.toLowerCase().includes('write'))
       .map(t => t.response)
       .join('\n\n')
-    
+
     if (scriptContent) {
       capturedOutputs.script = scriptContent
     }
@@ -359,7 +374,7 @@ export function simulationToTestCase(
 
   // Build context
   const context = buildContextFromOutputs(simulation.capturedOutputs)
-  
+
   // Add hypothesis context
   context.unshift(`Hypothesis: ${simulation.hypothesis.name}`)
   context.unshift(`Version: ${simulation.version}`)

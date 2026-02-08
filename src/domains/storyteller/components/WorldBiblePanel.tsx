@@ -180,7 +180,7 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
         switchTab('relationships')
       }
     }
-    
+
     window.addEventListener('bible-switch-tab', handleSwitchTab)
     window.addEventListener('navigate-to-entity', handleNavigateToEntity)
     return () => {
@@ -462,10 +462,8 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
         <div className="flex-1 overflow-y-auto pr-2 pt-6">
           <div className="space-y-8 pb-20">
             <BibleOverview
-              isGenerating={isGenerating}
               primaryImageIndex={primaryImageIndex}
               onSetPrimaryImage={handleSetPrimaryImage}
-              generatingIndices={generatingIndices}
               onRefetchMoodboardData={refetchMoodboardData}
             />
 
