@@ -1,9 +1,9 @@
 /**
  * Contextual Summary Service
- * 
+ *
  * Generates AI-powered contextual descriptions for entity references.
  * Uses GraphRAG to include related entities for richer context.
- * 
+ *
  * When hovering over [Elara] in "A close ally of Elara is working with the guild",
  * the tooltip shows WHY Elara is relevant in this specific context, including
  * her relationships discovered via graph traversal.
@@ -11,7 +11,7 @@
 
 import { openai } from '@ai-sdk/openai'
 import { generateText } from 'ai'
-import { entityGraphService, ScoredEntity } from './entity-graph-service'
+import { entityGraphService } from './entity-graph-service'
 import { relationshipEnricher } from './relationship-enricher'
 import { EntityType } from './entity-registry'
 
@@ -19,8 +19,8 @@ interface ContextualSummaryRequest {
   entityId: string
   entityName: string
   entityType: string
-  entityDescription: string  // Base description from registry
-  surroundingText: string    // The sentence/paragraph containing the reference
+  entityDescription: string // Base description from registry
+  surroundingText: string // The sentence/paragraph containing the reference
   projectId: string
 }
 
@@ -28,7 +28,7 @@ interface ContextualSummaryResult {
   contextualSummary: string
   generatedAt: Date
   cacheHit: boolean
-  relatedEntities?: string[]  // Names of related entities used in generation
+  relatedEntities?: string[] // Names of related entities used in generation
 }
 
 // Cache contextual summaries to avoid repeated LLM calls
@@ -48,7 +48,7 @@ function hashText(text: string): string {
   let hash = 0
   for (let i = 0; i < text.length; i++) {
     const char = text.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
+    hash = (hash << 5) - hash + char
     hash = hash & hash // Convert to 32bit integer
   }
   return Math.abs(hash).toString(36)
@@ -80,13 +80,13 @@ async function buildGraphRAGContext(
         maxDepth: 2,
         maxResults: 5,
         threshold: 0.5,
-        randomWalkSteps: 50,  // Quick random walk for scoring
+        randomWalkSteps: 50, // Quick random walk for scoring
       }
     )
 
     // Filter out the entity itself
     const others = relatedEntities.filter(e => e.id !== entityId)
-    
+
     if (others.length === 0) {
       return { relationshipContext: '', relatedEntities: [] }
     }
@@ -102,7 +102,7 @@ async function buildGraphRAGContext(
 
     // Build context string from relationships
     const relationshipParts: string[] = []
-    
+
     for (const rel of enriched.relationships.slice(0, 4)) {
       relationshipParts.push(`${rel.relationshipType} ${rel.targetName} (${rel.targetType})`)
     }
@@ -111,18 +111,19 @@ async function buildGraphRAGContext(
     const graphDiscovered = others
       .filter(e => !enriched.relationships.some(r => r.targetId === e.id))
       .slice(0, 3)
-    
+
     for (const entity of graphDiscovered) {
-      relationshipParts.push(`connected to ${entity.name} (${entity.type}, relevance: ${(entity.relevance * 100).toFixed(0)}%)`)
+      relationshipParts.push(
+        `connected to ${entity.name} (${entity.type}, relevance: ${(entity.relevance * 100).toFixed(0)}%)`
+      )
     }
 
-    const relationshipContext = relationshipParts.length > 0
-      ? `Known relationships: ${relationshipParts.join('; ')}`
-      : ''
+    const relationshipContext =
+      relationshipParts.length > 0 ? `Known relationships: ${relationshipParts.join('; ')}` : ''
 
     const relatedNames = [
       ...enriched.relationships.map(r => r.targetName),
-      ...graphDiscovered.map(e => e.name)
+      ...graphDiscovered.map(e => e.name),
     ]
 
     return { relationshipContext, relatedEntities: relatedNames }
@@ -135,7 +136,7 @@ async function buildGraphRAGContext(
 /**
  * Generate an AI-powered contextual summary for an entity reference
  * Uses GraphRAG to include related entities for richer context
- * 
+ *
  * @param request - The request containing entity info and surrounding context
  * @returns Contextual summary explaining the entity's relevance
  */
@@ -151,8 +152,12 @@ export async function generateContextualSummary(
     surroundingText: request.surroundingText.slice(0, 1000), // Already limited in API, but double-check
   }
 
-  const cacheKey = getCacheKey(safeRequest.projectId, safeRequest.entityId, safeRequest.surroundingText)
-  
+  const cacheKey = getCacheKey(
+    safeRequest.projectId,
+    safeRequest.entityId,
+    safeRequest.surroundingText
+  )
+
   // Check cache first with TTL
   const cached = summaryCache.get(cacheKey)
   if (cached && Date.now() - cached.timestamp < 1000 * 60 * 30) {
@@ -162,7 +167,8 @@ export async function generateContextualSummary(
   // If surrounding text is too short, just return base description
   if (safeRequest.surroundingText.length < 20) {
     return {
-      contextualSummary: safeRequest.entityDescription || `${safeRequest.entityName} (${safeRequest.entityType})`,
+      contextualSummary:
+        safeRequest.entityDescription || `${safeRequest.entityName} (${safeRequest.entityType})`,
       generatedAt: new Date(),
       cacheHit: false,
     }
@@ -171,14 +177,16 @@ export async function generateContextualSummary(
   // Security: Rate limiting per project
   const now = Date.now()
   const rateLimit = rateLimitMap.get(safeRequest.projectId)
-  
+
   if (rateLimit) {
     if (now - rateLimit.windowStart < RATE_LIMIT_WINDOW) {
       if (rateLimit.count >= RATE_LIMIT_PER_MINUTE) {
         console.warn(`[ContextualSummary] Rate limit exceeded for project ${safeRequest.projectId}`)
         // Return base description instead of blocking completely
         return {
-          contextualSummary: safeRequest.entityDescription || `${safeRequest.entityName} (${safeRequest.entityType})`,
+          contextualSummary:
+            safeRequest.entityDescription ||
+            `${safeRequest.entityName} (${safeRequest.entityType})`,
           generatedAt: new Date(),
           cacheHit: false,
         }
@@ -241,7 +249,8 @@ Write a 1-2 sentence contextual description explaining ${safeRequest.entityName}
     console.error('[ContextualSummary] Generation failed:', error)
     // Fallback to base description
     return {
-      contextualSummary: safeRequest.entityDescription || `${safeRequest.entityName} (${safeRequest.entityType})`,
+      contextualSummary:
+        safeRequest.entityDescription || `${safeRequest.entityName} (${safeRequest.entityType})`,
       generatedAt: new Date(),
       cacheHit: false,
     }
@@ -256,14 +265,14 @@ export async function generateBatchContextualSummaries(
   requests: ContextualSummaryRequest[]
 ): Promise<Map<string, ContextualSummaryResult>> {
   const results = new Map<string, ContextualSummaryResult>()
-  
+
   // Check cache and collect uncached requests
   const uncached: ContextualSummaryRequest[] = []
-  
+
   for (const request of requests) {
     const cacheKey = getCacheKey(request.projectId, request.entityId, request.surroundingText)
     const cached = summaryCache.get(cacheKey)
-    
+
     if (cached && Date.now() - cached.timestamp < 1000 * 60 * 30) {
       results.set(request.entityId, { ...cached.result, cacheHit: true })
     } else {
@@ -278,7 +287,7 @@ export async function generateBatchContextualSummaries(
 
   // Generate remaining summaries (could batch into single prompt for efficiency)
   // For now, generate in parallel with rate limiting
-  const batchPromises = uncached.map(async (request) => {
+  const batchPromises = uncached.map(async request => {
     const result = await generateContextualSummary(request)
     results.set(request.entityId, result)
   })

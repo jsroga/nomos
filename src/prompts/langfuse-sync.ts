@@ -10,6 +10,7 @@
 
 import { langfuse } from '../agent-core/observability'
 import { PromptDefinition } from './types'
+import { getErrorMessage } from '@/lib/error-utils'
 
 export interface LangfuseSyncOptions {
   /** Only sync prompts with these tags */
@@ -57,15 +58,15 @@ export async function pushPromptToLangfuse(
 
     console.log(`[Langfuse] Pushed prompt: ${definition.name}`)
     return { success: true }
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Handle "prompt already exists" gracefully
-    if (error.message?.includes('already exists')) {
+    if (getErrorMessage(error)?.includes('already exists')) {
       console.log(`[Langfuse] Prompt already exists: ${definition.name}`)
       return { success: true }
     }
 
-    console.error(`[Langfuse] Failed to push prompt ${definition.name}:`, error.message)
-    return { success: false, error: error.message }
+    console.error(`[Langfuse] Failed to push prompt ${definition.name}:`, getErrorMessage(error))
+    return { success: false, error: getErrorMessage(error) }
   }
 }
 
@@ -109,18 +110,18 @@ export async function pushPromptsToLangfuse(
 /**
  * Fetch a prompt from Langfuse
  */
-export async function fetchPromptFromLangfuse(
+async function fetchPromptFromLangfuse(
   name: string,
   version?: number
-): Promise<{ prompt: string; config?: Record<string, any> } | null> {
+): Promise<{ prompt: string; config?: Record<string, unknown> } | null> {
   try {
     const prompt = await langfuse.getPrompt(name, version)
     return {
       prompt: prompt.prompt,
-      config: prompt.config as Record<string, any> | undefined,
+      config: prompt.config as Record<string, unknown> | undefined,
     }
-  } catch (error: any) {
-    console.warn(`[Langfuse] Failed to fetch prompt ${name}:`, error.message)
+  } catch (error: unknown) {
+    console.warn(`[Langfuse] Failed to fetch prompt ${name}:`, getErrorMessage(error))
     return null
   }
 }
@@ -141,8 +142,8 @@ export async function compileLangfusePrompt(
       stringVars[key] = String(value)
     }
     return prompt.compile(stringVars)
-  } catch (error: any) {
-    console.warn(`[Langfuse] Failed to compile prompt ${name}:`, error.message)
+  } catch (error: unknown) {
+    console.warn(`[Langfuse] Failed to compile prompt ${name}:`, getErrorMessage(error))
     return null
   }
 }
@@ -150,7 +151,7 @@ export async function compileLangfusePrompt(
 /**
  * List all prompts from Langfuse (requires API access)
  */
-export async function listLangfusePrompts(): Promise<string[]> {
+async function listLangfusePrompts(): Promise<string[]> {
   // Note: Langfuse SDK doesn't provide a list method directly
   // This would require using the REST API
   console.warn('[Langfuse] List prompts not implemented - use Langfuse UI')

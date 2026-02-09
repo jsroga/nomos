@@ -23,7 +23,7 @@ export interface QuestionSession {
 // USER ANSWER
 // ============================================
 
-export interface UserAnswer {
+interface UserAnswer {
   questionId: string
   answer: string | string[]
   freeText?: string // Additional context from user
@@ -34,7 +34,7 @@ export interface UserAnswer {
 // QUESTION MANAGER STATE
 // ============================================
 
-export interface QuestionManagerState {
+interface QuestionManagerState {
   currentQuestion: QuestionSession | null
   pendingQuestions: QuestionSession[]
   answeredQuestions: QuestionSession[]
@@ -45,7 +45,7 @@ export interface QuestionManagerState {
 // EVENTS
 // ============================================
 
-export type QuestionEvent =
+type QuestionEvent =
   | { type: 'QUESTION_RECEIVED'; question: AgentQuestion }
   | { type: 'ANSWER_SUBMITTED'; questionId: string; answer: string | string[] }
   | { type: 'QUESTION_SKIPPED'; questionId: string }
@@ -56,7 +56,7 @@ export type QuestionEvent =
 // HELPERS
 // ============================================
 
-export function createQuestionSession(question: AgentQuestion): QuestionSession {
+function createQuestionSession(question: AgentQuestion): QuestionSession {
   return {
     id: question.id,
     question,
@@ -66,15 +66,15 @@ export function createQuestionSession(question: AgentQuestion): QuestionSession 
   }
 }
 
-export function isBlockingQuestion(question: AgentQuestion): boolean {
+function isBlockingQuestion(question: AgentQuestion): boolean {
   return question.urgency === 'blocking'
 }
 
-export function getRecommendedOption(question: AgentQuestion): QuestionOption | undefined {
+function getRecommendedOption(question: AgentQuestion): QuestionOption | undefined {
   return question.options?.find(opt => opt.recommended)
 }
 
-export function formatQuestionForMessage(session: QuestionSession): string {
+function formatQuestionForMessage(session: QuestionSession): string {
   const q = session.question
   let text = `**${q.agentName} asks:** ${q.question}\n\n`
 

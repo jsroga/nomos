@@ -1,6 +1,6 @@
 /**
  * Adapter Layer
- * 
+ *
  * Converts existing storyteller evaluation types to Confident AI format.
  */
 
@@ -11,24 +11,26 @@ import { StorytellerExample } from '../datasets/storyteller-golden'
 /**
  * Convert a storyteller evaluation example to a Confident AI LLMTestCase
  */
-export function toConfidentAITestCase(example: EvaluationExample | StorytellerExample): LLMTestCase {
+export function toConfidentAITestCase(
+  example: EvaluationExample | StorytellerExample
+): LLMTestCase {
   const input = example.input as StorytellerEvalInput
-  
+
   // Build context from metadata
   const context: string[] = []
-  
+
   if (input.phase) {
     context.push(`Phase: ${input.phase}`)
   }
-  
+
   if (input.projectId) {
     context.push(`Project ID: ${input.projectId}`)
   }
-  
+
   if (input.episodeId) {
     context.push(`Episode ID: ${input.episodeId}`)
   }
-  
+
   if (example.metadata) {
     if (example.metadata.category) {
       context.push(`Category: ${example.metadata.category}`)
@@ -52,14 +54,16 @@ export function toConfidentAITestCase(example: EvaluationExample | StorytellerEx
 /**
  * Convert a batch of storyteller examples to Confident AI test cases
  */
-export function toConfidentAITestCases(examples: (EvaluationExample | StorytellerExample)[]): LLMTestCase[] {
+function toConfidentAITestCases(
+  examples: (EvaluationExample | StorytellerExample)[]
+): LLMTestCase[] {
   return examples.map(toConfidentAITestCase)
 }
 
 /**
  * Convert test cases with actual outputs (post-generation) to Confident AI format
  */
-export function toConfidentAITestCaseWithOutput(
+function toConfidentAITestCaseWithOutput(
   example: EvaluationExample | StorytellerExample,
   actualOutput: string
 ): LLMTestCase {
@@ -73,7 +77,7 @@ export function toConfidentAITestCaseWithOutput(
 /**
  * Create a conversational test case from a multi-turn conversation
  */
-export function toConversationalTestCase(
+function toConversationalTestCase(
   turns: Array<{ role: 'user' | 'assistant'; content: string }>,
   scenario?: string,
   expectedOutcome?: string
@@ -99,7 +103,7 @@ export interface ExpectedBehavior {
   noHallucinations?: boolean
 }
 
-export function extractExpectedBehavior(example: StorytellerExample): ExpectedBehavior {
+function extractExpectedBehavior(example: StorytellerExample): ExpectedBehavior {
   return {
     shouldDelegate: example.expected?.shouldDelegate,
     expectedAgents: example.expected?.expectedAgents,
@@ -117,14 +121,14 @@ export function extractExpectedBehavior(example: StorytellerExample): ExpectedBe
  */
 export function groupByCategory(examples: StorytellerExample[]): Map<string, StorytellerExample[]> {
   const groups = new Map<string, StorytellerExample[]>()
-  
+
   for (const example of examples) {
     const category = (example.metadata?.category as string) || 'uncategorized'
     const existing = groups.get(category) || []
     existing.push(example)
     groups.set(category, existing)
   }
-  
+
   return groups
 }
 
@@ -145,19 +149,19 @@ export function filterExamples(
       const category = ex.metadata?.category as string
       if (!filter.categories.includes(category)) return false
     }
-    
+
     if (filter.hasMinMagicScore && ex.expected?.minMagicScore === undefined) {
       return false
     }
-    
+
     if (filter.hasDelegation && ex.expected?.shouldDelegate === undefined) {
       return false
     }
-    
+
     if (filter.hasConsistency && !ex.expected?.requiresConsistency) {
       return false
     }
-    
+
     return true
   })
 }

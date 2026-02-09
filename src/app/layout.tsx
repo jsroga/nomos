@@ -11,9 +11,22 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' })
 const syne = Syne({ subsets: ['latin'], variable: '--font-syne' })
 
-export const metadata = {
-  title: 'KUR',
-  description: 'Crazy project for games - AI-powered infinite canvas for world generation',
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: {
+    template: '/kur/ %s',
+    default: '/kur/ Build Worlds',
+  },
+  description: 'AI-powered infinite canvas for world generation and game development',
+  icons: {
+    icon: '/favicon.svg?v=9',
+  },
+  openGraph: {
+    title: '/kur/ Build Worlds',
+    description: 'AI-powered infinite canvas for world generation',
+    type: 'website',
+  },
 }
 
 import NextTopLoader from 'nextjs-toploader'
@@ -22,6 +35,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const cookieStore = await cookies()
   // @ts-expect-error - Next 15 cookies are async but auth-helpers expects a specific type that conflicts in this version
   const supabase = createServerComponentClient({ cookies: () => cookieStore })
+
   const {
     data: { session },
   } = await supabase.auth.getSession()

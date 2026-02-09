@@ -3,6 +3,7 @@ import { MeshyClient } from '@/infrastructure/ai/meshy'
 import { storageService } from '@/infrastructure/storage/StorageService'
 import { v4 as uuidv4 } from 'uuid'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getErrorMessage } from '@/lib/error-utils'
 
 export const retextureModelTask = task({
   id: 'retexture-model',
@@ -69,8 +70,8 @@ export const retextureModelTask = task({
         await metadata.set('meshy_task_id', meshy.currentTaskId)
         logger.info('Meshy retexture taskId', { taskId: meshy.currentTaskId })
       }
-    } catch (e: any) {
-      logger.error('Meshy retexture failed', { error: e.message, taskId: meshy.currentTaskId })
+    } catch (e: unknown) {
+      logger.error('Meshy retexture failed', { error: getErrorMessage(e), taskId: meshy.currentTaskId })
       throw e
     }
 
@@ -116,8 +117,8 @@ export const retextureModelTask = task({
 
       savedUrl = publicUrl
       logger.info('Saved retextured model to storage', { savedUrl })
-    } catch (saveError: any) {
-      logger.error('Failed to save retextured model to storage', { error: saveError.message })
+    } catch (saveError: unknown) {
+      logger.error('Failed to save retextured model to storage', { error: getErrorMessage(saveError) })
       throw saveError
     }
 

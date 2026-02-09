@@ -259,7 +259,7 @@ export interface MarketAnalystState {
 /**
  * Tool result wrapper
  */
-export interface ToolResult<T> {
+interface ToolResult<T> {
   success: boolean
   data: T | null
   error?: string
@@ -269,7 +269,7 @@ export interface ToolResult<T> {
 /**
  * Create initial analyst state
  */
-export function createInitialAnalystState(): MarketAnalystState {
+function createInitialAnalystState(): MarketAnalystState {
   return {
     hasSearchedWeb: false,
     hasSteamData: false,

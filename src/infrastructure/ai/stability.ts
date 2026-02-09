@@ -379,4 +379,4 @@ export class StabilityAIModel implements AIModel {
   }
 }
 
-export const stabilityAI = new StabilityAIModel()
+const stabilityAI = new StabilityAIModel()

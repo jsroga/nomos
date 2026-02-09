@@ -31,7 +31,7 @@ export class FalClient {
       y_max: Math.floor(Math.max(box.y1, box.y2)),
     }
 
-    const input: Record<string, any> = {
+    const input: Record<string, unknown> = {
       image_url: imageDataUri,
       box_prompts: [boxPrompt],
       apply_mask: false, // We want the RLE, not the masked image

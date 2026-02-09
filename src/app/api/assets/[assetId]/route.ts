@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { assets, projects } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/lib/auth'
+import { getErrorMessage } from '@/lib/error-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,8 +37,8 @@ export async function GET(request: Request, props: { params: Promise<{ assetId: 
     }
 
     return NextResponse.json(data)
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
   }
 }
 
@@ -69,8 +70,8 @@ export async function PATCH(request: Request, props: { params: Promise<{ assetId
     const [data] = await db.update(assets).set(body).where(eq(assets.id, assetId)).returning()
 
     return NextResponse.json(data)
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
   }
 }
 
@@ -90,7 +91,7 @@ export async function DELETE(request: Request, props: { params: Promise<{ assetI
     await db.delete(assets).where(eq(assets.id, assetId))
 
     return NextResponse.json({ success: true })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
   }
 }

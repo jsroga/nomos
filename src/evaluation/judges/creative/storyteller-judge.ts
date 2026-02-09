@@ -1,6 +1,6 @@
 /**
  * Storyteller LLM-as-Judge
- * 
+ *
  * Uses LLM to evaluate the quality of storytelling outputs.
  * Integrates with Langfuse for scoring and tracing.
  */
@@ -37,7 +37,7 @@ export const EVALUATION_DIMENSIONS = {
   },
 } as const
 
-export type EvaluationDimension = keyof typeof EVALUATION_DIMENSIONS
+type EvaluationDimension = keyof typeof EVALUATION_DIMENSIONS
 
 // ============================================
 // EVALUATION SCHEMAS
@@ -83,7 +83,7 @@ export class StorytellerJudge {
     context?: string
   ): Promise<EvaluationResult> {
     const startTime = Date.now()
-    
+
     // Create span for evaluation
     const span = this.traceId
       ? langfuse.span({
@@ -95,7 +95,7 @@ export class StorytellerJudge {
 
     try {
       const prompt = this.buildEvaluationPrompt(stepName, output, criteria, context)
-      
+
       const openai = createOpenAI({
         apiKey: process.env.OPENAI_API_KEY,
       })
@@ -108,14 +108,14 @@ export class StorytellerJudge {
 
       // Parse the evaluation result
       const result = this.parseEvaluationResult(text)
-      
+
       const duration = Date.now() - startTime
 
       // Log to Langfuse
       if (span) {
         span.end({
           output: result,
-          metadata: { duration, modelId: this.modelId }
+          metadata: { duration, modelId: this.modelId },
         })
       }
 
@@ -143,7 +143,7 @@ export class StorytellerJudge {
       return result
     } catch (error) {
       console.error(`[StorytellerJudge] Evaluation failed for ${stepName}:`, error)
-      
+
       if (span) {
         span.end({ level: 'ERROR', statusMessage: String(error) })
       }
@@ -162,9 +162,7 @@ export class StorytellerJudge {
     criteria: string,
     context?: string
   ): string {
-    const outputStr = typeof output === 'string' 
-      ? output 
-      : JSON.stringify(output, null, 2)
+    const outputStr = typeof output === 'string' ? output : JSON.stringify(output, null, 2)
 
     return `You are an expert creative writing evaluator. Evaluate the following storytelling output.
 
@@ -233,7 +231,7 @@ Respond ONLY with the JSON object, no additional text.`
   private createHeuristicResult(text: string): EvaluationResult {
     // Simple heuristic: if response is long, it's probably good
     const score = Math.min(10, Math.max(3, text.length / 100))
-    
+
     return {
       overallScore: score,
       overallReason: 'Heuristic evaluation used due to parsing failure',
@@ -288,7 +286,7 @@ Respond ONLY with the JSON object, no additional text.`
  * Judge for World Bible quality
  */
 export class WorldBibleJudge extends StorytellerJudge {
-  async evaluateBible(bible: Record<string, any>): Promise<EvaluationResult> {
+  async evaluateBible(bible: Record<string, unknown>): Promise<EvaluationResult> {
     const criteria = `
       Evaluate the World Bible for:
       1. World rules should create conflict and have consequences
@@ -304,7 +302,7 @@ export class WorldBibleJudge extends StorytellerJudge {
  * Judge for Episode Premise quality
  */
 export class EpisodePremiseJudge extends StorytellerJudge {
-  async evaluatePremise(premise: Record<string, any>): Promise<EvaluationResult> {
+  async evaluatePremise(premise: Record<string, unknown>): Promise<EvaluationResult> {
     const criteria = `
       Evaluate the Episode Premise using the Ozymandias framework:
       1. Protagonist Hook - Is it compelling and specific?
@@ -321,7 +319,7 @@ export class EpisodePremiseJudge extends StorytellerJudge {
  * Judge for Beat quality
  */
 export class BeatJudge extends StorytellerJudge {
-  async evaluateBeat(beat: Record<string, any>): Promise<EvaluationResult> {
+  async evaluateBeat(beat: Record<string, unknown>): Promise<EvaluationResult> {
     const criteria = `
       Evaluate the Beat for:
       1. Visual Hook - Is there a memorable image?
@@ -337,14 +335,10 @@ export class BeatJudge extends StorytellerJudge {
 // EXPORTS
 // ============================================
 
-export const createStorytellerJudge = (traceId?: string) => 
-  new StorytellerJudge({ traceId })
+const createStorytellerJudge = (traceId?: string) => new StorytellerJudge({ traceId })
 
-export const createWorldBibleJudge = (traceId?: string) => 
-  new WorldBibleJudge({ traceId })
+const createWorldBibleJudge = (traceId?: string) => new WorldBibleJudge({ traceId })
 
-export const createEpisodePremiseJudge = (traceId?: string) => 
-  new EpisodePremiseJudge({ traceId })
+const createEpisodePremiseJudge = (traceId?: string) => new EpisodePremiseJudge({ traceId })
 
-export const createBeatJudge = (traceId?: string) => 
-  new BeatJudge({ traceId })
+const createBeatJudge = (traceId?: string) => new BeatJudge({ traceId })

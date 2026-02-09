@@ -30,14 +30,14 @@ export function isAdminUser(userEmail?: string | null): boolean {
 /**
  * Check if user should bypass onboarding
  */
-export function shouldBypassOnboarding(userEmail?: string | null): boolean {
+function shouldBypassOnboarding(userEmail?: string | null): boolean {
   return isAdminUser(userEmail)
 }
 
 /**
  * Get admin badge config
  */
-export function getAdminBadge(userEmail?: string | null): {
+function getAdminBadge(userEmail?: string | null): {
   isAdmin: boolean
   badge?: React.ReactNode
 } {

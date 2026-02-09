@@ -1,6 +1,6 @@
 /**
  * Character Creation Tools - Mastra v2
- * 
+ *
  * Tools for creating and managing cast members with interactive question flow
  */
 
@@ -29,11 +29,15 @@ const CreateCharacterInputSchema = z.object({
 const AskCharacterQuestionsInputSchema = z.object({
   projectId: z.string().describe('Project ID'),
   characterName: z.string().describe('Name of character being created'),
-  questions: z.array(z.object({
-    id: z.string().describe('Unique question ID (e.g., "motivation", "flaw")'),
-    question: z.string().describe('The question to ask the user'),
-    required: z.boolean().optional().describe('Is this question required?'),
-  })).describe('Questions to ask the user'),
+  questions: z
+    .array(
+      z.object({
+        id: z.string().describe('Unique question ID (e.g., "motivation", "flaw")'),
+        question: z.string().describe('The question to ask the user'),
+        required: z.boolean().optional().describe('Is this question required?'),
+      })
+    )
+    .describe('Questions to ask the user'),
 })
 
 // ==========================================
@@ -46,7 +50,8 @@ const AskCharacterQuestionsInputSchema = z.object({
  */
 export const askCharacterQuestionsTool = createTool({
   id: 'ask_character_questions',
-  description: 'Ask the user a series of questions to gather information for character creation. Use this when the user wants to create a character but hasn\'t provided all details.',
+  description:
+    "Ask the user a series of questions to gather information for character creation. Use this when the user wants to create a character but hasn't provided all details.",
   inputSchema: AskCharacterQuestionsInputSchema,
   execute: async (args: any) => {
     const context = args?.context || args
@@ -73,7 +78,8 @@ export const askCharacterQuestionsTool = createTool({
  */
 export const createCharacterTool = createTool({
   id: 'create_character',
-  description: 'Create a new character in the project cast. Use this after gathering character details from the user.',
+  description:
+    'Create a new character in the project cast. Use this after gathering character details from the user.',
   inputSchema: CreateCharacterInputSchema,
   execute: async (args: any) => {
     const context = args?.context || args
@@ -101,40 +107,43 @@ export const createCharacterTool = createTool({
 
     try {
       // Call the character creation API
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/storyteller/characters`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-bypass-auth': 'true',
-        },
-        body: JSON.stringify({
-          projectId,
-          name,
-          role,
-          description: description || shortDescription || '',
-          shortDescription: shortDescription || description?.slice(0, 100) || '',
-          gender,
-          psychology: {
-            archetype,
-            motivation,
-            fatalFlaw,
-            traits,
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/storyteller/characters`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-bypass-auth': 'true',
           },
-          mbti,
-          voiceSignature,
-          // Default metrics
-          valence: 0,
-          arousal: 50,
-          autonomy: 60,
-          competence: 60,
-          relatedness: 50,
-          cognitiveClarity: 70,
-          perceivedStakes: 40,
-          socialSafety: 60,
-          moralAlignment: 70,
-          transformationProgress: 0,
-        }),
-      })
+          body: JSON.stringify({
+            projectId,
+            name,
+            role,
+            description: description || shortDescription || '',
+            shortDescription: shortDescription || description?.slice(0, 100) || '',
+            gender,
+            psychology: {
+              archetype,
+              motivation,
+              fatalFlaw,
+              traits,
+            },
+            mbti,
+            voiceSignature,
+            // Default metrics
+            valence: 0,
+            arousal: 50,
+            autonomy: 60,
+            competence: 60,
+            relatedness: 50,
+            cognitiveClarity: 70,
+            perceivedStakes: 40,
+            socialSafety: 60,
+            moralAlignment: 70,
+            transformationProgress: 0,
+          }),
+        }
+      )
 
       if (!response.ok) {
         const error = await response.json()
@@ -179,25 +188,30 @@ export const checkCharacterExistsTool = createTool({
     const { projectId, characterName } = context
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/storyteller/characters?projectId=${projectId}`, {
-        headers: {
-          'x-bypass-auth': 'true',
-        },
-      })
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/storyteller/characters?projectId=${projectId}`,
+        {
+          headers: {
+            'x-bypass-auth': 'true',
+          },
+        }
+      )
 
       if (!response.ok) {
         return JSON.stringify({ success: false, exists: false })
       }
 
       const characters = await response.json()
-      const exists = characters.some((c: any) =>
-        c.name.toLowerCase() === characterName.toLowerCase()
+      const exists = characters.some(
+        (c: any) => c.name.toLowerCase() === characterName.toLowerCase()
       )
 
       return JSON.stringify({
         success: true,
         exists,
-        character: exists ? characters.find((c: any) => c.name.toLowerCase() === characterName.toLowerCase()) : null,
+        character: exists
+          ? characters.find((c: any) => c.name.toLowerCase() === characterName.toLowerCase())
+          : null,
       })
     } catch (error) {
       return JSON.stringify({

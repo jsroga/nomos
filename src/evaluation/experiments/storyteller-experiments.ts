@@ -54,17 +54,27 @@ import { HallucinationJudge } from '../judges/rag/hallucination-judge'
 import { CoherenceJudge } from '../judges/coherence-judge'
 import { ReverseIntentJudge } from '../judges/creative/advanced-judges'
 import { OrchestrationJudge } from '../judges/operational/orchestration-judge'
-import { StorytellerExample, STORYTELLER_GOLDEN_DATASET } from '../datasets/storyteller-golden'
+import { STORYTELLER_GOLDEN_DATASET } from '../datasets/storyteller-golden'
 import { ALL_SCENARIOS } from '../datasets/scenarios'
-import type { CustomEvaluator, MultiVariantReport, VariantReport, ScenarioMetrics, EvaluationExample, EvaluatorInput, EvaluatorResult } from '../types'
+import type {
+  CustomEvaluator,
+  MultiVariantReport,
+  VariantReport,
+  ScenarioMetrics,
+  EvaluationExample,
+  EvaluatorInput,
+  EvaluatorResult,
+} from '../types'
 import { saveHtmlReport } from '../report-generator'
-import { BaseJudge, JudgeResult } from '../judges/base-judge'
+import { BaseJudge } from '../judges/base-judge'
 
 // Adapter to bridge BaseJudge (3 args) to CustomEvaluator (1 arg object)
 class JudgeAdapter implements CustomEvaluator {
-  constructor(private judge: BaseJudge) { }
+  constructor(private judge: BaseJudge) {}
 
-  get name() { return this.judge.name }
+  get name() {
+    return this.judge.name
+  }
 
   async evaluate(params: EvaluatorInput): Promise<EvaluatorResult> {
     const result = await this.judge.evaluate(params.input, params.output, params.reference)
@@ -73,8 +83,8 @@ class JudgeAdapter implements CustomEvaluator {
       reasoning: result.reason,
       metadata: {
         ...result.metadata,
-        scoreName: result.scoreName
-      }
+        scoreName: result.scoreName,
+      },
     }
   }
 }
@@ -98,7 +108,7 @@ const EVALUATOR_CONFIGS = {
     new JudgeAdapter(new OrchestrationJudge()),
     new JudgeAdapter(new MagicJudge()),
     new JudgeAdapter(new ReverseIntentJudge()),
-    new JudgeAdapter(new CoherenceJudge())
+    new JudgeAdapter(new CoherenceJudge()),
   ],
   consistencyOnly: [new JudgeAdapter(new ConsistencyJudge())],
 } as const
@@ -251,13 +261,13 @@ export async function runStorytellerExperiment(
           const outputStr = JSON.stringify(output)
           const inputTokens = inputStr.length / 4
           const outputTokens = outputStr.length / 4
-          const costUsd = (inputTokens / 1_000_000 * 0.25) + (outputTokens / 1_000_000 * 1.25)
+          const costUsd = (inputTokens / 1_000_000) * 0.25 + (outputTokens / 1_000_000) * 1.25
 
           // Merge example metadata (e.g. scenario name)
           Object.assign(metadata, example.metadata, {
             latencyMs: genDuration,
             costUsd: costUsd,
-            tokens: inputTokens + outputTokens
+            tokens: inputTokens + outputTokens,
           })
 
           return {
@@ -267,7 +277,7 @@ export async function runStorytellerExperiment(
             scores,
             reasoning,
             metadata,
-            context
+            context,
           }
         } catch (error) {
           console.error(`Error evaluating example ${example.id}:`, error)
@@ -278,7 +288,7 @@ export async function runStorytellerExperiment(
             scores: {},
             reasoning: { error: String(error) },
             metadata: { error: true },
-            context: {}
+            context: {},
           }
         }
       })
@@ -421,7 +431,7 @@ export async function runABTest(
 
 export interface AgentVariant {
   name: string
-  config: Record<string, any>
+  config: Record<string, unknown>
   generate: (input: Record<string, unknown>) => Promise<unknown>
 }
 
@@ -451,18 +461,18 @@ export async function runMultiVariantTest(
     }
   } else {
     // ... existing logic ...
-    console.log(`   Scenarios: Sci-Fi, Fantasy, Thriller, Edge Cases`)
+    console.log('   Scenarios: Sci-Fi, Fantasy, Thriller, Edge Cases')
     // Map helpful scenario names to filtered subsets of ALL_SCENARIOS
     // We filter ALL_SCENARIOS which should be imported
     scenarioMap = {
       'Sci-Fi': ALL_SCENARIOS.filter(e => e.metadata?.scenario === 'sci-fi'),
-      'Fantasy': ALL_SCENARIOS.filter(e => e.metadata?.scenario === 'fantasy'),
-      'Thriller': ALL_SCENARIOS.filter(e => e.metadata?.scenario === 'thriller'),
-      'Edge': ALL_SCENARIOS.filter(e => e.metadata?.scenario === 'edge'),
+      Fantasy: ALL_SCENARIOS.filter(e => e.metadata?.scenario === 'fantasy'),
+      Thriller: ALL_SCENARIOS.filter(e => e.metadata?.scenario === 'thriller'),
+      Edge: ALL_SCENARIOS.filter(e => e.metadata?.scenario === 'edge'),
     }
   }
 
-  const scenarioNames = Object.keys(scenarioMap);
+  const scenarioNames = Object.keys(scenarioMap)
 
   for (const variant of variants) {
     console.log(`\n👉 Running Variant: ${variant.name}`)
@@ -471,15 +481,18 @@ export async function runMultiVariantTest(
 
     for (const [scenarioName, examples] of Object.entries(scenarioMap)) {
       // Skip if no examples
-      if (examples.length === 0) continue;
+      if (examples.length === 0) continue
 
-      const run = await runStorytellerExperiment({
-        name: `${name}-${variant.name}-${scenarioName}`,
-        evaluatorSet: 'pro', // Default, but overridden if customEvaluators provided
-        customEvaluators: options?.customEvaluators, // Pass custom evaluators down
-        examples: examples,
-        tags: ['multi-variant', variant.name, scenarioName]
-      }, variant.generate)
+      const run = await runStorytellerExperiment(
+        {
+          name: `${name}-${variant.name}-${scenarioName}`,
+          evaluatorSet: 'pro', // Default, but overridden if customEvaluators provided
+          customEvaluators: options?.customEvaluators, // Pass custom evaluators down
+          examples: examples,
+          tags: ['multi-variant', variant.name, scenarioName],
+        },
+        variant.generate
+      )
       // ...
 
       // Aggregate metrics for this scenario
@@ -488,7 +501,7 @@ export async function runMultiVariantTest(
         consistency: run.aggregatedScores['consistency'] || 0,
         orchestration: run.aggregatedScores['orchestration'] || 0,
         latencyMs: run.duration / run.results.length,
-        costUsd: 0 // Placeholder
+        costUsd: 0, // Placeholder
       }
       allResults.push(...run.results)
     }
@@ -500,7 +513,7 @@ export async function runMultiVariantTest(
       consistency: overallAgg['consistency'] || 0,
       orchestration: overallAgg['orchestration'] || 0,
       latencyMs: 0,
-      costUsd: 0
+      costUsd: 0,
     }
 
     // Map logs for Detail View
@@ -511,7 +524,7 @@ export async function runMultiVariantTest(
       output: (r.output as any)?.response || JSON.stringify(r.output),
       score: r.scores['magic-score'] || 0,
       reasoning: r.reasoning,
-      context: r.context
+      context: r.context,
     }))
 
     reports.push({
@@ -519,7 +532,7 @@ export async function runMultiVariantTest(
       config: variant.config,
       overallMetrics,
       scenarioMetrics,
-      exampleLogs
+      exampleLogs,
     })
 
     // Save incrementally so dashboard updates live
@@ -527,7 +540,7 @@ export async function runMultiVariantTest(
       id: generateExperimentId(),
       timestamp: new Date().toISOString(),
       variants: reports,
-      scenarios: scenarioNames.map(s => s.toLowerCase())
+      scenarios: scenarioNames.map(s => s.toLowerCase()),
     }
 
     const resultsDir = path.resolve(process.cwd(), 'src/evaluation/results')
@@ -541,10 +554,10 @@ export async function runMultiVariantTest(
     id: generateExperimentId(),
     timestamp: new Date().toISOString(),
     variants: reports,
-    scenarios: scenarioNames.map(s => s.toLowerCase())
+    scenarios: scenarioNames.map(s => s.toLowerCase()),
   }
 
-  console.log(`\n💾 Multi-Variant Report saved to: src/evaluation/results/latest.json`)
+  console.log('\n💾 Multi-Variant Report saved to: src/evaluation/results/latest.json')
 
   return report
 }

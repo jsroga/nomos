@@ -219,7 +219,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <FlaskConical size={14} className="text-purple-400" />
               )}
               <span className="text-purple-400">
-                {isEvaluating ? 'Evaluating...' : evalResult ? `Score: ${evalResult.score}/10` : 'Eval'}
+                {isEvaluating
+                  ? 'Evaluating...'
+                  : evalResult
+                    ? `Score: ${evalResult.score}/10`
+                    : 'Eval'}
               </span>
             </Button>
           )}
@@ -262,14 +266,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div className="col-span-2 p-2 rounded bg-background/50 border border-border/30">
-              <div className="font-medium text-foreground mb-1">Overall Score: {evalResult.score}/10</div>
+              <div className="font-medium text-foreground mb-1">
+                Overall Score: {evalResult.score}/10
+              </div>
               <p className="text-muted-foreground">{evalResult.feedback}</p>
             </div>
             {Object.entries(evalResult.criteria).map(([key, value]) => (
               <div key={key} className="p-2 rounded bg-background/30 border border-border/20">
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-medium capitalize">{key.replace(/_/g, ' ')}</span>
-                  <span className={`font-mono ${value.score >= 7 ? 'text-green-400' : value.score >= 5 ? 'text-yellow-400' : 'text-red-400'}`}>
+                  <span
+                    className={`font-mono ${value.score >= 7 ? 'text-green-400' : value.score >= 5 ? 'text-yellow-400' : 'text-red-400'}`}
+                  >
                     {value.score}/10
                   </span>
                 </div>

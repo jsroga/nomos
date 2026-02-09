@@ -1,0 +1,38 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "src/app/**/*.{ts,tsx}",
+    "src/pages/**/*.{ts,tsx}",
+    "src/mcp/server.ts",
+    "src/trigger/**/*.ts",
+    "trigger.config.ts",
+    "scripts/**/*.{ts,js,mjs}",
+    "e2e/**/*.ts",
+    "src/evaluation/experiments/**/*.ts",
+    "src/evaluation/confident-ai/run-experiment.ts",
+    "src/evaluation/hypothesis/run-experiment.ts",
+    "src/evaluation/scripts/**/*.ts"
+  ],
+  "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{ts,js,mjs}", "e2e/**/*.ts"],
+  "ignore": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/*.e2e.test.ts",
+    "**/__tests__/**",
+    "**/__mocks__/**",
+    ".next/**",
+    "dist/**",
+    "scripts/deepeval/venv/**",
+    "public/scripts/**"
+  ],
+  "ignoreDependencies": [
+    "@types/*",
+    "server-only",
+    "eslint-*"
+  ],
+  "ignoreBinaries": [
+    "tsx",
+    "live-server"
+  ],
+  "ignoreExportsUsedInFile": true
+}

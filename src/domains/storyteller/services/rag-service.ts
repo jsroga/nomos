@@ -10,7 +10,7 @@
 
 import { db } from '@/lib/db'
 import { documentEmbeddings } from '../db/schema'
-import { desc, sql, and } from 'drizzle-orm'
+import { desc, sql } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 import {
   getVoyageEmbeddings,
@@ -21,11 +21,7 @@ import {
   HybridSearchEngine,
   SearchResult,
 } from '@/infrastructure/ai/rag/hybrid-search'
-import {
-  getSemanticChunker,
-  SemanticChunker,
-  DocumentChunk,
-} from '@/infrastructure/ai/rag/semantic-chunker'
+import { getSemanticChunker, SemanticChunker } from '@/infrastructure/ai/rag/semantic-chunker'
 import { getQueryExpander, QueryExpander } from '@/infrastructure/ai/rag/query-expander'
 import { getReranker, Reranker } from '@/infrastructure/ai/rag/reranker'
 import { STORYTELLER_CONFIG } from '../config/storyteller-config'
@@ -42,7 +38,7 @@ export type DocumentType =
 export interface RagResult {
   id: string
   content: string
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
   similarity: number
   citation?: CitationInfo
 }
@@ -408,7 +404,7 @@ Context: ${context}`
       return results.map((r, index) => ({
         id: r.id,
         content: r.content,
-        metadata: r.metadata as Record<string, any>,
+        metadata: r.metadata as Record<string, unknown>,
         similarity: r.similarity,
         citation: {
           id: r.id,

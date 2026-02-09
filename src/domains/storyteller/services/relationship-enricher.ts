@@ -6,7 +6,7 @@
  */
 
 import { db } from '@/lib/db'
-import { projects, characters } from '@/db/schema'
+import { projects } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { EntityType } from './entity-registry'
 import { entityGraphService } from './entity-graph-service'
@@ -102,7 +102,7 @@ class RelationshipEnricherService {
         return this.createBasicEnriched(entityId, entityType, entityName, baseDescription)
       }
 
-      const storyPlan = (project.storyPlan as Record<string, any>) || {}
+      const storyPlan = (project.storyPlan as Record<string, unknown>) || {}
       const cast = (project.cast as CharacterData[]) || []
 
       // Build relationships based on entity type
@@ -161,7 +161,7 @@ class RelationshipEnricherService {
     characterName: string,
     projectId: string,
     cast: CharacterData[],
-    storyPlan: Record<string, any>
+    storyPlan: Record<string, unknown>
   ): Promise<Relationship[]> {
     const relationships: Relationship[] = []
     const factions = (storyPlan.factions as FactionData[]) || []
@@ -226,7 +226,7 @@ class RelationshipEnricherService {
     )
     if (characterInCast) {
       // Check for relationships defined in character data
-      const charMeta = characterInCast as Record<string, any>
+      const charMeta = characterInCast as Record<string, unknown>
       if (charMeta.relationships && Array.isArray(charMeta.relationships)) {
         for (const rel of charMeta.relationships) {
           if (rel.target && rel.type) {
@@ -251,7 +251,7 @@ class RelationshipEnricherService {
    */
   private buildFactionRelationships(
     factionName: string,
-    storyPlan: Record<string, any>
+    storyPlan: Record<string, unknown>
   ): Relationship[] {
     const relationships: Relationship[] = []
     const factions = (storyPlan.factions as FactionData[]) || []

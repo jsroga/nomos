@@ -28,6 +28,7 @@ import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldSt
 import toast from 'react-hot-toast'
 import { cn } from '@/lib/utils'
 import { Progress } from '@/components/ui/progress'
+import { getErrorMessage } from '@/lib/error-utils'
 
 // Active task statuses that indicate work is still in progress
 const ACTIVE_TASK_STATUSES = ['PENDING', 'QUEUED', 'EXECUTING', 'WAITING', 'DEQUEUED']
@@ -343,8 +344,8 @@ export const SurfaceProperties: React.FC = () => {
 
       const data = await res.json()
       setPreviewUrl(data.imageUrl)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(getErrorMessage(e))
     } finally {
       setIsGenerating(false)
     }
@@ -443,9 +444,9 @@ export const SurfaceProperties: React.FC = () => {
       } else {
         throw new Error(data.error || 'Failed to start generation')
       }
-    } catch (e: any) {
-      setError(e.message)
-      toast.error('Failed to start 3D generation: ' + e.message)
+    } catch (e: unknown) {
+      setError(getErrorMessage(e))
+      toast.error('Failed to start 3D generation: ' + getErrorMessage(e))
       if (operationId) removeOperation(operationId)
     } finally {
       setIsStarting3D(false)

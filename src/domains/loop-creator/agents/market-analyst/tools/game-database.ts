@@ -191,13 +191,13 @@ export const gameDatabaseTool = new DynamicStructuredTool({
 /**
  * Get genre statistics
  */
-export function getGenreInfo(genre: string): {
+function getGenreInfo(genre: string): {
   description: string
   keyMechanics: string[]
   targetAudience: string
   marketTrend: string
 } {
-  const genreInfo: Record<string, any> = {
+  const genreInfo: Record<string, unknown> = {
     roguelike: {
       description: 'Permadeath-based games with procedural generation and run-based structure',
       keyMechanics: ['Permadeath', 'Procedural generation', 'Meta-progression', 'Build variety'],

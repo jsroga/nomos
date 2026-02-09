@@ -136,7 +136,7 @@ export function clearInterruptedStream(persistKey: string): void {
 /**
  * Check if chat state exists
  */
-export function hasSavedChatState(persistKey: string): boolean {
+function hasSavedChatState(persistKey: string): boolean {
   try {
     const saved = sessionStorage.getItem(`chat-state-${persistKey}`)
     return !!saved
@@ -148,7 +148,7 @@ export function hasSavedChatState(persistKey: string): boolean {
 /**
  * Check if there's an interrupted stream
  */
-export function hasInterruptedStream(persistKey: string): boolean {
+function hasInterruptedStream(persistKey: string): boolean {
   try {
     const saved = sessionStorage.getItem(`stream-interrupted-${persistKey}`)
     return !!saved
@@ -160,7 +160,7 @@ export function hasInterruptedStream(persistKey: string): boolean {
 /**
  * Get chat state age in seconds
  */
-export function getChatStateAge(persistKey: string): number | null {
+function getChatStateAge(persistKey: string): number | null {
   try {
     const saved = sessionStorage.getItem(`chat-state-${persistKey}`)
     if (!saved) return null

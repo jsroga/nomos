@@ -64,11 +64,8 @@ export type AIGatewayResult<T = unknown> = AIGatewayResponse<T> | AIGatewayError
 export enum AIErrorCode {
   PROVIDER_UNAVAILABLE = 'PROVIDER_UNAVAILABLE',
   RATE_LIMITED = 'RATE_LIMITED',
-  INVALID_REQUEST = 'INVALID_REQUEST',
-  CONTENT_FILTERED = 'CONTENT_FILTERED',
   TIMEOUT = 'TIMEOUT',
   QUOTA_EXCEEDED = 'QUOTA_EXCEEDED',
-  AUTHENTICATION_FAILED = 'AUTHENTICATION_FAILED',
   UNKNOWN = 'UNKNOWN',
 }
 
@@ -124,7 +121,7 @@ export interface AIProvider {
 // IMAGE GENERATION TYPES
 // =============================================================================
 
-export interface ImageGenerationOptions {
+interface ImageGenerationOptions {
   width?: number
   height?: number
   steps?: number
@@ -135,7 +132,7 @@ export interface ImageGenerationOptions {
   negativePrompt?: string
 }
 
-export interface ImageGenerationResult {
+interface ImageGenerationResult {
   url: string
   base64?: string
   width: number
@@ -148,14 +145,14 @@ export interface ImageGenerationResult {
 // 3D GENERATION TYPES
 // =============================================================================
 
-export interface ThreeDGenerationOptions {
+interface ThreeDGenerationOptions {
   format?: 'glb' | 'gltf' | 'obj' | 'fbx'
   quality?: 'draft' | 'standard' | 'high'
   textured?: boolean
   pivotPoint?: 'center' | 'bottom'
 }
 
-export interface ThreeDGenerationResult {
+interface ThreeDGenerationResult {
   modelUrl: string
   thumbnailUrl?: string
   format: string
@@ -167,7 +164,7 @@ export interface ThreeDGenerationResult {
 // TEXT GENERATION TYPES
 // =============================================================================
 
-export interface TextGenerationOptions {
+interface TextGenerationOptions {
   maxTokens?: number
   temperature?: number
   topP?: number
@@ -176,7 +173,7 @@ export interface TextGenerationOptions {
   stream?: boolean
 }
 
-export interface TextGenerationResult {
+interface TextGenerationResult {
   text: string
   finishReason: 'stop' | 'length' | 'content_filter'
   usage?: {
@@ -239,6 +236,6 @@ export function isAIGatewayError(result: AIGatewayResult): result is AIGatewayEr
   return result.success === false
 }
 
-export function isAIGatewayResponse<T>(result: AIGatewayResult<T>): result is AIGatewayResponse<T> {
+function isAIGatewayResponse<T>(result: AIGatewayResult<T>): result is AIGatewayResponse<T> {
   return result.success === true
 }

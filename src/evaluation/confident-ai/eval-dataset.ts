@@ -1,6 +1,6 @@
 /**
  * High-Quality Evaluation Dataset for Confident AI
- * 
+ *
  * These test cases are designed to:
  * 1. Generate actual creative prose (not tool calls)
  * 2. Pass scientific evaluation metrics (EQ-Bench, Mazur, Gilligan)
@@ -28,7 +28,8 @@ export const EVAL_TEST_CASES: EvalTestCase[] = [
   // ============================================
   {
     id: 'magic-01',
-    input: `Write a short scene (200 words): A father meets his estranged daughter after 15 years. She's now a successful lawyer. He's dying. Neither mentions his illness.`,
+    input:
+      "Write a short scene (200 words): A father meets his estranged daughter after 15 years. She's now a successful lawyer. He's dying. Neither mentions his illness.",
     context: [
       'Genre: Drama',
       'Style: Subtext-heavy, Gilligan method',
@@ -73,7 +74,8 @@ He smiled. It was enough. It had to be.`,
   // ============================================
   {
     id: 'voice-01',
-    input: `Write dialogue (150 words) between a street-smart 12-year-old orphan and a pompous nobleman. The child has information the noble needs. Each must speak distinctly.`,
+    input:
+      'Write dialogue (150 words) between a street-smart 12-year-old orphan and a pompous nobleman. The child has information the noble needs. Each must speak distinctly.',
     context: [
       'Setting: Medieval fantasy',
       'Power dynamic: Child has leverage',
@@ -104,7 +106,8 @@ She was gone before he could respond, melting into shadows that seemed to welcom
   // ============================================
   {
     id: 'narrative-01',
-    input: `Write three connected paragraphs where each causes the next: A dropped letter leads to a discovered betrayal leads to an unexpected alliance.`,
+    input:
+      'Write three connected paragraphs where each causes the next: A dropped letter leads to a discovered betrayal leads to an unexpected alliance.',
     context: [
       'Style: Tight causality, no coincidences',
       'Mazur principle: Each element causes the next',
@@ -124,9 +127,10 @@ She found the Ambassador in the western garden, preparing to depart. "I know abo
   // ============================================
   {
     id: 'show-01',
-    input: `Rewrite this as vivid sensory prose: "Sarah was nervous about the job interview. She was also hungover and hadn't slept."`,
+    input:
+      'Rewrite this as vivid sensory prose: "Sarah was nervous about the job interview. She was also hungover and hadn\'t slept."',
     context: [
-      'Gilligan method: Show don\'t tell',
+      "Gilligan method: Show don't tell",
       'EQ-Bench: Emotional truth through detail',
       'Avoid: Naming emotions directly',
     ],
@@ -139,7 +143,7 @@ She'd rehearsed her handshake in the mirror at 3 AM, unable to sleep, replaying 
 "Right this way, Ms. Chen."
 
 Her heels clicked against marble. Each step a small war against gravity.`,
-    description: 'Show don\'t tell transformation',
+    description: "Show don't tell transformation",
     targetMetrics: ['Anti-Slop Score', 'EQ-Bench Magic Score', 'Gilligan-Martin Quality'],
   },
 
@@ -148,7 +152,8 @@ Her heels clicked against marble. Each step a small war against gravity.`,
   // ============================================
   {
     id: 'clean-01',
-    input: `Write a scene (150 words) of a surgeon delivering bad news to a patient's family. No clichés, no purple prose, no hedging.`,
+    input:
+      "Write a scene (150 words) of a surgeon delivering bad news to a patient's family. No clichés, no purple prose, no hedging.",
     context: [
       'Style: Clean, direct, professional',
       'Anti-slop criteria: No AI-typical patterns',
@@ -182,7 +187,8 @@ Margaret laughed once, a sound like breaking glass, then began to cry.`,
   // ============================================
   {
     id: 'moral-01',
-    input: `Write an internal monologue (150 words) from a soldier who just killed a surrendering enemy—and discovered it was a child soldier. Make the reader understand, not forgive.`,
+    input:
+      'Write an internal monologue (150 words) from a soldier who just killed a surrendering enemy—and discovered it was a child soldier. Make the reader understand, not forgive.',
     context: [
       'GRRM principle: Villain is hero of their own story',
       'Moral complexity: No easy answers',
@@ -210,7 +216,8 @@ I gave him three.`,
   // ============================================
   {
     id: 'specific-01',
-    input: `Write a breakup scene (150 words) where one detail—a specific object—carries all the emotional weight. The dialogue itself should be mundane.`,
+    input:
+      'Write a breakup scene (150 words) where one detail—a specific object—carries all the emotional weight. The dialogue itself should be mundane.',
     context: [
       'Gilligan specificity: Details do the work',
       'Emotional truth through objects',
@@ -244,7 +251,8 @@ She closed it. She didn't cry. That would come later, at 3 AM, for reasons she c
   // ============================================
   {
     id: 'tension-01',
-    input: `Write a scene (150 words) where two characters who hate each other must be polite at a formal dinner. The tension should be unbearable. No one raises their voice.`,
+    input:
+      'Write a scene (150 words) where two characters who hate each other must be polite at a formal dinner. The tension should be unbearable. No one raises their voice.',
     context: [
       'Style: Restrained violence',
       'Subtext over text',
@@ -284,7 +292,8 @@ The pheasant grew cold between them.`,
   // ============================================
   {
     id: 'world-01',
-    input: `In 200 words, establish a world where memory is currency. Show don't explain. One character perspective.`,
+    input:
+      "In 200 words, establish a world where memory is currency. Show don't explain. One character perspective.",
     context: [
       'World building through lived experience',
       'No exposition dumps',
@@ -324,7 +333,8 @@ The tram came. She got on. The port on her wrist itched.`,
   // ============================================
   {
     id: 'twist-01',
-    input: `Write a scene (200 words) with a twist ending that's surprising but, in retrospect, was planted from the first line.`,
+    input:
+      "Write a scene (200 words) with a twist ending that's surprising but, in retrospect, was planted from the first line.",
     context: [
       'Gilligan method: Surprising but inevitable',
       'Plant and payoff within scene',
@@ -357,9 +367,9 @@ Mama always said I had my father's eyes. She just never said which father.`,
 /**
  * Convert evaluation test cases to LLMTestCase format
  */
-export function getEvalTestCases(limit?: number): LLMTestCase[] {
+function getEvalTestCases(limit?: number): LLMTestCase[] {
   const cases = limit ? EVAL_TEST_CASES.slice(0, limit) : EVAL_TEST_CASES
-  
+
   return cases.map(tc => ({
     name: tc.id, // Name for matching across test runs (experiments)
     input: tc.input,
@@ -386,6 +396,6 @@ export function getEvalTestCasesWithOutputs(): LLMTestCase[] {
 /**
  * Get test case IDs for filtering
  */
-export function getEvalTestCaseIds(): string[] {
+function getEvalTestCaseIds(): string[] {
   return EVAL_TEST_CASES.map(tc => tc.id)
 }

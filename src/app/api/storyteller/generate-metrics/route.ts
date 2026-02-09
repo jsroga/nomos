@@ -1,11 +1,12 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
-export async function POST(req: Request) {
+export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedRequest) => {
   try {
     const body = await req.json()
     const { description } = body
@@ -109,4 +110,4 @@ Analyze the provided description and return appropriate baseline metrics.`,
     console.error('Error generating metrics:', error)
     return NextResponse.json({ error: 'Failed to generate metrics' }, { status: 500 })
   }
-}
+})

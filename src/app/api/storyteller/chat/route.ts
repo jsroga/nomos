@@ -1,9 +1,9 @@
-
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { runStorytellerWorkflow } from '@/domains/storyteller/workflows/storyteller-workflow'
 import { db } from '@/lib/db'
 import { beats } from '@/domains/storyteller/db/schema'
 import { v4 as uuidv4 } from 'uuid'
+import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
 
 // Persist approved beats to database
 async function persistApprovedBeats(beatBoard: any[], episodeId: string) {
@@ -33,7 +33,7 @@ async function persistApprovedBeats(beatBoard: any[], episodeId: string) {
   }
 }
 
-export async function POST(req: Request) {
+export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedRequest) => {
   try {
     const body = await req.json()
     const {
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
       characters,
       existingBeats,
       targetEmotion,
-      traceId: bodyTraceId
+      traceId: bodyTraceId,
     } = body
 
     // Extract traceId from headers or body, or generate new
@@ -57,13 +57,13 @@ export async function POST(req: Request) {
       characters: characters || [],
       existingBeats: existingBeats || [],
       storyContext: message, // Use user message as context/instruction
-      targetEmotion
+      targetEmotion,
     }
 
     // Run workflow
     const result = await runStorytellerWorkflow(input, {
       modelName: 'openai:gpt-4o', // Default or from config
-      traceId
+      traceId,
     })
 
     // Persist if successful
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
       type: 'ai',
       content: result.message,
       name: 'Storyteller',
-      sender: 'Storyteller'
+      sender: 'Storyteller',
     }
 
     // If beats were generated, add them to content display
@@ -93,9 +93,8 @@ export async function POST(req: Request) {
       beatBoard: result.beats,
       status: result.status,
       continuityIssues: result.continuityIssues,
-      traceId
+      traceId,
     })
-
   } catch (error) {
     console.error('Error in chat:', error)
     return NextResponse.json(
@@ -113,4 +112,4 @@ export async function POST(req: Request) {
       { status: 500 }
     )
   }
-}
+})

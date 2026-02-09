@@ -40,6 +40,11 @@ export const GET = withAuth(
       return NextResponse.json({ error: 'entityId is required' }, { status: 400 })
     }
 
+    // Validate entityId is a UUID to prevent PostgREST filter injection
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entityId)) {
+      return NextResponse.json({ error: 'Invalid entityId format' }, { status: 400 })
+    }
+
     // If projectId provided, verify access
     if (projectId) {
       const hasAccess = await verifyProjectAccess(supabase, projectId)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { OnboardingState, DEFAULT_ONBOARDING_STATE, ModuleId } from '@/types/onboarding'
+import { getErrorMessage } from '@/lib/error-utils'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -65,8 +66,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true, onboarding: currentState })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
   }
 }
 
@@ -91,7 +92,7 @@ export async function GET(req: NextRequest) {
     const onboarding: OnboardingState = user.user_metadata?.onboarding || DEFAULT_ONBOARDING_STATE
 
     return NextResponse.json({ onboarding })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
   }
 }

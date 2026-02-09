@@ -4,7 +4,35 @@
  * Tests for the Mastra-based StorytellerAgent and v2 tools.
  */
 
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+// Use vi.hoisted to ensure the mock object is available during hoisting
+const { mockDb } = vi.hoisted(() => ({
+    mockDb: {
+        insert: vi.fn().mockImplementation(() => ({
+            values: vi.fn().mockResolvedValue({ success: true }),
+        })),
+        update: vi.fn().mockImplementation(() => ({
+            set: vi.fn().mockImplementation(() => ({
+                where: vi.fn().mockResolvedValue({ success: true }),
+            })),
+        })),
+        query: {
+            beats: {
+                findMany: vi.fn().mockResolvedValue([]),
+                findFirst: vi.fn().mockResolvedValue(null),
+            },
+        },
+    }
+}))
+
+// Mock Drizzle modules for all possible import paths
+vi.mock('../../src/db', () => ({ db: mockDb }))
+vi.mock('../../src/db/index', () => ({ db: mockDb }))
+vi.mock('../../src/lib/db', () => ({ db: mockDb }))
+vi.mock('@/db', () => ({ db: mockDb }))
+vi.mock('@/lib/db', () => ({ db: mockDb }))
+
 import {
     manageBeatTool,
     listBeatsTool,
@@ -14,13 +42,23 @@ import {
 } from '../../src/domains/storyteller/tools/v2'
 import { BeatStatus, BeatType } from '../../src/domains/storyteller/enums'
 
+// Helper to parse tool result whether it's a string or object
+function parseResult(result: any): any {
+    if (typeof result === 'string') {
+        return JSON.parse(result)
+    }
+    return result
+}
+
 describe('Storyteller v2 Tools Integration', () => {
-    const mockRuntimeContext = {} as any
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
 
     describe('Beat Management Tools', () => {
         it('should create a new beat', async () => {
-            const result = await manageBeatTool.execute({
-                context: {
+            const result = await manageBeatTool.execute!(
+                {
                     operation: 'create',
                     data: {
                         logline: 'Hero discovers a mysterious map',
@@ -29,13 +67,13 @@ describe('Storyteller v2 Tools Integration', () => {
                         beatType: BeatType.SETUP,
                         visualHook: 'Dust motes dancing in sunlight',
                     },
-                    episodeId: 'ep-001',
+                    episodeId: '00000000-0000-0000-0000-000000000001',
                     beatBoard: [],
                 },
-                runtimeContext: mockRuntimeContext,
-            })
+                {} as any
+            )
 
-            const parsed = JSON.parse(result as string)
+            const parsed = parseResult(result)
             expect(parsed.success).toBe(true)
             expect(parsed.beat).toBeDefined()
             expect(parsed.beat.logline).toBe('Hero discovers a mysterious map')
@@ -49,13 +87,13 @@ describe('Storyteller v2 Tools Integration', () => {
                 { id: '3', logline: 'Beat 3', status: BeatStatus.PROPOSED, sequence: 3, beatType: 'setup' },
             ]
 
-            const result = await listBeatsTool.execute({
-                context: {
+            const result = await listBeatsTool.execute!(
+                {
                     filterStatus: BeatStatus.PROPOSED,
                     beatBoard: mockBeats,
                 },
-                runtimeContext: mockRuntimeContext,
-            })
+                {} as any
+            )
 
             // listBeatsTool returns text format, not JSON
             const output = result as string
@@ -71,8 +109,8 @@ describe('Storyteller v2 Tools Integration', () => {
                 { id: 'beat-1', logline: 'Original logline', content: '', status: BeatStatus.PROPOSED, sequence: 1 },
             ]
 
-            const result = await manageBeatTool.execute({
-                context: {
+            const result = await manageBeatTool.execute!(
+                {
                     operation: 'update',
                     beatId: 'beat-1',
                     data: {
@@ -80,12 +118,13 @@ describe('Storyteller v2 Tools Integration', () => {
                     },
                     beatBoard: mockBeats,
                 },
-                runtimeContext: mockRuntimeContext,
-            })
+                {} as any
+            )
 
-            const parsed = JSON.parse(result as string)
+            const parsed = parseResult(result)
             expect(parsed.success).toBe(true)
-            expect(parsed.beat.logline).toBe('Updated logline')
+            // Update returns updatedBeatBoard, not beat
+            expect(parsed.updatedBeatBoard[0].logline).toBe('Updated logline')
         })
     })
 
@@ -108,8 +147,8 @@ describe('Storyteller v2 Tools Integration', () => {
                 },
             ]
 
-            const result = await checkContinuityTool.execute({
-                context: {
+            const result = await checkContinuityTool.execute!(
+                {
                     scope: 'all_beats',
                     checkTypes: ['all'],
                     autoFix: false,
@@ -118,10 +157,10 @@ describe('Storyteller v2 Tools Integration', () => {
                     seriesBible: {},
                     unresolvedSetups: [],
                 },
-                runtimeContext: mockRuntimeContext,
-            })
+                {} as any
+            )
 
-            const parsed = JSON.parse(result as string)
+            const parsed = parseResult(result)
             expect(parsed.success).toBe(true)
             expect(parsed.issues.length).toBe(0)
         })
@@ -143,8 +182,8 @@ describe('Storyteller v2 Tools Integration', () => {
                 ],
             }
 
-            const result = await checkContinuityTool.execute({
-                context: {
+            const result = await checkContinuityTool.execute!(
+                {
                     scope: 'all_beats',
                     checkTypes: ['world_rules'],
                     autoFix: false,
@@ -153,27 +192,25 @@ describe('Storyteller v2 Tools Integration', () => {
                     seriesBible,
                     unresolvedSetups: [],
                 },
-                runtimeContext: mockRuntimeContext,
-            })
+                {} as any
+            )
 
-            const parsed = JSON.parse(result as string)
+            const parsed = parseResult(result)
             expect(parsed.success).toBe(true)
-            // Note: The simplified rule checker may or may not catch this
-            // depending on keyword matching
         })
 
         it('should perform quick consistency check', async () => {
-            const result = await quickConsistencyCheckTool.execute({
-                context: {
+            const result = await quickConsistencyCheckTool.execute!(
+                {
                     statement: 'The hero walks to the castle.',
                     charactersInvolved: ['Hero'],
                     seriesBible: {},
                     characters: [],
                 },
-                runtimeContext: mockRuntimeContext,
-            })
+                {} as any
+            )
 
-            const parsed = JSON.parse(result as string)
+            const parsed = parseResult(result)
             expect(parsed.pass).toBe(true)
         })
     })
@@ -209,17 +246,17 @@ describe('Storyteller v2 Tools Integration', () => {
                 },
             ]
 
-            const result = await analyzeRelationshipsTool.execute({
-                context: {
+            const result = await analyzeRelationshipsTool.execute!(
+                {
                     focus: 'full_matrix',
                     characters: mockCharacters,
                     beatBoard: mockBeats,
                     seriesBible: {},
                 },
-                runtimeContext: mockRuntimeContext,
-            })
+                {} as any
+            )
 
-            const parsed = JSON.parse(result as string)
+            const parsed = parseResult(result)
             expect(parsed.success).toBe(true)
             expect(parsed.totalCharacters).toBe(2)
         })

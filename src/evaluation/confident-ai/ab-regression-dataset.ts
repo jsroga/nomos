@@ -1,10 +1,10 @@
 /**
  * A/B Regression Test Dataset for Confident AI
- * 
+ *
  * These test cases compare:
  * - Version A (Baseline): High-quality outputs that should PASS
  * - Version B (Regression): Degraded outputs that should FAIL
- * 
+ *
  * Use to detect quality regressions when:
  * - Changing prompts
  * - Updating models
@@ -34,7 +34,7 @@ export interface ABTestCase {
 
 /**
  * A/B Regression Test Cases
- * 
+ *
  * Each case has:
  * - Version A: Baseline quality (should pass metrics)
  * - Version B: Common regression patterns (should fail metrics)
@@ -143,7 +143,8 @@ Kowalski nodded. "That's good. It's important for young professionals to gain pr
       expectPass: false,
     },
     regressionType: 'voice',
-    description: 'Detects when all characters speak with identical vocabulary, cadence, and formality',
+    description:
+      'Detects when all characters speak with identical vocabulary, cadence, and formality',
   },
 
   // ============================================
@@ -153,7 +154,8 @@ Kowalski nodded. "That's good. It's important for young professionals to gain pr
   {
     id: 'ab-narrative-01',
     name: 'Narrative Regression: Plot Logic',
-    input: 'Write a scene where a character escapes a dangerous situation. The escape must feel earned.',
+    input:
+      'Write a scene where a character escapes a dangerous situation. The escape must feel earned.',
     context: [
       'Test type: A/B Regression',
       'Regression target: Narrative causality',
@@ -208,7 +210,7 @@ Everything worked out perfectly, as if the universe itself had conspired to save
  */
 export function getABTestCases(version: 'A' | 'B', limit?: number): LLMTestCase[] {
   const tests = limit ? AB_REGRESSION_TESTS.slice(0, limit) : AB_REGRESSION_TESTS
-  
+
   return tests.map(test => ({
     // Name for matching across test runs (required for experiments)
     name: test.id,
@@ -227,7 +229,7 @@ export function getABTestCases(version: 'A' | 'B', limit?: number): LLMTestCase[
 /**
  * Get all A/B test cases with metadata
  */
-export function getABTestCasesWithMeta(): { 
+function getABTestCasesWithMeta(): {
   versionA: LLMTestCase[]
   versionB: LLMTestCase[]
   metadata: ABTestCase[]
@@ -248,8 +250,12 @@ export function printABTestSummary(): void {
   for (const test of AB_REGRESSION_TESTS) {
     console.log(`\n${test.id}: ${test.name}`)
     console.log(`  Regression type: ${test.regressionType}`)
-    console.log(`  Version A (${test.versionA.label}): expect ${test.versionA.expectPass ? 'PASS' : 'FAIL'}`)
-    console.log(`  Version B (${test.versionB.label}): expect ${test.versionB.expectPass ? 'PASS' : 'FAIL'}`)
+    console.log(
+      `  Version A (${test.versionA.label}): expect ${test.versionA.expectPass ? 'PASS' : 'FAIL'}`
+    )
+    console.log(
+      `  Version B (${test.versionB.label}): expect ${test.versionB.expectPass ? 'PASS' : 'FAIL'}`
+    )
   }
   console.log('\n' + '═'.repeat(50))
 }

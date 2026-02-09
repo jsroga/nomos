@@ -54,10 +54,10 @@ Respond with a JSON object containing the episode premise:
 
 /**
  * Devil's Advocate Critique Prompt
- * 
+ *
  * Used to self-critique the initial premise draft before refinement.
  */
-export const PREMISE_CRITIQUE_PROMPT = `
+const PREMISE_CRITIQUE_PROMPT = `
 ## YOU ARE THE DEVIL'S ADVOCATE - PREMISE CRITIC
 
 Your role is to ruthlessly evaluate episode premises for WEAKNESSES before they reach production.
@@ -119,10 +119,10 @@ Respond with a JSON critique:
 
 /**
  * Refinement Prompt
- * 
+ *
  * Used after critique to generate an improved version.
  */
-export const PREMISE_REFINE_PROMPT = `
+const PREMISE_REFINE_PROMPT = `
 ## REFINEMENT MODE - ADDRESS THE CRITIQUE
 
 You are now refining a premise draft based on specific feedback.

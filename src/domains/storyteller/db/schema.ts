@@ -158,15 +158,15 @@ export const relationshipSnapshots = pgTable('relationship_snapshots', {
     .references(() => projects.id, { onDelete: 'cascade' })
     .notNull(),
   episodeId: uuid('episode_id'),
-  beatId: uuid('beat_id'),                                // Which beat caused this snapshot
-  sourceCharacterId: text('source_character_id').notNull(),  // Character ID or name
-  targetCharacterId: text('target_character_id').notNull(),  // Character ID or name
-  relationshipType: text('relationship_type').notNull(),   // ally, enemy, rival, mentor, etc.
-  trust: integer('trust').default(50),                     // 0-100
-  conflict: integer('conflict').default(0),                // 0-100
-  tension: integer('tension').default(0),                  // 0-100
-  powerBalance: integer('power_balance').default(50),      // 0-100 (who holds power: 0=target, 100=source)
-  changeReason: text('change_reason'),                     // Why this changed
+  beatId: uuid('beat_id'), // Which beat caused this snapshot
+  sourceCharacterId: text('source_character_id').notNull(), // Character ID or name
+  targetCharacterId: text('target_character_id').notNull(), // Character ID or name
+  relationshipType: text('relationship_type').notNull(), // ally, enemy, rival, mentor, etc.
+  trust: integer('trust').default(50), // 0-100
+  conflict: integer('conflict').default(0), // 0-100
+  tension: integer('tension').default(0), // 0-100
+  powerBalance: integer('power_balance').default(50), // 0-100 (who holds power: 0=target, 100=source)
+  changeReason: text('change_reason'), // Why this changed
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 

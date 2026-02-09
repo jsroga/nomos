@@ -14,25 +14,26 @@ import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { ChatOpenAI } from '@langchain/openai'
 import {
-    AtomicLoomOutputSchema,
-    MemoryKeeperOutputSchema,
-    GreyPaletteOutputSchema,
-    StrandWeaverOutputSchema,
-    SilentTeacherOutputSchema,
-    MundanePoetOutputSchema,
+  AtomicLoomOutputSchema,
+  MemoryKeeperOutputSchema,
+  GreyPaletteOutputSchema,
+  StrandWeaverOutputSchema,
+  SilentTeacherOutputSchema,
+  MundanePoetOutputSchema,
 } from '../../schemas'
+import { getErrorMessage } from '@/lib/error-utils'
 
 function getModel() {
-    return new ChatOpenAI({
-        modelName: 'gpt-4o',
-        temperature: 0.7, // Higher for creative design
-    })
+  return new ChatOpenAI({
+    modelName: 'gpt-4o',
+    temperature: 0.7, // Higher for creative design
+  })
 }
 
 function extractJson(content: string): any {
-    const jsonMatch = content.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) throw new Error('No JSON found in response')
-    return JSON.parse(jsonMatch[0])
+  const jsonMatch = content.match(/\{[\s\S]*\}/)
+  if (!jsonMatch) throw new Error('No JSON found in response')
+  return JSON.parse(jsonMatch[0])
 }
 
 // ==========================================
@@ -40,26 +41,31 @@ function extractJson(content: string): any {
 // ==========================================
 
 const AtomicLoomInputSchema = z.object({
-    gameDescription: z.string().describe('Brief description of the game concept'),
-    genre: z.string().describe('Game genre'),
-    existingMechanics: z.array(z.object({
+  gameDescription: z.string().describe('Brief description of the game concept'),
+  genre: z.string().describe('Game genre'),
+  existingMechanics: z
+    .array(
+      z.object({
         name: z.string(),
         description: z.string().optional(),
-    })).optional(),
-    complexityTarget: z.enum(['minimal', 'moderate', 'complex']).default('moderate'),
+      })
+    )
+    .optional(),
+  complexityTarget: z.enum(['minimal', 'moderate', 'complex']).default('moderate'),
 })
 
-export const createAtomicLoomTool = () => createTool({
+export const createAtomicLoomTool = () =>
+  createTool({
     id: 'design_atomic_systems',
     description: `Breaks a game concept into atomic verbs and nouns, then maps their interactions.
 Creates elegant rule systems where simple elements combine into emergent complexity.
 Inspired by Klei's design philosophy: few rules, many outcomes.`,
     schema: AtomicLoomInputSchema,
     execute: async ({ context }) => {
-        try {
-            const { gameDescription, genre, existingMechanics, complexityTarget } = context
+      try {
+        const { gameDescription, genre, existingMechanics, complexityTarget } = context
 
-            const prompt = `You are a systems designer inspired by Klei Entertainment (Don't Starve, Oxygen Not Included).
+        const prompt = `You are a systems designer inspired by Klei Entertainment (Don't Starve, Oxygen Not Included).
 
 Your philosophy: Create atomic rules that interact. Players discover combinations you never planned.
 
@@ -95,50 +101,60 @@ Respond with JSON:
   "systemEleganceScore": 0-10
 }`
 
-            const model = getModel()
-            const response = await model.invoke([{ role: 'user', content: prompt }])
-            const content = typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+        const model = getModel()
+        const response = await model.invoke([{ role: 'user', content: prompt }])
+        const content =
+          typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
 
-            const parsed = extractJson(content)
-            const validated = AtomicLoomOutputSchema.parse(parsed)
+        const parsed = extractJson(content)
+        const validated = AtomicLoomOutputSchema.parse(parsed)
 
-            return { success: true, ...validated }
-        } catch (error: any) {
-            return { success: false, error: error.message }
-        }
-    }
-})
+        return { success: true, ...validated }
+      } catch (error: unknown) {
+        return { success: false, error: getErrorMessage(error) }
+      }
+    },
+  })
 
 // ==========================================
 // 2. MEMORY KEEPER (CDPR: World Remembers)
 // ==========================================
 
 const MemoryKeeperInputSchema = z.object({
-    gameContext: z.string().describe('Current game/story context'),
-    playerActions: z.array(z.object({
+  gameContext: z.string().describe('Current game/story context'),
+  playerActions: z
+    .array(
+      z.object({
         action: z.string(),
         target: z.string().optional(),
         location: z.string().optional(),
-    })).optional(),
-    npcs: z.array(z.object({
+      })
+    )
+    .optional(),
+  npcs: z
+    .array(
+      z.object({
         name: z.string(),
         role: z.string(),
         faction: z.string().optional(),
-    })).optional(),
-    timeScope: z.enum(['session', 'campaign', 'persistent']).default('campaign'),
+      })
+    )
+    .optional(),
+  timeScope: z.enum(['session', 'campaign', 'persistent']).default('campaign'),
 })
 
-export const createMemoryKeeperTool = () => createTool({
+export const createMemoryKeeperTool = () =>
+  createTool({
     id: 'design_world_memory',
     description: `Designs systems where the world remembers player actions.
 NPCs witness events, rumors spread, and past actions seed future quests.
 Inspired by CDPR's narrative depth: every quest connects, nothing is throwaway.`,
     schema: MemoryKeeperInputSchema,
     execute: async ({ context }) => {
-        try {
-            const { gameContext, playerActions, npcs, timeScope } = context
+      try {
+        const { gameContext, playerActions, npcs, timeScope } = context
 
-            const prompt = `You are a narrative systems designer inspired by CD Projekt Red (Witcher 3, Cyberpunk 2077).
+        const prompt = `You are a narrative systems designer inspired by CD Projekt Red (Witcher 3, Cyberpunk 2077).
 
 Your philosophy: The world remembers. The butcher you helped in Act 1 appears in Act 3.
 
@@ -170,46 +186,52 @@ Respond with JSON:
   "worldMemoryDepth": 0-10
 }`
 
-            const model = getModel()
-            const response = await model.invoke([{ role: 'user', content: prompt }])
-            const content = typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+        const model = getModel()
+        const response = await model.invoke([{ role: 'user', content: prompt }])
+        const content =
+          typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
 
-            const parsed = extractJson(content)
-            const validated = MemoryKeeperOutputSchema.parse(parsed)
+        const parsed = extractJson(content)
+        const validated = MemoryKeeperOutputSchema.parse(parsed)
 
-            return { success: true, ...validated }
-        } catch (error: any) {
-            return { success: false, error: error.message }
-        }
-    }
-})
+        return { success: true, ...validated }
+      } catch (error: unknown) {
+        return { success: false, error: getErrorMessage(error) }
+      }
+    },
+  })
 
 // ==========================================
 // 3. GREY PALETTE (CDPR: Moral Complexity)
 // ==========================================
 
 const GreyPaletteInputSchema = z.object({
-    situation: z.string().describe('The dilemma or conflict situation'),
-    factions: z.array(z.object({
+  situation: z.string().describe('The dilemma or conflict situation'),
+  factions: z
+    .array(
+      z.object({
         name: z.string(),
         values: z.array(z.string()),
         playerRelation: z.enum(['allied', 'neutral', 'hostile']).optional(),
-    })).optional(),
-    stakes: z.enum(['personal', 'local', 'regional', 'world']).default('local'),
-    genre: z.string().optional(),
+      })
+    )
+    .optional(),
+  stakes: z.enum(['personal', 'local', 'regional', 'world']).default('local'),
+  genre: z.string().optional(),
 })
 
-export const createGreyPaletteTool = () => createTool({
+export const createGreyPaletteTool = () =>
+  createTool({
     id: 'design_moral_choices',
     description: `Creates morally complex choices where no option is clearly "right."
 Every choice has real cost, factions react, and consequences ripple through time.
 Inspired by CDPR: "Evil is evil, lesser, greater, middling... makes no difference."`,
     schema: GreyPaletteInputSchema,
     execute: async ({ context }) => {
-        try {
-            const { situation, factions, stakes, genre } = context
+      try {
+        const { situation, factions, stakes, genre } = context
 
-            const prompt = `You are a narrative designer inspired by CD Projekt Red's moral complexity.
+        const prompt = `You are a narrative designer inspired by CD Projekt Red's moral complexity.
 
 Your philosophy: No good choices. No bad choices. Only human choices.
 
@@ -266,42 +288,44 @@ Respond with JSON:
   "moralComplexityScore": 0-10
 }`
 
-            const model = getModel()
-            const response = await model.invoke([{ role: 'user', content: prompt }])
-            const content = typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+        const model = getModel()
+        const response = await model.invoke([{ role: 'user', content: prompt }])
+        const content =
+          typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
 
-            const parsed = extractJson(content)
-            const validated = GreyPaletteOutputSchema.parse(parsed)
+        const parsed = extractJson(content)
+        const validated = GreyPaletteOutputSchema.parse(parsed)
 
-            return { success: true, ...validated }
-        } catch (error: any) {
-            return { success: false, error: error.message }
-        }
-    }
-})
+        return { success: true, ...validated }
+      } catch (error: unknown) {
+        return { success: false, error: getErrorMessage(error) }
+      }
+    },
+  })
 
 // ==========================================
 // 4. STRAND WEAVER (Kojima: Connection)
 // ==========================================
 
 const StrandWeaverInputSchema = z.object({
-    gameType: z.string().describe('Type of game (survival, adventure, etc.)'),
-    multiplayerModel: z.enum(['none', 'async', 'coop', 'competitive']).default('async'),
-    persistenceLevel: z.enum(['session', 'server', 'global']).default('server'),
-    connectionTheme: z.string().optional().describe('Thematic reason for connection'),
+  gameType: z.string().describe('Type of game (survival, adventure, etc.)'),
+  multiplayerModel: z.enum(['none', 'async', 'coop', 'competitive']).default('async'),
+  persistenceLevel: z.enum(['session', 'server', 'global']).default('server'),
+  connectionTheme: z.string().optional().describe('Thematic reason for connection'),
 })
 
-export const createStrandWeaverTool = () => createTool({
+export const createStrandWeaverTool = () =>
+  createTool({
     id: 'design_strand_connections',
     description: `Designs asynchronous multiplayer systems where players leave traces for others.
 Not lobbies or chat - legacies, echoes, inherited consequences.
 Inspired by Kojima: "Games should connect strangers in ways social media never could."`,
     schema: StrandWeaverInputSchema,
     execute: async ({ context }) => {
-        try {
-            const { gameType, multiplayerModel, persistenceLevel, connectionTheme } = context
+      try {
+        const { gameType, multiplayerModel, persistenceLevel, connectionTheme } = context
 
-            const prompt = `You are a connection systems designer inspired by Hideo Kojima (Death Stranding, MGS5).
+        const prompt = `You are a connection systems designer inspired by Hideo Kojima (Death Stranding, MGS5).
 
 Your philosophy: Your isolation is an illusion. We're all connected through traces and legacies.
 
@@ -352,45 +376,49 @@ Respond with JSON:
   "connectionMeaningScore": 0-10
 }`
 
-            const model = getModel()
-            const response = await model.invoke([{ role: 'user', content: prompt }])
-            const content = typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+        const model = getModel()
+        const response = await model.invoke([{ role: 'user', content: prompt }])
+        const content =
+          typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
 
-            const parsed = extractJson(content)
-            const validated = StrandWeaverOutputSchema.parse(parsed)
+        const parsed = extractJson(content)
+        const validated = StrandWeaverOutputSchema.parse(parsed)
 
-            return { success: true, ...validated }
-        } catch (error: any) {
-            return { success: false, error: error.message }
-        }
-    }
-})
+        return { success: true, ...validated }
+      } catch (error: unknown) {
+        return { success: false, error: getErrorMessage(error) }
+      }
+    },
+  })
 
 // ==========================================
 // 5. SILENT TEACHER (Klei: Discovery)
 // ==========================================
 
 const SilentTeacherInputSchema = z.object({
-    mechanicsToTeach: z.array(z.object({
-        name: z.string(),
-        complexity: z.enum(['simple', 'moderate', 'complex']),
-        dependencies: z.array(z.string()).optional(),
-    })),
-    playerSkillCurve: z.enum(['gentle', 'moderate', 'steep']).default('moderate'),
-    genre: z.string().optional(),
+  mechanicsToTeach: z.array(
+    z.object({
+      name: z.string(),
+      complexity: z.enum(['simple', 'moderate', 'complex']),
+      dependencies: z.array(z.string()).optional(),
+    })
+  ),
+  playerSkillCurve: z.enum(['gentle', 'moderate', 'steep']).default('moderate'),
+  genre: z.string().optional(),
 })
 
-export const createSilentTeacherTool = () => createTool({
+export const createSilentTeacherTool = () =>
+  createTool({
     id: 'design_implicit_tutorial',
     description: `Designs learning through play, not instruction.
 No tutorials, no markers, no "press X to not die." Trust players to discover.
 Inspired by Klei: Death should teach, not punish.`,
     schema: SilentTeacherInputSchema,
     execute: async ({ context }) => {
-        try {
-            const { mechanicsToTeach, playerSkillCurve, genre } = context
+      try {
+        const { mechanicsToTeach, playerSkillCurve, genre } = context
 
-            const prompt = `You are a learning designer inspired by Klei Entertainment's respect for players.
+        const prompt = `You are a learning designer inspired by Klei Entertainment's respect for players.
 
 Your philosophy: No tutorials. No markers. Trust them to figure it out. Death teaches.
 
@@ -438,45 +466,49 @@ Respond with JSON:
   "discoveryRespectScore": 0-10
 }`
 
-            const model = getModel()
-            const response = await model.invoke([{ role: 'user', content: prompt }])
-            const content = typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+        const model = getModel()
+        const response = await model.invoke([{ role: 'user', content: prompt }])
+        const content =
+          typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
 
-            const parsed = extractJson(content)
-            const validated = SilentTeacherOutputSchema.parse(parsed)
+        const parsed = extractJson(content)
+        const validated = SilentTeacherOutputSchema.parse(parsed)
 
-            return { success: true, ...validated }
-        } catch (error: any) {
-            return { success: false, error: error.message }
-        }
-    }
-})
+        return { success: true, ...validated }
+      } catch (error: unknown) {
+        return { success: false, error: getErrorMessage(error) }
+      }
+    },
+  })
 
 // ==========================================
 // 6. MUNDANE POET (Kojima: Meaningful Routine)
 // ==========================================
 
 const MundanePoetInputSchema = z.object({
-    routineMechanics: z.array(z.object({
-        name: z.string(),
-        currentFeeling: z.enum(['boring', 'neutral', 'satisfying']),
-        frequency: z.enum(['constant', 'frequent', 'occasional', 'rare']),
-    })),
-    gameTheme: z.string().describe('Core emotional theme of the game'),
-    pacing: z.enum(['meditative', 'balanced', 'intense']).default('balanced'),
+  routineMechanics: z.array(
+    z.object({
+      name: z.string(),
+      currentFeeling: z.enum(['boring', 'neutral', 'satisfying']),
+      frequency: z.enum(['constant', 'frequent', 'occasional', 'rare']),
+    })
+  ),
+  gameTheme: z.string().describe('Core emotional theme of the game'),
+  pacing: z.enum(['meditative', 'balanced', 'intense']).default('balanced'),
 })
 
-export const createMundanePoetTool = () => createTool({
+export const createMundanePoetTool = () =>
+  createTool({
     id: 'design_meaningful_mundane',
     description: `Transforms routine mechanics into meaningful rituals.
 Walking, cooking, waiting - these can be profound when designed with intention.
 Inspired by Kojima: "Death Stranding taught us walking can be profound."`,
     schema: MundanePoetInputSchema,
     execute: async ({ context }) => {
-        try {
-            const { routineMechanics, gameTheme, pacing } = context
+      try {
+        const { routineMechanics, gameTheme, pacing } = context
 
-            const prompt = `You are a ritual designer inspired by Hideo Kojima's attention to the mundane.
+        const prompt = `You are a ritual designer inspired by Hideo Kojima's attention to the mundane.
 
 Your philosophy: If walking isn't meaningful, why is it in the game?
 
@@ -522,29 +554,30 @@ Respond with JSON:
   "mundaneBeautyScore": 0-10
 }`
 
-            const model = getModel()
-            const response = await model.invoke([{ role: 'user', content: prompt }])
-            const content = typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+        const model = getModel()
+        const response = await model.invoke([{ role: 'user', content: prompt }])
+        const content =
+          typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
 
-            const parsed = extractJson(content)
-            const validated = MundanePoetOutputSchema.parse(parsed)
+        const parsed = extractJson(content)
+        const validated = MundanePoetOutputSchema.parse(parsed)
 
-            return { success: true, ...validated }
-        } catch (error: any) {
-            return { success: false, error: error.message }
-        }
-    }
-})
+        return { success: true, ...validated }
+      } catch (error: unknown) {
+        return { success: false, error: getErrorMessage(error) }
+      }
+    },
+  })
 
 // ==========================================
 // EXPORT ALL HAUTE GAME TOOLS
 // ==========================================
 
 export const createAllHauteGameTools = () => [
-    createAtomicLoomTool(),
-    createMemoryKeeperTool(),
-    createGreyPaletteTool(),
-    createStrandWeaverTool(),
-    createSilentTeacherTool(),
-    createMundanePoetTool(),
+  createAtomicLoomTool(),
+  createMemoryKeeperTool(),
+  createGreyPaletteTool(),
+  createStrandWeaverTool(),
+  createSilentTeacherTool(),
+  createMundanePoetTool(),
 ]

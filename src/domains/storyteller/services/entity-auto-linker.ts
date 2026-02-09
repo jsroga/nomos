@@ -1,9 +1,9 @@
 /**
  * Entity Auto-Linker Service
- * 
+ *
  * Post-processes AI-generated text to automatically convert plain entity mentions
  * into entity references [Name][id] when the entity exists in the project.
- * 
+ *
  * Example:
  * Input:  "The Mood Wardens control the city"
  * Output: "[The Mood Wardens][faction-the-mood-wardens] control the city"
@@ -19,15 +19,12 @@ interface EntityMatch {
 
 /**
  * Auto-link entity names in text to entity references
- * 
+ *
  * @param text - Generated text that may contain plain entity names
  * @param projectId - Project ID to fetch entities from
  * @returns Text with entity names converted to references
  */
-export async function autoLinkEntities(
-  text: string,
-  projectId: string
-): Promise<string> {
+export async function autoLinkEntities(text: string, projectId: string): Promise<string> {
   if (!text || !projectId) return text
 
   try {
@@ -56,7 +53,7 @@ export async function autoLinkEntities(
       if (faction?.name) {
         const factionId = `faction-${faction.id?.slice(0, 8) || faction.name.toLowerCase().replace(/\s+/g, '-')}`
         entityMap.set(faction.name.toLowerCase(), { id: factionId, type: 'faction' })
-        
+
         // Also add "The" variants if applicable
         if (faction.name.startsWith('The ')) {
           const withoutThe = faction.name.slice(4)
@@ -68,16 +65,16 @@ export async function autoLinkEntities(
     // Add characters from storyPlan.keyCharacters as well
     const keyCharacters = storyPlan.keyCharacters || []
     const allCharacters = [...cast, ...keyCharacters]
-    
+
     console.log(`[AutoLinker] Found ${allCharacters.length} total characters`)
-    
+
     for (const char of allCharacters) {
       if (char?.name) {
         const charId = `char-${char.id?.slice(0, 8) || char.name.toLowerCase().replace(/\s+/g, '-')}`
         entityMap.set(char.name.toLowerCase(), { id: charId, type: 'character' })
-        
+
         console.log(`[AutoLinker] Added character: "${char.name}" -> ${charId}`)
-        
+
         // Also add first name only if it's unique
         const firstName = char.name.split(' ')[0]
         if (firstName && firstName.length > 2 && !entityMap.has(firstName.toLowerCase())) {
@@ -103,10 +100,11 @@ export async function autoLinkEntities(
     if (worldDesc) {
       // Match capitalized phrases that might be place names
       // Pattern: "The [Capitalized Word(s)]" or standalone "Capitalized Word(s)"
-      const placePattern = /\b(The\s+)?([A-Z][a-z]+(?:\s+(?:of|the)\s+[A-Z][a-z]+|\s+[A-Z][a-z]+)*)\b/g
+      const placePattern =
+        /\b(The\s+)?([A-Z][a-z]+(?:\s+(?:of|the)\s+[A-Z][a-z]+|\s+[A-Z][a-z]+)*)\b/g
       let match
       const potentialPlaces = new Set<string>()
-      
+
       while ((match = placePattern.exec(worldDesc)) !== null) {
         const placeName = match[0].trim()
         // Filter out common words and short phrases
@@ -114,14 +112,15 @@ export async function autoLinkEntities(
           potentialPlaces.add(placeName)
         }
       }
-      
+
       // Add potential places to entity map (only if not already added)
-      for (const placeName of Array.from(potentialPlaces).slice(0, 20)) { // Limit to 20 places
+      for (const placeName of Array.from(potentialPlaces).slice(0, 20)) {
+        // Limit to 20 places
         const lowerName = placeName.toLowerCase()
         if (!entityMap.has(lowerName)) {
           const placeId = `place-${placeName.toLowerCase().replace(/\s+/g, '-')}`
           entityMap.set(lowerName, { id: placeId, type: 'place' })
-          
+
           // Also add variant without "The"
           if (placeName.startsWith('The ')) {
             const withoutThe = placeName.slice(4)
@@ -137,28 +136,27 @@ export async function autoLinkEntities(
       console.log('[AutoLinker] No entities found in project to link')
       return text // No entities to link
     }
-    
+
     console.log(`[AutoLinker] Found ${entityMap.size} entities to potentially link`)
 
     // Find all entity name matches in text
     const matches: EntityMatch[] = []
-    
+
     // Sort entity names by length (longest first) to match "The Mood Wardens" before "Mood Wardens"
     const sortedNames = Array.from(entityMap.keys()).sort((a, b) => b.length - a.length)
-    
-    console.log(`[AutoLinker] Searching text (${text.length} chars) for ${sortedNames.length} entity names`)
-    
+
+    console.log(
+      `[AutoLinker] Searching text (${text.length} chars) for ${sortedNames.length} entity names`
+    )
+
     for (const entityName of sortedNames) {
       const entity = entityMap.get(entityName)!
-      
+
       // Create case-insensitive regex that matches whole words
       // Look for entity name NOT already in reference format
       const escapedName = entityName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      const pattern = new RegExp(
-        `(?<!\\[)\\b(${escapedName})\\b(?!\\]\\[)`,
-        'gi'
-      )
-      
+      const pattern = new RegExp(`(?<!\\[)\\b(${escapedName})\\b(?!\\]\\[)`, 'gi')
+
       let match
       while ((match = pattern.exec(text)) !== null) {
         console.log(`[AutoLinker] Found match: "${match[1]}" -> ${entity.id}`)
@@ -171,7 +169,7 @@ export async function autoLinkEntities(
         })
       }
     }
-    
+
     console.log(`[AutoLinker] Found ${matches.length} total matches before overlap removal`)
 
     if (matches.length === 0) {

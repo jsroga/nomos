@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { Plus, Edit2, Film, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cachedFetch, clearFetchCache } from '@/lib/fetch-cache'
 import { useConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
@@ -203,7 +203,12 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = ({
           <div className="flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="sm" variant="outline" className="h-6 w-6 p-0" onClick={handleCreateClick}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 w-6 p-0"
+                  onClick={handleCreateClick}
+                >
                   <Plus size={14} />
                 </Button>
               </TooltipTrigger>
@@ -217,86 +222,87 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = ({
         <div className="space-y-1">
           {isLoading
             ? // Shimmer loading state
-            Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="px-3 py-2 rounded text-sm flex items-center gap-2">
-                <span className="text-xs font-mono text-muted-foreground/30">#{i + 1}</span>
-                <div
-                  className="h-4 bg-muted/20 rounded animate-pulse flex-1"
-                  style={{ maxWidth: `${100 + i * 30}px` }}
-                />
-              </div>
-            ))
-            : episodes.map(ep => (
-              <div
-                key={ep.id}
-                className={`px-3 py-2 rounded text-sm cursor-pointer flex items-center justify-between group ${currentEpisodeId === ep.id ? 'bg-primary/20 text-primary' : 'hover:bg-accent'
-                  }`}
-                onClick={() => onEpisodeChange(ep.id)}
-              >
-                <div className="flex-1 flex items-center gap-2">
-                  <span className="text-xs font-mono opacity-50">#{ep.sequence}</span>
-                  {editingId === ep.id ? (
-                    <input
-                      autoFocus
-                      className="bg-transparent border-b-2 border-primary focus:outline-none w-full text-sm"
-                      defaultValue={ep.title}
-                      onBlur={e => handleRename(ep.id, e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') handleRename(ep.id, e.currentTarget.value)
-                      }}
-                      onClick={e => e.stopPropagation()}
-                    />
-                  ) : (
-                    <span
-                      onDoubleClick={e => {
-                        e.stopPropagation()
-                        setEditingId(ep.id)
-                      }}
-                    >
-                      {ep.title || 'Untitled Episode'}
-                    </span>
-                  )}
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="px-3 py-2 rounded text-sm flex items-center gap-2">
+                  <span className="text-xs font-mono text-muted-foreground/30">#{i + 1}</span>
+                  <div
+                    className="h-4 bg-muted/20 rounded animate-pulse flex-1"
+                    style={{ maxWidth: `${100 + i * 30}px` }}
+                  />
                 </div>
-                <div className="opacity-0 group-hover:opacity-100 flex gap-1">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-6 w-6 p-0"
-                        onClick={e => {
+              ))
+            : episodes.map(ep => (
+                <div
+                  key={ep.id}
+                  className={`px-3 py-2 rounded text-sm cursor-pointer flex items-center justify-between group ${
+                    currentEpisodeId === ep.id ? 'bg-primary/20 text-primary' : 'hover:bg-accent'
+                  }`}
+                  onClick={() => onEpisodeChange(ep.id)}
+                >
+                  <div className="flex-1 flex items-center gap-2">
+                    <span className="text-xs font-mono opacity-50">#{ep.sequence}</span>
+                    {editingId === ep.id ? (
+                      <input
+                        autoFocus
+                        className="bg-transparent border-b-2 border-primary focus:outline-none w-full text-sm"
+                        defaultValue={ep.title}
+                        onBlur={e => handleRename(ep.id, e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') handleRename(ep.id, e.currentTarget.value)
+                        }}
+                        onClick={e => e.stopPropagation()}
+                      />
+                    ) : (
+                      <span
+                        onDoubleClick={e => {
                           e.stopPropagation()
                           setEditingId(ep.id)
                         }}
                       >
-                        <Edit2 size={12} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Rename episode</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                        onClick={e => {
-                          e.stopPropagation()
-                          handleDelete(ep.id, ep.title)
-                        }}
-                      >
-                        <Trash2 size={12} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Delete episode</p>
-                    </TooltipContent>
-                  </Tooltip>
+                        {ep.title || 'Untitled Episode'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="opacity-0 group-hover:opacity-100 flex gap-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 w-6 p-0"
+                          onClick={e => {
+                            e.stopPropagation()
+                            setEditingId(ep.id)
+                          }}
+                        >
+                          <Edit2 size={12} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Rename episode</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                          onClick={e => {
+                            e.stopPropagation()
+                            handleDelete(ep.id, ep.title)
+                          }}
+                        >
+                          <Trash2 size={12} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Delete episode</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
         </div>
       </div>
 
@@ -314,11 +320,11 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = ({
               <Input
                 id="name"
                 value={newEpisodeTitle}
-                onChange={(e) => setNewEpisodeTitle(e.target.value)}
+                onChange={e => setNewEpisodeTitle(e.target.value)}
                 placeholder="e.g. The Call to Adventure"
                 className="col-span-3"
                 autoFocus
-                onKeyDown={(e) => {
+                onKeyDown={e => {
                   if (e.key === 'Enter') handleCreateEpisode()
                 }}
               />

@@ -143,7 +143,15 @@ export const ToolsIntegration = () => {
             transition={{ delay: 0.2 }}
             className="hidden md:block w-[800px] h-[800px] absolute -right-[200px] -top-[200px] pointer-events-none"
           >
-            <ThreeDIcon glowScale={0.1} density={0.8} type="WORLD_GEN" color="#5c7cfa" size={1200} scale={1} />
+            <ThreeDIcon
+              glowScale={0.5}
+              density={0.8}
+              type="WORLD_GEN"
+              color="#5c7cfa"
+              size={1200}
+              scale={0.7}
+              vignette={true}
+            />
           </motion.div>
         </div>
 

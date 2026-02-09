@@ -11,13 +11,13 @@ export enum AIProvider {
   Mock = 'mock',
 }
 
-export enum AppTab {
+enum AppTab {
   General = 'general',
   Upscaling = 'upscaling',
   APIKeys = 'apikeys',
 }
 
-export enum AppRoute {
+enum AppRoute {
   WorldBuilding = '/world-building',
   AssetExporter = '/asset-exporter',
   Login = '/login',
@@ -44,14 +44,14 @@ export enum JobType {
 }
 
 // Helper types for configs
-export interface AIConfig {
+interface AIConfig {
   apiKey?: string
   baseUrl?: string
   model?: string
   params?: Record<string, unknown>
 }
 
-export const ProviderConfigKeys: Record<AIProvider, string> = {
+const ProviderConfigKeys: Record<AIProvider, string> = {
   [AIProvider.OpenAI]: 'ai-config-openai',
   [AIProvider.Gemini]: 'ai-config-gemini',
   [AIProvider.NanoBanana]: 'ai-config-nano-banana',
@@ -64,7 +64,7 @@ export const ProviderConfigKeys: Record<AIProvider, string> = {
   [AIProvider.Mock]: 'ai-config-mock',
 }
 
-export const getEnumKeyByValue = (enumObj: unknown, value: string): string | undefined => {
+const getEnumKeyByValue = (enumObj: unknown, value: string): string | undefined => {
   return Object.keys(enumObj as object).find(
     key => (enumObj as Record<string, unknown>)[key] === value
   )

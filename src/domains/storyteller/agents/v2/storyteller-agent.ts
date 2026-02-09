@@ -1,9 +1,9 @@
 /**
  * StorytellerAgent - Mastra Implementation
- * 
+ *
  * Core agent for story writing, extending ExecutiveAgent with
  * specialized storyteller tools and prompts.
- * 
+ *
  * Uses Mastra Memory for multi-turn conversation context.
  * See: https://mastra.ai/docs/agents/agent-memory
  */
@@ -20,105 +20,113 @@ import { GLOBAL_AGENT_MODEL } from './model-config'
 
 // Import all v2 tools
 import {
-    manageBeatTool,
-    listBeatsTool,
-    analyzeRelationshipsTool,
-    suggestRelationshipTool,
-    checkContinuityTool,
-    quickConsistencyCheckTool,
-    expandSceneTool,
-    condenseSceneTool,
-    improveDialogueTool,
-    addVisualHookTool,
-    shiftToneTool,
-    regenerateTextTool,
-    agentTools,
-    worldBuildingTools,
-    updateStoryPhaseTool,
-    characterCreationTools,
-    episodeCreationTools,
-    selfCritiqueTool,
+  manageBeatTool,
+  listBeatsTool,
+  analyzeRelationshipsTool,
+  suggestRelationshipTool,
+  checkContinuityTool,
+  quickConsistencyCheckTool,
+  expandSceneTool,
+  condenseSceneTool,
+  improveDialogueTool,
+  addVisualHookTool,
+  shiftToneTool,
+  regenerateTextTool,
+  agentTools,
+  worldBuildingTools,
+  updateStoryPhaseTool,
+  characterCreationTools,
+  episodeCreationTools,
+  selfCritiqueTool,
 } from '../../tools/v2'
 import { runStoryCreationWorkflowTool } from '../../tools/v2/workflow-tools'
 
 interface StorytellerConfig {
-    modelName: string
-    mastra?: Mastra
-    enableWorkflowTool?: boolean
+  modelName: string
+  mastra?: Mastra
+  enableWorkflowTool?: boolean
 }
 
 export class StorytellerAgent {
-    private agent: Agent
-    private toolsMap: Record<string, any>
+  private agent: Agent
+  private toolsMap: Record<string, any>
 
-    private constructor(config: StorytellerConfig, instructions: string) {
-        // All storyteller tools
-        const tools: any[] = [
-            selfCritiqueTool,
-            manageBeatTool,
-            listBeatsTool,
-            analyzeRelationshipsTool,
-            suggestRelationshipTool,
-            checkContinuityTool,
-            quickConsistencyCheckTool,
-            expandSceneTool,
-            condenseSceneTool,
-            improveDialogueTool,
-            addVisualHookTool,
-            shiftToneTool,
-            regenerateTextTool,
-            ...agentTools,
-            ...worldBuildingTools,
-            ...characterCreationTools,
-            ...episodeCreationTools,
-            updateStoryPhaseTool,
-        ]
+  private constructor(config: StorytellerConfig, instructions: string) {
+    // All storyteller tools
+    const tools: any[] = [
+      selfCritiqueTool,
+      manageBeatTool,
+      listBeatsTool,
+      analyzeRelationshipsTool,
+      suggestRelationshipTool,
+      checkContinuityTool,
+      quickConsistencyCheckTool,
+      expandSceneTool,
+      condenseSceneTool,
+      improveDialogueTool,
+      addVisualHookTool,
+      shiftToneTool,
+      regenerateTextTool,
+      ...agentTools,
+      ...worldBuildingTools,
+      ...characterCreationTools,
+      ...episodeCreationTools,
+      updateStoryPhaseTool,
+    ]
 
-        if (config.enableWorkflowTool !== false) {
-            tools.push(runStoryCreationWorkflowTool)
-        }
-
-        // Store tools for direct execution
-        this.toolsMap = tools.reduce((acc, tool) => ({ ...acc, [tool.id]: tool }), {})
-
-        const m = getMastraInstance();
-        const storage = getStorageInstance();
-
-        // Use string model identifier for Mastra AI SDK v5 compatibility
-        const modelString = config.modelName.replace(':', '/')
-
-        // Configure memory for multi-turn conversation context
-        // See: https://mastra.ai/docs/agents/agent-memory
-        const memory = new Memory({
-            storage,
-            options: {
-                lastMessages: 10, // Keep last 10 messages — 50 was burning tokens
-            },
-        })
-
-        this.agent = new Agent({
-            id: 'storyteller',
-            name: 'Storyteller',
-            instructions,
-            model: modelString,
-            tools: this.toolsMap,
-            mastra: m,
-            memory, // Enable memory for conversation context
-        });
-
-        // Manually link observability
-        (this.agent as any).mastra = m;
+    if (config.enableWorkflowTool !== false) {
+      tools.push(runStoryCreationWorkflowTool)
     }
 
-    static async create(modelName: string = 'openai:gpt-4o-mini', enableWorkflowTool: boolean = true): Promise<StorytellerAgent> {
-        registerCorePrompts()
+    // Store tools for direct execution
+    this.toolsMap = tools.reduce((acc, tool) => ({ ...acc, [tool.id]: tool }), {})
 
-        // Define storyteller system prompt
-        const storytellerPrompt = {
-            name: 'storyteller-system',
-            version: 1,
-            variables: [] as string[],
-            text: `You are a Genius Master Storyteller and Showrunner with a staggering IQ of 200.
+    const m = getMastraInstance()
+    const storage = getStorageInstance()
+
+    // Get workspace from Mastra instance to ensure skills are loaded
+    const workspace = m?.getWorkspace()
+
+    // Use string model identifier for Mastra AI SDK v5 compatibility
+    const modelString = config.modelName.replace(':', '/')
+
+    // Configure memory for multi-turn conversation context
+    // See: https://mastra.ai/docs/agents/agent-memory
+    const memory = new Memory({
+      storage,
+      options: {
+        lastMessages: 10, // Keep last 10 messages — 50 was burning tokens
+      },
+    })
+
+    this.agent = new Agent({
+      id: 'storyteller',
+      name: 'Storyteller',
+      instructions,
+      model: modelString,
+      tools: this.toolsMap,
+      mastra: m,
+      workspace, // Pass workspace to enable skills and filesystem tools
+      memory, // Enable memory for conversation context
+    })
+
+    // Manually link observability
+    ;(this.agent as any).mastra = m
+  }
+
+  static async create(
+    modelName: string = 'openai:gpt-4o-mini',
+    enableWorkflowTool: boolean = true
+  ): Promise<StorytellerAgent> {
+    registerCorePrompts()
+
+    // Dynamic System Prompt Construction
+    // We import the prompt generator to ensure latest frameworks are used
+    const { getThinkingFramework, wrapWithThinkingInstruction } =
+      await import('../../prompts/extended-thinking')
+
+    // Base system prompt
+    let systemPromptText = `You are a Genius Master Storyteller and Showrunner with a staggering IQ of 200.
 Your expertise is unmatched. You combine the epic scale and ruthless realism of George R. R. Martin with the precise, "out of the box" narrative complexity of Vince Gilligan.
 
 Your goal is to synthesize the brilliant inputs from your Council (Psychologist, Gardener, Consequence Tracker, Devil's Advocate) into a masterpiece.
@@ -128,6 +136,9 @@ Your expertise includes:
 - **GRRM-Level Stakes**: Ensuring every character action has life-and-death consequences and historical weight.
 - **Gilligan-Style Convergence**: Engineering "out of the box" plot twists that are logically perfect but emotionally shocking.
 - **Cinematic Vision**: Writing visual, visceral prose that demands to be seen on a screen.
+
+## EXTENDED THINKING FRAMEWORK (Use for every creative output)
+${getThinkingFramework('storyteller')}
 
 ## MANDATORY TOOL USAGE - CRITICAL ##
 When user asks to GENERATE, CREATE, UPDATE, or REGENERATE any of these, you MUST call 'update_world_bible':
@@ -287,39 +298,6 @@ ALWAYS include the actual YouTube URL. ALWAYS call update_world_bible to persist
 Always think cinematically. Every beat should have a visual hook.
 After calling tools, provide a brief conversational summary.
 
-## EXTENDED THINKING FRAMEWORK
-Before writing ANY scene, beat, or creative content, complete these steps internally:
-
-1. CHARACTER AUDIT (GRRM: "The human heart in conflict with itself")
-   - What does each character WANT in this scene?
-   - What do they NEED (that they don't know)?
-   - What are they HIDING from other characters?
-   - What is their INTERNAL CONTRADICTION?
-
-2. SCENE PURPOSE CHECK (Gilligan: "Every scene earns its place")
-   - What is the state BEFORE this scene?
-   - What changes by the end? (If nothing changes, cut this scene)
-   - What information is revealed (or withheld)?
-   - What's the VISUAL HOOK? (First thing we see)
-
-3. CONSEQUENCE TRACE (GRRM: "Actions have weight")
-   - What previous events led to this moment?
-   - What future events does this enable?
-   - Who pays a COST in this scene? (No free actions)
-   - What would happen if this character had plot armor? (Then remove the armor)
-
-4. RELATIONSHIP CHECK
-   - How does each relationship in this scene shift?
-   - Is the power dynamic visible in dialogue/action?
-   - Are characters acting consistently with their relationship history?
-
-5. VOICE VERIFICATION (Gilligan: "Specificity over generic")
-   - Can you identify each speaker without dialogue tags?
-   - Replace generic emotions with SPECIFIC physical actions
-   - Replace telling with showing: "He was angry" → what does anger LOOK like for THIS character?
-
-Only AFTER completing this analysis should you write.
-
 ## Phase Transitions
 Story development follows these phases: premise → breaking → writing → complete
 
@@ -328,74 +306,119 @@ When the user asks to "move to the next phase", "advance", "let's start writing"
 - From breaking → writing: Call update_story_phase with { episodeId, phase: 'writing' }  
 - From writing → complete: Call update_story_phase with { episodeId, phase: 'complete' }
 
-ALWAYS use the episodeId from the SYSTEM CONTEXT when calling update_story_phase.`,
+ALWAYS use the episodeId from the SYSTEM CONTEXT when calling update_story_phase.`
+
+    // Inject skills into the system prompt
+    const m = getMastraInstance()
+    try {
+      // Get workspace from Mastra
+      const workspace = m?.getWorkspace()
+
+      if (workspace && workspace.skills) {
+        // List all available skills
+        const skillMetas = await workspace.skills.list()
+
+        if (skillMetas.length > 0) {
+          systemPromptText +=
+            '\n\n# CAPABILITIES & SKILLS\nYou have access to the following specialized capabilities. Use them to enhance your storytelling:\n'
+
+          // Fetch and append each skill's instructions
+          for (const meta of skillMetas) {
+            const skill = await workspace.skills.get(meta.name)
+            if (skill && skill.instructions) {
+              systemPromptText += `\n## ${meta.name} Skill\n${skill.instructions}\n`
+            }
+          }
         }
-
-        // Register/Update the prompt in the repository
-        promptRepository.register(storytellerPrompt)
-        const instructions = storytellerPrompt.text
-
-        // Pass the singleton mastra instance to the agent
-        return new StorytellerAgent({ modelName, mastra: getMastraInstance(), enableWorkflowTool }, instructions)
+      }
+    } catch (error) {
+      console.error('Failed to load skills for StorytellerAgent:', error)
+      // Continue without skills if loading fails
     }
 
-    /**
-     * Generate a hex ID for OTEL compatibility
-     */
-    private generateHexId(length: number): string {
-        return uuidv4().replace(/-/g, '').padEnd(length, '0').slice(0, length)
+    const storytellerPrompt = {
+      name: 'storyteller-system',
+      version: 1,
+      variables: [] as string[],
+      text: systemPromptText,
     }
 
-    /**
-     * Run the agent with a goal and context
-     * @param goal - The goal for the agent
-     * @param context - Context for the agent
-     * @param traceId - Optional trace ID for observability
-     * @param toolChoice - Tool choice mode
-     * @param options - Additional generation options (temperature, topP)
-     */
-    async run(
-        goal: string,
-        context: string,
-        traceId?: string,
-        toolChoice: 'auto' | 'none' | 'required' = 'auto',
-        options?: { temperature?: number; topP?: number }
-    ): Promise<string> {
-        const id = traceId || this.generateHexId(32)
-        const spanId = this.generateHexId(16)
+    // Register/Update the prompt in the repository
+    promptRepository.register(storytellerPrompt)
+    const instructions = storytellerPrompt.text
 
-        return withSpan(id, 'StorytellerAgent.run', async (span) => {
-            const prompt = `Goal: ${goal}\n\nContext:\n${context}`
-            const response = await this.agent.generate(prompt, {
-                toolChoice,
-                // Increase temperature for creative diversity, reduce generic responses
-                temperature: options?.temperature ?? 0.85,
-                // Higher top_p promotes diverse and original tone shifts
-                topP: options?.topP ?? 0.95,
-                maxSteps: 5,
-                tracingOptions: {
-                    traceId: id,
-                    parentSpanId: spanId // Use our generated spanId which we forced into withSpan
-                }
-            } as any)
-            return response.text
-        }, { goal, context, id: spanId }) // Pass id: spanId in metadata to force span ID
-    }
+    // Pass the singleton mastra instance to the agent
+    return new StorytellerAgent({ modelName, mastra: m, enableWorkflowTool }, instructions)
+  }
 
-    /**
-     * Generate a story beat based on context
-     */
-    async generateBeat(context: {
-        episodeId: string
-        previousBeat?: string
-        targetEmotion?: string
-        characters: string[]
-    }, traceId?: string): Promise<string> {
-        const id = traceId || this.generateHexId(32)
-        const spanId = this.generateHexId(16)
+  /**
+   * Generate a hex ID for OTEL compatibility
+   */
+  private generateHexId(length: number): string {
+    return uuidv4().replace(/-/g, '').padEnd(length, '0').slice(0, length)
+  }
 
-        return withSpan(id, 'StorytellerAgent.generateBeat', async (span) => {
-            const prompt = `Generate a new story beat for episode ${context.episodeId}.
+  /**
+   * Run the agent with a goal and context
+   * @param goal - The goal for the agent
+   * @param context - Context for the agent
+   * @param traceId - Optional trace ID for observability
+   * @param toolChoice - Tool choice mode
+   * @param options - Additional generation options (temperature, topP)
+   */
+  async run(
+    goal: string,
+    context: string,
+    traceId?: string,
+    toolChoice: 'auto' | 'none' | 'required' = 'auto',
+    options?: { temperature?: number; topP?: number }
+  ): Promise<string> {
+    const id = traceId || this.generateHexId(32)
+    const spanId = this.generateHexId(16)
+
+    return withSpan(
+      id,
+      'StorytellerAgent.run',
+      async span => {
+        const prompt = `Goal: ${goal}\n\nContext:\n${context}`
+        const response = await this.agent.generate(prompt, {
+          toolChoice,
+          // Increase temperature for creative diversity, reduce generic responses
+          temperature: options?.temperature ?? 0.85,
+          // Higher top_p promotes diverse and original tone shifts
+          topP: options?.topP ?? 0.95,
+          maxSteps: 5,
+          tracingOptions: {
+            traceId: id,
+            parentSpanId: spanId, // Use our generated spanId which we forced into withSpan
+          },
+        } as any)
+        return response.text
+      },
+      { goal, context, id: spanId }
+    ) // Pass id: spanId in metadata to force span ID
+  }
+
+  /**
+   * Generate a story beat based on context
+   */
+  async generateBeat(
+    context: {
+      episodeId: string
+      previousBeat?: string
+      targetEmotion?: string
+      characters: string[]
+    },
+    traceId?: string
+  ): Promise<string> {
+    const id = traceId || this.generateHexId(32)
+    const spanId = this.generateHexId(16)
+
+    return withSpan(
+      id,
+      'StorytellerAgent.generateBeat',
+      async span => {
+        const prompt = `Generate a new story beat for episode ${context.episodeId}.
 ${context.previousBeat ? `Previous beat: ${context.previousBeat}` : 'This is the opening beat.'}
 ${context.targetEmotion ? `Target emotional tone: ${context.targetEmotion}` : ''}
 Characters involved: ${context.characters.join(', ')}
@@ -406,86 +429,111 @@ Create a beat with:
 - Clear emotional stakes
 - Character advancement`
 
-            return this.run('Generate story beat', prompt, id)
-        }, { ...context, id: spanId })
+        return this.run('Generate story beat', prompt, id)
+      },
+      { ...context, id: spanId }
+    )
+  }
+
+  /**
+   * Check story for continuity issues
+   */
+  async checkStoryContinuity(beatBoard: any[], traceId?: string): Promise<string> {
+    const id = traceId || this.generateHexId(32)
+    const spanId = this.generateHexId(16)
+
+    return withSpan(
+      id,
+      'StorytellerAgent.checkStoryContinuity',
+      async span => {
+        return this.run(
+          'Check story continuity',
+          `Review the beat board for continuity issues. There are ${beatBoard.length} beats to check.`,
+          id
+        )
+      },
+      { beatCount: beatBoard.length, id: spanId }
+    )
+  }
+
+  /**
+   * Suggest relationship dynamics between characters
+   */
+  async analyzeCharacterDynamics(
+    character1: string,
+    character2: string,
+    traceId?: string
+  ): Promise<string> {
+    const id = traceId || this.generateHexId(32)
+    const spanId = this.generateHexId(16)
+
+    return withSpan(
+      id,
+      'StorytellerAgent.analyzeCharacterDynamics',
+      async span => {
+        return this.run(
+          'Analyze character dynamics',
+          `Analyze the relationship between ${character1} and ${character2}. Consider their goals, fears, and emotional states.`,
+          id
+        )
+      },
+      { character1, character2, id: spanId }
+    )
+  }
+
+  /**
+   * Execute a specific tool directly
+   */
+  async executeTool(
+    toolId: string,
+    args: Record<string, unknown>,
+    traceId?: string
+  ): Promise<string> {
+    const id = traceId || this.generateHexId(32)
+    const spanId = this.generateHexId(16)
+    const tool = this.toolsMap[toolId]
+
+    if (!tool) {
+      throw new Error(`Tool ${toolId} not found`)
     }
 
-    /**
-     * Check story for continuity issues
-     */
-    async checkStoryContinuity(beatBoard: any[], traceId?: string): Promise<string> {
-        const id = traceId || this.generateHexId(32)
-        const spanId = this.generateHexId(16)
+    return withSpan(
+      id,
+      `StorytellerAgent.tool.${toolId}`,
+      async span => {
+        const result = await tool.execute({ context: args })
+        return typeof result === 'string' ? result : JSON.stringify(result)
+      },
+      { toolId, args, id: spanId }
+    )
+  }
 
-        return withSpan(id, 'StorytellerAgent.checkStoryContinuity', async (span) => {
-            return this.run(
-                'Check story continuity',
-                `Review the beat board for continuity issues. There are ${beatBoard.length} beats to check.`,
-                id
-            )
-        }, { beatCount: beatBoard.length, id: spanId })
-    }
+  /**
+   * Stream response from the agent
+   */
+  async stream(prompt: string, options?: any) {
+    // Use stream() with v2 models (specificationVersion = 'v2' set in createModel)
+    const traceId = options?.traceId || this.generateHexId(32)
 
-    /**
-     * Suggest relationship dynamics between characters
-     */
-    async analyzeCharacterDynamics(character1: string, character2: string, traceId?: string): Promise<string> {
-        const id = traceId || this.generateHexId(32)
-        const spanId = this.generateHexId(16)
-
-        return withSpan(id, 'StorytellerAgent.analyzeCharacterDynamics', async (span) => {
-            return this.run(
-                'Analyze character dynamics',
-                `Analyze the relationship between ${character1} and ${character2}. Consider their goals, fears, and emotional states.`,
-                id
-            )
-        }, { character1, character2, id: spanId })
-    }
-
-    /**
-     * Execute a specific tool directly
-     */
-    async executeTool(toolId: string, args: Record<string, unknown>, traceId?: string): Promise<string> {
-        const id = traceId || this.generateHexId(32)
-        const spanId = this.generateHexId(16)
-        const tool = this.toolsMap[toolId]
-
-        if (!tool) {
-            throw new Error(`Tool ${toolId} not found`)
-        }
-
-        return withSpan(id, `StorytellerAgent.tool.${toolId}`, async (span) => {
-            const result = await tool.execute({ context: args })
-            return typeof result === 'string' ? result : JSON.stringify(result)
-        }, { toolId, args, id: spanId })
-    }
-
-    /**
-     * Stream response from the agent
-     */
-    async stream(prompt: string, options?: any) {
-        // Use stream() with v2 models (specificationVersion = 'v2' set in createModel)
-        const traceId = options?.traceId || this.generateHexId(32)
-
-        return this.agent.stream(prompt, {
-            toolChoice: options?.toolChoice || 'auto',
-            // Increase temperature for creative diversity, reduce generic responses
-            temperature: options?.temperature ?? 0.85,
-            // Higher top_p promotes diverse and original tone shifts
-            topP: options?.topP ?? 0.95,
-            ...options,
-            tracingOptions: {
-                traceId,
-                ...(options?.parentSpanId ? { parentSpanId: options.parentSpanId } : {})
-            }
-        } as any)
-    }
+    return this.agent.stream(prompt, {
+      toolChoice: options?.toolChoice || 'auto',
+      // Increase temperature for creative diversity, reduce generic responses
+      temperature: options?.temperature ?? 0.85,
+      // Higher top_p promotes diverse and original tone shifts
+      topP: options?.topP ?? 0.95,
+      ...options,
+      tracingOptions: {
+        traceId,
+        ...(options?.parentSpanId ? { parentSpanId: options.parentSpanId } : {}),
+      },
+    } as any)
+  }
 }
 
 // Factory function for easy instantiation
 export async function createStorytellerAgent(
-    modelName: string = GLOBAL_AGENT_MODEL,
-    enableWorkflowTool: boolean = true
+  modelName: string = GLOBAL_AGENT_MODEL,
+  enableWorkflowTool: boolean = true
 ): Promise<StorytellerAgent> {
-    return StorytellerAgent.create(modelName, enableWorkflowTool)
+  return StorytellerAgent.create(modelName, enableWorkflowTool)
 }

@@ -65,7 +65,7 @@ const getProviderConfig = () => {
 
 import { PendingAction } from './WorldBible/BibleContext'
 
-interface WorldBiblePanelProps {
+export interface WorldBiblePanelProps {
   storyPlan: StoryPlan
   onUpdate?: (updates: Partial<StoryPlan>) => void
   isReadOnly?: boolean
@@ -80,7 +80,7 @@ interface WorldBiblePanelProps {
   onSetPendingAction?: (section: string, action: PendingAction | null) => void
 }
 
-export const WorldBiblePanel: React.FC<WorldBiblePanelProps> = props => {
+const WorldBiblePanel: React.FC<WorldBiblePanelProps> = props => {
   const projectId =
     props.projectId ||
     (typeof window !== 'undefined'
@@ -251,13 +251,12 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
       <div className="h-full flex flex-col relative animate-pulse">
         {/* Header Shimmer */}
         <div
-          className="bg-background/80 border-b border-border/40 pb-[10px] flex items-center justify-between rounded-lg"
+          className="bg-background/80 border-b border-border/40 h-[60px] flex items-center justify-between rounded-lg"
           style={{
             marginLeft: -25,
             marginRight: -25,
             paddingLeft: 25,
             paddingRight: 25,
-            paddingTop: 10,
           }}
         >
           <div className="h-7 w-32 bg-muted/40 rounded"></div>
@@ -306,13 +305,12 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
   return (
     <div className="h-full relative flex flex-col">
       <div
-        className="bg-background/80 backdrop-blur-xl border-b border-border/40 pb-[10px] flex items-center justify-between rounded-lg"
+        className="bg-background/80 backdrop-blur-xl border-b border-border/40 h-[60px] flex items-center justify-between rounded-lg"
         style={{
           marginLeft: -25,
           marginRight: -25,
           paddingLeft: 25,
           paddingRight: 25,
-          paddingTop: 10,
         }}
       >
         <div className="flex items-center gap-4">
@@ -402,17 +400,21 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
             </Tooltip>
           </TooltipProvider>
 
-          {!effectiveReadOnly && onUpdate && canUserEditBible && !isEditing && activeTab === 'content' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsEditing(true)}
-              className="gap-2 h-8 border-muted-foreground/30 text-muted-foreground hover:bg-muted/50 hover:border-muted-foreground/50 transition-colors"
-            >
-              <Edit2 className="w-4 h-4" />
-              <span className="text-xs">Edit</span>
-            </Button>
-          )}
+          {!effectiveReadOnly &&
+            onUpdate &&
+            canUserEditBible &&
+            !isEditing &&
+            activeTab === 'content' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditing(true)}
+                className="gap-2 h-8 border-muted-foreground/30 text-muted-foreground hover:bg-muted/50 hover:border-muted-foreground/50 transition-colors"
+              >
+                <Edit2 className="w-4 h-4" />
+                <span className="text-xs">Edit</span>
+              </Button>
+            )}
 
           {!effectiveReadOnly && onUpdate && canUserEditBible && isEditing && (
             <>
@@ -480,11 +482,13 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
         </div>
       ) : (
         <div className="flex-1 overflow-hidden pt-4">
-          <Suspense fallback={
-            <div className="flex-1 flex items-center justify-center h-full">
-              <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
-            </div>
-          }>
+          <Suspense
+            fallback={
+              <div className="flex-1 flex items-center justify-center h-full">
+                <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+              </div>
+            }
+          >
             <CharacterWeb
               projectId={projectId || ''}
               className="h-full"
@@ -502,4 +506,3 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
 }
 
 export default WorldBiblePanel
-

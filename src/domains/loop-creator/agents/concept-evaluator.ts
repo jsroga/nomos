@@ -200,9 +200,7 @@ export async function evaluateConceptAlignment(
 /**
  * Run evaluation and generate improvement suggestions as actions
  */
-export async function conceptEvaluatorAgent(
-  state: LoopCreatorState
-): Promise<Partial<LoopCreatorState>> {
+async function conceptEvaluatorAgent(state: LoopCreatorState): Promise<Partial<LoopCreatorState>> {
   console.log('[ConceptEvaluator] Starting evaluation...')
 
   // Skip if no mechanics to evaluate
@@ -256,7 +254,7 @@ export async function conceptEvaluatorAgent(
 /**
  * Standalone evaluation function for testing/API use
  */
-export async function runConceptEvaluation(
+async function runConceptEvaluation(
   mechanics: Array<{ name: string; type: string; description: string }>,
   gameDescription: string,
   gameGenre?: string

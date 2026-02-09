@@ -1,6 +1,6 @@
 /**
  * CENTRAL MODEL CONFIGURATION
- * 
+ *
  * ONE FILE TO RULE THEM ALL.
  * Every model used anywhere in the system is configured here.
  */
@@ -20,7 +20,7 @@ export const MODELS = {
     fast: process.env.GENERATION_MODEL_FAST || 'openai:gpt-4o-mini',
     creative: process.env.GENERATION_MODEL_CREATIVE || 'openai:gpt-4o',
   },
-  
+
   // === JUDGING MODELS (for evaluation - independent layer) ===
   judging: {
     primary: process.env.JUDGING_MODEL || 'openai:gpt-4o',
@@ -28,13 +28,13 @@ export const MODELS = {
     // Low temperature for consistent judging
     temperature: 0.1,
   },
-  
+
   // === PLANNING MODELS (for reasoning/planning) ===
   planning: {
     primary: process.env.PLANNING_MODEL || 'openai:gpt-4o',
     reasoning: process.env.PLANNING_MODEL_REASONING || 'openai:o1-preview',
   },
-  
+
   // === EMBEDDING MODELS ===
   embedding: {
     primary: process.env.EMBEDDING_MODEL || 'openai:text-embedding-3-small',
@@ -72,7 +72,7 @@ export function createModel(modelName: string) {
     ;(model as any).specificationVersion = 'v2' // Mastra compatibility
     return model
   }
-  
+
   // Anthropic
   if (modelName.startsWith('anthropic:')) {
     const modelId = modelName.replace('anthropic:', '')
@@ -81,7 +81,7 @@ export function createModel(modelName: string) {
     ;(model as any).specificationVersion = 'v2'
     return model
   }
-  
+
   // Google
   if (modelName.startsWith('google:')) {
     const modelId = modelName.replace('google:', '')
@@ -89,7 +89,7 @@ export function createModel(modelName: string) {
     ;(model as any).specificationVersion = 'v2'
     return model
   }
-  
+
   // Default fallback
   const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY })
   return openai('gpt-4o')
@@ -106,20 +106,20 @@ export function createPureModel(modelName: string) {
     const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY })
     return openai(modelId)
   }
-  
+
   // Anthropic
   if (modelName.startsWith('anthropic:')) {
     const modelId = modelName.replace('anthropic:', '')
     const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
     return anthropic(modelId)
   }
-  
+
   // Google
   if (modelName.startsWith('google:')) {
     const modelId = modelName.replace('google:', '')
     return google(modelId)
   }
-  
+
   // Default fallback
   const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY })
   return openai('gpt-4o')
@@ -130,21 +130,21 @@ export function createPureModel(modelName: string) {
 // =============================================================================
 
 /** Get model for content generation - uses pure AI SDK */
-export const getGenerationModel = (tier: 'primary' | 'fast' | 'creative' = 'primary') => 
+export const getGenerationModel = (tier: 'primary' | 'fast' | 'creative' = 'primary') =>
   createPureModel(MODELS.generation[tier])
 
 /** Get model for judging/evaluation (independent layer) - uses pure AI SDK */
-export const getJudgingModel = (tier: 'primary' | 'fallback' = 'primary') => 
+export const getJudgingModel = (tier: 'primary' | 'fallback' = 'primary') =>
   createPureModel(MODELS.judging[tier])
 
 /** Get model for planning/reasoning */
-export const getPlanningModel = (tier: 'primary' | 'reasoning' = 'primary') => 
+const getPlanningModel = (tier: 'primary' | 'reasoning' = 'primary') =>
   createModel(MODELS.planning[tier])
 
 // =============================================================================
 // THE MAZUR FRAMEWORK - Why These Three Masters?
 // =============================================================================
-// 
+//
 // These three creators form a COMPLETE storytelling triangle:
 //
 //                    DEPTH (GRRM)
@@ -157,7 +157,7 @@ export const getPlanningModel = (tier: 'primary' | 'reasoning' = 'primary') =>
 //
 // Each catches what the others miss:
 // - GRRM: "Is this REAL?" - catches shallow characters, convenient plots
-// - GILLIGAN: "Does this WORK?" - catches illogical sequences, weak visuals  
+// - GILLIGAN: "Does this WORK?" - catches illogical sequences, weak visuals
 // - LYNCH: "Does this HAUNT?" - catches lack of atmosphere, over-explanation
 //
 // AI slop fails ALL THREE:
@@ -173,10 +173,11 @@ export const PERSONAS = {
     alias: 'The Gardener',
     dimension: 'DEPTH',
     question: 'Is this REAL?',
-    magic: 'The human heart in conflict with itself. Characters want contradicting things. Actions have brutal consequences. The world is ancient and textured.',
+    magic:
+      'The human heart in conflict with itself. Characters want contradicting things. Actions have brutal consequences. The world is ancient and textured.',
     focus: [
       'gray morality - no pure heroes or villains',
-      'consequences - stupid mistakes = suffering', 
+      'consequences - stupid mistakes = suffering',
       'texture - food, heraldry, rust on armor',
       'political intrigue - power corrupts realistically',
     ],
@@ -194,13 +195,14 @@ export const PERSONAS = {
     ],
     voice: 'Melancholic, cynical, richly detailed',
   },
-  
+
   'vince-gilligan': {
     name: 'Vince Gilligan',
-    alias: 'The Architect', 
+    alias: 'The Architect',
     dimension: 'STRUCTURE',
     question: 'Does this WORK?',
-    magic: 'Mr. Chips to Scarface. Every frame tells the story. Cause leads to effect with mathematical precision. The check always comes due.',
+    magic:
+      'Mr. Chips to Scarface. Every frame tells the story. Cause leads to effect with mathematical precision. The check always comes due.',
     focus: [
       'visual metaphor - show dont tell, camera angles matter',
       'transformation - track the moral decay step by step',
@@ -221,13 +223,14 @@ export const PERSONAS = {
     ],
     voice: 'Tense, observant, cinematic',
   },
-  
+
   'david-lynch': {
     name: 'David Lynch',
     alias: 'The Dreamer',
     dimension: 'FEELING',
     question: 'Does this HAUNT?',
-    magic: 'The mundane is terrifying. Things make emotional sense, not rational sense. The mystery IS the point. Hold the shot longer than comfortable.',
+    magic:
+      'The mundane is terrifying. Things make emotional sense, not rational sense. The mystery IS the point. Hold the shot longer than comfortable.',
     focus: [
       'uncanny mundane - ordinary objects become alien',
       'dream logic - connect via mood not causation',
@@ -250,17 +253,17 @@ export const PERSONAS = {
   },
 } as const
 
-export type PersonaId = keyof typeof PERSONAS
+type PersonaId = keyof typeof PERSONAS
 
 /**
  * The Mazur Score combines all three dimensions.
  * Great storytelling needs ALL THREE to score high.
  * AI slop consistently fails all three.
  */
-export interface MazurScore {
-  depth: number      // GRRM dimension (0-1)
-  structure: number  // Gilligan dimension (0-1)
-  feeling: number    // Lynch dimension (0-1)
-  overall: number    // Combined score
-  slopScore: number  // Inverse - how much AI slop detected (0 = no slop, 1 = pure slop)
+interface MazurScore {
+  depth: number // GRRM dimension (0-1)
+  structure: number // Gilligan dimension (0-1)
+  feeling: number // Lynch dimension (0-1)
+  overall: number // Combined score
+  slopScore: number // Inverse - how much AI slop detected (0 = no slop, 1 = pure slop)
 }

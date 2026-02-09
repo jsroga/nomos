@@ -1,6 +1,6 @@
 /**
  * Recommendation Generator for Hypothesis Experiments
- * 
+ *
  * LLM-powered analysis that:
  * 1. Receives hypothesis, scores, and captured outputs
  * 2. Analyzes which metrics improved/regressed
@@ -19,7 +19,7 @@ import {
   Recommendation,
   RecommendationReport,
 } from './types'
-import { DeepEvalOutput, DeepEvalTestCaseResult } from '../deepeval/types'
+import { DeepEvalOutput } from '../deepeval/types'
 
 // ============================================
 // Metric Comparison
@@ -85,8 +85,8 @@ export function determineVerdict(
   targetMetrics: string[]
 ): 'confirmed' | 'rejected' | 'inconclusive' {
   // Filter to target metrics only
-  const targetComparisons = comparisons.filter(c =>
-    targetMetrics.length === 0 || targetMetrics.includes(c.metricName)
+  const targetComparisons = comparisons.filter(
+    c => targetMetrics.length === 0 || targetMetrics.includes(c.metricName)
   )
 
   if (targetComparisons.length === 0) {
@@ -176,11 +176,16 @@ export async function generateRecommendations(
     apiKey: process.env.OPENAI_API_KEY,
   })
 
-  const prompt = RECOMMENDATION_PROMPT
-    .replace('{hypothesis}', JSON.stringify(hypothesis, null, 2))
-    .replace('{comparisons}', comparisons.map(c =>
-      `- ${c.metricName}: ${c.baselineScore.toFixed(2)} → ${c.variantScore.toFixed(2)} (${c.deltaPercent > 0 ? '+' : ''}${c.deltaPercent.toFixed(1)}%) ${c.significant ? '⚠️ SIGNIFICANT' : ''}`
-    ).join('\n'))
+  const prompt = RECOMMENDATION_PROMPT.replace('{hypothesis}', JSON.stringify(hypothesis, null, 2))
+    .replace(
+      '{comparisons}',
+      comparisons
+        .map(
+          c =>
+            `- ${c.metricName}: ${c.baselineScore.toFixed(2)} → ${c.variantScore.toFixed(2)} (${c.deltaPercent > 0 ? '+' : ''}${c.deltaPercent.toFixed(1)}%) ${c.significant ? '⚠️ SIGNIFICANT' : ''}`
+        )
+        .join('\n')
+    )
     .replace('{verdict}', verdict.toUpperCase())
     .replace('{baselineOutput}', baselineOutput.slice(0, 2000))
     .replace('{variantOutput}', variantOutput.slice(0, 2000))
@@ -283,14 +288,16 @@ export async function generateReport(
  * Render report as Markdown
  */
 export function renderReportAsMarkdown(report: RecommendationReport): string {
-  const { hypothesis, verdict, metricsAnalysis, recommendations, nextSteps, rawData, generatedAt } = report
+  const { hypothesis, verdict, metricsAnalysis, recommendations, nextSteps, rawData, generatedAt } =
+    report
 
   const verdictEmoji = verdict === 'confirmed' ? '✅' : verdict === 'rejected' ? '❌' : '❓'
-  const verdictText = verdict === 'confirmed'
-    ? 'HYPOTHESIS CONFIRMED - Variant outperformed baseline'
-    : verdict === 'rejected'
-      ? 'HYPOTHESIS REJECTED - Baseline outperformed variant'
-      : 'INCONCLUSIVE - No significant difference detected'
+  const verdictText =
+    verdict === 'confirmed'
+      ? 'HYPOTHESIS CONFIRMED - Variant outperformed baseline'
+      : verdict === 'rejected'
+        ? 'HYPOTHESIS REJECTED - Baseline outperformed variant'
+        : 'INCONCLUSIVE - No significant difference detected'
 
   let md = `# Hypothesis Evaluation Report
 

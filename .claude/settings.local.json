@@ -39,7 +39,11 @@
       "Bash(npx next:*)",
       "Bash(npm run test:e2e:*)",
       "Bash(wc:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Skill(security-review)",
+      "Skill(security-review:*)",
+      "Bash(npx knip:*)",
+      "Bash(npm run lint:*)"
     ]
   }
 }

@@ -1,4 +1,4 @@
-export interface LegNextResponse {
+interface LegNextResponse {
   job_id: string
   status: string
   output?: {

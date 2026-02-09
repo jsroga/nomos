@@ -8,9 +8,9 @@
 import { Agent } from '@mastra/core/agent'
 import { v4 as uuidv4 } from 'uuid'
 import {
-    createAgentTrace,
-    recordAgentGeneration,
-    withSpan
+  createAgentTrace,
+  recordAgentGeneration,
+  withSpan,
 } from '../../../../agent-core/observability'
 import { getWorkflowTraceId } from '../../utils/workflow-context'
 import { getMastraInstance } from './mastra-instance'
@@ -18,12 +18,12 @@ import { getMastraInstance } from './mastra-instance'
 export type CreativeDirectorType = 'grrm' | 'gilligan' | 'custom'
 
 interface CreativeDirectorConfig {
-    type: CreativeDirectorType
-    modelName: string
-    traceId?: string
-    projectId?: string
-    episodeId?: string
-    customDirectives?: string
+  type: CreativeDirectorType
+  modelName: string
+  traceId?: string
+  projectId?: string
+  episodeId?: string
+  customDirectives?: string
 }
 
 // Creative Director Prompts
@@ -83,100 +83,110 @@ SIGNATURE TECHNIQUES TO ENFORCE:
 - Foreshadowing that rewards rewatching`
 
 export class CreativeDirectorAgent {
-    private agent: Agent
-    private traceId: string
-    private config: CreativeDirectorConfig
+  private agent: Agent
+  private traceId: string
+  private config: CreativeDirectorConfig
 
-    private constructor(config: CreativeDirectorConfig, instructions: string) {
-        this.config = config
-        this.traceId = config.traceId || getWorkflowTraceId() || uuidv4()
+  private constructor(config: CreativeDirectorConfig, instructions: string) {
+    this.config = config
+    this.traceId = config.traceId || getWorkflowTraceId() || uuidv4()
 
-        const m = getMastraInstance()
-        // Use string model identifier for Mastra AI SDK v5 compatibility
-        const modelString = config.modelName.replace(':', '/')
+    const m = getMastraInstance()
+    // Use string model identifier for Mastra AI SDK v5 compatibility
+    const modelString = config.modelName.replace(':', '/')
 
-        const directorName = config.type === 'grrm' ? 'GRRM' :
-            config.type === 'gilligan' ? 'Gilligan' : 'Custom Director'
+    const directorName =
+      config.type === 'grrm' ? 'GRRM' : config.type === 'gilligan' ? 'Gilligan' : 'Custom Director'
 
-        this.agent = new Agent({
-            id: `creative-director-${config.type}`,
-            name: `Creative Director: ${directorName}`,
-            instructions,
-            model: modelString,
-            mastra: m,
-        })
+    this.agent = new Agent({
+      id: `creative-director-${config.type}`,
+      name: `Creative Director: ${directorName}`,
+      instructions,
+      model: modelString,
+      mastra: m,
+    })
 
-        this.createAgentTrace()
+    this.createAgentTrace()
+  }
+
+  private createAgentTrace() {
+    const directorName =
+      this.config.type === 'grrm'
+        ? 'GRRM'
+        : this.config.type === 'gilligan'
+          ? 'Gilligan'
+          : 'CustomDirector'
+    createAgentTrace({
+      traceId: this.traceId,
+      agentName: `CreativeDirector_${directorName}`,
+      projectId: this.config.projectId,
+      episodeId: this.config.episodeId,
+    })
+  }
+
+  getTraceId(): string {
+    return this.traceId
+  }
+
+  getDirectorType(): CreativeDirectorType {
+    return this.config.type
+  }
+
+  static async create(
+    type: CreativeDirectorType,
+    modelName: string = 'openai:gpt-4o',
+    options?: {
+      traceId?: string
+      projectId?: string
+      episodeId?: string
+      customDirectives?: string
+    }
+  ): Promise<CreativeDirectorAgent> {
+    let instructions: string
+
+    switch (type) {
+      case 'grrm':
+        instructions = GRRM_PROMPT
+        break
+      case 'gilligan':
+        instructions = GILLIGAN_PROMPT
+        break
+      case 'custom':
+        instructions = options?.customDirectives || 'You are a creative director.'
+        break
+      default:
+        instructions = GRRM_PROMPT
     }
 
-    private createAgentTrace() {
-        const directorName = this.config.type === 'grrm' ? 'GRRM' :
-            this.config.type === 'gilligan' ? 'Gilligan' : 'CustomDirector'
-        createAgentTrace({
-            traceId: this.traceId,
-            agentName: `CreativeDirector_${directorName}`,
-            projectId: this.config.projectId,
-            episodeId: this.config.episodeId
-        })
-    }
+    return new CreativeDirectorAgent(
+      {
+        type,
+        modelName,
+        traceId: options?.traceId,
+        projectId: options?.projectId,
+        episodeId: options?.episodeId,
+        customDirectives: options?.customDirectives,
+      },
+      instructions
+    )
+  }
 
-    getTraceId(): string {
-        return this.traceId
-    }
+  /**
+   * Review content from another agent and provide director-level feedback
+   */
+  async reviewContent(
+    content: string,
+    context: string,
+    originalAgent: string,
+    traceId?: string
+  ): Promise<{ feedback: string; approved: boolean; suggestions: string[] }> {
+    const id = traceId || this.traceId
 
-    getDirectorType(): CreativeDirectorType {
-        return this.config.type
-    }
-
-    static async create(
-        type: CreativeDirectorType,
-        modelName: string = 'openai:gpt-4o',
-        options?: {
-            traceId?: string
-            projectId?: string
-            episodeId?: string
-            customDirectives?: string
-        }
-    ): Promise<CreativeDirectorAgent> {
-        let instructions: string
-
-        switch (type) {
-            case 'grrm':
-                instructions = GRRM_PROMPT
-                break
-            case 'gilligan':
-                instructions = GILLIGAN_PROMPT
-                break
-            case 'custom':
-                instructions = options?.customDirectives || 'You are a creative director.'
-                break
-            default:
-                instructions = GRRM_PROMPT
-        }
-
-        return new CreativeDirectorAgent({
-            type,
-            modelName,
-            traceId: options?.traceId,
-            projectId: options?.projectId,
-            episodeId: options?.episodeId,
-            customDirectives: options?.customDirectives
-        }, instructions)
-    }
-
-    /**
-     * Review content from another agent and provide director-level feedback
-     */
-    async reviewContent(
-        content: string,
-        context: string,
-        originalAgent: string,
-        traceId?: string
-    ): Promise<{ feedback: string; approved: boolean; suggestions: string[] }> {
-        const id = traceId || this.traceId
-
-        return withSpan(id, 'CreativeDirector.reviewContent', async (span) => {
-            const prompt = `Review this content from the ${originalAgent} agent.
+    return withSpan(
+      id,
+      'CreativeDirector.reviewContent',
+      async span => {
+        const prompt = `Review this content from the ${originalAgent} agent.
 
 CONTENT TO REVIEW:
 ${content}
@@ -198,45 +208,50 @@ Format your response as JSON:
   "suggestions": ["Suggestion 1", "Suggestion 2"]
 }`
 
-            const response = await this.agent.generate(prompt)
-            const text = response.text
+        const response = await this.agent.generate(prompt)
+        const text = response.text
 
-            // Parse the response
-            try {
-                // Try to extract JSON from the response
-                const jsonMatch = text.match(/\{[\s\S]*\}/)
-                if (jsonMatch) {
-                    const parsed = JSON.parse(jsonMatch[0])
-                    return {
-                        feedback: parsed.feedback || text,
-                        approved: parsed.approved || false,
-                        suggestions: parsed.suggestions || []
-                    }
-                }
-            } catch {
-                // If parsing fails, return raw text
-            }
-
+        // Parse the response
+        try {
+          // Try to extract JSON from the response
+          const jsonMatch = text.match(/\{[\s\S]*\}/)
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0])
             return {
-                feedback: text,
-                approved: !text.toLowerCase().includes('needs_revision'),
-                suggestions: []
+              feedback: parsed.feedback || text,
+              approved: parsed.approved || false,
+              suggestions: parsed.suggestions || [],
             }
-        }, { originalAgent, contentLength: content.length })
-    }
+          }
+        } catch {
+          // If parsing fails, return raw text
+        }
 
-    /**
-     * Generate creative direction for a scene or beat
-     */
-    async directScene(
-        sceneDescription: string,
-        context: string,
-        traceId?: string
-    ): Promise<{ direction: string; visualNotes: string; characterNotes: string }> {
-        const id = traceId || this.traceId
+        return {
+          feedback: text,
+          approved: !text.toLowerCase().includes('needs_revision'),
+          suggestions: [],
+        }
+      },
+      { originalAgent, contentLength: content.length }
+    )
+  }
 
-        return withSpan(id, 'CreativeDirector.directScene', async (span) => {
-            const prompt = `You are directing this scene. Provide creative direction.
+  /**
+   * Generate creative direction for a scene or beat
+   */
+  async directScene(
+    sceneDescription: string,
+    context: string,
+    traceId?: string
+  ): Promise<{ direction: string; visualNotes: string; characterNotes: string }> {
+    const id = traceId || this.traceId
+
+    return withSpan(
+      id,
+      'CreativeDirector.directScene',
+      async span => {
+        const prompt = `You are directing this scene. Provide creative direction.
 
 SCENE:
 ${sceneDescription}
@@ -251,38 +266,43 @@ Provide direction including:
 4. Key moments to emphasize
 5. Traps to avoid (clichés, easy choices)`
 
-            const response = await this.agent.generate(prompt)
-            const text = response.text
+        const response = await this.agent.generate(prompt)
+        const text = response.text
 
-            recordAgentGeneration(
-                id,
-                `CreativeDirector_${this.config.type}`,
-                { prompt, context },
-                { text },
-                { model: this.config.modelName }
-            )
+        recordAgentGeneration(
+          id,
+          `CreativeDirector_${this.config.type}`,
+          { prompt, context },
+          { text },
+          { model: this.config.modelName }
+        )
 
-            return {
-                direction: text,
-                visualNotes: this.extractSection(text, 'visual'),
-                characterNotes: this.extractSection(text, 'character')
-            }
-        }, { sceneLength: sceneDescription.length })
-    }
+        return {
+          direction: text,
+          visualNotes: this.extractSection(text, 'visual'),
+          characterNotes: this.extractSection(text, 'character'),
+        }
+      },
+      { sceneLength: sceneDescription.length }
+    )
+  }
 
-    /**
-     * Challenge a story decision
-     */
-    async challengeDecision(
-        decision: string,
-        rationale: string,
-        alternatives: string[],
-        traceId?: string
-    ): Promise<{ challenge: string; betterPath?: string; maintain: boolean }> {
-        const id = traceId || this.traceId
+  /**
+   * Challenge a story decision
+   */
+  async challengeDecision(
+    decision: string,
+    rationale: string,
+    alternatives: string[],
+    traceId?: string
+  ): Promise<{ challenge: string; betterPath?: string; maintain: boolean }> {
+    const id = traceId || this.traceId
 
-        return withSpan(id, 'CreativeDirector.challengeDecision', async (span) => {
-            const prompt = `As Creative Director, challenge this story decision.
+    return withSpan(
+      id,
+      'CreativeDirector.challengeDecision',
+      async span => {
+        const prompt = `As Creative Director, challenge this story decision.
 
 DECISION:
 ${decision}
@@ -299,61 +319,62 @@ Your job is to:
 3. Ask the tough questions about character and consequence
 4. Either approve with notes, or suggest a better direction`
 
-            const response = await this.agent.generate(prompt)
-            const text = response.text
+        const response = await this.agent.generate(prompt)
+        const text = response.text
 
-            const maintain = text.toLowerCase().includes('approve') ||
-                text.toLowerCase().includes('proceed') ||
-                text.toLowerCase().includes('maintain')
+        const maintain =
+          text.toLowerCase().includes('approve') ||
+          text.toLowerCase().includes('proceed') ||
+          text.toLowerCase().includes('maintain')
 
-            return {
-                challenge: text,
-                betterPath: maintain ? undefined : text,
-                maintain
-            }
-        }, { decision })
-    }
+        return {
+          challenge: text,
+          betterPath: maintain ? undefined : text,
+          maintain,
+        }
+      },
+      { decision }
+    )
+  }
 
-    private extractSection(text: string, keyword: string): string {
-        const lines = text.split('\n')
-        const startIdx = lines.findIndex(l =>
-            l.toLowerCase().includes(keyword)
-        )
-        if (startIdx === -1) return ''
+  private extractSection(text: string, keyword: string): string {
+    const lines = text.split('\n')
+    const startIdx = lines.findIndex(l => l.toLowerCase().includes(keyword))
+    if (startIdx === -1) return ''
 
-        const endIdx = lines.findIndex((l, i) =>
-            i > startIdx && l.match(/^\d+\./) && !l.toLowerCase().includes(keyword)
-        )
+    const endIdx = lines.findIndex(
+      (l, i) => i > startIdx && l.match(/^\d+\./) && !l.toLowerCase().includes(keyword)
+    )
 
-        return lines
-            .slice(startIdx, endIdx === -1 ? undefined : endIdx)
-            .join('\n')
-            .trim()
-    }
+    return lines
+      .slice(startIdx, endIdx === -1 ? undefined : endIdx)
+      .join('\n')
+      .trim()
+  }
 }
 
 // Factory functions
-export async function createGRRMDirector(
-    modelName: string = 'openai:gpt-4o',
-    options?: { traceId?: string; projectId?: string; episodeId?: string }
+async function createGRRMDirector(
+  modelName: string = 'openai:gpt-4o',
+  options?: { traceId?: string; projectId?: string; episodeId?: string }
 ): Promise<CreativeDirectorAgent> {
-    return CreativeDirectorAgent.create('grrm', modelName, options)
+  return CreativeDirectorAgent.create('grrm', modelName, options)
 }
 
-export async function createGilliganDirector(
-    modelName: string = 'openai:gpt-4o',
-    options?: { traceId?: string; projectId?: string; episodeId?: string }
+async function createGilliganDirector(
+  modelName: string = 'openai:gpt-4o',
+  options?: { traceId?: string; projectId?: string; episodeId?: string }
 ): Promise<CreativeDirectorAgent> {
-    return CreativeDirectorAgent.create('gilligan', modelName, options)
+  return CreativeDirectorAgent.create('gilligan', modelName, options)
 }
 
-export async function createCustomDirector(
-    directives: string,
-    modelName: string = 'openai:gpt-4o',
-    options?: { traceId?: string; projectId?: string; episodeId?: string }
+async function createCustomDirector(
+  directives: string,
+  modelName: string = 'openai:gpt-4o',
+  options?: { traceId?: string; projectId?: string; episodeId?: string }
 ): Promise<CreativeDirectorAgent> {
-    return CreativeDirectorAgent.create('custom', modelName, {
-        ...options,
-        customDirectives: directives
-    })
+  return CreativeDirectorAgent.create('custom', modelName, {
+    ...options,
+    customDirectives: directives,
+  })
 }

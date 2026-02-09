@@ -2,6 +2,7 @@ import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import fs from 'fs'
 import path from 'path'
+import { getErrorMessage } from '@/lib/error-utils'
 
 interface GenerateMoodboardPayload {
   projectId: string
@@ -70,9 +71,9 @@ async function pollLegNextTask(
         logger.error('LegNext task failed', { error: errorMsg })
         throw new Error(errorMsg)
       }
-    } catch (e: any) {
-      logger.warn('Polling fetch error:', { error: e.message })
-      if (e.message?.includes('not found')) throw e
+    } catch (e: unknown) {
+      logger.warn('Polling fetch error:', { error: getErrorMessage(e) })
+      if (getErrorMessage(e)?.includes('not found')) throw e
     }
 
     attempts++
@@ -314,7 +315,7 @@ export const generateMoodboard = task({
 
           const newContent = {
             ...currentContent,
-            moodImages: newImages
+            moodImages: newImages,
           }
 
           // 2. Update Legacy Column
@@ -326,16 +327,14 @@ export const generateMoodboard = task({
           if (legacyError) throw legacyError
 
           // 3. Upsert Story Plans Table (Primary)
-          const { error: primaryError } = await supabase
-            .from('story_plans')
-            .upsert(
-              {
-                project_id: projectId,
-                content: newContent,
-                updated_at: new Date().toISOString()
-              },
-              { onConflict: 'project_id' }
-            )
+          const { error: primaryError } = await supabase.from('story_plans').upsert(
+            {
+              project_id: projectId,
+              content: newContent,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'project_id' }
+          )
 
           if (primaryError) throw primaryError
 
@@ -344,7 +343,6 @@ export const generateMoodboard = task({
             count: newImages.length,
           })
           break
-
         } catch (dbError) {
           logger.error(`Database error on attempt ${attempt + 1}`, { error: dbError })
           if (attempt < maxRetries - 1) {

@@ -22,7 +22,7 @@ export const BibleRoadmap: React.FC<BibleRoadmapProps> = () => {
     pendingActions,
   } = useBible()
   const sequences = storyPlan.sequences || []
-  
+
   // Check for loading state - roadmap uses 'episodeRoadmap' section key
   const isLoading = loadingSections?.episodeRoadmap?.loading ?? false
   const pendingAction = pendingActions?.episodeRoadmap
@@ -31,10 +31,7 @@ export const BibleRoadmap: React.FC<BibleRoadmapProps> = () => {
     <section className={isLoading || pendingAction ? 'relative' : ''}>
       {/* Pending action overlay */}
       {pendingAction && (
-        <SectionPendingOverlay 
-          pendingAction={pendingAction}
-          onReview={pendingAction.onReview}
-        />
+        <SectionPendingOverlay pendingAction={pendingAction} onReview={pendingAction.onReview} />
       )}
       {/* Loading Overlay */}
       {isLoading && !pendingAction && (

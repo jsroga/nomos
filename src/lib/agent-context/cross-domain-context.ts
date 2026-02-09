@@ -151,7 +151,7 @@ export async function buildCrossDomainContext(projectId: string): Promise<string
 /**
  * Build a summary of available entities for agent prompts
  */
-export async function buildCrossDomainSummary(projectId: string): Promise<string> {
+async function buildCrossDomainSummary(projectId: string): Promise<string> {
   if (!projectId) return ''
 
   try {

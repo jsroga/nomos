@@ -26,8 +26,16 @@ export async function GET(req: Request) {
 
     // Fetch project with seriesBible and storyPlan in parallel
     const [projectData, storyPlanData] = await Promise.all([
-      db.select().from(projects).where(eq(projects.id, projectId)).then(r => r[0]),
-      db.select().from(storyPlans).where(eq(storyPlans.projectId, projectId)).then(r => r[0]),
+      db
+        .select()
+        .from(projects)
+        .where(eq(projects.id, projectId))
+        .then(r => r[0]),
+      db
+        .select()
+        .from(storyPlans)
+        .where(eq(storyPlans.projectId, projectId))
+        .then(r => r[0]),
     ])
 
     if (!projectData) {
@@ -39,13 +47,21 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const seriesBible = (projectData.seriesBible as Record<string, any>) || {}
-    const storyPlan = (storyPlanData?.content as Record<string, any>) || {}
+    const seriesBible = (projectData.seriesBible as Record<string, unknown>) || {}
+    const storyPlan = (storyPlanData?.content as Record<string, unknown>) || {}
 
     // The update_world_bible tool may save fields under category keys like 'Setting', 'History', etc.
     // We need to flatten these nested category objects to top-level fields
-    const knownCategories = ['General', 'Setting', 'History', 'Magic', 'Factions', 'Technology', 'Culture']
-    const flattenedBible: Record<string, any> = {}
+    const knownCategories = [
+      'General',
+      'Setting',
+      'History',
+      'Magic',
+      'Factions',
+      'Technology',
+      'Culture',
+    ]
+    const flattenedBible: Record<string, unknown> = {}
 
     for (const [key, value] of Object.entries(seriesBible)) {
       if (knownCategories.includes(key) && typeof value === 'object' && value !== null) {

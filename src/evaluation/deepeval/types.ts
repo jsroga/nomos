@@ -1,6 +1,6 @@
 /**
  * Types for DeepEval Python Bridge
- * 
+ *
  * These types mirror the JSON format expected by scripts/deepeval/evaluate.py
  */
 
@@ -75,4 +75,4 @@ export const DEEPEVAL_METRICS = [
   'Gilligan-Martin Quality',
 ] as const
 
-export type DeepEvalMetricName = typeof DEEPEVAL_METRICS[number]
+type DeepEvalMetricName = (typeof DEEPEVAL_METRICS)[number]

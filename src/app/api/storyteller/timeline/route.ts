@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     }
 
     const cookieStore = await cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
 
     // Get beats for the episode
     const { data: beats, error: beatsError } = await supabase

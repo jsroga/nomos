@@ -7,7 +7,7 @@ import { motion } from 'framer-motion'
  * DECRYPTED TEXT EFFECT
  * Matrix-style scrambling reveal.
  */
-export const DecryptedText = ({
+const DecryptedText = ({
   text,
   speed = 50,
   maxIterations = 10,
@@ -58,7 +58,7 @@ export const DecryptedText = ({
  * FUZZY TEXT EFFECT
  * Canvas-based pixel distortion.
  */
-export const FuzzyText = ({
+const FuzzyText = ({
   text,
   className = '',
   baseIntensity = 0.1,
@@ -175,7 +175,7 @@ const PressureChar = ({
   )
 }
 
-export const TextPressure = ({
+const TextPressure = ({
   text,
   className = '',
   minWeight = 100,
@@ -277,7 +277,7 @@ export const LiquidDistortionText = ({
 }) => {
   return (
     <div
-      className={`relative ${className} group cursor-default py-8 px-12 md:px-20 overflow-visible flex items-center justify-center`}
+      className={`relative ${className} group cursor-default py-4 px-4 md:py-8 md:px-20 overflow-visible flex items-center justify-center`}
     >
       <svg className="absolute w-0 h-0 pointer-events-none">
         <filter
@@ -335,13 +335,7 @@ export const LiquidDistortionText = ({
  * AGGRESSIVE GLITCH TEXT
  * Brutal chromatic aberration and segment-based glitching.
  */
-export const AggressiveGlitchText = ({
-  text,
-  className = '',
-}: {
-  text: string
-  className?: string
-}) => {
+const AggressiveGlitchText = ({ text, className = '' }: { text: string; className?: string }) => {
   const [isGlitching, setIsGlitching] = useState(false)
   const [glitchText, setGlitchText] = useState(text)
 

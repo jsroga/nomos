@@ -702,6 +702,6 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
   if (typeof document !== 'undefined') {
     return createPortal(modalContent, document.body)
   }
-  
+
   return modalContent
 }

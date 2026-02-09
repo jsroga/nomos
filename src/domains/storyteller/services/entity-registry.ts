@@ -1,15 +1,15 @@
 /**
  * Entity Registry Service (SERVER-ONLY)
- * 
+ *
  * Manages entity references for smart context assembly and UI rendering.
  * Entities are referenced in LLM output using MD-style links: [Display Name][entity-type-uuid]
- * 
+ *
  * Features:
  * - In-memory LRU cache for fast lookups
  * - DB sync for persistence
  * - Reference extraction from text
  * - Integration with GraphRAG for relationship traversal
- * 
+ *
  * NOTE: This module uses database access and should only be imported server-side.
  * For client-side usage, use the API endpoints:
  * - GET /api/entities/resolve
@@ -22,27 +22,20 @@ import { eq, and, inArray } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 
 // Re-export types from reference-parser for convenience
-export {
-  ENTITY_PREFIXES,
-  PREFIX_TO_TYPE
-} from '../utils/reference-parser'
+export { ENTITY_PREFIXES, PREFIX_TO_TYPE } from '../utils/reference-parser'
 
 export type { EntityType } from '../utils/reference-parser'
 
-import {
-  EntityType,
-  ENTITY_PREFIXES,
-  PREFIX_TO_TYPE
-} from '../utils/reference-parser'
+import { EntityType, ENTITY_PREFIXES, PREFIX_TO_TYPE } from '../utils/reference-parser'
 
 export interface EntityReference {
-  id: string           // e.g., "char-a1b2c3d4"
+  id: string // e.g., "char-a1b2c3d4"
   type: EntityType
-  name: string         // Display name
-  description: string  // For tooltip
-  metadata: Record<string, any>  // Full entity data
+  name: string // Display name
+  description: string // For tooltip
+  metadata: Record<string, unknown> // Full entity data
   projectId: string
-  sourceEntityId?: string  // Link to original table
+  sourceEntityId?: string // Link to original table
   createdAt: Date
   lastReferencedAt: Date
 }
@@ -51,7 +44,7 @@ export interface RegisterEntityInput {
   type: EntityType
   name: string
   description: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
   projectId: string
   sourceEntityId?: string
 }
@@ -136,7 +129,7 @@ export function generateReferenceId(type: EntityType): string {
 /**
  * Format an entity reference for use in text
  */
-export function formatReference(name: string, refId: string): string {
+function formatReference(name: string, refId: string): string {
   return `[${name}][${refId}]`
 }
 
@@ -414,12 +407,7 @@ class EntityRegistryService {
       const dbEntities = await db
         .select()
         .from(entityReferences)
-        .where(
-          and(
-            eq(entityReferences.projectId, projectId),
-            eq(entityReferences.type, type)
-          )
-        )
+        .where(and(eq(entityReferences.projectId, projectId), eq(entityReferences.type, type)))
 
       return dbEntities.map(e => this.dbToEntity(e))
     } catch (err) {
@@ -459,9 +447,7 @@ class EntityRegistryService {
     }
 
     try {
-      await db
-        .delete(entityReferences)
-        .where(eq(entityReferences.id, refId))
+      await db.delete(entityReferences).where(eq(entityReferences.id, refId))
     } catch (err) {
       console.warn('[EntityRegistry] Failed to delete entity:', err)
     }
@@ -474,7 +460,7 @@ class EntityRegistryService {
   async syncFromSource(
     projectId: string,
     type: EntityType,
-    entities: Array<{ id: string; name: string; description?: string;[key: string]: any }>
+    entities: Array<{ id: string; name: string; description?: string; [key: string]: any }>
   ): Promise<void> {
     for (const entity of entities) {
       const existing = await this.findByNameAndType(projectId, entity.name, type)
@@ -542,11 +528,11 @@ class EntityRegistryService {
   private async generateEmbedding(entity: EntityReference): Promise<void> {
     try {
       const { entityGraphService } = await import('./entity-graph-service')
-      
+
       // Build embedding content from entity name, type, description, and key metadata
       const metaParts: string[] = []
       const meta = entity.metadata || {}
-      
+
       if (meta.role) metaParts.push(`Role: ${meta.role}`)
       if (meta.archetype) metaParts.push(`Archetype: ${meta.archetype}`)
       if (meta.motivation) metaParts.push(`Motivation: ${meta.motivation}`)
@@ -554,12 +540,14 @@ class EntityRegistryService {
       if (meta.description) metaParts.push(meta.description)
       if (meta.powerStructure) metaParts.push(meta.powerStructure)
       if (meta.goals && Array.isArray(meta.goals)) metaParts.push(`Goals: ${meta.goals.join(', ')}`)
-      
+
       const embeddingContent = [
         `${entity.type}: ${entity.name}`,
         entity.description || '',
         ...metaParts,
-      ].filter(Boolean).join('. ')
+      ]
+        .filter(Boolean)
+        .join('. ')
 
       if (embeddingContent.length < 5) return // Skip if too little content
 
@@ -577,7 +565,7 @@ class EntityRegistryService {
       type: dbEntity.type as EntityType,
       name: dbEntity.name,
       description: dbEntity.description || '',
-      metadata: (dbEntity.metadata as Record<string, any>) || {},
+      metadata: (dbEntity.metadata as Record<string, unknown>) || {},
       projectId: dbEntity.projectId,
       sourceEntityId: dbEntity.sourceEntityId,
       createdAt: new Date(dbEntity.createdAt),

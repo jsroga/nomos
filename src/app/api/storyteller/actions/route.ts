@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
 
     // Extract trace ID for Langfuse correlation (from headers or body)
     const traceId = req.headers.get('x-trace-id') || body.traceId || `action-${Date.now()}`
-    
+
     // Record user action approval in Langfuse
     try {
       recordUserAction(traceId, {
@@ -83,9 +83,11 @@ export async function POST(req: NextRequest) {
         payload: action.payload,
         reasoning: body.reasoning,
       })
-    } catch { /* ignore tracing errors */ }
+    } catch {
+      /* ignore tracing errors */
+    }
 
-    async function updateSeriesBible(updates: Record<string, any>) {
+    async function updateSeriesBible(updates: Record<string, unknown>) {
       if (!projectId) throw new Error('Project ID required')
 
       const [existing] = await db
@@ -94,7 +96,7 @@ export async function POST(req: NextRequest) {
         .where(eq(seriesBibles.projectId, projectId))
         .limit(1)
 
-      const currentContent = (existing?.content as Record<string, any>) || {}
+      const currentContent = (existing?.content as Record<string, unknown>) || {}
       const updatedContent = deepMerge(currentContent, updates)
 
       await db
@@ -113,7 +115,7 @@ export async function POST(req: NextRequest) {
       return updatedContent
     }
 
-    async function updateStoryPlan(updates: Record<string, any>) {
+    async function updateStoryPlan(updates: Record<string, unknown>) {
       if (!projectId) throw new Error('Project ID required')
 
       const [existing] = await db
@@ -122,16 +124,28 @@ export async function POST(req: NextRequest) {
         .where(eq(storyPlans.projectId, projectId))
         .limit(1)
 
-      const currentContent = (existing?.content as Record<string, any>) || {}
+      const currentContent = (existing?.content as Record<string, unknown>) || {}
       console.log('📖 [updateStoryPlan] BEFORE - currentContent keys:', Object.keys(currentContent))
-      console.log('📖 [updateStoryPlan] BEFORE - worldDescription:', (currentContent.worldDescription as string)?.slice(0, 80))
+      console.log(
+        '📖 [updateStoryPlan] BEFORE - worldDescription:',
+        (currentContent.worldDescription as string)?.slice(0, 80)
+      )
       console.log('📖 [updateStoryPlan] INCOMING - updates keys:', Object.keys(updates))
-      console.log('📖 [updateStoryPlan] INCOMING - worldDescription:', (updates.worldDescription as string)?.slice(0, 80))
-      
+      console.log(
+        '📖 [updateStoryPlan] INCOMING - worldDescription:',
+        (updates.worldDescription as string)?.slice(0, 80)
+      )
+
       const updatedContent = deepMerge(currentContent, updates)
-      
-      console.log('📖 [updateStoryPlan] AFTER MERGE - updatedContent keys:', Object.keys(updatedContent))
-      console.log('📖 [updateStoryPlan] AFTER MERGE - worldDescription:', (updatedContent.worldDescription as string)?.slice(0, 80))
+
+      console.log(
+        '📖 [updateStoryPlan] AFTER MERGE - updatedContent keys:',
+        Object.keys(updatedContent)
+      )
+      console.log(
+        '📖 [updateStoryPlan] AFTER MERGE - worldDescription:',
+        (updatedContent.worldDescription as string)?.slice(0, 80)
+      )
 
       await db
         .insert(storyPlans)
@@ -140,7 +154,7 @@ export async function POST(req: NextRequest) {
           target: storyPlans.projectId,
           set: { content: updatedContent, updatedAt: new Date() },
         })
-      
+
       console.log('✅ [updateStoryPlan] WRITE COMPLETE - saved to database')
 
       return updatedContent
@@ -170,8 +184,8 @@ export async function POST(req: NextRequest) {
           'imagePrompts',
         ]
 
-        const planUpdates: Record<string, any> = {}
-        const bibleUpdates: Record<string, any> = {}
+        const planUpdates: Record<string, unknown> = {}
+        const bibleUpdates: Record<string, unknown> = {}
 
         // 1. Extract nested storyPlan if exists
         if (payload.storyPlan) {
@@ -195,7 +209,7 @@ export async function POST(req: NextRequest) {
         console.log('🔍 [API] Detailed Updates:', {
           bibleKeys: Object.keys(bibleUpdates),
           planKeys: Object.keys(planUpdates),
-          rawPayload: JSON.stringify(payload).substring(0, 200) + '...'
+          rawPayload: JSON.stringify(payload).substring(0, 200) + '...',
         })
 
         if (Object.keys(bibleUpdates).length > 0) {
@@ -251,7 +265,9 @@ export async function POST(req: NextRequest) {
         } else if (action.type === 'UPDATE_INSPIRATIONS') {
           updates = { inspirations: action.payload.inspirations }
         } else if (action.type === 'UPDATE_WORLD_DESCRIPTION') {
-          updates = { worldDescription: action.payload.worldDescription || action.payload.description }
+          updates = {
+            worldDescription: action.payload.worldDescription || action.payload.description,
+          }
         } else if (action.type === 'UPDATE_PLOT_TWISTS') {
           updates = { plotTwists: action.payload.plotTwists }
         } else if (action.type === 'UPDATE_KEY_CHARACTERS') {
@@ -274,7 +290,10 @@ export async function POST(req: NextRequest) {
           updates = { soundtracks: action.payload.soundtracks }
 
         // FIX: These fields belong to storyPlan, so we update the storyPlan table/column
-        console.log(`💾 [API] ${action.type} - Saving updates:`, JSON.stringify(updates).slice(0, 200))
+        console.log(
+          `💾 [API] ${action.type} - Saving updates:`,
+          JSON.stringify(updates).slice(0, 200)
+        )
         const updated = await updateStoryPlan(updates)
         console.log(`✅ [API] ${action.type} - Saved successfully. Keys:`, Object.keys(updated))
         return NextResponse.json({
@@ -311,7 +330,7 @@ export async function POST(req: NextRequest) {
         if (!episodeId) return NextResponse.json({ error: 'Episode ID required' }, { status: 400 })
 
         const [existing] = await db.select().from(episodes).where(eq(episodes.id, episodeId))
-        const existingPlan = (existing?.storyPlan as Record<string, any>) || {}
+        const existingPlan = (existing?.storyPlan as Record<string, unknown>) || {}
         const newPlan = {
           ...existingPlan,
           premise: { ...((existingPlan.premise as any) || {}), ...premise },
@@ -398,7 +417,7 @@ export async function POST(req: NextRequest) {
         }
 
         await db.insert(characters).values(newCharacter)
-        
+
         // Register as entity with name-based ID for entity linking
         try {
           const { entityRegistry } = await import('@/domains/storyteller/services/entity-registry')
@@ -466,7 +485,7 @@ export async function POST(req: NextRequest) {
           .from(projects)
           .where(eq(projects.id, projectId))
           .limit(1)
-        const currentBible = (project?.seriesBible as Record<string, any>) || {}
+        const currentBible = (project?.seriesBible as Record<string, unknown>) || {}
         const newScript = append ? (currentBible.script || '') + '\n\n' + content : content
         const updatedBible = await updateSeriesBible({ script: newScript })
         return NextResponse.json({

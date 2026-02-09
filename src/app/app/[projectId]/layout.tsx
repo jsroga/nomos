@@ -4,6 +4,11 @@ import { ProjectLoader } from '@/components/ProjectLoader'
 import { ProjectTourWrapper } from '@/components/ProjectTourWrapper'
 
 import { TooltipProvider } from '@/components/ui/tooltip'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Project',
+}
 
 export default function ProjectLayout({ children }: { children: React.ReactNode }) {
   return (

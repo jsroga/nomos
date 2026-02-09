@@ -26,7 +26,7 @@ export interface MCPServiceContext {
 export interface LangSmithContext {
   runName?: string
   tags?: string[]
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 // ============================================
@@ -34,7 +34,7 @@ export interface LangSmithContext {
 // ============================================
 
 export type ToolHandler = (
-  args: Record<string, any>,
+  args: Record<string, unknown>,
   context: MCPServiceContext,
   langsmith: LangSmithContext
 ) => Promise<any>
@@ -47,7 +47,7 @@ export type ToolHandler = (
  * Interface for domain modules to implement.
  * Each domain must export tools and handlers.
  */
-export interface MCPDomainModule {
+interface MCPDomainModule {
   /**
    * Array of MCP Tool definitions for this domain
    */

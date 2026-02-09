@@ -2,6 +2,7 @@
 
 import React, { Suspense, useState, useEffect } from 'react'
 import { Loader2, AlertCircle, ExternalLink } from 'lucide-react'
+import { getErrorMessage } from '@/lib/error-utils'
 
 // Lazy load Three.js components to avoid SSR issues
 let Canvas: any = null
@@ -121,10 +122,10 @@ export const ThreeDViewer: React.FC<ThreeDViewerProps> = ({ modelUrl }) => {
         Html = dreiModule.Html
 
         setIsLibsLoaded(true)
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Failed to load Three.js:', err)
         setHasError(true)
-        setErrorMessage(err.message || 'Failed to load 3D viewer')
+        setErrorMessage(getErrorMessage(err) || 'Failed to load 3D viewer')
       }
     }
 
@@ -254,7 +255,7 @@ class ErrorBoundary extends React.Component<
   { children: React.ReactNode; fallback: React.ReactNode },
   { hasError: boolean }
 > {
-  constructor(props: any) {
+  constructor(props: { children: React.ReactNode; fallback: React.ReactNode }) {
     super(props)
     this.state = { hasError: false }
   }
@@ -263,7 +264,7 @@ class ErrorBoundary extends React.Component<
     return { hasError: true }
   }
 
-  componentDidCatch(error: any, errorInfo: any) {
+  componentDidCatch(error: unknown, errorInfo: React.ErrorInfo) {
     console.error('ThreeDViewer error:', error, errorInfo)
   }
 

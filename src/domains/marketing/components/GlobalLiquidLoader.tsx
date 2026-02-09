@@ -12,13 +12,19 @@ declare global {
 
 export function GlobalLiquidLoader() {
   const [scriptsLoaded, setScriptsLoaded] = useState({
+    jquery: false,
     html2canvas: false,
     ripples: false,
     liquidGL: false,
   })
 
   useEffect(() => {
-    if (scriptsLoaded.html2canvas && scriptsLoaded.ripples && scriptsLoaded.liquidGL) {
+    if (
+      scriptsLoaded.jquery &&
+      scriptsLoaded.html2canvas &&
+      scriptsLoaded.ripples &&
+      scriptsLoaded.liquidGL
+    ) {
       console.log('LiquidGL scripts loaded globally.')
     }
   }, [scriptsLoaded])
@@ -27,18 +33,22 @@ export function GlobalLiquidLoader() {
     <>
       <Script
         src="/scripts/html2canvas.min.js"
-        strategy="afterInteractive"
+        strategy="lazyOnload"
         onLoad={() => setScriptsLoaded(prev => ({ ...prev, html2canvas: true }))}
       />
-      <Script src="https://code.jquery.com/jquery-3.7.1.min.js" strategy="beforeInteractive" />
+      <Script
+        src="https://code.jquery.com/jquery-3.7.1.min.js"
+        strategy="lazyOnload"
+        onLoad={() => setScriptsLoaded(prev => ({ ...prev, jquery: true }))}
+      />
       <Script
         src="/scripts/jquery.ripples-min.js"
-        strategy="afterInteractive"
+        strategy="lazyOnload"
         onLoad={() => setScriptsLoaded(prev => ({ ...prev, ripples: true }))}
       />
       <Script
         src="/scripts/liquidGL.js"
-        strategy="afterInteractive"
+        strategy="lazyOnload"
         onLoad={() => setScriptsLoaded(prev => ({ ...prev, liquidGL: true }))}
       />
     </>

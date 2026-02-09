@@ -11,7 +11,7 @@ import { nodeColors } from './CustomNodes'
 interface PropertiesPanelProps {
   selectedNode: Node | null
   onClose: () => void
-  onUpdate: (nodeId: string, updates: Record<string, any>) => void
+  onUpdate: (nodeId: string, updates: Record<string, unknown>) => void
   onDelete: (nodeId: string) => void
 }
 
@@ -76,7 +76,7 @@ export function PropertiesPanel({
   onUpdate,
   onDelete,
 }: PropertiesPanelProps) {
-  const [localData, setLocalData] = useState<Record<string, any>>({})
+  const [localData, setLocalData] = useState<Record<string, unknown>>({})
 
   // Sync local state when selected node changes
   useEffect(() => {

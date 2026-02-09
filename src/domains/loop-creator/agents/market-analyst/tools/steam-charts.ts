@@ -165,7 +165,7 @@ export const steamChartsTool = new DynamicStructuredTool({
 /**
  * Get aggregate stats for a genre
  */
-export async function getGenreStats(genre: string): Promise<{
+async function getGenreStats(genre: string): Promise<{
   averagePeak: number
   averageCurrent: number
   topPerformers: string[]

@@ -28,7 +28,7 @@ describe('ExecutiveAgent Integration', () => {
 
         try {
             const agent = await ExecutiveAgent.create({
-                modelName: 'gpt-4o-mini', // Faster/Cheaper than Haiku for test? Or stick to script
+                modelName: 'openai/gpt-4o-mini', // Faster/Cheaper than Haiku for test? Or stick to script
                 planner: plannerTool,
                 tools: []
             })
@@ -50,7 +50,7 @@ describe('ExecutiveAgent Integration', () => {
             expect(['PROPOSE_PLAN', 'EXECUTE_STEP', 'FINISH']).toContain(result.type)
 
             if (result.type === 'PROPOSE_PLAN') {
-                expect(result.payload.plan).toBeDefined()
+                expect(result.payload.summary).toBeDefined()
             }
         } catch (e) {
             console.error('Agent Test Failed:', e)

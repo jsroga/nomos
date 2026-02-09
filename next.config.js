@@ -15,8 +15,15 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Mark async_hooks as external to prevent client-side bundling errors
-  serverExternalPackages: ['async_hooks'],
+  // Mark async_hooks and OpenTelemetry as external to prevent bundling errors
+  serverExternalPackages: [
+    'async_hooks',
+    '@opentelemetry/api',
+    '@opentelemetry/resources',
+    '@opentelemetry/sdk-node',
+    '@opentelemetry/sdk-trace-node',
+    '@opentelemetry/sdk-trace-base',
+  ],
   // Hide default dev indicators - we have our own error tracking
   devIndicators: {
     appIsrStatus: false,

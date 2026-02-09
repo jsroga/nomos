@@ -1,4 +1,3 @@
-
 import { z } from 'zod'
 
 // ==========================================
@@ -6,32 +5,44 @@ import { z } from 'zod'
 // ==========================================
 
 export const ResearchFocusSchema = z.enum([
-    'historical',
-    'cultural',
-    'scientific',
-    'psychological',
-    'mythology',
-    'real_events',
-    'genre_conventions',
-    'general'
+  'historical',
+  'cultural',
+  'scientific',
+  'psychological',
+  'mythology',
+  'real_events',
+  'genre_conventions',
+  'general',
 ])
 
 export const ResearchInputSchema = z.object({
-    query: z.string().describe('The research query - be specific about what you need to know'),
-    focus: ResearchFocusSchema.describe('Research focus area to optimize source selection'),
-    context: z.string().optional().describe('Story context for more relevant results (e.g., "1920s noir detectivestory")'),
-    depth: z.enum(['quick', 'standard', 'deep']).optional().default('standard').describe('Research depth')
+  query: z.string().describe('The research query - be specific about what you need to know'),
+  focus: ResearchFocusSchema.describe('Research focus area to optimize source selection'),
+  context: z
+    .string()
+    .optional()
+    .describe('Story context for more relevant results (e.g., "1920s noir detectivestory")'),
+  depth: z
+    .enum(['quick', 'standard', 'deep'])
+    .optional()
+    .default('standard')
+    .describe('Research depth'),
 })
 
-export const FactCheckCategorySchema = z.enum(['historical', 'scientific', 'cultural', 'geographical'])
+export const FactCheckCategorySchema = z.enum([
+  'historical',
+  'scientific',
+  'cultural',
+  'geographical',
+])
 
 export const FactCheckInputSchema = z.object({
-    claim: z.string().describe('The specific claim or detail to verify'),
-    category: FactCheckCategorySchema.describe('Category of the claim')
+  claim: z.string().describe('The specific claim or detail to verify'),
+  category: FactCheckCategorySchema.describe('Category of the claim'),
 })
 
 export const ReferenceLookupInputSchema = z.object({
-    term: z.string().describe('The term, name, or concept to look up')
+  term: z.string().describe('The term, name, or concept to look up'),
 })
 
 // ==========================================
@@ -39,19 +50,21 @@ export const ReferenceLookupInputSchema = z.object({
 // ==========================================
 
 export const GetPlotPhaseInputSchema = z.object({
-    currentChapter: z.number().int().min(1).describe('Current chapter number')
+  currentChapter: z.number().int().min(1).describe('Current chapter number'),
 })
 
 export const ValidateConsistencyInputSchema = z.object({
-    proposedBeat: z.string().describe('The story event being proposed'),
-    establishedFacts: z.array(z.string()).describe('List of established story facts to check against')
+  proposedBeat: z.string().describe('The story event being proposed'),
+  establishedFacts: z
+    .array(z.string())
+    .describe('List of established story facts to check against'),
 })
 
 // ==========================================
 // TYPE EXPORTS
 // ==========================================
-export type ResearchInput = z.infer<typeof ResearchInputSchema>
-export type FactCheckInput = z.infer<typeof FactCheckInputSchema>
-export type ReferenceLookupInput = z.infer<typeof ReferenceLookupInputSchema>
-export type GetPlotPhaseInput = z.infer<typeof GetPlotPhaseInputSchema>
-export type ValidateConsistencyInput = z.infer<typeof ValidateConsistencyInputSchema>
+type ResearchInput = z.infer<typeof ResearchInputSchema>
+type FactCheckInput = z.infer<typeof FactCheckInputSchema>
+type ReferenceLookupInput = z.infer<typeof ReferenceLookupInputSchema>
+type GetPlotPhaseInput = z.infer<typeof GetPlotPhaseInputSchema>
+type ValidateConsistencyInput = z.infer<typeof ValidateConsistencyInputSchema>

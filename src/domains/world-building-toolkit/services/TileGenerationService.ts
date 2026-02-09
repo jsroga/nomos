@@ -2,8 +2,6 @@ import { Tile, useWorldStore } from '@/domains/world-building-toolkit/store/useW
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
 import { aiService } from '@/infrastructure/ai/service'
 import { LocalStorageKeys, DynamicLocalStorageKeys } from '@/constants/localStorage'
-import { assembleContextImage } from '@/infrastructure/ai/contextAssembler'
-import { TileContext } from '@/infrastructure/ai/types'
 import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/constants/polling'
 
 interface TileGenRunState {

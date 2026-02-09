@@ -14,7 +14,7 @@ export interface SearchResult {
   id: string
   chunkId: string
   content: string
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
   vectorScore: number
   keywordScore: number
   combinedScore: number
@@ -109,7 +109,7 @@ export class HybridSearchEngine {
     // Create lookup maps for ranking
     const vectorRanks = new Map<string, number>()
     const keywordRanks = new Map<string, number>()
-    const contentMap = new Map<string, { content: string; metadata: Record<string, any> }>()
+    const contentMap = new Map<string, { content: string; metadata: Record<string, unknown> }>()
 
     vectorResults.forEach((result, index) => {
       vectorRanks.set(result.id, index + 1)
@@ -169,7 +169,7 @@ export class HybridSearchEngine {
       characterIds?: string[]
     },
     limit: number = 20
-  ): Promise<Array<{ id: string; content: string; metadata: Record<string, any>; score: number }>> {
+  ): Promise<Array<{ id: string; content: string; metadata: Record<string, unknown>; score: number }>> {
     try {
       // Generate query embedding
       const queryEmbedding = await this.embeddings.embedQuery(query)
@@ -207,7 +207,7 @@ export class HybridSearchEngine {
       return results.map(r => ({
         id: r.id,
         content: r.content,
-        metadata: r.metadata as Record<string, any>,
+        metadata: r.metadata as Record<string, unknown>,
         score: r.score,
       }))
     } catch (error) {
@@ -228,7 +228,7 @@ export class HybridSearchEngine {
       characterIds?: string[]
     },
     limit: number = 20
-  ): Promise<Array<{ id: string; content: string; metadata: Record<string, any>; score: number }>> {
+  ): Promise<Array<{ id: string; content: string; metadata: Record<string, unknown>; score: number }>> {
     try {
       // Build filter conditions
       const conditions = [sql`${documentEmbeddings.projectId} = ${projectId}`]
@@ -275,7 +275,7 @@ export class HybridSearchEngine {
           return {
             id: r.id,
             content: r.content,
-            metadata: r.metadata as Record<string, any>,
+            metadata: r.metadata as Record<string, unknown>,
             score,
           }
         })
@@ -319,5 +319,3 @@ export function getHybridSearchEngine(config?: Partial<HybridSearchConfig>): Hyb
   }
   return searchEngineInstance
 }
-
-export { DEFAULT_CONFIG as HYBRID_SEARCH_DEFAULT_CONFIG }

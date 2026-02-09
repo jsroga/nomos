@@ -1,14 +1,14 @@
 /**
  * Custom Metrics for Confident AI
- * 
+ *
  * These metrics translate our storyteller judge criteria into
  * Confident AI custom metric format using scientific evaluation approaches:
- * 
+ *
  * - EQ-Bench (arxiv.org/html/2312.06281v2) - Emotional Intelligence benchmark
  * - Mazur Benchmark - 10 elements for storytelling quality
  * - Gilligan Method - Breaking Bad writers room approach
  * - Martin Storytelling - GRRM principles
- * 
+ *
  * Confident AI will run LLM-as-judge evaluations server-side
  * using these criteria definitions.
  */

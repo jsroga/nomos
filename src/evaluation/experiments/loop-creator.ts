@@ -34,9 +34,9 @@ const mechanicsGenerationEvaluator: CustomEvaluator = {
     const outputStr = JSON.stringify(output)
     const expected = reference as
       | {
-        shouldGenerateMechanics?: boolean
-        expectedMechanicTypes?: string[]
-      }
+          shouldGenerateMechanics?: boolean
+          expectedMechanicTypes?: string[]
+        }
       | undefined
 
     // Check if mechanics were generated
@@ -89,8 +89,8 @@ const loopStructureEvaluator: CustomEvaluator = {
     const outputStr = JSON.stringify(output)
     const expected = reference as
       | {
-        shouldCreateLoop?: boolean
-      }
+          shouldCreateLoop?: boolean
+        }
       | undefined
 
     // Check for loop indicators
@@ -131,9 +131,9 @@ const balanceAnalysisEvaluator: CustomEvaluator = {
     const outputStr = JSON.stringify(output)
     const expected = reference as
       | {
-        shouldAnalyzeBalance?: boolean
-        minBalanceScore?: number
-      }
+          shouldAnalyzeBalance?: boolean
+          minBalanceScore?: number
+        }
       | undefined
 
     // Check for balance analysis indicators

@@ -272,14 +272,14 @@ export function getReranker(config?: Partial<RerankerConfig>): Reranker {
 /**
  * Check if Cohere reranking is available
  */
-export function isCohereAvailable(): boolean {
+function isCohereAvailable(): boolean {
   return !!process.env.COHERE_API_KEY
 }
 
 /**
  * Get recommended reranker based on available resources
  */
-export function getRecommendedProvider(): RerankerProvider {
+function getRecommendedProvider(): RerankerProvider {
   if (process.env.COHERE_API_KEY) {
     return 'cohere'
   }

@@ -10,25 +10,21 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { reviewScript, quickReview, ScriptReviewRequest } from '@/domains/storyteller/agents/v2/script-review-agent'
+import {
+  reviewScript,
+  quickReview,
+  ScriptReviewRequest,
+} from '@/domains/storyteller/agents/v2/script-review-agent'
+import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
+import { getErrorMessage } from '@/lib/error-utils'
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, _auth: AuthenticatedRequest) => {
   try {
     const body = await request.json()
-    const { 
-      script, 
-      episodePremise, 
-      characters, 
-      focusAreas,
-      quickMode,
-      persona,
-    } = body
+    const { script, episodePremise, characters, focusAreas, quickMode, persona } = body
 
     if (!script || typeof script !== 'string') {
-      return NextResponse.json(
-        { error: 'Script content is required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Script content is required' }, { status: 400 })
     }
 
     if (script.length < 50) {
@@ -72,15 +68,11 @@ export async function POST(request: NextRequest) {
       mode: 'full',
       ...result,
     })
-
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[ScriptReview] Error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Script review failed' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: getErrorMessage(error) || 'Script review failed' }, { status: 500 })
   }
-}
+})
 
 export async function GET() {
   return NextResponse.json({

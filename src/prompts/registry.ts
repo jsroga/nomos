@@ -1,4 +1,3 @@
-
 import { promptRepository } from './repository'
 import { PromptDefinition } from './types'
 
@@ -27,7 +26,7 @@ Output Format:
 CRITICAL: Output valid JSON after the closing </thinking> tag.
     `,
   variables: [],
-  tags: ['core', 'system']
+  tags: ['core', 'system'],
 }
 
 export const AGENT_LOOP_PROMPT: PromptDefinition = {
@@ -40,7 +39,7 @@ CONTEXT: "{{context}}"
 Determine the next best action.
     `,
   variables: ['goal', 'context'],
-  tags: ['core', 'user']
+  tags: ['core', 'user'],
 }
 
 export const STORYTELLER_SYSTEM_PROMPT: PromptDefinition = {
@@ -62,7 +61,7 @@ Output Format:
 { "type": "PROPOSE_PLAN" | "EXECUTE_STEP" | "FINISH", ... }
     `,
   variables: [],
-  tags: ['domain', 'storytelling']
+  tags: ['domain', 'storytelling'],
 }
 
 // Register Defaults
@@ -136,7 +135,7 @@ export const GAME_DESIGN_SYSTEM_PROMPT: PromptDefinition = {
 
 CRITICAL: Output valid JSON after the closing </thinking> tag.`,
   variables: [],
-  tags: ['domain', 'game-design']
+  tags: ['domain', 'game-design'],
 }
 
 export const GAME_DESIGN_LOOP_PROMPT: PromptDefinition = {
@@ -152,7 +151,7 @@ export const GAME_DESIGN_LOOP_PROMPT: PromptDefinition = {
 Analyze the context and determine the best next action to achieve the goal.
 Use your tools to gather information, analyze mechanics, or validate changes.`,
   variables: ['goal', 'context'],
-  tags: ['domain', 'game-design']
+  tags: ['domain', 'game-design'],
 }
 
 export const BALANCE_ANALYSIS_PROMPT: PromptDefinition = {
@@ -178,7 +177,7 @@ export const BALANCE_ANALYSIS_PROMPT: PromptDefinition = {
 
 Provide specific, actionable recommendations.`,
   variables: ['loop', 'mechanics', 'audience'],
-  tags: ['domain', 'game-design', 'analysis']
+  tags: ['domain', 'game-design', 'analysis'],
 }
 
 export function registerGameDesignPrompts() {
@@ -209,7 +208,7 @@ export const TOOL_USAGE_PROMPT: PromptDefinition = {
 Respond with valid JSON:
 { "score": 0.0-1.0, "reason": "Rationale" }`,
   variables: ['input', 'output', 'expected'],
-  tags: ['evaluation', 'operational']
+  tags: ['evaluation', 'operational'],
 }
 
 export const CORRECTION_PROMPT: PromptDefinition = {
@@ -233,7 +232,7 @@ export const CORRECTION_PROMPT: PromptDefinition = {
 Respond with valid JSON:
 { "score": 0.0-1.0, "reason": "Rationale" }`,
   variables: ['critique', 'draft', 'revision'],
-  tags: ['evaluation', 'operational']
+  tags: ['evaluation', 'operational'],
 }
 
 export const ORCHESTRATION_PROMPT: PromptDefinition = {
@@ -258,7 +257,7 @@ export const ORCHESTRATION_PROMPT: PromptDefinition = {
 Respond with valid JSON:
 { "score": 0.0-1.0, "reason": "Rationale" }`,
   variables: ['state', 'action', 'protocol'],
-  tags: ['evaluation', 'operational']
+  tags: ['evaluation', 'operational'],
 }
 
 export const EQ_PROMPT: PromptDefinition = {
@@ -278,7 +277,7 @@ Respond with valid JSON:
   }
 }`,
   variables: ['content'],
-  tags: ['evaluation', 'creative']
+  tags: ['evaluation', 'creative'],
 }
 
 export const TOXICITY_PROMPT: PromptDefinition = {
@@ -303,7 +302,7 @@ Respond with valid JSON:
   "severity": 0-10
 }`,
   variables: ['content'],
-  tags: ['evaluation', 'safety']
+  tags: ['evaluation', 'safety'],
 }
 
 export const MANIPULATION_PROMPT: PromptDefinition = {
@@ -329,7 +328,7 @@ Respond with valid JSON:
   "evidence": "Quote"
 }`,
   variables: ['content'],
-  tags: ['evaluation', 'safety']
+  tags: ['evaluation', 'safety'],
 }
 
 export const SCRIPT_FORMAT_PROMPT: PromptDefinition = {
@@ -350,7 +349,7 @@ export const SCRIPT_FORMAT_PROMPT: PromptDefinition = {
 Respond with valid JSON:
 { "score": 0.0-1.0, "reason": "Rationale" }`,
   variables: ['content'],
-  tags: ['evaluation', 'script']
+  tags: ['evaluation', 'script'],
 }
 
 export const DIALOGUE_PROMPT: PromptDefinition = {
@@ -369,7 +368,7 @@ export const DIALOGUE_PROMPT: PromptDefinition = {
 Respond with valid JSON:
 { "score": 0.0-1.0, "reason": "Rationale" }`,
   variables: ['content'],
-  tags: ['evaluation', 'script']
+  tags: ['evaluation', 'script'],
 }
 
 export const PACING_PROMPT: PromptDefinition = {
@@ -388,7 +387,7 @@ export const PACING_PROMPT: PromptDefinition = {
 Respond with valid JSON:
 { "score": 0.0-1.0, "reason": "Rationale" }`,
   variables: ['content'],
-  tags: ['evaluation', 'script']
+  tags: ['evaluation', 'script'],
 }
 
 export const MAGIC_JUDGE_PROMPT: PromptDefinition = {
@@ -428,7 +427,7 @@ Respond with valid JSON:
   "critique": "One specific actionable improvement"
 }`,
   variables: ['content'],
-  tags: ['evaluation', 'creative']
+  tags: ['evaluation', 'creative'],
 }
 
 export const RETRIEVAL_JUDGE_PROMPT: PromptDefinition = {
@@ -452,7 +451,7 @@ Respond with valid JSON:
   "reason": "Why is it relevant or not?"
 }`,
   variables: ['query', 'document'],
-  tags: ['evaluation', 'rag']
+  tags: ['evaluation', 'rag'],
 }
 
 export const PERSONA_FIDELITY_JUDGE_PROMPT: PromptDefinition = {
@@ -479,7 +478,7 @@ Respond with valid JSON:
   "missedOpportunities": ["what was missing that would have made it more authentic"]
 }`,
   variables: ['persona', 'content'],
-  tags: ['evaluation', 'creative']
+  tags: ['evaluation', 'creative'],
 }
 
 export const REVERSE_INTENT_JUDGE_PROMPT: PromptDefinition = {
@@ -501,7 +500,7 @@ export const REVERSE_INTENT_JUDGE_PROMPT: PromptDefinition = {
     "reason": "Why the content matches or misses the mark"
   }`,
   variables: ['content'],
-  tags: ['evaluation', 'creative']
+  tags: ['evaluation', 'creative'],
 }
 
 export const HALLUCINATION_JUDGE_PROMPT: PromptDefinition = {
@@ -535,7 +534,7 @@ Respond with ONLY valid JSON:
   ]
 }`,
   variables: ['reference', 'output'],
-  tags: ['evaluation', 'safety']
+  tags: ['evaluation', 'safety'],
 }
 
 export const CITATION_JUDGE_PROMPT: PromptDefinition = {
@@ -567,7 +566,7 @@ Respond with ONLY valid JSON:
   "summary": "Brief summary of citation quality"
 }`,
   variables: ['text'],
-  tags: ['evaluation', 'rag']
+  tags: ['evaluation', 'rag'],
 }
 
 export const RAG_GROUNDING_PROMPT: PromptDefinition = {
@@ -611,5 +610,5 @@ Respond with ONLY valid JSON:
   "citationsExpected": 5
 }`,
   variables: ['input', 'reference', 'output'],
-  tags: ['evaluation', 'rag']
+  tags: ['evaluation', 'rag'],
 }

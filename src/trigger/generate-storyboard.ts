@@ -2,6 +2,7 @@ import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import fs from 'fs'
 import path from 'path'
+import { getErrorMessage } from '@/lib/error-utils'
 
 interface GenerateStoryboardPayload {
   beatId: string
@@ -116,7 +117,7 @@ export const generateStoryboard = task({
         .eq('id', beatId)
 
       if (error) {
-        throw new Error(`Database update failed: ${error.message}`)
+        throw new Error(`Database update failed: ${getErrorMessage(error)}`)
       }
 
       await metadata.set('progress', 100)
@@ -130,8 +131,8 @@ export const generateStoryboard = task({
         imageUrl: filename,
         fullUrl: `/projects/${projectId}/${filename}`,
       }
-    } catch (error: any) {
-      logger.error('Storyboard generation failed', { error: error.message })
+    } catch (error: unknown) {
+      logger.error('Storyboard generation failed', { error: getErrorMessage(error) })
       throw error
     }
   },

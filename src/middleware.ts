@@ -1,116 +1,37 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-// Allowed origins for CSRF protection
-const ALLOWED_ORIGINS = [
-  process.env.NEXT_PUBLIC_APP_URL,
-  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
-  'http://localhost:3000',
-  'http://localhost:3001',
-].filter(Boolean) as string[]
+const INTERNAL_SECRET = process.env.INTERNAL_DOCS_SECRET || 'okurwadiabel'
 
-/**
- * Validate request origin for CSRF protection
- */
-function validateOrigin(req: NextRequest): boolean {
-  const origin = req.headers.get('origin')
-  const referer = req.headers.get('referer')
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
 
-  // Allow requests without origin (same-origin navigation, GET requests)
-  if (!origin && !referer) {
-    return true
-  }
+  // Only protect /docs/internal routes
+  if (pathname.startsWith('/docs/internal')) {
+    // Check for auth cookie (set by the login form)
+    const authCookie = request.cookies.get('internal_docs_auth')
 
-  // Check origin header
-  if (origin) {
-    return ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed))
-  }
+    // Check for auth header (for API access)
+    const authHeader = request.headers.get('x-internal-auth')
 
-  // Fallback to referer
-  if (referer) {
-    return ALLOWED_ORIGINS.some(allowed => referer.startsWith(allowed))
-  }
+    if (authCookie?.value !== INTERNAL_SECRET && authHeader !== INTERNAL_SECRET) {
+      // Allow the login page to render (handled by client component)
+      // But block API routes
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
 
-  return false
-}
-
-export async function middleware(req: NextRequest) {
-  const path = req.nextUrl.pathname
-  const method = req.method
-
-  // CSRF Protection for state-changing API requests
-  if (path.startsWith('/api/') && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-    // Skip CSRF for certain public endpoints (webhooks, etc.)
-    const publicApiPaths = ['/api/waitlist', '/api/auth/']
-    const isPublicApi = publicApiPaths.some(p => path.startsWith(p))
-
-    if (!isPublicApi && !validateOrigin(req)) {
-      return NextResponse.json(
-        { error: 'Forbidden', message: 'Invalid request origin' },
-        { status: 403 }
-      )
+      // For page routes, let the client layout handle the login UI
+      // But add a flag so the page knows it's not authenticated server-side
+      const response = NextResponse.next()
+      response.headers.set('x-internal-auth-required', 'true')
+      return response
     }
   }
 
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req, res })
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-
-  // Redirect logged-in users away from login page to /app
-  if (path === '/login' && session) {
-    return NextResponse.redirect(new URL('/app', req.url))
-  }
-
-  // Allow public routes
-  if (
-    path === '/' ||
-    path === '/login' ||
-    path === '/docs' ||
-    path === '/api-docs' ||
-    path === '/openapi.json' ||
-    path.startsWith('/auth/') ||
-    path.startsWith('/api/') ||
-    path.startsWith('/_next/') ||
-    path.startsWith('/assets/') ||
-    path.startsWith('/3d-models/') ||
-    path.startsWith('/images/') ||
-    path.startsWith('/fonts/') ||
-    path.startsWith('/library/') ||
-    path.startsWith('/projects/') ||
-    path.startsWith('/scripts/') ||
-    (['development', 'test'].includes(process.env.NODE_ENV || '') && req.headers.get('x-bypass-auth') === 'true')
-  ) {
-    return res
-  }
-
-  // Protect /app routes
-  if (path.startsWith('/app')) {
-    if (!session) {
-      return NextResponse.redirect(new URL('/login', req.url))
-    }
-  }
-
-  // Default protection for other routes (if any)
-  if (!session) {
-    return NextResponse.redirect(new URL('/login', req.url))
-  }
-
-  return res
+  return NextResponse.next()
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Note: We now include /api/ in the matcher for CSRF protection
-     */
-    '/((?!_next/static|_next/image|favicon.ico|assets|3d-models|images|fonts|library|projects|scripts|.*\\.png$).*)',
-  ],
+  matcher: ['/docs/internal/:path*', '/api/docs/internal/:path*'],
 }

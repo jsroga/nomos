@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { getErrorMessage } from '@/lib/error-utils'
 
 export async function POST(
   req: NextRequest,
@@ -25,13 +26,13 @@ export async function POST(
 
     if (error) {
       console.error('Failed to update onboarding status:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Onboarding API error:', error)
-    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: getErrorMessage(error) || 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -59,12 +60,12 @@ export async function GET(
 
     if (error) {
       console.error('Failed to get onboarding status:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
     }
 
     return NextResponse.json({ onboarding_completed: data?.onboarding_completed ?? false })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Onboarding API error:', error)
-    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: getErrorMessage(error) || 'Internal server error' }, { status: 500 })
   }
 }

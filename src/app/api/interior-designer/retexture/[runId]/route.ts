@@ -1,6 +1,7 @@
 import { runs } from '@trigger.dev/sdk/v3'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
+import { getErrorMessage } from '@/lib/error-utils'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ runId: string }> }) {
   try {
@@ -20,8 +21,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ runI
       output: run.output,
       error: run.error,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to get run status:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
   }
 }

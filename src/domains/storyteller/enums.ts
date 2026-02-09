@@ -36,7 +36,7 @@ export enum BeatStatus {
 // Phase - Writers room workflow phases
 // ============================================
 
-export enum Phase {
+enum Phase {
   PREMISE = 'premise',
   BREAKING = 'breaking',
   CARDLOCK = 'cardlock',
@@ -48,7 +48,7 @@ export enum Phase {
 // Plan Status - Task/plan item states
 // ============================================
 
-export enum PlanStatus {
+enum PlanStatus {
   PENDING = 'pending',
   IN_PROGRESS = 'in_progress',
   COMPLETE = 'complete',
@@ -95,16 +95,6 @@ export enum ActionStatus {
   COMMITTED = 'committed',
   UNDONE = 'undone',
   REDONE = 'redone',
-}
-
-// ============================================
-// Merge Mode - Bible update merge strategies
-// ============================================
-
-export enum MergeMode {
-  REPLACE = 'replace',
-  MERGE = 'merge',
-  SMART = 'smart',
 }
 
 // ============================================
@@ -199,7 +189,7 @@ export enum ActionType {
 // Episode Premise Section - Parts of episode premise
 // ============================================
 
-export enum EpisodePremiseSection {
+enum EpisodePremiseSection {
   PROTAGONIST_HOOK = 'protagonistHook',
   FATAL_FLAW = 'fatalFlaw',
   STAKES = 'stakes',
@@ -217,7 +207,7 @@ export enum EpisodePremiseSection {
 // World Rule Category - Categories for world rules
 // ============================================
 
-export enum WorldRuleCategory {
+enum WorldRuleCategory {
   MAGIC = 'Magic',
   PHYSICS = 'Physics',
   TECHNOLOGY = 'Technology',
@@ -230,7 +220,7 @@ export enum WorldRuleCategory {
 // Character Role - Character roles in story
 // ============================================
 
-export enum CharacterRole {
+enum CharacterRole {
   PROTAGONIST = 'Protagonist',
   ANTAGONIST = 'Antagonist',
   SUPPORTING = 'Supporting',
@@ -242,7 +232,7 @@ export enum CharacterRole {
 // Verdict Types - Agent verdicts
 // ============================================
 
-export enum Verdict {
+enum Verdict {
   PASS = 'PASS',
   CHALLENGE = 'CHALLENGE',
   REVISE = 'REVISE',
@@ -252,7 +242,7 @@ export enum Verdict {
 // Agent Roles - Named agents in the system
 // ============================================
 
-export enum AgentRole {
+enum AgentRole {
   SUPERVISOR = 'supervisor',
   PLANNER = 'planner',
   PREMISE_ARCHITECT = 'premise_architect',

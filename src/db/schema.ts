@@ -9,12 +9,12 @@ import {
   decimal,
 } from 'drizzle-orm/pg-core'
 
-import { 
-  characters, 
-  episodes, 
-  beats, 
-  seriesBibles, 
-  storyPlans, 
+import {
+  characters,
+  episodes,
+  beats,
+  seriesBibles,
+  storyPlans,
   entityReferences,
   seriesBiblesRelations,
   storyPlansRelations,
@@ -580,12 +580,12 @@ export type MarketAnalysisGenreMomentumRow = typeof marketAnalysisGenreMomentum.
 export type MarketAnalysisSocialBuzzRow = typeof marketAnalysisSocialBuzz.$inferSelect
 export type MarketAnalysisRisingCompetitorRow = typeof marketAnalysisRisingCompetitors.$inferSelect
 // Re-export storyteller tables for unified db.query access
-export { 
-  characters, 
-  episodes, 
-  beats, 
-  seriesBibles, 
-  storyPlans, 
+export {
+  characters,
+  episodes,
+  beats,
+  seriesBibles,
+  storyPlans,
   entityReferences,
   seriesBiblesRelations,
   storyPlansRelations,

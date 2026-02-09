@@ -1,5 +1,5 @@
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import {
     createIdentifyCoreLoopTool,
     createAnalyzeMechanicBalanceTool,
@@ -11,7 +11,7 @@ import {
     createGetLoopByIdTool,
     createGetMarketAnalysisTool,
 } from '../../../src/domains/game-design/tools/v2/loop-tools'
-import { GameMechanic, GameLoop, GameResource } from '../../../src/domains/game-design/schemas'
+import { GameMechanic, GameLoop } from '../../../src/domains/game-design/schemas'
 
 // Skip if no OPENAI_API_KEY
 const hasOpenAI = !!process.env.OPENAI_API_KEY
@@ -28,6 +28,7 @@ describe.skipIf(!hasOpenAI)('Game Design Logic Transformer Tools', () => {
                     type: 'core',
                     description: 'Collect resources from the environment',
                     transformers: [],
+                    playerInteraction: 'active',
                 },
                 {
                     id: crypto.randomUUID(),
@@ -35,6 +36,7 @@ describe.skipIf(!hasOpenAI)('Game Design Logic Transformer Tools', () => {
                     type: 'core',
                     description: 'Combine resources to create items',
                     transformers: [],
+                    playerInteraction: 'active',
                 },
                 {
                     id: crypto.randomUUID(),
@@ -42,16 +44,20 @@ describe.skipIf(!hasOpenAI)('Game Design Logic Transformer Tools', () => {
                     type: 'core',
                     description: 'Exchange items for currency',
                     transformers: [],
+                    playerInteraction: 'active',
                 },
             ]
 
-            const result = await tool.execute({
-                context: {
-                    mechanics: mechanics as GameMechanic[],
-                    genre: 'farming sim',
-                    targetAudience: 'casual',
+            const result = (await tool.execute!(
+                {
+                    context: {
+                        mechanics: mechanics as GameMechanic[],
+                        genre: 'farming sim',
+                        targetAudience: 'casual',
+                    },
                 },
-            })
+                {} as any
+            )) as any
 
             if (!result.success) {
                 console.log('Identify core loop error:', result.error)
@@ -61,7 +67,7 @@ describe.skipIf(!hasOpenAI)('Game Design Logic Transformer Tools', () => {
             expect(result.coreLoop.name).toBeDefined()
             expect(result.coreLoop.type).toBeDefined()
             expect(result.confidence).toBeGreaterThan(0)
-        }, 30000)
+        }, 60000)
     })
 
     describe('createAnalyzeMechanicBalanceTool', () => {
@@ -80,6 +86,7 @@ describe.skipIf(!hasOpenAI)('Game Design Logic Transformer Tools', () => {
                         inputs: [],
                         outputs: [{ resourceId: 'gold', amount: 10, probability: 1 }],
                     }],
+                    playerInteraction: 'active',
                 },
             ]
 
@@ -87,21 +94,24 @@ describe.skipIf(!hasOpenAI)('Game Design Logic Transformer Tools', () => {
                 { id: 'gold', name: 'Gold', type: 'currency' as const, initialValue: 0 },
             ]
 
-            const result = await tool.execute({
-                context: {
-                    loopId: crypto.randomUUID(),
-                    mechanics: mechanics as GameMechanic[],
-                    resources,
-                    targetAudience: 'midcore',
-                    sessionDurationMinutes: 30,
+            const result = (await tool.execute!(
+                {
+                    context: {
+                        loopId: crypto.randomUUID(),
+                        mechanics: mechanics as GameMechanic[],
+                        resources: resources as any,
+                        targetAudience: 'midcore',
+                        sessionDurationMinutes: 30,
+                    },
                 },
-            })
+                {} as any
+            )) as any
 
             expect(result.success).toBe(true)
             expect(result.overallScore).toBeDefined()
             expect(typeof result.overallScore).toBe('number')
             expect(result.economyHealth).toBeDefined()
-        }, 30000)
+        }, 60000)
     })
 
     describe('createSuggestProgressionTool', () => {
@@ -119,27 +129,30 @@ describe.skipIf(!hasOpenAI)('Game Design Logic Transformer Tools', () => {
                     { id: '3', mechanicId: 'm3', label: 'Harvest' },
                 ],
                 edges: [
-                    { id: 'e1', sourceNodeId: '1', targetNodeId: '2' },
-                    { id: 'e2', sourceNodeId: '2', targetNodeId: '3' },
-                    { id: 'e3', sourceNodeId: '3', targetNodeId: '1' },
+                    { id: 'e1', sourceNodeId: '1', targetNodeId: '2', weight: 1 },
+                    { id: 'e2', sourceNodeId: '2', targetNodeId: '3', weight: 1 },
+                    { id: 'e3', sourceNodeId: '3', targetNodeId: '1', weight: 1 },
                 ],
                 resources: [],
             }
 
-            const result = await tool.execute({
-                context: {
-                    currentLoop: loop as GameLoop,
-                    expansionDirection: 'depth',
-                    genre: 'farming sim',
-                    targetAudience: 'casual',
+            const result = (await tool.execute!(
+                {
+                    context: {
+                        currentLoop: loop as GameLoop,
+                        expansionDirection: 'depth',
+                        genre: 'farming sim',
+                        targetAudience: 'casual',
+                    },
                 },
-            })
+                {} as any
+            )) as any
 
             expect(result.success).toBe(true)
             expect(result.suggestions).toBeDefined()
             expect(Array.isArray(result.suggestions)).toBe(true)
             expect(result.overallDirection).toBeDefined()
-        }, 30000)
+        }, 60000)
     })
 
     describe('createValidateLoopStructureTool', () => {
@@ -161,32 +174,35 @@ describe.skipIf(!hasOpenAI)('Game Design Logic Transformer Tools', () => {
                     { id: 'n3', mechanicId: mechanicId3, label: 'End' },
                 ],
                 edges: [
-                    { id: 'e1', sourceNodeId: 'n1', targetNodeId: 'n2' },
-                    { id: 'e2', sourceNodeId: 'n2', targetNodeId: 'n3' },
-                    { id: 'e3', sourceNodeId: 'n3', targetNodeId: 'n1' }, // Creates a cycle
+                    { id: 'e1', sourceNodeId: 'n1', targetNodeId: 'n2', weight: 1 },
+                    { id: 'e2', sourceNodeId: 'n2', targetNodeId: 'n3', weight: 1 },
+                    { id: 'e3', sourceNodeId: 'n3', targetNodeId: 'n1', weight: 1 }, // Creates a cycle
                 ],
                 resources: [],
             }
 
             const mechanics: Partial<GameMechanic>[] = [
-                { id: mechanicId1, name: 'Start', type: 'core', description: 'Start', transformers: [] },
-                { id: mechanicId2, name: 'Middle', type: 'core', description: 'Middle', transformers: [] },
-                { id: mechanicId3, name: 'End', type: 'core', description: 'End', transformers: [] },
+                { id: mechanicId1, name: 'Start', type: 'core', description: 'Start', transformers: [], playerInteraction: 'active' },
+                { id: mechanicId2, name: 'Middle', type: 'core', description: 'Middle', transformers: [], playerInteraction: 'active' },
+                { id: mechanicId3, name: 'End', type: 'core', description: 'End', transformers: [], playerInteraction: 'active' },
             ]
 
-            const result = await tool.execute({
-                context: {
-                    loop: loop as GameLoop,
-                    mechanics: mechanics as GameMechanic[],
+            const result = (await tool.execute!(
+                {
+                    context: {
+                        loop: loop as GameLoop,
+                        mechanics: mechanics as GameMechanic[],
+                    },
                 },
-            })
+                {} as any
+            )) as any
 
             expect(result.success).toBe(true)
             expect(result.isValid).toBe(true)
             expect(result.metrics.cycleDetected).toBe(true)
             expect(result.metrics.nodeCount).toBe(3)
             expect(result.metrics.edgeCount).toBe(3)
-        })
+        }, 60000)
 
         it('should detect orphan nodes', async () => {
             const tool = createValidateLoopStructureTool()
@@ -208,21 +224,24 @@ describe.skipIf(!hasOpenAI)('Game Design Logic Transformer Tools', () => {
             }
 
             const mechanics: Partial<GameMechanic>[] = [
-                { id: mechanicId1, name: 'Connected', type: 'core', description: 'Connected', transformers: [] },
-                { id: mechanicId2, name: 'Orphan', type: 'core', description: 'Orphan', transformers: [] },
+                { id: mechanicId1, name: 'Connected', type: 'core', description: 'Connected', transformers: [], playerInteraction: 'active' },
+                { id: mechanicId2, name: 'Orphan', type: 'core', description: 'Orphan', transformers: [], playerInteraction: 'active' },
             ]
 
-            const result = await tool.execute({
-                context: {
-                    loop: loop as GameLoop,
-                    mechanics: mechanics as GameMechanic[],
+            const result = (await tool.execute!(
+                {
+                    context: {
+                        loop: loop as GameLoop,
+                        mechanics: mechanics as GameMechanic[],
+                    },
                 },
-            })
+                {} as any
+            )) as any
 
             expect(result.success).toBe(true)
             expect(result.issues.length).toBeGreaterThan(0)
             expect(result.issues.some((i: any) => i.type === 'orphan_node')).toBe(true)
-        })
+        }, 60000)
     })
 })
 

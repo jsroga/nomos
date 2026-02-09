@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     }
 
     const cookieStore = await cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
 
     const { data, error } = await supabase
       .from('character_state_snapshots')
@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
     }
 
     const cookieStore = await cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
 
     let query = supabase.from('character_state_snapshots').select(`
       *,

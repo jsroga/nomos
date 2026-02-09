@@ -140,7 +140,7 @@ interface ActionToastContainerProps {
   maxVisible?: number
 }
 
-export const ActionToastContainer: React.FC<ActionToastContainerProps> = ({
+const ActionToastContainer: React.FC<ActionToastContainerProps> = ({
   entries,
   onUndo,
   onDismiss,
@@ -180,7 +180,12 @@ interface ActionCommittedProps {
   canUndo?: boolean
 }
 
-export const ActionCommitted: React.FC<ActionCommittedProps> = ({ entry, compact = false, onUndo, canUndo = false }) => {
+export const ActionCommitted: React.FC<ActionCommittedProps> = ({
+  entry,
+  compact = false,
+  onUndo,
+  canUndo = false,
+}) => {
   const [showPreview, setShowPreview] = useState(false)
   // Use 'committed' status for proper wording
   const display = formatActionForDisplay(entry.action, 'committed')
@@ -289,7 +294,7 @@ const VisualJsonDiff: React.FC<{
       return {
         type: 'Update World Bible',
         changes: payload.updatedFields,
-        isPartial: true
+        isPartial: true,
       }
     }
 
@@ -298,7 +303,7 @@ const VisualJsonDiff: React.FC<{
       return {
         type: 'Manage Beat',
         changes: payload.beat,
-        isPartial: false // Usually a full object or significant chunk
+        isPartial: false, // Usually a full object or significant chunk
       }
     }
 
@@ -306,7 +311,7 @@ const VisualJsonDiff: React.FC<{
     return {
       type: 'Action Payload',
       changes: payload,
-      isPartial: false
+      isPartial: false,
     }
   }
 
@@ -371,7 +376,12 @@ const VisualJsonDiff: React.FC<{
             Review Changes: {type}
           </span>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose} className="h-5 w-5 text-blue-400/60 hover:text-blue-400">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          className="h-5 w-5 text-blue-400/60 hover:text-blue-400"
+        >
           <X className="w-3 h-3" />
         </Button>
       </div>
@@ -382,9 +392,7 @@ const VisualJsonDiff: React.FC<{
             * Only showing modified fields
           </div>
         )}
-        <div className="font-mono text-[10px]">
-          {renderValue('root', changes)}
-        </div>
+        <div className="font-mono text-[10px]">{renderValue('root', changes)}</div>
       </div>
     </div>
   )
@@ -473,14 +481,14 @@ export const ActionSuggestion: React.FC<ActionSuggestionProps> = ({
 
             <Button
               size="sm"
-              variant={showDiff ? "secondary" : "outline"}
+              variant={showDiff ? 'secondary' : 'outline'}
               onClick={handleReviewToggle}
               disabled={isProcessing}
               className={cn(
-                "h-7 text-[10px] uppercase tracking-widest transition-all font-bold px-3",
+                'h-7 text-[10px] uppercase tracking-widest transition-all font-bold px-3',
                 showDiff
-                  ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
-                  : "bg-blue-600/10 border-blue-500/30 text-blue-400 hover:bg-blue-600/20"
+                  ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                  : 'bg-blue-600/10 border-blue-500/30 text-blue-400 hover:bg-blue-600/20'
               )}
             >
               <Eye className="w-3 h-3 mr-1.5" />
@@ -500,10 +508,7 @@ export const ActionSuggestion: React.FC<ActionSuggestionProps> = ({
           </div>
 
           {/* Visual JSON Diff Area - Expandable */}
-          {showDiff && (
-            <VisualJsonDiff action={action} onClose={() => setShowDiff(false)} />
-          )}
-
+          {showDiff && <VisualJsonDiff action={action} onClose={() => setShowDiff(false)} />}
         </div>
       </div>
     </div>

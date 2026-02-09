@@ -248,7 +248,7 @@ export const reportGeneratorTool = new DynamicStructuredTool({
 /**
  * Format report for display
  */
-export function formatReportForDisplay(report: MarketAnalysisReport): string {
+function formatReportForDisplay(report: MarketAnalysisReport): string {
   const sections: string[] = []
 
   // Header

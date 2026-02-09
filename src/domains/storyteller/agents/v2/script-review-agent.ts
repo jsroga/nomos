@@ -120,14 +120,14 @@ const PersonaReviewSchema = z.object({
 // =============================================================================
 
 async function reviewAsGRRM(script: string, context: string): Promise<PersonaReview> {
-  const { object } = await generateText({
+  const { object } = (await generateText({
     model: openai('gpt-4o'),
     messages: [
       { role: 'system', content: GRRM_PROMPT },
       { role: 'user', content: `${context}\n\n---SCRIPT---\n${script}` },
     ],
     experimental_output: { schema: PersonaReviewSchema, name: 'grrm_review' },
-  }) as any
+  })) as any
 
   return {
     persona: 'george-rr-martin',
@@ -136,14 +136,14 @@ async function reviewAsGRRM(script: string, context: string): Promise<PersonaRev
 }
 
 async function reviewAsGilligan(script: string, context: string): Promise<PersonaReview> {
-  const { object } = await generateText({
+  const { object } = (await generateText({
     model: openai('gpt-4o'),
     messages: [
       { role: 'system', content: GILLIGAN_PROMPT },
       { role: 'user', content: `${context}\n\n---SCRIPT---\n${script}` },
     ],
     experimental_output: { schema: PersonaReviewSchema, name: 'gilligan_review' },
-  }) as any
+  })) as any
 
   return {
     persona: 'vince-gilligan',
@@ -152,14 +152,14 @@ async function reviewAsGilligan(script: string, context: string): Promise<Person
 }
 
 async function reviewAsLynch(script: string, context: string): Promise<PersonaReview> {
-  const { object } = await generateText({
+  const { object } = (await generateText({
     model: openai('gpt-4o'),
     messages: [
       { role: 'system', content: LYNCH_PROMPT },
       { role: 'user', content: `${context}\n\n---SCRIPT---\n${script}` },
     ],
     experimental_output: { schema: PersonaReviewSchema, name: 'lynch_review' },
-  }) as any
+  })) as any
 
   return {
     persona: 'david-lynch',
@@ -167,22 +167,29 @@ async function reviewAsLynch(script: string, context: string): Promise<PersonaRe
   }
 }
 
-async function synthesizeReviews(reviews: PersonaReview[], script: string): Promise<{
+async function synthesizeReviews(
+  reviews: PersonaReview[],
+  script: string
+): Promise<{
   overallScore: number
   overallFeedback: string
   mustFix: string[]
   suggestions: string[]
   standoutMoments: string[]
 }> {
-  const reviewSummary = reviews.map(r => `
+  const reviewSummary = reviews
+    .map(
+      r => `
 ### ${r.persona.toUpperCase()} (Score: ${r.score}/10)
 **Strengths:** ${r.strengths.join('; ')}
 **Weaknesses:** ${r.weaknesses.join('; ')}
 **Suggestions:** ${r.suggestions.join('; ')}
 **Quote:** "${r.quote}"
-`).join('\n')
+`
+    )
+    .join('\n')
 
-  const { object } = await generateText({
+  const { object } = (await generateText({
     model: openai('gpt-4o'),
     messages: [
       {
@@ -196,12 +203,12 @@ Provide:
 2. A 2-3 sentence overall feedback
 3. 2-3 "must fix" issues (consensus problems)
 4. 2-3 optional suggestions (interesting but not critical)
-5. 1-2 standout moments (what's already working)`
+5. 1-2 standout moments (what's already working)`,
       },
       {
         role: 'user',
-        content: `SCRIPT:\n${script.slice(0, 2000)}...\n\nREVIEWS:\n${reviewSummary}`
-      }
+        content: `SCRIPT:\n${script.slice(0, 2000)}...\n\nREVIEWS:\n${reviewSummary}`,
+      },
     ],
     experimental_output: {
       schema: z.object({
@@ -211,9 +218,9 @@ Provide:
         suggestions: z.array(z.string()),
         standoutMoments: z.array(z.string()),
       }),
-      name: 'synthesis'
+      name: 'synthesis',
     },
-  }) as any
+  })) as any
 
   return object
 }
@@ -238,7 +245,7 @@ export async function reviewScript(request: ScriptReviewRequest): Promise<Script
     context += `STAKES: ${episodePremise.stakes || 'N/A'}\n`
   }
   if (characters && characters.length > 0) {
-    context += `\nCHARACTERS:\n`
+    context += '\nCHARACTERS:\n'
     for (const c of characters) {
       context += `- ${c.name} (${c.role || 'unknown role'}): ${c.traits?.join(', ') || 'no traits'}\n`
     }
@@ -289,9 +296,10 @@ export async function quickReview(
 // TOOL EXPORT (for use in writers room)
 // =============================================================================
 
-export const scriptReviewTool = {
+const scriptReviewTool = {
   name: 'review_script',
-  description: `Review script using three legendary storyteller personas: George R.R. Martin (character depth, consequences), Vince Gilligan (visual storytelling, logic), and David Lynch (atmosphere, mystery). Returns detailed feedback from each perspective plus a synthesis.`,
+  description:
+    'Review script using three legendary storyteller personas: George R.R. Martin (character depth, consequences), Vince Gilligan (visual storytelling, logic), and David Lynch (atmosphere, mystery). Returns detailed feedback from each perspective plus a synthesis.',
   parameters: {
     type: 'object',
     properties: {

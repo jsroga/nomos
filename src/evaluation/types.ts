@@ -33,7 +33,7 @@ export interface CustomEvaluator {
   evaluate: (params: EvaluatorInput) => Promise<EvaluatorResult>
 }
 
-export interface ExperimentConfig {
+interface ExperimentConfig {
   datasetName: string
   evaluators: CustomEvaluator[]
   experimentPrefix: string
@@ -41,7 +41,7 @@ export interface ExperimentConfig {
   metadata?: Record<string, unknown>
 }
 
-export interface ExperimentResult {
+interface ExperimentResult {
   experimentId: string
   datasetName: string
   results: Array<{
@@ -61,7 +61,7 @@ export interface StorytellerEvalInput {
   phase?: string
 }
 
-export interface StorytellerEvalOutput {
+interface StorytellerEvalOutput {
   response: string
   delegatedAgents?: string[]
   actions?: string[]
@@ -78,7 +78,7 @@ export interface LoopCreatorEvalInput {
   }
 }
 
-export interface LoopCreatorEvalOutput {
+interface LoopCreatorEvalOutput {
   response: string
   mechanics?: Array<{ id: string; name: string }>
   loops?: Array<{ id: string; name: string }>
@@ -127,7 +127,7 @@ export interface MultiVariantReport {
 // MULTI-PASS ARCHITECTURE TYPES (PHASE 9)
 // ============================================
 
-export interface MultiPassScore {
+interface MultiPassScore {
   firstPass: number
   revised: number
   lift: number

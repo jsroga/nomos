@@ -93,7 +93,7 @@ export type StreamEventType =
   | 'terminated'
   | 'error'
 
-export interface StreamEvent {
+interface StreamEvent {
   type: StreamEventType
   [key: string]: any
 }

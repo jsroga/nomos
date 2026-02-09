@@ -44,7 +44,7 @@ Rewrite the user's raw prompt into a detailed Stable Diffusion prompt.
 /**
  * Build a complete texture prompt with style modifiers
  */
-export function buildTexturePrompt(basePrompt: string, style: TextureStyle): string {
+function buildTexturePrompt(basePrompt: string, style: TextureStyle): string {
   const styleModifiers = TEXTURE_STYLES[style]
   return `${basePrompt}, ${styleModifiers}`
 }

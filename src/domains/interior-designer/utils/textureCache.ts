@@ -58,7 +58,7 @@ export const getCachedTexture = (
  * Async version of getCachedTexture that returns a promise.
  * Useful when you need to wait for texture to fully load.
  */
-export const getCachedTextureAsync = (url: string): Promise<THREE.Texture> => {
+const getCachedTextureAsync = (url: string): Promise<THREE.Texture> => {
   if (!url) return Promise.reject(new Error('No URL provided'))
 
   // Already cached
@@ -97,7 +97,7 @@ export const getCachedTextureAsync = (url: string): Promise<THREE.Texture> => {
 /**
  * Clear a specific texture from cache (useful when texture is updated)
  */
-export const clearCachedTexture = (url: string): void => {
+const clearCachedTexture = (url: string): void => {
   const texture = textureCache.get(url)
   if (texture) {
     texture.dispose()
@@ -108,7 +108,7 @@ export const clearCachedTexture = (url: string): void => {
 /**
  * Clear all cached textures (useful on module unmount)
  */
-export const clearAllCachedTextures = (): void => {
+const clearAllCachedTextures = (): void => {
   textureCache.forEach(texture => texture.dispose())
   textureCache.clear()
   loadingPromises.clear()
@@ -117,4 +117,4 @@ export const clearAllCachedTextures = (): void => {
 /**
  * Get current cache size (for debugging)
  */
-export const getCacheSize = (): number => textureCache.size
+const getCacheSize = (): number => textureCache.size

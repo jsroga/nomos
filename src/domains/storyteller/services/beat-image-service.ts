@@ -1,5 +1,4 @@
 import { BeatCard } from '../types'
-import { moodboardGenerationService } from './MoodboardGenerationService'
 import { LocalStorageKeys } from '@/constants/localStorage'
 
 class BeatImageService {
@@ -121,4 +120,3 @@ class BeatImageService {
 }
 
 export const beatImageService = new BeatImageService()
-

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import { TOUR_STEP_IDS } from '@/lib/tour-constants'
+import { getErrorMessage } from '@/lib/error-utils'
 
 interface ToolButtonProps {
   icon: React.ReactNode
@@ -148,9 +149,9 @@ export const WorldGenToolbar: React.FC = () => {
       }))
 
       toast.success(`Tile uploaded at (${target.x}, ${target.y})`)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Upload error:', error)
-      toast.error(error.message || 'Failed to upload tile')
+      toast.error(getErrorMessage(error) || 'Failed to upload tile')
     } finally {
       setIsUploading(false)
       // Reset file input

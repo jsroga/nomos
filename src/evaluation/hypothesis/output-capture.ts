@@ -1,6 +1,6 @@
 /**
  * Output Capture for Hypothesis Experiments
- * 
+ *
  * Extracts story data from tool calls and simulation results:
  * - World Bible from update_world_bible tool calls
  * - Episodes from database
@@ -12,7 +12,6 @@
 import {
   CapturedOutputs,
   CapturedWorldBible,
-  CapturedEpisode,
   CapturedBeat,
   CapturedCharacter,
   CapturedToolCall,
@@ -26,9 +25,7 @@ import {
 /**
  * Extract world bible updates from tool calls
  */
-export function extractWorldBibleFromToolCalls(
-  toolCalls: CapturedToolCall[]
-): CapturedWorldBible {
+export function extractWorldBibleFromToolCalls(toolCalls: CapturedToolCall[]): CapturedWorldBible {
   const worldBible: CapturedWorldBible = {}
 
   // Find all update_world_bible tool calls
@@ -76,9 +73,7 @@ export function extractWorldBibleFromToolCalls(
 /**
  * Extract beats from tool calls
  */
-export function extractBeatsFromToolCalls(
-  toolCalls: CapturedToolCall[]
-): CapturedBeat[] {
+export function extractBeatsFromToolCalls(toolCalls: CapturedToolCall[]): CapturedBeat[] {
   const beats: CapturedBeat[] = []
   const beatMap = new Map<string, CapturedBeat>()
 
@@ -91,14 +86,17 @@ export function extractBeatsFromToolCalls(
 
     if (action === 'create' || action === 'update') {
       const beatData: CapturedBeat = {
-        id: (args.beatId as string) || `beat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        id:
+          (args.beatId as string) || `beat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         sequence: (args.sequence as number) || 0,
         logline: (args.logline as string) || '',
         beatType: (args.beatType as CapturedBeat['beatType']) || 'setup',
         content: args.content as string | undefined,
         visualHook: args.visualHook as string | undefined,
         charactersInvolved: args.charactersInvolved as string[] | undefined,
-        emotionalShifts: args.emotionalShifts as Record<string, { from: string; to: string }> | undefined,
+        emotionalShifts: args.emotionalShifts as
+          | Record<string, { from: string; to: string }>
+          | undefined,
         causalDependencies: args.causalDependencies as string[] | undefined,
         status: 'proposed',
       }
@@ -114,9 +112,7 @@ export function extractBeatsFromToolCalls(
 /**
  * Extract characters from create_character tool calls
  */
-export function extractCharactersFromToolCalls(
-  toolCalls: CapturedToolCall[]
-): CapturedCharacter[] {
+export function extractCharactersFromToolCalls(toolCalls: CapturedToolCall[]): CapturedCharacter[] {
   const characters: CapturedCharacter[] = []
   const characterMap = new Map<string, CapturedCharacter>()
 
@@ -197,32 +193,48 @@ export function serializeOutputsForEvaluation(
     }
 
     if (wb.worldRules?.length) {
-      wbSections.push(`## World Rules\n${wb.worldRules.map(r => 
-        `- **${r.category}**: ${r.rule} → ${r.consequence}`
-      ).join('\n')}`)
+      wbSections.push(
+        `## World Rules\n${wb.worldRules
+          .map(r => `- **${r.category}**: ${r.rule} → ${r.consequence}`)
+          .join('\n')}`
+      )
     }
 
     if (wb.cast?.length) {
-      wbSections.push(`## Cast\n${wb.cast.map(c =>
-        `### ${c.name} (${c.role})\n${c.description || ''}\n- Motivation: ${c.motivation || 'Unknown'}\n- Archetype: ${c.archetype || 'Unknown'}`
-      ).join('\n\n')}`)
+      wbSections.push(
+        `## Cast\n${wb.cast
+          .map(
+            c =>
+              `### ${c.name} (${c.role})\n${c.description || ''}\n- Motivation: ${c.motivation || 'Unknown'}\n- Archetype: ${c.archetype || 'Unknown'}`
+          )
+          .join('\n\n')}`
+      )
     }
 
     if (wb.factions?.length) {
-      wbSections.push(`## Factions\n${wb.factions.map(f =>
-        `### ${f.name}\n${f.description || ''}\n- Ideology: ${f.ideology || 'Unknown'}\n- Goals: ${f.goals?.join(', ') || 'Unknown'}`
-      ).join('\n\n')}`)
+      wbSections.push(
+        `## Factions\n${wb.factions
+          .map(
+            f =>
+              `### ${f.name}\n${f.description || ''}\n- Ideology: ${f.ideology || 'Unknown'}\n- Goals: ${f.goals?.join(', ') || 'Unknown'}`
+          )
+          .join('\n\n')}`
+      )
     }
 
     if (wb.episodePremise) {
       const ep = wb.episodePremise
-      wbSections.push(`## Episode Premise\n- Logline: ${ep.logline || 'N/A'}\n- Protagonist Hook: ${ep.protagonistHook || 'N/A'}\n- Fatal Flaw: ${ep.fatalFlaw || 'N/A'}\n- Stakes: ${ep.stakes || 'N/A'}`)
+      wbSections.push(
+        `## Episode Premise\n- Logline: ${ep.logline || 'N/A'}\n- Protagonist Hook: ${ep.protagonistHook || 'N/A'}\n- Fatal Flaw: ${ep.fatalFlaw || 'N/A'}\n- Stakes: ${ep.stakes || 'N/A'}`
+      )
     }
 
     if (wb.plotTwists?.length) {
-      wbSections.push(`## Plot Twists\n${wb.plotTwists.map(pt =>
-        `### ${pt.title}\n${pt.description}\n- Impact: ${pt.impact || 'N/A'}`
-      ).join('\n\n')}`)
+      wbSections.push(
+        `## Plot Twists\n${wb.plotTwists
+          .map(pt => `### ${pt.title}\n${pt.description}\n- Impact: ${pt.impact || 'N/A'}`)
+          .join('\n\n')}`
+      )
     }
 
     if (wbSections.length) {
@@ -232,16 +244,18 @@ export function serializeOutputsForEvaluation(
 
   // Episodes
   if (scope.includes('episodes') && outputs.episodes?.length) {
-    const episodeSections = outputs.episodes.map(ep =>
-      `## Episode ${ep.id}\n**Title**: ${ep.title || 'Untitled'}\n**Premise**: ${ep.premise || 'N/A'}\n**Phase**: ${ep.currentPhase || 'N/A'}\n**Status**: ${ep.status || 'N/A'}`
+    const episodeSections = outputs.episodes.map(
+      ep =>
+        `## Episode ${ep.id}\n**Title**: ${ep.title || 'Untitled'}\n**Premise**: ${ep.premise || 'N/A'}\n**Phase**: ${ep.currentPhase || 'N/A'}\n**Status**: ${ep.status || 'N/A'}`
     )
     sections.push(`# EPISODES\n\n${episodeSections.join('\n\n')}`)
   }
 
   // Beats
   if (scope.includes('beats') && outputs.beats?.length) {
-    const beatSections = outputs.beats.map(beat =>
-      `## Beat ${beat.sequence}: ${beat.logline}\n**Type**: ${beat.beatType}\n**Visual Hook**: ${beat.visualHook || 'N/A'}\n**Characters**: ${beat.charactersInvolved?.join(', ') || 'N/A'}\n${beat.content ? `\n${beat.content}` : ''}`
+    const beatSections = outputs.beats.map(
+      beat =>
+        `## Beat ${beat.sequence}: ${beat.logline}\n**Type**: ${beat.beatType}\n**Visual Hook**: ${beat.visualHook || 'N/A'}\n**Characters**: ${beat.charactersInvolved?.join(', ') || 'N/A'}\n${beat.content ? `\n${beat.content}` : ''}`
     )
     sections.push(`# BEATS\n\n${beatSections.join('\n\n')}`)
   }
@@ -253,8 +267,8 @@ export function serializeOutputsForEvaluation(
 
   // Characters
   if (outputs.characters?.length) {
-    const charSections = outputs.characters.map(char =>
-      `## ${char.name} (${char.role})\n${char.description || 'No description'}`
+    const charSections = outputs.characters.map(
+      char => `## ${char.name} (${char.role})\n${char.description || 'No description'}`
     )
     sections.push(`# CHARACTERS\n\n${charSections.join('\n\n')}`)
   }
@@ -271,7 +285,9 @@ export function buildContextFromOutputs(outputs: CapturedOutputs): string[] {
   // Add character context
   if (outputs.characters?.length) {
     for (const char of outputs.characters) {
-      context.push(`Character: ${char.name} - ${char.role}${char.description ? ` - ${char.description}` : ''}`)
+      context.push(
+        `Character: ${char.name} - ${char.role}${char.description ? ` - ${char.description}` : ''}`
+      )
     }
   }
 

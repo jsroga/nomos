@@ -37,7 +37,7 @@ export type ApiHandler<T = any> = (
  */
 export async function getUserSession() {
   const cookieStore = await cookies()
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+  const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
   const {
     data: { session },
     error,
@@ -96,7 +96,7 @@ export function withAuth<T = any>(handler: ApiHandler<T>) {
 /**
  * Optional auth wrapper - provides session if available, but doesn't require it
  */
-export function withOptionalAuth<T = any>(
+function withOptionalAuth<T = any>(
   handler: (
     request: NextRequest,
     auth: Partial<AuthenticatedRequest>,
@@ -212,7 +212,7 @@ export function withRateLimit<T = any>(
 /**
  * Combined auth + rate limit wrapper
  */
-export function withAuthAndRateLimit<T = any>(
+function withAuthAndRateLimit<T = any>(
   handler: ApiHandler<T>,
   rateLimitConfig: RateLimitConfig = {}
 ) {
@@ -265,7 +265,7 @@ export function validateOrigin(request: NextRequest): boolean {
 /**
  * CSRF protection wrapper
  */
-export function withCsrfProtection<T = any>(
+function withCsrfProtection<T = any>(
   handler: (request: NextRequest, context?: any) => Promise<NextResponse<T>>
 ) {
   return async (request: NextRequest, context?: any) => {
@@ -304,7 +304,7 @@ export async function verifyProjectAccess(
  * Verify user has access to an entity through project ownership
  * Uses a single JOIN query instead of multiple sequential queries
  */
-export async function verifyEntityAccess(
+async function verifyEntityAccess(
   supabase: ReturnType<typeof createRouteHandlerClient>,
   tableName: 'characters' | 'episodes' | 'beats' | 'game_loops' | 'interior_designs' | 'assets',
   entityId: string
@@ -326,7 +326,7 @@ export async function verifyEntityAccess(
 /**
  * Verify beat access with optimized single query
  */
-export async function verifyBeatAccess(
+async function verifyBeatAccess(
   supabase: ReturnType<typeof createRouteHandlerClient>,
   beatId: string
 ): Promise<{ hasAccess: boolean; projectId?: string; episodeId?: string }> {
@@ -361,22 +361,22 @@ export async function verifyBeatAccess(
 // RESPONSE HELPERS
 // ============================================
 
-export function jsonResponse<T>(data: T, status = 200) {
+function jsonResponse<T>(data: T, status = 200) {
   return NextResponse.json(data, { status })
 }
 
-export function errorResponse(message: string, status = 400) {
+function errorResponse(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status })
 }
 
-export function unauthorizedResponse(message = 'Unauthorized') {
+function unauthorizedResponse(message = 'Unauthorized') {
   return NextResponse.json({ error: message }, { status: 401 })
 }
 
-export function forbiddenResponse(message = 'Forbidden') {
+function forbiddenResponse(message = 'Forbidden') {
   return NextResponse.json({ error: message }, { status: 403 })
 }
 
-export function notFoundResponse(message = 'Not found') {
+function notFoundResponse(message = 'Not found') {
   return NextResponse.json({ error: message }, { status: 404 })
 }

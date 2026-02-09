@@ -3,6 +3,7 @@
 import React, { useState, useRef, DragEvent } from 'react'
 import { Upload, X, Check, AlertCircle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { getErrorMessage } from '@/lib/error-utils'
 
 const SUPPORTED_FORMATS = {
   images: ['.png', '.jpg', '.jpeg', '.webp'],
@@ -121,10 +122,10 @@ export const AssetUploadZone: React.FC<AssetUploadZoneProps> = ({
 
       xhr.open('POST', '/api/assets/upload')
       xhr.send(formData)
-    } catch (error: any) {
+    } catch (error: unknown) {
       setFiles(prev =>
         prev.map(f =>
-          f.id === uploadFile.id ? { ...f, status: 'error', error: error.message } : f
+          f.id === uploadFile.id ? { ...f, status: 'error', error: getErrorMessage(error) } : f
         )
       )
     }

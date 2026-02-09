@@ -121,7 +121,7 @@ export function findClosedPolygons(
  * Simpler version: just check if the end point matches any other wall's start/end
  * that eventually connects back to the start point
  */
-export function wouldClosePolygon(
+function wouldClosePolygon(
   walls: Wall[],
   newStart: [number, number, number],
   newEnd: [number, number, number]

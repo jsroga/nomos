@@ -12,6 +12,7 @@ import {
   safeFetch,
   secureLog,
 } from '@/lib/security'
+import { getErrorMessage } from '@/lib/error-utils'
 
 export async function POST(request: NextRequest) {
   try {
@@ -85,8 +86,8 @@ export async function POST(request: NextRequest) {
       success: true,
       path: `/projects/${projectId}/assets/${safeFilename}`,
     })
-  } catch (error: any) {
-    secureLog.error('Error saving model:', { message: error.message })
+  } catch (error: unknown) {
+    secureLog.error('Error saving model:', { message: getErrorMessage(error) })
     return NextResponse.json({ error: 'Failed to save model' }, { status: 500 })
   }
 }

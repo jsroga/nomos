@@ -41,19 +41,20 @@ SURROUNDING CONTEXT:
 Before: "${context.beforeText?.slice(-CONTEXT_LIMIT) || ''}"
 After: "${context.afterText?.slice(0, CONTEXT_LIMIT) || ''}"
 
-${context.characterVoices
-      ? `CHARACTER VOICES:\n${Object.entries(context.characterVoices)
+${
+  context.characterVoices
+    ? `CHARACTER VOICES:\n${Object.entries(context.characterVoices)
         .map(([name, voice]) => `- ${name}: ${voice}`)
         .join('\n')}`
-      : ''
-    }
+    : ''
+}
 `
     : ''
 
   try {
     const agent = await createStorytellerAgent()
     const result = await agent.run(
-      "Edit script",
+      'Edit script',
       `${SCRIPT_EDITOR_PROMPT}\n\n${contextInfo}\n\nSELECTED TEXT TO EDIT:\n"""\n${selection}\n"""\n\nINSTRUCTION: ${instruction}\n\nReturn only the edited text:`
     )
     return result.trim()
@@ -122,7 +123,7 @@ export async function shiftTone(
 }
 
 // Format script content for display
-export function formatScreenplay(text: string): string {
+function formatScreenplay(text: string): string {
   if (!text) return ''
 
   let formatted = text
@@ -163,7 +164,7 @@ export function formatScreenplay(text: string): string {
 }
 
 // Parse screenplay back to plain text
-export function parseScreenplayToText(html: string): string {
+function parseScreenplayToText(html: string): string {
   if (typeof document === 'undefined') {
     // Fallback for SSR - simple strip tags
     return html.replace(/<[^>]*>/g, '')

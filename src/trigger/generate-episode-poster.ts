@@ -2,6 +2,7 @@ import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import fs from 'fs'
 import path from 'path'
+import { getErrorMessage } from '@/lib/error-utils'
 
 interface GenerateEpisodePosterPayload {
   episodeId: string
@@ -117,7 +118,7 @@ export const generateEpisodePoster = task({
         .eq('id', episodeId)
 
       if (error) {
-        throw new Error(`Database update failed: ${error.message}`)
+        throw new Error(`Database update failed: ${getErrorMessage(error)}`)
       }
 
       await metadata.set('progress', 100)
@@ -131,8 +132,8 @@ export const generateEpisodePoster = task({
         imageUrl: filename,
         fullUrl: `/projects/${projectId}/${filename}`,
       }
-    } catch (error: any) {
-      logger.error('Poster generation failed', { error: error.message })
+    } catch (error: unknown) {
+      logger.error('Poster generation failed', { error: getErrorMessage(error) })
       throw error
     }
   },

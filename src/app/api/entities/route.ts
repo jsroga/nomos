@@ -62,7 +62,9 @@ export const GET = withAuth(
     }
 
     if (search) {
-      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`)
+      // Escape PostgREST special characters to prevent filter injection
+      const sanitizedSearch = search.replace(/[.,()\\]/g, '')
+      query = query.or(`name.ilike.%${sanitizedSearch}%,description.ilike.%${sanitizedSearch}%`)
     }
 
     const { data, error } = await query

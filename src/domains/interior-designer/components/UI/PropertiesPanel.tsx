@@ -28,6 +28,7 @@ import { LocalStorageKeys } from '@/constants/localStorage'
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
 import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/constants/polling'
 import { SidebarSection, SidebarLabel } from '@/components/ui/domain-sidebar'
+import { getErrorMessage } from '@/lib/error-utils'
 
 export const PropertiesPanel: React.FC = () => {
   const selectedId = useInteriorStore(state => state.selectedId)
@@ -737,7 +738,7 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
         } else {
           throw new Error(data.error)
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
         toast.error('Failed to start retexture')
         removeOperation(operationId)
         setIsStarting(false)
@@ -1171,8 +1172,8 @@ function TextTo3DControls({
       } else {
         throw new Error(data.error || 'Failed to start generation')
       }
-    } catch (e: any) {
-      toast.error('Failed to start text-to-3d: ' + e.message)
+    } catch (e: unknown) {
+      toast.error('Failed to start text-to-3d: ' + getErrorMessage(e))
       removeOperation(operationId)
     } finally {
       setIsStarting(false)

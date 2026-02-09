@@ -1,12 +1,14 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
+import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
+import { getErrorMessage } from '@/lib/error-utils'
 
-export async function POST() {
+export const POST = withAuth(async (_request: NextRequest, { session }: AuthenticatedRequest) => {
   try {
     // Enable pgvector extension
     await db.execute(sql`CREATE EXTENSION IF NOT EXISTS vector`)
-    
+
     // Create entity_references table
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS entity_references (
@@ -22,32 +24,35 @@ export async function POST() {
         last_referenced_at TIMESTAMP DEFAULT NOW() NOT NULL
       )
     `)
-    
+
     // Create indexes
     await db.execute(sql`
       CREATE INDEX IF NOT EXISTS idx_entity_references_project 
       ON entity_references(project_id)
     `)
-    
+
     await db.execute(sql`
       CREATE INDEX IF NOT EXISTS idx_entity_references_type 
       ON entity_references(type)
     `)
-    
+
     await db.execute(sql`
       CREATE INDEX IF NOT EXISTS idx_entity_references_embedding 
       ON entity_references USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)
     `)
-    
-    return NextResponse.json({ 
-      success: true, 
-      message: 'entity_references table created successfully' 
+
+    return NextResponse.json({
+      success: true,
+      message: 'entity_references table created successfully',
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Migration failed:', error)
-    return NextResponse.json({ 
-      success: false, 
-      error: error.message 
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: getErrorMessage(error),
+      },
+      { status: 500 }
+    )
   }
-}
+})

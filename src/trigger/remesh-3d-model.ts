@@ -26,7 +26,7 @@ export const remesh3DModelTask = task({
 
     // Step 1: Create remesh task
     // POST https://api.meshy.ai/openapi/v1/remesh
-    const remeshBody: Record<string, any> = {
+    const remeshBody: Record<string, unknown> = {
       input_task_id: meshyTaskId,
       target_formats: ['glb', 'fbx', 'obj', 'usdz'],
       topology: topology,

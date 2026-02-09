@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Check, Sparkles } from 'lucide-react'
 
@@ -74,10 +75,10 @@ export const ProPlanPromo = () => {
 
               <div className="space-y-4">
                 {[
-                  'Unlimited AI Generation Credits',
-                  'Priority GPU Access',
-                  'Advanced Terrain Sculpting Tools',
-                  'Commercial License Included',
+                  'Premium AI Models (GPT-5.2)',
+                  'Full Developer API Access',
+                  'Priority Generation Queue',
+                  'Commercial Studio License',
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center">
@@ -106,10 +107,13 @@ export const ProPlanPromo = () => {
                   </span>
                 </div>
 
-                <button className="w-full py-4 bg-black text-white rounded-lg font-bold hover:bg-[#ff4400] transition-colors duration-300 flex items-center justify-center gap-2 group">
+                <Link
+                  href="/login"
+                  className="w-full py-4 bg-black text-white rounded-lg font-bold hover:bg-[#ff4400] transition-colors duration-300 flex items-center justify-center gap-2 group"
+                >
                   Claim Free Access
                   <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-                </button>
+                </Link>
                 <p className="text-[10px] text-center mt-3 text-black/40 font-mono">
                   No credit card required. Cancel anytime.
                 </p>

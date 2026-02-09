@@ -2,6 +2,7 @@ import { task, logger, metadata, AbortTaskRunError } from '@trigger.dev/sdk/v3'
 import { put } from '@vercel/blob'
 import { storageService } from '@/infrastructure/storage/StorageService'
 import { UPSCALE_PROMPTS, MASK_CONFIG, getCreativityPrompt } from '@/lib/server/prompts'
+import { getErrorMessage } from '@/lib/error-utils'
 
 // Provider types
 type UpscaleProvider = 'midjourney' | 'replicate' | 'stability'
@@ -68,9 +69,9 @@ async function pollLegNextTask(
         logger.error('LegNext task failed', { error: errorMsg, fullData: data })
         throw new AbortTaskRunError(errorMsg)
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (e instanceof AbortTaskRunError) throw e
-      logger.warn('Polling fetch error:', { error: e.message })
+      logger.warn('Polling fetch error:', { error: getErrorMessage(e) })
     }
 
     attempts++

@@ -90,7 +90,7 @@ export interface ServiceContext {
 export interface LangSmithContext {
   runName?: string
   tags?: string[]
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 // ============================================
@@ -211,7 +211,7 @@ export class StorytellerService {
       throw new ServiceError('Character not found or access denied', 'NOT_FOUND')
     }
 
-    const dbUpdates: Record<string, any> = {}
+    const dbUpdates: Record<string, unknown> = {}
 
     if (validated.name !== undefined) dbUpdates.name = validated.name
     if (validated.role !== undefined) dbUpdates.role = validated.role

@@ -3,14 +3,14 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { Wand2, RotateCcw, Sparkles, ChevronDown } from 'lucide-react'
 
-interface ScriptEditorProps {
+export interface ScriptEditorProps {
   content: string
   onChange: (content: string) => void
   onRegenerateSelection?: (selection: string, instruction: string) => Promise<string>
   isLoading?: boolean
 }
 
-export const ScriptEditor: React.FC<ScriptEditorProps> = ({
+const ScriptEditor: React.FC<ScriptEditorProps> = ({
   content,
   onChange,
   onRegenerateSelection,
@@ -261,4 +261,3 @@ export const ScriptEditor: React.FC<ScriptEditorProps> = ({
 }
 
 export default ScriptEditor
-

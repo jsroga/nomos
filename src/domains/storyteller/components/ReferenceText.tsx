@@ -2,40 +2,26 @@
 
 /**
  * ReferenceText Component
- * 
+ *
  * Renders text containing entity references [Name][id] with:
  * - Hover tooltips showing entity details
  * - Clickable links for navigation
  * - Visual styling based on entity type
  * - Alt-key sticky tooltips (like Crusader Kings 3)
- * 
+ *
  * Usage:
- * <ReferenceText 
+ * <ReferenceText
  *   text="[Marcus][char-001] went to [The Citadel][place-002]"
  *   onEntityClick={(refId) => openEntityPanel(refId)}
  * />
  */
 
-import React, { useMemo, useState, useEffect, useCallback } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { useEntities } from '../hooks/useEntity'
 import { cn } from '@/lib/utils'
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
-import {
-  splitIntoSegments,
-  ParsedReference,
-  TextSegment
-} from '../utils/reference-parser'
-import {
-  User,
-  MapPin,
-  Calendar,
-  Users,
-  Scroll,
-  Film,
-  BookOpen,
-  Loader2,
-  ExternalLink
-} from 'lucide-react'
+import { splitIntoSegments, ParsedReference, TextSegment } from '../utils/reference-parser'
+import { User, MapPin, Calendar, Users, Scroll, Film, BookOpen, Loader2 } from 'lucide-react'
 
 // Entity types (duplicated to avoid server-only imports)
 type EntityType = 'character' | 'place' | 'event' | 'faction' | 'rule' | 'beat' | 'episode'
@@ -56,7 +42,7 @@ export interface EntityReference {
   type: EntityType
   name: string
   description: string
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
   projectId: string
   sourceEntityId?: string
   createdAt: Date
@@ -71,16 +57,19 @@ export interface EntityReference {
 // Global Alt-key state for sticky tooltips
 let isAltKeyDown = false
 if (typeof window !== 'undefined') {
-  window.addEventListener('keydown', (e) => {
+  window.addEventListener('keydown', e => {
     if (e.key === 'Alt') isAltKeyDown = true
   })
-  window.addEventListener('keyup', (e) => {
+  window.addEventListener('keyup', e => {
     if (e.key === 'Alt') isAltKeyDown = false
   })
 }
 
 // Entity type to icon mapping
-const ENTITY_ICONS: Record<EntityType, React.ComponentType<{ className?: string; size?: number }>> = {
+const ENTITY_ICONS: Record<
+  EntityType,
+  React.ComponentType<{ className?: string; size?: number }>
+> = {
   character: User,
   place: MapPin,
   event: Calendar,
@@ -192,9 +181,9 @@ const StickyTooltip: React.FC<{
 
     // Delay to allow mouse to move to content
     timeoutRef.current = setTimeout(() => {
-      // Logic check must happen inside timeout to get latest state? 
-      // Actually isHoveringContent ref might be better, but strict React state works if we trust closure scope? 
-      // No, setTimeout closure captures 'isHoveringContent' from render time. 
+      // Logic check must happen inside timeout to get latest state?
+      // Actually isHoveringContent ref might be better, but strict React state works if we trust closure scope?
+      // No, setTimeout closure captures 'isHoveringContent' from render time.
       // We need a ref to track live hovering state for the timeout callback.
     }, 300)
   }
@@ -274,12 +263,7 @@ const StickyTooltip: React.FC<{
 /**
  * Individual entity chip with sticky tooltip
  */
-const EntityChip: React.FC<EntityChipProps> = ({
-  ref,
-  entity,
-  isLoading,
-  onClick
-}) => {
+const EntityChip: React.FC<EntityChipProps> = ({ ref, entity, isLoading, onClick }) => {
   const type = ref.type || 'character'
   const Icon = ENTITY_ICONS[type] || User
   const colorClass = ENTITY_COLORS[type] || DEFAULT_COLOR
@@ -455,48 +439,49 @@ const EntityChip: React.FC<EntityChipProps> = ({
             Relationships
           </div>
           <div className="space-y-1.5">
-            {Array.from(grouped.entries()).slice(0, 4).map(([relType, rels]) => (
-              <div key={relType} className="text-xs">
-                <span className="opacity-50 text-[10px]">{typeLabels[relType] || relType}:</span>
-                <div className="flex flex-wrap gap-1 mt-0.5">
-                  {rels.slice(0, 3).map((rel, idx) => {
-                    // Use targetType if available, otherwise infer from targetId
-                    const relEntityType = rel.targetType || (rel.targetId.split('-')[0] as EntityType)
-                    const RelIcon = ENTITY_ICONS[relEntityType] || User
-                    const relColor = ENTITY_COLORS[relEntityType]?.split(' ')[0] || 'text-gray-400'
+            {Array.from(grouped.entries())
+              .slice(0, 4)
+              .map(([relType, rels]) => (
+                <div key={relType} className="text-xs">
+                  <span className="opacity-50 text-[10px]">{typeLabels[relType] || relType}:</span>
+                  <div className="flex flex-wrap gap-1 mt-0.5">
+                    {rels.slice(0, 3).map((rel, idx) => {
+                      // Use targetType if available, otherwise infer from targetId
+                      const relEntityType =
+                        rel.targetType || (rel.targetId.split('-')[0] as EntityType)
+                      const RelIcon = ENTITY_ICONS[relEntityType] || User
+                      const relColor =
+                        ENTITY_COLORS[relEntityType]?.split(' ')[0] || 'text-gray-400'
 
-                    return (
-                      <span
-                        key={idx}
-                        className={cn(
-                          'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded',
-                          'bg-zinc-800 hover:bg-zinc-700 cursor-pointer transition-colors',
-                          'border border-zinc-700/50',
-                          relColor
-                        )}
-                        title={rel.description || `View ${rel.targetName}`}
-                      >
-                        <RelIcon size={10} />
-                        <span className="text-[10px]">{rel.targetName}</span>
-                        {rel.strength > 0.8 && (
-                          <span className="text-[8px] opacity-50">★</span>
-                        )}
-                      </span>
-                    )
-                  })}
-                  {rels.length > 3 && (
-                    <span className="text-[10px] opacity-40 self-center">+{rels.length - 3}</span>
-                  )}
+                      return (
+                        <span
+                          key={idx}
+                          className={cn(
+                            'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded',
+                            'bg-zinc-800 hover:bg-zinc-700 cursor-pointer transition-colors',
+                            'border border-zinc-700/50',
+                            relColor
+                          )}
+                          title={rel.description || `View ${rel.targetName}`}
+                        >
+                          <RelIcon size={10} />
+                          <span className="text-[10px]">{rel.targetName}</span>
+                          {rel.strength > 0.8 && <span className="text-[8px] opacity-50">★</span>}
+                        </span>
+                      )
+                    })}
+                    {rels.length > 3 && (
+                      <span className="text-[10px] opacity-40 self-center">+{rels.length - 3}</span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
           {entity.relationshipSummary && (
             <div className="mt-2 text-[10px] opacity-60 italic">
               {entity.relationshipSummary.length > 100
                 ? entity.relationshipSummary.slice(0, 100) + '...'
-                : entity.relationshipSummary
-              }
+                : entity.relationshipSummary}
             </div>
           )}
         </div>
@@ -586,9 +571,6 @@ export const ReferenceText: React.FC<ReferenceTextProps> = ({
 }) => {
   // Use derived state from props + queries, no local state needed for caching anymore
 
-
-
-
   // Parse text into segments
   const segments = useMemo(() => splitIntoSegments(text), [text])
 
@@ -609,7 +591,6 @@ export const ReferenceText: React.FC<ReferenceTextProps> = ({
     return set
   }, [queryResults, refIds])
 
-
   // Let's simplify: Derived state only.
   const finalEntities = useMemo(() => {
     const map = new Map(initialEntities || [])
@@ -625,8 +606,9 @@ export const ReferenceText: React.FC<ReferenceTextProps> = ({
   const handleEntityClick = (refId: string, entity: EntityReference | null) => {
     // Mark as referenced via API (fire and forget)
     if (projectId) {
-      fetch(`/api/entities/mark-referenced?projectId=${projectId}&id=${refId}`, { method: 'POST' })
-        .catch(() => { })
+      fetch(`/api/entities/mark-referenced?projectId=${projectId}&id=${refId}`, {
+        method: 'POST',
+      }).catch(() => {})
     }
     onEntityClick?.(refId, entity)
   }
@@ -657,11 +639,7 @@ export const ReferenceText: React.FC<ReferenceTextProps> = ({
 
   const Container = inline ? 'span' : 'div'
 
-  return (
-    <Container className={cn('whitespace-pre-wrap', className)}>
-      {renderedContent}
-    </Container>
-  )
+  return <Container className={cn('whitespace-pre-wrap', className)}>{renderedContent}</Container>
 }
 
 /**
@@ -670,7 +648,7 @@ export const ReferenceText: React.FC<ReferenceTextProps> = ({
 /**
  * Hook to use entity references in a component
  */
-export function useEntityReferences(
+function useEntityReferences(
   text: string,
   projectId?: string,
   options: { enrichRelationships?: boolean } = {}
@@ -709,5 +687,3 @@ export function useEntityReferences(
     hasReferences: refIds.length > 0,
   }
 }
-
-export default ReferenceText

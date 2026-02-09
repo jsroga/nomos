@@ -3,6 +3,7 @@ import path from 'path'
 config({ path: path.resolve(process.cwd(), '.env.local') })
 
 import { upscaleTileTask } from '../upscale-tile'
+import { getErrorMessage } from '@/lib/error-utils'
 
 // Test configuration validation
 async function testPayloadValidation() {
@@ -134,8 +135,8 @@ async function runTests() {
     console.log('🎉 All tests passed!')
     console.log('='.repeat(50))
     process.exit(0)
-  } catch (error: any) {
-    console.error('\n❌ Test failed:', error.message)
+  } catch (error: unknown) {
+    console.error('\n❌ Test failed:', getErrorMessage(error))
     process.exit(1)
   }
 }

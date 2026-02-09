@@ -2,10 +2,10 @@
 
 /**
  * CharacterWeb Component
- * 
+ *
  * Interactive graph visualization of character relationships using React Flow.
  * Shows characters and factions as nodes, relationships as edges.
- * 
+ *
  * Features:
  * - Auto-layout using force-directed simulation
  * - Edge styling by relationship type
@@ -20,7 +20,6 @@ import {
   Background,
   MiniMap,
   Node,
-  Edge,
   BackgroundVariant,
   useNodesState,
   useEdgesState,
@@ -29,14 +28,13 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { cn } from '@/lib/utils'
-import { Loader2, RefreshCw, ZoomIn, ZoomOut } from 'lucide-react'
+import { Loader2, RefreshCw } from 'lucide-react'
 import CharacterNode from './CharacterNode'
-import ReferenceText from '../ReferenceText'
+import { ReferenceText } from '../ReferenceText'
 import {
   CharacterWebNode,
   CharacterWebEdge,
   CharacterNodeData,
-  RelationshipEdgeData,
   RELATIONSHIP_STYLES,
   RelationshipMatrixResponse,
   RelationshipType,
@@ -47,7 +45,7 @@ const nodeTypes = {
   characterNode: CharacterNode,
 }
 
-interface CharacterWebProps {
+export interface CharacterWebProps {
   /** Project ID to fetch relationships for */
   projectId: string
   /** Callback when a node is clicked */
@@ -64,9 +62,9 @@ interface CharacterWebProps {
 
 /**
  * Apply force-directed layout with proper spacing
- * 
+ *
  * Uses a spring-electric model:
- * - All nodes repel each other (electric force) 
+ * - All nodes repel each other (electric force)
  * - Connected nodes attract (spring force, proportional to edge weight)
  * - Central node is pinned near center
  * - Groups entities by type for visual clustering
@@ -128,11 +126,11 @@ function applyForceLayout(
 
   // Force simulation parameters
   const iterations = 120
-  const repulsion = 50000       // Strong repulsion to keep nodes apart
-  const springStrength = 0.008  // Gentle attraction along edges
-  const damping = 0.92          // Velocity damping
-  const minDist = 200           // Minimum distance between nodes
-  const centerGravity = 0.001   // Pull toward center
+  const repulsion = 50000 // Strong repulsion to keep nodes apart
+  const springStrength = 0.008 // Gentle attraction along edges
+  const damping = 0.92 // Velocity damping
+  const minDist = 200 // Minimum distance between nodes
+  const centerGravity = 0.001 // Pull toward center
 
   for (let iter = 0; iter < iterations; iter++) {
     const cooling = 1 - iter / iterations // Gradually reduce forces
@@ -147,7 +145,11 @@ function applyForceLayout(
         let dy = posA.y - posB.y
         let dist = Math.sqrt(dx * dx + dy * dy)
 
-        if (dist < 1) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; dist = 1 }
+        if (dist < 1) {
+          dx = Math.random() - 0.5
+          dy = Math.random() - 0.5
+          dist = 1
+        }
 
         // Stronger repulsion when close
         const force = (repulsion * cooling) / (dist * dist)
@@ -219,9 +221,10 @@ function applyForceLayout(
 /**
  * Convert API response to React Flow nodes and edges
  */
-function convertToFlowData(
-  data: RelationshipMatrixResponse
-): { nodes: CharacterWebNode[]; edges: CharacterWebEdge[] } {
+function convertToFlowData(data: RelationshipMatrixResponse): {
+  nodes: CharacterWebNode[]
+  edges: CharacterWebEdge[]
+} {
   const nodes: CharacterWebNode[] = data.nodes.map((n, index) => ({
     id: n.id,
     type: 'characterNode',
@@ -256,8 +259,12 @@ function convertToFlowData(
       style: {
         stroke: style.color,
         strokeWidth: scaledWidth,
-        strokeDasharray: style.strokeStyle === 'dashed' ? '5,5' :
-          style.strokeStyle === 'dotted' ? '2,2' : undefined,
+        strokeDasharray:
+          style.strokeStyle === 'dashed'
+            ? '5,5'
+            : style.strokeStyle === 'dotted'
+              ? '2,2'
+              : undefined,
         opacity: Math.max(0.3, e.weight || 0.5),
       },
       markerEnd: {
@@ -318,49 +325,52 @@ export function CharacterWeb({
   }, [nodes.length])
 
   // Highlight connected nodes and dim the rest
-  const highlightConnections = useCallback((nodeId: string) => {
-    const connectedNodeIds = new Set<string>([nodeId])
-    const connectedEdgeIds = new Set<string>()
+  const highlightConnections = useCallback(
+    (nodeId: string) => {
+      const connectedNodeIds = new Set<string>([nodeId])
+      const connectedEdgeIds = new Set<string>()
 
-    for (const edge of edges) {
-      if (edge.source === nodeId || edge.target === nodeId) {
-        connectedNodeIds.add(edge.source)
-        connectedNodeIds.add(edge.target)
-        connectedEdgeIds.add(edge.id)
+      for (const edge of edges) {
+        if (edge.source === nodeId || edge.target === nodeId) {
+          connectedNodeIds.add(edge.source)
+          connectedNodeIds.add(edge.target)
+          connectedEdgeIds.add(edge.id)
+        }
       }
-    }
 
-    setNodes(nds =>
-      nds.map(n => ({
-        ...n,
-        data: {
-          ...n.data,
-          isHighlighted: connectedNodeIds.has(n.id) && n.id !== nodeId,
-          isSelected: n.id === nodeId,
-        },
-        style: {
-          ...n.style,
-          opacity: connectedNodeIds.has(n.id) ? 1 : 0.15,
-          transition: 'opacity 0.3s ease',
-        },
-      }))
-    )
+      setNodes(nds =>
+        nds.map(n => ({
+          ...n,
+          data: {
+            ...n.data,
+            isHighlighted: connectedNodeIds.has(n.id) && n.id !== nodeId,
+            isSelected: n.id === nodeId,
+          },
+          style: {
+            ...n.style,
+            opacity: connectedNodeIds.has(n.id) ? 1 : 0.15,
+            transition: 'opacity 0.3s ease',
+          },
+        }))
+      )
 
-    setEdges(eds =>
-      eds.map(e => ({
-        ...e,
-        style: {
-          ...e.style,
-          opacity: connectedEdgeIds.has(e.id) ? 1 : 0.08,
-          transition: 'opacity 0.3s ease',
-        },
-        labelStyle: {
-          ...(e.labelStyle as any || {}),
-          opacity: connectedEdgeIds.has(e.id) ? 1 : 0,
-        },
-      }))
-    )
-  }, [edges, setNodes, setEdges])
+      setEdges(eds =>
+        eds.map(e => ({
+          ...e,
+          style: {
+            ...e.style,
+            opacity: connectedEdgeIds.has(e.id) ? 1 : 0.08,
+            transition: 'opacity 0.3s ease',
+          },
+          labelStyle: {
+            ...((e.labelStyle as any) || {}),
+            opacity: connectedEdgeIds.has(e.id) ? 1 : 0,
+          },
+        }))
+      )
+    },
+    [edges, setNodes, setEdges]
+  )
 
   // Clear all highlighting
   const clearHighlighting = useCallback(() => {
@@ -374,8 +384,12 @@ export function CharacterWeb({
     setEdges(eds =>
       eds.map(e => ({
         ...e,
-        style: { ...e.style, opacity: Math.max(0.3, (e.data as any)?.strength || 0.5), transition: 'opacity 0.3s ease' },
-        labelStyle: { ...(e.labelStyle as any || {}), opacity: 1 },
+        style: {
+          ...e.style,
+          opacity: Math.max(0.3, (e.data as any)?.strength || 0.5),
+          transition: 'opacity 0.3s ease',
+        },
+        labelStyle: { ...((e.labelStyle as any) || {}), opacity: 1 },
       }))
     )
   }, [setNodes, setEdges])
@@ -385,10 +399,12 @@ export function CharacterWeb({
     if (!focusEntityId || nodes.length === 0) return
 
     // Find the node matching this entity ID
-    const targetNode = nodes.find(n =>
-      n.id === focusEntityId ||
-      n.id.includes(focusEntityId) ||
-      n.data.name?.toLowerCase().replace(/\s+/g, '-') === focusEntityId.split('-').slice(1).join('-')
+    const targetNode = nodes.find(
+      n =>
+        n.id === focusEntityId ||
+        n.id.includes(focusEntityId) ||
+        n.data.name?.toLowerCase().replace(/\s+/g, '-') ===
+          focusEntityId.split('-').slice(1).join('-')
     )
 
     if (targetNode) {
@@ -461,14 +477,17 @@ export function CharacterWeb({
   }, [clearHighlighting, updateUrlWithNode])
 
   // Legend items
-  const legendItems = useMemo(() => [
-    { type: 'ally', label: 'Ally', color: RELATIONSHIP_STYLES.ally.color },
-    { type: 'enemy', label: 'Enemy', color: RELATIONSHIP_STYLES.enemy.color },
-    { type: 'rival', label: 'Rival', color: RELATIONSHIP_STYLES.rival.color },
-    { type: 'mentor', label: 'Mentor', color: RELATIONSHIP_STYLES.mentor.color },
-    { type: 'lover', label: 'Lover', color: RELATIONSHIP_STYLES.lover.color },
-    { type: 'family', label: 'Family', color: RELATIONSHIP_STYLES.family.color },
-  ], [])
+  const legendItems = useMemo(
+    () => [
+      { type: 'ally', label: 'Ally', color: RELATIONSHIP_STYLES.ally.color },
+      { type: 'enemy', label: 'Enemy', color: RELATIONSHIP_STYLES.enemy.color },
+      { type: 'rival', label: 'Rival', color: RELATIONSHIP_STYLES.rival.color },
+      { type: 'mentor', label: 'Mentor', color: RELATIONSHIP_STYLES.mentor.color },
+      { type: 'lover', label: 'Lover', color: RELATIONSHIP_STYLES.lover.color },
+      { type: 'family', label: 'Family', color: RELATIONSHIP_STYLES.family.color },
+    ],
+    []
+  )
 
   if (isLoading) {
     return (
@@ -525,12 +544,7 @@ export function CharacterWeb({
         minZoom={0.2}
         maxZoom={2}
       >
-        <Background
-          variant={BackgroundVariant.Dots}
-          gap={20}
-          size={1}
-          color="#27272a"
-        />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#27272a" />
         <Controls
           className="bg-zinc-900 border-zinc-700 [&_button]:bg-zinc-800 [&_button]:border-zinc-700 [&_button]:text-zinc-400 [&_button:hover]:bg-zinc-700"
           showInteractive={false}
@@ -568,24 +582,30 @@ export function CharacterWeb({
       </ReactFlow>
 
       {/* Node Details Panel */}
-      {
-        selectedNodeId && nodes.find(n => n.id === selectedNodeId) && (
-          <NodeDetailsPanel
-            projectId={projectId}
-            node={nodes.find(n => n.id === selectedNodeId)!}
-            onClose={() => {
-              setSelectedNodeId(null)
-              updateUrlWithNode(null)
-              clearHighlighting()
-            }}
-          />
-        )
-      }
-    </div >
+      {selectedNodeId && nodes.find(n => n.id === selectedNodeId) && (
+        <NodeDetailsPanel
+          projectId={projectId}
+          node={nodes.find(n => n.id === selectedNodeId)!}
+          onClose={() => {
+            setSelectedNodeId(null)
+            updateUrlWithNode(null)
+            clearHighlighting()
+          }}
+        />
+      )}
+    </div>
   )
 }
 
-function NodeDetailsPanel({ node, onClose, projectId }: { node: CharacterWebNode; onClose: () => void; projectId: string }) {
+function NodeDetailsPanel({
+  node,
+  onClose,
+  projectId,
+}: {
+  node: CharacterWebNode
+  onClose: () => void
+  projectId: string
+}) {
   const data = node.data
   const type = data.type || 'character'
   const isCharacter = type === 'character'
@@ -605,22 +625,31 @@ function NodeDetailsPanel({ node, onClose, projectId }: { node: CharacterWebNode
               className="w-10 h-10 rounded-md object-cover border border-zinc-700/50 shadow-sm"
             />
           ) : (
-            <div className={cn(
-              "w-10 h-10 rounded-md flex items-center justify-center border border-zinc-700/50 shadow-sm text-sm font-bold",
-              type === 'character' ? "bg-purple-900/20 text-purple-200" :
-                type === 'faction' ? "bg-blue-900/20 text-blue-200" :
-                  type === 'place' ? "bg-emerald-900/20 text-emerald-200" :
-                    "bg-zinc-800/50 text-zinc-300"
-            )}>
+            <div
+              className={cn(
+                'w-10 h-10 rounded-md flex items-center justify-center border border-zinc-700/50 shadow-sm text-sm font-bold',
+                type === 'character'
+                  ? 'bg-purple-900/20 text-purple-200'
+                  : type === 'faction'
+                    ? 'bg-blue-900/20 text-blue-200'
+                    : type === 'place'
+                      ? 'bg-emerald-900/20 text-emerald-200'
+                      : 'bg-zinc-800/50 text-zinc-300'
+              )}
+            >
               {data.name.charAt(0)}
             </div>
           )}
 
           {/* Badge Overlay */}
-          <div className={cn(
-            "absolute -bottom-1 -right-1 px-1 py-px rounded-[2px] text-[8px] uppercase font-bold tracking-wider leading-none shadow-sm border border-black/20",
-            type === 'character' ? "bg-purple-500/20 text-purple-300" : "bg-zinc-500/20 text-zinc-400"
-          )}>
+          <div
+            className={cn(
+              'absolute -bottom-1 -right-1 px-1 py-px rounded-[2px] text-[8px] uppercase font-bold tracking-wider leading-none shadow-sm border border-black/20',
+              type === 'character'
+                ? 'bg-purple-500/20 text-purple-300'
+                : 'bg-zinc-500/20 text-zinc-400'
+            )}
+          >
             {getLabel(type).slice(0, 4)}
           </div>
         </div>
@@ -634,7 +663,20 @@ function NodeDetailsPanel({ node, onClose, projectId }: { node: CharacterWebNode
               onClick={onClose}
               className="absolute top-2 right-2 text-zinc-600 hover:text-zinc-300 transition-colors p-1"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
             </button>
           </div>
 
@@ -669,38 +711,49 @@ function NodeDetailsPanel({ node, onClose, projectId }: { node: CharacterWebNode
           <div className="text-[10px] italic text-zinc-600">No description available.</div>
         )}
 
-        {isCharacter && (data.stressLevel !== undefined || data.transformationProgress !== undefined) && (
-          <div className="space-y-2 pt-1">
-            {data.stressLevel !== undefined && (
-              <div className="flex items-center gap-2">
-                <span className="text-[9px] text-zinc-500 uppercase tracking-wider w-8">Stress</span>
-                <div className="flex-1 h-1 bg-zinc-800/50 rounded-full overflow-hidden">
-                  <div
-                    className={cn("h-full rounded-full",
-                      data.stressLevel > 70 ? 'bg-red-500/70' :
-                        data.stressLevel > 40 ? 'bg-amber-500/70' : 'bg-emerald-500/70'
-                    )}
-                    style={{ width: `${data.stressLevel}%` }}
-                  />
+        {isCharacter &&
+          (data.stressLevel !== undefined || data.transformationProgress !== undefined) && (
+            <div className="space-y-2 pt-1">
+              {data.stressLevel !== undefined && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] text-zinc-500 uppercase tracking-wider w-8">
+                    Stress
+                  </span>
+                  <div className="flex-1 h-1 bg-zinc-800/50 rounded-full overflow-hidden">
+                    <div
+                      className={cn(
+                        'h-full rounded-full',
+                        data.stressLevel > 70
+                          ? 'bg-red-500/70'
+                          : data.stressLevel > 40
+                            ? 'bg-amber-500/70'
+                            : 'bg-emerald-500/70'
+                      )}
+                      style={{ width: `${data.stressLevel}%` }}
+                    />
+                  </div>
+                  <span className="text-[9px] font-mono text-zinc-400 w-6 text-right">
+                    {data.stressLevel}%
+                  </span>
                 </div>
-                <span className="text-[9px] font-mono text-zinc-400 w-6 text-right">{data.stressLevel}%</span>
-              </div>
-            )}
+              )}
 
-            {data.transformationProgress !== undefined && (
-              <div className="flex items-center gap-2">
-                <span className="text-[9px] text-zinc-500 uppercase tracking-wider w-8">Arc</span>
-                <div className="flex-1 h-1 bg-zinc-800/50 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-purple-500/70 rounded-full"
-                    style={{ width: `${data.transformationProgress}%` }}
-                  />
+              {data.transformationProgress !== undefined && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] text-zinc-500 uppercase tracking-wider w-8">Arc</span>
+                  <div className="flex-1 h-1 bg-zinc-800/50 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-purple-500/70 rounded-full"
+                      style={{ width: `${data.transformationProgress}%` }}
+                    />
+                  </div>
+                  <span className="text-[9px] font-mono text-zinc-400 w-6 text-right">
+                    {data.transformationProgress}%
+                  </span>
                 </div>
-                <span className="text-[9px] font-mono text-zinc-400 w-6 text-right">{data.transformationProgress}%</span>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )}
       </div>
     </div>
   )

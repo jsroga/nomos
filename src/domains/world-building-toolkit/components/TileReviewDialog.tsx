@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Check, X, Loader2, GripVertical } from 'lucide-react'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import toast from 'react-hot-toast'
+import { getErrorMessage } from '@/lib/error-utils'
 
 export type TileReviewType = 'generation' | 'fidelity' | 'upscale'
 
@@ -227,8 +228,8 @@ export const TileReviewDialog: React.FC<TileReviewDialogProps> = ({
         toast.success('Upscale accepted!')
       }
       onClose()
-    } catch (error: any) {
-      toast.error(`Failed to accept: ${error.message}`)
+    } catch (error: unknown) {
+      toast.error(`Failed to accept: ${getErrorMessage(error)}`)
     } finally {
       setIsAccepting(false)
     }

@@ -13,7 +13,7 @@ export interface GameEntity {
   sourceDomain: SourceDomain
   sourceEntityId?: string
   usedInDomains: string[]
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
   tags: string[]
   imageUrl?: string
   createdAt: string
@@ -26,7 +26,7 @@ export interface EntityRelationship {
   fromEntityId: string
   toEntityId: string
   relationshipType: 'uses' | 'located_in' | 'conflicts_with' | 'allies_with' | 'owns' | 'part_of'
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
   fromEntity?: GameEntity
   toEntity?: GameEntity
   createdAt: string
@@ -57,56 +57,59 @@ export function useGameEntities(options: UseGameEntitiesOptions = {}) {
   // Store previous values to detect actual changes
   const prevOptionsRef = useRef<string>('')
 
-  const fetchEntities = useCallback(async (forceRefresh = false) => {
-    if (!projectId && autoFetch) return
+  const fetchEntities = useCallback(
+    async (forceRefresh = false) => {
+      if (!projectId && autoFetch) return
 
-    // Create a key for the current options to compare
-    const optionsKey = JSON.stringify({ projectId, entityType, sourceDomain, search })
+      // Create a key for the current options to compare
+      const optionsKey = JSON.stringify({ projectId, entityType, sourceDomain, search })
 
-    // Skip if nothing changed and not forcing refresh
-    if (!forceRefresh && hasFetchedRef.current && prevOptionsRef.current === optionsKey) {
-      return
-    }
-
-    // Cancel any in-flight request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-    }
-    abortControllerRef.current = new AbortController()
-
-    setLoading(true)
-    setError(null)
-
-    try {
-      const params = new URLSearchParams()
-      if (projectId) params.append('projectId', projectId)
-      if (entityType) params.append('entityType', entityType)
-      if (sourceDomain) params.append('sourceDomain', sourceDomain)
-      if (search) params.append('search', search)
-
-      const response = await fetch(`/api/entities?${params.toString()}`, {
-        signal: abortControllerRef.current.signal,
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch entities')
-      }
-
-      const data = await response.json()
-      setEntities(data.entities || [])
-      hasFetchedRef.current = true
-      prevOptionsRef.current = optionsKey
-    } catch (err) {
-      // Ignore abort errors
-      if (err instanceof Error && err.name === 'AbortError') {
+      // Skip if nothing changed and not forcing refresh
+      if (!forceRefresh && hasFetchedRef.current && prevOptionsRef.current === optionsKey) {
         return
       }
-      setError(err instanceof Error ? err.message : 'Failed to fetch entities')
-      console.error('[useGameEntities] Error:', err)
-    } finally {
-      setLoading(false)
-    }
-  }, [projectId, entityType, sourceDomain, search, autoFetch])
+
+      // Cancel any in-flight request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+      abortControllerRef.current = new AbortController()
+
+      setLoading(true)
+      setError(null)
+
+      try {
+        const params = new URLSearchParams()
+        if (projectId) params.append('projectId', projectId)
+        if (entityType) params.append('entityType', entityType)
+        if (sourceDomain) params.append('sourceDomain', sourceDomain)
+        if (search) params.append('search', search)
+
+        const response = await fetch(`/api/entities?${params.toString()}`, {
+          signal: abortControllerRef.current.signal,
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch entities')
+        }
+
+        const data = await response.json()
+        setEntities(data.entities || [])
+        hasFetchedRef.current = true
+        prevOptionsRef.current = optionsKey
+      } catch (err) {
+        // Ignore abort errors
+        if (err instanceof Error && err.name === 'AbortError') {
+          return
+        }
+        setError(err instanceof Error ? err.message : 'Failed to fetch entities')
+        console.error('[useGameEntities] Error:', err)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [projectId, entityType, sourceDomain, search, autoFetch]
+  )
 
   const createEntity = useCallback(
     async (entity: {
@@ -117,7 +120,7 @@ export function useGameEntities(options: UseGameEntitiesOptions = {}) {
       description?: string
       sourceDomain: SourceDomain
       sourceEntityId?: string
-      metadata?: Record<string, any>
+      metadata?: Record<string, unknown>
       tags?: string[]
       imageUrl?: string
     }): Promise<GameEntity | null> => {
@@ -159,7 +162,7 @@ export function useGameEntities(options: UseGameEntitiesOptions = {}) {
       updates: {
         name?: string
         description?: string
-        metadata?: Record<string, any>
+        metadata?: Record<string, unknown>
         tags?: string[]
         imageUrl?: string
         usedInDomains?: string[]
@@ -275,9 +278,12 @@ export function useGameEntities(options: UseGameEntitiesOptions = {}) {
     if (!autoFetch || !projectId) return
 
     // Debounce search changes
-    const timeoutId = setTimeout(() => {
-      fetchEntities()
-    }, search !== undefined ? 300 : 0) // Debounce only for search
+    const timeoutId = setTimeout(
+      () => {
+        fetchEntities()
+      },
+      search !== undefined ? 300 : 0
+    ) // Debounce only for search
 
     return () => clearTimeout(timeoutId)
   }, [projectId, entityType, sourceDomain, search, autoFetch, fetchEntities])
@@ -300,7 +306,7 @@ export function useGameEntities(options: UseGameEntitiesOptions = {}) {
 /**
  * Hook for managing entity relationships
  */
-export function useEntityRelationships(entityId?: string, projectId?: string) {
+function useEntityRelationships(entityId?: string, projectId?: string) {
   const [relationships, setRelationships] = useState<EntityRelationship[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -353,7 +359,7 @@ export function useEntityRelationships(entityId?: string, projectId?: string) {
         | 'allies_with'
         | 'owns'
         | 'part_of'
-      metadata?: Record<string, any>
+      metadata?: Record<string, unknown>
     }): Promise<EntityRelationship | null> => {
       setLoading(true)
       setError(null)

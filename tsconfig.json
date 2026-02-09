@@ -29,7 +29,9 @@
       ]
     },
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "strictNullChecks": true,
+    "useUnknownInCatchVariables": true
   },
   "include": [
     "next-env.d.ts",

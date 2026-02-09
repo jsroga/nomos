@@ -33,7 +33,7 @@ export const MazurElementsSchema = z.object({
   tone: z.string().nullable().describe('Specific atmosphere'),
 })
 
-export type MazurElements = z.infer<typeof MazurElementsSchema>
+type MazurElements = z.infer<typeof MazurElementsSchema>
 
 // ============================================
 // BEAT SCHEMAS
@@ -97,7 +97,7 @@ export const BeatProposalSchema = z.object({
   mazurElements: MazurElementsSchema.nullable().optional(),
 })
 
-export type BeatProposal = z.infer<typeof BeatProposalSchema>
+type BeatProposal = z.infer<typeof BeatProposalSchema>
 
 // ============================================
 // STORY STRUCTURE SCHEMAS (Moved up for dependencies)
@@ -371,7 +371,7 @@ export const EpisodePremisePartialSchema = z.object({
 })
 
 export type EpisodePremise = z.infer<typeof EpisodePremiseSchema>
-export type EpisodePremisePartial = z.infer<typeof EpisodePremisePartialSchema>
+type EpisodePremisePartial = z.infer<typeof EpisodePremisePartialSchema>
 
 export const UpdateEpisodePremiseActionSchema = z.object({
   type: z.literal('UPDATE_EPISODE_PREMISE'),
@@ -847,7 +847,7 @@ export const AgentActionSchema = z.discriminatedUnion('type', [
   UpdateScriptContentActionSchema,
 ])
 
-export type AgentActionValidated = z.infer<typeof AgentActionSchema>
+type AgentActionValidated = z.infer<typeof AgentActionSchema>
 
 // ============================================
 // QUESTION SCHEMAS
@@ -879,7 +879,7 @@ export const AgentQuestionSchema = z.object({
   defaultOption: z.string().nullable().optional(),
 })
 
-export type AgentQuestionValidated = z.infer<typeof AgentQuestionSchema>
+type AgentQuestionValidated = z.infer<typeof AgentQuestionSchema>
 
 // ============================================
 // AGENT RESPONSE SCHEMAS
@@ -912,14 +912,14 @@ export const ShowrunnerResponseSchema = BaseAgentResponseSchema.extend({
   questions: z.array(AgentQuestionSchema).nullable().optional(),
 })
 
-export type ShowrunnerResponse = z.infer<typeof ShowrunnerResponseSchema>
+type ShowrunnerResponse = z.infer<typeof ShowrunnerResponseSchema>
 
 // Plot Architect specific response
 export const PlotArchitectResponseSchema = BaseAgentResponseSchema.extend({
   actions: z.array(AgentActionSchema).nullable().optional(), // Now supports all actions (e.g. UPDATE_BEAT)
 })
 
-export type PlotArchitectResponse = z.infer<typeof PlotArchitectResponseSchema>
+type PlotArchitectResponse = z.infer<typeof PlotArchitectResponseSchema>
 
 // Character Psychology response
 export const CharacterPsychologyResponseSchema = BaseAgentResponseSchema.extend({
@@ -945,7 +945,7 @@ export const CharacterPsychologyResponseSchema = BaseAgentResponseSchema.extend(
     .optional(),
 })
 
-export type CharacterPsychologyResponse = z.infer<typeof CharacterPsychologyResponseSchema>
+type CharacterPsychologyResponse = z.infer<typeof CharacterPsychologyResponseSchema>
 
 // Devil's Advocate response
 export const DevilsAdvocateResponseSchema = BaseAgentResponseSchema.extend({
@@ -967,7 +967,7 @@ export const DevilsAdvocateResponseSchema = BaseAgentResponseSchema.extend({
     .optional(),
 })
 
-export type DevilsAdvocateResponse = z.infer<typeof DevilsAdvocateResponseSchema>
+type DevilsAdvocateResponse = z.infer<typeof DevilsAdvocateResponseSchema>
 
 // Consequence Tracker response
 export const ConsequenceTrackerResponseSchema = BaseAgentResponseSchema.extend({
@@ -1005,7 +1005,7 @@ export const ConsequenceTrackerResponseSchema = BaseAgentResponseSchema.extend({
     .optional(),
 })
 
-export type ConsequenceTrackerResponse = z.infer<typeof ConsequenceTrackerResponseSchema>
+type ConsequenceTrackerResponse = z.infer<typeof ConsequenceTrackerResponseSchema>
 
 // Premise Architect response
 
@@ -1016,14 +1016,14 @@ export const EpisodePremiseArchitectResponseSchema = BaseAgentResponseSchema.ext
   actions: z.array(AgentActionSchema).nullable().optional(),
 })
 
-export type EpisodePremiseArchitectResponse = z.infer<typeof EpisodePremiseArchitectResponseSchema>
+type EpisodePremiseArchitectResponse = z.infer<typeof EpisodePremiseArchitectResponseSchema>
 
 export const PremiseArchitectResponseSchema = BaseAgentResponseSchema.extend({
   actions: z.array(AgentActionSchema).nullable().optional(),
   storyPlan: StoryPlanSchema.nullable().optional(),
 })
 
-export type PremiseArchitectResponse = z.infer<typeof PremiseArchitectResponseSchema>
+type PremiseArchitectResponse = z.infer<typeof PremiseArchitectResponseSchema>
 
 // Writer response
 export const WriterResponseSchema = BaseAgentResponseSchema.extend({
@@ -1033,7 +1033,7 @@ export const WriterResponseSchema = BaseAgentResponseSchema.extend({
   actions: z.array(AgentActionSchema).nullable().optional(),
 })
 
-export type WriterResponse = z.infer<typeof WriterResponseSchema>
+type WriterResponse = z.infer<typeof WriterResponseSchema>
 
 // Script Editor response (Evaluator-Optimizer pattern)
 export const ScriptEditorResponseSchema = BaseAgentResponseSchema.extend({
@@ -1077,7 +1077,7 @@ export const ScriptEditorResponseSchema = BaseAgentResponseSchema.extend({
   strengths: z.array(z.string()).nullable().optional().describe('What the script does well'),
 })
 
-export type ScriptEditorResponse = z.infer<typeof ScriptEditorResponseSchema>
+type ScriptEditorResponse = z.infer<typeof ScriptEditorResponseSchema>
 
 // ============================================
 // VALIDATION HELPERS
@@ -1086,7 +1086,7 @@ export type ScriptEditorResponse = z.infer<typeof ScriptEditorResponseSchema>
 /**
  * Safely parse an agent response with fallback
  */
-export function parseAgentResponse<T>(
+function parseAgentResponse<T>(
   content: string,
   schema: z.ZodType<T>,
   fallbackMessage: string = 'Failed to parse response'
@@ -1155,7 +1155,7 @@ export function parseAgentResponse<T>(
 /**
  * Create a fallback response when parsing fails
  */
-export function createFallbackResponse(
+function createFallbackResponse(
   content: string,
   agentName: string
 ): {

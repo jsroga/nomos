@@ -1,9 +1,9 @@
 /**
  * SELF-IMPROVEMENT LOOP
- * 
+ *
  * Iterative refinement using Mazur Framework judges.
  * Up to N iterations, with full Langfuse visibility.
- * 
+ *
  * The loop continues until:
  * 1. Quality threshold reached (default 0.85)
  * 2. Max iterations hit (default 20)
@@ -62,11 +62,15 @@ function buildRefinementPrompt(
   iterationNumber: number
 ): string {
   const weakest = judgment.refinementPriority[0]
-  const persona = PERSONAS[
-    weakest === 'depth' ? 'george-rr-martin' :
-    weakest === 'structure' ? 'vince-gilligan' : 'david-lynch'
-  ]
-  
+  const persona =
+    PERSONAS[
+      weakest === 'depth'
+        ? 'george-rr-martin'
+        : weakest === 'structure'
+          ? 'vince-gilligan'
+          : 'david-lynch'
+    ]
+
   return `# ITERATION ${iterationNumber} - REFINEMENT REQUIRED
 
 ## CURRENT SCORES
@@ -115,13 +119,19 @@ Output the refined content only, no explanation.`
 const PlanningSchema = z.object({
   analysis: z.string().describe('What are the main issues?'),
   strategy: z.string().describe('How will we fix them?'),
-  changes: z.array(z.object({
-    target: z.string().describe('What section to change'),
-    from: z.string().describe('Current problematic text'),
-    to: z.string().describe('What to change it to'),
-    why: z.string().describe('Why this helps'),
-  })),
-  confidence: z.number().min(0).max(1).describe('How confident are we this will improve the score?'),
+  changes: z.array(
+    z.object({
+      target: z.string().describe('What section to change'),
+      from: z.string().describe('Current problematic text'),
+      to: z.string().describe('What to change it to'),
+      why: z.string().describe('Why this helps'),
+    })
+  ),
+  confidence: z
+    .number()
+    .min(0)
+    .max(1)
+    .describe('How confident are we this will improve the score?'),
 })
 
 async function planRefinement(
@@ -129,9 +139,9 @@ async function planRefinement(
   judgment: MazurJudgment,
   traceId: string
 ): Promise<z.infer<typeof PlanningSchema>> {
-  return withSpan(traceId, 'ImprovementLoop.plan', async (span) => {
+  return withSpan(traceId, 'ImprovementLoop.plan', async span => {
     const model = getJudgingModel('primary')
-    
+
     const prompt = `You are planning how to improve this content based on the Mazur Framework judgment.
 
 SCORES:
@@ -142,11 +152,17 @@ SCORES:
 
 ALL WEAKNESSES:
 ${[...judgment.depth.weaknesses, ...judgment.structure.weaknesses, ...judgment.feeling.weaknesses]
-  .map(w => `- ${w}`).join('\n')}
+  .map(w => `- ${w}`)
+  .join('\n')}
 
 ALL SLOP SIGNALS:
-${[...judgment.depth.slopDetected, ...judgment.structure.slopDetected, ...judgment.feeling.slopDetected]
-  .map(s => `- ${s}`).join('\n')}
+${[
+  ...judgment.depth.slopDetected,
+  ...judgment.structure.slopDetected,
+  ...judgment.feeling.slopDetected,
+]
+  .map(s => `- ${s}`)
+  .join('\n')}
 
 CONTENT:
 ${content}
@@ -211,10 +227,10 @@ export async function runImprovementLoop(
   let exitReason: LoopResult['exitReason'] = 'max_iterations'
 
   for (let i = 1; i <= maxIterations; i++) {
-    await withSpan(traceId, `iteration_${i}`, async (span) => {
+    await withSpan(traceId, `iteration_${i}`, async span => {
       // === STEP 1: Judge current content ===
       const judgment = await judgeMazur(currentContent, traceId)
-      
+
       // Log iteration to Langfuse
       langfuse.event({
         traceId,
@@ -240,7 +256,8 @@ export async function runImprovementLoop(
         judgment,
         improved,
         delta,
-        reasoning: `Score: ${judgment.overallScore.toFixed(3)} (${improved ? '+' : ''}${delta.toFixed(3)}). ` +
+        reasoning:
+          `Score: ${judgment.overallScore.toFixed(3)} (${improved ? '+' : ''}${delta.toFixed(3)}). ` +
           `Verdict: ${judgment.verdict}. Priority: ${judgment.refinementPriority[0]}`,
       }
 
@@ -248,7 +265,7 @@ export async function runImprovementLoop(
       onIteration?.(iterationResult)
 
       // === CHECK EXIT CONDITIONS ===
-      
+
       // 1. Quality threshold reached
       if (judgment.overallScore >= qualityThreshold && judgment.slopScore < 0.2) {
         exitReason = 'threshold_reached'
@@ -359,24 +376,24 @@ export async function runImprovementLoop(
 // QUICK IMPROVEMENT (Single pass with judgment)
 // =============================================================================
 
-export async function quickImprove(
+async function quickImprove(
   content: string,
   traceId?: string
 ): Promise<{ improved: string; judgment: MazurJudgment; delta: number }> {
   const tid = traceId || uuidv4()
-  
+
   const initialJudgment = await judgeMazur(content, tid)
-  
+
   if (initialJudgment.verdict === 'PASS') {
     return { improved: content, judgment: initialJudgment, delta: 0 }
   }
 
   // Plan refinement for Langfuse visibility (logged internally)
   await planRefinement(content, initialJudgment, tid)
-  
+
   const model = getGenerationModel('creative')
   const prompt = buildRefinementPrompt(content, initialJudgment, 1)
-  
+
   const refined = await generateText({
     model,
     prompt,
@@ -384,7 +401,7 @@ export async function quickImprove(
   })
 
   const finalJudgment = await judgeMazur(refined.text, tid)
-  
+
   return {
     improved: refined.text,
     judgment: finalJudgment,

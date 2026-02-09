@@ -1,4 +1,5 @@
 import { UnityExporter } from '../utils/UnityExporter'
+import { getErrorMessage } from '@/lib/error-utils'
 
 // Mock Fetch
 const mockFetch = async (url: string) => {
@@ -20,8 +21,8 @@ async function it(name: string, fn: () => Promise<void> | void) {
   try {
     await fn()
     console.log('  PASS')
-  } catch (e: any) {
-    console.error(`  FAIL: ${e.message}`)
+  } catch (e: unknown) {
+    console.error(`  FAIL: ${getErrorMessage(e)}`)
     throw e
   }
 }

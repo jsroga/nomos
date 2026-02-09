@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
+import Link from 'next/link' // Added Link import
 import { useRouter } from 'next/navigation'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { Plus, FolderOpen, Loader2, LogOut, Trash2 } from 'lucide-react'
@@ -8,11 +10,38 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useConfirmDialog } from '@/components/ui/confirm-dialog'
+import dynamic from 'next/dynamic'
 
 // New Imports for Liquid UI
 import { TurbulentBackground } from '@/domains/marketing/components/TurbulentBackground'
 import { Liquid } from '@/domains/marketing/components/Liquid'
 import { GlowEffect } from '@/components/ui/glow-effect'
+import { TURBULENT_BG_PROPS, LIQUID_PROPS } from '@/lib/constants/visuals'
+import { BleedingText } from '@/components/ui/BleedingText'
+import { motion } from 'framer-motion'
+
+const SUBTITLES = [
+  "Play god. It’s cheaper than therapy.",
+  "Your reality is boring. Make a new one.",
+  "Build a world before this one ends.",
+  "No one will miss the old timeline.",
+  "Architect your own escape.",
+  "Simulation theory is real. You are the admin.",
+  "Reality is a suggestion. Ignore it.",
+  "The void is waiting for your input.",
+  "Create something that outlives you.",
+  "Sanity is optional here."
+]
+
+// Lazy load 3D icon for performance
+const ThreeDIcon = dynamic(
+  () => import('@/domains/marketing/components/ThreeDIcon').then((mod) => mod.ThreeDIcon),
+  { ssr: false, loading: () => <div className="w-[200px] h-[200px] bg-white/5 animate-pulse rounded-full" /> }
+)
+
+// Available 3D icon types for random selection
+const ICON_TYPES = ['WORLD_GEN', 'AI_NARRATIVE', 'SCULPT_SIM', 'EXPORTER', 'STR_TST'] as const
+type IconType = typeof ICON_TYPES[number]
 
 export default function ProjectSelectionPage() {
   const router = useRouter()
@@ -30,23 +59,18 @@ export default function ProjectSelectionPage() {
   const [newProjectName, setNewProjectName] = useState('')
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
 
+  // Random 3D icon type - set once on mount
+  const [iconType] = useState<IconType>(() => ICON_TYPES[Math.floor(Math.random() * ICON_TYPES.length)])
+
   // --- Liquid UI State ---
-  const [zoom, setZoom] = useState(0.1)
-  const [rotation, setRotation] = useState(3.33)
-  const [speed, setSpeed] = useState(1.0)
-  const [morphSpeed, setMorphSpeed] = useState(0.5)
   const [bgElement, setBgElement] = useState<HTMLDivElement | null>(null)
 
-  // Liquid Card Settings (Optimized Defaults)
-  const liquidOptions = {
-    snapshot: bgElement,
-    refraction: 0.064,
-    bevelWidth: 0.042,
-    bevelDepth: 2.0,
-    intensity: 0.0,
-    frost: 1.0,
-    specular: true,
-  }
+  // Subtitle State
+  const [subtitle, setSubtitle] = useState('')
+
+  useEffect(() => {
+    setSubtitle(SUBTITLES[Math.floor(Math.random() * SUBTITLES.length)])
+  }, [])
 
   // Live Texture Bridge
   useEffect(() => {
@@ -65,6 +89,8 @@ export default function ProjectSelectionPage() {
   }, [])
   // ---------------------
 
+  const [loadingProjectId, setLoadingProjectId] = useState<string | null>(null)
+
   useEffect(() => {
     const init = async () => {
       const {
@@ -82,6 +108,7 @@ export default function ProjectSelectionPage() {
   }, [])
 
   const handleSelectProject = (projectId: string) => {
+    setLoadingProjectId(projectId)
     router.push(`/app/${projectId}/storyteller?bible=open`)
   }
 
@@ -127,18 +154,24 @@ export default function ProjectSelectionPage() {
 
   return (
     <TurbulentBackground
-      zoom={zoom}
-      rotation={rotation}
-      speed={speed}
-      morphSpeed={morphSpeed}
-      colorShift={0}
-      saturation={0.65}
-      brightness={2.39}
-      contrast={1.32}
-      hue={0}
+      {...TURBULENT_BG_PROPS}
       onRef={setBgElement}
     >
-      <div className="relative z-10 w-full min-h-screen p-4 md:p-8 flex items-center justify-center">
+      <div className="relative z-10 w-full min-h-screen p-4 md:p-8 flex flex-col items-center justify-center gap-8">
+        {/* Centered Logo */}
+        <div className="z-50">
+          <Link href="/">
+            <Image
+              src="/logo.svg"
+              alt="Logo"
+              width={237}
+              height={59}
+              className="w-[237px] h-auto opacity-90 hover:opacity-100 transition-opacity cursor-pointer"
+              priority
+            />
+          </Link>
+        </div>
+
         {/* Main Content Container */}
         <div className="w-full max-w-6xl flex flex-col md:flex-row gap-6 md:h-[80vh]">
           {/* LEFT: Project List (Glass Panel) */}
@@ -147,15 +180,6 @@ export default function ProjectSelectionPage() {
               <div className="flex items-center gap-3">
                 <h1 className="text-xl font-bold tracking-tight text-white/90">Projects</h1>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleLogout}
-                title="Logout"
-                className="hover:bg-white/10 text-white/70"
-              >
-                <LogOut size={18} />
-              </Button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
@@ -167,7 +191,11 @@ export default function ProjectSelectionPage() {
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-white/80 group-hover:bg-primary group-hover:text-white transition-colors shadow-lg shrink-0">
-                      <FolderOpen size={20} />
+                      {loadingProjectId === project.id ? (
+                        <Loader2 size={20} className="animate-spin text-white" />
+                      ) : (
+                        <FolderOpen size={20} />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold truncate text-white/90 group-hover:text-white transition-colors">
@@ -183,6 +211,7 @@ export default function ProjectSelectionPage() {
                     size="icon"
                     onClick={e => handleDeleteProject(e, project.id)}
                     className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-white/40 hover:text-red-400 hover:bg-red-400/10"
+                    disabled={loadingProjectId === project.id}
                   >
                     <Trash2 size={14} />
                   </Button>
@@ -206,6 +235,15 @@ export default function ProjectSelectionPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate text-white/90">{user.email}</p>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleLogout}
+                    title="Logout"
+                    className="hover:bg-white/10 text-white/70"
+                  >
+                    <LogOut size={18} />
+                  </Button>
                 </div>
               )}
             </div>
@@ -213,35 +251,67 @@ export default function ProjectSelectionPage() {
 
           {/* RIGHT: Create World (Liquid Card) */}
           <div className="w-full md:w-2/3 flex items-center justify-center">
-            <Liquid speed={speed} {...liquidOptions}>
+            <Liquid speed={1.0} {...LIQUID_PROPS} snapshot={bgElement}>
               <div className="w-full h-full p-8 md:p-12 flex flex-col justify-center items-center text-center bg-[#0000005c] rounded-2xl border border-white/10 shadow-2xl backdrop-blur-sm">
                 <div className="max-w-md w-full space-y-8">
                   <div className="space-y-4 flex flex-col items-center relative group">
-                    <div className="relative">
-                      <img
-                        src="/logo.png"
-                        alt="Logo"
-                        className="h-[240px] w-[240px] brightness-0 invert mb-4 opacity-80 relative z-10"
-                      />
+                    {/* Edgy Header */}
+                    <div className="mb-8 relative z-10 flex flex-col items-center gap-2">
+                      <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tight font-syne leading-[0.9]">
+                        Getting Started
+                      </h2>
+                      <div className="h-6">
+                        {subtitle && (
+                          <BleedingText
+                            text={subtitle}
+                            className="text-sm font-mono tracking-wide uppercase"
+                            textColor="text-red-500/90"
+                            particleColor="text-red-500"
+                          />
+                        )}
+                      </div>
+                      <div className="w-32 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mt-4" />
                     </div>
-                    <h2 className="text-4xl md:text-5xl font-black tracking-tighter text-white drop-shadow-lg font-syne">
-                      Create Potential
-                    </h2>
-                    <p className="text-white/60 text-lg font-light leading-relaxed">
-                      "To define is to limit." <br />
-                      <span className="text-white/40 text-sm">- Oscar Wilde</span>
-                    </p>
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px]">
+                      {/* <ThreeDIcon
+                        type={iconType}
+                        size={600}
+                        scale={0.33}
+                        glowScale={0.5}
+                        // mouseRotation={0.25}
+                        speed={0.1}
+                      /> */}
+                    </div>
+
                   </div>
 
                   <form onSubmit={handleCreateProject} className="space-y-6 w-full">
                     <div className="space-y-2 relative group w-full">
                       <div className="relative">
-                        <GlowEffect
-                          colors={['#4f46e5', '#3b82f6', '#8b5cf6', '#6366f1']}
-                          mode="static"
-                          blur="soft"
-                          scale={0.9}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                        {/* Layer 1: Ambient Deep Glow (Always active, slow motion) */}
+                        <motion.div
+                          className="absolute inset-0 -z-20 rounded-xl opacity-20 blur-2xl"
+                          style={{
+                            background: 'linear-gradient(45deg, #4f46e5, #3b82f6, #8b5cf6, #4f46e5)',
+                            backgroundSize: '400% 400%',
+                          }}
+                          animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+                          transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                        />
+
+                        {/* Layer 2: Focus/Hover Intensity (Bright, scale pulse) */}
+                        <motion.div
+                          className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-0 group-hover:opacity-30 group-focus-within:opacity-75 blur-md transition-all duration-500"
+                          style={{ backgroundSize: '200% 200%' }}
+                          animate={{
+                            backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                            scale: [0.98, 1.02, 0.98]
+                          }}
+                          transition={{
+                            duration: 4,
+                            repeat: Infinity,
+                            ease: 'easeInOut'
+                          }}
                         />
                         <input
                           type="text"
@@ -253,12 +323,30 @@ export default function ProjectSelectionPage() {
                       </div>
                     </div>
                     <div className="relative group">
-                      <GlowEffect
-                        colors={['#4f46e5', '#3b82f6', '#8b5cf6', '#6366f1']}
-                        mode="static"
-                        blur="medium"
-                        scale={0.9}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                      {/* Button Glow Layer 1: Ambient */}
+                      <motion.div
+                        className="absolute inset-0 -z-20 rounded-xl opacity-20 blur-xl"
+                        style={{
+                          background: 'linear-gradient(45deg, #4f46e5, #3b82f6, #8b5cf6, #4f46e5)',
+                          backgroundSize: '400% 400%',
+                        }}
+                        animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+                        transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+                      />
+
+                      {/* Button Glow Layer 2: Hover Intensity */}
+                      <motion.div
+                        className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-0 group-hover:opacity-100 blur-lg transition-all duration-300"
+                        style={{ backgroundSize: '200% 200%' }}
+                        animate={{
+                          backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                          scale: [0.95, 1.05, 0.95]
+                        }}
+                        transition={{
+                          duration: 3,
+                          repeat: Infinity,
+                          ease: 'easeInOut'
+                        }}
                       />
                       <Button
                         type="submit"

@@ -73,7 +73,7 @@ export interface GameEntity {
   description: string | null
   source_domain: string
   source_entity_id: string | null
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
   tags: string[]
   image_url: string | null
   used_in_domains: string[]
@@ -208,7 +208,7 @@ export class EntitiesService {
     // First verify the entity exists and user has access
     await this.get(entityId, context)
 
-    const updateData: Record<string, any> = {}
+    const updateData: Record<string, unknown> = {}
     if (validated.name !== undefined) updateData.name = validated.name
     if (validated.description !== undefined) updateData.description = validated.description
     if (validated.metadata !== undefined) updateData.metadata = validated.metadata

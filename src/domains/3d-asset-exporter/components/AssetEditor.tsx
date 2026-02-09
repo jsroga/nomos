@@ -16,6 +16,7 @@ import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldSt
 import toast from 'react-hot-toast'
 import { repaintService } from '@/domains/world-building-toolkit/services/RepaintService'
 import { EditorTool } from '@/types/enums'
+import { getErrorMessage } from '@/lib/error-utils'
 
 interface AssetEditorProps {
   assetId: string
@@ -351,9 +352,9 @@ export const AssetEditor: React.FC<AssetEditorProps> = ({
 
       xhr.open('POST', '/api/assets/upload')
       xhr.send(formData)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Upload error:', error)
-      toast.error(`Upload failed: ${error.message}`)
+      toast.error(`Upload failed: ${getErrorMessage(error)}`)
       setIsUploading(false)
       setUploadProgress(0)
     }

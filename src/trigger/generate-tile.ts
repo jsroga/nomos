@@ -6,6 +6,7 @@ import { imageService, StyleInfo } from '@/lib/server/image-service'
 import sharp from 'sharp'
 import { v4 as uuidv4 } from 'uuid'
 import { storageService } from '@/infrastructure/storage/StorageService'
+import { getErrorMessage } from '@/lib/error-utils'
 
 export const generateTileTask = task({
   id: 'generate-tile',
@@ -19,7 +20,7 @@ export const generateTileTask = task({
     y: number
     prompt: string
     aiProvider: string
-    aiConfig: Record<string, any>
+    aiConfig: Record<string, unknown>
     isFirstTile?: boolean
     styleReferenceUrls?: string[]
     contextImageBase64?: string
@@ -56,12 +57,15 @@ export const generateTileTask = task({
     if (!isFirstTile && !contextImageBase64 && neighbors) {
       await metadata.set('stage', 'assembling_context')
       logger.info('Assembling context image on server')
-      const { image } = await imageService.assembleContext({
-        targetX: x,
-        targetY: y,
-        neighbors,
-        allTiles: {} // Not needed for assembly
-      }, 1024)
+      const { image } = await imageService.assembleContext(
+        {
+          targetX: x,
+          targetY: y,
+          neighbors,
+          allTiles: {}, // Not needed for assembly
+        },
+        1024
+      )
       contextImageBase64 = image.toString('base64')
     }
 
@@ -292,10 +296,12 @@ async function generateWithGemini(
 
     // For follow-up tiles, we need to crop the center 512x512 from the 1024x1024 result
     if (!isFirstTile && contextImageBase64) {
-      const buffer = await imageService.crop(
-        Buffer.from(imageData, 'base64'),
-        { x: 256, y: 256, width: 512, height: 512 }
-      )
+      const buffer = await imageService.crop(Buffer.from(imageData, 'base64'), {
+        x: 256,
+        y: 256,
+        width: 512,
+        height: 512,
+      })
       imageData = buffer.toString('base64')
     }
 
@@ -373,12 +379,15 @@ async function generateWithOpenAI(
     formData.append('image', imageBlob, 'image.png')
 
     // Create mask: center 512x512 transparent (to edit), rest white (keep)
-    const { mask } = await imageService.assembleContext({
-      targetX: 0, // Not strictly needed for just a mask but interface expects it
-      targetY: 0,
-      neighbors: {},
-      allTiles: {}
-    }, 1024)
+    const { mask } = await imageService.assembleContext(
+      {
+        targetX: 0, // Not strictly needed for just a mask but interface expects it
+        targetY: 0,
+        neighbors: {},
+        allTiles: {},
+      },
+      1024
+    )
     // Convert Buffer to Uint8Array for Blob compatibility if needed
     formData.append('mask', new Blob([new Uint8Array(mask)], { type: 'image/png' }), 'mask.png')
 
@@ -410,10 +419,12 @@ async function generateWithOpenAI(
     }
 
     // Crop center 512x512 from the 1024x1024 result
-    const croppedBuffer = await imageService.crop(
-      Buffer.from(data.data[0].b64_json, 'base64'),
-      { x: 256, y: 256, width: 512, height: 512 }
-    )
+    const croppedBuffer = await imageService.crop(Buffer.from(data.data[0].b64_json, 'base64'), {
+      x: 256,
+      y: 256,
+      width: 512,
+      height: 512,
+    })
     return croppedBuffer.toString('base64')
   }
 }
@@ -478,12 +489,15 @@ async function generateWithStability(
     logger.info('Stability: Generating follow-up tile with context image')
 
     // Create mask for center region
-    const { mask } = await imageService.assembleContext({
-      targetX: 0,
-      targetY: 0,
-      neighbors: {},
-      allTiles: {}
-    }, 1024)
+    const { mask } = await imageService.assembleContext(
+      {
+        targetX: 0,
+        targetY: 0,
+        neighbors: {},
+        allTiles: {},
+      },
+      1024
+    )
     const maskBase64 = mask.toString('base64')
 
     const formData = new FormData()
@@ -532,10 +546,12 @@ async function generateWithStability(
     }
 
     // Crop center 512x512 from the 1024x1024 result
-    const croppedBuffer = await imageService.crop(
-      Buffer.from(data.artifacts[0].base64, 'base64'),
-      { x: 256, y: 256, width: 512, height: 512 }
-    )
+    const croppedBuffer = await imageService.crop(Buffer.from(data.artifacts[0].base64, 'base64'), {
+      x: 256,
+      y: 256,
+      width: 512,
+      height: 512,
+    })
     return croppedBuffer.toString('base64')
   }
 }
@@ -621,9 +637,9 @@ async function pollLegNextTask(
         logger.error('LegNext task failed', { error: errorMsg, fullData: data })
         throw new Error(errorMsg)
       }
-    } catch (e: any) {
-      logger.warn('Polling fetch error:', { error: e.message })
-      if (e.message?.includes('not found')) throw e
+    } catch (e: unknown) {
+      logger.warn('Polling fetch error:', { error: getErrorMessage(e) })
+      if (getErrorMessage(e)?.includes('not found')) throw e
     }
 
     attempts++

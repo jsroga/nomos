@@ -19,47 +19,62 @@ export const BibleInspirations: React.FC<BibleInspirationsProps> = () => {
     loadingSections,
     pendingActions,
   } = useBible()
-  
+
   const isLoading = loadingSections?.inspirations?.loading ?? false
   const pendingAction = pendingActions?.inspirations
-  
+
   // Normalize inspirations - handle both flat array and categorized object formats
   const normalizedInspirations = React.useMemo(() => {
     const raw = storyPlan.inspirations
-    
+
     // If already in correct format (object with books/movies/games keys)
     if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-      return raw as { books?: InspirationItem[]; movies?: InspirationItem[]; games?: InspirationItem[] }
+      return raw as {
+        books?: InspirationItem[]
+        movies?: InspirationItem[]
+        games?: InspirationItem[]
+      }
     }
-    
+
     // If flat array, categorize by detecting type from title
     if (Array.isArray(raw)) {
       const books: InspirationItem[] = []
       const movies: InspirationItem[] = []
       const games: InspirationItem[] = []
-      
+
       for (const item of raw) {
         const title = typeof item === 'string' ? item : item?.title || ''
         const titleLower = title.toLowerCase()
-        
+
         // Detect category from title patterns
-        if (titleLower.includes('(game)') || titleLower.includes('video game') || 
-            titleLower.match(/\(\d{4}\).*game/i) || titleLower.includes('bioshock') ||
-            titleLower.includes('rpg') || titleLower.includes('zelda') || titleLower.includes('souls')) {
+        if (
+          titleLower.includes('(game)') ||
+          titleLower.includes('video game') ||
+          titleLower.match(/\(\d{4}\).*game/i) ||
+          titleLower.includes('bioshock') ||
+          titleLower.includes('rpg') ||
+          titleLower.includes('zelda') ||
+          titleLower.includes('souls')
+        ) {
           games.push(typeof item === 'string' ? { title: item } : item)
-        } else if (titleLower.includes('film') || titleLower.includes('movie') ||
-                   titleLower.match(/\(\d{4}\)$/) || titleLower.includes('anime') ||
-                   titleLower.includes('inside out') || titleLower.includes('weathering')) {
+        } else if (
+          titleLower.includes('film') ||
+          titleLower.includes('movie') ||
+          titleLower.match(/\(\d{4}\)$/) ||
+          titleLower.includes('anime') ||
+          titleLower.includes('inside out') ||
+          titleLower.includes('weathering')
+        ) {
           movies.push(typeof item === 'string' ? { title: item } : item)
         } else {
           // Default to books (includes "by Author" patterns)
           books.push(typeof item === 'string' ? { title: item } : item)
         }
       }
-      
+
       return { books, movies, games }
     }
-    
+
     return { books: [], movies: [], games: [] }
   }, [storyPlan.inspirations])
 
@@ -67,10 +82,7 @@ export const BibleInspirations: React.FC<BibleInspirationsProps> = () => {
     <section className={isLoading || pendingAction ? 'relative' : ''}>
       {/* Pending action overlay */}
       {pendingAction && (
-        <SectionPendingOverlay 
-          pendingAction={pendingAction}
-          onReview={pendingAction.onReview}
-        />
+        <SectionPendingOverlay pendingAction={pendingAction} onReview={pendingAction.onReview} />
       )}
       {isLoading && !pendingAction && (
         <div className="absolute inset-0 z-10 bg-background/60 backdrop-blur-sm rounded-lg flex items-center justify-center">

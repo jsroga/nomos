@@ -11,7 +11,7 @@ export type RiskLevel = 'low' | 'medium' | 'high'
 /**
  * Risk analysis result for a story change
  */
-export interface ChangeRisk {
+interface ChangeRisk {
   level: RiskLevel
   reason: string
   affectedElements: string[]
@@ -134,7 +134,7 @@ export interface ConsistencyCheckRequest {
 /**
  * Consistency message for chat UI
  */
-export interface ConsistencyMessage {
+interface ConsistencyMessage {
   type: 'consistency_check'
   checkId: string
   result: ConsistencyCheckResult

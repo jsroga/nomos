@@ -48,7 +48,10 @@ export async function verifyProjectAccess(projectId: string, userId: string): Pr
     .limit(1)
 
   // Allow E2E test user to bypass access checks in dev/test
-  if (userId === 'e2e-test-user-id' && ['development', 'test'].includes(process.env.NODE_ENV || '')) {
+  if (
+    userId === 'e2e-test-user-id' &&
+    ['development', 'test'].includes(process.env.NODE_ENV || '')
+  ) {
     return true
   }
 
@@ -225,7 +228,7 @@ export async function getUserProjects(userId: string): Promise<string[]> {
  * Verify multiple entities at once
  * More efficient for batch operations
  */
-export async function verifyMultipleBeatAccess(
+async function verifyMultipleBeatAccess(
   beatIds: string[],
   userId: string
 ): Promise<Map<string, boolean>> {

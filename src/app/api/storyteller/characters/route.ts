@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { characters, projects } from '@/domains/storyteller/db/schema'
+import { characters } from '@/domains/storyteller/db/schema'
 import { eq, desc, and, sql } from 'drizzle-orm'
 import { requireAuth } from '@/lib/auth'
 
-import { verifyProjectAccess, verifyCharacterAccess } from '@/domains/storyteller/lib/access-verification'
+import {
+  verifyProjectAccess,
+  verifyCharacterAccess,
+} from '@/domains/storyteller/lib/access-verification'
 
 /**
  * @openapi
@@ -190,7 +193,6 @@ import { verifyProjectAccess, verifyCharacterAccess } from '@/domains/storytelle
  *           description: Character voice/speech pattern description
  */
 
-
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const projectId = searchParams.get('projectId')
@@ -293,9 +295,9 @@ export async function POST(req: NextRequest) {
         // Default new metrics
         valence: 0,
         arousal: stress ?? 50, // Map stress to arousal as proxy?
-        autonomy: power ? (power * 0.6 + 20) : 60, // Rough proxy
+        autonomy: power ? power * 0.6 + 20 : 60, // Rough proxy
         competence: 60,
-        relatedness: isolation ? (100 - isolation) : 50, // Inverse isolation
+        relatedness: isolation ? 100 - isolation : 50, // Inverse isolation
         cognitiveClarity: 70,
         perceivedStakes: 40,
         socialSafety: trust ?? 60, // Trust -> Safety proxy
@@ -411,7 +413,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Build update object with only valid fields
-    const dbUpdates: Record<string, any> = {}
+    const dbUpdates: Record<string, unknown> = {}
 
     if (name !== undefined) dbUpdates.name = name
     if (role !== undefined) dbUpdates.role = role

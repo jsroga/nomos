@@ -229,7 +229,7 @@ export interface TestCaseResult {
   metrics: MetricResult[]
 }
 
-export interface EvaluationResult {
+interface EvaluationResult {
   success: boolean
   testCases: TestCaseResult[]
   timestamp: string
@@ -307,7 +307,7 @@ export interface DeepEvalTestCase {
   context?: string[]
 }
 
-export interface DeepEvalInput {
+interface DeepEvalInput {
   hypothesis?: {
     id: string
     name: string
@@ -317,7 +317,7 @@ export interface DeepEvalInput {
   metrics?: string[]
 }
 
-export interface DeepEvalOutput {
+interface DeepEvalOutput {
   success: boolean
   testCases: TestCaseResult[]
   error?: string

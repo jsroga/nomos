@@ -24,6 +24,6 @@ export function seedFromString(str: string): number {
  * Combines multiple strings into a single seed.
  * Useful for combining master prompt with object-specific prompt.
  */
-export function combinedSeed(...strings: string[]): number {
+function combinedSeed(...strings: string[]): number {
   return seedFromString(strings.filter(Boolean).join('|'))
 }

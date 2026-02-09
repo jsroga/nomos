@@ -118,7 +118,9 @@ async function callVoyageAPI(
   // 1. Check Circuit Breaker & Config
   if (!isEnabled || !apiKey || Date.now() < rateLimitUntil) {
     if (Date.now() < rateLimitUntil) {
-      console.warn(`[Voyage] Circuit breaker active. Skipping API call (cooldown expires in ${Math.ceil((rateLimitUntil - Date.now()) / 1000)}s).`)
+      console.warn(
+        `[Voyage] Circuit breaker active. Skipping API call (cooldown expires in ${Math.ceil((rateLimitUntil - Date.now()) / 1000)}s).`
+      )
     } else if (!isEnabled) {
       console.warn('[Voyage] Disabled via VOYAGE_ENABLED=false.')
     } else {
@@ -158,14 +160,18 @@ async function callVoyageAPI(
       if (response.status === 429) {
         // Stop retrying if we've hit the limit too many times
         if (retryCount >= 3) {
-          console.error('[Voyage] Rate limit exceeded max retries. Activating circuit breaker for 60s.')
+          console.error(
+            '[Voyage] Rate limit exceeded max retries. Activating circuit breaker for 60s.'
+          )
           rateLimitUntil = Date.now() + 60000 // 1 minute cooldown
           const mockEmbedding = new Array(EMBEDDING_DIMENSIONS).fill(0)
           return texts.map(() => [...mockEmbedding])
         }
 
         const retryAfter = parseInt(response.headers.get('retry-after') || '5', 10)
-        console.warn(`[Voyage] Rate limited, retrying after ${retryAfter}s (attempt ${retryCount + 1}/3)`)
+        console.warn(
+          `[Voyage] Rate limited, retrying after ${retryAfter}s (attempt ${retryCount + 1}/3)`
+        )
         await new Promise(resolve => setTimeout(resolve, retryAfter * 1000))
         return callVoyageAPI(texts, config, retryCount + 1)
       }
@@ -353,15 +359,15 @@ export function getVoyageEmbeddings(config?: Partial<VoyageEmbeddingConfig>): Vo
 /**
  * Utility function to clear the embedding cache
  */
-export function clearEmbeddingCache(): void {
+function clearEmbeddingCache(): void {
   embeddingCache.clear()
 }
 
 /**
  * Get embedding dimensions for the current model
  */
-export function getEmbeddingDimensions(): number {
+function getEmbeddingDimensions(): number {
   return EMBEDDING_DIMENSIONS
 }
 
-export { EMBEDDING_DIMENSIONS, VOYAGE_MODEL, VOYAGE_LITE_MODEL }
+export { EMBEDDING_DIMENSIONS, VOYAGE_MODEL }

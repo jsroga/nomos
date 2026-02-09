@@ -1,6 +1,7 @@
 import { runs } from '@trigger.dev/sdk/v3'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
+import { getErrorMessage } from '@/lib/error-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,8 +24,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ task
       error: run.error,
       metadata: run.metadata,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to get surface-material run status:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
   }
 }

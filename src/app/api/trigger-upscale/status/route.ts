@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runs } from '@trigger.dev/sdk/v3'
 import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
+import { getErrorMessage } from '@/lib/error-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,13 +31,13 @@ export const GET = withAuth(async (request: NextRequest, { session }: Authentica
       startedAt: run.startedAt,
       finishedAt: run.finishedAt,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to get upscale status:', error)
 
-    if (error.message?.includes('not found') || error.status === 404) {
+    if (getErrorMessage(error)?.includes('not found') || error.status === 404) {
       return NextResponse.json({ error: 'Run not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ error: error.message || 'Failed to get status' }, { status: 500 })
+    return NextResponse.json({ error: getErrorMessage(error) || 'Failed to get status' }, { status: 500 })
   }
 })

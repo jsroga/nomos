@@ -1,8 +1,8 @@
 /**
  * TypeScript-Python Bridge for DeepEval
- * 
+ *
  * Spawns the Python evaluation script and parses results.
- * 
+ *
  * Usage:
  *   const result = await runDeepEval({
  *     testCases: [{ input: '...', actualOutput: '...' }],
@@ -19,9 +19,10 @@ import { DeepEvalInput, DeepEvalOutput } from './types'
 const DEFAULT_TIMEOUT_MS = 300_000
 
 /** Path to the Python virtual environment */
-const VENV_PYTHON = process.platform === 'win32'
-  ? path.join('scripts', 'deepeval', 'venv', 'Scripts', 'python.exe')
-  : path.join('scripts', 'deepeval', 'venv', 'bin', 'python3')
+const VENV_PYTHON =
+  process.platform === 'win32'
+    ? path.join('scripts', 'deepeval', 'venv', 'Scripts', 'python.exe')
+    : path.join('scripts', 'deepeval', 'venv', 'bin', 'python3')
 
 /** Path to the evaluation script */
 const EVALUATE_SCRIPT = path.join('scripts', 'deepeval', 'evaluate.py')
@@ -37,7 +38,7 @@ export interface RunDeepEvalOptions {
 
 /**
  * Run DeepEval metrics on test cases
- * 
+ *
  * @param input - Test cases and optional metric filter
  * @param options - Execution options
  * @returns Evaluation results
@@ -46,17 +47,11 @@ export async function runDeepEval(
   input: DeepEvalInput,
   options: RunDeepEvalOptions = {}
 ): Promise<DeepEvalOutput> {
-  const {
-    timeoutMs = DEFAULT_TIMEOUT_MS,
-    useVenv = true,
-    cwd = process.cwd(),
-  } = options
+  const { timeoutMs = DEFAULT_TIMEOUT_MS, useVenv = true, cwd = process.cwd() } = options
 
   // Determine Python executable
-  const pythonPath = useVenv
-    ? path.join(cwd, VENV_PYTHON)
-    : 'python3'
-  
+  const pythonPath = useVenv ? path.join(cwd, VENV_PYTHON) : 'python3'
+
   const scriptPath = path.join(cwd, EVALUATE_SCRIPT)
 
   // Check if script exists
@@ -74,7 +69,7 @@ export async function runDeepEval(
   const tempFile = path.join(cwd, '.deepeval-input.json')
   await fs.writeFile(tempFile, JSON.stringify(input, null, 2))
 
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     let stdout = ''
     let stderr = ''
     let resolved = false
@@ -102,23 +97,23 @@ export async function runDeepEval(
       cwd,
     })
 
-    proc.stdout.on('data', (data) => {
+    proc.stdout.on('data', data => {
       stdout += data.toString()
     })
 
-    proc.stderr.on('data', (data) => {
+    proc.stderr.on('data', data => {
       stderr += data.toString()
     })
 
-    proc.on('error', async (err) => {
+    proc.on('error', async err => {
       let errorMessage = `Failed to spawn Python: ${err.message}`
-      
+
       if (err.message.includes('ENOENT')) {
         errorMessage = useVenv
-          ? `Python virtual environment not found. Run: cd scripts/deepeval && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt`
-          : `Python not found. Install Python 3 and try again.`
+          ? 'Python virtual environment not found. Run: cd scripts/deepeval && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt'
+          : 'Python not found. Install Python 3 and try again.'
       }
-      
+
       await resolveOnce({
         success: false,
         error: errorMessage,
@@ -126,7 +121,7 @@ export async function runDeepEval(
       })
     })
 
-    proc.on('close', async (code) => {
+    proc.on('close', async code => {
       if (code === 0) {
         try {
           const result = JSON.parse(stdout) as DeepEvalOutput
@@ -172,7 +167,7 @@ export async function runDeepEval(
 
 /**
  * Check if DeepEval is properly set up
- * 
+ *
  * @returns True if setup is complete
  */
 export async function checkDeepEvalSetup(cwd: string = process.cwd()): Promise<{
@@ -198,17 +193,20 @@ export async function checkDeepEvalSetup(cwd: string = process.cwd()): Promise<{
   } catch {
     return {
       ready: false,
-      error: `Python venv not found. Run: cd scripts/deepeval && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt`,
+      error:
+        'Python venv not found. Run: cd scripts/deepeval && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt',
     }
   }
 
   // Run test command
   const result = await runDeepEval(
     {
-      testCases: [{
-        input: 'test',
-        actualOutput: 'test output for verification',
-      }],
+      testCases: [
+        {
+          input: 'test',
+          actualOutput: 'test output for verification',
+        },
+      ],
       metrics: ['Anti-Slop Score'],
     },
     { cwd, timeoutMs: 60_000 }
@@ -227,32 +225,34 @@ export async function checkDeepEvalSetup(cwd: string = process.cwd()): Promise<{
 /**
  * Run DeepEval with retry on failure
  */
-export async function runDeepEvalWithRetry(
+async function runDeepEvalWithRetry(
   input: DeepEvalInput,
   options: RunDeepEvalOptions & { maxRetries?: number } = {}
 ): Promise<DeepEvalOutput> {
   const { maxRetries = 2, ...runOptions } = options
-  
+
   let lastError: DeepEvalOutput | undefined
-  
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const result = await runDeepEval(input, runOptions)
-    
+
     if (result.success) {
       return result
     }
-    
+
     lastError = result
-    
+
     // Wait before retry (exponential backoff)
     if (attempt < maxRetries) {
       await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)))
     }
   }
-  
-  return lastError || {
-    success: false,
-    error: 'All retries failed',
-    testCases: [],
-  }
+
+  return (
+    lastError || {
+      success: false,
+      error: 'All retries failed',
+      testCases: [],
+    }
+  )
 }

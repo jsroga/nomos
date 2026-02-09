@@ -1,13 +1,13 @@
 /**
  * Entity Graph Service
- * 
+ *
  * Provides graph-based traversal of entity relationships using embeddings.
  * Implements a GraphRAG pattern with random walk scoring:
  * 1. Initial vector search for relevant entities
  * 2. Build relationship graph from co-occurrence and semantic similarity
  * 3. Multi-hop traversal with relevance decay
  * 4. Random walk scoring for relationship discovery
- * 
+ *
  * Uses pgvector for similarity search.
  */
 
@@ -23,7 +23,7 @@ const EMBEDDING_DIMENSION = 1024
 /**
  * Convert a JS array to a pgvector-compatible string
  * Drizzle passes arrays as individual params which breaks vector casting
- * 
+ *
  * Security: Only allows numeric values - prevents SQL injection
  * Performance: Validates dimension to catch mismatches early
  */
@@ -31,7 +31,7 @@ function toVectorString(embedding: any): string {
   if (!embedding) {
     throw new Error('toVectorString: embedding is null/undefined')
   }
-  
+
   // If already a string (from DB), validate format
   if (typeof embedding === 'string') {
     if (!embedding.startsWith('[') || !embedding.endsWith(']')) {
@@ -39,15 +39,15 @@ function toVectorString(embedding: any): string {
     }
     return embedding
   }
-  
+
   if (!Array.isArray(embedding)) {
     throw new Error('toVectorString: expected array')
   }
-  
+
   if (embedding.length === 0) {
     throw new Error('toVectorString: empty embedding')
   }
-  
+
   // Security: Validate every element is a finite number (prevents SQL injection)
   for (let i = 0; i < embedding.length; i++) {
     const val = embedding[i]
@@ -55,19 +55,21 @@ function toVectorString(embedding: any): string {
       throw new Error(`toVectorString: non-numeric value at index ${i}: ${typeof val}`)
     }
   }
-  
+
   // Performance: Check dimension matches expected
   if (embedding.length !== EMBEDDING_DIMENSION) {
-    console.warn(`[EntityGraph] Embedding dimension mismatch: got ${embedding.length}, expected ${EMBEDDING_DIMENSION}`)
+    console.warn(
+      `[EntityGraph] Embedding dimension mismatch: got ${embedding.length}, expected ${EMBEDDING_DIMENSION}`
+    )
   }
-  
+
   return `'[${embedding.join(',')}]'`
 }
 
 /**
  * Create a raw SQL fragment for vector comparison
  * Uses sql.raw() to embed the vector directly in SQL (avoiding param expansion)
- * 
+ *
  * Security: toVectorString validates all values are finite numbers before embedding
  */
 function vectorSql(embedding: any) {
@@ -146,7 +148,7 @@ const DEFAULT_OPTIONS: Required<GraphRAGOptions> = {
 class EntityGraphService {
   /**
    * Find related entities using multi-hop graph traversal with relevance scoring
-   * 
+   *
    * @param seedIds - Starting entity IDs (directly mentioned)
    * @param projectId - Project to search within
    * @param options - Graph traversal options
@@ -158,7 +160,7 @@ class EntityGraphService {
     options: GraphRAGOptions = {}
   ): Promise<ScoredEntity[]> {
     const opts = { ...DEFAULT_OPTIONS, ...options }
-    
+
     if (seedIds.length === 0) {
       return []
     }
@@ -167,16 +169,13 @@ class EntityGraphService {
       // Track discovered entities with their scores
       const discovered = new Map<string, ScoredEntity>()
       const seedSet = new Set(seedIds)
-      
+
       // 1. Get seed entities - these have relevance 1.0 (directly mentioned)
       const seedEntities = await db
         .select()
         .from(entityReferences)
         .where(
-          and(
-            eq(entityReferences.projectId, projectId),
-            inArray(entityReferences.id, seedIds)
-          )
+          and(eq(entityReferences.projectId, projectId), inArray(entityReferences.id, seedIds))
         )
 
       // Add seeds with max relevance
@@ -186,7 +185,7 @@ class EntityGraphService {
           name: seed.name,
           type: seed.type as EntityType,
           description: seed.description || '',
-          metadata: (seed.metadata as Record<string, any>) || {},
+          metadata: (seed.metadata as Record<string, unknown>) || {},
           projectId: seed.projectId,
           sourceEntityId: seed.sourceEntityId || undefined,
           createdAt: new Date(seed.createdAt),
@@ -198,7 +197,7 @@ class EntityGraphService {
 
       // 2. Multi-hop traversal with decay
       let currentHopEntities = seedEntities.filter(e => e.embedding)
-      
+
       for (let hop = 1; hop <= opts.maxDepth; hop++) {
         const nextHopEntities: typeof seedEntities = []
         const decayMultiplier = Math.pow(HOP_DECAY_FACTOR, hop)
@@ -228,9 +227,7 @@ class EntityGraphService {
                 eq(entityReferences.projectId, projectId),
                 sql`${entityReferences.id} != ${source.id}`,
                 sql`${entityReferences.embedding} IS NOT NULL`,
-                opts.types.length > 0
-                  ? inArray(entityReferences.type, opts.types)
-                  : sql`TRUE`
+                opts.types.length > 0 ? inArray(entityReferences.type, opts.types) : sql`TRUE`
               )
             )
             .orderBy(desc(sql`1 - (${entityReferences.embedding} <=> ${vecFragment})`))
@@ -239,15 +236,15 @@ class EntityGraphService {
           for (const entity of similar) {
             // Skip if below threshold
             if (entity.similarity < opts.threshold) continue
-            
+
             // Calculate relevance with hop decay
             const relevance = entity.similarity * decayMultiplier
-            
+
             // Skip if below minimum relevance
             if (relevance < MIN_RELEVANCE_THRESHOLD) continue
 
             const existing = discovered.get(entity.id)
-            
+
             // Only add if not discovered or if this path has higher relevance
             if (!existing || relevance > existing.relevance) {
               const scored: ScoredEntity = {
@@ -255,7 +252,7 @@ class EntityGraphService {
                 name: entity.name,
                 type: entity.type as EntityType,
                 description: entity.description || '',
-                metadata: (entity.metadata as Record<string, any>) || {},
+                metadata: (entity.metadata as Record<string, unknown>) || {},
                 projectId: entity.projectId,
                 sourceEntityId: entity.sourceEntityId || undefined,
                 createdAt: new Date(entity.createdAt),
@@ -265,7 +262,7 @@ class EntityGraphService {
                 discoveredVia: source.id,
               }
               discovered.set(entity.id, scored)
-              
+
               // Add to next hop candidates (but not seeds)
               if (!seedSet.has(entity.id)) {
                 nextHopEntities.push(entity as any)
@@ -275,7 +272,7 @@ class EntityGraphService {
         }
 
         currentHopEntities = nextHopEntities
-        
+
         // Stop if no more entities to explore
         if (currentHopEntities.length === 0) break
       }
@@ -313,7 +310,7 @@ class EntityGraphService {
   ): void {
     const entityMap = new Map(entities.map(e => [e.id, e]))
     const visitCounts = new Map<string, number>()
-    
+
     // Initialize visit counts
     for (const e of entities) {
       visitCounts.set(e.id, 0)
@@ -337,19 +334,19 @@ class EntityGraphService {
       } else {
         // Follow edge to a connected entity
         // Connected = discovered via this entity OR same discoveredVia
-        const connected = entities.filter(e => 
-          e.id !== current.id && (
-            e.discoveredVia === current.id ||
-            (current.discoveredVia && e.discoveredVia === current.discoveredVia) ||
-            Math.abs(e.hopDistance - current.hopDistance) <= 1
-          )
+        const connected = entities.filter(
+          e =>
+            e.id !== current.id &&
+            (e.discoveredVia === current.id ||
+              (current.discoveredVia && e.discoveredVia === current.discoveredVia) ||
+              Math.abs(e.hopDistance - current.hopDistance) <= 1)
         )
 
         if (connected.length > 0) {
           // Weighted random selection based on relevance
           const totalRelevance = connected.reduce((sum, e) => sum + e.relevance, 0)
           let random = Math.random() * totalRelevance
-          
+
           for (const e of connected) {
             random -= e.relevance
             if (random <= 0) {
@@ -377,7 +374,7 @@ class EntityGraphService {
 
   /**
    * Find related entities using graph traversal (legacy method, uses new scoring internally)
-   * 
+   *
    * @param seedIds - Starting entity IDs
    * @param projectId - Project to search within
    * @param options - Graph traversal options
@@ -397,17 +394,15 @@ class EntityGraphService {
    * Build entity embeddings for a project
    * Called when entities are registered or updated
    */
-  async buildEntityEmbedding(
-    entityId: string,
-    content: string
-  ): Promise<void> {
+  async buildEntityEmbedding(entityId: string, content: string): Promise<void> {
     try {
       // Use the voyage embeddings or OpenAI embeddings
-      const { getVoyageEmbeddings } = await import('@/infrastructure/ai/embeddings/voyage-embeddings')
+      const { getVoyageEmbeddings } =
+        await import('@/infrastructure/ai/embeddings/voyage-embeddings')
       const embeddings = getVoyageEmbeddings()
-      
+
       const [embedding] = await embeddings.embedDocuments([content])
-      
+
       if (embedding && embedding.length === EMBEDDING_DIMENSION) {
         // Use raw SQL to set vector - Drizzle can't handle vector type natively
         const vecFragment = vectorSql(embedding)
@@ -422,7 +417,7 @@ class EntityGraphService {
 
   /**
    * Find entities by semantic query
-   * 
+   *
    * @param query - Natural language query
    * @param projectId - Project to search within
    * @param options - Search options
@@ -436,7 +431,8 @@ class EntityGraphService {
 
     try {
       // Get embedding for query
-      const { getVoyageEmbeddings } = await import('@/infrastructure/ai/embeddings/voyage-embeddings')
+      const { getVoyageEmbeddings } =
+        await import('@/infrastructure/ai/embeddings/voyage-embeddings')
       const embeddings = getVoyageEmbeddings()
       const queryEmbedding = await embeddings.embedQuery(query)
 
@@ -464,9 +460,7 @@ class EntityGraphService {
           and(
             eq(entityReferences.projectId, projectId),
             sql`${entityReferences.embedding} IS NOT NULL`,
-            opts.types.length > 0
-              ? inArray(entityReferences.type, opts.types)
-              : sql`TRUE`
+            opts.types.length > 0 ? inArray(entityReferences.type, opts.types) : sql`TRUE`
           )
         )
         .orderBy(desc(sql`1 - (${entityReferences.embedding} <=> ${vectorSql(queryEmbedding)})`))
@@ -479,7 +473,7 @@ class EntityGraphService {
           name: r.name,
           type: r.type as EntityType,
           description: r.description || '',
-          metadata: (r.metadata as Record<string, any>) || {},
+          metadata: (r.metadata as Record<string, unknown>) || {},
           projectId: r.projectId,
           sourceEntityId: r.sourceEntityId || undefined,
           createdAt: new Date(r.createdAt),
@@ -514,7 +508,7 @@ class EntityGraphService {
       const result = await db.execute(
         sql`SELECT 1 - (${vectorSql(a[0].embedding)} <=> ${vectorSql(b[0].embedding)}) as similarity`
       )
-      
+
       return (result.rows[0] as any)?.similarity || 0
     } catch {
       return 0
@@ -564,12 +558,12 @@ class EntityGraphService {
             eq(entityReferences.projectId, projectId),
             sql`${entityReferences.id} != ${entityId}`,
             sql`${entityReferences.embedding} IS NOT NULL`,
-            opts.types.length > 0
-              ? inArray(entityReferences.type, opts.types)
-              : sql`TRUE`
+            opts.types.length > 0 ? inArray(entityReferences.type, opts.types) : sql`TRUE`
           )
         )
-        .orderBy(desc(sql`1 - (${entityReferences.embedding} <=> ${vectorSql(sourceEntity.embedding)})`))
+        .orderBy(
+          desc(sql`1 - (${entityReferences.embedding} <=> ${vectorSql(sourceEntity.embedding)})`)
+        )
         .limit(opts.maxResults)
 
       // Map to relationships with inferred type
@@ -580,7 +574,7 @@ class EntityGraphService {
           name: entity.name,
           type: entity.type as EntityType,
           description: entity.description || '',
-          metadata: (entity.metadata as Record<string, any>) || {},
+          metadata: (entity.metadata as Record<string, unknown>) || {},
           projectId: entity.projectId,
           sourceEntityId: entity.sourceEntityId || undefined,
           createdAt: new Date(entity.createdAt),
@@ -635,7 +629,7 @@ class EntityGraphService {
   /**
    * Build a complete relationship graph for a project
    * Used for Character Web visualization
-   * 
+   *
    * Performance: Uses single SQL query for all pairwise similarities
    * instead of O(n^2) individual queries
    * Security: Entity limit prevents DOS via large projects
@@ -644,7 +638,7 @@ class EntityGraphService {
     projectId: string,
     options: { types?: EntityType[]; minStrength?: number } = {}
   ): Promise<{
-    nodes: Array<{ id: string; name: string; type: EntityType; metadata: Record<string, any> }>
+    nodes: Array<{ id: string; name: string; type: EntityType; metadata: Record<string, unknown> }>
     edges: Array<{ source: string; target: string; weight: number; type: string }>
   }> {
     const { types = ['character', 'faction'], minStrength = 0.6 } = options
@@ -667,13 +661,13 @@ class EntityGraphService {
         id: e.id,
         name: e.name,
         type: e.type as EntityType,
-        metadata: (e.metadata as Record<string, any>) || {},
+        metadata: (e.metadata as Record<string, unknown>) || {},
       }))
 
       // Performance: Compute all pairwise similarities in a single SQL query
       // Uses a self-join with cosine distance, much faster than N^2 individual queries
       const edges: Array<{ source: string; target: string; weight: number; type: string }> = []
-      
+
       if (entities.length > 1) {
         try {
           const entityIds = entities.map(e => e.id)
@@ -703,14 +697,17 @@ class EntityGraphService {
               target: row.target_id,
               weight: parseFloat(row.similarity) || 0,
               type: this.inferRelationshipType(
-                row.source_type as EntityType, 
-                row.target_type as EntityType, 
+                row.source_type as EntityType,
+                row.target_type as EntityType,
                 parseFloat(row.similarity) || 0
               ),
             })
           }
         } catch (queryErr) {
-          console.warn('[EntityGraphService] Batch similarity query failed, falling back:', queryErr)
+          console.warn(
+            '[EntityGraphService] Batch similarity query failed, falling back:',
+            queryErr
+          )
           // Fallback: simple pairwise (limited to first 20 entities)
           const limited = entities.slice(0, 20)
           for (let i = 0; i < limited.length; i++) {
@@ -718,7 +715,7 @@ class EntityGraphService {
               const a = limited[i]
               const b = limited[j]
               if (!a.embedding || !b.embedding) continue
-              
+
               try {
                 const result = await db.execute(
                   sql`SELECT 1 - (${vectorSql(a.embedding)} <=> ${vectorSql(b.embedding)}) as similarity`
@@ -729,10 +726,16 @@ class EntityGraphService {
                     source: a.id,
                     target: b.id,
                     weight: similarity,
-                    type: this.inferRelationshipType(a.type as EntityType, b.type as EntityType, similarity),
+                    type: this.inferRelationshipType(
+                      a.type as EntityType,
+                      b.type as EntityType,
+                      similarity
+                    ),
                   })
                 }
-              } catch { /* skip pair on error */ }
+              } catch {
+                /* skip pair on error */
+              }
             }
           }
         }

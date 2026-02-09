@@ -1,10 +1,10 @@
 #!/usr/bin/env npx tsx
 /**
  * Confident AI Experiment Runner
- * 
+ *
  * Runs storyteller evaluations on Confident AI and returns
  * a shareable URL to view results.
- * 
+ *
  * Usage:
  *   npx tsx src/evaluation/confident-ai/run-experiment.ts
  *   npx tsx src/evaluation/confident-ai/run-experiment.ts --quick
@@ -17,18 +17,14 @@ import * as dotenv from 'dotenv'
 dotenv.config({ path: '.env.local' })
 
 import { createStorytellerAgent } from '@/domains/storyteller/agents/v2/storyteller-agent'
-import { 
-  getConfidentAIClient, 
-  getTestRunUrl, 
-  LLMTestCase,
-  TestRunResponse 
-} from './client'
+import { getConfidentAIClient, getTestRunUrl, LLMTestCase, TestRunResponse } from './client'
 import { setupConfidentAI, getCollectionNames } from './setup'
 import { getTestCasesForEvaluation, printDatasetSummary } from './datasets'
 import { getEvalTestCasesWithOutputs, EVAL_TEST_CASES } from './eval-dataset'
 import { getABTestCases, AB_REGRESSION_TESTS, printABTestSummary } from './ab-regression-dataset'
 import { StorytellerExample } from '../datasets/storyteller-golden'
 import { langfuse } from '@/agent-core/observability'
+import { getErrorMessage } from '@/lib/error-utils'
 
 // ============================================
 // Configuration
@@ -39,7 +35,7 @@ interface ExperimentConfig {
   collection: 'full' | 'quick'
   categories?: string[]
   limit?: number
-  hyperparameters?: Record<string, any>
+  hyperparameters?: Record<string, unknown>
 }
 
 const DEFAULT_CONFIG: ExperimentConfig = {
@@ -76,25 +72,25 @@ async function generateOutputs(
   traceId: string
 ): Promise<Map<string, string>> {
   console.log(`\n🤖 Generating outputs for ${examples.length} test cases...`)
-  
+
   const outputs = new Map<string, string>()
   const agent = await createStorytellerAgent()
-  
+
   for (let i = 0; i < examples.length; i++) {
     const example = examples[i]
     const input = example.input as { message: string; phase?: string }
-    
+
     console.log(`  [${i + 1}/${examples.length}] ${example.id}: "${input.message.slice(0, 40)}..."`)
-    
+
     try {
       // Build context for the agent
       const context = `Phase: ${input.phase || 'structure'}
 Category: ${example.metadata?.category || 'general'}`
-      
+
       // Generate output
       const output = await agent.run(input.message, context)
       outputs.set(example.id, output)
-      
+
       // Record to Langfuse
       langfuse.event({
         traceId,
@@ -106,13 +102,12 @@ Category: ${example.metadata?.category || 'general'}`
           category: example.metadata?.category,
         },
       })
-      
-    } catch (error: any) {
-      console.error(`    ❌ Error: ${error.message}`)
-      outputs.set(example.id, `[Error generating output: ${error.message}]`)
+    } catch (error: unknown) {
+      console.error(`    ❌ Error: ${getErrorMessage(error)}`)
+      outputs.set(example.id, `[Error generating output: ${getErrorMessage(error)}]`)
     }
   }
-  
+
   console.log(`✅ Generated ${outputs.size} outputs`)
   return outputs
 }
@@ -136,7 +131,7 @@ interface ExperimentResult {
 async function runABRegressionTest(version: 'A' | 'B'): Promise<ExperimentResult> {
   const client = getConfidentAIClient()
   const traceId = `confident-ai-ab-${version}-${Date.now()}`
-  
+
   langfuse.trace({
     id: traceId,
     name: `A/B Regression Test: Version ${version}`,
@@ -152,7 +147,7 @@ async function runABRegressionTest(version: 'A' | 'B'): Promise<ExperimentResult
 
   // Get test cases for this version
   const testCases = getABTestCases(version)
-  
+
   console.log(`\n📋 Test cases: ${testCases.length}`)
   for (const test of AB_REGRESSION_TESTS) {
     const versionInfo = version === 'A' ? test.versionA : test.versionB
@@ -163,11 +158,11 @@ async function runABRegressionTest(version: 'A' | 'B'): Promise<ExperimentResult
   // Use quick collection
   const collections = getCollectionNames()
   const collectionName = collections.quick
-  
+
   // Create unique identifier
   const identifier = `ab-test-version-${version}-${Date.now()}`
 
-  console.log(`\n📊 Running evaluation on Confident AI...`)
+  console.log('\n📊 Running evaluation on Confident AI...')
   console.log(`   Collection: ${collectionName}`)
   console.log(`   Version: ${version} (${isBaseline ? 'Baseline' : 'Regression'})`)
 
@@ -177,11 +172,11 @@ async function runABRegressionTest(version: 'A' | 'B'): Promise<ExperimentResult
     llmTestCases: testCases,
     hyperparameters: {
       // Key hyperparameters for experiment comparison
-      'Model': 'storyteller-v2',
-      'Version': version,
+      Model: 'storyteller-v2',
+      Version: version,
       'Test Type': 'A/B Regression',
-      'Expectation': isBaseline ? 'should_pass' : 'should_fail',
-      'Temperature': '0.85',
+      Expectation: isBaseline ? 'should_pass' : 'should_fail',
+      Temperature: '0.85',
       'Top P': '0.95',
     },
     identifier,
@@ -217,7 +212,7 @@ async function runABRegressionTest(version: 'A' | 'B'): Promise<ExperimentResult
 async function runEvalWithPrewrittenOutputs(config: ExperimentConfig): Promise<ExperimentResult> {
   const client = getConfidentAIClient()
   const traceId = `confident-ai-eval-${Date.now()}`
-  
+
   langfuse.trace({
     id: traceId,
     name: `Confident AI Eval: ${config.name}`,
@@ -232,10 +227,10 @@ async function runEvalWithPrewrittenOutputs(config: ExperimentConfig): Promise<E
   // Get pre-written test cases
   const testCases = getEvalTestCasesWithOutputs()
   const limitedCases = config.limit ? testCases.slice(0, config.limit) : testCases
-  
+
   console.log(`\n📋 Test cases: ${limitedCases.length}`)
-  console.log(`📝 Using pre-written high-quality outputs`)
-  
+  console.log('📝 Using pre-written high-quality outputs')
+
   // Log test case IDs
   const evalCases = config.limit ? EVAL_TEST_CASES.slice(0, config.limit) : EVAL_TEST_CASES
   for (const tc of evalCases) {
@@ -245,11 +240,11 @@ async function runEvalWithPrewrittenOutputs(config: ExperimentConfig): Promise<E
   // Determine collection name
   const collections = getCollectionNames()
   const collectionName = config.collection === 'quick' ? collections.quick : collections.full
-  
+
   // Create unique identifier for this run
   const identifier = `eval-prewritten-${Date.now()}`
 
-  console.log(`\n📊 Running evaluation on Confident AI...`)
+  console.log('\n📊 Running evaluation on Confident AI...')
   console.log(`   Collection: ${collectionName}`)
   console.log(`   Identifier: ${identifier}`)
 
@@ -297,7 +292,7 @@ async function runEvalWithPrewrittenOutputs(config: ExperimentConfig): Promise<E
 async function runExperiment(config: ExperimentConfig): Promise<ExperimentResult> {
   const client = getConfidentAIClient()
   const traceId = `confident-ai-${Date.now()}`
-  
+
   // Create trace for this experiment
   langfuse.trace({
     id: traceId,
@@ -319,12 +314,12 @@ async function runExperiment(config: ExperimentConfig): Promise<ExperimentResult
     categories: config.categories,
     limit: config.limit,
   })
-  
+
   console.log(`\n📋 Test cases: ${testCases.length}`)
 
   // Generate outputs
   const outputs = await generateOutputs(examples, traceId)
-  
+
   // Fill test cases with actual outputs
   const filledTestCases: LLMTestCase[] = testCases.map((tc, i) => ({
     ...tc,
@@ -334,11 +329,11 @@ async function runExperiment(config: ExperimentConfig): Promise<ExperimentResult
   // Determine collection name
   const collections = getCollectionNames()
   const collectionName = config.collection === 'quick' ? collections.quick : collections.full
-  
+
   // Create unique identifier for this run
   const identifier = `${config.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`
 
-  console.log(`\n📊 Running evaluation on Confident AI...`)
+  console.log('\n📊 Running evaluation on Confident AI...')
   console.log(`   Collection: ${collectionName}`)
   console.log(`   Identifier: ${identifier}`)
 
@@ -389,32 +384,32 @@ async function runExperiment(config: ExperimentConfig): Promise<ExperimentResult
 
 async function main() {
   const args = process.argv.slice(2)
-  
+
   // Handle --setup flag
   if (args.includes('--setup')) {
     await setupConfidentAI()
     printDatasetSummary()
     return
   }
-  
+
   // Handle --stats flag
   if (args.includes('--stats')) {
     printDatasetSummary()
     return
   }
-  
+
   // Handle --ab flag for A/B regression testing
   if (args.includes('--ab') || args.includes('--ab-test')) {
     console.log('🔧 Verifying Confident AI setup...')
     await setupConfidentAI()
-    
+
     // Run both versions
     console.log('\n🧪 Running A/B Regression Tests...\n')
     printABTestSummary()
-    
+
     const resultA = await runABRegressionTest('A')
     const resultB = await runABRegressionTest('B')
-    
+
     console.log('\n' + '═'.repeat(60))
     console.log('  ✅ A/B REGRESSION TEST COMPLETE')
     console.log('═'.repeat(60))
@@ -431,11 +426,11 @@ async function main() {
     console.log('\n' + '═'.repeat(60) + '\n')
     return
   }
-  
+
   // Determine config
   const isQuick = args.includes('--quick') || args.includes('-q')
   const isEval = args.includes('--eval') || args.includes('-e')
-  
+
   let config: ExperimentConfig
   if (isEval) {
     config = { ...EVAL_CONFIG }
@@ -444,29 +439,27 @@ async function main() {
   } else {
     config = { ...DEFAULT_CONFIG }
   }
-  
+
   // Allow custom name
   const nameIndex = args.indexOf('--name')
   if (nameIndex !== -1 && args[nameIndex + 1]) {
     config.name = args[nameIndex + 1]
   }
-  
+
   // Allow custom limit
   const limitIndex = args.indexOf('--limit')
   if (limitIndex !== -1 && args[limitIndex + 1]) {
     config.limit = parseInt(args[limitIndex + 1], 10)
   }
-  
+
   try {
     // Ensure setup is complete
     console.log('🔧 Verifying Confident AI setup...')
     await setupConfidentAI()
-    
+
     // Run experiment (use pre-written outputs for --eval mode)
-    const result = isEval 
-      ? await runEvalWithPrewrittenOutputs(config)
-      : await runExperiment(config)
-    
+    const result = isEval ? await runEvalWithPrewrittenOutputs(config) : await runExperiment(config)
+
     // Print results
     console.log('\n' + '═'.repeat(60))
     console.log('  ✅ EXPERIMENT COMPLETE')
@@ -475,20 +468,19 @@ async function main() {
     console.log(`  Test Cases:   ${result.testCaseCount}`)
     console.log(`  Collection:   ${result.collection}`)
     console.log(`  Identifier:   ${result.identifier}`)
-    console.log(`\n  🔗 VIEW RESULTS:`)
+    console.log('\n  🔗 VIEW RESULTS:')
     console.log(`  ${result.url}`)
     console.log('\n' + '═'.repeat(60) + '\n')
-    
-  } catch (error: any) {
-    console.error('\n❌ Experiment failed:', error.message)
-    
-    if (error.message.includes('CONFIDENT_AI_API_KEY')) {
+  } catch (error: unknown) {
+    console.error('\n❌ Experiment failed:', getErrorMessage(error))
+
+    if (getErrorMessage(error).includes('CONFIDENT_AI_API_KEY')) {
       console.error('\n💡 To fix this:')
       console.error('   1. Sign up at https://app.confident-ai.com')
       console.error('   2. Get your Project API Key from Settings')
       console.error('   3. Add CONFIDENT_AI_API_KEY to your .env.local')
     }
-    
+
     process.exit(1)
   }
 }

@@ -60,14 +60,15 @@ const STORYTELLING_TEST_PROMPTS = [
   },
   {
     id: 'consequence-the-favor',
-    message: 'Create three beats showing how a "minor favor" granted to a smuggler in the prologue leads to the inadvertent assassination of the heir apparent in the mid-season finale.',
+    message:
+      'Create three beats showing how a "minor favor" granted to a smuggler in the prologue leads to the inadvertent assassination of the heir apparent in the mid-season finale.',
     phase: 'breaking',
     category: 'consequence',
   },
   {
     id: 'subtext-the-funeral',
     message:
-      'Two sisters who hate each other share a carriage on the way to their father\'s funeral. They only discuss the quality of the carriage\'s suspension and the late rain, but the subtext is the inheritance of the family vineyard.',
+      "Two sisters who hate each other share a carriage on the way to their father's funeral. They only discuss the quality of the carriage's suspension and the late rain, but the subtext is the inheritance of the family vineyard.",
     phase: 'writing',
     category: 'subtext',
   },

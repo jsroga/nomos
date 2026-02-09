@@ -69,88 +69,88 @@ const METRIC_CONFIG: {
   highLabel: string
   isValence?: boolean // Special handling for -100 to +100 scale
 }[] = [
-    {
-      key: 'valence',
-      label: 'Mood',
-      icon: Heart,
-      color: 'text-pink-400',
-      lowLabel: 'Negative',
-      highLabel: 'Positive',
-      isValence: true,
-    },
-    {
-      key: 'arousal',
-      label: 'Energy',
-      icon: Zap,
-      color: 'text-yellow-400',
-      lowLabel: 'Calm',
-      highLabel: 'Activated',
-    },
-    {
-      key: 'autonomy',
-      label: 'Freedom',
-      icon: Compass,
-      color: 'text-blue-400',
-      lowLabel: 'Constrained',
-      highLabel: 'Free',
-    },
-    {
-      key: 'competence',
-      label: 'Confidence',
-      icon: Target,
-      color: 'text-green-400',
-      lowLabel: 'Doubt',
-      highLabel: 'Capable',
-    },
-    {
-      key: 'relatedness',
-      label: 'Connection',
-      icon: Users,
-      color: 'text-cyan-400',
-      lowLabel: 'Isolated',
-      highLabel: 'Connected',
-    },
-    {
-      key: 'cognitiveClarity',
-      label: 'Clarity',
-      icon: Brain,
-      color: 'text-purple-400',
-      lowLabel: 'Confused',
-      highLabel: 'Sharp',
-    },
-    {
-      key: 'perceivedStakes',
-      label: 'Tension',
-      icon: Flame,
-      color: 'text-orange-400',
-      lowLabel: 'Low',
-      highLabel: 'Critical',
-    },
-    {
-      key: 'socialSafety',
-      label: 'Security',
-      icon: ShieldCheck,
-      color: 'text-teal-400',
-      lowLabel: 'Threatened',
-      highLabel: 'Safe',
-    },
-    {
-      key: 'moralAlignment',
-      label: 'Integrity',
-      icon: Scale,
-      color: 'text-indigo-400',
-      lowLabel: 'Compromised',
-      highLabel: 'Aligned',
-    },
-    {
-      key: 'transformation',
-      label: 'Arc Progress',
-      icon: TrendingUp,
-      color: 'text-emerald-400',
-      lowLabel: 'Start',
-      highLabel: 'Complete',
-    },
-  ]
+  {
+    key: 'valence',
+    label: 'Mood',
+    icon: Heart,
+    color: 'text-pink-400',
+    lowLabel: 'Negative',
+    highLabel: 'Positive',
+    isValence: true,
+  },
+  {
+    key: 'arousal',
+    label: 'Energy',
+    icon: Zap,
+    color: 'text-yellow-400',
+    lowLabel: 'Calm',
+    highLabel: 'Activated',
+  },
+  {
+    key: 'autonomy',
+    label: 'Freedom',
+    icon: Compass,
+    color: 'text-blue-400',
+    lowLabel: 'Constrained',
+    highLabel: 'Free',
+  },
+  {
+    key: 'competence',
+    label: 'Confidence',
+    icon: Target,
+    color: 'text-green-400',
+    lowLabel: 'Doubt',
+    highLabel: 'Capable',
+  },
+  {
+    key: 'relatedness',
+    label: 'Connection',
+    icon: Users,
+    color: 'text-cyan-400',
+    lowLabel: 'Isolated',
+    highLabel: 'Connected',
+  },
+  {
+    key: 'cognitiveClarity',
+    label: 'Clarity',
+    icon: Brain,
+    color: 'text-purple-400',
+    lowLabel: 'Confused',
+    highLabel: 'Sharp',
+  },
+  {
+    key: 'perceivedStakes',
+    label: 'Tension',
+    icon: Flame,
+    color: 'text-orange-400',
+    lowLabel: 'Low',
+    highLabel: 'Critical',
+  },
+  {
+    key: 'socialSafety',
+    label: 'Security',
+    icon: ShieldCheck,
+    color: 'text-teal-400',
+    lowLabel: 'Threatened',
+    highLabel: 'Safe',
+  },
+  {
+    key: 'moralAlignment',
+    label: 'Integrity',
+    icon: Scale,
+    color: 'text-indigo-400',
+    lowLabel: 'Compromised',
+    highLabel: 'Aligned',
+  },
+  {
+    key: 'transformation',
+    label: 'Arc Progress',
+    icon: TrendingUp,
+    color: 'text-emerald-400',
+    lowLabel: 'Start',
+    highLabel: 'Complete',
+  },
+]
 
 interface CharacterPanelProps {
   characters: Character[]
@@ -188,7 +188,8 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
             // Convert array to map by characterId
             const snapshotMap: Record<string, Partial<CharacterMetrics>> = {}
             for (const snap of data.snapshots) {
-              const getVal = (key: string, def: number) => snap[key] ?? snap[key.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`)] ?? def
+              const getVal = (key: string, def: number) =>
+                snap[key] ?? snap[key.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`)] ?? def
               snapshotMap[snap.characterId] = {
                 valence: snap.valence ?? snap.stress_level ?? snap.stressLevel ?? 0,
                 arousal: getVal('arousal', 50),
@@ -199,7 +200,11 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
                 perceivedStakes: getVal('perceivedStakes', 40),
                 socialSafety: getVal('socialSafety', 60),
                 moralAlignment: getVal('moralAlignment', 70),
-                transformation: snap.transformationProgress ?? snap.transformation ?? snap.transformation_progress ?? 0,
+                transformation:
+                  snap.transformationProgress ??
+                  snap.transformation ??
+                  snap.transformation_progress ??
+                  0,
               }
             }
             setBeatSnapshots(snapshotMap)
@@ -303,7 +308,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
         <CharacterCreationDialog
           isOpen={!!editingCharacter}
           onClose={() => setEditingCharacter(null)}
-          onCreate={() => { }} // Not used in edit mode
+          onCreate={() => {}} // Not used in edit mode
           onUpdate={(id, updates) => {
             if (onUpdate) onUpdate(id, updates)
             setEditingCharacter(null)
@@ -313,24 +318,24 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
           initialData={
             editingCharacter
               ? {
-                id: editingCharacter.id,
-                name: editingCharacter.name,
-                role: editingCharacter.role,
-                gender: editingCharacter.gender,
-                mbti: editingCharacter.mbti,
-                description: editingCharacter.characterPrompt,
-                portraitUrl: editingCharacter.portraitUrl,
-                // Map metrics from character state
-                valence: editingCharacter.valence,
-                arousal: editingCharacter.arousal,
-                autonomy: editingCharacter.autonomy,
-                competence: editingCharacter.competence,
-                relatedness: editingCharacter.relatedness,
-                cognitiveClarity: editingCharacter.cognitiveClarity,
-                perceivedStakes: editingCharacter.perceivedStakes,
-                socialSafety: editingCharacter.socialSafety,
-                moralAlignment: editingCharacter.moralAlignment,
-              }
+                  id: editingCharacter.id,
+                  name: editingCharacter.name,
+                  role: editingCharacter.role,
+                  gender: editingCharacter.gender,
+                  mbti: editingCharacter.mbti,
+                  description: editingCharacter.characterPrompt,
+                  portraitUrl: editingCharacter.portraitUrl,
+                  // Map metrics from character state
+                  valence: editingCharacter.valence,
+                  arousal: editingCharacter.arousal,
+                  autonomy: editingCharacter.autonomy,
+                  competence: editingCharacter.competence,
+                  relatedness: editingCharacter.relatedness,
+                  cognitiveClarity: editingCharacter.cognitiveClarity,
+                  perceivedStakes: editingCharacter.perceivedStakes,
+                  socialSafety: editingCharacter.socialSafety,
+                  moralAlignment: editingCharacter.moralAlignment,
+                }
               : undefined
           }
         />
@@ -347,7 +352,13 @@ interface CharacterCardProps {
   isDeleting?: boolean
 }
 
-const CharacterCard: React.FC<CharacterCardProps> = ({ character, onUpdate, onDelete, onEdit, isDeleting }) => {
+const CharacterCard: React.FC<CharacterCardProps> = ({
+  character,
+  onUpdate,
+  onDelete,
+  onEdit,
+  isDeleting,
+}) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
 

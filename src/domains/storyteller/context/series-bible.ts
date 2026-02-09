@@ -86,7 +86,7 @@ export interface SeriesBible {
 }
 
 // Default empty bible
-export function createEmptyBible(): SeriesBible {
+function createEmptyBible(): SeriesBible {
   return {
     title: '',
     logline: '',
@@ -225,7 +225,7 @@ Dialogue: ${bible.toneGuidelines.dialogue || 'Not specified'}
 }
 
 // Extract character state for psychology agent
-export function getCharacterContext(bible: SeriesBible, characterId: string): string {
+function getCharacterContext(bible: SeriesBible, characterId: string): string {
   const arc = bible.characterArcs.find(a => a.characterId === characterId)
   if (!arc) return 'Character not found in series bible.'
 

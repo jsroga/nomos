@@ -11,6 +11,7 @@ describe.skipIf(!DATABASE_URL)('AgentMemory Integration with PgVector', () => {
 
     beforeAll(async () => {
         vector = new PgVector({
+            id: 'test-messages',
             connectionString: DATABASE_URL!,
         })
         await vector.createIndex({ indexName: 'test_messages', dimension: 3, metric: 'cosine' })
@@ -22,7 +23,9 @@ describe.skipIf(!DATABASE_URL)('AgentMemory Integration with PgVector', () => {
         } catch {
             // Index might not exist
         }
-        await vector.disconnect()
+        if (vector) {
+            await vector.disconnect()
+        }
     })
 
     it('should save and recall messages using vector search', async () => {

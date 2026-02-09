@@ -68,7 +68,7 @@ const AGENT_DISPLAY_NAMES: Record<string, string> = {
   PlotArchitect: 'Plot Architect',
   CharacterPsychology: 'Character Expert',
   ConsequenceTracker: 'Logic Guardian',
-  DevilsAdvocate: 'Devil\'s Advocate',
+  DevilsAdvocate: "Devil's Advocate",
   VisualMoment: 'Visual Designer',
   Writer: 'Writer',
   User: 'You',
@@ -121,7 +121,8 @@ const getAgentDisplayName = (agentName: string): string => {
 // Agent configuration with colors and icons - Minimalist version
 const AGENT_CONFIG: Record<string, { color: string; icon: React.ReactNode }> = {
   Showrunner: {
-    color: 'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full transition-all duration-300 bg-primary/10 border border-primary/30 text-primary',
+    color:
+      'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full transition-all duration-300 bg-primary/10 border border-primary/30 text-primary',
     icon: <Sparkles className="w-3.5 h-3.5" />,
   },
   PlotArchitect: {
@@ -158,7 +159,8 @@ const AGENT_CONFIG: Record<string, { color: string; icon: React.ReactNode }> = {
     icon: <Lightbulb className="w-3.5 h-3.5" />,
   },
   Supervisor: {
-    color: 'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full transition-all duration-300 bg-primary/10 border border-primary/30 text-primary',
+    color:
+      'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full transition-all duration-300 bg-primary/10 border border-primary/30 text-primary',
     icon: <Sparkles className="w-3.5 h-3.5" />,
   },
   // Specialized Council Agents (v2)
@@ -287,9 +289,6 @@ export const AgentLog: React.FC<AgentLogProps> = ({
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-
-
-
   // Group messages: collect consecutive delegation messages into chains
   const groupedMessages: Array<{ type: 'message' | 'delegation'; messages: Message[] }> = []
   let currentDelegationChain: Message[] = []
@@ -366,16 +365,23 @@ export const AgentLog: React.FC<AgentLogProps> = ({
             {/* Thinking (if enabled and Activity is ON) - Enhanced multi-agent thinking display */}
             {(() => {
               // Get thinking entries from additional_kwargs for multi-agent attribution
-              const thinkingEntries = msg.additional_kwargs?.thinkingEntries as Array<{
-                agent: string
-                content: string
-                timestamp: number
-              }> | undefined
+              const thinkingEntries = msg.additional_kwargs?.thinkingEntries as
+                | Array<{
+                    agent: string
+                    content: string
+                    timestamp: number
+                  }>
+                | undefined
               const thinkingContent = msg.thinking || msg.additional_kwargs?.thinking
               const hasExtendedThinking =
                 msg.additional_kwargs?.hasThinking || msg.additional_kwargs?.extendedThinkingEnabled
 
-              if (!showThinking || !isActivityPanelOpen || (!thinkingContent && !thinkingEntries?.length)) return null
+              if (
+                !showThinking ||
+                !isActivityPanelOpen ||
+                (!thinkingContent && !thinkingEntries?.length)
+              )
+                return null
 
               // If we have structured thinking entries, render them individually
               if (thinkingEntries && thinkingEntries.length > 0) {
@@ -390,13 +396,13 @@ export const AgentLog: React.FC<AgentLogProps> = ({
                           className="rounded-lg border border-border/30 bg-gradient-to-br from-muted/10 to-transparent overflow-hidden"
                         >
                           {/* Agent Header */}
-                          <div className={cn(
-                            'flex items-center gap-2 px-3 py-2 border-b border-border/20 bg-muted/5',
-                            entryConfig.color
-                          )}>
-                            <div className="p-1 rounded bg-background/50">
-                              {entryConfig.icon}
-                            </div>
+                          <div
+                            className={cn(
+                              'flex items-center gap-2 px-3 py-2 border-b border-border/20 bg-muted/5',
+                              entryConfig.color
+                            )}
+                          >
+                            <div className="p-1 rounded bg-background/50">{entryConfig.icon}</div>
                             <span className="text-[10px] font-bold uppercase tracking-wider">
                               {entryDisplayName}
                             </span>
@@ -427,9 +433,7 @@ export const AgentLog: React.FC<AgentLogProps> = ({
                       <Brain className="w-3 h-3 text-purple-400/70" />
                     </div>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400/70">
-                      {hasExtendedThinking
-                        ? 'Extended Thinking'
-                        : 'Thinking'}
+                      {hasExtendedThinking ? 'Extended Thinking' : 'Thinking'}
                     </span>
                   </div>
                   <div className="p-3 text-[11px] text-muted-foreground/80 leading-relaxed">
@@ -587,7 +591,10 @@ const parseInlineFormatting = (text: string, keyPrefix: string = ''): React.Reac
   return parts.length > 0 ? parts : [text]
 }
 
-const MessageContent: React.FC<{ content: string; projectId?: string }> = ({ content, projectId }) => {
+const MessageContent: React.FC<{ content: string; projectId?: string }> = ({
+  content,
+  projectId,
+}) => {
   // Check if content is JSON and extract message field
   let displayContent = content
 

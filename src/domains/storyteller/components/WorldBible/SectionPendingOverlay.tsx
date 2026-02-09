@@ -15,7 +15,7 @@ export const SectionPendingOverlay: React.FC<SectionPendingOverlayProps> = ({
   onReview,
 }) => {
   const isProcessing = pendingAction.isProcessing ?? false
-  
+
   return (
     <div className="absolute inset-0 z-20 bg-background/80 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center gap-3 border-2 border-amber-500/50 animate-in fade-in duration-200">
       <div className="text-center">
@@ -23,10 +23,12 @@ export const SectionPendingOverlay: React.FC<SectionPendingOverlayProps> = ({
           {isProcessing ? 'Applying Changes...' : 'Pending Review'}
         </div>
         <p className="text-sm text-muted-foreground max-w-[200px]">
-          {isProcessing ? 'Please wait while changes are being saved' : 'New content ready for approval'}
+          {isProcessing
+            ? 'Please wait while changes are being saved'
+            : 'New content ready for approval'}
         </p>
       </div>
-      
+
       <div className="flex gap-2">
         <Button
           size="sm"
@@ -38,7 +40,7 @@ export const SectionPendingOverlay: React.FC<SectionPendingOverlayProps> = ({
           <X className="w-3.5 h-3.5" />
           Reject
         </Button>
-        
+
         {onReview && (
           <Button
             size="sm"
@@ -51,7 +53,7 @@ export const SectionPendingOverlay: React.FC<SectionPendingOverlayProps> = ({
             Review
           </Button>
         )}
-        
+
         <Button
           size="sm"
           className="h-8 gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50"
@@ -69,5 +71,3 @@ export const SectionPendingOverlay: React.FC<SectionPendingOverlayProps> = ({
     </div>
   )
 }
-
-export default SectionPendingOverlay

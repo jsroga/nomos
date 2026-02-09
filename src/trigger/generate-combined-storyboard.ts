@@ -2,6 +2,7 @@ import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import fs from 'fs'
 import path from 'path'
+import { getErrorMessage } from '@/lib/error-utils'
 
 interface GenerateCombinedStoryboardPayload {
   episodeId: string
@@ -184,8 +185,8 @@ Output: A single high-resolution Board/Map image.
         imageUrl: filename,
         fullUrl: `/projects/${projectId}/${filename}`,
       }
-    } catch (error: any) {
-      logger.error('Combined storyboard generation failed', { error: error.message })
+    } catch (error: unknown) {
+      logger.error('Combined storyboard generation failed', { error: getErrorMessage(error) })
       throw error
     }
   },

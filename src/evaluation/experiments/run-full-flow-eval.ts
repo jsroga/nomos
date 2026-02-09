@@ -1,14 +1,14 @@
 #!/usr/bin/env npx tsx
 /**
  * Full Flow Evaluation Runner v2
- * 
+ *
  * Professional-grade evaluation of the complete Storyteller flow.
  * Uses LLM-as-Judge with GRRM/Gilligan quality standards.
- * 
+ *
  * Usage:
  *   npx tsx src/evaluation/experiments/run-full-flow-eval.ts
  *   npm run eval full-flow
- * 
+ *
  * Based on: docs/modules/extended-thinking-for-storyteller.md
  *           docs/modules/storyteller-evaluation-guide.md
  */
@@ -36,31 +36,31 @@ const QUALITY_STANDARDS = {
   characterDecisions: {
     name: 'Decisions Reveal Character',
     description: 'Decisions reveal character, not just move plot',
-    weight: 0.10,
+    weight: 0.1,
   },
-  
+
   // Scene Test (Gilligan)
   sceneStateChange: {
     name: 'Scene State Change',
     description: 'Scene has clear before/after state change',
-    weight: 0.10,
+    weight: 0.1,
   },
   visualStorytelling: {
     name: 'Visual Storytelling',
-    description: 'Visual action carries emotional weight, show don\'t tell',
-    weight: 0.10,
+    description: "Visual action carries emotional weight, show don't tell",
+    weight: 0.1,
   },
   subtextQuality: {
     name: 'Subtext Quality',
     description: 'Subtext > text in dialogue, layered meaning',
-    weight: 0.10,
+    weight: 0.1,
   },
-  
+
   // Anti-Slop Checklist
   noGenericEmotions: {
     name: 'No Generic Emotions',
     description: 'No "tension was palpable" or cliché emotional descriptions',
-    weight: 0.10,
+    weight: 0.1,
   },
   noConvenientTiming: {
     name: 'No Convenient Plot',
@@ -72,17 +72,17 @@ const QUALITY_STANDARDS = {
     description: 'No "as you know, Bob" exposition dumps',
     weight: 0.05,
   },
-  
+
   // Structural Quality
   narrativeCoherence: {
     name: 'Narrative Coherence',
     description: 'Plot progression, character arcs, setup/payoff',
-    weight: 0.10,
+    weight: 0.1,
   },
   worldConsistency: {
     name: 'World Consistency',
     description: 'Matches world bible, maintains internal logic',
-    weight: 0.10,
+    weight: 0.1,
   },
   memorability: {
     name: 'Memorability',
@@ -113,7 +113,8 @@ const TEST_CASES: TestCase[] = [
     id: 'bible-01-master-prompt',
     name: 'Master Prompt Establishment',
     category: 'bible',
-    prompt: 'Establish the core premise: A world where emotions manifest as weather. Cities channel collective feelings. Mood Wardens regulate outbursts. Black market trades bottled feelings.',
+    prompt:
+      'Establish the core premise: A world where emotions manifest as weather. Cities channel collective feelings. Mood Wardens regulate outbursts. Black market trades bottled feelings.',
     criteria: 'Master prompt should establish unique world with clear conflict potential',
     minScore: 6,
     dimensions: ['worldConsistency', 'memorability'],
@@ -122,7 +123,8 @@ const TEST_CASES: TestCase[] = [
     id: 'bible-02-world-rules',
     name: 'World Rules Generation',
     category: 'bible',
-    prompt: 'Generate 5 world rules that create drama. Each rule must have: the law itself, its consequences, and potential for violation. Think Death Note rules, GoT prophecies.',
+    prompt:
+      'Generate 5 world rules that create drama. Each rule must have: the law itself, its consequences, and potential for violation. Think Death Note rules, GoT prophecies.',
     criteria: 'Rules should create conflict, have clear consequences, be specific not generic',
     minScore: 7,
     dimensions: ['worldConsistency', 'narrativeCoherence', 'noConvenientTiming'],
@@ -131,7 +133,8 @@ const TEST_CASES: TestCase[] = [
     id: 'bible-03-factions',
     name: 'Faction System Design',
     category: 'bible',
-    prompt: 'Create 3 factions with opposing ideologies. Include: name, core belief, methods, resources, leadership structure, relationship to other factions.',
+    prompt:
+      'Create 3 factions with opposing ideologies. Include: name, core belief, methods, resources, leadership structure, relationship to other factions.',
     criteria: 'Factions should have GRRM-style moral ambiguity, no clear heroes/villains',
     minScore: 7,
     dimensions: ['characterComplexity', 'narrativeCoherence', 'worldConsistency'],
@@ -140,8 +143,10 @@ const TEST_CASES: TestCase[] = [
     id: 'bible-04-inspirations',
     name: 'Thematic Inspirations',
     category: 'bible',
-    prompt: 'Identify 5 real books, films, or games that share thematic DNA with this world. For each, explain the specific element we\'re drawing from.',
-    criteria: 'References should be real works with specific thematic connections, not surface similarities',
+    prompt:
+      "Identify 5 real books, films, or games that share thematic DNA with this world. For each, explain the specific element we're drawing from.",
+    criteria:
+      'References should be real works with specific thematic connections, not surface similarities',
     minScore: 6,
     dimensions: ['memorability', 'narrativeCoherence'],
   },
@@ -149,7 +154,8 @@ const TEST_CASES: TestCase[] = [
     id: 'bible-05-soundtracks',
     name: 'Atmospheric Soundtracks',
     category: 'bible',
-    prompt: 'Recommend 5 YouTube music tracks that capture this world\'s atmosphere. Provide artist, title, URL, and explain how it fits the tone.',
+    prompt:
+      "Recommend 5 YouTube music tracks that capture this world's atmosphere. Provide artist, title, URL, and explain how it fits the tone.",
     criteria: 'Tracks should be real, URLs valid, and descriptions show understanding of tone',
     minScore: 5,
     dimensions: ['memorability'],
@@ -162,16 +168,23 @@ const TEST_CASES: TestCase[] = [
     id: 'cast-01-protagonist',
     name: 'Protagonist Design',
     category: 'cast',
-    prompt: 'Create the protagonist: a Mood Warden who struggles with their own suppressed emotions. Include: name, appearance, psychological profile, fatal flaw, want vs need, voice sample.',
+    prompt:
+      'Create the protagonist: a Mood Warden who struggles with their own suppressed emotions. Include: name, appearance, psychological profile, fatal flaw, want vs need, voice sample.',
     criteria: 'Character must have GRRM-style internal conflict, Gilligan-style specificity',
     minScore: 7,
-    dimensions: ['characterComplexity', 'characterDecisions', 'subtextQuality', 'noGenericEmotions'],
+    dimensions: [
+      'characterComplexity',
+      'characterDecisions',
+      'subtextQuality',
+      'noGenericEmotions',
+    ],
   },
   {
     id: 'cast-02-antagonist',
     name: 'Antagonist Design',
     category: 'cast',
-    prompt: 'Create the antagonist: a black market emotion dealer who believes they\'re freeing people. Include: name, methodology, tragic backstory, valid worldview, voice sample.',
+    prompt:
+      "Create the antagonist: a black market emotion dealer who believes they're freeing people. Include: name, methodology, tragic backstory, valid worldview, voice sample.",
     criteria: 'Antagonist must have sympathetic motivation, not be "evil for evil\'s sake"',
     minScore: 7,
     dimensions: ['characterComplexity', 'characterDecisions', 'noGenericEmotions'],
@@ -180,7 +193,8 @@ const TEST_CASES: TestCase[] = [
     id: 'cast-03-supporting',
     name: 'Supporting Character Design',
     category: 'cast',
-    prompt: 'Create a supporting character: reformed emotion addict who now helps others. Include: recovery arc, relationship to protagonist, secret they\'re keeping, distinctive speech pattern.',
+    prompt:
+      "Create a supporting character: reformed emotion addict who now helps others. Include: recovery arc, relationship to protagonist, secret they're keeping, distinctive speech pattern.",
     criteria: 'Character should serve story function while having own agency and arc',
     minScore: 6,
     dimensions: ['characterComplexity', 'subtextQuality', 'narrativeCoherence'],
@@ -189,7 +203,8 @@ const TEST_CASES: TestCase[] = [
     id: 'cast-04-relationships',
     name: 'Character Relationship Web',
     category: 'cast',
-    prompt: 'Map the relationships between our 3 characters. For each pair: history, current dynamic, source of tension, potential for betrayal or alliance.',
+    prompt:
+      'Map the relationships between our 3 characters. For each pair: history, current dynamic, source of tension, potential for betrayal or alliance.',
     criteria: 'Relationships should create dramatic potential, not just be friendly/hostile',
     minScore: 6,
     dimensions: ['narrativeCoherence', 'characterComplexity', 'noConvenientTiming'],
@@ -198,8 +213,9 @@ const TEST_CASES: TestCase[] = [
     id: 'cast-05-voice-test',
     name: 'Character Voice Distinction',
     category: 'cast',
-    prompt: 'Write 3 lines of dialogue for each character reacting to the same event: discovering a hidden emotional storm is approaching the city.',
-    criteria: 'Each character\'s voice must be distinct without dialogue tags',
+    prompt:
+      'Write 3 lines of dialogue for each character reacting to the same event: discovering a hidden emotional storm is approaching the city.',
+    criteria: "Each character's voice must be distinct without dialogue tags",
     minScore: 7,
     dimensions: ['characterDecisions', 'subtextQuality', 'noExposition', 'memorability'],
   },
@@ -211,7 +227,8 @@ const TEST_CASES: TestCase[] = [
     id: 'episode-01-roadmap',
     name: 'Season Roadmap Structure',
     category: 'episode',
-    prompt: 'Create an 8-episode season roadmap. Define: inciting incident (ep1), midpoint twist (ep4), dark night of the soul (ep6), climax (ep7), resolution (ep8).',
+    prompt:
+      'Create an 8-episode season roadmap. Define: inciting incident (ep1), midpoint twist (ep4), dark night of the soul (ep6), climax (ep7), resolution (ep8).',
     criteria: 'Structure should follow Gilligan-style escalation with GRRM-style consequences',
     minScore: 7,
     dimensions: ['narrativeCoherence', 'sceneStateChange', 'noConvenientTiming'],
@@ -220,7 +237,8 @@ const TEST_CASES: TestCase[] = [
     id: 'episode-02-premise-hook',
     name: 'Episode 1 Protagonist Hook',
     category: 'episode',
-    prompt: 'Using Ozymandias framework, create Episode 1\'s protagonist hook. What impossible choice does the protagonist face in the first 5 minutes?',
+    prompt:
+      "Using Ozymandias framework, create Episode 1's protagonist hook. What impossible choice does the protagonist face in the first 5 minutes?",
     criteria: 'Hook must create immediate dramatic tension with character-specific stakes',
     minScore: 7,
     dimensions: ['characterDecisions', 'sceneStateChange', 'memorability'],
@@ -229,7 +247,8 @@ const TEST_CASES: TestCase[] = [
     id: 'episode-03-fatal-flaw',
     name: 'Episode 1 Fatal Flaw Setup',
     category: 'episode',
-    prompt: 'Define the fatal flaw that will drive Episode 1. How does it manifest in the protagonist\'s behavior? What scenes will reveal it without stating it?',
+    prompt:
+      "Define the fatal flaw that will drive Episode 1. How does it manifest in the protagonist's behavior? What scenes will reveal it without stating it?",
     criteria: 'Flaw must be shown through action, not told through dialogue (Gilligan style)',
     minScore: 7,
     dimensions: ['characterComplexity', 'visualStorytelling', 'subtextQuality', 'noExposition'],
@@ -238,7 +257,8 @@ const TEST_CASES: TestCase[] = [
     id: 'episode-04-stakes',
     name: 'Episode 1 Stakes Escalation',
     category: 'episode',
-    prompt: 'Define Episode 1 stakes across three levels: physical (what they might lose), professional (career/reputation), psychological (identity/beliefs).',
+    prompt:
+      'Define Episode 1 stakes across three levels: physical (what they might lose), professional (career/reputation), psychological (identity/beliefs).',
     criteria: 'Stakes must be specific, escalating, and interconnected',
     minScore: 6,
     dimensions: ['narrativeCoherence', 'characterDecisions', 'noGenericEmotions'],
@@ -247,7 +267,8 @@ const TEST_CASES: TestCase[] = [
     id: 'episode-05-consequence',
     name: 'Episode 1 Inevitable Consequence',
     category: 'episode',
-    prompt: 'Define the inevitable consequence that closes Episode 1. It must logically follow from the setup while being surprising.',
+    prompt:
+      'Define the inevitable consequence that closes Episode 1. It must logically follow from the setup while being surprising.',
     criteria: 'Consequence must feel "surprising yet inevitable" (GRRM\'s Red Wedding principle)',
     minScore: 7,
     dimensions: ['narrativeCoherence', 'sceneStateChange', 'noConvenientTiming', 'memorability'],
@@ -260,7 +281,8 @@ const TEST_CASES: TestCase[] = [
     id: 'breaking-01-transition',
     name: 'Phase Transition to Breaking',
     category: 'breaking',
-    prompt: 'Transition to breaking phase. Acknowledge the premise is locked and prepare to break Episode 1 into beats.',
+    prompt:
+      'Transition to breaking phase. Acknowledge the premise is locked and prepare to break Episode 1 into beats.',
     criteria: 'System should correctly handle phase transition state',
     minScore: 5,
     dimensions: ['worldConsistency'],
@@ -269,7 +291,8 @@ const TEST_CASES: TestCase[] = [
     id: 'breaking-02-act-structure',
     name: 'Episode Act Structure',
     category: 'breaking',
-    prompt: 'Break Episode 1 into 5 acts. For each act: logline, emotional starting point, emotional ending point, key scene.',
+    prompt:
+      'Break Episode 1 into 5 acts. For each act: logline, emotional starting point, emotional ending point, key scene.',
     criteria: 'Acts should follow dramatic structure with clear emotional arcs',
     minScore: 6,
     dimensions: ['narrativeCoherence', 'sceneStateChange', 'characterDecisions'],
@@ -278,10 +301,17 @@ const TEST_CASES: TestCase[] = [
     id: 'breaking-03-beat-sample',
     name: 'Sample Beat Generation',
     category: 'breaking',
-    prompt: 'Generate a detailed beat for the opening scene of Episode 1. Include: visual hook, character action, subtext, what changes.',
+    prompt:
+      'Generate a detailed beat for the opening scene of Episode 1. Include: visual hook, character action, subtext, what changes.',
     criteria: 'Beat should be visual, specific, and advance character/plot (Gilligan style)',
     minScore: 7,
-    dimensions: ['visualStorytelling', 'sceneStateChange', 'subtextQuality', 'noGenericEmotions', 'memorability'],
+    dimensions: [
+      'visualStorytelling',
+      'sceneStateChange',
+      'subtextQuality',
+      'noGenericEmotions',
+      'memorability',
+    ],
   },
 
   // ============================================
@@ -291,7 +321,8 @@ const TEST_CASES: TestCase[] = [
     id: 'flow-01-consistency-check',
     name: 'Cross-Reference Consistency',
     category: 'flow',
-    prompt: 'Verify consistency: Do the episode beats reference established world rules? Do character actions align with their profiles? Are faction dynamics maintained?',
+    prompt:
+      'Verify consistency: Do the episode beats reference established world rules? Do character actions align with their profiles? Are faction dynamics maintained?',
     criteria: 'No contradictions with established bible, characters act in-character',
     minScore: 7,
     dimensions: ['worldConsistency', 'characterComplexity', 'narrativeCoherence'],
@@ -300,7 +331,8 @@ const TEST_CASES: TestCase[] = [
     id: 'flow-02-quality-check',
     name: 'Anti-Slop Quality Audit',
     category: 'flow',
-    prompt: 'Review all generated content for AI slop markers: generic emotions, convenient plot devices, exposition dumps, interchangeable character voices.',
+    prompt:
+      'Review all generated content for AI slop markers: generic emotions, convenient plot devices, exposition dumps, interchangeable character voices.',
     criteria: 'Content should pass GRRM/Gilligan quality standards without slop',
     minScore: 7,
     dimensions: ['noGenericEmotions', 'noConvenientTiming', 'noExposition', 'subtextQuality'],
@@ -405,13 +437,13 @@ Respond with ONLY valid JSON.`
     const jsonStart = text.indexOf('{')
     const jsonEnd = text.lastIndexOf('}')
     if (jsonStart === -1 || jsonEnd === -1) throw new Error('No JSON in response')
-    
+
     const jsonString = text.slice(jsonStart, jsonEnd + 1)
     const result = JSON.parse(jsonString) as EvaluationResult
 
     // Log to Langfuse
     span.end({ output: result })
-    
+
     langfuse.score({
       traceId,
       name: `${testCase.id}-overall`,
@@ -423,7 +455,7 @@ Respond with ONLY valid JSON.`
       traceId,
       name: `${testCase.id}-grrm-gilligan`,
       value: result.grrmGilliganScore / 10,
-      comment: `GRRM/Gilligan quality score`,
+      comment: 'GRRM/Gilligan quality score',
     })
 
     return result
@@ -492,7 +524,8 @@ async function runFullFlowEvaluation(): Promise<EvaluationSummary> {
   })
 
   // Create test project
-  const masterPrompt = `A world where emotions manifest as weather. Cities are designed to channel collective feelings. Mood Wardens regulate emotional outbursts to prevent catastrophic storms. A black market trades in bottled feelings.`
+  const masterPrompt =
+    'A world where emotions manifest as weather. Cities are designed to channel collective feelings. Mood Wardens regulate emotional outbursts to prevent catastrophic storms. A black market trades in bottled feelings.'
 
   await db.insert(projects).values({
     id: projectId,
@@ -509,7 +542,7 @@ async function runFullFlowEvaluation(): Promise<EvaluationSummary> {
 
   // Run tests by category
   const categories = ['bible', 'cast', 'episode', 'breaking', 'flow'] as const
-  
+
   for (const category of categories) {
     const categoryTests = TEST_CASES.filter(t => t.category === category)
     console.log(`\n${'─'.repeat(50)}`)
@@ -543,11 +576,14 @@ masterPrompt: ${masterPrompt}`
 
         // Print result
         const emoji = passed ? '✅' : '❌'
-        const scoreColor = evaluation.overallScore >= 7 ? '🟢' : evaluation.overallScore >= 5 ? '🟡' : '🔴'
-        console.log(`    ${emoji} Score: ${scoreColor} ${evaluation.overallScore}/10 (min: ${testCase.minScore})`)
+        const scoreColor =
+          evaluation.overallScore >= 7 ? '🟢' : evaluation.overallScore >= 5 ? '🟡' : '🔴'
+        console.log(
+          `    ${emoji} Score: ${scoreColor} ${evaluation.overallScore}/10 (min: ${testCase.minScore})`
+        )
         console.log(`    📊 GRRM/Gilligan: ${evaluation.grrmGilliganScore}/10`)
         console.log(`    ⏱️  ${duration}ms`)
-        
+
         if (evaluation.strengths.length > 0) {
           console.log(`    ✨ ${evaluation.strengths[0]}`)
         }
@@ -557,7 +593,6 @@ masterPrompt: ${masterPrompt}`
         if (evaluation.slopIndicators.length > 0) {
           console.log(`    🚨 SLOP: ${evaluation.slopIndicators.join(', ')}`)
         }
-
       } catch (error) {
         console.error(`    ❌ ERROR: ${error}`)
         results.push({
@@ -582,7 +617,9 @@ masterPrompt: ${masterPrompt}`
   // Cleanup
   try {
     await db.delete(projects).where(eq(projects.id, projectId))
-  } catch (e) { /* ignore */ }
+  } catch (e) {
+    /* ignore */
+  }
 
   await langfuse.flush()
 
@@ -628,22 +665,26 @@ function printReport(summary: EvaluationSummary): void {
 
   // Overall
   const passEmoji = summary.passedTests >= 18 ? '🏆' : summary.passedTests >= 14 ? '✅' : '❌'
-  console.log(`\n  ${passEmoji} OVERALL: ${summary.passedTests}/${summary.totalTests} PASSED (${summary.passRate})`)
+  console.log(
+    `\n  ${passEmoji} OVERALL: ${summary.passedTests}/${summary.totalTests} PASSED (${summary.passRate})`
+  )
   console.log(`  📈 Average Score: ${summary.averageScore.toFixed(2)}/10`)
   console.log(`  🎬 GRRM/Gilligan Score: ${summary.averageGrrmGilliganScore.toFixed(2)}/10`)
   console.log(`  ⏱️  Total Duration: ${(summary.duration / 1000).toFixed(1)}s`)
 
   // Category breakdown
-  console.log(`\n  📂 BY CATEGORY:`)
+  console.log('\n  📂 BY CATEGORY:')
   for (const [cat, { passed, total }] of Object.entries(summary.categoryBreakdown)) {
     const pct = ((passed / total) * 100).toFixed(0)
-    const bar = '█'.repeat(Math.round(passed / total * 10)) + '░'.repeat(10 - Math.round(passed / total * 10))
+    const bar =
+      '█'.repeat(Math.round((passed / total) * 10)) +
+      '░'.repeat(10 - Math.round((passed / total) * 10))
     console.log(`     ${cat.padEnd(10)} ${bar} ${passed}/${total} (${pct}%)`)
   }
 
   // Slop indicators
   if (summary.slopIndicatorsFound.length > 0) {
-    console.log(`\n  🚨 SLOP INDICATORS FOUND:`)
+    console.log('\n  🚨 SLOP INDICATORS FOUND:')
     for (const slop of summary.slopIndicatorsFound.slice(0, 5)) {
       console.log(`     • ${slop}`)
     }
@@ -652,9 +693,11 @@ function printReport(summary: EvaluationSummary): void {
   // Top failures
   const failures = summary.results.filter(r => !r.passed)
   if (failures.length > 0) {
-    console.log(`\n  ❌ FAILED TESTS:`)
+    console.log('\n  ❌ FAILED TESTS:')
     for (const f of failures.slice(0, 5)) {
-      console.log(`     • ${f.testCase.name}: ${f.evaluation.overallScore}/10 (needed ${f.testCase.minScore})`)
+      console.log(
+        `     • ${f.testCase.name}: ${f.evaluation.overallScore}/10 (needed ${f.testCase.minScore})`
+      )
       if (f.evaluation.weaknesses[0]) {
         console.log(`       └─ ${f.evaluation.weaknesses[0]}`)
       }

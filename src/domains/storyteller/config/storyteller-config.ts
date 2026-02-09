@@ -137,8 +137,7 @@ const DEFAULT_CONFIG: StorytellerConfig = {
   prompts: {
     useHub: process.env.STORYTELLER_USE_PROMPT_HUB !== 'false', // Default to TRUE
     hubOwner: process.env.LANGSMITH_HUB_OWNER || 'tilemap',
-    environment:
-      (process.env.STORYTELLER_PROMPT_ENV as 'production' | 'staging' | 'dev') || 'dev', // Default to dev, safer than production
+    environment: (process.env.STORYTELLER_PROMPT_ENV as 'production' | 'staging' | 'dev') || 'dev', // Default to dev, safer than production
     fallbackToLocal: false, // Strict mode by default
   },
 
@@ -173,7 +172,7 @@ export function getStorytellerConfig(): StorytellerConfig {
  * Update runtime configuration
  * Changes persist until process restart
  */
-export function updateStorytellerConfig(updates: Partial<StorytellerConfig>): void {
+function updateStorytellerConfig(updates: Partial<StorytellerConfig>): void {
   runtimeConfig = deepMerge(runtimeConfig, updates) as Partial<StorytellerConfig>
   console.log('[Storyteller Config] Configuration updated')
 }
@@ -181,7 +180,7 @@ export function updateStorytellerConfig(updates: Partial<StorytellerConfig>): vo
 /**
  * Reset to default configuration
  */
-export function resetStorytellerConfig(): void {
+function resetStorytellerConfig(): void {
   runtimeConfig = {}
   console.log('[Storyteller Config] Reset to defaults')
 }
@@ -193,9 +192,7 @@ export function resetStorytellerConfig(): void {
 /**
  * Check if a specific guardrail is enabled
  */
-export function isGuardrailEnabled(
-  guardrail: 'antiSlop' | 'hallucination' | 'consistency'
-): boolean {
+function isGuardrailEnabled(guardrail: 'antiSlop' | 'hallucination' | 'consistency'): boolean {
   const config = getStorytellerConfig()
   return config.guardrails.globalEnabled && config.guardrails[guardrail].enabled
 }
@@ -203,7 +200,7 @@ export function isGuardrailEnabled(
 /**
  * Get anti-slop configuration
  */
-export function getAntiSlopConfig(): AntiSlopConfig {
+function getAntiSlopConfig(): AntiSlopConfig {
   return getStorytellerConfig().guardrails.antiSlop
 }
 
@@ -217,7 +214,7 @@ export function getPromptConfig(): PromptConfig {
 /**
  * Get evaluation configuration
  */
-export function getEvaluationConfig(): EvaluationConfig {
+function getEvaluationConfig(): EvaluationConfig {
   return getStorytellerConfig().evaluation
 }
 
@@ -258,7 +255,7 @@ export const PROMPT_IDS = {
 /**
  * Get full Hub path for a prompt
  */
-export function getPromptHubPath(
+function getPromptHubPath(
   promptId: keyof typeof PROMPT_IDS,
   environment?: 'production' | 'staging' | 'dev'
 ): string {
@@ -274,7 +271,7 @@ export function getPromptHubPath(
 /**
  * Environment variable names for documentation
  */
-export const ENV_VARS = {
+const ENV_VARS = {
   // Feature flags
   STORYTELLER_HITL_ENABLED: 'Enable human-in-the-loop confirmation',
   STORYTELLER_GUARDRAILS_ENABLED: 'Enable all guardrails (master switch)',

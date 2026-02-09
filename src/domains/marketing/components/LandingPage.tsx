@@ -1,8 +1,15 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import Link from 'next/link'
-import { motion, useScroll, useTransform, useSpring, AnimatePresence } from 'framer-motion'
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useSpring,
+  useMotionValue,
+  AnimatePresence,
+} from 'framer-motion'
 import {
   Map,
   Palette,
@@ -17,13 +24,42 @@ import {
   X,
   Users,
   Sparkles,
+  Menu,
 } from 'lucide-react'
+import { BleedingText } from '@/components/ui/BleedingText'
 import { TurbulentBackground } from './TurbulentBackground'
+
+const SUBTITLES = [
+  'Play god. It’s cheaper than therapy.',
+  'Your reality is boring. Make a new one.',
+  'Build a world before this one ends.',
+  'No one will miss the old timeline.',
+  'Architect your own escape.',
+  'Simulation theory is real. You are the admin.',
+  'Reality is a suggestion. Ignore it.',
+  'The void is waiting for your input.',
+  'Create something that outlives you.',
+  'Sanity is optional here.',
+]
+
+function ClientOnly({ children }: { children: React.ReactNode }) {
+  const [hasMounted, setHasMounted] = useState(false)
+  useEffect(() => {
+    setHasMounted(true)
+  }, [])
+  if (!hasMounted) return null
+  return <>{children}</>
+}
 import { MotionHighlight, LiquidDistortionText } from '@/components/ui/text-effects'
-import { BleedingText } from './BleedingText'
-import { ThreeDIcon } from './ThreeDIcon'
+import dynamic from 'next/dynamic'
 import { ToolsIntegration } from './ToolsIntegration'
 import { ProPlanPromo } from './ProPlanPromo'
+
+// Optimize heavy 3D components with strict lazy loading
+const ThreeDIcon = dynamic(() => import('./ThreeDIcon').then(mod => mod.ThreeDIcon), {
+  ssr: false,
+  loading: () => <div className="w-full h-full bg-white/5 animate-pulse rounded-full" />,
+})
 
 // ═══════════════════════════════════════════════════════════════════
 // FEATURES DATA
@@ -122,49 +158,10 @@ const STEPS = [
 const HeadlineVariant = () => {
   return (
     <h1 className="flex flex-col items-center gap-1 font-black uppercase tracking-[-0.02em] font-syne text-white text-center leading-[0.85]">
-      <LiquidDistortionText text="BUILD" className="text-[clamp(2.4rem,8vw,6.4rem)]" />
-      <LiquidDistortionText text="WORLDS" className="text-[clamp(3rem,10vw,8rem)]" />
+      <LiquidDistortionText text="BUILD" fontSize="text-[clamp(2rem,8vw,6.4rem)]" />
+      <LiquidDistortionText text="WORLDS" fontSize="text-[clamp(2.5rem,10vw,8rem)]" />
       <BleedingText text="THAT BLEED" />
     </h1>
-  )
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// INTERACTIVE CONCEPT TILE
-// ═══════════════════════════════════════════════════════════════════
-const ConceptToCarnageTile = () => {
-  const [state, setState] = useState<'concept' | 'carnage'>('concept')
-
-  return (
-    <motion.div
-      onClick={() => setState(prev => (prev === 'concept' ? 'carnage' : 'concept'))}
-      className="group relative h-full min-h-[280px] border border-white/10 cursor-pointer overflow-hidden rounded-xl bg-black/40 backdrop-blur-sm transition-all duration-500 hover:border-primary/50 hover:scale-[1.01] hover:shadow-2xl hover:shadow-primary/10"
-    >
-      {/* Subtle grid in background for clean look - REMOVED per request */}
-      {/* <div
-        className="absolute inset-0 opacity-[0.03] pointer-events-none"
-        style={{
-          backgroundImage: 'radial-gradient(white 1px, transparent 1px)',
-          backgroundSize: '16px 16px',
-        }}
-      /> */}
-
-      {/* Content footer */}
-      <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/80 to-transparent">
-        <span className="font-mono text-[10px] text-primary mb-2 tracking-widest uppercase">
-          CLICK TO TRANSFORM
-        </span>
-        <h3 className="text-2xl font-black tracking-wide leading-tight mb-2 font-syne">
-          From Concept
-          <br />
-          <span className={state === 'carnage' ? 'text-primary' : 'text-white'}>To Carnage</span>
-        </h3>
-        <div className="flex items-center gap-2 text-xs font-mono text-white/50">
-          <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-          {state === 'concept' ? 'Sketch phase' : 'Production ready'}
-        </div>
-      </div>
-    </motion.div>
   )
 }
 
@@ -332,6 +329,13 @@ const FeatureDeepDive = ({
   modelOffsetY = 0,
   density,
   glowScale,
+  distortion = 0,
+  speed = 1,
+  frequency,
+  contrast,
+  twist,
+  metalness,
+  vignette = false,
 }: {
   title: string
   subtitle: string
@@ -347,6 +351,14 @@ const FeatureDeepDive = ({
   modelOffsetY?: number
   density?: number
   glowScale?: number
+  distortion?: number
+  speed?: number
+  frequency?: number
+  contrast?: number
+  twist?: number
+  metalness?: number
+  /** Adds a black vignette overlay fading from transparent center to black edges */
+  vignette?: boolean
 }) => {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
   const layoutId = `screenshot-${index}`
@@ -376,6 +388,13 @@ const FeatureDeepDive = ({
                 offset={[modelOffsetX, modelOffsetY]}
                 density={density}
                 glowScale={glowScale}
+                distortion={distortion}
+                speed={speed}
+                frequency={frequency}
+                contrast={contrast}
+                twist={twist}
+                metalness={metalness}
+                vignette={vignette}
               />
             </div>
 
@@ -479,7 +498,7 @@ const FeatureDeepDive = ({
             </span>
           </div>
 
-          <h3 className="text-4xl md:text-5xl font-black text-white font-syne mb-6 leading-[0.9] uppercase">
+          <h3 className="text-3xl md:text-5xl font-black text-white font-syne mb-6 leading-[0.9] uppercase">
             {title.split(' ').map((word, i) => (
               <span key={i} className="block">
                 {word}
@@ -536,8 +555,17 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   const smoothProgress = useSpring(scrollYProgress, { stiffness: 100, damping: 30 })
   const heroY = useTransform(smoothProgress, [0, 0.2], [0, -100])
   const heroOpacity = useTransform(smoothProgress, [0, 0.15], [1, 0])
-  // Background darkening overlay - fades to 50% black as user scrolls
-  const bgOverlayOpacity = useTransform(smoothProgress, [0, 0.3], [0, 0.5])
+  // Pixel-based scroll tracking for background overlay
+  const scrollY = useMotionValue(0)
+
+  useEffect(() => {
+    const handleScroll = () => scrollY.set(window.scrollY)
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [scrollY])
+
+  // Background darkening overlay - 75% black after scrolling 600px
+  const bgOverlayOpacity = useTransform(scrollY, [600, 700], [0, 0.75])
 
   // Lightbox State
   const [selectedFeature, setSelectedFeature] = useState<{
@@ -546,6 +574,10 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
     description: string
     icon: any
   } | null>(null)
+  // API/MCP Tab State
+  const [activeTab, setActiveTab] = useState<'rest' | 'mcp'>('rest')
+  // Mobile Menu State
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
     <TurbulentBackground
@@ -582,7 +614,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                 initial={{ scale: 0.95, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                onClick={(e) => e.stopPropagation()}
+                onClick={e => e.stopPropagation()}
                 className="relative max-w-2xl w-full bg-[#111] border border-white/10 rounded-2xl overflow-hidden shadow-2xl"
               >
                 <div className="absolute top-0 right-0 p-4 z-10">
@@ -632,21 +664,13 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
         <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-black/40 backdrop-blur-xl">
           <div className="mx-auto max-w-7xl px-6">
             <div className="flex h-16 items-center justify-between">
-              <Link href="/" className="flex items-center gap-3 group">
-                <div className="relative w-12 h-12 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+              <Link href="/" className="flex items-center group">
+                <div className="relative w-28 h-auto flex items-center justify-center group-hover:bg-primary/10 transition-colors rounded-lg p-1">
                   <img
-                    src="/logo.png"
+                    src="/logo.svg"
                     alt="KUR"
                     className="w-full h-full object-contain brightness-0 invert"
                   />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-black uppercase tracking-[0.2em] leading-none font-syne">
-                    KUR
-                  </span>
-                  <span className="text-[9px] font-mono text-white/30 tracking-wider">
-                    SYSTEM.v1.0.0
-                  </span>
                 </div>
               </Link>
 
@@ -669,9 +693,17 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
               </div>
 
               <div className="flex items-center gap-4">
+                {/* Mobile menu button */}
+                <button
+                  onClick={() => setMobileMenuOpen(true)}
+                  className="md:hidden p-2 rounded-lg border border-white/10 hover:border-primary/50 hover:bg-primary/10 transition-colors"
+                >
+                  <Menu className="w-5 h-5 text-white" />
+                </button>
+
                 <Link
                   href={isLoggedIn ? '/app' : '/login'}
-                  className="group relative inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white transition-all duration-300 rounded-lg overflow-hidden border border-primary/50 hover:border-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm hover:shadow-[0_0_20px_-5px_rgba(92,124,250,0.5)] hover:scale-[1.02]"
+                  className="hidden sm:inline-flex group relative items-center gap-2 px-5 py-2.5 text-sm font-bold text-white transition-all duration-300 rounded-lg overflow-hidden border border-primary/50 hover:border-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm hover:shadow-[0_0_20px_-5px_rgba(92,124,250,0.5)] hover:scale-[1.02]"
                 >
                   <span className="relative z-10">{isLoggedIn ? 'Dashboard' : 'Get Started'}</span>
                   <ArrowRight className="relative z-10 w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -680,6 +712,85 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
             </div>
           </div>
         </nav>
+
+        {/* Mobile Menu Drawer */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setMobileMenuOpen(false)}
+                className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm md:hidden"
+              />
+              {/* Drawer */}
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="fixed top-0 right-0 bottom-0 z-[70] w-72 bg-[#0a0a0a] border-l border-white/10 md:hidden"
+              >
+                <div className="flex flex-col h-full">
+                  {/* Header */}
+                  <div className="flex items-center justify-between p-6 border-b border-white/5">
+                    <span className="text-xs font-mono text-primary tracking-widest uppercase">
+                      MENU
+                    </span>
+                    <button
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="p-2 rounded-lg hover:bg-white/5 transition-colors"
+                    >
+                      <X className="w-5 h-5 text-white/60" />
+                    </button>
+                  </div>
+
+                  {/* Top CTA */}
+                  <div className="p-6 border-b border-white/5">
+                    <Link
+                      href={isLoggedIn ? '/app' : '/login'}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center justify-center gap-2 w-full px-5 py-3 text-sm font-bold text-white rounded-lg border border-primary/50 bg-primary/20 hover:bg-primary/30 transition-colors font-syne tracking-wide"
+                    >
+                      {isLoggedIn ? 'Dashboard' : 'Get Started'}
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+
+                  {/* Links */}
+                  <div className="flex-1 p-6 space-y-2">
+                    {['SYSTEMS', 'DOCS', 'API', 'CHANGELOG'].map((item, i) => (
+                      <motion.button
+                        key={item}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        onClick={() => {
+                          setMobileMenuOpen(false)
+                          if (item === 'DOCS') {
+                            window.location.href = '/docs/getting-started'
+                            return
+                          }
+                          if (item === 'API') {
+                            window.location.href = '/docs'
+                            return
+                          }
+                          const el = document.getElementById(item.toLowerCase())
+                          if (el) el.scrollIntoView({ behavior: 'smooth' })
+                        }}
+                        className="w-full text-left px-4 py-3 rounded-lg text-white/70 hover:text-white hover:bg-primary/10 transition-colors font-mono text-sm tracking-wider"
+                      >
+                        {item}
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
 
         {/* Hero Section */}
         <motion.section
@@ -761,14 +872,42 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
           <div className="max-w-7xl mx-auto">
             {/* TRUE BENTO GRID - Asymmetric with varied heights */}
             <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-32 auto-rows-[140px]">
-              {/* Interactive Tile - Concept to Carnage (3x2) - Large feature */}
+              {/* World Generation (3x2) - Large feature tile */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
-                className="md:col-span-3 lg:col-span-3 row-span-2"
+                onClick={() =>
+                  setSelectedFeature({
+                    title: 'World Generation',
+                    subtitle: 'PROCEDURAL_ENGINE',
+                    description:
+                      'Infinite procedural terrain generation. From continents to caves, biomes to battlegrounds. Ship-ready assets in minutes, not weeks.',
+                    icon: Map,
+                  })
+                }
+                className="md:col-span-3 lg:col-span-3 row-span-2 rounded-xl border border-white/10 overflow-hidden group relative bg-black/40 backdrop-blur-xl hover:border-primary/50 hover:scale-[1.01] transition-all duration-300 cursor-pointer"
               >
-                <ConceptToCarnageTile />
+                {/* Large background icon */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] group-hover:opacity-[0.08] transition-opacity">
+                  <Map size={280} strokeWidth={1} />
+                </div>
+
+                {/* Content footer */}
+                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/80 to-transparent">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Map className="w-5 h-5 text-primary" />
+                    <span className="font-mono text-[10px] text-primary/80 tracking-widest uppercase">
+                      WLD_GEN
+                    </span>
+                  </div>
+                  <h3 className="text-2xl font-black text-white font-syne mb-2">
+                    World Generation
+                  </h3>
+                  <p className="text-white/60 font-mono text-xs leading-relaxed max-w-md">
+                    Infinite procedural terrain. Days → minutes. Ship-ready assets.
+                  </p>
+                </div>
               </motion.div>
 
               {/* Scene Simulator (2x1) */}
@@ -780,7 +919,8 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                   setSelectedFeature({
                     title: 'Scene Simulator',
                     subtitle: 'PHYSICS_ENGINE',
-                    description: 'Real-time physics simulation for combat, environmental hazards, and object interactions. Test your world mechanics without writing a single line of code.',
+                    description:
+                      'Real-time physics simulation for combat, environmental hazards, and object interactions. Test your world mechanics without writing a single line of code.',
                     icon: Sparkles,
                   })
                 }
@@ -813,7 +953,8 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                   setSelectedFeature({
                     title: 'Team Collaboration',
                     subtitle: 'MULTI_USER',
-                    description: 'Real-time multiplayer editing for your entire team. Role-based access control, version history, and instant syncing across all connected clients.',
+                    description:
+                      'Real-time multiplayer editing for your entire team. Role-based access control, version history, and instant syncing across all connected clients.',
                     icon: Users,
                   })
                 }
@@ -826,7 +967,9 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                   <span className="font-mono text-[8px] text-violet-400/80 tracking-widest uppercase mb-1">
                     Team
                   </span>
-                  <h3 className="text-sm font-black text-white font-syne mb-1">Collab</h3>
+                  <h3 className="text-sm font-black text-white font-syne mb-1">
+                    Collab <span className="text-white/40 font-normal">(soon)</span>
+                  </h3>
                   <p className="text-white/50 font-mono text-[10px] leading-tight">
                     Multiplayer editing.
                   </p>
@@ -842,7 +985,8 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                   setSelectedFeature({
                     title: 'Loop Designer',
                     subtitle: 'GAMEPLAY_LOOPS',
-                    description: 'Visual node-based editor for designing core gameplay loops. Analyze player retention mechanics and optimize reward schedules with AI-driven suggestions.',
+                    description:
+                      'Visual node-based editor for designing core gameplay loops. Analyze player retention mechanics and optimize reward schedules with AI-driven suggestions.',
                     icon: Zap,
                   })
                 }
@@ -863,7 +1007,8 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                       Addictive Game Loops
                     </h3>
                     <p className="text-white/50 font-mono text-xs max-w-sm leading-relaxed">
-                      "Just one more turn" — engineered, not guessed. Visualise and optimize your core engagement cycles.
+                      "Just one more turn" — engineered, not guessed. Visualise and optimize your
+                      core engagement cycles.
                     </p>
                   </div>
                 </div>
@@ -879,9 +1024,11 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                 subtitle="NARRATIVE_ENGINE"
                 description="Factions. Intrigue. Betrayal. An AI co-writer that understands narrative arcs and character motivation, never sleeping, always plotting."
                 type3d="AI_NARRATIVE"
-                modelScale={5}
+                modelScale={3}
                 modelOffsetX={-0.5}
                 modelOffsetY={-0.2}
+                glowScale={0.5}
+                density={0.15}
                 align="left"
                 pngIcon="/images/icons/ai-narrative.png"
               />
@@ -894,22 +1041,22 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                 description="Generate entire continents in milliseconds. Biomes, caves, cities—all procedurally crafted. The foundation of your reality, infinitely scalable."
                 type3d="WORLD_GEN"
                 align="right"
-                modelScale={20}
-                glowScale={0.2}
-                density={0.5}
-                modelOffsetX={-0.5}
-                modelOffsetY={-0.2}
+                modelScale={3}
+                glowScale={1}
+                density={45}
                 pngIcon="/images/icons/world-gen.png"
               />
 
               {/* Section 3: 3D Canvas / Terrain Sculpting */}
               <FeatureDeepDive
                 index={3}
+                modelScale={2}
                 title="3D Canvas"
                 subtitle="SCULPT_SIMULATION"
                 description="Shape mountains and gouge trenches with real-time physics simulation. Drag, drop, sculpt. The most tactile terrain tool ever built."
                 type3d="SCULPT_SIM"
                 align="left"
+                density={1.2}
                 pngIcon="/images/icons/sculpt-sim.png"
               />
 
@@ -922,6 +1069,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                 type3d="EXPORT_SEC"
                 modelOffsetY={-0.3}
                 modelOffsetX={-0.5}
+                modelScale={1}
                 align="right"
                 pngIcon="/images/icons/export-sec.png"
               />
@@ -939,7 +1087,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                     transition={{ duration: 0.7 }}
                     className="flex-1 w-full"
                   >
-                    <div className="relative rounded-lg overflow-hidden bg-[#0d0d0d] border border-white/10">
+                    <div className="relative rounded-lg overflow-hidden bg-[#0d0d0d] border border-white/10 min-h-[320px]">
                       {/* Terminal Header */}
                       <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-white/[0.02]">
                         <div className="flex gap-1.5">
@@ -948,55 +1096,91 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                           <div className="w-3 h-3 rounded-full bg-green-500/80" />
                         </div>
                         <span className="text-[10px] font-mono text-white/30 ml-2">
-                          api_example.ts
+                          {activeTab === 'rest' ? 'api_client.ts' : 'mcp_config.json'}
                         </span>
                       </div>
 
                       {/* Code Content */}
                       <div className="p-6 font-mono text-sm leading-relaxed overflow-x-auto">
-                        <div className="text-white/40">// REST API</div>
-                        <div>
-                          <span className="text-purple-400">const</span>{' '}
-                          <span className="text-blue-300">world</span> ={' '}
-                          <span className="text-purple-400">await</span>{' '}
-                          <span className="text-yellow-300">fetch</span>(
-                          <span className="text-green-300">'/api/worlds/generate'</span>, {'{'}
-                        </div>
-                        <div className="pl-4">
-                          <span className="text-blue-300">method</span>:{' '}
-                          <span className="text-green-300">'POST'</span>,
-                        </div>
-                        <div className="pl-4">
-                          <span className="text-blue-300">body</span>: JSON.stringify({'{'}{' '}
-                          <span className="text-blue-300">biome</span>:{' '}
-                          <span className="text-green-300">'forest'</span>,{' '}
-                          <span className="text-blue-300">size</span>:{' '}
-                          <span className="text-orange-300">1024</span> {'}'})
-                        </div>
-                        <div>{'}'});</div>
-                        <div className="mt-4 text-white/40">// MCP Protocol</div>
-                        <div>
-                          <span className="text-purple-400">import</span> {'{'}{' '}
-                          <span className="text-blue-300">MCPClient</span> {'}'}{' '}
-                          <span className="text-purple-400">from</span>{' '}
-                          <span className="text-green-300">'@kurtvitza/mcp'</span>;
-                        </div>
-                        <div className="mt-2">
-                          <span className="text-purple-400">const</span>{' '}
-                          <span className="text-blue-300">mcp</span> ={' '}
-                          <span className="text-purple-400">new</span>{' '}
-                          <span className="text-yellow-300">MCPClient</span>();
-                        </div>
-                        <div>
-                          <span className="text-purple-400">await</span> mcp.
-                          <span className="text-yellow-300">connect</span>(
-                          <span className="text-green-300">'kurtvitza://studio'</span>);
-                        </div>
-                        <div>
-                          mcp.<span className="text-yellow-300">on</span>(
-                          <span className="text-green-300">'terrain:update'</span>,{' '}
-                          <span className="text-blue-300">handleUpdate</span>);
-                        </div>
+                        <AnimatePresence mode="wait">
+                          {activeTab === 'rest' ? (
+                            <motion.div
+                              key="rest"
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <div className="text-white/40">// Generate 3D Assets</div>
+                              <div>
+                                <span className="text-purple-400">const</span>{' '}
+                                <span className="text-blue-300">response</span> ={' '}
+                                <span className="text-purple-400">await</span>{' '}
+                                <span className="text-yellow-300">fetch</span>(
+                                <span className="text-green-300">'/api/generate-3d'</span>, {'{'}
+                              </div>
+                              <div className="pl-4">
+                                <span className="text-blue-300">method</span>:{' '}
+                                <span className="text-green-300">'POST'</span>,
+                              </div>
+                              <div className="pl-4">
+                                <span className="text-blue-300">body</span>: JSON.stringify(
+                                {'{'}
+                              </div>
+                              <div className="pl-8">
+                                <span className="text-blue-300">imageUrl</span>:{' '}
+                                <span className="text-green-300">'/assets/concept.png'</span>,
+                              </div>
+                              <div className="pl-8">
+                                <span className="text-blue-300">provider</span>:{' '}
+                                <span className="text-green-300">'meshy'</span>,
+                              </div>
+                              <div className="pl-8">
+                                <span className="text-blue-300">apiKey</span>: process.env.
+                                <span className="text-blue-300">MESHY_API_KEY</span>
+                              </div>
+                              <div className="pl-4">{'}'})</div>
+                              <div>{'}'});</div>
+                            </motion.div>
+                          ) : (
+                            <motion.div
+                              key="mcp"
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <div className="text-white/40">// MCP Configuration</div>
+                              <div>{'{'}</div>
+                              <div className="pl-4">
+                                <span className="text-green-300">"mcpServers"</span>: {'{'}
+                              </div>
+                              <div className="pl-8">
+                                <span className="text-green-300">"world-building-kit"</span>: {'{'}
+                              </div>
+                              <div className="pl-12">
+                                <span className="text-green-300">"command"</span>:{' '}
+                                <span className="text-green-300">"npx"</span>,
+                              </div>
+                              <div className="pl-12">
+                                <span className="text-green-300">"args"</span>: [
+                                <span className="text-green-300">"tsx"</span>,{' '}
+                                <span className="text-green-300">"src/mcp/server.ts"</span>]
+                              </div>
+                              <div className="pl-12">
+                                <span className="text-green-300">"env"</span>: {'{'}
+                              </div>
+                              <div className="pl-16">
+                                <span className="text-green-300">"MCP_API_KEY"</span>:{' '}
+                                <span className="text-green-300">"your-api-key"</span>
+                              </div>
+                              <div className="pl-12">{'}'}</div>
+                              <div className="pl-8">{'}'}</div>
+                              <div className="pl-4">{'}'}</div>
+                              <div>{'}'}</div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     </div>
                   </motion.div>
@@ -1029,18 +1213,24 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                     </p>
 
                     <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
-                      <span className="px-3 py-1.5 bg-white/5 border border-white/10 rounded text-xs font-mono text-white/60">
+                      <button
+                        onClick={() => setActiveTab('rest')}
+                        className={`px-3 py-1.5 border rounded text-xs font-mono transition-colors cursor-pointer ${activeTab === 'rest'
+                          ? 'bg-white/10 border-white text-white'
+                          : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white'
+                          }`}
+                      >
                         REST API
-                      </span>
-                      <span className="px-3 py-1.5 bg-white/5 border border-white/10 rounded text-xs font-mono text-white/60">
-                        WebSocket
-                      </span>
-                      <span className="px-3 py-1.5 bg-primary/20 border border-primary/30 rounded text-xs font-mono text-primary">
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('mcp')}
+                        className={`px-3 py-1.5 border rounded text-xs font-mono transition-colors cursor-pointer ${activeTab === 'mcp'
+                          ? 'bg-primary/30 border-primary text-primary-300'
+                          : 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/20'
+                          }`}
+                      >
                         MCP Protocol
-                      </span>
-                      <span className="px-3 py-1.5 bg-white/5 border border-white/10 rounded text-xs font-mono text-white/60">
-                        TypeScript SDK
-                      </span>
+                      </button>
                     </div>
                   </motion.div>
                 </div>
@@ -1077,7 +1267,21 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
               className="hidden lg:block lg:w-1/2 relative h-[800px] -ml-20"
             >
               <div className="absolute inset-0 flex items-center justify-center">
-                <ThreeDIcon type="STR_TST" color="#5c7cfa" size={700} mouseRotation={0.15} />
+                <ThreeDIcon
+                  type="STR_TST"
+                  color="#5c7cfa"
+                  size={700}
+                  density={150}
+                  glowScale={0.2}
+                  distortion={0.1}
+                  mouseRotation={0.2}
+                  scale={0.5}
+                  contrast={1}
+                  speed={0.1}
+                  frequency={50}
+                  vignette={true}
+                  twist={3.5}
+                />
               </div>
             </motion.div>
 
@@ -1110,7 +1314,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                   {/* Stat Model 2 */}
                   <div className="flex flex-col gap-2">
                     <div className="flex items-start gap-2">
-                      <span className="text-7xl md:text-8xl font-black font-syne tracking-tighter leading-none">
+                      <span className="text-5xl sm:text-7xl md:text-8xl font-black font-syne tracking-tighter leading-none">
                         4,000+
                       </span>
                       <Plus className="w-8 h-8 text-primary mt-2" strokeWidth={4} />
@@ -1175,48 +1379,38 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                   </span>
                 </div>
 
-                <h2 className="text-6xl md:text-8xl font-black leading-[0.85] font-syne tracking-tight">
-                  WE DON&apos;T
+                <h2 className="text-4xl sm:text-6xl md:text-8xl font-black leading-[0.85] font-syne tracking-tight break-keep">
+                  YOU ARE
                   <br />
-                  <span className="text-black/30">REPLACE</span>
+                  <span className="text-black/30">THE</span>
                   <br />
-                  CREATORS
+                  ARCHITECT
                 </h2>
               </div>
 
-              <div className="space-y-8 lg:border-l lg:border-black/10 lg:pl-16">
+              <div className="space-y-8 lg:border-l lg:border-black/10 lg:pl-16 -mt-[100px] -ml-[100px]">
                 <p className="text-2xl font-bold font-syne leading-tight max-w-xl">
-                  &ldquo;AI isn&apos;t here to paint the picture. It&apos;s here to stretch the
-                  canvas.&rdquo;
+                  &ldquo;AI automates the mundane.
+                  <br />
+                  You orchestrate the vision.&rdquo;
                 </p>
                 <div className="space-y-4">
                   <p className="font-mono text-sm font-bold uppercase tracking-widest mb-4 opacity-50">
-                    Core Beliefs
+                    Our Belief:
                   </p>
-                  <div className="flex items-start gap-4">
-                    <div className="w-8 h-8 rounded-full border border-black/20 flex items-center justify-center shrink-0">
-                      1
-                    </div>
-                    <p className="font-mono text-sm leading-relaxed">
-                      Automate the drudgery, not the discovery.
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-4">
-                    <div className="w-8 h-8 rounded-full border border-black/20 flex items-center justify-center shrink-0">
-                      2
-                    </div>
-                    <p className="font-mono text-sm leading-relaxed">
-                      Your taste is the only thing that can't be generated.
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-4">
-                    <div className="w-8 h-8 rounded-full border border-black/20 flex items-center justify-center shrink-0">
-                      3
-                    </div>
-                    <p className="font-mono text-sm leading-relaxed">
-                      Tools should be dangerous enough to build something new.
-                    </p>
-                  </div>
+                  <p className="font-mono text-sm leading-relaxed">
+                    The golden age of gaming isn&apos;t behind us—it&apos;s ahead.
+                    <br />
+                    When smaller studios match the output of giants, quality wins.
+                    <br />
+                    Corporations are shrinking.
+                    <br />
+                    But somewhere, a small team is building the next Disco Elysium.
+                    <br />
+                    The next Clair Obscure.
+                    <br />
+                    Maybe it&apos;s you.
+                  </p>
                 </div>
               </div>
             </div>
@@ -1245,9 +1439,16 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                 <br />
                 <span className="text-primary">world today</span>
               </h2>
-              <p className="text-white/40 font-mono text-sm mb-12 max-w-md mx-auto">
-                Join 2,000+ game developers shipping faster with AI-powered tools.
-              </p>
+              <div className="flex justify-center h-8 mb-12">
+                <ClientOnly>
+                  <BleedingText
+                    text={SUBTITLES[Math.floor(Math.random() * SUBTITLES.length)]}
+                    className="text-sm font-mono tracking-wide uppercase"
+                    textColor="text-red-500/90"
+                    particleColor="text-red-500"
+                  />
+                </ClientOnly>
+              </div>
             </motion.div>
 
             <motion.div

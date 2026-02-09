@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { ConfidentAIClient, getTestRunUrl, LLMTestCase } from '@/evaluation/confident-ai/client'
 import { spawn } from 'child_process'
 import * as path from 'path'
+import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
 
 function runPythonScript(scriptPath: string, input: string): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -16,15 +17,15 @@ function runPythonScript(scriptPath: string, input: string): Promise<string> {
     let stdout = ''
     let stderr = ''
 
-    process.stdout.on('data', (data) => {
+    process.stdout.on('data', data => {
       stdout += data.toString()
     })
 
-    process.stderr.on('data', (data) => {
+    process.stderr.on('data', data => {
       stderr += data.toString()
     })
 
-    process.on('close', (code) => {
+    process.on('close', code => {
       if (code === 0) {
         resolve(stdout)
       } else {
@@ -32,7 +33,7 @@ function runPythonScript(scriptPath: string, input: string): Promise<string> {
       }
     })
 
-    process.on('error', (err) => {
+    process.on('error', err => {
       reject(err)
     })
 
@@ -87,22 +88,20 @@ const POLL_INTERVAL_MS = 2000
 
 const CRITERIA_DESCRIPTIONS: Record<string, string> = {
   narrative_coherence: 'Does the story flow logically? Are there plot holes or contradictions?',
-  character_consistency: 'Do characters behave consistently with their established traits and motivations?',
+  character_consistency:
+    'Do characters behave consistently with their established traits and motivations?',
   creative_quality: 'Is the writing engaging, original, and well-crafted?',
   user_goal_alignment: 'Did the AI help the user achieve their stated goals effectively?',
   pacing_and_structure: 'Is the story paced well? Does the structure support the narrative?',
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, _auth: AuthenticatedRequest) => {
   try {
     const body: EvaluationRequest = await request.json()
     const { conversation, criteria, projectId } = body
 
     if (!conversation || conversation.length === 0) {
-      return NextResponse.json(
-        { error: 'No conversation provided' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'No conversation provided' }, { status: 400 })
     }
 
     const traceId = uuidv4()
@@ -125,7 +124,7 @@ export async function POST(request: NextRequest) {
     // 3. Otherwise -> Fallback to local GPT-4o evaluation
     const confidentAIKey = process.env.CONFIDENT_API_KEY || process.env.CONFIDENT_AI_API_KEY
     const useLocalDeepeval = process.env.DEEPEVAL_LOCAL === 'true'
-    
+
     if (confidentAIKey) {
       // Use Confident AI for scientific evaluation
       return await evaluateWithConfidentAI(conversation, traceId, confidentAIKey)
@@ -138,12 +137,9 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error('Evaluation error:', error)
-    return NextResponse.json(
-      { error: 'Evaluation failed' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Evaluation failed' }, { status: 500 })
   }
-}
+})
 
 /**
  * Evaluate using Confident AI's scientific metrics (EQ-Bench, Mazur, Gilligan)
@@ -154,16 +150,13 @@ async function evaluateWithConfidentAI(
   apiKey: string
 ): Promise<NextResponse> {
   const client = new ConfidentAIClient({ apiKey })
-  
+
   // Build context from conversation
   const userMessages = conversation.filter(m => m.role === 'user').map(m => m.content)
   const lastAssistantMessage = [...conversation].reverse().find(m => m.role === 'assistant')
-  
+
   if (!lastAssistantMessage) {
-    return NextResponse.json(
-      { error: 'No assistant response to evaluate' },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: 'No assistant response to evaluate' }, { status: 400 })
   }
 
   // Create test case for evaluation
@@ -176,7 +169,9 @@ async function evaluateWithConfidentAI(
   const span = langfuse.span({
     traceId,
     name: 'confident-ai-evaluation',
-    input: { testCase: { input: testCase.input.slice(0, 200), outputLength: testCase.actualOutput.length } },
+    input: {
+      testCase: { input: testCase.input.slice(0, 200), outputLength: testCase.actualOutput.length },
+    },
   })
 
   try {
@@ -198,7 +193,7 @@ async function evaluateWithConfidentAI(
     let projectId: string | undefined
     for (let i = 0; i < MAX_POLL_ATTEMPTS; i++) {
       await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS))
-      
+
       try {
         const details = await client.getTestRun(testRunId)
         // projectId is nested in testCases[0].metricsData[0].projectId
@@ -230,7 +225,7 @@ async function evaluateWithConfidentAI(
 
     if (testRunDetails && testRunDetails.testCases?.[0]?.metricData) {
       const metricData = testRunDetails.testCases[0].metricData
-      
+
       // Calculate overall score as average
       const scores = metricData.map(m => m.score)
       result.score = Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10
@@ -273,11 +268,11 @@ async function evaluateWithConfidentAI(
   } catch (error) {
     span.end({ output: { error: String(error) } })
     console.error('Confident AI evaluation error:', error)
-    
+
     // Return partial result with URL if we have it
     return NextResponse.json({
       score: 0,
-      feedback: `Evaluation in progress. Check Confident AI dashboard for results.`,
+      feedback: 'Evaluation in progress. Check Confident AI dashboard for results.',
       criteria: {},
       traceId,
       confidentAIUrl: undefined,
@@ -295,12 +290,9 @@ async function evaluateWithLocalDeepeval(
 ): Promise<NextResponse> {
   const userMessages = conversation.filter(m => m.role === 'user').map(m => m.content)
   const lastAssistantMessage = [...conversation].reverse().find(m => m.role === 'assistant')
-  
+
   if (!lastAssistantMessage) {
-    return NextResponse.json(
-      { error: 'No assistant response to evaluate' },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: 'No assistant response to evaluate' }, { status: 400 })
   }
 
   const span = langfuse.span({
@@ -319,7 +311,7 @@ async function evaluateWithLocalDeepeval(
 
     // Get the script path
     const scriptPath = path.join(process.cwd(), 'scripts', 'deepeval-local.py')
-    
+
     // Run Python script with JSON input via stdin
     const stdout = await runPythonScript(scriptPath, JSON.stringify(evalInput))
 
@@ -358,26 +350,32 @@ async function evaluateWithLocalDeepeval(
   } catch (error) {
     span.end({ output: { error: String(error) } })
     console.error('Local DeepEval error:', error)
-    
+
     // Check if it's a "deepeval not installed" error
     const errorStr = String(error)
     if (errorStr.includes('deepeval not installed') || errorStr.includes('No module named')) {
-      return NextResponse.json({
-        error: 'DeepEval not installed. Run: pip install deepeval',
-        score: 0,
-        feedback: 'DeepEval not installed. Run: pip install deepeval',
-        criteria: {},
-        traceId,
-      }, { status: 500 })
+      return NextResponse.json(
+        {
+          error: 'DeepEval not installed. Run: pip install deepeval',
+          score: 0,
+          feedback: 'DeepEval not installed. Run: pip install deepeval',
+          criteria: {},
+          traceId,
+        },
+        { status: 500 }
+      )
     }
 
-    return NextResponse.json({
-      error: 'Local DeepEval evaluation failed',
-      score: 0,
-      feedback: `Local DeepEval failed: ${errorStr}`,
-      criteria: {},
-      traceId,
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: 'Local DeepEval evaluation failed',
+        score: 0,
+        feedback: `Local DeepEval failed: ${errorStr}`,
+        criteria: {},
+        traceId,
+      },
+      { status: 500 }
+    )
   }
 }
 
@@ -468,10 +466,7 @@ Respond ONLY with the JSON object.`
     }
   } catch {
     console.error('Failed to parse evaluation response:', response.text)
-    return NextResponse.json(
-      { error: 'Failed to parse evaluation response' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to parse evaluation response' }, { status: 500 })
   }
 
   // Format the result

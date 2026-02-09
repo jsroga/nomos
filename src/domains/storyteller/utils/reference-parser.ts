@@ -1,9 +1,9 @@
 /**
  * Reference Parser Utility
- * 
+ *
  * Parses entity references in MD-style format: [Display Name][entity-type-uuid]
  * Used by UI components for rendering and by context assembler for smart context.
- * 
+ *
  * NOTE: This module is client-safe and does not import server-only code.
  */
 
@@ -56,11 +56,11 @@ export type TextSegment =
  * Reference pattern for parsing entity references from text
  * Matches: [Display Name][entity-type-uuid]
  * Groups: [1] = Display Name, [2] = Full ID (e.g., char-abc123)
- * 
+ *
  * Pattern breakdown:
  * - \[([^\]]+)\] = Display name in brackets (any text except ])
  * - \[([a-zA-Z0-9_-]+)\] = Entity ID in brackets (alphanumeric, underscores, hyphens)
- * 
+ *
  * Note: Hyphen must be at the end of character class or escaped to be literal
  */
 const REFERENCE_REGEX = /\[([^\]]+)\]\[([a-zA-Z0-9_-]+)\]/g
@@ -93,7 +93,7 @@ export function parseReferences(text: string): ParsedReference[] {
 /**
  * Extract just the reference IDs from text
  */
-export function extractRefIds(text: string): string[] {
+function extractRefIds(text: string): string[] {
   const refs = parseReferences(text)
   return [...new Set(refs.map(r => r.refId))]
 }
@@ -144,7 +144,7 @@ export function splitIntoSegments(text: string): TextSegment[] {
 /**
  * Replace references with just display names (for plain text output)
  */
-export function stripReferences(text: string): string {
+function stripReferences(text: string): string {
   return text.replace(REFERENCE_REGEX, '$1')
 }
 
@@ -158,14 +158,14 @@ export function hasReferences(text: string): boolean {
 /**
  * Count references in text
  */
-export function countReferences(text: string): number {
+function countReferences(text: string): number {
   return parseReferences(text).length
 }
 
 /**
  * Get unique entity types referenced in text
  */
-export function getReferencedTypes(text: string): EntityType[] {
+function getReferencedTypes(text: string): EntityType[] {
   const refs = parseReferences(text)
   const types = refs.map(r => r.type).filter((t): t is EntityType => t !== null)
   return [...new Set(types)]
@@ -174,7 +174,7 @@ export function getReferencedTypes(text: string): EntityType[] {
 /**
  * Format a reference for insertion into text
  */
-export function formatReference(displayName: string, refId: string): string {
+function formatReference(displayName: string, refId: string): string {
   return `[${displayName}][${refId}]`
 }
 
@@ -189,7 +189,7 @@ export function createRefId(type: EntityType, shortId: string): string {
 /**
  * Validate a reference ID format
  */
-export function isValidRefId(refId: string): boolean {
+function isValidRefId(refId: string): boolean {
   const parts = refId.split('-')
   if (parts.length < 2) return false
 
@@ -200,7 +200,7 @@ export function isValidRefId(refId: string): boolean {
 /**
  * Get entity type from reference ID
  */
-export function getTypeFromRefId(refId: string): EntityType | null {
+function getTypeFromRefId(refId: string): EntityType | null {
   const prefix = refId.split('-')[0]
   return PREFIX_TO_TYPE[prefix] || null
 }
@@ -209,7 +209,7 @@ export function getTypeFromRefId(refId: string): EntityType | null {
  * Highlight references in text with HTML markup
  * Useful for debugging or simple rendering
  */
-export function highlightReferences(
+function highlightReferences(
   text: string,
   wrapperTag: string = 'mark',
   className?: string
@@ -225,21 +225,15 @@ export function highlightReferences(
  * Convert references to markdown links
  * Useful for rendering in markdown-enabled contexts
  */
-export function referencesToMarkdownLinks(text: string, baseUrl: string = '#entity'): string {
-  return text.replace(
-    REFERENCE_REGEX,
-    (_, name, refId) => `[${name}](${baseUrl}/${refId})`
-  )
+function referencesToMarkdownLinks(text: string, baseUrl: string = '#entity'): string {
+  return text.replace(REFERENCE_REGEX, (_, name, refId) => `[${name}](${baseUrl}/${refId})`)
 }
 
 /**
  * Batch replace references with resolved names
  * Useful when you have a map of refId -> resolved name
  */
-export function replaceReferencesWithNames(
-  text: string,
-  nameMap: Map<string, string>
-): string {
+function replaceReferencesWithNames(text: string, nameMap: Map<string, string>): string {
   return text.replace(REFERENCE_REGEX, (fullMatch, displayName, refId) => {
     const resolvedName = nameMap.get(refId)
     return resolvedName || displayName

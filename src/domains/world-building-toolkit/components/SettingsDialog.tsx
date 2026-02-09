@@ -29,7 +29,50 @@ interface SettingsDialogProps {
 
 type Tab = 'generation' | 'upscaling' | 'tools' | 'apikeys' | 'storyteller' | 'projectSettings'
 
+interface AIModelConfig {
+  baseUrl?: string
+  apiKey?: string
+  params?: {
+    steps?: number
+    cfgScale?: number
+    sampler?: string
+    modelId?: string
+    [key: string]: unknown
+  }
+  [key: string]: unknown
+}
+
+interface ApiKeyConfig {
+  apiKey?: string
+  [key: string]: unknown
+}
+
+interface FalConfig extends ApiKeyConfig {
+  returnMultipleMasks?: boolean
+  includeScores?: boolean
+  includeBoxes?: boolean
+}
+
+interface ReplicateConfig extends ApiKeyConfig {
+  model?: string
+}
+
+interface LegnextConfig extends ApiKeyConfig {
+  parameters?: string
+}
+
+interface Upscale4kConfig extends ApiKeyConfig {
+  upscaleMode?: string
+}
+
+interface ProjectData {
+  name?: string
+  styleReferenceUrls?: string[]
+  [key: string]: unknown
+}
+
 import { LocalStorageKeys } from '@/constants/localStorage'
+import { getErrorMessage } from '@/lib/error-utils'
 
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose, projectId }) => {
   const [mounted, setMounted] = useState(false)
@@ -38,15 +81,15 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
   const [activeTab, setActiveTab] = useState<Tab>('generation')
 
   const [activeId, setActiveId] = useState(aiService.getActiveModelId())
-  const [config, setConfig] = useState<any>({})
-  const [openaiConfig, setOpenaiConfig] = useState<any>({})
-  const [geminiConfig, setGeminiConfig] = useState<any>({})
-  const [upscale4kConfig, setUpscale4kConfig] = useState<any>({})
-  const [replicateConfig, setReplicateConfig] = useState<any>({})
-  const [falConfig, setFalConfig] = useState<any>({})
-  const [hyper3dConfig, setHyper3dConfig] = useState<any>({})
-  const [meshyConfig, setMeshyConfig] = useState<any>({})
-  const [legnextConfig, setLegnextConfig] = useState<any>({})
+  const [config, setConfig] = useState<AIModelConfig>({})
+  const [openaiConfig, setOpenaiConfig] = useState<ApiKeyConfig>({})
+  const [geminiConfig, setGeminiConfig] = useState<ApiKeyConfig>({})
+  const [upscale4kConfig, setUpscale4kConfig] = useState<Upscale4kConfig>({})
+  const [replicateConfig, setReplicateConfig] = useState<ReplicateConfig>({})
+  const [falConfig, setFalConfig] = useState<FalConfig>({})
+  const [hyper3dConfig, setHyper3dConfig] = useState<ApiKeyConfig>({})
+  const [meshyConfig, setMeshyConfig] = useState<ApiKeyConfig>({})
+  const [legnextConfig, setLegnextConfig] = useState<LegnextConfig>({})
   const [activeUpscaler, setActiveUpscaler] = useState<string>('stability')
   const [skipGeminiPreUpscale, setSkipGeminiPreUpscale] = useState(false)
 
@@ -66,9 +109,25 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
   const [defaultFidelityPrompt, setDefaultFidelityPrompt] = useState<string>('')
 
   // Project Settings
-  const [projectData, setProjectData] = useState<any>(null)
+  const [projectData, setProjectData] = useState<ProjectData | null>(null)
   const [styleReferenceUrls, setStyleReferenceUrls] = useState<string[]>([])
   const [newStyleUrl, setNewStyleUrl] = useState<string>('')
+
+  // MCP API Keys
+  interface McpApiKey {
+    id: string
+    name: string
+    scopes: string[]
+    created_at: string
+    last_used_at: string | null
+    revoked_at: string | null
+    expires_at: string | null
+  }
+  const [mcpKeys, setMcpKeys] = useState<McpApiKey[]>([])
+  const [isLoadingMcpKeys, setIsLoadingMcpKeys] = useState(false)
+  const [newMcpKeyName, setNewMcpKeyName] = useState('')
+  const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null)
+  const [isCreatingKey, setIsCreatingKey] = useState(false)
 
   const models = aiService.getAvailableModels()
 
@@ -140,6 +199,16 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
           })
           .catch(err => console.error('Failed to load project:', err))
       }
+
+      // Load MCP API keys
+      setIsLoadingMcpKeys(true)
+      fetch('/api/api-keys')
+        .then(res => res.json())
+        .then(data => {
+          setMcpKeys(data.apiKeys || [])
+        })
+        .catch(err => console.error('Failed to load MCP keys:', err))
+        .finally(() => setIsLoadingMcpKeys(false))
     }
   }, [isOpen, projectId])
 
@@ -179,15 +248,59 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
     setConfig(aiService.getConfig(id))
   }
 
-  const handleConfigChange = (update: any) => {
-    setConfig((prev: any) => ({ ...prev, ...update }))
+  const handleConfigChange = (update: Partial<AIModelConfig>) => {
+    setConfig(prev => ({ ...prev, ...update }))
   }
 
-  const handleParamChange = (key: string, value: any) => {
-    setConfig((prev: any) => ({
+  const handleParamChange = (key: string, value: string | number) => {
+    setConfig(prev => ({
       ...prev,
       params: { ...prev.params, [key]: value },
     }))
+  }
+
+  // MCP Key Management
+  const handleCreateMcpKey = async () => {
+    if (!newMcpKeyName.trim()) {
+      toast.error('Please enter a key name')
+      return
+    }
+    setIsCreatingKey(true)
+    setNewlyCreatedKey(null)
+    try {
+      const res = await fetch('/api/api-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newMcpKeyName.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to create key')
+
+      setNewlyCreatedKey(data.apiKey.key)
+      setMcpKeys(prev => [data.apiKey, ...prev])
+      setNewMcpKeyName('')
+      toast.success('API key created! Save it now.')
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err) || 'Failed to create API key')
+    } finally {
+      setIsCreatingKey(false)
+    }
+  }
+
+  const handleRevokeMcpKey = async (keyId: string) => {
+    try {
+      const res = await fetch(`/api/api-keys?id=${keyId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed to revoke key')
+      setMcpKeys(prev => prev.filter(k => k.id !== keyId))
+      toast.success('API key revoked')
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err) || 'Failed to revoke key')
+    }
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    toast.success('Copied to clipboard!')
   }
 
   // Connection status indicator component
@@ -596,7 +709,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                                 Upscale Mode
                               </label>
                               <select
-                                value={(upscale4kConfig as any).upscaleMode || 'conservative'}
+                                value={upscale4kConfig.upscaleMode || 'conservative'}
                                 onChange={e =>
                                   setUpscale4kConfig({
                                     ...upscale4kConfig,
@@ -1188,6 +1301,92 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                             />
                           </div>
                         </div>
+                      </div>
+
+                      {/* MCP API Keys Section */}
+                      <div className="p-4 rounded-lg bg-card border border-primary/30 space-y-4">
+                        <div className="flex items-center gap-2">
+                          <Key className="w-4 h-4 text-primary" />
+                          <h4 className="font-semibold text-sm">MCP API Keys</h4>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Generate keys for external MCP clients (Cursor, Claude Desktop, etc.)
+                        </p>
+
+                        {/* Create new key */}
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={newMcpKeyName}
+                            onChange={e => setNewMcpKeyName(e.target.value)}
+                            placeholder="Key name (e.g., My Cursor)"
+                            className="flex-1 p-2 rounded-md border border-input bg-background text-sm"
+                            onKeyDown={e => e.key === 'Enter' && handleCreateMcpKey()}
+                          />
+                          <Button size="sm" onClick={handleCreateMcpKey} disabled={isCreatingKey}>
+                            {isCreatingKey ? 'Creating...' : '+ Create'}
+                          </Button>
+                        </div>
+
+                        {/* Newly created key (show once) */}
+                        {newlyCreatedKey && (
+                          <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-md space-y-2">
+                            <div className="flex items-center gap-2 text-amber-500 text-xs font-medium">
+                              <Info className="w-3 h-3" />
+                              Save this key now — it won&apos;t be shown again!
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <code className="flex-1 p-2 bg-black/30 rounded text-xs font-mono truncate">
+                                {newlyCreatedKey}
+                              </code>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => copyToClipboard(newlyCreatedKey)}
+                              >
+                                Copy
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Existing keys list */}
+                        {isLoadingMcpKeys ? (
+                          <div className="text-xs text-muted-foreground">Loading keys...</div>
+                        ) : mcpKeys.filter(k => !k.revoked_at).length > 0 ? (
+                          <div className="space-y-2">
+                            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                              Your Keys
+                            </div>
+                            {mcpKeys
+                              .filter(k => !k.revoked_at)
+                              .map(key => (
+                                <div
+                                  key={key.id}
+                                  className="flex items-center justify-between p-2 bg-muted/30 rounded-md border border-border"
+                                >
+                                  <div>
+                                    <div className="text-sm font-medium">{key.name}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      Created {new Date(key.created_at).toLocaleDateString()}
+                                    </div>
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                    onClick={() => handleRevokeMcpKey(key.id)}
+                                  >
+                                    Revoke
+                                  </Button>
+                                </div>
+                              ))}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-muted-foreground">
+                            No keys yet. Create one above.
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

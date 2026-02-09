@@ -73,7 +73,7 @@ export const AssetsPanel: React.FC<AssetsPanelProps> = ({ showHelpText = true })
       // Update local state
       removeAsset(assetToDelete.id)
       toast.success('Asset deleted')
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting asset:', error)
       toast.error('Failed to delete asset')
     } finally {

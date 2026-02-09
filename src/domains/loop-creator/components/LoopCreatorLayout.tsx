@@ -655,7 +655,7 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
   }, [])
 
   const handleNodeUpdate = useCallback(
-    (nodeId: string, updates: Record<string, any>) => {
+    (nodeId: string, updates: Record<string, unknown>) => {
       // Check if we need to change the node type
       const changeNodeType = updates._changeNodeType
       delete updates._changeNodeType

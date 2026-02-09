@@ -1,6 +1,6 @@
 /**
  * Conversation Simulator for Hypothesis Experiments
- * 
+ *
  * Executes multi-turn conversations using the Storyteller agent
  * and captures all tool calls and outputs for evaluation.
  */
@@ -10,12 +10,10 @@ import { createStorytellerAgent } from '@/domains/storyteller/agents/v2/storytel
 import { langfuse } from '@/agent-core/observability'
 import {
   Hypothesis,
-  HypothesisVariable,
   ConversationTurn,
   ExecutedTurn,
   SimulationResult,
   CapturedToolCall,
-  CapturedOutputs,
   OutputScope,
 } from './types'
 import {
@@ -56,8 +54,8 @@ const DEFAULT_CONFIG: SimulatorConfig = {
 }
 
 // Circuit breaker: max consecutive errors before aborting
-const MAX_CONSECUTIVE_ERRORS = 3;
-let consecutiveErrors = 0;
+const MAX_CONSECUTIVE_ERRORS = 3
+let consecutiveErrors = 0
 
 // ============================================
 // Conversation Simulator
@@ -80,9 +78,7 @@ async function executeTurn(
 
   try {
     // Build the full prompt with context
-    const prompt = turn.role === 'user'
-      ? `${context}\n\nUser: ${turn.content}`
-      : turn.content
+    const prompt = turn.role === 'user' ? `${context}\n\nUser: ${turn.content}` : turn.content
 
     // Run the agent
     const result = await agent.run(
@@ -110,14 +106,15 @@ async function executeTurn(
         timestamp: Date.now(),
       })
     }
-
   } catch (err) {
     error = err instanceof Error ? err.message : String(err)
     consecutiveErrors++
 
     // Circuit breaker: abort if too many consecutive errors
     if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-      console.error(`\n🛑 CIRCUIT BREAKER: ${consecutiveErrors} consecutive errors. Aborting to prevent cost overrun.`)
+      console.error(
+        `\n🛑 CIRCUIT BREAKER: ${consecutiveErrors} consecutive errors. Aborting to prevent cost overrun.`
+      )
       throw new Error(`Circuit breaker triggered: ${consecutiveErrors} consecutive errors`)
     }
 
@@ -147,12 +144,12 @@ function buildInitialContext(
   const value = version === 'baseline' ? variable.baseline : variable.variant
 
   let contextParts: string[] = [
-    `SYSTEM CONTEXT:`,
+    'SYSTEM CONTEXT:',
     `- ProjectId: ${config.projectId || 'simulation-project'}`,
     `- EpisodeId: ${config.episodeId || 'simulation-episode'}`,
-    `- Phase: premise`,
-    ``,
-    `HYPOTHESIS EXPERIMENT:`,
+    '- Phase: premise',
+    '',
+    'HYPOTHESIS EXPERIMENT:',
     `- Name: ${hypothesis.name}`,
     `- Variable Type: ${variable.type}`,
     `- Testing: ${version}`,
@@ -225,16 +222,12 @@ export async function runSimulation(
     const turn = messageFlow[i]
 
     if (mergedConfig.verbose) {
-      console.log(`   [${i + 1}/${messageFlow.length}] ${turn.role}: ${turn.content.slice(0, 50)}...`)
+      console.log(
+        `   [${i + 1}/${messageFlow.length}] ${turn.role}: ${turn.content.slice(0, 50)}...`
+      )
     }
 
-    const executed = await executeTurn(
-      agent,
-      turn,
-      accumulatedContext,
-      traceId,
-      mergedConfig
-    )
+    const executed = await executeTurn(agent, turn, accumulatedContext, traceId, mergedConfig)
 
     executedTurns.push(executed)
     allToolCalls.push(...executed.toolCalls)
@@ -312,14 +305,14 @@ export async function runABSimulation(
   const mergedConfig = { ...DEFAULT_CONFIG, ...config }
 
   if (mergedConfig.verbose) {
-    console.log(`\n═══════════════════════════════════════════════════════════`)
+    console.log('\n═══════════════════════════════════════════════════════════')
     console.log(`  🧪 A/B Simulation: ${hypothesis.name}`)
-    console.log(`═══════════════════════════════════════════════════════════`)
+    console.log('═══════════════════════════════════════════════════════════')
   }
 
   // Run baseline
   if (mergedConfig.verbose) {
-    console.log(`\n📊 Running BASELINE...`)
+    console.log('\n📊 Running BASELINE...')
   }
   const baseline = await runSimulation(
     hypothesis,
@@ -331,22 +324,16 @@ export async function runABSimulation(
 
   // Run variant
   if (mergedConfig.verbose) {
-    console.log(`\n📊 Running VARIANT...`)
+    console.log('\n📊 Running VARIANT...')
   }
-  const variant = await runSimulation(
-    hypothesis,
-    messageFlow,
-    outputScope,
-    'variant',
-    mergedConfig
-  )
+  const variant = await runSimulation(hypothesis, messageFlow, outputScope, 'variant', mergedConfig)
 
   if (mergedConfig.verbose) {
-    console.log(`\n═══════════════════════════════════════════════════════════`)
-    console.log(`  ✅ A/B Simulation Complete`)
+    console.log('\n═══════════════════════════════════════════════════════════')
+    console.log('  ✅ A/B Simulation Complete')
     console.log(`  Baseline: ${baseline.durationMs}ms, ${baseline.rawToolCalls.length} tool calls`)
     console.log(`  Variant: ${variant.durationMs}ms, ${variant.rawToolCalls.length} tool calls`)
-    console.log(`═══════════════════════════════════════════════════════════`)
+    console.log('═══════════════════════════════════════════════════════════')
   }
 
   return { baseline, variant }

@@ -55,7 +55,7 @@ export interface RunStatus {
   status: string
   output?: any
   error?: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
   createdAt?: string
   updatedAt?: string
 }
@@ -139,7 +139,7 @@ export class TilesService {
         status: run.status,
         output: run.output,
         error: run.error?.message,
-        metadata: run.metadata as Record<string, any> | undefined,
+        metadata: run.metadata as Record<string, unknown> | undefined,
         createdAt: run.createdAt?.toISOString(),
         updatedAt: run.updatedAt?.toISOString(),
       }

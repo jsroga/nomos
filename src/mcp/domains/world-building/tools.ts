@@ -10,39 +10,5 @@
  * - generate_world_map: Generate a world map
  */
 
-import { Tool } from '@modelcontextprotocol/sdk/types.js'
-import { MCPDomainModule, MCPServiceContext, LangSmithContext } from '../../core/types'
-
-// ============================================
-// TOOL DEFINITIONS
-// ============================================
-
-const tools: Tool[] = [
-  // TODO: Add world-building tools
-]
-
-// ============================================
-// HANDLERS
-// ============================================
-
-const handlers: Record<
-  string,
-  (
-    args: Record<string, any>,
-    context: MCPServiceContext,
-    langsmith: LangSmithContext
-  ) => Promise<any>
-> = {
-  // TODO: Add handlers
-}
-
-// ============================================
-// EXPORT MODULE
-// ============================================
-
-const worldBuildingModule: MCPDomainModule = {
-  tools,
-  handlers,
-}
-
-export default worldBuildingModule
+// Export tools
+export const worldBuildingTools = {}

@@ -2,13 +2,13 @@
 
 /**
  * RichText Component
- * 
+ *
  * A simple wrapper around ReferenceText for rendering text that may contain
  * entity references [Name][id]. Automatically gets projectId from context.
- * 
+ *
  * Use this in all Bible and Episode components to render any text that might
  * contain entity references (descriptions, ideologies, goals, etc.)
- * 
+ *
  * Usage:
  * <RichText text={faction.ideology} />
  * <RichText text={worldDescription} className="text-lg" />
@@ -59,11 +59,7 @@ export const RichText: React.FC<RichTextProps> = ({
   if (!text || text.trim() === '') {
     if (fallback) return <>{fallback}</>
     if (showPlaceholder) {
-      return (
-        <span className={cn('text-muted-foreground italic', className)}>
-          {placeholder}
-        </span>
-      )
+      return <span className={cn('text-muted-foreground italic', className)}>{placeholder}</span>
     }
     return null
   }
@@ -83,11 +79,7 @@ export const RichText: React.FC<RichTextProps> = ({
   // If no references, render plain text
   if (!containsReferences) {
     const Container = inline ? 'span' : 'div'
-    return (
-      <Container className={cn('whitespace-pre-wrap', className)}>
-        {text}
-      </Container>
-    )
+    return <Container className={cn('whitespace-pre-wrap', className)}>{text}</Container>
   }
 
   // Default entity click: navigate to Relationships tab with entity focused
@@ -97,9 +89,11 @@ export const RichText: React.FC<RichTextProps> = ({
       return
     }
     // Dispatch global event to navigate to relationships tab with entity selected
-    window.dispatchEvent(new CustomEvent('navigate-to-entity', { 
-      detail: { refId, entityName: entity?.name || refId, entityType: entity?.type } 
-    }))
+    window.dispatchEvent(
+      new CustomEvent('navigate-to-entity', {
+        detail: { refId, entityName: entity?.name || refId, entityType: entity?.type },
+      })
+    )
   }
 
   // Render with reference support
@@ -128,7 +122,7 @@ function useSafeBible() {
  * Convenience hook to get projectId from URL path
  * Works for /app/[projectId]/storyteller routes
  */
-export function useProjectIdFromUrl(): string | undefined {
+function useProjectIdFromUrl(): string | undefined {
   if (typeof window === 'undefined') return undefined
 
   const path = window.location.pathname
@@ -137,5 +131,3 @@ export function useProjectIdFromUrl(): string | undefined {
   }
   return path.split('/')[1]
 }
-
-export default RichText

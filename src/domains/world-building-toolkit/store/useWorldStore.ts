@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { getSupabaseClient } from '@/infrastructure/storage/supabaseClient'
+import { useAuthStore } from '@/store/useAuthStore'
 import type { SelectResult } from '@/domains/world-building-toolkit/services/SelectModeService'
 import { Database } from '@/infrastructure/storage/database.types'
 import { JobStatus, JobType } from '@/types/enums'
@@ -255,7 +256,7 @@ export const useWorldStore = create<WorldState>((set, get) => ({
       // cache: 'no-store' ensures we always get fresh data from the server (fixes stale data after refresh)
       const response = await fetch(`/api/storyteller/projects/${projectId}`, {
         cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache' }
+        headers: { 'Cache-Control': 'no-cache' },
       })
       if (!response.ok) {
         console.error('API error loading project:', response.statusText)
@@ -272,7 +273,7 @@ export const useWorldStore = create<WorldState>((set, get) => ({
         story_plan: projectData.storyPlan || projectData.story_plan || {},
       }
 
-      // Fetch tiles separately (this might still need RLS bypass if we want full E2E, 
+      // Fetch tiles separately (this might still need RLS bypass if we want full E2E,
       // but for World Bible heading, project record is enough)
       const supabase = getSupabaseClient()
       const { data: tiles, error: tilesError } = await supabase
@@ -307,7 +308,7 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   },
 
   createProject: async (name: string, prompt: string) => {
-    const { user } = get()
+    const { user } = useAuthStore.getState()
     if (!user) return null
 
     const supabase = getSupabaseClient()

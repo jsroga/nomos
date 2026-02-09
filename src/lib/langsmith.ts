@@ -36,7 +36,7 @@ export function checkLangSmithConfig(): { enabled: boolean; issues: string[] } {
   }
 }
 
-export function logLangSmithStatus(): void {
+function logLangSmithStatus(): void {
   const { enabled, issues } = checkLangSmithConfig()
 
   console.log('=== LangSmith Configuration ===')

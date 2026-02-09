@@ -16,6 +16,35 @@ import { langfuse, isLangfuseEnabled } from '@/agent-core/observability'
 
 export const maxDuration = 120
 
+interface CanvasNode {
+  id: string
+  type?: string
+  label?: string
+  data?: { label?: string; nodeType?: string; description?: string }
+  description?: string
+  position?: { x: number; y: number }
+}
+
+interface CanvasEdge {
+  id: string
+  source: string
+  target: string
+  label?: string
+}
+
+interface LoopSessionState {
+  mechanics: unknown[]
+  connections: unknown[]
+  loops: unknown[]
+  progressionSystems: unknown[]
+  balanceAnalysis: { overallScore?: number } | null
+  currentPhase: string
+  gameGenre: string
+  gamePlatform: string
+  gameDescription: string
+  targetAudience: string
+}
+
 interface ChatRequest {
   message: string
   projectId: string
@@ -27,8 +56,8 @@ interface ChatRequest {
     gamePlatform?: string
     targetAudience?: string
     gameDescription?: string
-    nodes?: any[]
-    edges?: any[]
+    nodes?: CanvasNode[]
+    edges?: CanvasEdge[]
   }
   modelConfig?: {
     model?: string
@@ -38,7 +67,16 @@ interface ChatRequest {
 
 // StreamEvent interface for UI compatibility
 interface StreamEvent {
-  type: 'node' | 'message' | 'action' | 'questions' | 'token' | 'error' | 'start' | 'state' | 'complete'
+  type:
+    | 'node'
+    | 'message'
+    | 'action'
+    | 'questions'
+    | 'token'
+    | 'error'
+    | 'start'
+    | 'state'
+    | 'complete'
   node?: string
   agent?: string
   content?: string
@@ -50,11 +88,11 @@ interface StreamEvent {
   }
   action?: {
     type: string
-    payload: any
+    payload: unknown
     confidence?: number
     reasoning?: string
   }
-  questions?: any[]
+  questions?: unknown[]
   error?: string
   timestamp: number
   threadId?: string
@@ -66,18 +104,18 @@ interface StreamEvent {
   phase?: string
 }
 
-function formatSSE(data: any): string {
+function formatSSE(data: StreamEvent): string {
   const jsonStr = JSON.stringify(data)
   return `data: ${jsonStr}\n\n`
 }
 
 // In-memory session storage (for thread persistence)
 // In production, this should use a database
-const sessionStore = new Map<string, any>()
+const sessionStore = new Map<string, LoopSessionState>()
 
 // Simple in-memory plan persistence
 class InMemoryPlanPersistence implements PlanPersistence {
-  private plans = new Map<string, any>()
+  private plans = new Map<string, unknown>()
 
   constructor(private threadId: string) {}
 
@@ -85,7 +123,7 @@ class InMemoryPlanPersistence implements PlanPersistence {
     return this.plans.get(this.threadId) || null
   }
 
-  async savePlan(plan: any) {
+  async savePlan(plan: unknown) {
     this.plans.set(this.threadId, plan)
   }
 }
@@ -98,24 +136,24 @@ async function getAgent(threadId: string): Promise<GameDesignAgent> {
   })
 }
 
-function convertCanvasToMechanics(nodes: any[], edges: any[]) {
+function convertCanvasToMechanics(nodes: CanvasNode[], edges: CanvasEdge[]) {
   const mechanics = (nodes || [])
-    .filter((n: any) => n.type !== 'group')
-    .map((n: any) => ({
+    .filter(n => n.type !== 'group')
+    .map(n => ({
       id: n.id,
       name: n.label || n.data?.label || n.id,
-      type: (n.data?.nodeType || 'core') as any,
+      type: (n.data?.nodeType || 'core') as string,
       description: n.data?.description || n.description || '',
-      inputs: [],
-      outputs: [],
+      inputs: [] as string[],
+      outputs: [] as string[],
       balanceFactors: { effort: 5, reward: 5, frequency: 5 },
     }))
 
-  const connections = (edges || []).map((e: any) => ({
+  const connections = (edges || []).map(e => ({
     id: e.id,
     source: e.source,
     target: e.target,
-    type: 'triggers' as any,
+    type: 'triggers' as string,
     label: e.label || '',
   }))
 
@@ -133,7 +171,15 @@ export async function POST(req: NextRequest) {
     }
 
     const body: ChatRequest = await req.json()
-    const { message, projectId, threadId, context, modelConfig, sessionId: bodySessionId, userId } = body
+    const {
+      message,
+      projectId,
+      threadId,
+      context,
+      modelConfig,
+      sessionId: bodySessionId,
+      userId,
+    } = body
 
     if (!message || !projectId) {
       return new Response(JSON.stringify({ error: 'message and projectId are required' }), {
@@ -152,9 +198,9 @@ export async function POST(req: NextRequest) {
 
     // Generate Langfuse session ID for grouping traces
     const langfuseSessionId = bodySessionId || `session-loop-creator-${projectId}`
-    
+
     // Create Langfuse trace with session for observability
-    let trace: any = null
+    let trace: ReturnType<typeof langfuse.trace> | null = null
     if (isLangfuseEnabled) {
       try {
         trace = langfuse.trace({
@@ -255,7 +301,7 @@ export async function POST(req: NextRequest) {
           const result = await agent.runWithContext({
             projectId,
             genre: sessionState.gameGenre || 'game',
-            targetAudience: sessionState.targetAudience as any,
+            targetAudience: sessionState.targetAudience as 'casual' | 'midcore' | 'hardcore',
             existingMechanics: sessionState.mechanics,
             userMessage: message,
           })
@@ -278,11 +324,13 @@ export async function POST(req: NextRequest) {
           if (result.type === 'ASK_USER' && result.payload?.question) {
             safeEnqueue({
               type: 'questions',
-              questions: [{
-                id: crypto.randomUUID(),
-                question: result.payload.question,
-                options: result.payload.options || [],
-              }],
+              questions: [
+                {
+                  id: crypto.randomUUID(),
+                  question: result.payload.question,
+                  options: result.payload.options || [],
+                },
+              ],
               timestamp: Date.now(),
             })
           }
@@ -329,7 +377,8 @@ export async function POST(req: NextRequest) {
               // Update state with final results
               if (result.payload.mechanics) sessionState.mechanics = result.payload.mechanics
               if (result.payload.loops) sessionState.loops = result.payload.loops
-              if (result.payload.balanceAnalysis) sessionState.balanceAnalysis = result.payload.balanceAnalysis
+              if (result.payload.balanceAnalysis)
+                sessionState.balanceAnalysis = result.payload.balanceAnalysis
             }
           }
 

@@ -126,7 +126,7 @@ export async function PATCH(req: NextRequest) {
     const { hasAccess } = await verifyDesignAccess(id, session.user.id)
     if (!hasAccess) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
 
-    const updates: Record<string, any> = { updatedAt: new Date() }
+    const updates: Record<string, unknown> = { updatedAt: new Date() }
     if (name !== undefined) updates.name = name
     if (sceneData !== undefined) updates.sceneData = sceneData
 

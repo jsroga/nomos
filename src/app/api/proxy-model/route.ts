@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
+import { getErrorMessage } from '@/lib/error-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,7 +27,9 @@ export async function GET(request: NextRequest) {
       'supabase.co',
     ]
 
-    const isAllowed = allowedDomains.some(domain => parsedUrl.hostname.endsWith(domain))
+    const isAllowed = allowedDomains.some(
+      domain => parsedUrl.hostname === domain || parsedUrl.hostname.endsWith('.' + domain)
+    )
     if (!isAllowed) {
       return NextResponse.json({ error: 'URL domain not allowed' }, { status: 403 })
     }
@@ -55,8 +58,8 @@ export async function GET(request: NextRequest) {
         'Cache-Control': 'public, max-age=86400',
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Proxy error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
   }
 }

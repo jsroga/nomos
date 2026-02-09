@@ -1,6 +1,6 @@
 /**
  * Episode Creation Tools - Mastra v2
- * 
+ *
  * Tools for creating episodes with premise generation, poster creation, and beat planning
  */
 
@@ -16,13 +16,16 @@ const CreateEpisodeInputSchema = z.object({
   sequence: z.number().describe('Episode number in the series (1-based)'),
   title: z.string().describe('Episode title'),
   thematicFocus: z.string().optional().describe('Central theme of this episode'),
-  premise: z.object({
-    logline: z.string().describe('One-sentence episode summary'),
-    protagonistHook: z.string().describe('What pulls the protagonist into this episode'),
-    antagonistMove: z.string().describe('What the antagonist does to create conflict'),
-    fatalFlaw: z.string().describe('How protagonist\'s flaw creates problems'),
-    thematicQuestion: z.string().describe('The central question this episode explores'),
-  }).optional().describe('Episode premise structure'),
+  premise: z
+    .object({
+      logline: z.string().describe('One-sentence episode summary'),
+      protagonistHook: z.string().describe('What pulls the protagonist into this episode'),
+      antagonistMove: z.string().describe('What the antagonist does to create conflict'),
+      fatalFlaw: z.string().describe("How protagonist's flaw creates problems"),
+      thematicQuestion: z.string().describe('The central question this episode explores'),
+    })
+    .optional()
+    .describe('Episode premise structure'),
   generatePoster: z.boolean().optional().describe('Whether to generate a poster for this episode'),
 })
 
@@ -41,18 +44,12 @@ const AskContinueToBeatsInputSchema = z.object({
  */
 export const createEpisodeTool = createTool({
   id: 'create_episode',
-  description: 'Create a new episode in the series with full premise structure. Optionally generate poster art.',
+  description:
+    'Create a new episode in the series with full premise structure. Optionally generate poster art.',
   inputSchema: CreateEpisodeInputSchema,
   execute: async (args: any) => {
     const context = args?.context || args
-    const {
-      projectId,
-      sequence,
-      title,
-      thematicFocus,
-      premise,
-      generatePoster = true,
-    } = context
+    const { projectId, sequence, title, thematicFocus, premise, generatePoster = true } = context
 
     if (!projectId || !title) {
       return JSON.stringify({
@@ -63,21 +60,24 @@ export const createEpisodeTool = createTool({
 
     try {
       // Create episode via API
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/storyteller/episodes`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-bypass-auth': 'system',
-        },
-        body: JSON.stringify({
-          projectId,
-          sequence: sequence || 1,
-          title,
-          thematicFocus,
-          premise: premise ? JSON.stringify(premise) : null,
-          storyPlan: premise ? { premise } : null,
-        }),
-      })
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/storyteller/episodes`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-bypass-auth': 'system',
+          },
+          body: JSON.stringify({
+            projectId,
+            sequence: sequence || 1,
+            title,
+            thematicFocus,
+            premise: premise ? JSON.stringify(premise) : null,
+            storyPlan: premise ? { premise } : null,
+          }),
+        }
+      )
 
       if (!response.ok) {
         const error = await response.json()
@@ -92,19 +92,22 @@ export const createEpisodeTool = createTool({
       // Optionally generate poster (trigger async, don't wait)
       if (generatePoster && premise?.logline) {
         // Fire and forget poster generation
-        fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/storyteller/moodboard/trigger`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-bypass-auth': 'system',
-          },
-          body: JSON.stringify({
-            projectId,
-            episodeId: episode.id,
-            type: 'poster',
-            prompt: `${premise.logline}. ${premise.protagonistHook}.`,
-          }),
-        }).catch(() => {
+        fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/storyteller/moodboard/trigger`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-bypass-auth': 'system',
+            },
+            body: JSON.stringify({
+              projectId,
+              episodeId: episode.id,
+              type: 'poster',
+              prompt: `${premise.logline}. ${premise.protagonistHook}.`,
+            }),
+          }
+        ).catch(() => {
           console.warn('[Episode Creation] Poster generation failed (non-blocking)')
         })
       }
@@ -134,7 +137,8 @@ export const createEpisodeTool = createTool({
  */
 export const askContinueTobeatsTool = createTool({
   id: 'ask_continue_to_beats',
-  description: 'Ask the user if they want to continue to beat planning for the newly created episode',
+  description:
+    'Ask the user if they want to continue to beat planning for the newly created episode',
   inputSchema: AskContinueToBeatsInputSchema,
   execute: async (args: any) => {
     const context = args?.context || args

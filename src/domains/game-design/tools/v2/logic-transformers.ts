@@ -1,41 +1,40 @@
-
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { ChatOpenAI } from '@langchain/openai'
 import {
-    GameMechanicSchema,
-    IdentifyCoreLoopInputSchema,
-    IdentifyCoreLoopOutputSchema,
-    AnalyzeBalanceInputSchema,
-    AnalyzeBalanceOutputSchema,
-    SuggestProgressionInputSchema,
-    SuggestProgressionOutputSchema,
-    GameLoopSchema,
+  GameMechanicSchema,
+  IdentifyCoreLoopInputSchema,
+  IdentifyCoreLoopOutputSchema,
+  AnalyzeBalanceOutputSchema,
+  SuggestProgressionOutputSchema,
+  GameLoopSchema,
 } from '../../schemas'
+import { getErrorMessage } from '@/lib/error-utils'
 
 // Create a shared model instance
 function getModel() {
-    return new ChatOpenAI({
-        modelName: 'gpt-4o',
-        temperature: 0.3,
-    })
+  return new ChatOpenAI({
+    modelName: 'gpt-4o',
+    temperature: 0.3,
+  })
 }
 
 // ==========================================
 // IDENTIFY CORE LOOP TOOL
 // ==========================================
 
-export const createIdentifyCoreLoopTool = () => createTool({
+export const createIdentifyCoreLoopTool = () =>
+  createTool({
     id: 'identify_core_loop',
     description: `Analyzes a set of game mechanics and identifies the core gameplay loop.
 This tool uses AI to determine which mechanics form the central engagement cycle,
 what psychological hooks are at play, and how long each cycle typically takes.`,
     schema: IdentifyCoreLoopInputSchema,
     execute: async ({ context }) => {
-        try {
-            const { mechanics, genre, targetAudience } = context
+      try {
+        const { mechanics, genre, targetAudience } = context
 
-            const prompt = `You are a senior game designer specializing in game loop analysis.
+        const prompt = `You are a senior game designer specializing in game loop analysis.
 
 Analyze these game mechanics and identify the CORE LOOP - the central repeating engagement cycle.
 
@@ -67,69 +66,75 @@ Respond with JSON matching this schema:
   "reasoning": "string explaining your analysis"
 }`
 
-            const model = getModel()
-            const response = await model.invoke([
-                { role: 'user', content: prompt }
-            ])
+        const model = getModel()
+        const response = await model.invoke([{ role: 'user', content: prompt }])
 
-            const content = typeof response.content === 'string'
-                ? response.content
-                : JSON.stringify(response.content)
+        const content =
+          typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
 
-            // Extract JSON from response
-            const jsonMatch = content.match(/\{[\s\S]*\}/)
-            if (!jsonMatch) {
-                return { success: false, error: 'Failed to parse AI response' }
-            }
-
-            const parsed = JSON.parse(jsonMatch[0])
-            const validated = IdentifyCoreLoopOutputSchema.parse(parsed)
-
-            return { success: true, ...validated }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+        // Extract JSON from response
+        const jsonMatch = content.match(/\{[\s\S]*\}/)
+        if (!jsonMatch) {
+          return { success: false, error: 'Failed to parse AI response' }
         }
-    }
-})
+
+        const parsed = JSON.parse(jsonMatch[0])
+        const validated = IdentifyCoreLoopOutputSchema.parse(parsed)
+
+        return { success: true, ...validated }
+      } catch (error: unknown) {
+        return { success: false, error: getErrorMessage(error) }
+      }
+    },
+  })
 
 // ==========================================
 // ANALYZE MECHANIC BALANCE TOOL
 // ==========================================
 
 const AnalyzeMechanicBalanceInputSchema = z.object({
-    loopId: z.string().uuid(),
-    mechanics: z.array(GameMechanicSchema),
-    resources: z.array(z.object({
-        id: z.string().uuid(),
-        name: z.string(),
-        type: z.enum(['currency', 'material', 'stat', 'abstract']),
-        initialValue: z.number(),
-    })),
-    targetAudience: z.enum(['casual', 'midcore', 'hardcore']),
-    sessionDurationMinutes: z.number().default(30),
+  loopId: z.string().uuid(),
+  mechanics: z.array(GameMechanicSchema),
+  resources: z.array(
+    z.object({
+      id: z.string().uuid(),
+      name: z.string(),
+      type: z.enum(['currency', 'material', 'stat', 'abstract']),
+      initialValue: z.number(),
+    })
+  ),
+  targetAudience: z.enum(['casual', 'midcore', 'hardcore']),
+  sessionDurationMinutes: z.number().default(30),
 })
 
-export const createAnalyzeMechanicBalanceTool = () => createTool({
+export const createAnalyzeMechanicBalanceTool = () =>
+  createTool({
     id: 'analyze_mechanic_balance',
     description: `Analyzes the balance of game mechanics within a loop.
 Checks for reward imbalances, effort mismatches, dead ends, and grind detection.
 Returns a comprehensive balance report with actionable recommendations.`,
     schema: AnalyzeMechanicBalanceInputSchema,
     execute: async ({ context }) => {
-        try {
-            const { mechanics, resources, targetAudience, sessionDurationMinutes } = context
+      try {
+        const { mechanics, resources, targetAudience, sessionDurationMinutes } = context
 
-            const prompt = `You are a game economy and balance expert.
+        const prompt = `You are a game economy and balance expert.
 
 Analyze the balance of these game mechanics and provide a detailed assessment.
 
 ## Mechanics
-${mechanics.map(m => {
-    const transformerInfo = m.transformers?.map(t =>
-        `  - ${t.type}: inputs=${JSON.stringify(t.inputs)}, outputs=${JSON.stringify(t.outputs)}`
-    ).join('\n') || '  (no transformers)'
+${mechanics
+  .map(m => {
+    const transformerInfo =
+      m.transformers
+        ?.map(
+          t =>
+            `  - ${t.type}: inputs=${JSON.stringify(t.inputs)}, outputs=${JSON.stringify(t.outputs)}`
+        )
+        .join('\n') || '  (no transformers)'
     return `- ${m.name} (${m.type}):\n  ${m.description}\n${transformerInfo}`
-}).join('\n\n')}
+  })
+  .join('\n\n')}
 
 ## Resources in Economy
 ${resources.map(r => `- ${r.name} (${r.type}): starts at ${r.initialValue}`).join('\n')}
@@ -169,55 +174,54 @@ Respond with JSON matching this schema:
   }
 }`
 
-            const model = getModel()
-            const response = await model.invoke([
-                { role: 'user', content: prompt }
-            ])
+        const model = getModel()
+        const response = await model.invoke([{ role: 'user', content: prompt }])
 
-            const content = typeof response.content === 'string'
-                ? response.content
-                : JSON.stringify(response.content)
+        const content =
+          typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
 
-            // Extract JSON from response
-            const jsonMatch = content.match(/\{[\s\S]*\}/)
-            if (!jsonMatch) {
-                return { success: false, error: 'Failed to parse AI response' }
-            }
-
-            const parsed = JSON.parse(jsonMatch[0])
-            const validated = AnalyzeBalanceOutputSchema.parse(parsed)
-
-            return { success: true, loopId: context.loopId, ...validated }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+        // Extract JSON from response
+        const jsonMatch = content.match(/\{[\s\S]*\}/)
+        if (!jsonMatch) {
+          return { success: false, error: 'Failed to parse AI response' }
         }
-    }
-})
+
+        const parsed = JSON.parse(jsonMatch[0])
+        const validated = AnalyzeBalanceOutputSchema.parse(parsed)
+
+        return { success: true, loopId: context.loopId, ...validated }
+      } catch (error: unknown) {
+        return { success: false, error: getErrorMessage(error) }
+      }
+    },
+  })
 
 // ==========================================
 // SUGGEST PROGRESSION TOOL
 // ==========================================
 
 const SuggestProgressionToolInputSchema = z.object({
-    currentLoop: GameLoopSchema,
-    existingMechanics: z.array(GameMechanicSchema).optional(),
-    expansionDirection: z.enum(['depth', 'breadth', 'complexity']),
-    theme: z.string().optional(),
-    genre: z.string().optional(),
-    targetAudience: z.enum(['casual', 'midcore', 'hardcore']).optional(),
+  currentLoop: GameLoopSchema,
+  existingMechanics: z.array(GameMechanicSchema).optional(),
+  expansionDirection: z.enum(['depth', 'breadth', 'complexity']),
+  theme: z.string().optional(),
+  genre: z.string().optional(),
+  targetAudience: z.enum(['casual', 'midcore', 'hardcore']).optional(),
 })
 
-export const createSuggestProgressionTool = () => createTool({
+export const createSuggestProgressionTool = () =>
+  createTool({
     id: 'suggest_progression',
     description: `Suggests ways to expand and improve a game loop's progression system.
 Can suggest new mechanics, balance tweaks, or progression gates based on the
 desired expansion direction (depth, breadth, or complexity).`,
     schema: SuggestProgressionToolInputSchema,
     execute: async ({ context }) => {
-        try {
-            const { currentLoop, existingMechanics, expansionDirection, theme, genre, targetAudience } = context
+      try {
+        const { currentLoop, existingMechanics, expansionDirection, theme, genre, targetAudience } =
+          context
 
-            const prompt = `You are a game design consultant specializing in progression systems.
+        const prompt = `You are a game design consultant specializing in progression systems.
 
 Analyze this game loop and suggest ways to expand its progression.
 
@@ -267,180 +271,186 @@ Respond with JSON matching this schema:
   "overallDirection": "string with strategic advice"
 }`
 
-            const model = getModel()
-            const response = await model.invoke([
-                { role: 'user', content: prompt }
-            ])
+        const model = getModel()
+        const response = await model.invoke([{ role: 'user', content: prompt }])
 
-            const content = typeof response.content === 'string'
-                ? response.content
-                : JSON.stringify(response.content)
+        const content =
+          typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
 
-            // Extract JSON from response
-            const jsonMatch = content.match(/\{[\s\S]*\}/)
-            if (!jsonMatch) {
-                return { success: false, error: 'Failed to parse AI response' }
-            }
-
-            const parsed = JSON.parse(jsonMatch[0])
-            const validated = SuggestProgressionOutputSchema.parse(parsed)
-
-            return { success: true, ...validated }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+        // Extract JSON from response
+        const jsonMatch = content.match(/\{[\s\S]*\}/)
+        if (!jsonMatch) {
+          return { success: false, error: 'Failed to parse AI response' }
         }
-    }
-})
+
+        const parsed = JSON.parse(jsonMatch[0])
+        const validated = SuggestProgressionOutputSchema.parse(parsed)
+
+        return { success: true, ...validated }
+      } catch (error: unknown) {
+        return { success: false, error: getErrorMessage(error) }
+      }
+    },
+  })
 
 // ==========================================
 // VALIDATE LOOP STRUCTURE TOOL
 // ==========================================
 
 const ValidateLoopStructureInputSchema = z.object({
-    loop: GameLoopSchema,
-    mechanics: z.array(GameMechanicSchema),
+  loop: GameLoopSchema,
+  mechanics: z.array(GameMechanicSchema),
 })
 
 const ValidateLoopStructureOutputSchema = z.object({
-    isValid: z.boolean(),
-    issues: z.array(z.object({
-        type: z.enum(['orphan_node', 'missing_mechanic', 'cycle_break', 'unreachable_state', 'invalid_edge']),
-        severity: z.enum(['error', 'warning']),
-        description: z.string(),
-        affectedNodeIds: z.array(z.string()).optional(),
-    })),
-    metrics: z.object({
-        nodeCount: z.number(),
-        edgeCount: z.number(),
-        cycleDetected: z.boolean(),
-        averagePathLength: z.number().optional(),
-    }),
+  isValid: z.boolean(),
+  issues: z.array(
+    z.object({
+      type: z.enum([
+        'orphan_node',
+        'missing_mechanic',
+        'cycle_break',
+        'unreachable_state',
+        'invalid_edge',
+      ]),
+      severity: z.enum(['error', 'warning']),
+      description: z.string(),
+      affectedNodeIds: z.array(z.string()).optional(),
+    })
+  ),
+  metrics: z.object({
+    nodeCount: z.number(),
+    edgeCount: z.number(),
+    cycleDetected: z.boolean(),
+    averagePathLength: z.number().optional(),
+  }),
 })
 
-export const createValidateLoopStructureTool = () => createTool({
+export const createValidateLoopStructureTool = () =>
+  createTool({
     id: 'validate_loop_structure',
     description: `Validates the structural integrity of a game loop.
 Checks for orphan nodes, missing mechanics, broken cycles, and unreachable states.
 Returns validation results with specific issues and graph metrics.`,
     schema: ValidateLoopStructureInputSchema,
     execute: async ({ context }) => {
-        try {
-            const { loop, mechanics } = context
-            const issues: z.infer<typeof ValidateLoopStructureOutputSchema>['issues'] = []
+      try {
+        const { loop, mechanics } = context
+        const issues: z.infer<typeof ValidateLoopStructureOutputSchema>['issues'] = []
 
-            const nodeIds = new Set(loop.nodes.map(n => n.id))
-            const mechanicIds = new Set(mechanics.map(m => m.id))
+        const nodeIds = new Set(loop.nodes.map(n => n.id))
+        const mechanicIds = new Set(mechanics.map(m => m.id))
 
-            // Check for orphan nodes (no edges)
-            const connectedNodes = new Set<string>()
-            for (const edge of loop.edges) {
-                connectedNodes.add(edge.sourceNodeId)
-                connectedNodes.add(edge.targetNodeId)
-            }
-
-            for (const node of loop.nodes) {
-                if (!connectedNodes.has(node.id) && loop.nodes.length > 1) {
-                    issues.push({
-                        type: 'orphan_node',
-                        severity: 'warning',
-                        description: `Node "${node.label || node.id}" has no connections`,
-                        affectedNodeIds: [node.id],
-                    })
-                }
-
-                // Check if mechanic exists
-                if (!mechanicIds.has(node.mechanicId)) {
-                    issues.push({
-                        type: 'missing_mechanic',
-                        severity: 'error',
-                        description: `Node "${node.label || node.id}" references non-existent mechanic ${node.mechanicId}`,
-                        affectedNodeIds: [node.id],
-                    })
-                }
-            }
-
-            // Check for invalid edges
-            for (const edge of loop.edges) {
-                if (!nodeIds.has(edge.sourceNodeId)) {
-                    issues.push({
-                        type: 'invalid_edge',
-                        severity: 'error',
-                        description: `Edge ${edge.id} references non-existent source node ${edge.sourceNodeId}`,
-                    })
-                }
-                if (!nodeIds.has(edge.targetNodeId)) {
-                    issues.push({
-                        type: 'invalid_edge',
-                        severity: 'error',
-                        description: `Edge ${edge.id} references non-existent target node ${edge.targetNodeId}`,
-                    })
-                }
-            }
-
-            // Simple cycle detection using DFS
-            const adjacencyList = new Map<string, string[]>()
-            for (const node of loop.nodes) {
-                adjacencyList.set(node.id, [])
-            }
-            for (const edge of loop.edges) {
-                const existing = adjacencyList.get(edge.sourceNodeId) || []
-                existing.push(edge.targetNodeId)
-                adjacencyList.set(edge.sourceNodeId, existing)
-            }
-
-            let cycleDetected = false
-            const visited = new Set<string>()
-            const recursionStack = new Set<string>()
-
-            function hasCycle(nodeId: string): boolean {
-                visited.add(nodeId)
-                recursionStack.add(nodeId)
-
-                const neighbors = adjacencyList.get(nodeId) || []
-                for (const neighbor of neighbors) {
-                    if (!visited.has(neighbor)) {
-                        if (hasCycle(neighbor)) return true
-                    } else if (recursionStack.has(neighbor)) {
-                        return true
-                    }
-                }
-
-                recursionStack.delete(nodeId)
-                return false
-            }
-
-            for (const node of loop.nodes) {
-                if (!visited.has(node.id)) {
-                    if (hasCycle(node.id)) {
-                        cycleDetected = true
-                        break
-                    }
-                }
-            }
-
-            // A game loop SHOULD have a cycle
-            if (!cycleDetected && loop.nodes.length > 1) {
-                issues.push({
-                    type: 'cycle_break',
-                    severity: 'warning',
-                    description: 'No cycle detected in the loop - game loops should typically form a cycle',
-                })
-            }
-
-            const hasErrors = issues.some(i => i.severity === 'error')
-
-            return {
-                success: true,
-                isValid: !hasErrors,
-                issues,
-                metrics: {
-                    nodeCount: loop.nodes.length,
-                    edgeCount: loop.edges.length,
-                    cycleDetected,
-                },
-            }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+        // Check for orphan nodes (no edges)
+        const connectedNodes = new Set<string>()
+        for (const edge of loop.edges) {
+          connectedNodes.add(edge.sourceNodeId)
+          connectedNodes.add(edge.targetNodeId)
         }
-    }
-})
+
+        for (const node of loop.nodes) {
+          if (!connectedNodes.has(node.id) && loop.nodes.length > 1) {
+            issues.push({
+              type: 'orphan_node',
+              severity: 'warning',
+              description: `Node "${node.label || node.id}" has no connections`,
+              affectedNodeIds: [node.id],
+            })
+          }
+
+          // Check if mechanic exists
+          if (!mechanicIds.has(node.mechanicId)) {
+            issues.push({
+              type: 'missing_mechanic',
+              severity: 'error',
+              description: `Node "${node.label || node.id}" references non-existent mechanic ${node.mechanicId}`,
+              affectedNodeIds: [node.id],
+            })
+          }
+        }
+
+        // Check for invalid edges
+        for (const edge of loop.edges) {
+          if (!nodeIds.has(edge.sourceNodeId)) {
+            issues.push({
+              type: 'invalid_edge',
+              severity: 'error',
+              description: `Edge ${edge.id} references non-existent source node ${edge.sourceNodeId}`,
+            })
+          }
+          if (!nodeIds.has(edge.targetNodeId)) {
+            issues.push({
+              type: 'invalid_edge',
+              severity: 'error',
+              description: `Edge ${edge.id} references non-existent target node ${edge.targetNodeId}`,
+            })
+          }
+        }
+
+        // Simple cycle detection using DFS
+        const adjacencyList = new Map<string, string[]>()
+        for (const node of loop.nodes) {
+          adjacencyList.set(node.id, [])
+        }
+        for (const edge of loop.edges) {
+          const existing = adjacencyList.get(edge.sourceNodeId) || []
+          existing.push(edge.targetNodeId)
+          adjacencyList.set(edge.sourceNodeId, existing)
+        }
+
+        let cycleDetected = false
+        const visited = new Set<string>()
+        const recursionStack = new Set<string>()
+
+        function hasCycle(nodeId: string): boolean {
+          visited.add(nodeId)
+          recursionStack.add(nodeId)
+
+          const neighbors = adjacencyList.get(nodeId) || []
+          for (const neighbor of neighbors) {
+            if (!visited.has(neighbor)) {
+              if (hasCycle(neighbor)) return true
+            } else if (recursionStack.has(neighbor)) {
+              return true
+            }
+          }
+
+          recursionStack.delete(nodeId)
+          return false
+        }
+
+        for (const node of loop.nodes) {
+          if (!visited.has(node.id)) {
+            if (hasCycle(node.id)) {
+              cycleDetected = true
+              break
+            }
+          }
+        }
+
+        // A game loop SHOULD have a cycle
+        if (!cycleDetected && loop.nodes.length > 1) {
+          issues.push({
+            type: 'cycle_break',
+            severity: 'warning',
+            description: 'No cycle detected in the loop - game loops should typically form a cycle',
+          })
+        }
+
+        const hasErrors = issues.some(i => i.severity === 'error')
+
+        return {
+          success: true,
+          isValid: !hasErrors,
+          issues,
+          metrics: {
+            nodeCount: loop.nodes.length,
+            edgeCount: loop.edges.length,
+            cycleDetected,
+          },
+        }
+      } catch (error: unknown) {
+        return { success: false, error: getErrorMessage(error) }
+      }
+    },
+  })

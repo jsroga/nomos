@@ -3,9 +3,9 @@
  */
 
 export {
-    HybridSearchEngine,
-    getSearchEngine,
-    initializeSearch,
-    type SearchResult,
-    type SearchOptions
+  HybridSearchEngine,
+  getSearchEngine,
+  initializeSearch,
+  type SearchResult,
+  type SearchOptions,
 } from './hybrid-search'

@@ -148,11 +148,18 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
   }
 }
 
+import { requireAuth } from '@/lib/auth'
+
 /**
  * POST - Save a new market analysis
  */
 export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
+    const { session } = await requireAuth()
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { gameLoopId } = await params
 
     // Verify game loop exists
@@ -183,7 +190,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       .insert(marketAnalyses)
       .values({
         gameLoopId,
-        userId: user.id,
+        userId: session.user.id,
         overallScore: report.overallScore,
         confidence: String(report.confidence),
         recommendations: report.recommendations,

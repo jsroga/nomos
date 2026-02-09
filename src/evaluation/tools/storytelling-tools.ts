@@ -5,9 +5,9 @@ import OpenAI from 'openai'
 // ==========================================
 
 export interface Tool {
-    name: string
-    description: string
-    func: (input: string) => Promise<string>
+  name: string
+  description: string
+  func: (input: string) => Promise<string>
 }
 
 // ==========================================
@@ -20,18 +20,19 @@ export interface Tool {
  * Creates a Psychologist tool for use by agentic systems.
  */
 export function createPsychologistTool(): Tool {
-    return {
-        name: 'analyze_character_psyche',
-        description: `Performs deep psychological analysis of a character. Input: JSON with 'characterName' and 'context'. Returns personality profile, hidden motivations, and predicted behavior.`,
-        func: async (input: string) => {
-            try {
-                const { characterName, context } = JSON.parse(input)
+  return {
+    name: 'analyze_character_psyche',
+    description:
+      "Performs deep psychological analysis of a character. Input: JSON with 'characterName' and 'context'. Returns personality profile, hidden motivations, and predicted behavior.",
+    func: async (input: string) => {
+      try {
+        const { characterName, context } = JSON.parse(input)
 
-                const openai = new OpenAI({
-                    apiKey: process.env.OPENAI_API_KEY,
-                })
+        const openai = new OpenAI({
+          apiKey: process.env.OPENAI_API_KEY,
+        })
 
-                const prompt = `
+        const prompt = `
 You are a forensic psychologist analyzing a fictional character.
 
 CHARACTER: ${characterName}
@@ -47,18 +48,20 @@ Provide analysis in this format:
   "dialogue_signature": "speech patterns, word choices, verbal tics"
 }
 `
-                const response = await openai.chat.completions.create({
-                    model: 'gpt-4o',
-                    messages: [{ role: 'user', content: prompt }],
-                    temperature: 0.3,
-                })
+        const response = await openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.3,
+        })
 
-                return response.choices[0].message.content || ''
-            } catch (e) {
-                return JSON.stringify({ error: 'Failed to parse input. Expected JSON with characterName and context.' })
-            }
-        }
-    }
+        return response.choices[0].message.content || ''
+      } catch (e) {
+        return JSON.stringify({
+          error: 'Failed to parse input. Expected JSON with characterName and context.',
+        })
+      }
+    },
+  }
 }
 
 // ==========================================
@@ -68,18 +71,19 @@ Provide analysis in this format:
 // to increase dramatic tension.
 
 export function createStoryEngineTool(): Tool {
-    return {
-        name: 'inject_conflict',
-        description: `Generates a dramatic conflict beat to inject into a scene. Input: JSON with 'currentScene', 'conflictType' (interpersonal|environmental|internal), and 'intensity' (1-10). Returns a conflict beat and suggested dialogue hook.`,
-        func: async (input: string) => {
-            try {
-                const { currentScene, conflictType, intensity } = JSON.parse(input)
+  return {
+    name: 'inject_conflict',
+    description:
+      "Generates a dramatic conflict beat to inject into a scene. Input: JSON with 'currentScene', 'conflictType' (interpersonal|environmental|internal), and 'intensity' (1-10). Returns a conflict beat and suggested dialogue hook.",
+    func: async (input: string) => {
+      try {
+        const { currentScene, conflictType, intensity } = JSON.parse(input)
 
-                const openai = new OpenAI({
-                    apiKey: process.env.OPENAI_API_KEY,
-                })
+        const openai = new OpenAI({
+          apiKey: process.env.OPENAI_API_KEY,
+        })
 
-                const prompt = `
+        const prompt = `
 You are a story consultant specializing in dramatic tension.
 
 CURRENT SCENE: ${currentScene}
@@ -95,22 +99,25 @@ Generate a conflict injection:
   "escalation_path": "How this can get worse if not resolved"
 }
 `
-                const response = await openai.chat.completions.create({
-                    model: 'gpt-4o',
-                    messages: [{ role: 'user', content: prompt }],
-                    temperature: 0.8,
-                })
+        const response = await openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.8,
+        })
 
-                return response.choices[0].message.content || ''
-            } catch (e) {
-                return JSON.stringify({ error: 'Failed to parse input. Expected JSON with currentScene, conflictType, and intensity.' })
-            }
-        }
-    }
+        return response.choices[0].message.content || ''
+      } catch (e) {
+        return JSON.stringify({
+          error:
+            'Failed to parse input. Expected JSON with currentScene, conflictType, and intensity.',
+        })
+      }
+    },
+  }
 }
 
 // Export toolset for agent use
-export const STORYTELLING_TOOLS = {
-    psychologist: createPsychologistTool,
-    storyEngine: createStoryEngineTool
+const STORYTELLING_TOOLS = {
+  psychologist: createPsychologistTool,
+  storyEngine: createStoryEngineTool,
 }

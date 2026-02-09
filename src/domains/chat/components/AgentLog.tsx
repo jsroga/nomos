@@ -249,20 +249,28 @@ export const AgentStatusIndicator: React.FC<AgentStatusIndicatorProps> = ({
  * Renders a persistent timeline of technical agent activities
  */
 const ActivityEntryItem: React.FC<{ entry: ActivityLogEntry }> = ({ entry }) => {
-  const time = new Date(entry.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  const time = new Date(entry.timestamp).toLocaleTimeString([], {
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
 
   if (entry.type === 'tool') {
     let resultDisplay = entry.toolResult
     let isJson = false
 
     // Try to parse JSON result string for better displaying
-    if (typeof entry.toolResult === 'string' && (entry.toolResult.startsWith('{') || entry.toolResult.startsWith('['))) {
+    if (
+      typeof entry.toolResult === 'string' &&
+      (entry.toolResult.startsWith('{') || entry.toolResult.startsWith('['))
+    ) {
       try {
         const parsed = JSON.parse(entry.toolResult)
         resultDisplay = parsed
         isJson = true
       } catch (e) {
-        // keep as string 
+        // keep as string
       }
     }
 
@@ -273,31 +281,41 @@ const ActivityEntryItem: React.FC<{ entry: ActivityLogEntry }> = ({ entry }) => 
         <div className="flex-1 space-y-2">
           {/* Header */}
           <div className="flex items-center gap-2">
-            <span className="text-purple-400 font-bold uppercase tracking-wider bg-purple-500/10 px-1.5 py-0.5 rounded text-[10px]">TOOL</span>
+            <span className="text-purple-400 font-bold uppercase tracking-wider bg-purple-500/10 px-1.5 py-0.5 rounded text-[10px]">
+              TOOL
+            </span>
             <span className="text-foreground/90 font-semibold">{entry.toolName}</span>
           </div>
 
           {/* Inputs */}
           {entry.toolInput && (
             <div className="text-xs text-muted-foreground/70 bg-muted/10 p-2 rounded border border-white/5">
-              <span className="uppercase text-[9px] opacity-70 block mb-1 tracking-wider">Input</span>
+              <span className="uppercase text-[9px] opacity-70 block mb-1 tracking-wider">
+                Input
+              </span>
               <span className="font-mono text-purple-300/80 break-words whitespace-pre-wrap">
-                {typeof entry.toolInput === 'string' ? entry.toolInput : JSON.stringify(entry.toolInput, null, 2)}
+                {typeof entry.toolInput === 'string'
+                  ? entry.toolInput
+                  : JSON.stringify(entry.toolInput, null, 2)}
               </span>
             </div>
           )}
 
           {/* Result */}
           {resultDisplay && (
-            <div className="text-xs bg-black/40 p-2 rounded text-muted-foreground/80 overflow-x-auto border border-white/5">
-              <span className="uppercase text-[9px] opacity-50 block mb-1 tracking-wider">Result</span>
+            <div className="text-xs bg-black/40 p-2 rounded text-muted-foreground/80 border border-white/5">
+              <span className="uppercase text-[9px] opacity-50 block mb-1 tracking-wider">
+                Result
+              </span>
               {isJson ? (
                 <pre className="whitespace-pre-wrap text-green-400/80 font-mono text-[10px]">
                   {JSON.stringify(resultDisplay, null, 2)}
                 </pre>
               ) : (
                 <div className="whitespace-pre-wrap max-h-48 overflow-y-auto scrollbar-thin text-green-400/80">
-                  {typeof resultDisplay === 'string' ? resultDisplay.slice(0, 500) + (resultDisplay.length > 500 ? '...' : '') : JSON.stringify(resultDisplay)}
+                  {typeof resultDisplay === 'string'
+                    ? resultDisplay.slice(0, 500) + (resultDisplay.length > 500 ? '...' : '')
+                    : JSON.stringify(resultDisplay)}
                 </div>
               )}
             </div>
@@ -332,7 +350,9 @@ const ActivityEntryItem: React.FC<{ entry: ActivityLogEntry }> = ({ entry }) => 
         <span className="text-muted-foreground/50 w-16 shrink-0 pt-0.5">{time}</span>
         <div className="flex-1 space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-blue-400 font-bold uppercase tracking-wider bg-blue-500/10 px-1.5 py-0.5 rounded text-[10px]">ACTION</span>
+            <span className="text-blue-400 font-bold uppercase tracking-wider bg-blue-500/10 px-1.5 py-0.5 rounded text-[10px]">
+              ACTION
+            </span>
             <span className="text-foreground/90 font-semibold">{entry.content}</span>
           </div>
           {entry.details && (
@@ -346,12 +366,16 @@ const ActivityEntryItem: React.FC<{ entry: ActivityLogEntry }> = ({ entry }) => 
   }
 
   if (entry.type === 'status') {
-    const isThinking = entry.content?.toLowerCase().includes('thinking') || entry.content?.toLowerCase().includes('processing')
+    const isThinking =
+      entry.content?.toLowerCase().includes('thinking') ||
+      entry.content?.toLowerCase().includes('processing')
     return (
       <div
         className={cn(
           'flex gap-3 text-xs font-mono border-l-2 pl-3 py-1 ml-1 transition-colors hover:bg-white/5 rounded-r',
-          isThinking ? 'border-amber-500/30 text-amber-200/80' : 'border-border/30 text-muted-foreground'
+          isThinking
+            ? 'border-amber-500/30 text-amber-200/80'
+            : 'border-border/30 text-muted-foreground'
         )}
       >
         <span className="opacity-50 w-16 shrink-0">{time}</span>
@@ -369,9 +393,6 @@ const ActivityEntryItem: React.FC<{ entry: ActivityLogEntry }> = ({ entry }) => 
       </div>
     )
   }
-
-
-
 
   return null
 }
@@ -863,7 +884,8 @@ export const AgentLog: React.FC<AgentLogProps> = ({
                   </div>
                   {activeOperations.length > 0 && (
                     <span className="text-[9px] text-muted-foreground ml-auto">
-                      {activeOperations.length} active operation{activeOperations.length > 1 ? 's' : ''}
+                      {activeOperations.length} active operation
+                      {activeOperations.length > 1 ? 's' : ''}
                     </span>
                   )}
                 </div>
@@ -871,7 +893,7 @@ export const AgentLog: React.FC<AgentLogProps> = ({
                 {/* Active Operations List */}
                 {activeOperations.length > 0 && (
                   <div className="space-y-1 pl-2 border-l-2 border-primary/30">
-                    {activeOperations.map((op) => (
+                    {activeOperations.map(op => (
                       <div key={op.id} className="flex items-center gap-2 text-[10px] py-1">
                         <Loader2 className="w-3 h-3 animate-spin text-primary/70" />
                         <span className="text-foreground/80 font-medium">{op.label}</span>
@@ -947,9 +969,7 @@ export const AgentLog: React.FC<AgentLogProps> = ({
                   // Fallback generic
                   <>
                     <Loader2 className="w-3 h-3 animate-spin" />
-                    <span>
-                      {getThinkingMessage(thinkingMessagesConfig, thinkingTime, false)}
-                    </span>
+                    <span>{getThinkingMessage(thinkingMessagesConfig, thinkingTime, false)}</span>
                   </>
                 )}
               </div>
@@ -1098,7 +1118,7 @@ const MessageContent: React.FC<{
 // Helper component that wraps text with entity reference support
 const TextWithReferences: React.FC<{ children: React.ReactNode; projectId?: string }> = ({
   children,
-  projectId
+  projectId,
 }) => {
   // Convert children to string if possible
   const text = React.Children.toArray(children)
@@ -1141,29 +1161,49 @@ function parseMessageContent(content: string, projectId?: string) {
         // Headers
         h1: ({ children }) => (
           <h1 className="font-bold text-xl text-foreground mt-4 mb-2">
-            {contentHasRefs ? <TextWithReferences projectId={projectId}>{children}</TextWithReferences> : children}
+            {contentHasRefs ? (
+              <TextWithReferences projectId={projectId}>{children}</TextWithReferences>
+            ) : (
+              children
+            )}
           </h1>
         ),
         h2: ({ children }) => (
           <h2 className="font-bold text-lg text-foreground mt-3 mb-1.5">
-            {contentHasRefs ? <TextWithReferences projectId={projectId}>{children}</TextWithReferences> : children}
+            {contentHasRefs ? (
+              <TextWithReferences projectId={projectId}>{children}</TextWithReferences>
+            ) : (
+              children
+            )}
           </h2>
         ),
         h3: ({ children }) => (
           <h3 className="font-semibold text-base text-foreground mt-2 mb-1">
-            {contentHasRefs ? <TextWithReferences projectId={projectId}>{children}</TextWithReferences> : children}
+            {contentHasRefs ? (
+              <TextWithReferences projectId={projectId}>{children}</TextWithReferences>
+            ) : (
+              children
+            )}
           </h3>
         ),
         h4: ({ children }) => (
           <h4 className="font-medium text-sm text-foreground/90 mt-1.5">
-            {contentHasRefs ? <TextWithReferences projectId={projectId}>{children}</TextWithReferences> : children}
+            {contentHasRefs ? (
+              <TextWithReferences projectId={projectId}>{children}</TextWithReferences>
+            ) : (
+              children
+            )}
           </h4>
         ),
 
         // Paragraphs
         p: ({ children }) => (
           <p className="mb-2 last:mb-0">
-            {contentHasRefs ? <TextWithReferences projectId={projectId}>{children}</TextWithReferences> : children}
+            {contentHasRefs ? (
+              <TextWithReferences projectId={projectId}>{children}</TextWithReferences>
+            ) : (
+              children
+            )}
           </p>
         ),
 
@@ -1174,7 +1214,11 @@ function parseMessageContent(content: string, projectId?: string) {
           <li className="flex gap-2">
             <span className="text-primary shrink-0">•</span>
             <span className="flex-1">
-              {contentHasRefs ? <TextWithReferences projectId={projectId}>{children}</TextWithReferences> : children}
+              {contentHasRefs ? (
+                <TextWithReferences projectId={projectId}>{children}</TextWithReferences>
+              ) : (
+                children
+              )}
             </span>
           </li>
         ),
@@ -1182,12 +1226,20 @@ function parseMessageContent(content: string, projectId?: string) {
         // Inline formatting
         strong: ({ children }) => (
           <strong className="font-bold">
-            {contentHasRefs ? <TextWithReferences projectId={projectId}>{children}</TextWithReferences> : children}
+            {contentHasRefs ? (
+              <TextWithReferences projectId={projectId}>{children}</TextWithReferences>
+            ) : (
+              children
+            )}
           </strong>
         ),
         em: ({ children }) => (
           <em className="italic text-muted-foreground">
-            {contentHasRefs ? <TextWithReferences projectId={projectId}>{children}</TextWithReferences> : children}
+            {contentHasRefs ? (
+              <TextWithReferences projectId={projectId}>{children}</TextWithReferences>
+            ) : (
+              children
+            )}
           </em>
         ),
 
@@ -1219,7 +1271,11 @@ function parseMessageContent(content: string, projectId?: string) {
         // Blockquote
         blockquote: ({ children }) => (
           <blockquote className="border-l-2 border-primary/50 pl-3 italic text-muted-foreground my-2">
-            {contentHasRefs ? <TextWithReferences projectId={projectId}>{children}</TextWithReferences> : children}
+            {contentHasRefs ? (
+              <TextWithReferences projectId={projectId}>{children}</TextWithReferences>
+            ) : (
+              children
+            )}
           </blockquote>
         ),
 

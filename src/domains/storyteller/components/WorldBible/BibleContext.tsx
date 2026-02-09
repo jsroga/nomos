@@ -36,10 +36,10 @@ interface BibleContextType {
   projectId: string
   onSendMessage?: (msg: string, section?: string) => void
   getProviderConfig: () => any
-  
+
   // Section loading states
   loadingSections: Record<string, { loading: boolean; message?: string }>
-  
+
   // Pending actions per section (for blur overlay with accept/reject)
   pendingActions: Record<string, PendingAction>
   setPendingAction: (section: string, action: PendingAction | null) => void
@@ -115,22 +115,27 @@ export const BibleProvider: React.FC<{
   const [lockedAt, setLockedAt] = useState<Date | null>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [isLockLoading, setIsLockLoading] = useState(false)
-  const [internalPendingActions, setInternalPendingActions] = useState<Record<string, PendingAction>>({})
-  
+  const [internalPendingActions, setInternalPendingActions] = useState<
+    Record<string, PendingAction>
+  >({})
+
   const pendingActions = externalPendingActions ?? internalPendingActions
-  const setPendingAction = useCallback((section: string, action: PendingAction | null) => {
-    if (onSetPendingAction) {
-      onSetPendingAction(section, action)
-    } else {
-      setInternalPendingActions(prev => {
-        if (action === null) {
-          const { [section]: _, ...rest } = prev
-          return rest
-        }
-        return { ...prev, [section]: action }
-      })
-    }
-  }, [onSetPendingAction])
+  const setPendingAction = useCallback(
+    (section: string, action: PendingAction | null) => {
+      if (onSetPendingAction) {
+        onSetPendingAction(section, action)
+      } else {
+        setInternalPendingActions(prev => {
+          if (action === null) {
+            const { [section]: _, ...rest } = prev
+            return rest
+          }
+          return { ...prev, [section]: action }
+        })
+      }
+    },
+    [onSetPendingAction]
+  )
 
   const isUserCentral = isCentralUser(userEmail)
   const canEdit = canEditBible(userEmail, isLocked)

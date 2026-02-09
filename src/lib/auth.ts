@@ -36,9 +36,13 @@ export async function getUserSession() {
     }
   }
 
-  // Next.js 15+ requires awaiting cookies()
+  /*
+   * Next.js 15+ requires awaiting cookies(), but @supabase/auth-helpers-nextjs
+   * expects the `cookies` option to return the store synchronously (or it doesn't await it).
+   * Since we've already awaited `cookies()` above, we should pass it directly.
+   */
   const cookieStore = await cookies()
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+  const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
   const {
     data: { session },
     error,

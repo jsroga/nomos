@@ -17,6 +17,7 @@ import {
   EQ_BENCH_MAGIC_JUDGE,
   EQ_BENCH_CONSISTENCY_JUDGE,
 } from '../../prompts/storyteller-prompts'
+import { getErrorMessage } from '@/lib/error-utils'
 
 // =============================================================================
 // TYPES
@@ -68,14 +69,18 @@ export const MagicJudgeOutputSchema = z.object({
     memorability: z.number().min(0).max(100),
     riskTaking: z.number().min(0).max(100),
   }),
-  sparks: z.array(z.object({
-    quote: z.string(),
-    why: z.string(),
-  })),
-  slop: z.array(z.object({
-    quote: z.string(),
-    category: z.string(),
-  })),
+  sparks: z.array(
+    z.object({
+      quote: z.string(),
+      why: z.string(),
+    })
+  ),
+  slop: z.array(
+    z.object({
+      quote: z.string(),
+      category: z.string(),
+    })
+  ),
   overallMagic: z.number().min(0).max(100),
   reasoning: z.string(),
   revision: z.string().optional(),
@@ -84,13 +89,15 @@ export const MagicJudgeOutputSchema = z.object({
 export const ConsistencyJudgeOutputSchema = z.object({
   factsClaimed: z.array(z.string()),
   factsVerified: z.array(z.string()),
-  violations: z.array(z.object({
-    fact: z.string(),
-    contradicts: z.string(),
-    severity: z.enum(['CRITICAL', 'MODERATE', 'MINOR']),
-    intentional: z.boolean(),
-    quote: z.string(),
-  })),
+  violations: z.array(
+    z.object({
+      fact: z.string(),
+      contradicts: z.string(),
+      severity: z.enum(['CRITICAL', 'MODERATE', 'MINOR']),
+      intentional: z.boolean(),
+      quote: z.string(),
+    })
+  ),
   overallConsistency: z.number().min(0).max(100),
   reasoning: z.string(),
   revision: z.string().optional(),
@@ -167,9 +174,9 @@ export class EQBenchEvaluator {
       trace.update({ output: { score, overallEmotionalTruth: output.overallEmotionalTruth } })
 
       return { score, output, raw }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[EQBench] Emotion evaluation failed:', error)
-      trace.update({ output: { error: error.message }, metadata: { error: true } })
+      trace.update({ output: { error: getErrorMessage(error) }, metadata: { error: true } })
       throw error
     } finally {
       await langfuse.flush()
@@ -228,7 +235,10 @@ export class EQBenchEvaluator {
       // Record scores in Langfuse
       trace.score({ name: 'eq_magic_score', value: score, comment: output.reasoning.slice(0, 500) })
       trace.score({ name: 'eq_originality', value: output.dimensions.originality / 100 })
-      trace.score({ name: 'eq_character_specificity', value: output.dimensions.characterSpecificity / 100 })
+      trace.score({
+        name: 'eq_character_specificity',
+        value: output.dimensions.characterSpecificity / 100,
+      })
       trace.score({ name: 'eq_prose_voice', value: output.dimensions.proseVoice / 100 })
       trace.score({ name: 'eq_emotional_truth', value: output.dimensions.emotionalTruth / 100 })
       trace.score({ name: 'eq_memorability', value: output.dimensions.memorability / 100 })
@@ -237,9 +247,9 @@ export class EQBenchEvaluator {
       trace.update({ output: { score, dimensions: output.dimensions } })
 
       return { score, output, raw }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[EQBench] Magic evaluation failed:', error)
-      trace.update({ output: { error: error.message }, metadata: { error: true } })
+      trace.update({ output: { error: getErrorMessage(error) }, metadata: { error: true } })
       throw error
     } finally {
       await langfuse.flush()
@@ -296,15 +306,19 @@ export class EQBenchEvaluator {
       const score = output.overallConsistency / 100
 
       // Record scores
-      trace.score({ name: 'eq_consistency_score', value: score, comment: output.reasoning.slice(0, 500) })
+      trace.score({
+        name: 'eq_consistency_score',
+        value: score,
+        comment: output.reasoning.slice(0, 500),
+      })
       trace.score({ name: 'eq_violations_count', value: output.violations.length })
 
       trace.update({ output: { score, violationsCount: output.violations.length } })
 
       return { score, output, raw }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[EQBench] Consistency evaluation failed:', error)
-      trace.update({ output: { error: error.message }, metadata: { error: true } })
+      trace.update({ output: { error: getErrorMessage(error) }, metadata: { error: true } })
       throw error
     } finally {
       await langfuse.flush()
@@ -337,7 +351,11 @@ export class EQBenchEvaluator {
 
     let consistency: { score: number; output: ConsistencyJudgeOutput } | undefined
     if (options.canon) {
-      const consistencyResult = await this.evaluateConsistency(content, options.canon, `${baseTraceId}-consistency`)
+      const consistencyResult = await this.evaluateConsistency(
+        content,
+        options.canon,
+        `${baseTraceId}-consistency`
+      )
       consistency = { score: consistencyResult.score, output: consistencyResult.output }
     }
 
@@ -405,7 +423,10 @@ Be rigorous and use the full range of scores.`,
 
   private parseResponse<T>(raw: string, schema: z.ZodType<T>): T {
     try {
-      let cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim()
+      let cleaned = raw
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
+        .trim()
       const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
       if (jsonMatch) cleaned = jsonMatch[0]
 
@@ -444,9 +465,9 @@ Be rigorous and use the full range of scores.`,
   private calculateMagicScore(output: MagicJudgeOutput): number {
     const weights = {
       originality: 0.15,
-      characterSpecificity: 0.20,
+      characterSpecificity: 0.2,
       proseVoice: 0.15,
-      emotionalTruth: 0.20,
+      emotionalTruth: 0.2,
       memorability: 0.15,
       riskTaking: 0.15,
     }
@@ -503,7 +524,7 @@ export async function quickEQBenchEval(
 // LANGFUSE EXPERIMENT API (for LLM-as-judge tab)
 // =============================================================================
 
-export interface DatasetItem {
+interface DatasetItem {
   id: string
   input: string
   expectedOutput?: string
@@ -514,10 +535,16 @@ export interface DatasetItem {
  * Create Langfuse-compatible evaluators for experiment.run()
  * These return { name, value, comment } format required by Langfuse
  */
-export function createLangfuseEvaluators(config?: Partial<EQBenchConfig>) {
+function createLangfuseEvaluators(config?: Partial<EQBenchConfig>) {
   const evaluator = new EQBenchEvaluator(config)
 
-  const emotionEvaluator = async ({ output }: { input: string; output: string; expectedOutput?: string }) => {
+  const emotionEvaluator = async ({
+    output,
+  }: {
+    input: string
+    output: string
+    expectedOutput?: string
+  }) => {
     try {
       const result = await evaluator.evaluateEmotion(output)
       return {
@@ -525,12 +552,18 @@ export function createLangfuseEvaluators(config?: Partial<EQBenchConfig>) {
         value: result.score,
         comment: result.output.reasoning.slice(0, 500),
       }
-    } catch (error: any) {
-      return { name: 'eq_emotion', value: 0, comment: `Error: ${error.message}` }
+    } catch (error: unknown) {
+      return { name: 'eq_emotion', value: 0, comment: `Error: ${getErrorMessage(error)}` }
     }
   }
 
-  const magicEvaluator = async ({ output }: { input: string; output: string; expectedOutput?: string }) => {
+  const magicEvaluator = async ({
+    output,
+  }: {
+    input: string
+    output: string
+    expectedOutput?: string
+  }) => {
     try {
       const result = await evaluator.evaluateMagic(output)
       return {
@@ -538,12 +571,18 @@ export function createLangfuseEvaluators(config?: Partial<EQBenchConfig>) {
         value: result.score,
         comment: result.output.reasoning.slice(0, 500),
       }
-    } catch (error: any) {
-      return { name: 'eq_magic', value: 0, comment: `Error: ${error.message}` }
+    } catch (error: unknown) {
+      return { name: 'eq_magic', value: 0, comment: `Error: ${getErrorMessage(error)}` }
     }
   }
 
-  const compositeEvaluator = async ({ output }: { input: string; output: string; expectedOutput?: string }) => {
+  const compositeEvaluator = async ({
+    output,
+  }: {
+    input: string
+    output: string
+    expectedOutput?: string
+  }) => {
     try {
       const emotion = await evaluator.evaluateEmotion(output)
       const magic = await evaluator.evaluateMagic(output)
@@ -553,8 +592,8 @@ export function createLangfuseEvaluators(config?: Partial<EQBenchConfig>) {
         value: composite,
         comment: `Emotion: ${(emotion.score * 100).toFixed(1)}%, Magic: ${(magic.score * 100).toFixed(1)}%`,
       }
-    } catch (error: any) {
-      return { name: 'eq_composite', value: 0, comment: `Error: ${error.message}` }
+    } catch (error: unknown) {
+      return { name: 'eq_composite', value: 0, comment: `Error: ${getErrorMessage(error)}` }
     }
   }
 
@@ -584,9 +623,9 @@ export async function runLangfuseExperiment(
       metadata: { type: 'eq-bench', model: config?.model || 'gpt-4o' },
     })
     console.log(`Dataset created: ${datasetName}`)
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Dataset might already exist
-    console.log(`Dataset creation: ${error.message}`)
+    console.log(`Dataset creation: ${getErrorMessage(error)}`)
   }
 
   // 2. Add items to dataset
@@ -606,8 +645,8 @@ export async function runLangfuseExperiment(
         metadata: { output: item.output },
       })
       datasetItems.push(itemId)
-    } catch (error: any) {
-      console.error(`Failed to create dataset item ${i}:`, error.message)
+    } catch (error: unknown) {
+      console.error(`Failed to create dataset item ${i}:`, getErrorMessage(error))
     }
   }
 
@@ -638,8 +677,16 @@ export async function runLangfuseExperiment(
       const composite = emotion.score * 0.4 + magic.score * 0.6
 
       // Record scores on trace
-      trace.score({ name: 'eq_emotion', value: emotion.score, comment: emotion.output.reasoning.slice(0, 300) })
-      trace.score({ name: 'eq_magic', value: magic.score, comment: magic.output.reasoning.slice(0, 300) })
+      trace.score({
+        name: 'eq_emotion',
+        value: emotion.score,
+        comment: emotion.output.reasoning.slice(0, 300),
+      })
+      trace.score({
+        name: 'eq_magic',
+        value: magic.score,
+        comment: magic.output.reasoning.slice(0, 300),
+      })
       trace.score({ name: 'eq_composite', value: composite })
 
       trace.update({ output: { emotion: emotion.score, magic: magic.score, composite } })
@@ -652,8 +699,8 @@ export async function runLangfuseExperiment(
           runName,
           metadata: { scores: { emotion: emotion.score, magic: magic.score, composite } },
         })
-      } catch (linkError: any) {
-        console.warn(`Failed to link to dataset: ${linkError.message}`)
+      } catch (linkError: unknown) {
+        console.warn(`Failed to link to dataset: ${getErrorMessage(linkError)}`)
       }
 
       results.push({
@@ -663,10 +710,12 @@ export async function runLangfuseExperiment(
         composite,
       })
 
-      console.log(`  Emotion: ${(emotion.score * 100).toFixed(1)}% | Magic: ${(magic.score * 100).toFixed(1)}% | Composite: ${(composite * 100).toFixed(1)}%`)
-    } catch (error: any) {
-      console.error(`  Error: ${error.message}`)
-      trace.update({ output: { error: error.message }, metadata: { error: true } })
+      console.log(
+        `  Emotion: ${(emotion.score * 100).toFixed(1)}% | Magic: ${(magic.score * 100).toFixed(1)}% | Composite: ${(composite * 100).toFixed(1)}%`
+      )
+    } catch (error: unknown) {
+      console.error(`  Error: ${getErrorMessage(error)}`)
+      trace.update({ output: { error: getErrorMessage(error) }, metadata: { error: true } })
     }
   }
 

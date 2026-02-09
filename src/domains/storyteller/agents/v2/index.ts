@@ -12,9 +12,9 @@ export { storyCreationWorkflow, StoryCreationWorkflow } from './story-workflow'
 
 // Creative Directors (Meta-agents that influence storytelling style)
 export {
-    CreativeDirectorAgent,
-    createGRRMDirector,
-    createGilliganDirector,
-    createCustomDirector,
-    type CreativeDirectorType
+  CreativeDirectorAgent,
+  createGRRMDirector,
+  createGilliganDirector,
+  createCustomDirector,
+  type CreativeDirectorType,
 } from './creative-director-agent'

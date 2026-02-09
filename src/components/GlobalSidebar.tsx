@@ -41,10 +41,7 @@ export const GlobalSidebar = () => {
   return (
     <div className="w-16 h-screen bg-card border-r border-border flex flex-col items-center pt-2 pb-4 gap-4 z-50">
       <div className="mb-4">
-        <Link
-          href="/app"
-          className="w-10 h-10 flex items-center justify-center relative group z-50"
-        >
+        <Link href="/" className="w-10 h-10 flex items-center justify-center relative group z-50">
           <GlowEffect
             colors={['#4f46e5', '#3b82f6', '#8b5cf6', '#6366f1']}
             mode="static"
@@ -53,9 +50,9 @@ export const GlobalSidebar = () => {
             className="opacity-0 group-hover:opacity-50 transition-opacity duration-500"
           />
           <img
-            src="/logo.png"
+            src="/favicon.svg"
             alt="Logo"
-            className="w-full h-full object-contain brightness-0 invert relative z-10 transition-transform duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_15px_rgba(168,85,247,0.8)]"
+            className="w-full h-full object-contain relative z-10 transition-transform duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_15px_rgba(168,85,247,0.8)]"
           />
         </Link>
       </div>

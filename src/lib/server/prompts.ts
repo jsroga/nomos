@@ -115,7 +115,7 @@ export function getCreativityPrompt(creativity: number): string {
 /**
  * Get creativity prompt specifically for edge-matching generation
  */
-export function getGenerationCreativityPrompt(creativity: number): string {
+function getGenerationCreativityPrompt(creativity: number): string {
   const level = Math.round(creativity * 100)
   let hint: string
 

@@ -65,7 +65,7 @@ export const PATCH = withRateLimit(
       try {
         const validated = updateEntitySchema.parse(body)
 
-        const updates: Record<string, any> = { updated_at: new Date().toISOString() }
+        const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
 
         if (validated.name !== undefined) updates.name = validated.name
         if (validated.description !== undefined) updates.description = validated.description

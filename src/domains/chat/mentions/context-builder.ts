@@ -65,7 +65,7 @@ export function buildMessageWithContext(
  * Extract agent routing hints from mentions
  * Returns agent names that should be prioritized for routing
  */
-export function extractAgentHints(mentions: MentionItem[]): string[] {
+function extractAgentHints(mentions: MentionItem[]): string[] {
   return mentions.filter(m => m.category === 'agent').map(m => m.type)
 }
 
@@ -97,7 +97,7 @@ function escapeXml(str: string): string {
  * Parse @ mentions from input text
  * Returns array of mention names found in the text
  */
-export function parseMentionsFromText(text: string): string[] {
+function parseMentionsFromText(text: string): string[] {
   const mentionRegex = /@([\w_]+)/g
   const matches: string[] = []
   let match
@@ -113,7 +113,7 @@ export function parseMentionsFromText(text: string): string[] {
  * Replace @ mentions in text with formatted version
  * Useful for display purposes
  */
-export function formatMentionsInText(
+function formatMentionsInText(
   text: string,
   mentions: MentionItem[],
   format: 'plain' | 'markdown' = 'plain'

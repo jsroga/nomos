@@ -38,19 +38,21 @@ class ErrorBoundaryClass extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       // Show fallback or error UI to break infinite loops
-      return this.props.fallback || (
-        <div className="flex items-center justify-center h-full p-8">
-          <div className="text-center space-y-4">
-            <p className="text-red-500 font-medium">Something went wrong</p>
-            <p className="text-muted-foreground text-sm">Check console for details</p>
-            <button
-              onClick={() => this.setState({ hasError: false })}
-              className="px-4 py-2 bg-primary/10 hover:bg-primary/20 rounded text-sm transition-colors"
-            >
-              Try again
-            </button>
+      return (
+        this.props.fallback || (
+          <div className="flex items-center justify-center h-full p-8">
+            <div className="text-center space-y-4">
+              <p className="text-red-500 font-medium">Something went wrong</p>
+              <p className="text-muted-foreground text-sm">Check console for details</p>
+              <button
+                onClick={() => this.setState({ hasError: false })}
+                className="px-4 py-2 bg-primary/10 hover:bg-primary/20 rounded text-sm transition-colors"
+              >
+                Try again
+              </button>
+            </div>
           </div>
-        </div>
+        )
       )
     }
     return this.props.children

@@ -53,12 +53,15 @@ export type CharacterWebNode = Node<CharacterNodeData>
 export type CharacterWebEdge = Edge<RelationshipEdgeData>
 
 // Edge styling based on relationship type
-export const RELATIONSHIP_STYLES: Record<RelationshipType, {
-  color: string
-  strokeStyle: string
-  strokeWidth: number
-  animated: boolean
-}> = {
+export const RELATIONSHIP_STYLES: Record<
+  RelationshipType,
+  {
+    color: string
+    strokeStyle: string
+    strokeWidth: number
+    animated: boolean
+  }
+> = {
   ally: { color: '#22c55e', strokeStyle: 'solid', strokeWidth: 2, animated: false },
   enemy: { color: '#ef4444', strokeStyle: 'dashed', strokeWidth: 2, animated: true },
   rival: { color: '#f97316', strokeStyle: 'dotted', strokeWidth: 2, animated: false },
@@ -79,7 +82,7 @@ export interface RelationshipMatrixResponse {
     name: string
     type: 'character' | 'faction' | 'place' | 'event' | 'rule'
     description?: string
-    metadata: Record<string, any>
+    metadata: Record<string, unknown>
   }>
   edges: Array<{
     source: string

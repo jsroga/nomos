@@ -3,16 +3,82 @@ import * as path from 'path'
 
 /**
  * Storyteller Report Generator
- * 
+ *
  * Creates a beautiful, literary HTML dashboard for evaluation results.
  * Optimized for comparing parallel runs and inspecting high-fidelity intent.
  */
 
-export function generateHtmlReport(experiment: any): string {
-    const { name = 'Experiment', id = 'N/A', timestamp = new Date(), results = [], aggregatedScores = {}, regressions = [], duration = 0 } = experiment
+interface EvalRegression {
+  message: string
+}
 
-    const scoreCards = Object.entries(aggregatedScores || {})
-        .map(([metric, score]: [string, any]) => `
+interface EvalExampleResult {
+  exampleId: string
+  input: unknown
+  output: string | { response?: string; metadata?: { isMeta?: boolean }; [key: string]: unknown }
+  scores: Record<string, number>
+  reasoning: Record<string, string>
+}
+
+interface EvalExperiment {
+  name?: string
+  id?: string
+  timestamp?: Date | string
+  results?: EvalExampleResult[]
+  aggregatedScores?: Record<string, number>
+  regressions?: EvalRegression[]
+  duration?: number
+}
+
+interface EvalVariant {
+  name: string
+  aggregatedScores: Record<string, number>
+  results: EvalExampleResult[]
+}
+
+interface ABTestReport {
+  variantA: EvalVariant
+  variantB: EvalVariant
+  winner: string
+  significance: number
+}
+
+interface PersonaExampleLog {
+  scenario: string
+  output: string
+  score: number
+  reasoning: string
+}
+
+interface PersonaVariant {
+  name: string
+  overallMetrics: {
+    averageScore: number
+    latencyMs: number
+  }
+  exampleLogs: PersonaExampleLog[]
+}
+
+interface PersonaReport {
+  id: string
+  timestamp: Date | string
+  variants: PersonaVariant[]
+}
+
+export function generateHtmlReport(experiment: EvalExperiment): string {
+  const {
+    name = 'Experiment',
+    id = 'N/A',
+    timestamp = new Date(),
+    results = [],
+    aggregatedScores = {},
+    regressions = [],
+    duration = 0,
+  } = experiment
+
+  const scoreCards = Object.entries(aggregatedScores || {})
+    .map(
+      ([metric, score]) => `
       <div class="score-card">
         <div class="score-label">${metric.replace(/-/g, ' ').toUpperCase()}</div>
         <div class="score-value">${((score || 0) * 100).toFixed(1)}%</div>
@@ -20,9 +86,13 @@ export function generateHtmlReport(experiment: any): string {
           <div class="score-bar-fill" style="width: ${(score || 0) * 100}%"></div>
         </div>
       </div>
-    `).join('')
+    `
+    )
+    .join('')
 
-    const exampleRows = results.map((res: any, idx: number) => `
+  const exampleRows = results
+    .map(
+      (res: EvalExampleResult, idx: number) => `
     <div class="example-box" data-example="${idx}">
       <div class="example-header" onclick="toggleExample(${idx})">
         <div class="example-title">
@@ -30,12 +100,16 @@ export function generateHtmlReport(experiment: any): string {
           <span class="example-id">#${idx + 1} - ${res.exampleId}</span>
         </div>
         <div class="example-badges">
-          ${Object.entries(res.scores || {}).map(([m, s]: [any, any]) => `
+          ${Object.entries(res.scores || {})
+            .map(
+              ([m, s]) => `
             <span class="metric-pill">
               <span class="m-label">${m.replace(/-/g, ' ')}:</span>
               <span class="m-value">${(s * 100).toFixed(0)}</span>
             </span>
-          `).join('')}
+          `
+            )
+            .join('')}
         </div>
       </div>
       
@@ -52,12 +126,14 @@ export function generateHtmlReport(experiment: any): string {
         
         <div class="tab-content" id="tab-output-${idx}" style="display: none;">
           <div class="literary-output">
-            ${typeof res.output === 'string' ? res.output : (res.output?.response || JSON.stringify(res.output, null, 2))}
+            ${typeof res.output === 'string' ? res.output : res.output?.response || JSON.stringify(res.output, null, 2)}
           </div>
         </div>
         
         <div class="tab-content" id="tab-reasoning-${idx}" style="display: none;">
-          ${Object.entries(res.reasoning).map(([evalName, reason]) => `
+          ${Object.entries(res.reasoning)
+            .map(
+              ([evalName, reason]) => `
             <div class="reason-block">
               <div class="reason-header" onclick="toggleReason(this)">
                 <span class="reason-icon">▶</span>
@@ -65,13 +141,17 @@ export function generateHtmlReport(experiment: any): string {
               </div>
               <div class="reason-content" style="display: none;">${reason}</div>
             </div>
-          `).join('')}
+          `
+            )
+            .join('')}
         </div>
       </div>
     </div>
-  `).join('')
+  `
+    )
+    .join('')
 
-    return `
+  return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -488,12 +568,16 @@ export function generateHtmlReport(experiment: any): string {
             </div>
         </header>
 
-        ${regressions.length > 0 ? `
+        ${
+          regressions.length > 0
+            ? `
             <div class="regressions">
                 <h3>⚠️ Regressions & Warnings</h3>
-                ${regressions.map((r: any) => `<div class="regression-item">${r.message}</div>`).join('')}
+                ${regressions.map((r: EvalRegression) => `<div class="regression-item">${r.message}</div>`).join('')}
             </div>
-        ` : ''}
+        `
+            : ''
+        }
 
         <div class="dashboard">
             ${scoreCards}
@@ -508,25 +592,25 @@ export function generateHtmlReport(experiment: any): string {
   `
 }
 
-export function saveHtmlReport(experiment: any) {
-    const html = generateHtmlReport(experiment)
-    const reportDir = path.resolve(process.cwd(), 'src/evaluation/reports')
-    if (!fs.existsSync(reportDir)) {
-        fs.mkdirSync(reportDir, { recursive: true })
-    }
+export function saveHtmlReport(experiment: EvalExperiment & { id: string }) {
+  const html = generateHtmlReport(experiment)
+  const reportDir = path.resolve(process.cwd(), 'src/evaluation/reports')
+  if (!fs.existsSync(reportDir)) {
+    fs.mkdirSync(reportDir, { recursive: true })
+  }
 
-    const filePath = path.join(reportDir, `${experiment.id}.html`)
-    fs.writeFileSync(filePath, html)
+  const filePath = path.join(reportDir, `${experiment.id}.html`)
+  fs.writeFileSync(filePath, html)
 
-    const latestPath = path.join(reportDir, 'latest.html')
-    fs.writeFileSync(latestPath, html)
+  const latestPath = path.join(reportDir, 'latest.html')
+  fs.writeFileSync(latestPath, html)
 
-    console.log(`   🎨 HTML Report generated: src/evaluation/reports/latest.html`)
+  console.log('   🎨 HTML Report generated: src/evaluation/reports/latest.html')
 }
 
-export function saveABTestReport(abTest: any) {
-    const { variantA, variantB, winner, significance } = abTest
-    const html = `
+export function saveABTestReport(abTest: ABTestReport) {
+  const { variantA, variantB, winner, significance } = abTest
+  const html = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -622,36 +706,52 @@ export function saveABTestReport(abTest: any) {
             <div class="variant-column">
                 <div class="variant-header">${variantA.name}</div>
                 <div class="agg-scores">
-                    ${Object.entries(variantA.aggregatedScores).map(([m, s]: [any, any]) => `
+                    ${Object.entries(variantA.aggregatedScores)
+                      .map(
+                        ([m, s]) => `
                         <div class="score-item ${m.includes('magic') || m.includes('intent') ? 'art' : 'sys'}">
                             <span class="score-label">${m.replace(/-/g, ' ')}</span>
                             <span class="score-val">${(s * 100).toFixed(0)}%</span>
                         </div>
-                    `).join('')}
+                    `
+                      )
+                      .join('')}
                 </div>
             </div>
             <div class="variant-column">
                 <div class="variant-header">${variantB.name}</div>
                 <div class="agg-scores">
-                    ${Object.entries(variantB.aggregatedScores).map(([m, s]: [any, any]) => `
+                    ${Object.entries(variantB.aggregatedScores)
+                      .map(
+                        ([m, s]) => `
                         <div class="score-item ${m.includes('magic') || m.includes('intent') ? 'art' : 'sys'}">
                             <span class="score-label">${m.replace(/-/g, ' ')}</span>
                             <span class="score-val">${(s * 100).toFixed(0)}%</span>
                         </div>
-                    `).join('')}
+                    `
+                      )
+                      .join('')}
                 </div>
             </div>
         </div>
 
-        ${variantA.results.map((resA: any, i: number) => {
-        const resB = variantB.results[i] || { output: 'N/A', scores: {}, reasoning: {} }
-        const isMeta = (resA.output && typeof resA.output === 'object' && resA.output.metadata?.isMeta) ||
-            (resB.output && typeof resB.output === 'object' && resB.output.metadata?.isMeta)
+        ${variantA.results
+          .map((resA: EvalExampleResult, i: number) => {
+            const resB: EvalExampleResult = variantB.results[i] || { exampleId: '', input: null, output: 'N/A', scores: {}, reasoning: {} }
+            const isMeta =
+              (resA.output && typeof resA.output === 'object' && resA.output.metadata?.isMeta) ||
+              (resB.output && typeof resB.output === 'object' && resB.output.metadata?.isMeta)
 
-        const outputA = typeof resA.output === 'string' ? resA.output : (resA.output?.response || JSON.stringify(resA.output))
-        const outputB = typeof resB.output === 'string' ? resB.output : (resB.output?.response || JSON.stringify(resB.output))
+            const outputA =
+              typeof resA.output === 'string'
+                ? resA.output
+                : resA.output?.response || JSON.stringify(resA.output)
+            const outputB =
+              typeof resB.output === 'string'
+                ? resB.output
+                : resB.output?.response || JSON.stringify(resB.output)
 
-        return `
+            return `
             <div class="example-header">
                 <span>Case: ${resA.exampleId}</span>
                 <span style="font-size: 0.9rem; color: #888;">${isMeta ? 'SYSTEM REQUEST' : 'CREATIVE TASK'}</span>
@@ -683,22 +783,25 @@ export function saveABTestReport(abTest: any) {
                 </div>
             </div>
             `
-    }).join('')}
+          })
+          .join('')}
     </div>
 </body>
 </html>
     `
-    const reportDir = path.resolve(process.cwd(), 'src/evaluation/reports')
-    if (!fs.existsSync(reportDir)) fs.mkdirSync(reportDir, { recursive: true })
-    const filePath = path.join(reportDir, `ab-test-latest.html`)
-    fs.writeFileSync(filePath, html)
-    console.log(`   📊 A/B Test comparison generated: src/evaluation/reports/ab-test-latest.html`)
+  const reportDir = path.resolve(process.cwd(), 'src/evaluation/reports')
+  if (!fs.existsSync(reportDir)) fs.mkdirSync(reportDir, { recursive: true })
+  const filePath = path.join(reportDir, 'ab-test-latest.html')
+  fs.writeFileSync(filePath, html)
+  console.log('   📊 A/B Test comparison generated: src/evaluation/reports/ab-test-latest.html')
 }
 
-export function generatePersonaReport(report: any): string {
-    const { id, timestamp, variants } = report;
+export function generatePersonaReport(report: PersonaReport): string {
+  const { id, timestamp, variants } = report
 
-    const variantCards = variants.map((v: any) => `
+  const variantCards = variants
+    .map(
+      (v: PersonaVariant) => `
         <div class="score-card persona-card">
             <div class="score-label">${v.name.toUpperCase()}</div>
             <div class="score-value">${(v.overallMetrics.averageScore * 100).toFixed(1)}%</div>
@@ -707,15 +810,19 @@ export function generatePersonaReport(report: any): string {
                 <div class="score-bar-fill" style="width: ${v.overallMetrics.averageScore * 100}%"></div>
             </div>
         </div>
-    `).join('');
+    `
+    )
+    .join('')
 
-    const exampleSections = variants[0].exampleLogs.map((_: any, i: number) => {
-        return `
+  const exampleSections = variants[0].exampleLogs
+    .map((_: PersonaExampleLog, i: number) => {
+      return `
         <div class="example-header">Case: ${variants[0].exampleLogs[i].scenario}</div>
         <div class="comparison-grid" style="grid-template-columns: repeat(${variants.length}, 1fr);">
-            ${variants.map((v: any) => {
-            const log = v.exampleLogs[i];
-            return `
+            ${variants
+              .map((v: PersonaVariant) => {
+                const log = v.exampleLogs[i]
+                return `
                 <div class="example-card">
                     <h4>${v.name}</h4>
                     <div class="literary-box">${log.output}</div>
@@ -724,13 +831,15 @@ export function generatePersonaReport(report: any): string {
                         <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 5px;">${log.reasoning}</div>
                     </div>
                 </div>
-                `;
-        }).join('')}
+                `
+              })
+              .join('')}
         </div>
-        `;
-    }).join('');
+        `
+    })
+    .join('')
 
-    return `
+  return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -780,21 +889,23 @@ export function generatePersonaReport(report: any): string {
     </div>
 </body>
 </html>
-    `;
+    `
 }
 
-export async function savePersonaReport(report: any) {
-    const html = generatePersonaReport(report);
-    const reportDir = path.resolve(process.cwd(), 'src/evaluation/reports');
-    if (!fs.existsSync(reportDir)) fs.mkdirSync(reportDir, { recursive: true });
+export async function savePersonaReport(report: PersonaReport) {
+  const html = generatePersonaReport(report)
+  const reportDir = path.resolve(process.cwd(), 'src/evaluation/reports')
+  if (!fs.existsSync(reportDir)) fs.mkdirSync(reportDir, { recursive: true })
 
-    const filePath = path.join(reportDir, `persona-eval-latest.html`);
-    fs.writeFileSync(filePath, html);
+  const filePath = path.join(reportDir, 'persona-eval-latest.html')
+  fs.writeFileSync(filePath, html)
 
-    // Also save specific ID version
-    const idPath = path.join(reportDir, `${report.id}.html`);
-    fs.writeFileSync(idPath, html);
+  // Also save specific ID version
+  const idPath = path.join(reportDir, `${report.id}.html`)
+  fs.writeFileSync(idPath, html)
 
-    console.log(`\n🎨 Persona Comparative Report generated: src/evaluation/reports/persona-eval-latest.html`);
-    return filePath;
+  console.log(
+    '\n🎨 Persona Comparative Report generated: src/evaluation/reports/persona-eval-latest.html'
+  )
+  return filePath
 }

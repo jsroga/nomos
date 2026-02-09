@@ -132,7 +132,7 @@ export async function getServiceContext(
 /**
  * Check if a scope is allowed for the API key
  */
-export function hasScope(context: MCPServiceContext, requiredScope: string): boolean {
+function hasScope(context: MCPServiceContext, requiredScope: string): boolean {
   // Wildcard allows all scopes
   if (context.scopes.includes('*')) {
     return true
@@ -180,7 +180,7 @@ export function generateApiKey(): string {
 /**
  * Create a new API key in the database
  */
-export async function createApiKey(
+async function createApiKey(
   userId: string,
   name: string,
   scopes: string[] = ['*'],

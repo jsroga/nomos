@@ -495,5 +495,3 @@ export const LOOP_CREATOR_DATASET: DatasetConfig = {
   description: 'Golden test cases for loop creator agent evaluation',
   examples: examples as EvaluationExample[],
 }
-
-export { examples as LOOP_CREATOR_EXAMPLES }

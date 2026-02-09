@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
 import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/constants/polling'
 
@@ -133,7 +132,10 @@ export class MoodboardGenerationService {
           const { stage, progress, provider } = statusData.metadata
           if (stage) {
             // Format stage (e.g. waiting_diffusion -> Waiting Diffusion)
-            const formattedStage = stage.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+            const formattedStage = stage
+              .split('_')
+              .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+              .join(' ')
             statusDetail = `${formattedStage} (${progress}%)`
           }
         }

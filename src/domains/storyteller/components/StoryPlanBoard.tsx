@@ -3,7 +3,7 @@ import { EpisodePremisePanel } from './EpisodePremisePanel'
 import { Button } from '@/components/ui/button'
 import { CheckCircle } from 'lucide-react'
 
-interface StoryPlanBoardProps {
+export interface StoryPlanBoardProps {
   storyPlan: StoryPlan | null
   globalBible: Partial<StoryPlan>
   onApprove: () => void
@@ -17,7 +17,7 @@ interface StoryPlanBoardProps {
   generatingSection?: string | null
 }
 
-export const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
+const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
   storyPlan,
   globalBible,
   onApprove,
@@ -54,9 +54,9 @@ export const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
   const rawPremise = (storyPlan as any)?.premise || storyPlan
   const episodePremise = rawPremise
     ? {
-      ...rawPremise,
-      title: (rawPremise as any).title || storyPlan?.title,
-    }
+        ...rawPremise,
+        title: (rawPremise as any).title || storyPlan?.title,
+      }
     : null
 
   // Check if plan is complete (has all required sections)

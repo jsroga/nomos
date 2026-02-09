@@ -1651,13 +1651,13 @@ export const useInteriorStore = create<InteriorState>()(
 /**
  * Subscribe only to terrain settings (heightmap, colors, sizes)
  */
-export const useTerrainSettings = () => useInteriorStore(useShallow(state => state.terrainSettings))
+const useTerrainSettings = () => useInteriorStore(useShallow(state => state.terrainSettings))
 
 /**
  * Subscribe only to heightmap data (for mesh displacement)
  * Includes heightmapVersion to ensure reactivity with in-place mutation
  */
-export const useHeightmapData = () =>
+const useHeightmapData = () =>
   useInteriorStore(
     useShallow(state => ({
       heightmap: state.terrainSettings.heightmap,
@@ -1670,22 +1670,22 @@ export const useHeightmapData = () =>
 /**
  * Subscribe only to terrain brush settings
  */
-export const useTerrainBrush = () => useInteriorStore(useShallow(state => state.terrainBrush))
+const useTerrainBrush = () => useInteriorStore(useShallow(state => state.terrainBrush))
 
 /**
  * Subscribe only to surfaces array
  */
-export const useSurfaces = () => useInteriorStore(useShallow(state => state.surfaces))
+const useSurfaces = () => useInteriorStore(useShallow(state => state.surfaces))
 
 /**
  * Subscribe only to objects array
  */
-export const useObjects = () => useInteriorStore(useShallow(state => state.objects))
+const useObjects = () => useInteriorStore(useShallow(state => state.objects))
 
 /**
  * Subscribe only to selection state
  */
-export const useSelection = () =>
+const useSelection = () =>
   useInteriorStore(
     useShallow(state => ({
       selectedId: state.selectedId,
@@ -1696,4 +1696,4 @@ export const useSelection = () =>
 /**
  * Subscribe only to interaction mode
  */
-export const useInteractionMode = () => useInteriorStore(state => state.mode)
+const useInteractionMode = () => useInteriorStore(state => state.mode)

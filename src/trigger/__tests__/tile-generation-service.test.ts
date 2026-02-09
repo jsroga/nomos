@@ -5,6 +5,7 @@
 
 import 'dotenv/config'
 import { generateTileTask } from '../generate-tile'
+import { getErrorMessage } from '@/lib/error-utils'
 
 // Test task configuration
 async function testTaskConfiguration() {
@@ -186,8 +187,8 @@ async function runTests() {
     console.log('🎉 All TileGenerationService tests passed!')
     console.log('='.repeat(50))
     process.exit(0)
-  } catch (error: any) {
-    console.error('\n❌ Test failed:', error.message)
+  } catch (error: unknown) {
+    console.error('\n❌ Test failed:', getErrorMessage(error))
     process.exit(1)
   }
 }

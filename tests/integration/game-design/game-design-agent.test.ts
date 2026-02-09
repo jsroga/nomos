@@ -40,7 +40,7 @@ describe.skipIf(!hasOpenAI)('GameDesignAgent', () => {
     beforeAll(async () => {
         persistence = new InMemoryPlanPersistence()
         agent = await GameDesignAgent.create({
-            modelName: 'gpt-4o', // Mastra expects model name without provider prefix
+            modelName: 'openai:gpt-4o',
             persistence,
         })
     })
@@ -112,7 +112,7 @@ describe.skipIf(!hasOpenAI || !hasDatabase)('GameDesignAgent with Memory', () =>
 
     beforeAll(async () => {
         persistence = new InMemoryPlanPersistence()
-        memory = createGameDesignMemory()
+        memory = createGameDesignMemory(process.env.DATABASE_URL || 'postgres://localhost:5432/test')
 
         // Seed some patterns
         await memory.addPatterns([
@@ -134,14 +134,16 @@ describe.skipIf(!hasOpenAI || !hasDatabase)('GameDesignAgent with Memory', () =>
         ])
 
         agent = await GameDesignAgent.create({
-            modelName: 'gpt-4o',
+            modelName: 'openai:gpt-4o',
             persistence,
             memory,
         })
     })
 
     afterAll(async () => {
-        await memory.disconnect()
+        if (memory) {
+            await memory.disconnect()
+        }
     })
 
     it('should retrieve relevant patterns when designing', async () => {
@@ -165,7 +167,7 @@ describe.skipIf(!hasOpenAI)('GameDesignAgent - Harvest-Craft-Sell Loop', () => {
     beforeAll(async () => {
         persistence = new InMemoryPlanPersistence()
         agent = await GameDesignAgent.create({
-            modelName: 'gpt-4o',
+            modelName: 'openai:gpt-4o',
             persistence,
         })
     })

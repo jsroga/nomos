@@ -35,8 +35,14 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     // This prevents the frontend from merging stale data and ensures single source of truth
     if (Object.keys(storyPlan).length > 0) {
       const legacyFields = [
-        'worldDescription', 'genre', 'tone', 'worldRules',
-        'factions', 'keyCharacters', 'plotTwists', 'inspirations'
+        'worldDescription',
+        'genre',
+        'tone',
+        'worldRules',
+        'factions',
+        'keyCharacters',
+        'plotTwists',
+        'inspirations',
       ]
 
       // 1. Clean from Top Level
@@ -106,7 +112,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
       const existing = await db.query.seriesBibles.findFirst({
         where: eq(seriesBibles.projectId, params.id),
       })
-      const existingContent = (existing?.content || {}) as Record<string, any>
+      const existingContent = (existing?.content || {}) as Record<string, unknown>
       const mergedContent = { ...existingContent, ...bibleUpdate }
 
       await db
@@ -125,8 +131,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
       const existing = await db.query.storyPlans.findFirst({
         where: eq(storyPlans.projectId, params.id),
       })
-      const existingContent = (existing?.content || {}) as Record<string, any>
-      const mergedContent = { ...existingContent, ...(planUpdate as Record<string, any>) }
+      const existingContent = (existing?.content || {}) as Record<string, unknown>
+      const mergedContent = { ...existingContent, ...(planUpdate as Record<string, unknown>) }
 
       await db
         .insert(storyPlans)

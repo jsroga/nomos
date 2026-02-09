@@ -157,6 +157,6 @@ export function getUndoManager(): UndoManager {
 /**
  * Reset the global undo manager (useful for testing)
  */
-export function resetUndoManager(): void {
+function resetUndoManager(): void {
   globalUndoManager = null
 }

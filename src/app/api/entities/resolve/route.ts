@@ -1,13 +1,13 @@
 /**
  * Entity Resolution API
- * 
+ *
  * Resolves entity reference IDs to their full entity details.
  * Used by client-side components to fetch entity data without
  * importing server-only database code.
- * 
+ *
  * If entities aren't found in the registry, attempts to create them
  * from existing project data (characters, factions, etc.)
- * 
+ *
  * Query params:
  * - projectId: Required
  * - ids: Comma-separated entity IDs
@@ -17,7 +17,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { entityRegistry, getEntityTypeFromId } from '@/domains/storyteller/services/entity-registry'
-import { relationshipEnricher, Relationship } from '@/domains/storyteller/services/relationship-enricher'
+import { relationshipEnricher } from '@/domains/storyteller/services/relationship-enricher'
 import { contextualSummaryService } from '@/domains/storyteller/services/contextual-summary-service'
 import { db } from '@/lib/db'
 import { projects, characters } from '@/domains/storyteller/db/schema'
@@ -69,30 +69,34 @@ async function tryAutoRegisterEntity(
     if (type === 'faction') {
       const factions = storyPlan.factions || []
       console.log(`[AutoRegister] Found ${factions.length} factions in storyPlan`)
-      console.log(`[AutoRegister] Faction names:`, factions.map((f: any) => f?.name))
+      console.log(
+        '[AutoRegister] Faction names:',
+        factions.map((f: any) => f?.name)
+      )
 
-      const faction = factions.find((f: any) =>
-        f?.name?.toLowerCase().replace(/\s+/g, '-') === namePart ||
-        f?.name?.toLowerCase() === normalizedName.toLowerCase()
+      const faction = factions.find(
+        (f: any) =>
+          f?.name?.toLowerCase().replace(/\s+/g, '-') === namePart ||
+          f?.name?.toLowerCase() === normalizedName.toLowerCase()
       )
 
       if (faction) {
         console.log(`[AutoRegister] Matched faction: ${faction.name}`)
-        
+
         // Build comprehensive description from faction data
         const descriptionParts: string[] = []
         if (faction.description) descriptionParts.push(faction.description)
-        if (faction.ideology && faction.ideology !== faction.description) descriptionParts.push(faction.ideology)
+        if (faction.ideology && faction.ideology !== faction.description)
+          descriptionParts.push(faction.ideology)
         if (faction.powerStructure) descriptionParts.push(faction.powerStructure)
         if (faction.politicalForces) descriptionParts.push(faction.politicalForces)
         if (faction.goals && Array.isArray(faction.goals) && faction.goals.length > 0) {
           descriptionParts.push(`Goals: ${faction.goals.slice(0, 2).join('; ')}`)
         }
-        
-        const description = descriptionParts.length > 0 
-          ? descriptionParts.slice(0, 3).join(' ') 
-          : faction.name
-        
+
+        const description =
+          descriptionParts.length > 0 ? descriptionParts.slice(0, 3).join(' ') : faction.name
+
         // Use registerWithId to use the exact ID from the reference
         await entityRegistry.registerWithId(refId, {
           name: faction.name,
@@ -104,7 +108,9 @@ async function tryAutoRegisterEntity(
         console.log(`   Description: ${description.slice(0, 100)}`)
         return true
       } else {
-        console.log(`⚠️ [AutoRegister] No faction matched in storyPlan for: ${normalizedName}. Creating stub.`)
+        console.log(
+          `⚠️ [AutoRegister] No faction matched in storyPlan for: ${normalizedName}. Creating stub.`
+        )
 
         // Fallback: Register a stub/discovered faction
         // If context is available, use it as description, otherwise generic
@@ -129,11 +135,15 @@ async function tryAutoRegisterEntity(
       // Check cast in project
       const cast = (project as any).cast || []
       console.log(`[AutoRegister] Found ${cast.length} characters in project.cast`)
-      console.log(`[AutoRegister] Character names:`, cast.map((c: any) => c?.name))
+      console.log(
+        '[AutoRegister] Character names:',
+        cast.map((c: any) => c?.name)
+      )
 
-      const character = cast.find((c: any) =>
-        c?.name?.toLowerCase().replace(/\s+/g, '-') === namePart ||
-        c?.name?.toLowerCase() === normalizedName.toLowerCase()
+      const character = cast.find(
+        (c: any) =>
+          c?.name?.toLowerCase().replace(/\s+/g, '-') === namePart ||
+          c?.name?.toLowerCase() === normalizedName.toLowerCase()
       )
 
       if (character) {
@@ -145,10 +155,8 @@ async function tryAutoRegisterEntity(
         }
         if (character.role) descParts.push(`Role: ${character.role}`)
 
-        const description = descParts.length > 0 
-          ? descParts.join('. ') 
-          : character.name
-        
+        const description = descParts.length > 0 ? descParts.join('. ') : character.name
+
         await entityRegistry.registerWithId(refId, {
           name: character.name,
           description,
@@ -175,15 +183,20 @@ async function tryAutoRegisterEntity(
         .from(characters)
         .where(eq(characters.projectId, projectId))
 
-      const matchedChar = dbCharacters.find(c =>
-        c.name?.toLowerCase().replace(/\s+/g, '-') === namePart ||
-        c.name?.toLowerCase() === normalizedName.toLowerCase()
+      const matchedChar = dbCharacters.find(
+        c =>
+          c.name?.toLowerCase().replace(/\s+/g, '-') === namePart ||
+          c.name?.toLowerCase() === normalizedName.toLowerCase()
       )
 
       if (matchedChar) {
         const psychology = (matchedChar.psychology as any) || {}
-        const description = matchedChar.description || matchedChar.shortDescription || matchedChar.role || matchedChar.name
-        
+        const description =
+          matchedChar.description ||
+          matchedChar.shortDescription ||
+          matchedChar.role ||
+          matchedChar.name
+
         await entityRegistry.registerWithId(refId, {
           name: matchedChar.name,
           description,
@@ -197,7 +210,9 @@ async function tryAutoRegisterEntity(
           projectId,
           sourceEntityId: matchedChar.id,
         })
-        console.log(`✅ [AutoRegister] Registered character from DB with ID ${refId}: ${matchedChar.name}`)
+        console.log(
+          `✅ [AutoRegister] Registered character from DB with ID ${refId}: ${matchedChar.name}`
+        )
         console.log(`   Description: ${description.slice(0, 100)}`)
         return true
       }
@@ -205,14 +220,15 @@ async function tryAutoRegisterEntity(
 
     if (type === 'rule') {
       const rules = storyPlan.worldRules || []
-      const rule = rules.find((r: any, idx: number) =>
-        `rule-${idx}` === refId ||
-        r?.rule?.toLowerCase().includes(normalizedName.toLowerCase().split(' ')[0])
+      const rule = rules.find(
+        (r: any, idx: number) =>
+          `rule-${idx}` === refId ||
+          r?.rule?.toLowerCase().includes(normalizedName.toLowerCase().split(' ')[0])
       )
-      
+
       if (rule) {
         await entityRegistry.registerWithId(refId, {
-          name: rule.rule?.slice(0, 50) || `Rule`,
+          name: rule.rule?.slice(0, 50) || 'Rule',
           description: rule.consequence || rule.rule || '',
           metadata: rule,
           projectId,
@@ -242,7 +258,7 @@ async function tryAutoRegisterEntity(
 
       await entityRegistry.registerWithId(refId, {
         name: normalizedName,
-        description: placeDescription || `A location in the story`,
+        description: placeDescription || 'A location in the story',
         metadata: { inferredFromText: true },
         projectId,
       })
@@ -254,7 +270,7 @@ async function tryAutoRegisterEntity(
     if (type === 'event') {
       await entityRegistry.registerWithId(refId, {
         name: normalizedName,
-        description: context?.slice(0, 300) || `An event in the story`,
+        description: context?.slice(0, 300) || 'An event in the story',
         metadata: { inferredFromText: true },
         projectId,
       })
@@ -287,38 +303,29 @@ export async function GET(request: NextRequest) {
     const context = searchParams.get('context') // Surrounding text for contextual summaries
 
     if (!projectId) {
-      return NextResponse.json(
-        { error: 'Missing projectId parameter' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Missing projectId parameter' }, { status: 400 })
     }
 
     // Security: Verify user has access to this project
     if (!(await verifyProjectAccess(projectId, session.user.id))) {
-      return NextResponse.json(
-        { error: 'Project not found or access denied' },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 403 })
     }
 
     if (!idsParam) {
-      return NextResponse.json(
-        { error: 'Missing ids parameter' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Missing ids parameter' }, { status: 400 })
     }
 
     // Security: Limit number of IDs to prevent abuse
-    const ids = idsParam.split(',').filter(id => id.trim()).slice(0, 50) // Max 50 entities per request
+    const ids = idsParam
+      .split(',')
+      .filter(id => id.trim())
+      .slice(0, 50) // Max 50 entities per request
 
     // Security: Validate ID format (alphanumeric, hyphens only)
     const validIdPattern = /^[a-z0-9-]+$/i
     const invalidIds = ids.filter(id => !validIdPattern.test(id))
     if (invalidIds.length > 0) {
-      return NextResponse.json(
-        { error: 'Invalid entity ID format', invalidIds },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid entity ID format', invalidIds }, { status: 400 })
     }
 
     if (ids.length === 0) {
@@ -327,18 +334,20 @@ export async function GET(request: NextRequest) {
 
     // First try to resolve from registry
     let resolved = await entityRegistry.resolveMany(ids)
-    
+
     // Find unresolved IDs and try to auto-register them
     const unresolvedIds = ids.filter(id => !resolved.has(id))
-    
+
     if (unresolvedIds.length > 0) {
-      console.log(`[Entity Resolution] Attempting to auto-register ${unresolvedIds.length} unresolved entities`)
+      console.log(
+        `[Entity Resolution] Attempting to auto-register ${unresolvedIds.length} unresolved entities`
+      )
       // Try to auto-register from project data
-      const autoRegisterPromises = unresolvedIds.map(id => 
+      const autoRegisterPromises = unresolvedIds.map(id =>
         tryAutoRegisterEntity(id, projectId, context)
       )
       await Promise.all(autoRegisterPromises)
-      
+
       // Re-resolve after auto-registration
       resolved = await entityRegistry.resolveMany(ids)
     }
@@ -405,9 +414,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ entities })
   } catch (error) {
     console.error('[API] Entity resolution failed:', error)
-    return NextResponse.json(
-      { error: 'Failed to resolve entities' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to resolve entities' }, { status: 500 })
   }
 }

@@ -56,26 +56,26 @@ export const createQuickActions = {
     onEditPremise: () => void,
     onAddSoundtrack: () => void
   ): QuickAction[] => [
-    {
-      id: 'generate-beats',
-      label: 'Generate Beats',
-      icon: <Sparkles className="w-3 h-3" />,
-      variant: 'primary',
-      onClick: onGenerateBeats,
-    },
-    {
-      id: 'edit-premise',
-      label: 'Edit Premise',
-      icon: <Edit3 className="w-3 h-3" />,
-      onClick: onEditPremise,
-    },
-    {
-      id: 'add-soundtrack',
-      label: 'Add Soundtrack',
-      icon: <Music className="w-3 h-3" />,
-      onClick: onAddSoundtrack,
-    },
-  ],
+      {
+        id: 'generate-beats',
+        label: 'Generate Beats',
+        icon: <Sparkles className="w-3 h-3" />,
+        variant: 'primary',
+        onClick: onGenerateBeats,
+      },
+      {
+        id: 'edit-premise',
+        label: 'Edit Premise',
+        icon: <Edit3 className="w-3 h-3" />,
+        onClick: onEditPremise,
+      },
+      {
+        id: 'add-soundtrack',
+        label: 'Add Soundtrack',
+        icon: <Music className="w-3 h-3" />,
+        onClick: onAddSoundtrack,
+      },
+    ],
 
   afterBeats: (onWriteScript: () => void, onAddBeat: () => void): QuickAction[] => [
     {
@@ -93,26 +93,26 @@ export const createQuickActions = {
     onAddRule: () => void,
     onGenerateEpisodes: () => void
   ): QuickAction[] => [
-    {
-      id: 'create-character',
-      label: 'Create Character',
-      icon: <Users className="w-3 h-3" />,
-      onClick: onCreateCharacter,
-    },
-    {
-      id: 'add-rule',
-      label: 'Add World Rule',
-      icon: <Lightbulb className="w-3 h-3" />,
-      onClick: onAddRule,
-    },
-    {
-      id: 'generate-episodes',
-      label: 'Generate Episodes',
-      icon: <Sparkles className="w-3 h-3" />,
-      variant: 'primary',
-      onClick: onGenerateEpisodes,
-    },
-  ],
+      {
+        id: 'create-character',
+        label: 'Create Character',
+        icon: <Users className="w-3 h-3" />,
+        onClick: onCreateCharacter,
+      },
+      {
+        id: 'add-rule',
+        label: 'Add World Rule',
+        icon: <Lightbulb className="w-3 h-3" />,
+        onClick: onAddRule,
+      },
+      {
+        id: 'generate-episodes',
+        label: 'Generate Episodes',
+        icon: <Sparkles className="w-3 h-3" />,
+        variant: 'primary',
+        onClick: onGenerateEpisodes,
+      },
+    ],
 
   generic: (onAskQuestion: () => void, onSuggestIdea: () => void): QuickAction[] => [
     {
@@ -301,7 +301,7 @@ export const SmartQuickActions: React.FC<SmartQuickActionsProps> = ({
             id: 'ask',
             label: 'Ask a question',
             icon: <MessageSquare className="w-4 h-4" />,
-            onClick: () => {}, // Will be handled by input focus
+            onClick: () => { }, // Will be handled by input focus
           },
         ]
     }

@@ -37,7 +37,13 @@ export const POST = withRateLimit(
     }
 
     const projectDir = path.join(process.cwd(), 'public', 'projects', projectId)
-    const filePath = path.join(projectDir, filename)
+    const filePath = path.resolve(projectDir, filename)
+
+    // Ensure resolved path stays within the project directory
+    if (!filePath.startsWith(projectDir + path.sep) && filePath !== projectDir) {
+      return NextResponse.json({ error: 'Invalid filename' }, { status: 400 })
+    }
+
     const fileDir = path.dirname(filePath)
 
     // Ensure directory exists

@@ -16,6 +16,7 @@ A comprehensive toolset for storytellers, game designers, and world builders, po
 *   **[Chat](docs/modules/chat.md)**: AI chat interface.
 
 ### Infrastructure & APIs
+*   **[System Architecture](docs/ARCHITECTURE.md)**: Full stack overview, 3rd party services (Vercel, Trigger.dev, etc.), and core patterns.
 *   **[MCP API](docs/MCP_API.md)**: Model Context Protocol server reference.
 *   **[Agent Core](docs/agent-core.md)**: Shared agentic architecture primitives.
 *   **[Evaluation](docs/evaluation/README.md)**: Testing and evaluation framework.

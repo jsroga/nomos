@@ -30,10 +30,7 @@ export const BibleFactions: React.FC<BibleFactionsProps> = () => {
     <section className={isLoading || pendingAction ? 'relative' : ''}>
       {/* Pending action overlay */}
       {pendingAction && (
-        <SectionPendingOverlay 
-          pendingAction={pendingAction}
-          onReview={pendingAction.onReview}
-        />
+        <SectionPendingOverlay pendingAction={pendingAction} onReview={pendingAction.onReview} />
       )}
       {isLoading && !pendingAction && (
         <div className="absolute inset-0 z-10 bg-background/60 backdrop-blur-sm rounded-lg flex items-center justify-center">

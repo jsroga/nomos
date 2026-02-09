@@ -53,7 +53,11 @@ export class GeminiAIModel implements AIModel {
     if (typeof window === 'undefined') {
       // SERVER SIDE
       const { imageService } = await import('@/lib/server/image-service')
-      const { image, mask, cropRect: serverCropRect } = await imageService.assembleContext(context, 1024)
+      const {
+        image,
+        mask,
+        cropRect: serverCropRect,
+      } = await imageService.assembleContext(context, 1024)
       contextImageBase64 = image.toString('base64')
       cropRect = serverCropRect
     } else {
@@ -145,7 +149,10 @@ export class GeminiAIModel implements AIModel {
       if (typeof window === 'undefined') {
         // SERVER SIDE with sharp
         const { imageService } = await import('@/lib/server/image-service')
-        const croppedBuffer = await imageService.crop(Buffer.from(generatedBase64, 'base64'), cropRect)
+        const croppedBuffer = await imageService.crop(
+          Buffer.from(generatedBase64, 'base64'),
+          cropRect
+        )
         return `data:image/png;base64,${croppedBuffer.toString('base64')}`
       } else {
         // CLIENT SIDE with Canvas

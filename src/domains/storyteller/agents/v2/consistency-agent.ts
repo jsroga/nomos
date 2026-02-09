@@ -7,7 +7,6 @@
 
 import { z } from 'zod'
 import { Agent } from '@mastra/core/agent'
-import { openai } from '@ai-sdk/openai'
 import { GLOBAL_AGENT_MODEL } from './model-config'
 import {
   StoryContext,
@@ -43,14 +42,16 @@ export const InconsistencySchema = z.object({
  * Schema for JSON values (OpenAI structured output compatible)
  * Note: z.unknown() is NOT compatible with OpenAI - use union of concrete types
  */
-export const JsonValueSchema = z.union([
-  z.string(),
-  z.number(),
-  z.boolean(),
-  z.null(),
-  z.array(z.string()), // Simplified - arrays of strings
-  z.record(z.string()), // Simplified - objects with string values
-]).describe('JSON-compatible value')
+export const JsonValueSchema = z
+  .union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.array(z.string()), // Simplified - arrays of strings
+    z.record(z.string()), // Simplified - objects with string values
+  ])
+  .describe('JSON-compatible value')
 
 /**
  * Schema for a consistency change
@@ -178,7 +179,7 @@ export async function runConsistencyCheck(
     const result = await agent.generate(prompt, {
       structuredOutput: {
         schema: ConsistencyAgentResponseSchema,
-      }
+      },
     })
 
     const response = result.object as ConsistencyAgentResponse

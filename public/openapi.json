@@ -144,6 +144,61 @@
     }
   },
   "paths": {
+    "/api/mcp": {
+      "get": {
+        "operationId": "get-mcp",
+        "summary": "Connect to MCP Server (SSE)",
+        "description": "Established a Server-Sent Events connection for the Model Context Protocol.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SSE Connection Established",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "post-mcp",
+        "summary": "Send MCP Message",
+        "description": "Send JSON-RPC messages to the MCP Server.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message Processed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/fal-segment": {
       "post": {
         "operationId": "post-ai-fal-segment",

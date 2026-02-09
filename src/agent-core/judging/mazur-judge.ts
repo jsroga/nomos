@@ -1,6 +1,6 @@
 /**
  * MAZUR FRAMEWORK - LLM-as-Judge System
- * 
+ *
  * Pure LLM evaluation using the three creative directors.
  * NO REGEX - all judgment is done by the model.
  */
@@ -32,7 +32,9 @@ export const MazurJudgmentSchema = z.object({
   overallScore: z.number().min(0).max(1),
   slopScore: z.number().min(0).max(1).describe('0 = authentic, 1 = pure AI slop'),
   verdict: z.enum(['PASS', 'REFINE', 'REJECT']),
-  refinementPriority: z.array(z.enum(['depth', 'structure', 'feeling'])).describe('Which dimension to fix first'),
+  refinementPriority: z
+    .array(z.enum(['depth', 'structure', 'feeling']))
+    .describe('Which dimension to fix first'),
 })
 
 export type PersonaJudgment = z.infer<typeof PersonaJudgmentSchema>
@@ -44,7 +46,7 @@ export type MazurJudgment = z.infer<typeof MazurJudgmentSchema>
 
 function buildPersonaPrompt(personaId: keyof typeof PERSONAS): string {
   const p = PERSONAS[personaId]
-  
+
   return `You are ${p.name} (${p.alias}), judging creative writing.
 
 YOUR DIMENSION: ${p.dimension}
@@ -83,10 +85,10 @@ export async function judgeWithPersona(
   context?: string
 ): Promise<PersonaJudgment> {
   const persona = PERSONAS[personaId]
-  
-  return withSpan(traceId, `MazurJudge.${personaId}`, async (span) => {
+
+  return withSpan(traceId, `MazurJudge.${personaId}`, async span => {
     const model = getJudgingModel('primary')
-    
+
     const prompt = `${buildPersonaPrompt(personaId)}
 
 CONTENT TO JUDGE:
@@ -126,7 +128,7 @@ export async function judgeMazur(
   traceId: string,
   context?: string
 ): Promise<MazurJudgment> {
-  return withSpan(traceId, 'MazurJudge.full', async (span) => {
+  return withSpan(traceId, 'MazurJudge.full', async span => {
     // Run all three judges in parallel
     const [depth, structure, feeling] = await Promise.all([
       judgeWithPersona(content, 'george-rr-martin', traceId, context),
@@ -136,12 +138,10 @@ export async function judgeMazur(
 
     // Calculate overall scores
     const overallScore = (depth.score + structure.score + feeling.score) / 3
-    
+
     // Slop score is inverse of quality, weighted by detected slop
-    const totalSlopSignals = 
-      depth.slopDetected.length + 
-      structure.slopDetected.length + 
-      feeling.slopDetected.length
+    const totalSlopSignals =
+      depth.slopDetected.length + structure.slopDetected.length + feeling.slopDetected.length
     const slopScore = Math.min(1, totalSlopSignals * 0.1 + (1 - overallScore) * 0.5)
 
     // Determine verdict
@@ -160,7 +160,7 @@ export async function judgeMazur(
       { name: 'structure' as const, score: structure.score },
       { name: 'feeling' as const, score: feeling.score },
     ].sort((a, b) => a.score - b.score)
-    
+
     const refinementPriority = dimensions.map(d => d.name)
 
     const judgment: MazurJudgment = {
@@ -189,23 +189,26 @@ export async function judgeMazur(
 const SlopCheckSchema = z.object({
   isSlop: z.boolean(),
   confidence: z.number().min(0).max(1),
-  signals: z.array(z.object({
-    pattern: z.string().describe('The specific slop pattern detected'),
-    location: z.string().describe('Where in the content this appears'),
-    severity: z.enum(['minor', 'moderate', 'severe']),
-  })),
-  humanScore: z.number().min(0).max(1).describe('How human/authentic does this feel? 1 = very human'),
+  signals: z.array(
+    z.object({
+      pattern: z.string().describe('The specific slop pattern detected'),
+      location: z.string().describe('Where in the content this appears'),
+      severity: z.enum(['minor', 'moderate', 'severe']),
+    })
+  ),
+  humanScore: z
+    .number()
+    .min(0)
+    .max(1)
+    .describe('How human/authentic does this feel? 1 = very human'),
 })
 
 export type SlopCheck = z.infer<typeof SlopCheckSchema>
 
-export async function checkForSlop(
-  content: string,
-  traceId: string
-): Promise<SlopCheck> {
-  return withSpan(traceId, 'MazurJudge.slopCheck', async (span) => {
+async function checkForSlop(content: string, traceId: string): Promise<SlopCheck> {
+  return withSpan(traceId, 'MazurJudge.slopCheck', async span => {
     const model = getJudgingModel('primary')
-    
+
     const prompt = `You are an AI slop detector. Your job is to identify patterns that reveal AI-generated content trying to pass as human creativity.
 
 COMMON AI SLOP PATTERNS:
@@ -258,22 +261,23 @@ const ImprovementSchema = z.object({
   explanation: z.string().describe('Why this is better'),
 })
 
-export async function generateImprovement(
+async function generateImprovement(
   content: string,
   judgment: MazurJudgment,
   traceId: string
 ): Promise<z.infer<typeof ImprovementSchema>> {
-  return withSpan(traceId, 'MazurJudge.improve', async (span) => {
+  return withSpan(traceId, 'MazurJudge.improve', async span => {
     const model = getJudgingModel('primary')
     const weakestDimension = judgment.refinementPriority[0]
-    const persona = weakestDimension === 'depth' 
-      ? PERSONAS['george-rr-martin']
-      : weakestDimension === 'structure'
-      ? PERSONAS['vince-gilligan']
-      : PERSONAS['david-lynch']
+    const persona =
+      weakestDimension === 'depth'
+        ? PERSONAS['george-rr-martin']
+        : weakestDimension === 'structure'
+          ? PERSONAS['vince-gilligan']
+          : PERSONAS['david-lynch']
 
     const dimensionJudgment = judgment[weakestDimension]
-    
+
     const prompt = `You are ${persona.name}, rewriting content to eliminate AI slop.
 
 WEAKEST DIMENSION: ${weakestDimension.toUpperCase()} (${persona.question})

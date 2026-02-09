@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { upscaleService } from '../services/UpscaleService'
 import toast from 'react-hot-toast'
+import { getErrorMessage } from '@/lib/error-utils'
 
 interface MjVariantPickerProps {
   tileId: string
@@ -35,9 +36,9 @@ export const MjVariantPicker: React.FC<MjVariantPickerProps> = ({
       toast.success(`Variant ${index} selected - processing...`)
       onSelected()
       onClose()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to select variant:', error)
-      toast.error(error.message || 'Failed to select variant')
+      toast.error(getErrorMessage(error) || 'Failed to select variant')
       setSelecting(null)
     }
   }

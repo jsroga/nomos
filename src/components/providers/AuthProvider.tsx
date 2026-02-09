@@ -2,28 +2,12 @@
 
 import { useEffect } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
+import { useAuthStore } from '@/store/useAuthStore'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const setUser = useWorldStore(state => state.setUser)
+  const setUser = useAuthStore(state => state.setUser)
 
   useEffect(() => {
-    // Development Mock User
-    if (process.env.NODE_ENV === 'development') {
-      console.log("AuthProvider: Dev mode detected, mocking user 'jsroga'")
-      setUser({
-        id: 'dev-mock-user-id',
-        email: 'jsroga@example.com',
-        user_metadata: {
-          user_name: 'jsroga',
-          full_name: 'Jacek Sroga (Dev)',
-        },
-        aud: 'authenticated',
-        role: 'authenticated',
-      })
-      return
-    }
-
     const supabase = createClientComponentClient()
 
     // Get initial session

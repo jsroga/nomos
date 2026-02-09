@@ -5,6 +5,7 @@ import { Loader2, Save, Trash2, Square, Check } from 'lucide-react'
 import { getSupabaseClient } from '@/infrastructure/storage/supabaseClient'
 import { selectModeService } from '@/domains/world-building-toolkit/services/SelectModeService'
 import toast from 'react-hot-toast'
+import { getErrorMessage } from '@/lib/error-utils'
 
 export const SelectModeToolbar: React.FC = () => {
   const isSelectMode = useWorldStore(state => state.isSelectMode)
@@ -73,9 +74,9 @@ export const SelectModeToolbar: React.FC = () => {
       toast.success('Asset saved!')
       setSelectedMask(null)
       clearSelectBox()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving asset:', error)
-      toast.error('Failed to save asset: ' + error.message)
+      toast.error('Failed to save asset: ' + getErrorMessage(error))
     } finally {
       setIsSaving(false)
     }

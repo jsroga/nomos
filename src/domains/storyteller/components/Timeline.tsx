@@ -22,7 +22,7 @@ interface CharacterSnapshot {
   transformationProgress: number
 }
 
-interface TimelineProps {
+export interface TimelineProps {
   episodeId: string | null
   beats: Beat[]
   onBeatSelect: (beatId: string | null) => void
@@ -56,9 +56,11 @@ const BeatItem = memo(function BeatItem({
 }) {
   return (
     <button
-      className={`relative flex-shrink-0 w-8 h-8 rounded-full transition-all duration-200 ${BEAT_COLORS[beat.beatType] || BEAT_COLORS.default
-        } ${isSelected ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-110' : ''} ${isHovered ? 'scale-105' : ''
-        }`}
+      className={`relative flex-shrink-0 w-8 h-8 rounded-full transition-all duration-200 ${
+        BEAT_COLORS[beat.beatType] || BEAT_COLORS.default
+      } ${isSelected ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-110' : ''} ${
+        isHovered ? 'scale-105' : ''
+      }`}
       onClick={() => onSelect(beat.id)}
       onMouseEnter={() => onHover(beat.id)}
       onMouseLeave={() => onHover(null)}
@@ -69,7 +71,7 @@ const BeatItem = memo(function BeatItem({
   )
 })
 
-export const Timeline: React.FC<TimelineProps> = memo(function Timeline({
+const Timeline: React.FC<TimelineProps> = memo(function Timeline({
   episodeId,
   beats,
   onBeatSelect,
@@ -172,8 +174,9 @@ export const Timeline: React.FC<TimelineProps> = memo(function Timeline({
 
   return (
     <div
-      className={`border-t border-border bg-card/95 backdrop-blur flex flex-col transition-all duration-300 ease-in-out ${isCollapsed ? 'h-10' : 'h-40'
-        }`}
+      className={`border-t border-border bg-card/95 backdrop-blur flex flex-col transition-all duration-300 ease-in-out ${
+        isCollapsed ? 'h-10' : 'h-40'
+      }`}
     >
       {/* Collapse Toggle Header */}
       <div className="h-10 px-4 flex items-center justify-between border-b border-border shrink-0">
@@ -242,8 +245,9 @@ export const Timeline: React.FC<TimelineProps> = memo(function Timeline({
 
       {/* Timeline Track - with overflow visible for tooltips */}
       <div
-        className={`flex-1 flex transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100'
-          }`}
+        className={`flex-1 flex transition-all duration-300 ease-in-out ${
+          isCollapsed ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100'
+        }`}
       >
         {/* Beat Track */}
         <div className="flex-1 px-4 py-2 overflow-x-auto overflow-y-visible">
@@ -267,10 +271,11 @@ export const Timeline: React.FC<TimelineProps> = memo(function Timeline({
                   onClick={() => handleBeatClick(beat.id, index)}
                   onMouseEnter={() => setHoveredBeat(beat.id)}
                   onMouseLeave={() => setHoveredBeat(null)}
-                  className={`relative w-4 h-4 rounded-full transition-all duration-200 ${index === currentIndex
+                  className={`relative w-4 h-4 rounded-full transition-all duration-200 ${
+                    index === currentIndex
                       ? 'scale-150 ring-2 ring-primary ring-offset-2 ring-offset-card'
                       : 'hover:scale-125'
-                    } ${BEAT_COLORS[beat.beatType] || BEAT_COLORS.default}`}
+                  } ${BEAT_COLORS[beat.beatType] || BEAT_COLORS.default}`}
                   title={beat.logline}
                 >
                   {hoveredBeat === beat.id && (
@@ -299,4 +304,3 @@ export const Timeline: React.FC<TimelineProps> = memo(function Timeline({
 })
 
 export default Timeline
-

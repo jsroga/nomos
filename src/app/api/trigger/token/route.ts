@@ -4,8 +4,9 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@trigger.dev/sdk/v3'
+import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
 
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedRequest) => {
   try {
     const { runIds } = await req.json()
 
@@ -31,4 +32,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     )
   }
-}
+})

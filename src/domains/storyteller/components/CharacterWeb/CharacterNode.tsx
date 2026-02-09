@@ -2,7 +2,7 @@
 
 /**
  * CharacterNode Component
- * 
+ *
  * Custom node for the Character Web graph.
  * Shows character avatar, name, role, and metrics.
  */
@@ -14,17 +14,37 @@ import { User, Users, Crown, MapPin, Calendar, Scroll } from 'lucide-react'
 import { CharacterNodeData, CharacterWebNode } from './types'
 
 const TYPE_STYLES: Record<string, { bg: string; border: string; iconBg: string; Icon: any }> = {
-  character: { bg: 'bg-purple-950/80', border: 'border-purple-700/50', iconBg: 'bg-purple-800', Icon: User },
-  faction: { bg: 'bg-blue-950/80', border: 'border-blue-700/50', iconBg: 'bg-blue-800', Icon: Users },
-  place: { bg: 'bg-emerald-950/80', border: 'border-emerald-700/50', iconBg: 'bg-emerald-800', Icon: MapPin },
-  event: { bg: 'bg-amber-950/80', border: 'border-amber-700/50', iconBg: 'bg-amber-800', Icon: Calendar },
+  character: {
+    bg: 'bg-purple-950/80',
+    border: 'border-purple-700/50',
+    iconBg: 'bg-purple-800',
+    Icon: User,
+  },
+  faction: {
+    bg: 'bg-blue-950/80',
+    border: 'border-blue-700/50',
+    iconBg: 'bg-blue-800',
+    Icon: Users,
+  },
+  place: {
+    bg: 'bg-emerald-950/80',
+    border: 'border-emerald-700/50',
+    iconBg: 'bg-emerald-800',
+    Icon: MapPin,
+  },
+  event: {
+    bg: 'bg-amber-950/80',
+    border: 'border-amber-700/50',
+    iconBg: 'bg-amber-800',
+    Icon: Calendar,
+  },
   rule: { bg: 'bg-rose-950/80', border: 'border-rose-700/50', iconBg: 'bg-rose-800', Icon: Scroll },
 }
 
 const DEFAULT_STYLE = TYPE_STYLES.character
 
-const CharacterNode: React.FC<NodeProps<CharacterWebNode>> = (props) => {
-  const data = props.data || {} as CharacterNodeData
+const CharacterNode: React.FC<NodeProps<CharacterWebNode>> = props => {
+  const data = props.data || ({} as CharacterNodeData)
   const selected = props.selected
 
   const name = data.name || 'Unknown'
@@ -55,10 +75,13 @@ const CharacterNode: React.FC<NodeProps<CharacterWebNode>> = (props) => {
         className={cn(
           'px-3 py-2 rounded-lg border transition-all duration-300',
           'min-w-[120px] max-w-[180px]',
-          style.bg, style.border,
+          style.bg,
+          style.border,
           selected && 'ring-2 ring-white/50',
           isSelected && 'ring-2 ring-cyan-400 shadow-xl shadow-cyan-500/40 scale-110',
-          isHighlighted && !isSelected && 'ring-2 ring-amber-400/70 shadow-lg shadow-amber-500/20 scale-105',
+          isHighlighted &&
+            !isSelected &&
+            'ring-2 ring-amber-400/70 shadow-lg shadow-amber-500/20 scale-105',
           isCentral && !isSelected && !isHighlighted && 'ring-1 ring-emerald-400/50'
         )}
       >
@@ -78,23 +101,16 @@ const CharacterNode: React.FC<NodeProps<CharacterWebNode>> = (props) => {
               className="w-8 h-8 rounded-full object-cover border border-zinc-600"
             />
           ) : (
-            <div className={cn(
-              'w-8 h-8 rounded-full flex items-center justify-center',
-              style.iconBg
-            )}>
+            <div
+              className={cn('w-8 h-8 rounded-full flex items-center justify-center', style.iconBg)}
+            >
               <Icon size={16} className="text-white/80" />
             </div>
           )}
 
           <div className="flex-1 min-w-0">
-            <div className="font-medium text-sm text-white truncate">
-              {name}
-            </div>
-            {role && (
-              <div className="text-[10px] text-zinc-400 truncate">
-                {role}
-              </div>
-            )}
+            <div className="font-medium text-sm text-white truncate">{name}</div>
+            {role && <div className="text-[10px] text-zinc-400 truncate">{role}</div>}
           </div>
         </div>
 
@@ -108,7 +124,11 @@ const CharacterNode: React.FC<NodeProps<CharacterWebNode>> = (props) => {
                   <div
                     className={cn(
                       'h-full rounded-full transition-all',
-                      stressLevel > 70 ? 'bg-red-500' : stressLevel > 40 ? 'bg-amber-500' : 'bg-emerald-500'
+                      stressLevel > 70
+                        ? 'bg-red-500'
+                        : stressLevel > 40
+                          ? 'bg-amber-500'
+                          : 'bg-emerald-500'
                     )}
                     style={{ width: `${stressLevel}%` }}
                   />
@@ -126,7 +146,9 @@ const CharacterNode: React.FC<NodeProps<CharacterWebNode>> = (props) => {
                     style={{ width: `${transformationProgress}%` }}
                   />
                 </div>
-                <span className="text-[9px] text-zinc-500 w-6 text-right">{transformationProgress}%</span>
+                <span className="text-[9px] text-zinc-500 w-6 text-right">
+                  {transformationProgress}%
+                </span>
               </div>
             )}
           </div>

@@ -4,6 +4,7 @@ import { Tile } from './Tile'
 import { RepaintCanvas } from './RepaintCanvas'
 import { selectModeService } from '@/domains/world-building-toolkit/services/SelectModeService'
 import { Sparkles, X, ArrowRight } from 'lucide-react'
+import { getErrorMessage } from '@/lib/error-utils'
 
 const TILE_SIZE = 512
 
@@ -230,11 +231,11 @@ export const WorldCanvas: React.FC = () => {
       if (result.debugInfo) {
         useWorldStore.getState().setSelectDebugInfo(result.debugInfo)
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Segmentation failed:', error)
       useWorldStore.getState().setSelectDebugInfo({
         box,
-        apiResponse: { error: error.message || String(error) },
+        apiResponse: { error: getErrorMessage(error) || String(error) },
       })
     } finally {
       setSegmenting(false)

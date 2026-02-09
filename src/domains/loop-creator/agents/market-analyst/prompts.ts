@@ -220,7 +220,7 @@ export function buildLoopContext(input: {
  * Reference game scoring criteria - SECRET SAUCE
  * These detailed criteria help the scorer tools understand what makes each archetype successful
  */
-export const SCORING_CRITERIA = {
+const SCORING_CRITERIA = {
   discoElysium: {
     name: 'Disco Elysium',
     aspects: [

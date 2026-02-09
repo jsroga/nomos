@@ -57,7 +57,7 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = ({
   const [currentChangeIndex, setCurrentChangeIndex] = useState(0)
   const [viewMode, setViewMode] = useState<'summary' | 'diff'>('summary')
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
-  
+
   const changes = useMemo(() => extractChanges(action), [action])
   const currentChange = changes[currentChangeIndex]
 
@@ -114,7 +114,7 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = ({
         setCurrentChangeIndex(Math.min(changes.length - 1, currentChangeIndex + 1))
       } else if (e.key === 'Tab') {
         e.preventDefault()
-        setViewMode(v => v === 'summary' ? 'diff' : 'summary')
+        setViewMode(v => (v === 'summary' ? 'diff' : 'summary'))
       }
     }
 
@@ -141,22 +141,29 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = ({
                 {formatActionType(action.type)}
               </div>
               <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-3">
-                <span>From: <span className="text-foreground">{agentName}</span></span>
+                <span>
+                  From: <span className="text-foreground">{agentName}</span>
+                </span>
                 <span>•</span>
                 <span className="flex items-center gap-1">
-                  Confidence: 
-                  <span className={cn(
-                    'font-medium',
-                    (action.confidence || 0.8) >= 0.8 ? 'text-green-400' :
-                    (action.confidence || 0.8) >= 0.5 ? 'text-yellow-400' : 'text-red-400'
-                  )}>
+                  Confidence:
+                  <span
+                    className={cn(
+                      'font-medium',
+                      (action.confidence || 0.8) >= 0.8
+                        ? 'text-green-400'
+                        : (action.confidence || 0.8) >= 0.5
+                          ? 'text-yellow-400'
+                          : 'text-red-400'
+                    )}
+                  >
                     {Math.round((action.confidence || 0.8) * 100)}%
                   </span>
                 </span>
               </div>
             </div>
           </div>
-          
+
           {/* Stats Pills */}
           <div className="flex items-center gap-3">
             <div className="flex gap-2 text-xs">
@@ -223,7 +230,9 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = ({
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => setCurrentChangeIndex(Math.min(changes.length - 1, currentChangeIndex + 1))}
+                  onClick={() =>
+                    setCurrentChangeIndex(Math.min(changes.length - 1, currentChangeIndex + 1))
+                  }
                   disabled={currentChangeIndex === changes.length - 1}
                   className="h-6 w-6"
                 >
@@ -246,7 +255,9 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = ({
                     <Sparkles className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                     <div>
                       <div className="text-sm font-medium text-primary mb-1">Why this change?</div>
-                      <p className="text-sm text-foreground/80 leading-relaxed">{action.reasoning}</p>
+                      <p className="text-sm text-foreground/80 leading-relaxed">
+                        {action.reasoning}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -255,7 +266,10 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = ({
               {/* Changes by Category */}
               <div className="space-y-4">
                 {Object.entries(changesByCategory).map(([category, categoryChanges]) => (
-                  <div key={category} className="border border-border/50 rounded-lg overflow-hidden">
+                  <div
+                    key={category}
+                    className="border border-border/50 rounded-lg overflow-hidden"
+                  >
                     {/* Category Header */}
                     <button
                       className="w-full flex items-center justify-between p-4 bg-muted/30 hover:bg-muted/50 transition-colors"
@@ -287,7 +301,7 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = ({
                                   <span className="font-medium text-sm">{change.friendlyName}</span>
                                   <ChangeTypeBadge type={change.changeType} />
                                 </div>
-                                
+
                                 {/* Visual Before/After for simple values */}
                                 {change.summary ? (
                                   <p className="text-sm text-muted-foreground">{change.summary}</p>
@@ -311,7 +325,11 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = ({
                                       <div key={i} className="flex items-center gap-2 text-sm">
                                         <Plus className="w-3 h-3 text-green-400" />
                                         <span className="text-foreground/80">
-                                          {typeof item === 'object' ? (item.name || item.title || JSON.stringify(item).slice(0, 50)) : item}
+                                          {typeof item === 'object'
+                                            ? item.name ||
+                                              item.title ||
+                                              JSON.stringify(item).slice(0, 50)
+                                            : item}
                                         </span>
                                       </div>
                                     ))}
@@ -440,7 +458,8 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = ({
                         line: {
                           padding: '4px 12px',
                           fontSize: '13px',
-                          fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
+                          fontFamily:
+                            'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
                           lineHeight: '1.6',
                         },
                         gutter: {
@@ -472,13 +491,26 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = ({
         {/* Footer Actions */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-border/50 bg-muted/30">
           <div className="flex gap-3 text-[10px] text-muted-foreground font-mono">
-            <span><kbd className="px-1.5 py-0.5 bg-muted rounded border border-border">Esc</kbd> Close</span>
-            <span><kbd className="px-1.5 py-0.5 bg-muted rounded border border-border">Tab</kbd> Switch View</span>
+            <span>
+              <kbd className="px-1.5 py-0.5 bg-muted rounded border border-border">Esc</kbd> Close
+            </span>
+            <span>
+              <kbd className="px-1.5 py-0.5 bg-muted rounded border border-border">Tab</kbd> Switch
+              View
+            </span>
             {viewMode === 'diff' && changes.length > 1 && (
-              <span><kbd className="px-1.5 py-0.5 bg-muted rounded border border-border">←→</kbd> Navigate</span>
+              <span>
+                <kbd className="px-1.5 py-0.5 bg-muted rounded border border-border">←→</kbd>{' '}
+                Navigate
+              </span>
             )}
-            <span><kbd className="px-1.5 py-0.5 bg-muted rounded border border-border">Enter</kbd> Approve</span>
-            <span><kbd className="px-1.5 py-0.5 bg-muted rounded border border-border">Del</kbd> Reject</span>
+            <span>
+              <kbd className="px-1.5 py-0.5 bg-muted rounded border border-border">Enter</kbd>{' '}
+              Approve
+            </span>
+            <span>
+              <kbd className="px-1.5 py-0.5 bg-muted rounded border border-border">Del</kbd> Reject
+            </span>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={onReject} className="gap-2">
@@ -500,17 +532,23 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = ({
 const ChangeTypeIcon: React.FC<{ type: ActionChange['changeType'] }> = ({ type }) => {
   switch (type) {
     case 'add':
-      return <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
-        <Plus className="w-3.5 h-3.5 text-green-400" />
-      </div>
+      return (
+        <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
+          <Plus className="w-3.5 h-3.5 text-green-400" />
+        </div>
+      )
     case 'modify':
-      return <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
-        <Edit3 className="w-3.5 h-3.5 text-blue-400" />
-      </div>
+      return (
+        <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
+          <Edit3 className="w-3.5 h-3.5 text-blue-400" />
+        </div>
+      )
     case 'remove':
-      return <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
-        <Minus className="w-3.5 h-3.5 text-red-400" />
-      </div>
+      return (
+        <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+          <Minus className="w-3.5 h-3.5 text-red-400" />
+        </div>
+      )
   }
 }
 
@@ -520,7 +558,7 @@ const ChangeTypeBadge: React.FC<{ type: ActionChange['changeType'] }> = ({ type 
     modify: { label: 'Updated', className: 'bg-blue-500/10 text-blue-400' },
     remove: { label: 'Removed', className: 'bg-red-500/10 text-red-400' },
   }[type]
-  
+
   return (
     <span className={cn('text-[10px] px-1.5 py-0.5 rounded', config.className)}>
       {config.label}
@@ -530,10 +568,10 @@ const ChangeTypeBadge: React.FC<{ type: ActionChange['changeType'] }> = ({ type 
 
 function getCategoryIcon(category: string) {
   const icons: Record<string, React.ReactNode> = {
-    'Characters': <Users className="w-4 h-4 text-purple-400" />,
+    Characters: <Users className="w-4 h-4 text-purple-400" />,
     'World Rules': <Globe className="w-4 h-4 text-blue-400" />,
-    'Story': <FileText className="w-4 h-4 text-orange-400" />,
-    'Premise': <Sparkles className="w-4 h-4 text-primary" />,
+    Story: <FileText className="w-4 h-4 text-orange-400" />,
+    Premise: <Sparkles className="w-4 h-4 text-primary" />,
   }
   return icons[category] || <FileText className="w-4 h-4 text-muted-foreground" />
 }
@@ -635,14 +673,24 @@ function extractChanges(action: AgentAction): ActionChange[] {
   const generateSummary = (key: string, value: unknown): string | undefined => {
     if (Array.isArray(value)) {
       const count = value.length
-      const itemType = key === 'characters' || key === 'keyCharacters' ? 'character' :
-                       key === 'worldRules' ? 'rule' :
-                       key === 'factions' ? 'faction' :
-                       key === 'themes' ? 'theme' :
-                       key === 'traits' ? 'trait' :
-                       key === 'soundtracks' ? 'track' :
-                       key === 'plotTwists' ? 'twist' :
-                       key === 'sequences' || key === 'episodeRoadmap' ? 'episode' : 'item'
+      const itemType =
+        key === 'characters' || key === 'keyCharacters'
+          ? 'character'
+          : key === 'worldRules'
+            ? 'rule'
+            : key === 'factions'
+              ? 'faction'
+              : key === 'themes'
+                ? 'theme'
+                : key === 'traits'
+                  ? 'trait'
+                  : key === 'soundtracks'
+                    ? 'track'
+                    : key === 'plotTwists'
+                      ? 'twist'
+                      : key === 'sequences' || key === 'episodeRoadmap'
+                        ? 'episode'
+                        : 'item'
       return `${count} ${itemType}${count !== 1 ? 's' : ''} ${action.type.startsWith('CREATE_') ? 'added' : 'updated'}`
     }
     if (typeof value === 'string' && value.length > 100) {
@@ -654,19 +702,29 @@ function extractChanges(action: AgentAction): ActionChange[] {
   // For UPDATE actions, extract the fields being updated
   if (action.type.startsWith('UPDATE_')) {
     const srcPayload = payload as any
-    
+
     // Extract "before" data if provided by stream (for diff viewer)
     const beforeData = srcPayload._before || null
-    
+
     // Handle updatedFields wrapper (common in bible updates)
-    const source = srcPayload.updatedFields || 
-                   (srcPayload.updates && typeof srcPayload.updates === 'object' && !Array.isArray(srcPayload.updates)
-                     ? srcPayload.updates
-                     : srcPayload)
+    const source =
+      srcPayload.updatedFields ||
+      (srcPayload.updates &&
+      typeof srcPayload.updates === 'object' &&
+      !Array.isArray(srcPayload.updates)
+        ? srcPayload.updates
+        : srcPayload)
 
     Object.entries(source).forEach(([key, value]) => {
       // Filter out technical keys
-      if (key !== 'id' && key !== 'beatId' && key !== 'characterId' && key !== 'projectId' && key !== 'episodeId' && key !== '_before') {
+      if (
+        key !== 'id' &&
+        key !== 'beatId' &&
+        key !== 'characterId' &&
+        key !== 'projectId' &&
+        key !== 'episodeId' &&
+        key !== '_before'
+      ) {
         changes.push({
           path: key,
           before: beforeData, // Use the "before" data from stream
@@ -690,8 +748,8 @@ function extractChanges(action: AgentAction): ActionChange[] {
       after: payload,
       reason: action.reasoning,
       changeType: 'add',
-      category: entityType === 'beat' ? 'Story' : 
-                entityType === 'character' ? 'Characters' : 'General',
+      category:
+        entityType === 'beat' ? 'Story' : entityType === 'character' ? 'Characters' : 'General',
       friendlyName: 'New ' + formatFieldName(entityType),
       summary: generateSummary(entityType, payload),
     })
@@ -706,8 +764,8 @@ function extractChanges(action: AgentAction): ActionChange[] {
       after: null,
       reason: action.reasoning,
       changeType: 'remove',
-      category: entityType === 'beat' ? 'Story' : 
-                entityType === 'character' ? 'Characters' : 'General',
+      category:
+        entityType === 'beat' ? 'Story' : entityType === 'character' ? 'Characters' : 'General',
       friendlyName: formatFieldName(entityType),
     })
   }
@@ -764,5 +822,3 @@ function formatActionType(type: string): string {
     .toLowerCase()
     .replace(/\b\w/g, c => c.toUpperCase())
 }
-
-export default ActionApprovalModal

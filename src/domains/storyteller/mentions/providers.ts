@@ -251,7 +251,7 @@ export const storytellerSectionProvider: MentionProvider = {
 /**
  * Entity Registry Provider - All registered entities from the EntityRegistry
  * This enables @ mentions for entities that the LLM has referenced
- * 
+ *
  * NOTE: This provider requires server-side data fetching.
  * The actual entity list should be passed via context.registryEntities
  * which is populated by the parent component fetching from the API.
@@ -260,30 +260,35 @@ export const entityRegistryProvider: MentionProvider = {
   category: 'entity',
   getItems: (filter: string, context: ProjectContext): MentionItem[] => {
     const items: MentionItem[] = []
-    
+
     // Registry entities should be passed via context from server
     // This avoids importing server-only database code in client components
-    const registryEntities = (context as any).registryEntities as Array<{
-      id: string
-      name: string
-      type: EntityType
-      description?: string
-      metadata?: Record<string, any>
-    }> | undefined
-    
+    const registryEntities = (context as any).registryEntities as
+      | Array<{
+          id: string
+          name: string
+          type: EntityType
+          description?: string
+          metadata?: Record<string, unknown>
+        }>
+      | undefined
+
     if (!registryEntities || registryEntities.length === 0) {
       return items
     }
-    
+
     const filterLower = filter.toLowerCase()
-    
+
     for (const entity of registryEntities) {
       // Filter by name or type
-      if (filter && !entity.name.toLowerCase().includes(filterLower) && 
-          !entity.type.toLowerCase().includes(filterLower)) {
+      if (
+        filter &&
+        !entity.name.toLowerCase().includes(filterLower) &&
+        !entity.type.toLowerCase().includes(filterLower)
+      ) {
         continue
       }
-      
+
       items.push({
         id: entity.id, // Already in format like "char-abc123"
         name: entity.name,
@@ -300,7 +305,7 @@ export const entityRegistryProvider: MentionProvider = {
         },
       })
     }
-    
+
     return items
   },
 }
@@ -310,8 +315,8 @@ export const entityRegistryProvider: MentionProvider = {
  */
 export function getStorytellerMentionProviders(): MentionProvider[] {
   return [
-    storytellerEntityProvider, 
-    storytellerAgentProvider, 
+    storytellerEntityProvider,
+    storytellerAgentProvider,
     storytellerSectionProvider,
     entityRegistryProvider, // Add registry-based provider
   ]

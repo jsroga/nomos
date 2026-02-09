@@ -40,7 +40,7 @@ export function canEditBible(userEmail?: string | null, isBibleLocked?: boolean)
 /**
  * Get Bible lock status message
  */
-export function getBibleLockMessage(
+function getBibleLockMessage(
   isLocked: boolean,
   lockedBy?: string | null,
   lockedAt?: Date | null

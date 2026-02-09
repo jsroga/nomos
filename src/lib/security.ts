@@ -222,7 +222,7 @@ export async function safeFetch(url: string, options?: RequestInit): Promise<Res
 // INPUT VALIDATION SCHEMAS
 // ============================================
 
-export const schemas = {
+const schemas = {
   uuid: z.string().uuid(),
   projectId: z.string().uuid(),
   email: z.string().email(),
@@ -334,7 +334,7 @@ export const securityHeaders = {
 /**
  * Apply security headers to a response
  */
-export function applySecurityHeaders(response: Response): Response {
+function applySecurityHeaders(response: Response): Response {
   const headers = new Headers(response.headers)
   for (const [key, value] of Object.entries(securityHeaders)) {
     headers.set(key, value)

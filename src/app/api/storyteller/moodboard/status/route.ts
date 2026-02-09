@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runs } from '@trigger.dev/sdk/v3'
 import { requireAuth } from '@/lib/auth'
+import { getErrorMessage } from '@/lib/error-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,9 +35,9 @@ export async function GET(request: NextRequest) {
       startedAt: run.startedAt,
       finishedAt: run.finishedAt,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to get moodboard generation status:', error)
 
-    return NextResponse.json({ error: error.message || 'Failed to get status' }, { status: 500 })
+    return NextResponse.json({ error: getErrorMessage(error) || 'Failed to get status' }, { status: 500 })
   }
 }

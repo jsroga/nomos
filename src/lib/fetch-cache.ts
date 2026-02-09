@@ -34,7 +34,7 @@ export async function cachedFetch<T>(
   const cached = fetchCache.get(key)
 
   // If we have cached data that's still fresh, return it
-  if (cached && cached.data !== undefined && (now - cached.timestamp) < ttl) {
+  if (cached && cached.data !== undefined && now - cached.timestamp < ttl) {
     return cached.data as T
   }
 
@@ -78,7 +78,7 @@ export function clearFetchCache(key?: string): void {
  * Creates a scoped cache with a prefix for all keys.
  * Useful for per-project or per-feature caching.
  */
-export function createScopedCache(prefix: string) {
+function createScopedCache(prefix: string) {
   return {
     fetch: <T>(key: string, fetcher: () => Promise<T>, options?: { ttlMs?: number }) =>
       cachedFetch<T>(`${prefix}:${key}`, fetcher, options),
@@ -91,6 +91,6 @@ export function createScopedCache(prefix: string) {
           fetchCache.delete(k)
         }
       }
-    }
+    },
   }
 }

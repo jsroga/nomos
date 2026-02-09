@@ -781,7 +781,5 @@ export const STORYTELLER_GOLDEN_DATASET: DatasetConfig = {
   examples: examples as EvaluationExample[],
 }
 
-// Legacy export for backwards compatibility
-export const STORYTELLER_DATASET = STORYTELLER_GOLDEN_DATASET
 export { examples as STORYTELLER_EXAMPLES }
 export type { StorytellerExample }

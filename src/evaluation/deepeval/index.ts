@@ -1,6 +1,6 @@
 /**
  * DeepEval Integration
- * 
+ *
  * TypeScript bridge for running Python DeepEval metrics locally.
  */
 

@@ -24,6 +24,7 @@ import { AIProvider } from '@/types/enums'
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
 import { LocalStorageKeys } from '@/constants/localStorage'
 import { TOUR_STEP_IDS } from '@/lib/tour-constants'
+import { getErrorMessage } from '@/lib/error-utils'
 
 // Dynamic import with SSR disabled to avoid React reconciler issues
 const ThreeDViewer = dynamic(
@@ -404,9 +405,9 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
       } else {
         toast(`Meshy task status: ${result.status}. Progress: ${result.progress}%`, { icon: 'ℹ️' })
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.dismiss()
-      toast.error(`Recovery failed: ${err.message}`)
+      toast.error(`Recovery failed: ${getErrorMessage(err)}`)
     } finally {
       setIsRecovering(false)
     }
@@ -688,10 +689,10 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
         details: `${provider} - In progress`,
         status: 'in-progress',
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error)
       toast.dismiss()
-      toast.error(`Failed to Start: ${error.message}`)
+      toast.error(`Failed to Start: ${getErrorMessage(error)}`)
       setIsGenerating(false)
     }
   }
@@ -808,10 +809,10 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
         details: 'Meshy - In progress',
         status: 'in-progress',
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error)
       toast.dismiss()
-      toast.error(`Failed to Start Remesh: ${error.message}`)
+      toast.error(`Failed to Start Remesh: ${getErrorMessage(error)}`)
       setIsRemeshing(false)
     }
   }
@@ -880,10 +881,10 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
         details: 'In progress',
         status: 'in-progress',
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error)
       toast.dismiss()
-      toast.error(`Failed to Start Upload: ${error.message}`)
+      toast.error(`Failed to Start Upload: ${getErrorMessage(error)}`)
       setIsUploading(false)
     }
   }

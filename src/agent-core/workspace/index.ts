@@ -3,10 +3,10 @@
  */
 
 export {
-    StorytellerWorkspace,
-    getStorytellerWorkspace,
-    initializeWorkspace,
-    type WorkspaceConfig,
-    type ScriptArtifact,
-    type FileIndexEntry
+  StorytellerWorkspace,
+  getStorytellerWorkspace,
+  initializeWorkspace,
+  type WorkspaceConfig,
+  type ScriptArtifact,
+  type FileIndexEntry,
 } from './storyteller-workspace'

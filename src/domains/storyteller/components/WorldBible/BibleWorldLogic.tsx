@@ -7,7 +7,7 @@ import { RichText } from '../RichText'
 import { useBible } from './BibleContext'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
 
-interface BibleWorldLogicProps { }
+interface BibleWorldLogicProps {}
 
 export const BibleWorldLogic: React.FC<BibleWorldLogicProps> = () => {
   const {
@@ -30,12 +30,11 @@ export const BibleWorldLogic: React.FC<BibleWorldLogicProps> = () => {
   const localRules = Array.isArray(localPlan.worldRules) ? localPlan.worldRules : []
   const plotTwists = Array.isArray(storyPlan.plotTwists) ? storyPlan.plotTwists : []
   const localPlotTwists = Array.isArray(localPlan.plotTwists) ? localPlan.plotTwists : []
-  
-  
+
   // Check loading states for each section
   const isWorldRulesLoading = loadingSections?.worldRules?.loading ?? false
   const isPlotTwistsLoading = loadingSections?.plotTwists?.loading ?? false
-  
+
   // Check pending actions for each section
   const worldRulesPending = pendingActions?.worldRules
   const plotTwistsPending = pendingActions?.plotTwists
@@ -43,7 +42,7 @@ export const BibleWorldLogic: React.FC<BibleWorldLogicProps> = () => {
   return (
     <div className="space-y-8">
       {/* WORLD RULES SECTION */}
-      <section className={(isWorldRulesLoading || worldRulesPending) ? 'relative' : ''}>
+      <section className={isWorldRulesLoading || worldRulesPending ? 'relative' : ''}>
         {/* Loading overlay */}
         {isWorldRulesLoading && !worldRulesPending && (
           <div className="absolute inset-0 z-10 bg-background/60 backdrop-blur-sm rounded-lg flex items-center justify-center">
@@ -55,7 +54,10 @@ export const BibleWorldLogic: React.FC<BibleWorldLogicProps> = () => {
         )}
         {/* Pending action overlay */}
         {worldRulesPending && (
-          <SectionPendingOverlay pendingAction={worldRulesPending} onReview={worldRulesPending.onReview} />
+          <SectionPendingOverlay
+            pendingAction={worldRulesPending}
+            onReview={worldRulesPending.onReview}
+          />
         )}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -167,7 +169,7 @@ export const BibleWorldLogic: React.FC<BibleWorldLogicProps> = () => {
       </section>
 
       {/* PLOT TWISTS SECTION */}
-      <section className={(isPlotTwistsLoading || plotTwistsPending) ? 'relative' : ''}>
+      <section className={isPlotTwistsLoading || plotTwistsPending ? 'relative' : ''}>
         {/* Loading overlay */}
         {isPlotTwistsLoading && !plotTwistsPending && (
           <div className="absolute inset-0 z-10 bg-background/60 backdrop-blur-sm rounded-lg flex items-center justify-center">
@@ -179,7 +181,10 @@ export const BibleWorldLogic: React.FC<BibleWorldLogicProps> = () => {
         )}
         {/* Pending action overlay */}
         {plotTwistsPending && (
-          <SectionPendingOverlay pendingAction={plotTwistsPending} onReview={plotTwistsPending.onReview} />
+          <SectionPendingOverlay
+            pendingAction={plotTwistsPending}
+            onReview={plotTwistsPending.onReview}
+          />
         )}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -199,7 +204,9 @@ export const BibleWorldLogic: React.FC<BibleWorldLogicProps> = () => {
             )}
             {!isReadOnly && onSendMessage && (
               <button
-                onClick={() => onSendMessage?.('Generate 3 major plot twists for this story.', 'plotTwists')}
+                onClick={() =>
+                  onSendMessage?.('Generate 3 major plot twists for this story.', 'plotTwists')
+                }
                 className={`p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105 ${isPlotTwistsLoading ? 'pointer-events-none opacity-50' : ''}`}
                 title="Generate Twists"
                 disabled={isPlotTwistsLoading}
@@ -251,9 +258,17 @@ export const BibleWorldLogic: React.FC<BibleWorldLogicProps> = () => {
                 )
               }
               // Object format: {title, description, impact, foreshadowing}
-              const t = twist as { title?: string; description?: string; impact?: string; foreshadowing?: string }
+              const t = twist as {
+                title?: string
+                description?: string
+                impact?: string
+                foreshadowing?: string
+              }
               return (
-                <div key={i} className="p-4 bg-card/50 border border-border/50 rounded-lg space-y-2">
+                <div
+                  key={i}
+                  className="p-4 bg-card/50 border border-border/50 rounded-lg space-y-2"
+                >
                   <h4 className="font-semibold text-red-400">
                     <RichText text={t.title || `Twist ${i + 1}`} projectId={projectId} inline />
                   </h4>

@@ -1,12 +1,13 @@
 /**
  * Confident AI Setup
- * 
+ *
  * Ensures metrics and collections are created on Confident AI
  * before running experiments.
  */
 
-import { getConfidentAIClient, CreateMetricRequest } from './client'
+import { getConfidentAIClient } from './client'
 import { STORYTELLER_METRICS, getMetricNames } from './metrics'
+import { getErrorMessage } from '@/lib/error-utils'
 
 const STORYTELLER_COLLECTION_NAME = 'Storyteller Full v3'
 const STORYTELLER_QUICK_COLLECTION = 'Storyteller Quick v3'
@@ -16,13 +17,13 @@ const STORYTELLER_QUICK_COLLECTION = 'Storyteller Quick v3'
  */
 export async function ensureMetricsExist(): Promise<void> {
   const client = getConfidentAIClient()
-  
+
   console.log('📊 Checking Confident AI metrics...')
-  
+
   // Get existing metrics
   const { data } = await client.listMetrics()
   const existingNames = new Set(data.metrics.map(m => m.name))
-  
+
   // Create missing metrics
   for (const metric of STORYTELLER_METRICS) {
     if (!existingNames.has(metric.name)) {
@@ -32,7 +33,7 @@ export async function ensureMetricsExist(): Promise<void> {
       console.log(`  ✓ Metric exists: ${metric.name}`)
     }
   }
-  
+
   console.log('✅ All metrics ready')
 }
 
@@ -44,19 +45,19 @@ export async function ensureCollectionExists(
   metricNames?: string[]
 ): Promise<void> {
   const client = getConfidentAIClient()
-  
+
   console.log(`📦 Checking collection: ${collectionName}`)
-  
+
   // Get existing collections
   const response = await client.listMetricCollections()
   const collections = response.data?.collections || []
   const existingNames = new Set(collections.map(c => c.name))
-  
+
   if (!existingNames.has(collectionName)) {
     console.log(`  Creating collection: ${collectionName}`)
-    
+
     const metricsToUse = metricNames || getMetricNames()
-    
+
     try {
       await client.createMetricCollection({
         name: collectionName,
@@ -67,11 +68,11 @@ export async function ensureCollectionExists(
           includeReason: true,
         })),
       })
-      
+
       console.log(`✅ Collection created: ${collectionName}`)
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle 409 conflict (collection already exists)
-      if (error.message?.includes('409') || error.message?.includes('already exists')) {
+      if (getErrorMessage(error)?.includes('409') || getErrorMessage(error)?.includes('already exists')) {
         console.log(`✓ Collection already exists: ${collectionName}`)
       } else {
         throw error
@@ -87,23 +88,23 @@ export async function ensureCollectionExists(
  */
 export async function setupConfidentAI(): Promise<void> {
   console.log('\n🔧 Setting up Confident AI...\n')
-  
+
   // First ensure metrics exist
   await ensureMetricsExist()
-  
+
   // Then create collections
   await ensureCollectionExists(STORYTELLER_COLLECTION_NAME)
-  
+
   // Create a quick collection with ALL scientific metrics
   await ensureCollectionExists(STORYTELLER_QUICK_COLLECTION, [
     'EQ-Bench Magic Score',
-    'Anti-Slop Score', 
+    'Anti-Slop Score',
     'EQ-Bench Consistency',
     'Mazur Character Voice',
     'Mazur Narrative Coherence',
     'Gilligan-Martin Quality',
   ])
-  
+
   console.log('\n✅ Confident AI setup complete!\n')
 }
 

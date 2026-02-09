@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     )
 
     const cookieStore = await cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
 
     const updates: any = {
       is_locked: action === 'lock',
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
     }
 
     const cookieStore = await cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
 
     const { data, error } = await supabase
       .from('series_bibles')

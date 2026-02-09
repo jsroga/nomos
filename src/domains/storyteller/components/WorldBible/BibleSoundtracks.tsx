@@ -22,7 +22,7 @@ export const BibleSoundtracks: React.FC<BibleSoundtracksProps> = () => {
   } = useBible()
   const [playingTrackIndex, setPlayingTrackIndex] = useState<number | null>(null)
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null)
-  
+
   // Check if soundtracks section is loading or has pending action
   const isLoading = loadingSections?.soundtracks?.loading ?? false
   const pendingAction = pendingActions?.soundtracks
@@ -31,12 +31,9 @@ export const BibleSoundtracks: React.FC<BibleSoundtracksProps> = () => {
     <section className={isLoading || pendingAction ? 'relative' : ''}>
       {/* Pending action overlay with approve/reject buttons */}
       {pendingAction && (
-        <SectionPendingOverlay 
-          pendingAction={pendingAction}
-          onReview={pendingAction.onReview}
-        />
+        <SectionPendingOverlay pendingAction={pendingAction} onReview={pendingAction.onReview} />
       )}
-      
+
       {/* Loading overlay with shimmer */}
       {isLoading && !pendingAction && (
         <div className="absolute inset-0 z-10 bg-background/60 backdrop-blur-sm rounded-lg flex items-center justify-center">
@@ -46,7 +43,7 @@ export const BibleSoundtracks: React.FC<BibleSoundtracksProps> = () => {
           </div>
         </div>
       )}
-      
+
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Music className="w-5 h-5 text-cyan-400/80" />

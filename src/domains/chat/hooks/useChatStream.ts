@@ -10,7 +10,14 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { Message, AgentAction, AgentQuestion, QuestionSession, ActionStatus, ActivityLogEntry } from '../types'
+import {
+  Message,
+  AgentAction,
+  AgentQuestion,
+  QuestionSession,
+  ActionStatus,
+  ActivityLogEntry,
+} from '../types'
 import { AgentStatusInfo, AgentStatus } from '../components/AgentLog'
 import { Citation } from '../components/CitationDisplay'
 import { ProgressSection } from '../components/SectionProgress'
@@ -22,6 +29,7 @@ import {
   clearInterruptedStream,
 } from '@/lib/chat-persistence'
 import { generateSessionId } from '@/lib/langfuse-session'
+import { getErrorMessage, toError } from '@/lib/error-utils'
 
 interface UseChatStreamProps {
   initialMessages?: Message[]
@@ -46,7 +54,7 @@ interface UseChatStreamProps {
   userId?: string
 }
 
-export interface StreamState {
+interface StreamState {
   // Core state
   messages: Message[]
   isSending: boolean
@@ -147,7 +155,9 @@ export function useChatStream({
   const [roundCount, setRoundCount] = useState(0)
 
   // Section-specific loading states (for bible sections)
-  const [loadingSections, setLoadingSections] = useState<Record<string, { loading: boolean; message?: string }>>({})
+  const [loadingSections, setLoadingSections] = useState<
+    Record<string, { loading: boolean; message?: string }>
+  >({})
 
   // Restore streaming state on mount or when key changes
   useEffect(() => {
@@ -158,7 +168,9 @@ export function useChatStream({
         if (storedMessages) {
           const parsed = JSON.parse(storedMessages)
           if (Array.isArray(parsed) && parsed.length > 0) {
-            console.log(`📦 [useChatStream] Restored ${parsed.length} messages for key: ${persistKey}`)
+            console.log(
+              `📦 [useChatStream] Restored ${parsed.length} messages for key: ${persistKey}`
+            )
             setMessagesInternal(parsed)
           }
         }
@@ -270,7 +282,7 @@ export function useChatStream({
         const currentLog = lastMsg.activityLog || []
         updatedMessages[actualIndex] = {
           ...lastMsg,
-          activityLog: [...currentLog, entry]
+          activityLog: [...currentLog, entry],
         }
         return updatedMessages
       }
@@ -282,8 +294,8 @@ export function useChatStream({
           sender: 'Storyteller',
           content: '',
           type: 'ai',
-          activityLog: [entry]
-        }
+          activityLog: [entry],
+        },
       ]
     })
   }, [])
@@ -375,11 +387,11 @@ export function useChatStream({
         prev.map(s =>
           s.id === data.section
             ? {
-              ...s,
-              status: 'completed' as const,
-              endTime: Date.now(),
-              details: data.preview || data.details,
-            }
+                ...s,
+                status: 'completed' as const,
+                endTime: Date.now(),
+                details: data.preview || data.details,
+              }
             : s
         )
       )
@@ -388,11 +400,11 @@ export function useChatStream({
         prev.map(s =>
           s.id === data.section
             ? {
-              ...s,
-              status: 'error' as const,
-              endTime: Date.now(),
-              details: data.error,
-            }
+                ...s,
+                status: 'error' as const,
+                endTime: Date.now(),
+                details: data.error,
+              }
             : s
         )
       )
@@ -483,20 +495,28 @@ export function useChatStream({
                     console.log('[useChatStream] Stream Start - Last Msg:', {
                       sender: lastMsg?.sender,
                       type: lastMsg?.type,
-                      content: lastMsg?.content?.slice(0, 20)
+                      content: lastMsg?.content?.slice(0, 20),
                     })
 
                     // If last message is already AI and empty, reuse it
-                    if (lastMsg && lastMsg.type === 'ai' && !lastMsg.content && !lastMsg.activityLog) {
+                    if (
+                      lastMsg &&
+                      lastMsg.type === 'ai' &&
+                      !lastMsg.content &&
+                      !lastMsg.activityLog
+                    ) {
                       return prev
                     }
                     // Add new placeholder AI message
-                    return [...prev, {
-                      sender: 'Storyteller',
-                      content: '',
-                      type: 'ai',
-                      activityLog: []
-                    }]
+                    return [
+                      ...prev,
+                      {
+                        sender: 'Storyteller',
+                        content: '',
+                        type: 'ai',
+                        activityLog: [],
+                      },
+                    ]
                   })
                 } else if (data.type === 'token') {
                   setStreamingTokens(prev => {
@@ -529,10 +549,9 @@ export function useChatStream({
                     agent: data.agent,
                     content: data.message,
                     timestamp: Date.now(),
-                    details: data.details
+                    details: data.details,
                   }
                   appendActivityLog(entry)
-
                 } else if (data.type === 'tool_result' || data.type === 'tool_call') {
                   // Handle explicit tool events if they come through stream
                   const entry: ActivityLogEntry = {
@@ -540,10 +559,9 @@ export function useChatStream({
                     toolName: data.toolName || data.tool,
                     toolInput: data.args || data.input,
                     toolResult: data.result,
-                    timestamp: Date.now()
+                    timestamp: Date.now(),
                   }
                   appendActivityLog(entry)
-
                 } else if (data.type === 'thinking') {
                   // Extended thinking/reasoning from agent - attach to current message and activity log
                   const thinking = data.thinking || ''
@@ -555,15 +573,20 @@ export function useChatStream({
                       type: 'thinking',
                       agent: agentName,
                       content: thinking,
-                      timestamp: data.timestamp || Date.now()
+                      timestamp: data.timestamp || Date.now(),
                     })
 
                     // 2. Add to message thinking entries for the dedicated thinking UI
                     setMessages(prev => {
                       const lastMsg = prev[prev.length - 1]
                       if (lastMsg && lastMsg.type === 'ai') {
-                        const existingThinkingEntries = lastMsg.additional_kwargs?.thinkingEntries || []
-                        const newEntry = { agent: agentName, content: thinking, timestamp: data.timestamp || Date.now() }
+                        const existingThinkingEntries =
+                          lastMsg.additional_kwargs?.thinkingEntries || []
+                        const newEntry = {
+                          agent: agentName,
+                          content: thinking,
+                          timestamp: data.timestamp || Date.now(),
+                        }
                         const updatedEntries = [...existingThinkingEntries, newEntry]
 
                         const formattedThinking = updatedEntries
@@ -580,8 +603,8 @@ export function useChatStream({
                               thinking: formattedThinking,
                               thinkingEntries: updatedEntries,
                               hasThinking: true,
-                            }
-                          }
+                            },
+                          },
                         ]
                       }
                       return prev
@@ -627,7 +650,7 @@ export function useChatStream({
                     agent: thinkingAgent || data.node || data.agent,
                     content: actionObj.reasoning || 'Proposed Action',
                     details: actionObj,
-                    timestamp: Date.now()
+                    timestamp: Date.now(),
                   }
                   appendActivityLog(entry)
 
@@ -635,12 +658,16 @@ export function useChatStream({
                   setMessages(prev => {
                     const lastMsg = prev[prev.length - 1]
                     // If last message is from this agent, attach action
-                    if (lastMsg && lastMsg.type === 'ai' && lastMsg.sender === (thinkingAgent || data.node || data.agent)) {
-                      const updatedActions = [...(lastMsg.actions || []), { ...actionObj, status: 'pending' }]
-                      return [
-                        ...prev.slice(0, -1),
-                        { ...lastMsg, actions: updatedActions }
+                    if (
+                      lastMsg &&
+                      lastMsg.type === 'ai' &&
+                      lastMsg.sender === (thinkingAgent || data.node || data.agent)
+                    ) {
+                      const updatedActions = [
+                        ...(lastMsg.actions || []),
+                        { ...actionObj, status: 'pending' },
                       ]
+                      return [...prev.slice(0, -1), { ...lastMsg, actions: updatedActions }]
                     }
                     // Otherwise create a new message for the action
                     return [
@@ -649,8 +676,8 @@ export function useChatStream({
                         sender: thinkingAgent || data.node || data.agent || 'System',
                         content: '', // Action-only message
                         type: 'ai',
-                        actions: [{ ...actionObj, status: 'pending' }]
-                      }
+                        actions: [{ ...actionObj, status: 'pending' }],
+                      },
                     ]
                   })
 
@@ -686,11 +713,11 @@ export function useChatStream({
                   setStreamingTokens('')
                 } else if (data.type === 'info') {
                   // Info notification (e.g., episode created)
-                  console.log(`[useChatStream] Info:`, data.message)
+                  console.log('[useChatStream] Info:', data.message)
                   if (onStreamingUpdate) onStreamingUpdate(data)
                 } else if (data.type === 'navigation') {
                   // Navigation signal (e.g., open beat board)
-                  console.log(`[useChatStream] Navigation:`, data.action, data.episodeId)
+                  console.log('[useChatStream] Navigation:', data.action, data.episodeId)
                   if (onStreamingUpdate) onStreamingUpdate(data)
                   // Could trigger router.push() here if we have access to router
                 } else if (data.type === 'state') {
@@ -704,7 +731,7 @@ export function useChatStream({
 
                   setLoadingSections(prev => ({
                     ...prev,
-                    [section]: { loading, message }
+                    [section]: { loading, message },
                   }))
 
                   // Notify external handler
@@ -727,7 +754,8 @@ export function useChatStream({
                   onComplete?.()
                 } else if (data.type === 'error') {
                   // Extract error message from various formats
-                  const errorMsg = data.error?.message || data.message || data.error || 'Unknown error'
+                  const errorMsg =
+                    data.error?.message || data.message || data.error || 'Unknown error'
                   const errorCode = data.error?.code || 'ERROR'
 
                   console.error(`[useChatStream] Error received: ${errorCode} - ${errorMsg}`)
@@ -756,11 +784,14 @@ export function useChatStream({
 
                     // Add helpful context for known errors
                     if (errorCode === 'QUOTA_EXCEEDED' || errorMsg.includes('quota')) {
-                      displayMessage = '⚠️ **API Quota Exceeded**\n\nThe AI service has reached its usage limit. Please:\n- Check your OpenAI billing settings\n- Wait a few minutes and try again\n- Contact support if the issue persists'
+                      displayMessage =
+                        '⚠️ **API Quota Exceeded**\n\nThe AI service has reached its usage limit. Please:\n- Check your OpenAI billing settings\n- Wait a few minutes and try again\n- Contact support if the issue persists'
                     } else if (errorMsg.includes('rate limit')) {
-                      displayMessage = '⏳ **Rate Limited**\n\nToo many requests. Please wait a moment and try again.'
+                      displayMessage =
+                        '⏳ **Rate Limited**\n\nToo many requests. Please wait a moment and try again.'
                     } else if (errorMsg.includes('network') || errorMsg.includes('timeout')) {
-                      displayMessage = '🌐 **Connection Error**\n\nCouldn\'t reach the AI service. Please check your internet connection and try again.'
+                      displayMessage =
+                        "🌐 **Connection Error**\n\nCouldn't reach the AI service. Please check your internet connection and try again."
                     }
 
                     setMessages(prev => [
@@ -790,7 +821,7 @@ export function useChatStream({
             }
           }
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Stream error', error)
       } finally {
         // Try to parse any remaining tokens as action (only if not aborted)
@@ -892,14 +923,14 @@ export function useChatStream({
           signal: abortControllerRef.current.signal,
         })
         await processStream(res, abortControllerRef.current.signal, roundCount)
-      } catch (error: any) {
-        if (error.name !== 'AbortError') {
+      } catch (error: unknown) {
+        if (toError(error).name !== 'AbortError') {
           console.error('Failed to send message:', error)
           // Check for common dev-mode issues
           const isDevReload =
-            error.message?.includes('network error') ||
-            error.message?.includes('incomplete') ||
-            error.message?.includes('chunked')
+            getErrorMessage(error)?.includes('network error') ||
+            getErrorMessage(error)?.includes('incomplete') ||
+            getErrorMessage(error)?.includes('chunked')
           const errorMessage = isDevReload
             ? 'Connection interrupted (possibly due to Hot Reload). Please try again.'
             : 'Failed to send message. Please try again.'

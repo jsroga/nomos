@@ -14,7 +14,7 @@ interface FactionCardProps {
 
 export const FactionCard: React.FC<FactionCardProps> = ({ faction, projectId, className }) => {
   const factionAny = faction as any
-  
+
   // Normalize goals to always be an array - handle both "goals" and "powerStructure"
   const goals = Array.isArray(faction.goals)
     ? faction.goals
@@ -27,7 +27,7 @@ export const FactionCard: React.FC<FactionCardProps> = ({ faction, projectId, cl
   // Resources can be "resources" or "politicalForces"
   const resources = faction.resources || factionAny.politicalForces || ''
 
-  // Normalize rivals to always be an array  
+  // Normalize rivals to always be an array
   const rivals = Array.isArray(faction.rivals)
     ? faction.rivals
     : typeof faction.rivals === 'string' && faction.rivals
@@ -119,7 +119,8 @@ export const FactionCard: React.FC<FactionCardProps> = ({ faction, projectId, cl
           {resources && (
             <div>
               <div className="flex items-center gap-2 mb-1 text-muted-foreground/50 font-bold text-[10px] uppercase tracking-widest">
-                <Zap className="w-3 h-3" /> {factionAny.politicalForces ? 'Political Forces' : 'Resources'}
+                <Zap className="w-3 h-3" />{' '}
+                {factionAny.politicalForces ? 'Political Forces' : 'Resources'}
               </div>
               <p className="text-xs text-foreground/70 ml-1 leading-relaxed">
                 <RichText text={resources} projectId={projectId} inline />
