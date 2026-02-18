@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import { Sparkles, Image as ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { LiquidGlass } from '@/components/LiquidGlass'
+// LiquidGlass removed
+
 
 interface StorytellerImageProps {
   src?: string | null
@@ -48,12 +49,7 @@ export const StorytellerImage: React.FC<StorytellerImageProps> = ({
           className
         )}
       >
-        <LiquidGlass
-          className="absolute inset-0 w-full h-full"
-          intensity={0.4}
-          speed={0.8}
-          frosted={true}
-        >
+        <div className="absolute inset-0 w-full h-full bg-muted/10 backdrop-blur-md">
           <div className="flex flex-col items-center justify-center w-full h-full p-4 relative z-20">
             <div className="relative">
               <img
@@ -68,7 +64,7 @@ export const StorytellerImage: React.FC<StorytellerImageProps> = ({
               Dreaming...
             </p>
           </div>
-        </LiquidGlass>
+        </div>
       </div>
     )
   }

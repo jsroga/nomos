@@ -17,7 +17,7 @@ const listEntities = createTool({
   id: 'list_entities',
   description:
     'List game entities for a project with optional filtering by type or domain. Returns characters, locations, mechanics, factions, items, and quests.',
-  schema: z.object({
+  inputSchema: z.object({
     projectId: z.string().uuid().describe('The project ID to list entities for (required)'),
     entityType: z
       .enum(['character', 'location', 'mechanic', 'faction', 'item', 'quest'])
@@ -32,23 +32,23 @@ const listEntities = createTool({
       .optional()
       .describe('Search term to filter by name or description (optional)'),
   }),
-  execute: async ({ context: _ctx, data }) => {
+  execute: async (input) => {
     const apiKey = process.env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
     const authResult = await validateApiKey(apiKey)
     if (!authResult.valid) throw new Error('Invalid API key')
 
-    const context = await getServiceContext(authResult)
+    const serviceContext = await getServiceContext(authResult)
 
     return entitiesService.list(
       {
-        projectId: data.projectId,
-        entityType: data.entityType,
-        sourceDomain: data.sourceDomain,
-        search: data.search,
+        projectId: input.projectId,
+        entityType: input.entityType,
+        sourceDomain: input.sourceDomain,
+        search: input.search,
       },
-      { userId: context.userId, supabase: context.supabase }
+      { userId: serviceContext.userId, supabase: serviceContext.supabase }
     )
   },
 })
@@ -56,21 +56,21 @@ const listEntities = createTool({
 const getEntity = createTool({
   id: 'get_entity',
   description: 'Get a single game entity by its ID.',
-  schema: z.object({
+  inputSchema: z.object({
     entityId: z.string().uuid().describe('The entity ID to retrieve'),
   }),
-  execute: async ({ context: _ctx, data }) => {
+  execute: async (input) => {
     const apiKey = process.env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
     const authResult = await validateApiKey(apiKey)
     if (!authResult.valid) throw new Error('Invalid API key')
 
-    const context = await getServiceContext(authResult)
+    const serviceContext = await getServiceContext(authResult)
 
-    return entitiesService.get(data.entityId, {
-      userId: context.userId,
-      supabase: context.supabase,
+    return entitiesService.get(input.entityId, {
+      userId: serviceContext.userId,
+      supabase: serviceContext.supabase,
     })
   },
 })
@@ -79,7 +79,7 @@ const createEntity = createTool({
   id: 'create_entity',
   description:
     'Create a new game entity. Entities are cross-domain objects that can be referenced across storyteller, loop-creator, interior-designer, and world-building modules.',
-  schema: z.object({
+  inputSchema: z.object({
     projectId: z.string().uuid().describe('The project ID to create the entity in'),
     entityType: z
       .enum(['character', 'location', 'mechanic', 'faction', 'item', 'quest'])
@@ -96,27 +96,27 @@ const createEntity = createTool({
     tags: z.array(z.string()).optional().describe('Tags for categorizing the entity (optional)'),
     imageUrl: z.string().url().optional().describe('URL to an image for the entity (optional)'),
   }),
-  execute: async ({ context: _ctx, data }) => {
+  execute: async (input) => {
     const apiKey = process.env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
     const authResult = await validateApiKey(apiKey)
     if (!authResult.valid) throw new Error('Invalid API key')
 
-    const context = await getServiceContext(authResult)
+    const serviceContext = await getServiceContext(authResult)
 
     return entitiesService.create(
       {
-        projectId: data.projectId,
-        entityType: data.entityType,
-        name: data.name,
-        description: data.description,
-        sourceDomain: data.sourceDomain,
-        metadata: data.metadata,
-        tags: data.tags,
-        imageUrl: data.imageUrl,
+        projectId: input.projectId,
+        entityType: input.entityType,
+        name: input.name,
+        description: input.description,
+        sourceDomain: input.sourceDomain,
+        metadata: input.metadata,
+        tags: input.tags,
+        imageUrl: input.imageUrl,
       },
-      { userId: context.userId, supabase: context.supabase }
+      { userId: serviceContext.userId, supabase: serviceContext.supabase }
     )
   },
 })
@@ -124,7 +124,7 @@ const createEntity = createTool({
 const updateEntity = createTool({
   id: 'update_entity',
   description: 'Update an existing game entity.',
-  schema: z.object({
+  inputSchema: z.object({
     entityId: z.string().uuid().describe('The entity ID to update'),
     name: z.string().optional().describe('New name for the entity (optional)'),
     description: z.string().optional().describe('New description for the entity (optional)'),
@@ -132,19 +132,19 @@ const updateEntity = createTool({
     tags: z.array(z.string()).optional().describe('Updated tags (optional)'),
     imageUrl: z.string().url().optional().describe('Updated image URL (optional)'),
   }),
-  execute: async ({ context: _ctx, data }) => {
+  execute: async (input) => {
     const apiKey = process.env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
     const authResult = await validateApiKey(apiKey)
     if (!authResult.valid) throw new Error('Invalid API key')
 
-    const context = await getServiceContext(authResult)
+    const serviceContext = await getServiceContext(authResult)
 
-    const { entityId, ...updateData } = data
+    const { entityId, ...updateData } = input
     return entitiesService.update(entityId, updateData, {
-      userId: context.userId,
-      supabase: context.supabase,
+      userId: serviceContext.userId,
+      supabase: serviceContext.supabase,
     })
   },
 })
@@ -152,21 +152,21 @@ const updateEntity = createTool({
 const deleteEntity = createTool({
   id: 'delete_entity',
   description: 'Delete a game entity.',
-  schema: z.object({
+  inputSchema: z.object({
     entityId: z.string().uuid().describe('The entity ID to delete'),
   }),
-  execute: async ({ context: _ctx, data }) => {
+  execute: async (input) => {
     const apiKey = process.env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
     const authResult = await validateApiKey(apiKey)
     if (!authResult.valid) throw new Error('Invalid API key')
 
-    const context = await getServiceContext(authResult)
+    const serviceContext = await getServiceContext(authResult)
 
-    return entitiesService.delete(data.entityId, {
-      userId: context.userId,
-      supabase: context.supabase,
+    return entitiesService.delete(input.entityId, {
+      userId: serviceContext.userId,
+      supabase: serviceContext.supabase,
     })
   },
 })

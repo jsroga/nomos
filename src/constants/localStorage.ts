@@ -1,6 +1,7 @@
 export enum LocalStorageKeys {
   // Developer Testing
   FORCE_ONBOARDING = 'forceOnboarding',
+  FORCE_STORYTELLER_STATE = 'forceStorytellerState',
 
   // AI Configuration
   AI_CONFIG_OPENAI = 'ai-config-openai',
@@ -23,10 +24,6 @@ export enum LocalStorageKeys {
   // Prompts
   FIDELITY_PROMPT = 'fidelity-prompt',
   MASTER_PROMPT = 'master-prompt',
-
-  // Storyteller / Writers Room
-  PREFERRED_MODEL_PROVIDER = 'preferredModelProvider',
-  ANTHROPIC_API_KEY = 'anthropicApiKey',
 
   // UI Layout
   SIDEBAR_WIDTH = 'sidebar-width',

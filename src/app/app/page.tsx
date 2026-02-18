@@ -14,9 +14,8 @@ import dynamic from 'next/dynamic'
 
 // New Imports for Liquid UI
 import { TurbulentBackground } from '@/domains/marketing/components/TurbulentBackground'
-import { Liquid } from '@/domains/marketing/components/Liquid'
 import { GlowEffect } from '@/components/ui/glow-effect'
-import { TURBULENT_BG_PROPS, LIQUID_PROPS } from '@/lib/constants/visuals'
+import { TURBULENT_BG_PROPS } from '@/lib/constants/visuals'
 import { BleedingText } from '@/components/ui/BleedingText'
 import { motion } from 'framer-motion'
 
@@ -61,9 +60,6 @@ export default function ProjectSelectionPage() {
 
   // Random 3D icon type - set once on mount
   const [iconType] = useState<IconType>(() => ICON_TYPES[Math.floor(Math.random() * ICON_TYPES.length)])
-
-  // --- Liquid UI State ---
-  const [bgElement, setBgElement] = useState<HTMLDivElement | null>(null)
 
   // Subtitle State
   const [subtitle, setSubtitle] = useState('')
@@ -155,7 +151,6 @@ export default function ProjectSelectionPage() {
   return (
     <TurbulentBackground
       {...TURBULENT_BG_PROPS}
-      onRef={setBgElement}
     >
       <div className="relative z-10 w-full min-h-screen p-4 md:p-8 flex flex-col items-center justify-center gap-8">
         {/* Centered Logo */}
@@ -249,31 +244,30 @@ export default function ProjectSelectionPage() {
             </div>
           </div>
 
-          {/* RIGHT: Create World (Liquid Card) */}
+          {/* RIGHT: Create World (Simple Blur Card) */}
           <div className="w-full md:w-2/3 flex items-center justify-center">
-            <Liquid speed={1.0} {...LIQUID_PROPS} snapshot={bgElement}>
-              <div className="w-full h-full p-8 md:p-12 flex flex-col justify-center items-center text-center bg-[#0000005c] rounded-2xl border border-white/10 shadow-2xl backdrop-blur-sm">
-                <div className="max-w-md w-full space-y-8">
-                  <div className="space-y-4 flex flex-col items-center relative group">
-                    {/* Edgy Header */}
-                    <div className="mb-8 relative z-10 flex flex-col items-center gap-2">
-                      <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tight font-syne leading-[0.9]">
-                        Getting Started
-                      </h2>
-                      <div className="h-6">
-                        {subtitle && (
-                          <BleedingText
-                            text={subtitle}
-                            className="text-sm font-mono tracking-wide uppercase"
-                            textColor="text-red-500/90"
-                            particleColor="text-red-500"
-                          />
-                        )}
-                      </div>
-                      <div className="w-32 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mt-4" />
+            <div className="w-full h-full p-8 md:p-12 flex flex-col justify-center items-center text-center bg-[#0000005c] rounded-2xl border border-white/10 shadow-2xl backdrop-blur-xl">
+              <div className="max-w-md w-full space-y-8">
+                <div className="space-y-4 flex flex-col items-center relative group">
+                  {/* Edgy Header */}
+                  <div className="mb-8 relative z-10 flex flex-col items-center gap-2">
+                    <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tight font-syne leading-[0.9]">
+                      Getting Started
+                    </h2>
+                    <div className="h-6">
+                      {subtitle && (
+                        <BleedingText
+                          text={subtitle}
+                          className="text-sm font-mono tracking-wide uppercase"
+                          textColor="text-red-500/90"
+                          particleColor="text-red-500"
+                        />
+                      )}
                     </div>
-                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px]">
-                      {/* <ThreeDIcon
+                    <div className="w-32 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mt-4" />
+                  </div>
+                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px]">
+                    {/* <ThreeDIcon
                         type={iconType}
                         size={600}
                         scale={0.33}
@@ -281,99 +275,98 @@ export default function ProjectSelectionPage() {
                         // mouseRotation={0.25}
                         speed={0.1}
                       /> */}
-                    </div>
-
                   </div>
 
-                  <form onSubmit={handleCreateProject} className="space-y-6 w-full">
-                    <div className="space-y-2 relative group w-full">
-                      <div className="relative">
-                        {/* Layer 1: Ambient Deep Glow (Always active, slow motion) */}
-                        <motion.div
-                          className="absolute inset-0 -z-20 rounded-xl opacity-20 blur-2xl"
-                          style={{
-                            background: 'linear-gradient(45deg, #4f46e5, #3b82f6, #8b5cf6, #4f46e5)',
-                            backgroundSize: '400% 400%',
-                          }}
-                          animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
-                          transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-                        />
+                </div>
 
-                        {/* Layer 2: Focus/Hover Intensity (Bright, scale pulse) */}
-                        <motion.div
-                          className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-0 group-hover:opacity-30 group-focus-within:opacity-75 blur-md transition-all duration-500"
-                          style={{ backgroundSize: '200% 200%' }}
-                          animate={{
-                            backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
-                            scale: [0.98, 1.02, 0.98]
-                          }}
-                          transition={{
-                            duration: 4,
-                            repeat: Infinity,
-                            ease: 'easeInOut'
-                          }}
-                        />
-                        <input
-                          type="text"
-                          placeholder="Name your world..."
-                          value={newProjectName}
-                          onChange={e => setNewProjectName(e.target.value)}
-                          className="w-full px-6 py-4 bg-black border border-white/20 rounded-xl focus:outline-none focus:border-white/50 focus:bg-black text-xl placeholder:text-white/30 transition-all duration-300 text-white text-center relative z-10"
-                        />
-                      </div>
-                    </div>
-                    <div className="relative group">
-                      {/* Button Glow Layer 1: Ambient */}
+                <form onSubmit={handleCreateProject} className="space-y-6 w-full">
+                  <div className="space-y-2 relative group w-full">
+                    <div className="relative">
+                      {/* Layer 1: Ambient Deep Glow (Always active, slow motion) */}
                       <motion.div
-                        className="absolute inset-0 -z-20 rounded-xl opacity-20 blur-xl"
+                        className="absolute inset-0 -z-20 rounded-xl opacity-20 blur-2xl"
                         style={{
                           background: 'linear-gradient(45deg, #4f46e5, #3b82f6, #8b5cf6, #4f46e5)',
                           backgroundSize: '400% 400%',
                         }}
                         animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
-                        transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+                        transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
                       />
 
-                      {/* Button Glow Layer 2: Hover Intensity */}
+                      {/* Layer 2: Focus/Hover Intensity (Bright, scale pulse) */}
                       <motion.div
-                        className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-0 group-hover:opacity-100 blur-lg transition-all duration-300"
+                        className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-0 group-hover:opacity-30 group-focus-within:opacity-75 blur-md transition-all duration-500"
                         style={{ backgroundSize: '200% 200%' }}
                         animate={{
                           backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
-                          scale: [0.95, 1.05, 0.95]
+                          scale: [0.98, 1.02, 0.98]
                         }}
                         transition={{
-                          duration: 3,
+                          duration: 4,
                           repeat: Infinity,
                           ease: 'easeInOut'
                         }}
                       />
-                      <Button
-                        type="submit"
-                        className="w-full h-14 text-lg font-bold shadow-xl hover:shadow-2xl transition-all bg-white text-black hover:bg-white/90 rounded-xl relative z-10"
-                        disabled={isCreating || !newProjectName.trim()}
-                      >
-                        {isCreating ? (
-                          <>
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            Forging...
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="mr-2 h-5 w-5" />
-                            Create New World
-                          </>
-                        )}
-                      </Button>
+                      <input
+                        type="text"
+                        placeholder="Name your world..."
+                        value={newProjectName}
+                        onChange={e => setNewProjectName(e.target.value)}
+                        className="w-full px-6 py-4 bg-black border border-white/20 rounded-xl focus:outline-none focus:border-white/50 focus:bg-black text-xl placeholder:text-white/30 transition-all duration-300 text-white text-center relative z-10"
+                      />
                     </div>
-                  </form>
-                </div>
+                  </div>
+                  <div className="relative group">
+                    {/* Button Glow Layer 1: Ambient */}
+                    <motion.div
+                      className="absolute inset-0 -z-20 rounded-xl opacity-20 blur-xl"
+                      style={{
+                        background: 'linear-gradient(45deg, #4f46e5, #3b82f6, #8b5cf6, #4f46e5)',
+                        backgroundSize: '400% 400%',
+                      }}
+                      animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+                      transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+                    />
+
+                    {/* Button Glow Layer 2: Hover Intensity */}
+                    <motion.div
+                      className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-0 group-hover:opacity-100 blur-lg transition-all duration-300"
+                      style={{ backgroundSize: '200% 200%' }}
+                      animate={{
+                        backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                        scale: [0.95, 1.05, 0.95]
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: 'easeInOut'
+                      }}
+                    />
+                    <Button
+                      type="submit"
+                      className="w-full h-14 text-lg font-bold shadow-xl hover:shadow-2xl transition-all bg-white text-black hover:bg-white/90 rounded-xl relative z-10"
+                      disabled={isCreating || !newProjectName.trim()}
+                    >
+                      {isCreating ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          Forging...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="mr-2 h-5 w-5" />
+                          Create New World
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
               </div>
-            </Liquid>
+            </div>
           </div>
         </div>
       </div>
       {ConfirmDialogComponent}
-    </TurbulentBackground>
+    </TurbulentBackground >
   )
 }

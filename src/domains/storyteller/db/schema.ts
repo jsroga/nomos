@@ -81,6 +81,7 @@ export const episodes = pgTable('episodes', {
   planApproved: boolean('plan_approved').default(false), // Whether the plan has been approved
   currentPhase: text('current_phase').default('premise'), // premise, breaking, cardlock, writing, complete
   status: text('status').default('planning'), // planning, breaking, writing, completed
+  tenPointsPlan: jsonb('ten_points_plan').default([]), // The 10-point plan for the episode
   posterUrl: text('poster_url'), // Generated episode poster/cover URL
   posterPrompt: text('poster_prompt'), // The prompt used to generate the poster
   createdAt: timestamp('created_at').defaultNow().notNull(),

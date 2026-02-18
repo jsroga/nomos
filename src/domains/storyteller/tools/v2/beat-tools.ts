@@ -480,4 +480,4 @@ export const listBeatsTool = createTool({
 })
 
 // Export all tools as array for easy registration
-const beatTools = [manageBeatTool, listBeatsTool]
+export const beatTools = [manageBeatTool, listBeatsTool]

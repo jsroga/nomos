@@ -93,7 +93,7 @@ interface WithHoverActionsProps {
   showActions?: boolean
 }
 
-export const WithHoverActions: React.FC<WithHoverActionsProps> = ({
+const WithHoverActions: React.FC<WithHoverActionsProps> = ({
   children,
   content,
   onEdit,

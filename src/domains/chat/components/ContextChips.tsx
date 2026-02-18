@@ -95,7 +95,7 @@ const ContextChip: React.FC<{ item: ContextItem; compact?: boolean }> = ({ item,
 }
 
 // Helper to extract context items from message content
-export const extractContextFromMessage = (
+const extractContextFromMessage = (
   content: string,
   availableContext: {
     characters?: Array<{ id: string; name: string }>
@@ -150,7 +150,7 @@ interface ContextBarProps {
   className?: string
 }
 
-export const ContextBar: React.FC<ContextBarProps> = ({
+const ContextBar: React.FC<ContextBarProps> = ({
   characters = [],
   worldRules = [],
   episode,

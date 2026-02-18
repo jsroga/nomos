@@ -7,8 +7,8 @@
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { db } from '@/lib/db'
-import { projects } from '../../db/schema'
-import { eq } from 'drizzle-orm'
+import { projects, characters } from '../../db/schema'
+import { eq, and } from 'drizzle-orm'
 import { deepMerge } from '../../config/action-config'
 import { getErrorMessage } from '@/lib/error-utils'
 
@@ -59,6 +59,25 @@ function normalizeUpdates(raw: Record<string, any>): Record<string, any> {
   )
 }
 
+const CharacterSchema = z.object({
+  name: z.string().describe('Full name of the character'),
+  role: z.string().describe('Role in the story (Protagonist, Antagonist, etc.)'),
+  gender: z.string().describe('Gender identity'),
+  description: z.string().describe('Physical and personality description'),
+  archetype: z.string().optional().describe('Jungian archetype'),
+  mbti: z.string().optional().describe('MBTI personality type'),
+  voiceSignature: z.string().optional().describe('Distinctive speaking style'),
+  motivation: z.string().optional().describe('Public motivation'),
+  fatalFlaw: z.string().optional().describe('Critical weakness'),
+  psychology: z.object({
+    actualMotivation: z.string().optional(),
+    fears: z.string().optional(),
+    desires: z.string().optional(),
+    delusions: z.string().optional(),
+    secrets: z.string().optional(),
+  }).optional().describe('Deep psychological profile'),
+})
+
 export const updateWorldBibleTool = createTool({
   id: 'update_world_bible',
   description:
@@ -66,6 +85,8 @@ export const updateWorldBibleTool = createTool({
   inputSchema: z
     .object({
       projectId: z.string(),
+      worldDescription: z.string().optional().describe('The narrative description of the world. CRITICAL: MUST weave in key cast members (protagonist/antagonist) and their relationship to the setting.'),
+      cast: z.array(CharacterSchema).optional().describe('List of characters to add or update'),
       // All other fields are optional and allowed via passthrough
     })
     .passthrough(),
@@ -133,6 +154,8 @@ export const updateWorldBibleTool = createTool({
 
         // 3. Map common aliases
         if (key === 'characters') targetKey = 'keyCharacters'
+        if (key === 'cast') targetKey = 'keyCharacters'
+        if (key === 'key_characters') targetKey = 'keyCharacters'
         if (key === 'episodes') targetKey = 'sequences'
 
         storyPlanUpdates[targetKey] = value
@@ -166,6 +189,68 @@ export const updateWorldBibleTool = createTool({
         Object.entries(finalUpdates).forEach(([key, value]) => {
           mergeToStoryPlan(key, value)
         })
+      }
+
+      // SYNC: If keyCharacters/cast are present, sync to characters table
+      const charsToSync = storyPlanUpdates.keyCharacters || storyPlanUpdates.cast || storyPlanUpdates.key_characters
+      if (charsToSync && Array.isArray(charsToSync)) {
+        console.log(`[update_world_bible] Syncing ${charsToSync.length} characters to DB...`)
+
+        for (const char of charsToSync) {
+          if (!char.name) continue
+
+          try {
+            // Check existence by name + projectId
+            const existing = await db
+              .select()
+              .from(characters)
+              .where(and(eq(characters.projectId, projectId), eq(characters.name, char.name)))
+              .limit(1)
+
+            // Build full psychology object from all available fields
+            const buildPsychology = (existingPsych: any = {}) => ({
+              ...existingPsych,
+              ...(char.archetype ? { archetype: char.archetype } : {}),
+              ...(char.motivation ? { actualMotivation: char.motivation } : {}),
+              ...(char.fatalFlaw ? { fatalFlaw: char.fatalFlaw } : {}),
+              ...(char.psychology && typeof char.psychology === 'object' ? char.psychology : {}),
+            })
+
+            if (existing.length > 0) {
+              const current = existing[0]
+              await db
+                .update(characters)
+                .set({
+                  role: char.role || current.role,
+                  description: char.description || current.description,
+                  gender: char.gender || current.gender,
+                  mbti: char.mbti || current.mbti,
+                  voiceSignature: char.voiceSignature || char.voice_signature || current.voiceSignature,
+                  psychology: buildPsychology((current.psychology as any) || {}),
+                  updatedAt: new Date(),
+                })
+                .where(eq(characters.id, current.id))
+            } else {
+              await db.insert(characters).values({
+                projectId,
+                name: char.name,
+                role: char.role || 'Supporting',
+                description: char.description || '',
+                gender: char.gender,
+                mbti: char.mbti,
+                voiceSignature: char.voiceSignature || char.voice_signature,
+                psychology: buildPsychology(),
+                valence: 0,
+                arousal: 50,
+                autonomy: 50,
+                competence: 50,
+                relatedness: 50,
+              })
+            }
+          } catch (err) {
+            console.error(`[update_world_bible] Failed to sync character ${char.name}:`, err)
+          }
+        }
       }
 
       // Prepare DB Updates

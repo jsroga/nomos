@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { projects } from '@/domains/storyteller/db/schema'
+import { projects, characters } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'
 import {
   bibleToPrompt,
@@ -41,17 +41,23 @@ export async function GET(req: NextRequest) {
     const bible = project.seriesBible as SeriesBible
 
     if (!bible || (!bible.title && !bible.logline && !bible.premise)) {
-      return NextResponse.json(
-        {
-          error:
-            'Series Bible not created. Please set up your Story Bible first in the Storyteller section.',
-        },
-        { status: 400 }
-      )
+      console.warn('Series Bible not created, returning empty summary')
+      // Continue with empty bible effectively
     }
 
-    let summary = bibleToPrompt(bible)
-    const worldGenPrompt = bibleToVisualPrompt(bible)
+    // Fetch project-level cast so the summary includes character data
+    const cast = await db
+      .select({ name: characters.name, role: characters.role, description: characters.description })
+      .from(characters)
+      .where(eq(characters.projectId, projectId))
+
+    const formattedCast = cast.map(c => ({
+      ...c,
+      description: c.description || undefined,
+    }))
+
+    let summary = bibleToPrompt(bible, formattedCast)
+    const worldGenPrompt = bibleToVisualPrompt(bible, formattedCast)
 
     try {
       const ragResults = await ragService.retrieveByType(

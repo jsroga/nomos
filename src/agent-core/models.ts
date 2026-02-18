@@ -69,7 +69,7 @@ export function createModel(modelName: string) {
     const modelId = modelName.replace('openai:', '')
     const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY })
     const model = openai(modelId)
-    ;(model as any).specificationVersion = 'v2' // Mastra compatibility
+      ; (model as any).specificationVersion = 'v2' // Mastra compatibility
     return model
   }
 
@@ -78,7 +78,7 @@ export function createModel(modelName: string) {
     const modelId = modelName.replace('anthropic:', '')
     const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
     const model = anthropic(modelId)
-    ;(model as any).specificationVersion = 'v2'
+      ; (model as any).specificationVersion = 'v2'
     return model
   }
 
@@ -86,7 +86,7 @@ export function createModel(modelName: string) {
   if (modelName.startsWith('google:')) {
     const modelId = modelName.replace('google:', '')
     const model = google(modelId)
-    ;(model as any).specificationVersion = 'v2'
+      ; (model as any).specificationVersion = 'v2'
     return model
   }
 
@@ -142,28 +142,36 @@ const getPlanningModel = (tier: 'primary' | 'reasoning' = 'primary') =>
   createModel(MODELS.planning[tier])
 
 // =============================================================================
-// THE MAZUR FRAMEWORK - Why These Three Masters?
+// THE MAZUR FRAMEWORK - Why These Four Masters?
 // =============================================================================
 //
-// These three creators form a COMPLETE storytelling triangle:
+// Four creators form a COMPLETE storytelling diamond:
 //
 //                    DEPTH (GRRM)
-//                        △
-//                       /  \
-//                      /    \
-//                     /      \
-//        STRUCTURE ◁──────────▷ FEELING
-//        (Gilligan)              (Lynch)
+//                        ◇
+//                       / \
+//                      /   \
+//     ORIGINALITY ◁──/─────\──▷ STRUCTURE
+//     (Le Guin)     /       \    (Gilligan)
+//                  \         /
+//                   \       /
+//                    \     /
+//                     \   /
+//                      \ /
+//                       ◇
+//                   FEELING (Lynch)
 //
 // Each catches what the others miss:
 // - GRRM: "Is this REAL?" - catches shallow characters, convenient plots
 // - GILLIGAN: "Does this WORK?" - catches illogical sequences, weak visuals
 // - LYNCH: "Does this HAUNT?" - catches lack of atmosphere, over-explanation
+// - LE GUIN: "Is this NECESSARY?" - catches AI slop, clichés, generic prose, derivative ideas
 //
-// AI slop fails ALL THREE:
+// AI slop fails ALL FOUR:
 // - Slop has no depth (generic characters, no consequences)
 // - Slop has no structure (things happen "because plot")
 // - Slop has no feeling (explains everything, no mystery)
+// - Slop has no originality (borrowed ideas, hedging language, interchangeable characters)
 //
 // =============================================================================
 
@@ -186,14 +194,19 @@ export const PERSONAS = {
       'black-and-white morality - obvious good vs evil',
       'convenient coincidences - saved by luck',
       'characters without history or grudges',
+      'modern slang or anachronisms',
+      'villains who are evil just to be evil',
+      'safe choices that preserve the status quo',
     ],
     slopSignals: [
       'character does something "out of character" for plot',
       'consequences disappear when inconvenient',
       'world feels generic, no lived-in texture',
       'everyone agrees too easily',
+      'dialogue that sounds like a therapy session',
+      'lack of sensory details (smell/taste/grit)',
     ],
-    voice: 'Melancholic, cynical, richly detailed',
+    voice: 'Melancholic, cynical, richly detailed, ruthless',
   },
 
   'vince-gilligan': {
@@ -214,14 +227,19 @@ export const PERSONAS = {
       'unmotivated action - doing things for no reason',
       'telling over showing - explaining emotions',
       'broken continuity - forgetting what happened',
+      'passive protagonists who just react',
+      'fuzzy logic or dream sequences to escape corners',
+      'unearned emotional moments',
     ],
     slopSignals: [
       'character explains their feelings instead of showing',
       'solution appears from nowhere',
       'timeline/continuity errors',
       'actions without consequences',
+      'scenes that start too early or end too late',
+      'exposition dumps disguised as arguments',
     ],
-    voice: 'Tense, observant, cinematic',
+    voice: 'Tense, observant, cinematic, precise',
   },
 
   'david-lynch': {
@@ -251,19 +269,52 @@ export const PERSONAS = {
     ],
     voice: 'Ethereal, hypnotic, deeply unsettling',
   },
+
+  'ursula-le-guin': {
+    name: 'Ursula K. Le Guin',
+    alias: 'The Truthteller',
+    dimension: 'ORIGINALITY',
+    question: 'Is this NECESSARY?',
+    magic:
+      'Every sentence earns its place. No decoration, no showing off, no borrowed ideas. The story could only exist in THIS world with THESE characters. There is no other version.',
+    focus: [
+      'specificity - details unique to this world, not borrowed from tropes',
+      'necessity - every element must serve the story or be cut',
+      'authentic voice - prose that sounds like a person, not an algorithm',
+      'original framing - familiar themes approached from unexpected angles',
+    ],
+    hates: [
+      'borrowed ideas - plot points lifted from popular media without transformation',
+      'decorative prose - beautiful language that says nothing',
+      'interchangeable characters - names you could swap without anyone noticing',
+      'AI-speak - hedging phrases, fake profundity, synonym stuffing',
+      'derivative worlds - fantasy/sci-fi settings that are just Tolkien/Star Wars reskins',
+      'filler - scenes that exist to pad length rather than advance story',
+    ],
+    slopSignals: [
+      'phrases like "it\'s worth noting", "tapestry of", "delve into", "embark on"',
+      'emotions named rather than shown ("she felt sad", "tension was palpable")',
+      'purple prose - orbs for eyes, crimson liquid for blood',
+      'characters who all sound the same regardless of background',
+      'world-building that reads like a wiki article rather than lived experience',
+      'descriptions that could apply to any story ("the ancient city", "the mysterious stranger")',
+    ],
+    voice: 'Precise, understated, deceptively simple, cuts to the bone',
+  },
 } as const
 
 type PersonaId = keyof typeof PERSONAS
 
 /**
- * The Mazur Score combines all three dimensions.
- * Great storytelling needs ALL THREE to score high.
- * AI slop consistently fails all three.
+ * The Mazur Score combines all four dimensions.
+ * Great storytelling needs ALL FOUR to score high.
+ * AI slop consistently fails all four.
  */
 interface MazurScore {
   depth: number // GRRM dimension (0-1)
   structure: number // Gilligan dimension (0-1)
   feeling: number // Lynch dimension (0-1)
+  originality: number // Le Guin dimension (0-1)
   overall: number // Combined score
   slopScore: number // Inverse - how much AI slop detected (0 = no slop, 1 = pure slop)
 }

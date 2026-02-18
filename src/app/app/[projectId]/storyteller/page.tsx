@@ -180,36 +180,6 @@ import { toError } from '@/lib/error-utils'
 const MAX_ROUNDS = 15 // Hard stop after this many rounds
 
 // Get model config from localStorage for API requests
-function getModelConfigFromStorage() {
-  if (typeof window === 'undefined') return { provider: 'openai' as const }
-
-  const provider = localStorage.getItem(LocalStorageKeys.PREFERRED_MODEL_PROVIDER)
-  const anthropicApiKey = localStorage.getItem(LocalStorageKeys.ANTHROPIC_API_KEY)
-
-  // Get Gemini API key from existing AI_CONFIG_GEMINI structure
-  let geminiApiKey: string | undefined
-  let geminiModelId: string | undefined
-  const geminiConfig = localStorage.getItem(LocalStorageKeys.AI_CONFIG_GEMINI)
-  if (geminiConfig) {
-    try {
-      const parsed = JSON.parse(geminiConfig)
-      geminiApiKey = parsed.apiKey || undefined
-      geminiModelId = parsed.modelId || undefined
-    } catch {
-      // ignore
-    }
-  }
-
-  return {
-    provider:
-      provider === 'anthropic' || provider === 'openai' || provider === 'gemini'
-        ? provider
-        : ('openai' as const),
-    anthropicApiKey: anthropicApiKey || undefined,
-    geminiApiKey: geminiApiKey || undefined,
-    geminiModelId: geminiModelId,
-  }
-}
 
 interface Character {
   id: string
@@ -338,6 +308,7 @@ export default function StorytellerPage() {
         'masterPrompt',
         'moodImages',
         'executiveSummary',
+        'episodeRoadmap',
       ]
 
       // Start with storyPlan from the storyPlans table (PRIMARY source for worldRules etc)
@@ -442,6 +413,60 @@ export default function StorytellerPage() {
   } | null>(null)
 
   // Fetch current episode details when ID changes
+  const [hasEpisodes, setHasEpisodes] = useState(false)
+  const [overrideState, setOverrideState] = useState<string | null>(null)
+
+  // Check for override
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const override = localStorage.getItem(LocalStorageKeys.FORCE_STORYTELLER_STATE)
+      if (override) setOverrideState(override)
+    }
+  }, [])
+
+  // Check for existing episodes to determine empty state
+  useEffect(() => {
+    let isMounted = true
+    if (!currentProject?.id) return
+
+    // Apply immediate override if possible
+    if (overrideState === 'HAS_EPISODES') {
+      setHasEpisodes(true)
+      return
+    } else if (overrideState === 'NO_EPISODES') {
+      setHasEpisodes(false)
+      return
+    }
+
+    cachedFetch(
+      `episodes:${currentProject.id}`,
+      async () => {
+        const res = await fetch(`/api/storyteller/episodes?projectId=${currentProject.id}`)
+        return res.json()
+      },
+      { ttlMs: 60_000 }
+    )
+      .then(data => {
+        if (!isMounted) return
+
+        // Re-check override in case it changed (though usually steady)
+        if (overrideState === 'HAS_EPISODES') {
+          setHasEpisodes(true)
+        } else if (overrideState === 'NO_EPISODES') {
+          setHasEpisodes(false)
+        } else if (Array.isArray(data)) {
+          setHasEpisodes(data.length > 0)
+        }
+      })
+      .catch(() => {
+        // ignore
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [currentProject?.id, overrideState])
+
   useEffect(() => {
     if (!currentEpisodeId) {
       setCurrentEpisode(null)
@@ -663,13 +688,16 @@ export default function StorytellerPage() {
 
   // Derive if project has a bible foundation
   const hasBible = useMemo(() => {
+    if (overrideState === 'NO_BIBLE') return false
+    if (overrideState === 'NO_EPISODES' || overrideState === 'HAS_EPISODES') return true
+
     return !!(
       storyPlan?.worldDescription ||
       (storyPlan?.genre && storyPlan.genre !== 'Unknown' && storyPlan.genre !== '') ||
       (storyPlan?.tone && storyPlan.tone !== 'Unknown' && storyPlan.tone !== '') ||
       (storyPlan?.themes && storyPlan.themes.length > 0)
     )
-  }, [storyPlan])
+  }, [storyPlan, overrideState])
 
   // Story decisions that have been made (to prevent re-asking)
   const [storyDecisions, setStoryDecisions] = useState<Record<string, string>>({})
@@ -813,6 +841,35 @@ export default function StorytellerPage() {
                 )
                 return updated
               })
+
+              // If characters were synced to table, refetch CharacterPanel data
+              if (data.result.characters_synced && currentProject?.id) {
+                console.log('🔄 [executeAction] Characters synced - refetching from characters table')
+                fetch(`/api/storyteller/characters?projectId=${currentProject.id}`)
+                  .then(res => res.json())
+                  .then(charData => {
+                    if (Array.isArray(charData)) {
+                      const mapped = charData.map((c: any) => ({
+                        ...c,
+                        stress: c.stressLevel ?? c.stress_level ?? 30,
+                        trust: c.trustLevel ?? c.trust_level ?? 50,
+                        power: c.powerLevel ?? c.power_level ?? 30,
+                        morality: c.moralityLevel ?? c.morality_level ?? 50,
+                        hope: c.hopeLevel ?? c.hope_level ?? 60,
+                        isolation: c.isolationLevel ?? c.isolation_level ?? 20,
+                        transformation:
+                          c.transformationProgress ??
+                          c.transformation_progress ??
+                          c.arcStatus?.transformation ??
+                          0,
+                        id: c.id || c.characterId,
+                        role: c.role || '',
+                      }))
+                      setCharacters(mapped)
+                    }
+                  })
+                  .catch(e => console.error('Failed to refetch characters after sync', e))
+              }
             }
           } else if (action.type === 'UPDATE_SERIES_BIBLE' || action.type.startsWith('UPDATE_')) {
             // Handle all UPDATE_* action types by applying payload directly to state
@@ -895,6 +952,7 @@ export default function StorytellerPage() {
     setIsAwaitingInput,
     abortControllerRef,
     updateActionStatus,
+    updateActionStatusById,
     loadingSections, // Section-specific loading states for granular shimmer
     setLoadingSections, // To set loading state immediately on button click
   } = useChatStream({
@@ -944,7 +1002,10 @@ export default function StorytellerPage() {
                 // Create handlers that will execute/reject the action
                 const handleSectionAccept = async () => {
                   console.log(`[Section Accept] Approving ${action.type} for section ${section}`)
-                  // Set processing state
+                  // Set processing state on both section overlay AND chat widget
+                  if (action.id) {
+                    updateActionStatusById(action.id, 'executing')
+                  }
                   setSectionPendingActions(prev => {
                     if (!prev[section]) return prev
                     return {
@@ -955,6 +1016,11 @@ export default function StorytellerPage() {
 
                   try {
                     await executeAction(action as any)
+                    // Sync chat status using ID
+                    if (action.id) {
+                      updateActionStatusById(action.id, 'committed')
+                    }
+
                     // Clear pending action on success
                     setSectionPendingActions(prev => {
                       const { [section]: _, ...rest } = prev
@@ -973,7 +1039,10 @@ export default function StorytellerPage() {
                     ])
                   } catch (e) {
                     console.error('[Section Accept] Failed:', e)
-                    // Reset processing state on failure
+                    // Reset processing state on failure for both section and chat
+                    if (action.id) {
+                      updateActionStatusById(action.id, 'pending')
+                    }
                     setSectionPendingActions(prev => {
                       if (!prev[section]) return prev
                       return {
@@ -986,6 +1055,11 @@ export default function StorytellerPage() {
 
                 const handleSectionReject = () => {
                   console.log(`[Section Reject] Rejecting ${action.type} for section ${section}`)
+                  // Sync chat status using ID
+                  if (action.id) {
+                    updateActionStatusById(action.id, 'rejected')
+                  }
+
                   // Clear pending action
                   setSectionPendingActions(prev => {
                     const { [section]: _, ...rest } = prev
@@ -1183,7 +1257,11 @@ export default function StorytellerPage() {
       const section = getActionSection(action.type)
 
       const handleApprove = async () => {
-        updateActionStatus(messageIndex, actionIndex, 'executing')
+        if (action.id) {
+          updateActionStatusById(action.id, 'executing')
+        } else {
+          updateActionStatus(messageIndex, actionIndex, 'executing')
+        }
 
         // Set processing state on section pending action (so overlay shows loading)
         if (section) {
@@ -1209,7 +1287,12 @@ export default function StorytellerPage() {
 
         try {
           await executeAction(action as any)
-          updateActionStatus(messageIndex, actionIndex, 'committed')
+
+          if (action.id) {
+            updateActionStatusById(action.id, 'committed')
+          } else {
+            updateActionStatus(messageIndex, actionIndex, 'committed')
+          }
 
           // Clear section pending action on success
           if (section) {
@@ -1231,7 +1314,12 @@ export default function StorytellerPage() {
           ])
         } catch (e) {
           console.error('Approval failed', e)
-          updateActionStatus(messageIndex, actionIndex, 'pending')
+
+          if (action.id) {
+            updateActionStatusById(action.id, 'pending')
+          } else {
+            updateActionStatus(messageIndex, actionIndex, 'pending')
+          }
 
           // Reset processing state on failure
           if (section) {
@@ -1253,7 +1341,12 @@ export default function StorytellerPage() {
       }
 
       const handleReject = () => {
-        updateActionStatus(messageIndex, actionIndex, 'rejected')
+        if (action.id) {
+          updateActionStatusById(action.id, 'rejected')
+        } else {
+          updateActionStatus(messageIndex, actionIndex, 'rejected')
+        }
+
         // Clear section pending action
         if (section) {
           setSectionPendingActions(prev => {
@@ -1435,7 +1528,7 @@ export default function StorytellerPage() {
         currentPhase: effectivePhase,
         seriesBible: {
           ...((currentProject?.series_bible as any) || {}),
-          masterPrompt: currentProject?.master_prompt || '',
+          masterPrompt: currentProject?.masterPrompt || currentProject?.master_prompt || '',
           userDecisions: storyDecisions,
         },
         characters: characters.map((c: any) => ({
@@ -1449,7 +1542,6 @@ export default function StorytellerPage() {
           knowledgeState: c.knowledgeState || [],
           stressLevel: c.stress || c.stressLevel || 30,
         })),
-        modelConfig: getModelConfigFromStorage(),
         streamMode: useEnhancedStreaming ? 'events' : 'nodes',
       })
     },
@@ -1531,9 +1623,15 @@ export default function StorytellerPage() {
 
       setIsGeneratingStoryboard(true)
 
-      const config = getModelConfigFromStorage()
-      if (!config.geminiApiKey) {
-        alert('Gemini API Key missing!')
+      // Read Gemini API key from localStorage (legacy client-side config)
+      let geminiApiKey: string | undefined
+      try {
+        const geminiConfig = localStorage.getItem(LocalStorageKeys.AI_CONFIG_GEMINI)
+        if (geminiConfig) geminiApiKey = JSON.parse(geminiConfig).apiKey
+      } catch { /* ignore */ }
+
+      if (!geminiApiKey) {
+        alert('Gemini API Key missing! Configure it in your environment.')
         setIsGeneratingStoryboard(false)
         return
       }
@@ -1553,7 +1651,7 @@ export default function StorytellerPage() {
           episodeId,
           prompt,
           beatsPayload,
-          { apiKey: config.geminiApiKey },
+          { apiKey: geminiApiKey },
           async url => {
             setIsGeneratingStoryboard(false)
             setStoryPlan(prev => (prev ? ({ ...prev, storyboardUrl: url } as any) : null))
@@ -1615,8 +1713,6 @@ export default function StorytellerPage() {
       } catch (e) {
         console.warn('Failed to parse LegNext config', e)
       }
-
-      const config = getModelConfigFromStorage()
 
       try {
         const premise = (storyPlan as any)?.premise || storyPlan
@@ -1697,9 +1793,8 @@ export default function StorytellerPage() {
 
       if (!projectId) return
 
-      const config = getModelConfigFromStorage()
-      // Call the moodboard generation service
-      await moodboardGenerationService.generate(projectId, [], undefined, config, async () => {
+      // Call the moodboard generation service (provider config now read from env on server)
+      await moodboardGenerationService.generate(projectId, [], undefined, {}, async () => {
         // Refetch project data when generation completes
         try {
           const response = await fetch(`/api/storyteller/projects/${projectId}`)
@@ -2621,19 +2716,22 @@ export default function StorytellerPage() {
   const worldRulesArray = Array.isArray(storyPlan?.worldRules) ? storyPlan.worldRules : []
   const factionsArray = Array.isArray(storyPlan?.factions) ? storyPlan.factions : []
 
-  const mentionItems: any[] = [
-    ...characters.map(c => ({ id: c.id, name: c.name, type: 'character' as const })),
-    ...worldRulesArray.map((r: any, idx: number) => ({
-      id: `rule-${idx}`,
-      name: r.rule,
-      type: 'world_rule' as const,
-    })),
-    ...factionsArray.map((f: any, idx: number) => ({
-      id: `faction-${idx}`,
-      name: f.name,
-      type: 'faction' as const,
-    })),
-  ]
+  const mentionItems = useMemo<any[]>(
+    () => [
+      ...characters.map(c => ({ id: c.id, name: c.name, type: 'character' as const })),
+      ...worldRulesArray.map((r: any, idx: number) => ({
+        id: `rule-${idx}`,
+        name: r.rule,
+        type: 'world_rule' as const,
+      })),
+      ...factionsArray.map((f: any, idx: number) => ({
+        id: `faction-${idx}`,
+        name: f.name,
+        type: 'faction' as const,
+      })),
+    ],
+    [characters, worldRulesArray, factionsArray]
+  )
 
   // Stop streaming handler removed (handled by hook)
 
@@ -2708,7 +2806,6 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           knowledgeState: [],
           stressLevel: c.stress || 30,
         })),
-        modelConfig: getModelConfigFromStorage(),
         // Enhanced streaming options
         streamMode: useEnhancedStreaming ? 'events' : 'nodes',
       }
@@ -2770,7 +2867,6 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
             masterPrompt: currentProject?.master_prompt || '',
           },
           characters: characters,
-          modelConfig: getModelConfigFromStorage(),
           streamMode: 'events', // Always use enhanced streaming for premise generation
           progressiveGeneration: true,
         }
@@ -2816,7 +2912,6 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
             masterPrompt: currentProject?.master_prompt || '',
           },
           characters: characters,
-          modelConfig: getModelConfigFromStorage(),
           streamMode: 'events', // Always use enhanced streaming for premise generation
           progressiveGeneration: true,
         }
@@ -2852,7 +2947,6 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
             masterPrompt: currentProject?.master_prompt || '',
           },
           characters: characters,
-          modelConfig: getModelConfigFromStorage(),
           streamMode: 'events',
           progressiveGeneration: true,
         }
@@ -2918,6 +3012,27 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
     setShowToasts(prev => prev.filter(e => e.id !== entryId))
   }, [])
 
+  const handleSaveProjectPrompt = useCallback(
+    async (prompt: string) => {
+      try {
+        const res = await fetch(`/api/storyteller/projects/${currentProject?.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ masterPrompt: prompt }),
+        })
+        if (res.ok && currentProject) {
+          useWorldStore.getState().setCurrentProject({
+            ...currentProject,
+            masterPrompt: prompt,
+          })
+        }
+      } catch (err) {
+        console.error('Failed to save master prompt:', err)
+      }
+    },
+    [currentProject]
+  )
+
   const handleSaveEpisodePrompt = useCallback(
     async (prompt: string) => {
       if (!currentEpisodeId) return
@@ -2954,28 +3069,29 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
 
   const handleUpdateGlobalBible = useCallback(
     async (updates: Partial<StoryPlan>) => {
-      // Access latest state directly to avoid dependency on currentProject changing
-      const latestProject = useWorldStore.getState().currentProject
-      if (!latestProject?.id) return
-
-      // Use current project's series bible as base
-      const currentBible = (latestProject.series_bible as StoryPlan) || {}
-      const newBible = { ...currentBible, ...updates }
-
-      // 1. Update Store immediately
-      useWorldStore.getState().setCurrentProject({
-        ...latestProject,
-        series_bible: newBible,
-      })
-
-      // If we are NOT in an episode context, also update the local storyPlan state
-      // to keep the UI consistent if it's relying on it.
-      if (!currentEpisodeId) {
-        setStoryPlan(newBible)
-      }
-
-      // 2. Persist to DB
+      setIsSending(true)
       try {
+        // Access latest state directly to avoid dependency on currentProject changing
+        const latestProject = useWorldStore.getState().currentProject
+        if (!latestProject?.id) return
+
+        // Use current project's series bible as base
+        const currentBible = (latestProject.series_bible as StoryPlan) || {}
+        const newBible = { ...currentBible, ...updates }
+
+        // 1. Update Store immediately
+        useWorldStore.getState().setCurrentProject({
+          ...latestProject,
+          series_bible: newBible,
+        })
+
+        // If we are NOT in an episode context, also update the local storyPlan state
+        // to keep the UI consistent if it's relying on it.
+        if (!currentEpisodeId) {
+          setStoryPlan(newBible)
+        }
+
+        // 2. Persist to DB
         await fetch(`/api/storyteller/projects/${latestProject.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -2983,33 +3099,36 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
         })
       } catch (e) {
         console.error('Failed to save global bible:', e)
+      } finally {
+        setIsSending(false)
       }
     },
     [currentEpisodeId]
   )
 
   const handleUpdateBible = async (updates: Partial<StoryPlan>) => {
-    // 1. Optimistic Update
-    const newBible = {
-      ...(storyPlan || (currentProject?.series_bible as any) || {}),
-      ...updates,
-    } as StoryPlan
-
-    setStoryPlan(prev => {
-      if (!prev) return newBible
-      return { ...prev, ...updates }
-    })
-
-    // 2. Persist to DB
-    if (!currentProject?.id) return
-
-    // Update local store immediately for responsiveness
-    useWorldStore.getState().setCurrentProject({
-      ...currentProject,
-      series_bible: newBible,
-    })
-
+    setIsSending(true)
     try {
+      // 1. Optimistic Update
+      const newBible = {
+        ...(storyPlan || (currentProject?.series_bible as any) || {}),
+        ...updates,
+      } as StoryPlan
+
+      setStoryPlan(prev => {
+        if (!prev) return newBible
+        return { ...prev, ...updates }
+      })
+
+      // 2. Persist to DB
+      if (!currentProject?.id) return
+
+      // Update local store immediately for responsiveness
+      useWorldStore.getState().setCurrentProject({
+        ...currentProject,
+        series_bible: newBible,
+      })
+
       await fetch(`/api/storyteller/projects/${currentProject.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -3018,8 +3137,26 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
     } catch (e) {
       console.error('Failed to save bible:', e)
       // Optionally revert? For now we trust optimistic update.
+    } finally {
+      setIsSending(false)
     }
   }
+
+  const handleBibleSendMessage = useCallback(
+    (msg: string, section?: string) => handleSendMessage(undefined, msg, section),
+    [handleSendMessage]
+  )
+
+  const StableQuestionComponent = useCallback(
+    ({ question, onAnswer, onSkip }: { question: any; onAnswer: (a: string | string[]) => void; onSkip: () => void }) => (
+      <QuestionCard
+        question={question as unknown as AgentQuestion}
+        onAnswer={onAnswer}
+        onSkip={onSkip}
+      />
+    ),
+    []
+  )
 
   return (
     <div className="flex flex-col h-full bg-background text-foreground overflow-hidden font-sans">
@@ -3039,6 +3176,8 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                     params.delete('bible')
                   } else {
                     params.set('bible', 'open')
+                    // Dispatch event for tour
+                    window.dispatchEvent(new Event('bible-opened'))
                   }
                   router.push(`?${params.toString()}`)
                 }}
@@ -3063,6 +3202,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                         ? 'Close World Bible'
                         : 'Open World Bible'
                 }
+                id={TOUR_STEP_IDS.STORYTELLER_BIBLE}
               >
                 {/* Divine Shine Effect overlay */}
                 {isWorldBibleOpen && (
@@ -3104,37 +3244,18 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           {currentProject ? (
             <div className="space-y-6">
               {/* 1. Project Master Prompt */}
-              <div id={TOUR_STEP_IDS.STORYTELLER_BIBLE}>
+              <div id={TOUR_STEP_IDS.STORYTELLER_MASTER_PROMPT}>
                 <SidebarSection icon={<Scroll size={12} />}>
                   <MasterPromptEditor
                     scope="Project"
-                    initialPrompt={currentProject.master_prompt || ''}
-                    onSave={async prompt => {
-                      try {
-                        // 1. Persist to DB
-                        const res = await fetch(`/api/storyteller/projects/${currentProject.id}`, {
-                          method: 'PATCH',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ master_prompt: prompt }),
-                        })
-
-                        // 2. Update Store
-                        if (res.ok) {
-                          useWorldStore.getState().setCurrentProject({
-                            ...currentProject,
-                            master_prompt: prompt,
-                          })
-                        }
-                      } catch (err) {
-                        console.error('Failed to save master prompt:', err)
-                      }
-                    }}
+                    initialPrompt={currentProject.masterPrompt || currentProject.master_prompt || ''}
+                    onSave={handleSaveProjectPrompt}
                   />
                 </SidebarSection>
               </div>
 
               {/* 3. Episode Manager - disabled while agents working */}
-              <div id={TOUR_STEP_IDS.STORYTELLER_EPISODES}>
+              <div>
                 <SidebarSection separator>
                   <div className={isSending ? 'opacity-50 pointer-events-none' : ''}>
                     <EpisodeManager
@@ -3227,7 +3348,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 }
                 projectId={currentProject?.id || ''}
                 onUpdate={handleUpdateGlobalBible}
-                onSendMessage={(msg, section) => handleSendMessage(undefined, msg, section)}
+                onSendMessage={handleBibleSendMessage}
                 isReadOnly={isSending}
                 onConvertToCast={handleCreateCharacter}
                 isLoading={isFetchingPlan}
@@ -3271,7 +3392,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                     title="View character & faction relationships"
                   >
                     <Network size={12} />
-                    <span>Web</span>
+                    <span>Relationships</span>
                   </button>
                 </div>
 
@@ -3353,7 +3474,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                       }
                       projectId={currentProject?.id || ''}
                       onUpdate={handleUpdateBible}
-                      onSendMessage={(msg, section) => handleSendMessage(undefined, msg, section)}
+                      onSendMessage={handleBibleSendMessage}
                       isReadOnly={isSending}
                       isLoading={isFetchingPlan}
                       loadingSections={loadingSections}
@@ -3398,7 +3519,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 }
                 projectId={currentProject?.id || ''}
                 onUpdate={handleUpdateGlobalBible}
-                onSendMessage={(msg, section) => handleSendMessage(undefined, msg, section)}
+                onSendMessage={handleBibleSendMessage}
                 isReadOnly={isSending}
                 isLoading={isFetchingPlan}
                 loadingSections={loadingSections}
@@ -3418,12 +3539,16 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                   </div>
                   <h2 className="text-3xl font-bold text-foreground">
                     {hasBible
-                      ? 'Ready to Create Your First Episode?'
-                      : "Let's Built Your World Bible First"}
+                      ? hasEpisodes
+                        ? 'Select an Episode to Continue'
+                        : 'Ready to Create Your First Episode?'
+                      : "Let's Build Your World Bible First"}
                   </h2>
                   <p className="text-muted-foreground text-lg leading-relaxed">
                     {hasBible
-                      ? 'Use the AI to draft your first episode, or manually create one in the sidebar.'
+                      ? hasEpisodes
+                        ? 'Select an episode from the sidebar to continue writing, or create a new one.'
+                        : 'Use the AI to draft your first episode, or manually create one in the sidebar.'
                       : "Before we dive into episodes, let's establish the foundation of your world—the rules, themes, and characters that make it unique."}
                   </p>
                 </div>
@@ -3549,13 +3674,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
               showThinking={showThinking}
               currentPhase={currentPhase}
               ActionComponent={MemoizedActionComponent}
-              QuestionComponent={({ question, onAnswer, onSkip }) => (
-                <QuestionCard
-                  question={question as unknown as AgentQuestion}
-                  onAnswer={onAnswer}
-                  onSkip={onSkip}
-                />
-              )}
+              QuestionComponent={StableQuestionComponent}
             >
               {/* Streaming Tokens Injection - ONLY when Activity ON */}
               {/* NOTE: When Activity OFF, AgentLog's bottom indicator handles the "Processing..." status */}
@@ -3660,10 +3779,44 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           action={reviewModalAction.action}
           agentName={reviewModalAction.agentName}
           isOpen={!!reviewModalAction}
+          isProcessing={
+            messages[reviewModalAction.messageIndex]?.actions?.[reviewModalAction.actionIndex]?.status === 'executing'
+          }
           onClose={() => setReviewModalAction(null)}
           onApprove={async () => {
             const { action, messageIndex, actionIndex } = reviewModalAction
-            updateActionStatus(messageIndex, actionIndex, 'executing')
+
+            if (action.id) {
+              updateActionStatusById(action.id, 'executing')
+            } else if (messageIndex >= 0) {
+              updateActionStatus(messageIndex, actionIndex, 'executing')
+            } else {
+              // Fallback: Try to find action in messages by finding matching payload/type
+              // This handles the case where action came from sectionPendingActions with index -1
+              const found = messages.map((m, mIdx) => ({
+                mIdx,
+                aIdx: m.actions?.findIndex(a =>
+                  a.type === action.type &&
+                  JSON.stringify(a.payload) === JSON.stringify(action.payload)
+                ) ?? -1
+              })).find(res => res.aIdx !== -1)
+
+              if (found) {
+                updateActionStatus(found.mIdx, found.aIdx, 'executing')
+              }
+            }
+
+            // Set processing state on section pending action (so Bible overlay shows loading)
+            const section = getActionSection(action.type)
+            if (section) {
+              setSectionPendingActions(prev => {
+                if (!prev[section]) return prev
+                return {
+                  ...prev,
+                  [section]: { ...prev[section], isProcessing: true },
+                }
+              })
+            }
 
             // Save current state for undo
             if (action.type.startsWith('UPDATE_')) {
@@ -3677,6 +3830,14 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
             try {
               // Execute the action (calls the backend)
               await executeAction(action as any)
+
+              // Clear pending review overlay if it exists for this section
+              if (section) {
+                setSectionPendingActions(prev => {
+                  const { [section]: _, ...rest } = prev
+                  return rest
+                })
+              }
 
               // MANUAL STATE UPDATE:
               // For bible updates, we must update the local state immediately so the UI reflects it
@@ -3701,9 +3862,43 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                   setStoryPlan(prev => (prev ? { ...prev, worldRules: rules } : prev))
                   toast.success('World rules updated')
                 }
+              } else if (action.type === 'UPDATE_EPISODE_ROADMAP') {
+                const payload = action.payload as any
+                // Support both new nested format and legacy flat format if any
+                const roadmap = payload.episodeRoadmap || payload
+
+                if (roadmap) {
+                  setStoryPlan(prev => {
+                    if (!prev) return prev
+                    return {
+                      ...prev,
+                      sequences: roadmap.episodes || roadmap.sequences || prev.sequences,
+                      seasonStructure: roadmap.seasonStructure || prev.seasonStructure,
+                      executiveSummary: roadmap.executiveSummary || prev.executiveSummary,
+                    }
+                  })
+                  toast.success('Roadmap updated')
+                }
               }
 
-              updateActionStatus(messageIndex, actionIndex, 'committed')
+              if (action.id) {
+                updateActionStatusById(action.id, 'committed')
+              } else if (messageIndex >= 0) {
+                updateActionStatus(messageIndex, actionIndex, 'committed')
+              } else {
+                // Fallback for committed status
+                const found = messages.map((m, mIdx) => ({
+                  mIdx,
+                  aIdx: m.actions?.findIndex(a =>
+                    a.type === action.type &&
+                    JSON.stringify(a.payload) === JSON.stringify(action.payload)
+                  ) ?? -1
+                })).find(res => res.aIdx !== -1)
+
+                if (found) {
+                  updateActionStatus(found.mIdx, found.aIdx, 'committed')
+                }
+              }
               setActionHistory(prev => [
                 {
                   id: `${messageIndex}-${actionIndex}`,
@@ -3716,13 +3911,39 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
               ])
             } catch (e) {
               console.error('Approval failed', e)
-              updateActionStatus(messageIndex, actionIndex, 'pending')
+              if (action.id) {
+                updateActionStatusById(action.id, 'pending')
+              } else if (messageIndex >= 0) {
+                updateActionStatus(messageIndex, actionIndex, 'pending')
+              }
+              // Reset processing state on section overlay
+              if (section) {
+                setSectionPendingActions(prev => {
+                  if (!prev[section]) return prev
+                  return {
+                    ...prev,
+                    [section]: { ...prev[section], isProcessing: false },
+                  }
+                })
+              }
             }
             setReviewModalAction(null)
           }}
           onReject={() => {
-            const { messageIndex, actionIndex } = reviewModalAction
-            updateActionStatus(messageIndex, actionIndex, 'rejected')
+            const { action, messageIndex, actionIndex } = reviewModalAction
+            if (action.id) {
+              updateActionStatusById(action.id, 'rejected')
+            } else if (messageIndex >= 0) {
+              updateActionStatus(messageIndex, actionIndex, 'rejected')
+            }
+            // Clear section pending action overlay
+            const section = getActionSection(action.type)
+            if (section) {
+              setSectionPendingActions(prev => {
+                const { [section]: _, ...rest } = prev
+                return rest
+              })
+            }
             setReviewModalAction(null)
           }}
         />

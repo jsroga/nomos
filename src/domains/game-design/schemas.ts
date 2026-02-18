@@ -104,13 +104,13 @@ export const GameLoopSchema = z.object({
 // AGENT INTERACTION SCHEMAS
 // ==========================================
 
-export const AnalyzeBalanceInputSchema = z.object({
+const AnalyzeBalanceInputSchema = z.object({
   loopId: z.string().uuid(),
   targetAudience: z.enum(['casual', 'midcore', 'hardcore']),
   durationSeconds: z.number().default(600), // Simulation time
 })
 
-export const SuggestProgressionInputSchema = z.object({
+const SuggestProgressionInputSchema = z.object({
   currentLoop: GameLoopSchema,
   expansionDirection: z.enum(['depth', 'breadth', 'complexity']),
   theme: z.string().optional(),
@@ -246,7 +246,7 @@ export const GameDesignInputSchema = z.object({
 
 export type GameLoop = z.infer<typeof GameLoopSchema>
 export type GameMechanic = z.infer<typeof GameMechanicSchema>
-export type GameResource = z.infer<typeof GameResourceSchema>
+type GameResource = z.infer<typeof GameResourceSchema>
 type BalanceConfig = z.infer<typeof BalanceConfigSchema>
 type GameDesignInput = z.infer<typeof GameDesignInputSchema>
 type IdentifyCoreLoopOutput = z.infer<typeof IdentifyCoreLoopOutputSchema>

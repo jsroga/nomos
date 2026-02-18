@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import {
   Message,
@@ -303,7 +303,7 @@ const ActivityEntryItem: React.FC<{ entry: ActivityLogEntry }> = ({ entry }) => 
 
           {/* Result */}
           {resultDisplay && (
-            <div className="text-xs bg-black/40 p-2 rounded text-muted-foreground/80 border border-white/5">
+            <div className="text-xs bg-black/40 p-2 rounded text-muted-foreground/80 border border-white/5 ml-[-80px]">
               <span className="uppercase text-[9px] opacity-50 block mb-1 tracking-wider">
                 Result
               </span>
@@ -541,7 +541,7 @@ interface AgentLogProps {
   projectId?: string
 }
 
-export const AgentLog: React.FC<AgentLogProps> = ({
+export const AgentLog: React.FC<AgentLogProps> = React.memo(({
   messages,
   agentConfig,
   onQuestionAnswer,
@@ -644,43 +644,45 @@ export const AgentLog: React.FC<AgentLogProps> = ({
 
   // Group messages: collect consecutive delegation messages into chains
   // Track original indices for action approval
-  const groupedMessages: Array<{
-    type: 'message' | 'delegation'
-    messages: Message[]
-    originalIndices: number[] // Track original message indices
-  }> = []
-  let currentDelegationChain: Message[] = []
-  let currentDelegationIndices: number[] = []
+  const groupedMessages = useMemo(() => {
+    const groups: Array<{
+      type: 'message' | 'delegation'
+      messages: Message[]
+      originalIndices: number[]
+    }> = []
+    let currentDelegationChain: Message[] = []
+    let currentDelegationIndices: number[] = []
 
-  messages.forEach((msg, originalIndex) => {
-    if (isDelegationMessage(msg)) {
-      currentDelegationChain.push(msg)
-      currentDelegationIndices.push(originalIndex)
-    } else {
-      if (currentDelegationChain.length > 0) {
-        groupedMessages.push({
-          type: 'delegation',
-          messages: currentDelegationChain,
-          originalIndices: currentDelegationIndices,
+    messages.forEach((msg, originalIndex) => {
+      if (isDelegationMessage(msg)) {
+        currentDelegationChain.push(msg)
+        currentDelegationIndices.push(originalIndex)
+      } else {
+        if (currentDelegationChain.length > 0) {
+          groups.push({
+            type: 'delegation',
+            messages: currentDelegationChain,
+            originalIndices: currentDelegationIndices,
+          })
+          currentDelegationChain = []
+          currentDelegationIndices = []
+        }
+        groups.push({
+          type: 'message',
+          messages: [msg],
+          originalIndices: [originalIndex],
         })
-        currentDelegationChain = []
-        currentDelegationIndices = []
       }
-      groupedMessages.push({
-        type: 'message',
-        messages: [msg],
-        originalIndices: [originalIndex],
+    })
+    if (currentDelegationChain.length > 0) {
+      groups.push({
+        type: 'delegation',
+        messages: currentDelegationChain,
+        originalIndices: currentDelegationIndices,
       })
     }
-  })
-  // Don't forget trailing delegation chain
-  if (currentDelegationChain.length > 0) {
-    groupedMessages.push({
-      type: 'delegation',
-      messages: currentDelegationChain,
-      originalIndices: currentDelegationIndices,
-    })
-  }
+    return groups
+  }, [messages])
 
   return (
     <div
@@ -736,40 +738,43 @@ export const AgentLog: React.FC<AgentLogProps> = ({
             )}
           >
             {/* Agent Header - Minimalist */}
-            <div
-              className={cn(
-                'flex items-center gap-2 mb-1.5',
-                isHuman ? 'justify-end text-primary' : config.color
-              )}
-            >
-              {!isHuman && (
-                <div
-                  className={cn(
-                    'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full transition-all duration-300',
-                    config.bgColor || 'bg-muted/30 border border-border/20'
-                  )}
-                >
-                  <div className="p-0.5 opacity-90">{config.icon}</div>
-                  <span className="font-bold text-[10px] uppercase tracking-[0.15em]">
-                    {displayName}
-                  </span>
-                </div>
-              )}
-              {isHuman && (
-                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20">
-                  <span className="font-bold text-[10px] uppercase tracking-[0.15em]">You</span>
-                  <div className="p-0.5 opacity-90">
-                    <User className="w-3.5 h-3.5" />
+            {/* Always show agent header as requested */}
+            {(true) && (
+              <div
+                className={cn(
+                  'flex items-center gap-2 mb-1.5',
+                  isHuman ? 'justify-end text-primary' : config.color
+                )}
+              >
+                {!isHuman && (
+                  <div
+                    className={cn(
+                      'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full transition-all duration-300',
+                      config.bgColor || 'bg-muted/30 border border-border/20'
+                    )}
+                  >
+                    <div className="p-0.5 opacity-90">{config.icon}</div>
+                    <span className="font-bold text-[10px] uppercase tracking-[0.15em]">
+                      {displayName}
+                    </span>
                   </div>
-                </div>
-              )}
+                )}
+                {isHuman && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20">
+                    <span className="font-bold text-[10px] uppercase tracking-[0.15em]">You</span>
+                    <div className="p-0.5 opacity-90">
+                      <User className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                )}
 
-              {!isHuman && msg.confidence !== undefined && isActivityPanelOpen && (
-                <span className="text-[10px] text-muted-foreground/60 ml-auto font-mono">
-                  {Math.round(msg.confidence * 100)}%
-                </span>
-              )}
-            </div>
+                {!isHuman && msg.confidence !== undefined && isActivityPanelOpen && (
+                  <span className="text-[10px] text-muted-foreground/60 ml-auto font-mono">
+                    {Math.round(msg.confidence * 100)}%
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Thinking (if enabled and Activity is ON) */}
             {showThinking && msg.thinking && isActivityPanelOpen && (
@@ -796,8 +801,8 @@ export const AgentLog: React.FC<AgentLogProps> = ({
                 hasActions={!!(msg.actions && msg.actions.length > 0)}
                 projectId={projectId}
               />
-              {/* Hover Actions */}
-              {!isHuman && <MessageHoverActions content={msg.content} />}
+              {/* Hover Actions - HIDE when activity is OFF */}
+              {!isHuman && isActivityPanelOpen && <MessageHoverActions content={msg.content} />}
             </div>
 
             {/* Actions - ALWAYS show (approval is user-critical, not technical detail) */}
@@ -883,10 +888,11 @@ export const AgentLog: React.FC<AgentLogProps> = ({
                     </span>
                   </div>
                   {activeOperations.length > 0 && (
-                    <span className="text-[9px] text-muted-foreground ml-auto">
-                      {activeOperations.length} active operation
-                      {activeOperations.length > 1 ? 's' : ''}
-                    </span>
+                    <div className="ml-auto flex items-center gap-2">
+                      <span className="text-[9px] text-muted-foreground/80 truncate max-w-[200px]">
+                        {activeOperations.map(op => op.label).join(', ')}
+                      </span>
+                    </div>
                   )}
                 </div>
 
@@ -932,8 +938,8 @@ export const AgentLog: React.FC<AgentLogProps> = ({
               </div>
             )}
 
-            {/* Current Agent Indicator - Only show details if Activity ON */}
-            {currentAgent && isActivityPanelOpen ? (
+            {/* Current Agent Indicator - Always show detailed view if agent is active */}
+            {currentAgent ? (
               <div className="flex items-center gap-2 animate-in slide-in-from-bottom-2 duration-300">
                 <div className="flex items-center gap-2 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-lg px-3 py-2 shadow-sm flex-1">
                   <div className="relative">
@@ -957,21 +963,10 @@ export const AgentLog: React.FC<AgentLogProps> = ({
                 </div>
               </div>
             ) : (
-              /* Simplified processing indicator when Activity OFF or generic */
+              /* Fallback generic processing indicator */
               <div className="flex items-center gap-2 text-primary/70 text-[10px] uppercase tracking-widest font-medium">
-                {currentAgent ? (
-                  // If we have an agent but Activity OFF, just show "Storyteller is thinking..." or agent name
-                  <>
-                    {getAgentConfigLocal(currentAgent).icon}
-                    <span>{getAgentDisplayName(currentAgent)} is thinking...</span>
-                  </>
-                ) : (
-                  // Fallback generic
-                  <>
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    <span>{getThinkingMessage(thinkingMessagesConfig, thinkingTime, false)}</span>
-                  </>
-                )}
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span>{getThinkingMessage(thinkingMessagesConfig, thinkingTime, false)}</span>
               </div>
             )}
           </div>
@@ -991,7 +986,9 @@ export const AgentLog: React.FC<AgentLogProps> = ({
       <div ref={bottomRef} />
     </div>
   )
-}
+})
+
+AgentLog.displayName = 'AgentLog'
 
 // ============================================
 // Message Content - Renders markdown with react-markdown
@@ -1154,6 +1151,12 @@ function parseMessageContent(content: string, projectId?: string) {
   // Check if content has entity references
   const contentHasRefs = hasReferences(content)
 
+  // Pre-process: convert entity refs [Name][id] to markdown links [Name](#entity/id)
+  // so ReactMarkdown doesn't mangle them as broken reference-style links
+  const processedContent = contentHasRefs
+    ? content.replace(/\[([^\]]+)\]\[([a-zA-Z0-9_-]+)\]/g, '[$1](#entity/$2)')
+    : content
+
   // Use react-markdown for proper markdown rendering
   return (
     <ReactMarkdown
@@ -1243,17 +1246,32 @@ function parseMessageContent(content: string, projectId?: string) {
           </em>
         ),
 
-        // Links
-        a: ({ href, children }) => (
-          <a
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline"
-          >
-            {children}
-          </a>
-        ),
+        // Links - also handles entity references converted to #entity/id format
+        a: ({ href, children }) => {
+          if (href?.startsWith('#entity/')) {
+            const refId = href.replace('#entity/', '')
+            const displayName = typeof children === 'string' ? children
+              : React.Children.toArray(children).map(c => typeof c === 'string' ? c : '').join('')
+            // Render as entity reference chip via ReferenceText
+            return (
+              <ReferenceText
+                text={`[${displayName}][${refId}]`}
+                projectId={projectId}
+                inline
+              />
+            )
+          }
+          return (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              {children}
+            </a>
+          )
+        },
 
         // Code
         code: ({ children, className, inline, ...props }: any) => {
@@ -1283,7 +1301,7 @@ function parseMessageContent(content: string, projectId?: string) {
         hr: () => <hr className="border-border my-3" />,
       }}
     >
-      {content}
+      {processedContent}
     </ReactMarkdown>
   )
 }

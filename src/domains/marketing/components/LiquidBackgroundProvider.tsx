@@ -13,11 +13,11 @@ export function LiquidBackgroundProvider({
   children,
   showCanvas = true,
 }: LiquidBackgroundProviderProps) {
-  // State for Turbulent Background
-  const [zoom, setZoom] = useState(0.1)
-  const [rotation, setRotation] = useState(3.33)
-  const [speed, setSpeed] = useState(0.5) // Slower speed for main app
-  const [morphSpeed, setMorphSpeed] = useState(0.2)
+  // Static values for Turbulent Background
+  const zoom = 0.1
+  const rotation = 3.33
+  const speed = 0.5
+  const morphSpeed = 0.2
 
   // State for Liquid Context (to be consumed by Liquid components)
   const [bgElement, setBgElement] = useState<HTMLDivElement | null>(null)

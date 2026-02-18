@@ -893,6 +893,8 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                   <Map size={280} strokeWidth={1} />
                 </div>
 
+                <img src="https://placehold.co/600x400/101010/FFF?text=Bento+Grid" alt="Bento Grid" className="rounded-lg border border-white/10" />
+
                 {/* Content footer */}
                 <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/80 to-transparent">
                   <div className="flex items-center gap-2 mb-3">

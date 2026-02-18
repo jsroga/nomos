@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useConfirmDialog } from '@/components/ui/confirm-dialog'
+import { TOUR_STEP_IDS } from '@/lib/tour-constants'
 
 // Character metrics based on Affective Circumplex + Self-Determination Theory
 // Aligned with src/domains/storytell../types.ts
@@ -41,7 +42,10 @@ interface Character {
   name: string
   role: string
   gender?: string
+  description?: string
+  archetype?: string
   characterPrompt?: string
+  psychology?: Record<string, any>
   // Core metrics from database
   valence?: number
   arousal?: number
@@ -69,88 +73,88 @@ const METRIC_CONFIG: {
   highLabel: string
   isValence?: boolean // Special handling for -100 to +100 scale
 }[] = [
-  {
-    key: 'valence',
-    label: 'Mood',
-    icon: Heart,
-    color: 'text-pink-400',
-    lowLabel: 'Negative',
-    highLabel: 'Positive',
-    isValence: true,
-  },
-  {
-    key: 'arousal',
-    label: 'Energy',
-    icon: Zap,
-    color: 'text-yellow-400',
-    lowLabel: 'Calm',
-    highLabel: 'Activated',
-  },
-  {
-    key: 'autonomy',
-    label: 'Freedom',
-    icon: Compass,
-    color: 'text-blue-400',
-    lowLabel: 'Constrained',
-    highLabel: 'Free',
-  },
-  {
-    key: 'competence',
-    label: 'Confidence',
-    icon: Target,
-    color: 'text-green-400',
-    lowLabel: 'Doubt',
-    highLabel: 'Capable',
-  },
-  {
-    key: 'relatedness',
-    label: 'Connection',
-    icon: Users,
-    color: 'text-cyan-400',
-    lowLabel: 'Isolated',
-    highLabel: 'Connected',
-  },
-  {
-    key: 'cognitiveClarity',
-    label: 'Clarity',
-    icon: Brain,
-    color: 'text-purple-400',
-    lowLabel: 'Confused',
-    highLabel: 'Sharp',
-  },
-  {
-    key: 'perceivedStakes',
-    label: 'Tension',
-    icon: Flame,
-    color: 'text-orange-400',
-    lowLabel: 'Low',
-    highLabel: 'Critical',
-  },
-  {
-    key: 'socialSafety',
-    label: 'Security',
-    icon: ShieldCheck,
-    color: 'text-teal-400',
-    lowLabel: 'Threatened',
-    highLabel: 'Safe',
-  },
-  {
-    key: 'moralAlignment',
-    label: 'Integrity',
-    icon: Scale,
-    color: 'text-indigo-400',
-    lowLabel: 'Compromised',
-    highLabel: 'Aligned',
-  },
-  {
-    key: 'transformation',
-    label: 'Arc Progress',
-    icon: TrendingUp,
-    color: 'text-emerald-400',
-    lowLabel: 'Start',
-    highLabel: 'Complete',
-  },
-]
+    {
+      key: 'valence',
+      label: 'Mood',
+      icon: Heart,
+      color: 'text-pink-400',
+      lowLabel: 'Negative',
+      highLabel: 'Positive',
+      isValence: true,
+    },
+    {
+      key: 'arousal',
+      label: 'Energy',
+      icon: Zap,
+      color: 'text-yellow-400',
+      lowLabel: 'Calm',
+      highLabel: 'Activated',
+    },
+    {
+      key: 'autonomy',
+      label: 'Freedom',
+      icon: Compass,
+      color: 'text-blue-400',
+      lowLabel: 'Constrained',
+      highLabel: 'Free',
+    },
+    {
+      key: 'competence',
+      label: 'Confidence',
+      icon: Target,
+      color: 'text-green-400',
+      lowLabel: 'Doubt',
+      highLabel: 'Capable',
+    },
+    {
+      key: 'relatedness',
+      label: 'Connection',
+      icon: Users,
+      color: 'text-cyan-400',
+      lowLabel: 'Isolated',
+      highLabel: 'Connected',
+    },
+    {
+      key: 'cognitiveClarity',
+      label: 'Clarity',
+      icon: Brain,
+      color: 'text-purple-400',
+      lowLabel: 'Confused',
+      highLabel: 'Sharp',
+    },
+    {
+      key: 'perceivedStakes',
+      label: 'Tension',
+      icon: Flame,
+      color: 'text-orange-400',
+      lowLabel: 'Low',
+      highLabel: 'Critical',
+    },
+    {
+      key: 'socialSafety',
+      label: 'Security',
+      icon: ShieldCheck,
+      color: 'text-teal-400',
+      lowLabel: 'Threatened',
+      highLabel: 'Safe',
+    },
+    {
+      key: 'moralAlignment',
+      label: 'Integrity',
+      icon: Scale,
+      color: 'text-indigo-400',
+      lowLabel: 'Compromised',
+      highLabel: 'Aligned',
+    },
+    {
+      key: 'transformation',
+      label: 'Arc Progress',
+      icon: TrendingUp,
+      color: 'text-emerald-400',
+      lowLabel: 'Start',
+      highLabel: 'Complete',
+    },
+  ]
 
 interface CharacterPanelProps {
   characters: Character[]
@@ -164,7 +168,7 @@ interface CharacterPanelProps {
   // NEW: Shimmer loading state
   isLoading?: boolean
 }
-export const CharacterPanel: React.FC<CharacterPanelProps> = ({
+export const CharacterPanel: React.FC<CharacterPanelProps> = React.memo(({
   characters,
   onUpdate,
   onCreate,
@@ -234,7 +238,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
         </div>
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
-            <div key={i} className="bg-[#191919] border border-white/5 rounded-lg p-3 h-20">
+            <div key={i} className="bg-black border border-white/5 rounded-lg p-3 h-20">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-8 h-8 rounded-full bg-muted/20"></div>
                 <div className="flex-1 space-y-2">
@@ -252,7 +256,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
   return (
     <TooltipProvider>
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between" id={TOUR_STEP_IDS.STORYTELLER_CHARACTERS}>
           <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <Users size={12} />
             Cast ({characters.length})
@@ -308,41 +312,44 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
         <CharacterCreationDialog
           isOpen={!!editingCharacter}
           onClose={() => setEditingCharacter(null)}
-          onCreate={() => {}} // Not used in edit mode
-          onUpdate={(id, updates) => {
-            if (onUpdate) onUpdate(id, updates)
-            setEditingCharacter(null)
+          onCreate={() => { }} // Not used in edit mode
+          onUpdate={async (id, updates) => {
+            if (onUpdate) await onUpdate(id, updates)
           }}
           projectId={projectId}
           mode="edit"
           initialData={
             editingCharacter
               ? {
-                  id: editingCharacter.id,
-                  name: editingCharacter.name,
-                  role: editingCharacter.role,
-                  gender: editingCharacter.gender,
-                  mbti: editingCharacter.mbti,
-                  description: editingCharacter.characterPrompt,
-                  portraitUrl: editingCharacter.portraitUrl,
-                  // Map metrics from character state
-                  valence: editingCharacter.valence,
-                  arousal: editingCharacter.arousal,
-                  autonomy: editingCharacter.autonomy,
-                  competence: editingCharacter.competence,
-                  relatedness: editingCharacter.relatedness,
-                  cognitiveClarity: editingCharacter.cognitiveClarity,
-                  perceivedStakes: editingCharacter.perceivedStakes,
-                  socialSafety: editingCharacter.socialSafety,
-                  moralAlignment: editingCharacter.moralAlignment,
-                }
+                id: editingCharacter.id,
+                name: editingCharacter.name,
+                role: editingCharacter.role,
+                gender: editingCharacter.gender || (editingCharacter as any).gender,
+                mbti: editingCharacter.mbti || (editingCharacter as any).mbti,
+                description: editingCharacter.description || editingCharacter.characterPrompt || (editingCharacter as any).character_prompt,
+                portraitUrl: editingCharacter.portraitUrl || (editingCharacter as any).portrait_url,
+                voiceSignature: editingCharacter.voiceSignature || (editingCharacter as any).voice_signature,
+                psychology: (editingCharacter as any).psychology,
+                // Map metrics from character state (with snake_case fallbacks)
+                valence: editingCharacter.valence,
+                arousal: editingCharacter.arousal,
+                autonomy: editingCharacter.autonomy,
+                competence: editingCharacter.competence,
+                relatedness: editingCharacter.relatedness,
+                cognitiveClarity: editingCharacter.cognitiveClarity ?? (editingCharacter as any).cognitive_clarity,
+                perceivedStakes: editingCharacter.perceivedStakes ?? (editingCharacter as any).perceived_stakes,
+                socialSafety: editingCharacter.socialSafety ?? (editingCharacter as any).social_safety,
+                moralAlignment: editingCharacter.moralAlignment ?? (editingCharacter as any).moral_alignment,
+              }
               : undefined
           }
         />
       </div>
     </TooltipProvider>
   )
-}
+})
+
+CharacterPanel.displayName = 'CharacterPanel'
 
 interface CharacterCardProps {
   character: Character
@@ -376,7 +383,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
   }
 
   return (
-    <div className="bg-[#191919] border border-border rounded-lg p-3 space-y-3">
+    <div className="bg-black border border-border rounded-lg p-3 space-y-3">
       <div
         className="flex items-center justify-between cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
@@ -431,6 +438,40 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
 
       {isExpanded && (
         <div className="space-y-3 pt-2 border-t border-border/50">
+          {/* Description */}
+          {character.description && (
+            <div className="bg-background/50 p-2 rounded border border-border">
+              <div className="text-[10px] text-muted-foreground uppercase mb-1">Description</div>
+              <div className="text-xs text-foreground/80 leading-relaxed">
+                {character.description}
+              </div>
+            </div>
+          )}
+
+          {/* Archetype & Psychology */}
+          {(character.archetype || character.psychology) && (
+            <div className="space-y-2">
+              {character.archetype && (
+                <div className="bg-background/50 p-2 rounded border border-border">
+                  <div className="text-[10px] text-muted-foreground uppercase mb-1">Archetype</div>
+                  <div className="text-xs font-medium">{character.archetype}</div>
+                </div>
+              )}
+              {character.psychology?.fatalFlaw && (
+                <div className="bg-background/50 p-2 rounded border border-destructive/20">
+                  <div className="text-[10px] text-destructive/70 uppercase mb-1">Fatal Flaw</div>
+                  <div className="text-xs text-foreground/80">{character.psychology.fatalFlaw}</div>
+                </div>
+              )}
+              {character.psychology?.secrets && (
+                <div className="bg-background/50 p-2 rounded border border-amber-500/20">
+                  <div className="text-[10px] text-amber-500/70 uppercase mb-1">Secret</div>
+                  <div className="text-xs text-foreground/80 italic">{character.psychology.secrets}</div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Character Metrics Grid */}
           <div className="space-y-2">
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-2">

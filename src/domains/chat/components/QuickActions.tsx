@@ -34,7 +34,7 @@ interface QuickActionsProps {
 }
 
 // Pre-defined action templates for common scenarios
-export const createQuickActions = {
+const createQuickActions = {
   afterGeneration: (onRegenerate: () => void, onContinue: () => void): QuickAction[] => [
     {
       id: 'regenerate',

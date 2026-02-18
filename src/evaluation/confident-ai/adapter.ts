@@ -119,7 +119,7 @@ function extractExpectedBehavior(example: StorytellerExample): ExpectedBehavior 
 /**
  * Group test cases by category for organized evaluation
  */
-export function groupByCategory(examples: StorytellerExample[]): Map<string, StorytellerExample[]> {
+function groupByCategory(examples: StorytellerExample[]): Map<string, StorytellerExample[]> {
   const groups = new Map<string, StorytellerExample[]>()
 
   for (const example of examples) {

@@ -58,7 +58,7 @@ import { sanitizePath, isValidProjectId, safeFetch, secureLog } from '@/lib/secu
  */
 
 export const POST = withRateLimit(
-  withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
+  withAuth<any>(async (request: NextRequest, { session }: AuthenticatedRequest) => {
     const { assetId, imageUrl, provider, apiKey } = await request.json()
 
     if (!assetId || !imageUrl || !provider || !apiKey) {

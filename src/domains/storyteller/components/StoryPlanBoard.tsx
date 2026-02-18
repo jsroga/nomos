@@ -1,6 +1,7 @@
 import { StoryPlan, StorySequence } from '../schemas/agent-schemas'
 import { EpisodePremisePanel } from './EpisodePremisePanel'
 import { Button } from '@/components/ui/button'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { CheckCircle } from 'lucide-react'
 
 export interface StoryPlanBoardProps {
@@ -68,6 +69,7 @@ const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
     episodePremise.inevitableConsequence
 
   return (
+    <TooltipProvider delayDuration={100}>
     <div className="h-full flex flex-col">
       <EpisodePremisePanel
         premise={episodePremise}
@@ -134,6 +136,7 @@ const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
         </div>
       )}
     </div>
+    </TooltipProvider>
   )
 }
 export default StoryPlanBoard

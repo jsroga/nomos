@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, verifyProjectAccess, type AuthenticatedRequest } from '@/lib/api-utils'
+import { Database } from '@/infrastructure/storage/database.types'
 
-export const POST = withAuth(
+type TileUpdate = Database['public']['Tables']['tiles']['Update']
+
+export const POST = withAuth<any>(
   async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
     const { projectId, x, y, upscaledUrl } = await request.json()
 
@@ -16,9 +19,11 @@ export const POST = withAuth(
     }
 
     // Update tile using authenticated client (RLS enforced)
+    const updates: TileUpdate = { image_filename: upscaledUrl }
+
     const { error } = await supabase
       .from('tiles')
-      .update({ image_filename: upscaledUrl })
+      .update(updates)
       .eq('project_id', projectId)
       .eq('x', x)
       .eq('y', y)

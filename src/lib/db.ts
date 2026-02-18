@@ -8,7 +8,7 @@ const connectionString = process.env.DATABASE_URL!
 const pool = new Pool({
   connectionString,
   ssl: false,
-  max: 5,
+  max: 20, // Increased for concurrent streams
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
 })

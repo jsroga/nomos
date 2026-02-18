@@ -90,7 +90,7 @@ export const AssetExporterSidebar: React.FC = () => {
               }
             >
               {/* Upload Zone */}
-              <div className="mb-4">
+              <div className="mb-4" id="tour-asset-upload-zone">
                 <AssetUploadZone
                   projectId={currentProject.id}
                   onUploadComplete={assetIds => {

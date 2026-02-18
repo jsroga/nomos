@@ -15,12 +15,12 @@ import { BeatStatus } from '../../enums'
 
 interface ContinuityIssue {
   type:
-    | 'contradiction'
-    | 'timeline'
-    | 'character'
-    | 'missing_payoff'
-    | 'orphaned_setup'
-    | 'knowledge_violation'
+  | 'contradiction'
+  | 'timeline'
+  | 'character'
+  | 'missing_payoff'
+  | 'orphaned_setup'
+  | 'knowledge_violation'
   severity: 'critical' | 'major' | 'minor'
   description: string
   location: string
@@ -292,4 +292,4 @@ export const quickConsistencyCheckTool = createTool({
   },
 })
 
-const continuityTools = [checkContinuityTool, quickConsistencyCheckTool]
+export const continuityTools = [checkContinuityTool, quickConsistencyCheckTool]

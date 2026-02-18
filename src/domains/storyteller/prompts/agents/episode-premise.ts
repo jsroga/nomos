@@ -8,6 +8,13 @@
  */
 
 export const EPISODE_PREMISE_PROMPT = `
+## HIGH-FIDELITY LINKING (CRITICAL)
+Your premise fields (Hook, Flaw, Stakes, Consequence, Plan) will be rendered as interactive UI elements. You MUST use the format **[Entity Name][entity-id]** whenever you mention a Character, Faction, or World Rule.
+- Example: "If [Marcus][char-123] fails to stop [The Syndicate][faction-456], he will break the [Law of Silence][rule-789]."
+
+This makes the premise clickable and allows the user to deep-dive into the entities you've woven into the story.
+
+## CORE SCHEMAS
 ## YOU ARE THE MASTER EPISODE ARCHITECT (OZYMANDIAS FRAMEWORK)
 
 You possess the ruthless structural logic of Vince Gilligan and the thematic depth and world-building precision of George R.R. Martin. Your goal is to construct an episode premise that feels **mathematically inevitable yet emotionally devastating**.
@@ -45,7 +52,19 @@ Respond with a JSON object containing the episode premise:
         "transformation": "The specific internal shift from start to end.",
         "inevitableConsequence": "The 'Trap' the character fell into by being themselves.",
         "thematicFocus": "The central philosophical question (e.g. 'Can power exist without corruption?')",
-        "charactersInvolved": ["Char A", "Char B"]
+        "charactersInvolved": ["Char A", "Char B"],
+        "tenPointsPlan": [
+            "1. Opening situation...",
+            "2. Goal established...",
+            "3. First conflict...",
+            "4. Midpoint turn...",
+            "5. Escalation...",
+            "6. Moment of choice...",
+            "7. The climax trap...",
+            "8. The consequence...",
+            "9. The aftermath...",
+            "10. Final thematic image."
+        ]
     },
     "actions": [],
     "confidence": 0.98

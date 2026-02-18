@@ -1,4 +1,3 @@
-/* eslint-disable */
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { aiService } from '@/infrastructure/ai/service'
@@ -6,63 +5,39 @@ import {
   X,
   Settings,
   Image as ImageIcon,
-  Box,
-  Brain,
   Key,
   Info,
-  ScanLine,
-  Check,
-  Wrench,
   Sparkles,
+  Check,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Slider } from '@/components/ui/slider'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { LocalStorageKeys } from '@/constants/localStorage'
+import { getErrorMessage } from '@/lib/error-utils'
 
 interface SettingsDialogProps {
   isOpen: boolean
   onClose: () => void
-  projectId?: string // Optional: for project-specific settings
+  projectId?: string
 }
 
-type Tab = 'generation' | 'upscaling' | 'tools' | 'apikeys' | 'storyteller' | 'projectSettings'
+type Tab = 'general' | 'mcpkeys' | 'projectSettings'
 
-interface AIModelConfig {
-  baseUrl?: string
-  apiKey?: string
-  params?: {
-    steps?: number
-    cfgScale?: number
-    sampler?: string
-    modelId?: string
-    [key: string]: unknown
-  }
-  [key: string]: unknown
-}
-
-interface ApiKeyConfig {
-  apiKey?: string
-  [key: string]: unknown
-}
-
-interface FalConfig extends ApiKeyConfig {
-  returnMultipleMasks?: boolean
-  includeScores?: boolean
-  includeBoxes?: boolean
-}
-
-interface ReplicateConfig extends ApiKeyConfig {
-  model?: string
-}
-
-interface LegnextConfig extends ApiKeyConfig {
-  parameters?: string
-}
-
-interface Upscale4kConfig extends ApiKeyConfig {
-  upscaleMode?: string
+interface ProviderStatus {
+  openai: boolean
+  anthropic: boolean
+  google: boolean
+  legnext: boolean
+  stability: boolean
+  replicate: boolean
+  hyper3d: boolean
+  meshy: boolean
+  fal: boolean
+  voyage: boolean
+  langfuse: boolean
+  langsmith: boolean
 }
 
 interface ProjectData {
@@ -71,58 +46,49 @@ interface ProjectData {
   [key: string]: unknown
 }
 
-import { LocalStorageKeys } from '@/constants/localStorage'
-import { getErrorMessage } from '@/lib/error-utils'
+interface McpApiKey {
+  id: string
+  name: string
+  scopes: string[]
+  created_at: string
+  last_used_at: string | null
+  revoked_at: string | null
+  expires_at: string | null
+}
+
+const ConnectionDot = ({ connected, label }: { connected: boolean; label: string }) => (
+  <div className="flex items-center gap-2 text-xs bg-muted/30 p-2 rounded border border-border w-full">
+    <div
+      className={cn(
+        'w-2 h-2 rounded-full shrink-0',
+        connected ? 'bg-green-500' : 'bg-red-500'
+      )}
+    />
+    <span className="text-muted-foreground">
+      {label}
+    </span>
+    {connected && <Check className="w-3 h-3 text-green-500 ml-auto shrink-0" />}
+  </div>
+)
 
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose, projectId }) => {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
-  const [activeTab, setActiveTab] = useState<Tab>('generation')
+  const [activeTab, setActiveTab] = useState<Tab>('general')
 
-  const [activeId, setActiveId] = useState(aiService.getActiveModelId())
-  const [config, setConfig] = useState<AIModelConfig>({})
-  const [openaiConfig, setOpenaiConfig] = useState<ApiKeyConfig>({})
-  const [geminiConfig, setGeminiConfig] = useState<ApiKeyConfig>({})
-  const [upscale4kConfig, setUpscale4kConfig] = useState<Upscale4kConfig>({})
-  const [replicateConfig, setReplicateConfig] = useState<ReplicateConfig>({})
-  const [falConfig, setFalConfig] = useState<FalConfig>({})
-  const [hyper3dConfig, setHyper3dConfig] = useState<ApiKeyConfig>({})
-  const [meshyConfig, setMeshyConfig] = useState<ApiKeyConfig>({})
-  const [legnextConfig, setLegnextConfig] = useState<LegnextConfig>({})
+  // General tab state
+  const [activeModelId, setActiveModelId] = useState(aiService.getActiveModelId())
   const [activeUpscaler, setActiveUpscaler] = useState<string>('stability')
-  const [skipGeminiPreUpscale, setSkipGeminiPreUpscale] = useState(false)
+  const [providers, setProviders] = useState<ProviderStatus | null>(null)
+  const [loadingProviders, setLoadingProviders] = useState(false)
 
-  // Storyteller AI Settings
-  const [storytellerProvider, setStorytellerProvider] = useState<'openai' | 'anthropic' | 'gemini'>(
-    'openai'
-  )
-  const [anthropicApiKey, setAnthropicApiKey] = useState<string>('')
-
-  // Storyteller Image Settings
-  const [moodboardProvider, setMoodboardProvider] = useState<'nanobanana' | 'midjourney'>(
-    'midjourney'
-  )
-  const [nanoBananaModelId, setNanoBananaModelId] = useState<string>('flux-pro')
-
-  // Fidelity Enhancement Settings
-  const [defaultFidelityPrompt, setDefaultFidelityPrompt] = useState<string>('')
-
-  // Project Settings
+  // Project Settings state
   const [projectData, setProjectData] = useState<ProjectData | null>(null)
   const [styleReferenceUrls, setStyleReferenceUrls] = useState<string[]>([])
   const [newStyleUrl, setNewStyleUrl] = useState<string>('')
 
-  // MCP API Keys
-  interface McpApiKey {
-    id: string
-    name: string
-    scopes: string[]
-    created_at: string
-    last_used_at: string | null
-    revoked_at: string | null
-    expires_at: string | null
-  }
+  // MCP API Keys state
   const [mcpKeys, setMcpKeys] = useState<McpApiKey[]>([])
   const [isLoadingMcpKeys, setIsLoadingMcpKeys] = useState(false)
   const [newMcpKeyName, setNewMcpKeyName] = useState('')
@@ -133,61 +99,18 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
 
   useEffect(() => {
     if (isOpen) {
-      setActiveId(aiService.getActiveModelId())
-      setConfig(aiService.getConfig(aiService.getActiveModelId()))
-
-      // Load configs
-      const savedOpenai = localStorage.getItem(LocalStorageKeys.AI_CONFIG_OPENAI)
-      if (savedOpenai) setOpenaiConfig(JSON.parse(savedOpenai))
-
-      const savedGemini = localStorage.getItem(LocalStorageKeys.AI_CONFIG_GEMINI)
-      if (savedGemini) setGeminiConfig(JSON.parse(savedGemini))
-
-      const saved4k = localStorage.getItem(LocalStorageKeys.AI_CONFIG_STABILITY)
-      if (saved4k) setUpscale4kConfig(JSON.parse(saved4k))
-
-      const savedReplicate = localStorage.getItem(LocalStorageKeys.AI_CONFIG_REPLICATE)
-      if (savedReplicate) setReplicateConfig(JSON.parse(savedReplicate))
-
-      const savedFal = localStorage.getItem(LocalStorageKeys.AI_CONFIG_FAL)
-      if (savedFal) setFalConfig(JSON.parse(savedFal))
-
-      const savedHyper3d = localStorage.getItem(LocalStorageKeys.AI_CONFIG_HYPER3D)
-      if (savedHyper3d) setHyper3dConfig(JSON.parse(savedHyper3d))
-
-      const savedMeshy = localStorage.getItem(LocalStorageKeys.AI_CONFIG_MESHY)
-      if (savedMeshy) setMeshyConfig(JSON.parse(savedMeshy))
-
-      const savedLegNext = localStorage.getItem(LocalStorageKeys.AI_CONFIG_LEGNEXT)
-      if (savedLegNext) setLegnextConfig(JSON.parse(savedLegNext))
+      setActiveModelId(aiService.getActiveModelId())
 
       const savedUpscaler = localStorage.getItem(LocalStorageKeys.AI_ACTIVE_UPSCALER)
       if (savedUpscaler) setActiveUpscaler(savedUpscaler)
 
-      const savedSkipGemini = localStorage.getItem(LocalStorageKeys.SKIP_GEMINI_PRE_UPSCALE)
-      setSkipGeminiPreUpscale(savedSkipGemini === 'true')
-
-      // Load Fidelity prompt
-      const savedFidelityPrompt = localStorage.getItem(LocalStorageKeys.FIDELITY_PROMPT)
-      setDefaultFidelityPrompt(
-        savedFidelityPrompt ||
-          'Enhance with fine artistic details, crisp textures, and vibrant colors while maintaining the original composition.'
-      )
-
-      // Load Storyteller settings
-      const savedProvider = localStorage.getItem(LocalStorageKeys.PREFERRED_MODEL_PROVIDER)
-      if (savedProvider === 'anthropic' || savedProvider === 'openai') {
-        setStorytellerProvider(savedProvider)
-      }
-      const savedAnthropicKey = localStorage.getItem(LocalStorageKeys.ANTHROPIC_API_KEY)
-      if (savedAnthropicKey) setAnthropicApiKey(savedAnthropicKey)
-
-      const savedMoodboardProvider = localStorage.getItem('MOODBOARD_PROVIDER')
-      if (savedMoodboardProvider === 'nanobanana' || savedMoodboardProvider === 'midjourney') {
-        setMoodboardProvider(savedMoodboardProvider)
-      }
-      const savedNanoBananaModel = localStorage.getItem('NANO_BANANA_MODEL_ID')
-      if (savedNanoBananaModel) setNanoBananaModelId(savedNanoBananaModel)
+      // Fetch provider status
+      setLoadingProviders(true)
+      fetch('/api/settings/providers')
+        .then(res => res.json())
+        .then(data => setProviders(data.providers))
+        .catch(err => console.error('Failed to load provider status:', err))
+        .finally(() => setLoadingProviders(false))
 
       // Load project settings if projectId provided
       if (projectId) {
@@ -204,59 +127,16 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
       setIsLoadingMcpKeys(true)
       fetch('/api/api-keys')
         .then(res => res.json())
-        .then(data => {
-          setMcpKeys(data.apiKeys || [])
-        })
+        .then(data => setMcpKeys(data.apiKeys || []))
         .catch(err => console.error('Failed to load MCP keys:', err))
         .finally(() => setIsLoadingMcpKeys(false))
     }
   }, [isOpen, projectId])
 
   const handleSave = () => {
-    aiService.setActiveModel(activeId)
-    aiService.updateConfig(activeId, config)
-
-    // Save configs
-    localStorage.setItem(LocalStorageKeys.AI_CONFIG_OPENAI, JSON.stringify(openaiConfig))
-    localStorage.setItem(LocalStorageKeys.AI_CONFIG_GEMINI, JSON.stringify(geminiConfig))
-    localStorage.setItem(LocalStorageKeys.AI_CONFIG_NANO_BANANA, JSON.stringify(geminiConfig)) // Gemini = Nano Banana for now?? No separate
-    localStorage.setItem(LocalStorageKeys.AI_CONFIG_STABILITY, JSON.stringify(upscale4kConfig))
-    localStorage.setItem(LocalStorageKeys.AI_CONFIG_REPLICATE, JSON.stringify(replicateConfig))
-    localStorage.setItem(LocalStorageKeys.AI_CONFIG_FAL, JSON.stringify(falConfig))
-    localStorage.setItem(LocalStorageKeys.AI_CONFIG_HYPER3D, JSON.stringify(hyper3dConfig))
-    localStorage.setItem(LocalStorageKeys.AI_CONFIG_MESHY, JSON.stringify(meshyConfig))
-    localStorage.setItem(LocalStorageKeys.AI_CONFIG_LEGNEXT, JSON.stringify(legnextConfig))
+    aiService.setActiveModel(activeModelId)
     localStorage.setItem(LocalStorageKeys.AI_ACTIVE_UPSCALER, activeUpscaler)
-    localStorage.setItem(LocalStorageKeys.SKIP_GEMINI_PRE_UPSCALE, skipGeminiPreUpscale.toString())
-    localStorage.setItem(LocalStorageKeys.FIDELITY_PROMPT, defaultFidelityPrompt)
-
-    // Save Storyteller settings
-    localStorage.setItem(LocalStorageKeys.PREFERRED_MODEL_PROVIDER, storytellerProvider)
-    if (anthropicApiKey) {
-      localStorage.setItem(LocalStorageKeys.ANTHROPIC_API_KEY, anthropicApiKey)
-    }
-
-    // Save Moodboard Settings
-    localStorage.setItem('MOODBOARD_PROVIDER', moodboardProvider)
-    if (nanoBananaModelId) localStorage.setItem('NANO_BANANA_MODEL_ID', nanoBananaModelId)
-
     onClose()
-  }
-
-  const handleModelChange = (id: string) => {
-    setActiveId(id)
-    setConfig(aiService.getConfig(id))
-  }
-
-  const handleConfigChange = (update: Partial<AIModelConfig>) => {
-    setConfig(prev => ({ ...prev, ...update }))
-  }
-
-  const handleParamChange = (key: string, value: string | number) => {
-    setConfig(prev => ({
-      ...prev,
-      params: { ...prev.params, [key]: value },
-    }))
   }
 
   // MCP Key Management
@@ -303,23 +183,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
     toast.success('Copied to clipboard!')
   }
 
-  // Connection status indicator component
-  const ConnectionStatus = ({ isConnected, label }: { isConnected: boolean; label: string }) => (
-    <div className="flex items-center gap-2 text-xs bg-muted/30 p-2 rounded border border-border w-fit">
-      <div
-        className={
-          isConnected ? 'w-2 h-2 bg-green-500 rounded-full' : 'w-2 h-2 bg-red-500 rounded-full'
-        }
-      />
-      <span className="text-muted-foreground">
-        {isConnected ? `${label} Connected` : `${label} Not Connected`}
-      </span>
-    </div>
-  )
-
   if (!isOpen || !mounted) return null
 
-  const selectedModel = models.find(m => m.id === activeId)
+  const selectedModel = models.find(m => m.id === activeModelId)
 
   return createPortal(
     <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/80 backdrop-blur-sm">
@@ -336,44 +202,20 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
           <h2 className="text-lg font-bold mb-6 px-2">Settings</h2>
           <nav className="space-y-2 flex-1">
             <Button
-              variant={activeTab === 'generation' ? 'secondary' : 'ghost'}
+              variant={activeTab === 'general' ? 'secondary' : 'ghost'}
               className="w-full justify-start gap-2"
-              onClick={() => setActiveTab('generation')}
+              onClick={() => setActiveTab('general')}
             >
-              <Sparkles className="w-4 h-4" />
-              Generation
+              <Settings className="w-4 h-4" />
+              General
             </Button>
             <Button
-              variant={activeTab === 'upscaling' ? 'secondary' : 'ghost'}
+              variant={activeTab === 'mcpkeys' ? 'secondary' : 'ghost'}
               className="w-full justify-start gap-2"
-              onClick={() => setActiveTab('upscaling')}
-            >
-              <ImageIcon className="w-4 h-4" />
-              Upscaling
-            </Button>
-            <Button
-              variant={activeTab === 'tools' ? 'secondary' : 'ghost'}
-              className="w-full justify-start gap-2"
-              onClick={() => setActiveTab('tools')}
-            >
-              <Wrench className="w-4 h-4" />
-              Editor Tools
-            </Button>
-            <Button
-              variant={activeTab === 'apikeys' ? 'secondary' : 'ghost'}
-              className="w-full justify-start gap-2"
-              onClick={() => setActiveTab('apikeys')}
+              onClick={() => setActiveTab('mcpkeys')}
             >
               <Key className="w-4 h-4" />
-              API Keys
-            </Button>
-            <Button
-              variant={activeTab === 'storyteller' ? 'secondary' : 'ghost'}
-              className="w-full justify-start gap-2"
-              onClick={() => setActiveTab('storyteller')}
-            >
-              <Brain className="w-4 h-4" />
-              Writers Room AI
+              MCP Keys
             </Button>
             {projectId && (
               <Button
@@ -381,7 +223,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                 className="w-full justify-start gap-2"
                 onClick={() => setActiveTab('projectSettings')}
               >
-                <Settings className="w-4 h-4" />
+                <ImageIcon className="w-4 h-4" />
                 Project Settings
               </Button>
             )}
@@ -392,1002 +234,213 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
         <div className="flex-1 flex flex-col min-w-0">
           <ScrollArea className="flex-1 p-6">
             <div className="max-w-2xl mx-auto space-y-8 pb-20">
-              {/* Generation Tab */}
-              {activeTab === 'generation' && (
+              {/* General Tab */}
+              {activeTab === 'general' && (
                 <div className="space-y-6">
+                  {/* Provider Connection Status */}
                   <div>
-                    <h3 className="text-lg font-medium mb-4">World Generation</h3>
-
-                    <div className="space-y-6">
-                      {/* Card: Tile Generation */}
-                      <div className="p-4 rounded-lg bg-zinc-900/20 border border-zinc-900 space-y-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Sparkles className="w-4 h-4 text-primary" />
-                          <h4 className="font-semibold text-sm">Tile Generator</h4>
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">
-                            Primary Model
-                          </label>
-                          <select
-                            value={activeId}
-                            onChange={e => handleModelChange(e.target.value)}
-                            className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md py-2 px-3 text-xs text-zinc-300 font-mono focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-all"
-                          >
-                            {models.map(m => (
-                              <option key={m.id} value={m.id}>
-                                {m.name}
-                              </option>
-                            ))}
-                          </select>
-                          <p className="text-xs text-muted-foreground mt-1.5">
-                            {selectedModel?.description}
-                          </p>
-                        </div>
-
-                        {activeId === 'custom' && (
-                          <div>
-                            <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">
-                              Base URL
-                            </label>
-                            <input
-                              type="text"
-                              value={config.baseUrl || ''}
-                              onChange={e => handleConfigChange({ baseUrl: e.target.value })}
-                              placeholder="https://..."
-                              className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md py-2 px-3 text-xs text-zinc-300 font-mono focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-all placeholder:text-zinc-600"
-                            />
-                          </div>
-                        )}
-
-                        {activeId === 'gemini' && (
-                          <div>
-                            <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">
-                              Model ID
-                            </label>
-                            <input
-                              type="text"
-                              value={config.params?.modelId || 'imagen-3.0-generate-001'}
-                              onChange={e => handleParamChange('modelId', e.target.value)}
-                              placeholder="imagen-3.0-generate-001"
-                              className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md py-2 px-3 text-xs text-zinc-300 font-mono focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-all placeholder:text-zinc-600"
-                            />
-                            <p className="text-xs text-muted-foreground mt-1.5">
-                              Try <code>imagen-3.0-generate-001</code> or{' '}
-                              <code>gemini-1.5-pro</code>
-                            </p>
-                          </div>
-                        )}
-
-                        {activeId === 'midjourney' && (
-                          <div className="space-y-3">
-                            <div className="bg-blue-500/10 border border-blue-500/20 rounded-md p-3">
-                              <p className="text-xs text-blue-600 dark:text-blue-400">
-                                Midjourney uses LegNext AI for tile generation.
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs bg-muted/30 p-2 rounded border border-border">
-                              <div
-                                className={
-                                  config.apiKey || legnextConfig.apiKey
-                                    ? 'w-2 h-2 bg-green-500 rounded-full'
-                                    : 'w-2 h-2 bg-red-500 rounded-full'
-                                }
-                              />
-                              <span className="text-muted-foreground">
-                                {config.apiKey || legnextConfig.apiKey
-                                  ? 'LegNext API Key Configured'
-                                  : 'Missing LegNext API Key'}
-                              </span>
-                              <Button
-                                variant="link"
-                                size="sm"
-                                className="h-auto p-0 ml-auto text-xs"
-                                onClick={() => setActiveTab('apikeys')}
-                              >
-                                Configure in API Keys
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Fidelity Enhancement (Inside Tile Generator) */}
-                        <div className="pt-4 border-t border-border/50">
-                          <label className="block text-sm font-medium mb-1.5">
-                            Fidelity Enhancement Prompt
-                          </label>
-                          <textarea
-                            value={defaultFidelityPrompt}
-                            onChange={e => setDefaultFidelityPrompt(e.target.value)}
-                            placeholder="Describe the artistic style to apply..."
-                            className="w-full p-2 rounded-md border border-input bg-background text-sm h-20 resize-none"
-                          />
-                          <p className="text-xs text-muted-foreground mt-1.5">
-                            Appended to prompts when enhancing tile fidelity.
-                          </p>
-                        </div>
+                    <h3 className="text-lg font-medium mb-4">Provider Status</h3>
+                    <div className="p-4 rounded-lg bg-zinc-900/20 border border-zinc-900 space-y-4">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Info className="w-4 h-4 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">
+                          API keys are managed via environment variables. See <code className="text-xs">.env.local</code> for configuration.
+                        </p>
                       </div>
 
-                      {/* Card: Parameters (Only for Stability/Custom) */}
-                      {(activeId === 'stability' || activeId === 'custom') && (
-                        <div className="p-4 rounded-lg bg-card border border-border space-y-4">
-                          <h4 className="font-semibold text-sm mb-2">Generation Parameters</h4>
-                          <div className="space-y-6">
-                            <div className="space-y-3">
-                              <div className="flex justify-between">
-                                <label className="text-sm font-medium">Steps</label>
-                                <span className="text-sm text-muted-foreground">
-                                  {config.params?.steps || 30}
-                                </span>
-                              </div>
-                              <Slider
-                                min={10}
-                                max={150}
-                                step={1}
-                                value={[config.params?.steps || 30]}
-                                onValueChange={([val]) => handleParamChange('steps', val)}
-                              />
-                            </div>
-
-                            <div className="space-y-3">
-                              <div className="flex justify-between">
-                                <label className="text-sm font-medium">CFG Scale</label>
-                                <span className="text-sm text-muted-foreground">
-                                  {config.params?.cfgScale || 7}
-                                </span>
-                              </div>
-                              <Slider
-                                min={1}
-                                max={30}
-                                step={0.5}
-                                value={[config.params?.cfgScale || 7]}
-                                onValueChange={([val]) => handleParamChange('cfgScale', val)}
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium mb-1.5">Sampler</label>
-                              <select
-                                value={config.params?.sampler || 'Euler a'}
-                                onChange={e => handleParamChange('sampler', e.target.value)}
-                                className="w-full p-2 rounded-md border border-input bg-background text-sm"
-                              >
-                                <option value="Euler a">Euler a</option>
-                                <option value="Euler">Euler</option>
-                                <option value="LMS">LMS</option>
-                                <option value="Heun">Heun</option>
-                                <option value="DPM2">DPM2</option>
-                                <option value="DPM2 a">DPM2 a</option>
-                                <option value="DPM++ 2S a">DPM++ 2S a</option>
-                                <option value="DPM++ 2M">DPM++ 2M</option>
-                                <option value="DPM++ SDE">DPM++ SDE</option>
-                                <option value="DPM fast">DPM fast</option>
-                                <option value="DPM adaptive">DPM adaptive</option>
-                              </select>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Card: API Connections Summary */}
-                      <div className="p-4 rounded-lg bg-card border border-border space-y-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Key className="w-4 h-4 text-primary" />
-                          <h4 className="font-semibold text-sm">API Connections</h4>
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="h-auto p-0 ml-auto text-xs"
-                            onClick={() => setActiveTab('apikeys')}
-                          >
-                            Manage Keys
-                          </Button>
-                        </div>
-
+                      {loadingProviders ? (
+                        <div className="text-xs text-muted-foreground py-4 text-center">Loading provider status...</div>
+                      ) : providers ? (
                         <div className="grid grid-cols-2 gap-4">
-                          {/* Image Generation */}
+                          <div className="space-y-2">
+                            <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
+                              LLM Providers
+                            </h5>
+                            <ConnectionDot connected={providers.openai} label="OpenAI" />
+                            <ConnectionDot connected={providers.anthropic} label="Anthropic" />
+                            <ConnectionDot connected={providers.google} label="Google / Gemini" />
+                          </div>
+
                           <div className="space-y-2">
                             <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
                               Image Generation
                             </h5>
-                            <ConnectionStatus
-                              isConnected={!!geminiConfig.apiKey}
-                              label="Gemini / Nano Banana"
-                            />
-                            <ConnectionStatus
-                              isConnected={!!legnextConfig.apiKey}
-                              label="Midjourney (LegNext AI)"
-                            />
+                            <ConnectionDot connected={providers.legnext} label="LegNext / Midjourney" />
+                            <ConnectionDot connected={providers.google} label="Gemini Imagen" />
                           </div>
 
-                          {/* Upscaling */}
                           <div className="space-y-2">
                             <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
                               Upscaling
                             </h5>
-                            <ConnectionStatus
-                              isConnected={!!upscale4kConfig.apiKey}
-                              label="Stability AI"
-                            />
-                            <ConnectionStatus
-                              isConnected={!!replicateConfig.apiKey}
-                              label="Replicate"
-                            />
+                            <ConnectionDot connected={providers.stability} label="Stability AI" />
+                            <ConnectionDot connected={providers.replicate} label="Replicate" />
                           </div>
 
-                          {/* 3D Generation */}
                           <div className="space-y-2">
                             <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
                               3D Generation
                             </h5>
-                            <ConnectionStatus
-                              isConnected={!!hyper3dConfig.apiKey}
-                              label="Hyper3D"
-                            />
-                            <ConnectionStatus isConnected={!!meshyConfig.apiKey} label="Meshy" />
+                            <ConnectionDot connected={providers.hyper3d} label="Hyper3D" />
+                            <ConnectionDot connected={providers.meshy} label="Meshy" />
                           </div>
 
-                          {/* Tools & AI */}
                           <div className="space-y-2">
                             <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
-                              Tools & AI
+                              Tools
                             </h5>
-                            <ConnectionStatus isConnected={!!openaiConfig.apiKey} label="OpenAI" />
-                            <ConnectionStatus
-                              isConnected={!!anthropicApiKey}
-                              label="Anthropic (Claude)"
-                            />
-                            <ConnectionStatus
-                              isConnected={!!falConfig.apiKey}
-                              label="Fal.ai (Smart Select)"
-                            />
+                            <ConnectionDot connected={providers.fal} label="Fal.ai" />
+                            <ConnectionDot connected={providers.voyage} label="Voyage AI" />
+                          </div>
+
+                          <div className="space-y-2">
+                            <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
+                              Observability
+                            </h5>
+                            <ConnectionDot connected={providers.langfuse} label="Langfuse" />
+                            <ConnectionDot connected={providers.langsmith} label="LangSmith" />
                           </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="text-xs text-muted-foreground py-4 text-center">Failed to load provider status</div>
+                      )}
                     </div>
                   </div>
-                </div>
-              )}
 
-              {/* Upscaling Tab */}
-              {activeTab === 'upscaling' && (
-                <div className="space-y-6">
+                  {/* Generation Preferences */}
                   <div>
-                    <h3 className="text-lg font-medium mb-4">Image Upscaling</h3>
-
-                    <div className="p-4 rounded-lg bg-card border border-border space-y-4">
+                    <h3 className="text-lg font-medium mb-4">Generation Preferences</h3>
+                    <div className="p-4 rounded-lg bg-zinc-900/20 border border-zinc-900 space-y-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <ImageIcon className="w-4 h-4 text-primary" />
-                        <h4 className="font-semibold text-sm">Upscaler Configuration</h4>
+                        <Sparkles className="w-4 h-4 text-primary" />
+                        <h4 className="font-semibold text-sm">Tile Generator</h4>
                       </div>
 
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium mb-1.5">
-                            Upscaler Provider
-                          </label>
-                          <select
-                            value={activeUpscaler}
-                            onChange={e => setActiveUpscaler(e.target.value)}
-                            className="w-full p-2 rounded-md border border-input bg-background text-sm"
-                          >
-                            <option value="stability">Stability AI (4k)</option>
-                            <option value="replicate">Replicate (Creative/Painterly)</option>
-                            <option value="midjourney">Midjourney (LegNext AI)</option>
-                          </select>
-                        </div>
-
-                        {/* Gemini Pre-Upscale Toggle */}
-                        <div className="flex items-center justify-between p-3 bg-muted/30 rounded-md border border-border">
-                          <div>
-                            <label className="text-sm font-medium">Gemini Pre-Upscale</label>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              Enhance image with Gemini before provider upscale
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setSkipGeminiPreUpscale(!skipGeminiPreUpscale)}
-                            className={`relative w - 11 h - 6 rounded - full transition - colors ${
-                              !skipGeminiPreUpscale ? 'bg-primary' : 'bg-muted-foreground/30'
-                            } `}
-                          >
-                            <span
-                              className={`absolute top - 0.5 left - 0.5 w - 5 h - 5 bg - white rounded - full shadow transition - transform ${
-                                !skipGeminiPreUpscale ? 'translate-x-5' : 'translate-x-0'
-                              } `}
-                            />
-                          </button>
-                        </div>
-
-                        {activeUpscaler === 'stability' && (
-                          <div className="bg-muted/30 p-4 rounded-md space-y-4 border border-border">
-                            <h4 className="text-sm font-semibold">Stability AI Configuration</h4>
-                            <div>
-                              <label className="block text-sm font-medium mb-1.5">
-                                Upscale Mode
-                              </label>
-                              <select
-                                value={upscale4kConfig.upscaleMode || 'conservative'}
-                                onChange={e =>
-                                  setUpscale4kConfig({
-                                    ...upscale4kConfig,
-                                    upscaleMode: e.target.value,
-                                  })
-                                }
-                                className="w-full p-2 rounded-md border border-input bg-background text-sm"
-                              >
-                                <option value="conservative">
-                                  Conservative (Fast, maintains style)
-                                </option>
-                                <option value="creative">Creative (Slow, adds details)</option>
-                              </select>
-                            </div>
-                          </div>
-                        )}
-
-                        {activeUpscaler === 'replicate' && (
-                          <div className="bg-muted/30 p-4 rounded-md space-y-4 border border-border">
-                            <h4 className="text-sm font-semibold">Replicate Configuration</h4>
-                            <div>
-                              <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">
-                                Model ID
-                              </label>
-                              <input
-                                type="text"
-                                value={
-                                  replicateConfig.model || 'recraft-ai/recraft-creative-upscale'
-                                }
-                                onChange={e =>
-                                  setReplicateConfig({ ...replicateConfig, model: e.target.value })
-                                }
-                                placeholder="recraft-ai/recraft-creative-upscale"
-                                className="w-full p-2 rounded-md border border-input bg-background text-sm font-mono"
-                              />
-                            </div>
-                          </div>
-                        )}
-
-                        {activeUpscaler === 'midjourney' && (
-                          <div className="bg-muted/30 p-4 rounded-md space-y-4 border border-border">
-                            <div className="flex justify-between items-center">
-                              <h4 className="text-sm font-semibold">Midjourney Configuration</h4>
-                              <Button
-                                variant="link"
-                                size="sm"
-                                className="h-auto p-0 text-xs"
-                                onClick={() => setActiveTab('apikeys')}
-                              >
-                                Configure API Key
-                              </Button>
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium mb-1.5">
-                                Additional Parameters
-                              </label>
-                              <input
-                                type="text"
-                                value={legnextConfig.parameters || ''}
-                                onChange={e =>
-                                  setLegnextConfig({ ...legnextConfig, parameters: e.target.value })
-                                }
-                                placeholder="--style raw --stylize 100 --cref https://..."
-                                className="w-full p-2 rounded-md border border-input bg-background text-sm font-mono"
-                              />
-                              <p className="text-xs text-muted-foreground mt-1.5">
-                                Appended to the upscale prompt. Supports standard Discord
-                                parameters.
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Tools Tab */}
-              {activeTab === 'tools' && (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">Editor Tools</h3>
-
-                    <div className="p-4 rounded-lg bg-card border border-border space-y-4">
-                      <div className="flex items-center gap-2">
-                        <ScanLine className="w-4 h-4 text-primary" />
-                        <h4 className="font-semibold text-sm">Smart Select (SAM-3)</h4>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Configure Fal.ai SAM-3 segmentation parameters. API Key is set in the API
-                        Keys tab.
-                      </p>
-
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between p-3 bg-muted/30 rounded-md border border-border">
-                          <div>
-                            <label className="text-sm font-medium">Multimask Output</label>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              Return multiple mask options to choose from
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setFalConfig({
-                                ...falConfig,
-                                returnMultipleMasks: !falConfig.returnMultipleMasks,
-                              })
-                            }
-                            className={`relative w - 11 h - 6 rounded - full transition - colors ${falConfig.returnMultipleMasks ? 'bg-primary' : 'bg-muted-foreground/30'} `}
-                          >
-                            <span
-                              className={`absolute top - 0.5 left - 0.5 w - 5 h - 5 bg - white rounded - full shadow transition - transform ${falConfig.returnMultipleMasks ? 'translate-x-5' : 'translate-x-0'} `}
-                            />
-                          </button>
-                        </div>
-
-                        <div className="flex items-center justify-between p-3 bg-muted/30 rounded-md border border-border">
-                          <div>
-                            <label className="text-sm font-medium">Include Scores</label>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              Include confidence scores in response
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setFalConfig({
-                                ...falConfig,
-                                includeScores: !(falConfig.includeScores !== false),
-                              })
-                            }
-                            className={`relative w - 11 h - 6 rounded - full transition - colors ${falConfig.includeScores !== false ? 'bg-primary' : 'bg-muted-foreground/30'} `}
-                          >
-                            <span
-                              className={`absolute top - 0.5 left - 0.5 w - 5 h - 5 bg - white rounded - full shadow transition - transform ${falConfig.includeScores !== false ? 'translate-x-5' : 'translate-x-0'} `}
-                            />
-                          </button>
-                        </div>
-
-                        <div className="flex items-center justify-between p-3 bg-muted/30 rounded-md border border-border">
-                          <div>
-                            <label className="text-sm font-medium">Include Boxes</label>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              Include bounding boxes in response
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setFalConfig({
-                                ...falConfig,
-                                includeBoxes: !(falConfig.includeBoxes !== false),
-                              })
-                            }
-                            className={`relative w - 11 h - 6 rounded - full transition - colors ${falConfig.includeBoxes !== false ? 'bg-primary' : 'bg-muted-foreground/30'} `}
-                          >
-                            <span
-                              className={`absolute top - 0.5 left - 0.5 w - 5 h - 5 bg - white rounded - full shadow transition - transform ${falConfig.includeBoxes !== false ? 'translate-x-5' : 'translate-x-0'} `}
-                            />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Writers Room AI Tab */}
-              {activeTab === 'storyteller' && (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">Writers Room AI Settings</h3>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Configure the AI model used by the Storyteller agents (Showrunner, Plot
-                      Architect, etc.)
-                    </p>
-                    <div className="mb-6">
-                      <ConnectionStatus
-                        isConnected={
-                          storytellerProvider === 'openai'
-                            ? !!openaiConfig.apiKey
-                            : storytellerProvider === 'gemini'
-                              ? !!geminiConfig.apiKey
-                              : !!anthropicApiKey
-                        }
-                        label={
-                          storytellerProvider === 'openai'
-                            ? 'OpenAI'
-                            : storytellerProvider === 'gemini'
-                              ? 'Gemini'
-                              : 'Anthropic'
-                        }
-                      />
-                    </div>
-
-                    <div className="space-y-6">
-                      {/* Model Provider Selection */}
-                      <div className="p-4 rounded-lg bg-card border border-border space-y-4">
-                        <div className="flex items-center gap-2">
-                          <Brain className="w-4 h-4 text-primary" />
-                          <h4 className="font-semibold text-sm">AI Model Provider</h4>
-                        </div>
-                        <div className="grid grid-cols-3 gap-3">
-                          <button
-                            onClick={() => setStorytellerProvider('openai')}
-                            className={cn(
-                              'p-4 border rounded-lg text-left transition-all',
-                              storytellerProvider === 'openai'
-                                ? 'border-primary bg-primary/5'
-                                : 'border-border hover:border-primary/50'
-                            )}
-                          >
-                            <div className="font-medium">GPT-5.1</div>
-                            <div className="text-xs text-muted-foreground">The smartest model</div>
-                            {selectedModel?.id === 'gpt-5.1' && (
-                              <Check className="w-4 h-4 text-primary" />
-                            )}
-                          </button>
-                          <button
-                            onClick={() => setStorytellerProvider('anthropic')}
-                            className={cn(
-                              'p-4 border rounded-lg text-left transition-all',
-                              storytellerProvider === 'anthropic'
-                                ? 'border-primary bg-primary/5'
-                                : 'border-border hover:border-primary/50'
-                            )}
-                          >
-                            <div className="font-medium">Claude Sonnet 4</div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              Anthropic's creative model
-                            </div>
-                          </button>
-                          <button
-                            onClick={() => setStorytellerProvider('gemini')}
-                            className={cn(
-                              'p-4 border rounded-lg text-left transition-all',
-                              storytellerProvider === 'gemini'
-                                ? 'border-primary bg-primary/5'
-                                : 'border-border hover:border-primary/50'
-                            )}
-                          >
-                            <div className="font-medium">Gemini 3 Pro</div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              Google's advanced model
-                            </div>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Moodboard Image Provider */}
-                      <div className="p-4 rounded-lg bg-card border border-border space-y-4">
-                        <div className="flex items-center gap-2">
-                          <ImageIcon className="w-4 h-4 text-primary" />
-                          <h4 className="font-semibold text-sm">Moodboard Image Provider</h4>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <button
-                            onClick={() => setMoodboardProvider('midjourney')}
-                            className={cn(
-                              'p-4 border rounded-lg text-left transition-all',
-                              moodboardProvider === 'midjourney'
-                                ? 'border-primary bg-primary/5'
-                                : 'border-border hover:border-primary/50'
-                            )}
-                          >
-                            <div className="font-medium">Midjourney</div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              Professional quality images
-                            </div>
-                          </button>
-                          <button
-                            onClick={() => setMoodboardProvider('nanobanana')}
-                            className={cn(
-                              'p-4 border rounded-lg text-left transition-all',
-                              moodboardProvider === 'nanobanana'
-                                ? 'border-primary bg-primary/5'
-                                : 'border-border hover:border-primary/50'
-                            )}
-                          >
-                            <div className="font-medium">Nano Banana</div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              Fast Flux generation
-                            </div>
-                          </button>
-                        </div>
-                        {moodboardProvider === 'nanobanana' && (
-                          <div className="space-y-3 pt-2">
-                            <ConnectionStatus
-                              isConnected={!!geminiConfig.apiKey}
-                              label="Nano Banana (via Gemini key)"
-                            />
-                            <div>
-                              <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">
-                                Model ID
-                              </label>
-                              <input
-                                type="text"
-                                value={nanoBananaModelId}
-                                onChange={e => setNanoBananaModelId(e.target.value)}
-                                placeholder="flux-pro"
-                                className="w-full p-2 rounded-md border border-input bg-background text-sm font-mono"
-                              />
-                              <p className="text-xs text-muted-foreground mt-1.5">
-                                Uses your Gemini API key from the API Keys tab.
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                        {moodboardProvider === 'midjourney' && (
-                          <div className="space-y-2 pt-2">
-                            <ConnectionStatus
-                              isConnected={!!legnextConfig.apiKey}
-                              label="Midjourney (LegNext AI)"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              Uses your configured LegNext API key (see API Keys tab).
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* API Keys Tab */}
-              {activeTab === 'apikeys' && (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">Centralized API Keys</h3>
-                    <p className="text-sm text-muted-foreground mb-6">
-                      Manage your API keys for all services here. Keys are stored locally in your
-                      browser.
-                    </p>
-
-                    <div className="space-y-6">
-                      {/* Image Generation Keys */}
-                      <div className="p-4 rounded-lg bg-card border border-border space-y-4">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 text-primary" />
-                          <h4 className="font-semibold text-sm">Image Generation</h4>
-                        </div>
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <label className="text-sm font-medium">
-                                Gemini / Nano Banana (Imagen)
-                              </label>
-                              <Button
-                                variant="link"
-                                size="sm"
-                                className="h-auto p-0 text-xs"
-                                onClick={() =>
-                                  window.open('https://aistudio.google.com/app/apikey', '_blank')
-                                }
-                              >
-                                Get Key
-                              </Button>
-                            </div>
-                            <input
-                              type="password"
-                              value={geminiConfig.apiKey || ''}
-                              onChange={e =>
-                                setGeminiConfig({ ...geminiConfig, apiKey: e.target.value })
-                              }
-                              placeholder="AIza..."
-                              className="w-full p-2 rounded-md border border-input bg-background text-sm"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <label className="text-sm font-medium">LegNext AI (Midjourney)</label>
-                              <Button
-                                variant="link"
-                                size="sm"
-                                className="h-auto p-0 text-xs"
-                                onClick={() => window.open('https://legnext.ai', '_blank')}
-                              >
-                                Get Key
-                              </Button>
-                            </div>
-                            <input
-                              type="password"
-                              value={legnextConfig.apiKey || ''}
-                              onChange={e =>
-                                setLegnextConfig({ ...legnextConfig, apiKey: e.target.value })
-                              }
-                              placeholder="Enter LegNext API Key"
-                              className="w-full p-2 rounded-md border border-input bg-background text-sm"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Upscaling Keys */}
-                      <div className="p-4 rounded-lg bg-card border border-border space-y-4">
-                        <div className="flex items-center gap-2">
-                          <ImageIcon className="w-4 h-4 text-primary" />
-                          <h4 className="font-semibold text-sm">Upscaling</h4>
-                        </div>
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <label className="text-sm font-medium">Stability AI</label>
-                              <Button
-                                variant="link"
-                                size="sm"
-                                className="h-auto p-0 text-xs"
-                                onClick={() =>
-                                  window.open(
-                                    'https://platform.stability.ai/account/keys',
-                                    '_blank'
-                                  )
-                                }
-                              >
-                                Get Key
-                              </Button>
-                            </div>
-                            <input
-                              type="password"
-                              value={upscale4kConfig.apiKey || ''}
-                              onChange={e =>
-                                setUpscale4kConfig({ ...upscale4kConfig, apiKey: e.target.value })
-                              }
-                              placeholder="sk-..."
-                              className="w-full p-2 rounded-md border border-input bg-background text-sm"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <label className="text-sm font-medium">Replicate</label>
-                              <Button
-                                variant="link"
-                                size="sm"
-                                className="h-auto p-0 text-xs"
-                                onClick={() =>
-                                  window.open('https://replicate.com/account/api-tokens', '_blank')
-                                }
-                              >
-                                Get Key
-                              </Button>
-                            </div>
-                            <input
-                              type="password"
-                              value={replicateConfig.apiKey || ''}
-                              onChange={e =>
-                                setReplicateConfig({ ...replicateConfig, apiKey: e.target.value })
-                              }
-                              placeholder="r8_..."
-                              className="w-full p-2 rounded-md border border-input bg-background text-sm"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* 3D Generation Keys */}
-                      <div className="p-4 rounded-lg bg-card border border-border space-y-4">
-                        <div className="flex items-center gap-2">
-                          <Box className="w-4 h-4 text-primary" />
-                          <h4 className="font-semibold text-sm">3D Generation</h4>
-                        </div>
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <label className="text-sm font-medium">Hyper3D</label>
-                              <Button
-                                variant="link"
-                                size="sm"
-                                className="h-auto p-0 text-xs"
-                                onClick={() => window.open('https://www.hyper3d.ai', '_blank')}
-                              >
-                                Get Key
-                              </Button>
-                            </div>
-                            <input
-                              type="password"
-                              value={hyper3dConfig.apiKey || ''}
-                              onChange={e =>
-                                setHyper3dConfig({ ...hyper3dConfig, apiKey: e.target.value })
-                              }
-                              placeholder="Enter Hyper3D API Key"
-                              className="w-full p-2 rounded-md border border-input bg-background text-sm"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <label className="text-sm font-medium">Meshy</label>
-                              <Button
-                                variant="link"
-                                size="sm"
-                                className="h-auto p-0 text-xs"
-                                onClick={() => window.open('https://meshy.ai', '_blank')}
-                              >
-                                Get Key
-                              </Button>
-                            </div>
-                            <input
-                              type="password"
-                              value={meshyConfig.apiKey || ''}
-                              onChange={e =>
-                                setMeshyConfig({ ...meshyConfig, apiKey: e.target.value })
-                              }
-                              placeholder="Enter Meshy API Key"
-                              className="w-full p-2 rounded-md border border-input bg-background text-sm"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Tools & AI Keys */}
-                      <div className="p-4 rounded-lg bg-card border border-border space-y-4">
-                        <div className="flex items-center gap-2">
-                          <Brain className="w-4 h-4 text-primary" />
-                          <h4 className="font-semibold text-sm">Tools & AI</h4>
-                        </div>
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <label className="text-sm font-medium">OpenAI</label>
-                              <Button
-                                variant="link"
-                                size="sm"
-                                className="h-auto p-0 text-xs"
-                                onClick={() =>
-                                  window.open('https://platform.openai.com/api-keys', '_blank')
-                                }
-                              >
-                                Get Key
-                              </Button>
-                            </div>
-                            <input
-                              type="password"
-                              value={openaiConfig.apiKey || ''}
-                              onChange={e =>
-                                setOpenaiConfig({ ...openaiConfig, apiKey: e.target.value })
-                              }
-                              placeholder="sk-..."
-                              className="w-full p-2 rounded-md border border-input bg-background text-sm"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <label className="text-sm font-medium">Anthropic (Claude)</label>
-                              <Button
-                                variant="link"
-                                size="sm"
-                                className="h-auto p-0 text-xs"
-                                onClick={() =>
-                                  window.open(
-                                    'https://console.anthropic.com/settings/keys',
-                                    '_blank'
-                                  )
-                                }
-                              >
-                                Get Key
-                              </Button>
-                            </div>
-                            <input
-                              type="password"
-                              value={anthropicApiKey}
-                              onChange={e => setAnthropicApiKey(e.target.value)}
-                              placeholder="sk-ant-..."
-                              className="w-full p-2 rounded-md border border-input bg-background text-sm"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <label className="text-sm font-medium">Fal.ai (Smart Select)</label>
-                              <Button
-                                variant="link"
-                                size="sm"
-                                className="h-auto p-0 text-xs"
-                                onClick={() =>
-                                  window.open('https://fal.ai/dashboard/keys', '_blank')
-                                }
-                              >
-                                Get Key
-                              </Button>
-                            </div>
-                            <input
-                              type="password"
-                              value={falConfig.apiKey || ''}
-                              onChange={e => setFalConfig({ ...falConfig, apiKey: e.target.value })}
-                              placeholder="Enter your fal.ai API key"
-                              className="w-full p-2 rounded-md border border-input bg-background text-sm"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* MCP API Keys Section */}
-                      <div className="p-4 rounded-lg bg-card border border-primary/30 space-y-4">
-                        <div className="flex items-center gap-2">
-                          <Key className="w-4 h-4 text-primary" />
-                          <h4 className="font-semibold text-sm">MCP API Keys</h4>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Generate keys for external MCP clients (Cursor, Claude Desktop, etc.)
+                      <div>
+                        <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">
+                          Primary Model
+                        </label>
+                        <select
+                          value={activeModelId}
+                          onChange={e => {
+                            setActiveModelId(e.target.value)
+                          }}
+                          className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md py-2 px-3 text-xs text-zinc-300 font-mono focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-all"
+                        >
+                          {models.map(m => (
+                            <option key={m.id} value={m.id}>
+                              {m.name}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-xs text-muted-foreground mt-1.5">
+                          {selectedModel?.description}
                         </p>
-
-                        {/* Create new key */}
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={newMcpKeyName}
-                            onChange={e => setNewMcpKeyName(e.target.value)}
-                            placeholder="Key name (e.g., My Cursor)"
-                            className="flex-1 p-2 rounded-md border border-input bg-background text-sm"
-                            onKeyDown={e => e.key === 'Enter' && handleCreateMcpKey()}
-                          />
-                          <Button size="sm" onClick={handleCreateMcpKey} disabled={isCreatingKey}>
-                            {isCreatingKey ? 'Creating...' : '+ Create'}
-                          </Button>
-                        </div>
-
-                        {/* Newly created key (show once) */}
-                        {newlyCreatedKey && (
-                          <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-md space-y-2">
-                            <div className="flex items-center gap-2 text-amber-500 text-xs font-medium">
-                              <Info className="w-3 h-3" />
-                              Save this key now — it won&apos;t be shown again!
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <code className="flex-1 p-2 bg-black/30 rounded text-xs font-mono truncate">
-                                {newlyCreatedKey}
-                              </code>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => copyToClipboard(newlyCreatedKey)}
-                              >
-                                Copy
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Existing keys list */}
-                        {isLoadingMcpKeys ? (
-                          <div className="text-xs text-muted-foreground">Loading keys...</div>
-                        ) : mcpKeys.filter(k => !k.revoked_at).length > 0 ? (
-                          <div className="space-y-2">
-                            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                              Your Keys
-                            </div>
-                            {mcpKeys
-                              .filter(k => !k.revoked_at)
-                              .map(key => (
-                                <div
-                                  key={key.id}
-                                  className="flex items-center justify-between p-2 bg-muted/30 rounded-md border border-border"
-                                >
-                                  <div>
-                                    <div className="text-sm font-medium">{key.name}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                      Created {new Date(key.created_at).toLocaleDateString()}
-                                    </div>
-                                  </div>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                                    onClick={() => handleRevokeMcpKey(key.id)}
-                                  >
-                                    Revoke
-                                  </Button>
-                                </div>
-                              ))}
-                          </div>
-                        ) : (
-                          <div className="text-xs text-muted-foreground">
-                            No keys yet. Create one above.
-                          </div>
-                        )}
                       </div>
+
+                      <div>
+                        <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">
+                          Upscaler Provider
+                        </label>
+                        <select
+                          value={activeUpscaler}
+                          onChange={e => setActiveUpscaler(e.target.value)}
+                          className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md py-2 px-3 text-xs text-zinc-300 font-mono focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-all"
+                        >
+                          <option value="stability">Stability AI (4k)</option>
+                          <option value="replicate">Replicate (Creative/Painterly)</option>
+                          <option value="midjourney">Midjourney (LegNext AI)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* MCP Keys Tab */}
+              {activeTab === 'mcpkeys' && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-medium mb-4">MCP API Keys</h3>
+                    <p className="text-sm text-muted-foreground mb-6">
+                      Generate keys for external MCP clients (Cursor, Claude Desktop, etc.)
+                    </p>
+
+                    <div className="p-4 rounded-lg bg-card border border-primary/30 space-y-4">
+                      {/* Create new key */}
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newMcpKeyName}
+                          onChange={e => setNewMcpKeyName(e.target.value)}
+                          placeholder="Key name (e.g., My Cursor)"
+                          className="flex-1 p-2 rounded-md border border-input bg-background text-sm"
+                          onKeyDown={e => e.key === 'Enter' && handleCreateMcpKey()}
+                        />
+                        <Button size="sm" onClick={handleCreateMcpKey} disabled={isCreatingKey}>
+                          {isCreatingKey ? 'Creating...' : '+ Create'}
+                        </Button>
+                      </div>
+
+                      {/* Newly created key (show once) */}
+                      {newlyCreatedKey && (
+                        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-md space-y-2">
+                          <div className="flex items-center gap-2 text-amber-500 text-xs font-medium">
+                            <Info className="w-3 h-3" />
+                            Save this key now — it won&apos;t be shown again!
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <code className="flex-1 p-2 bg-black/30 rounded text-xs font-mono truncate">
+                              {newlyCreatedKey}
+                            </code>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => copyToClipboard(newlyCreatedKey)}
+                            >
+                              Copy
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Existing keys list */}
+                      {isLoadingMcpKeys ? (
+                        <div className="text-xs text-muted-foreground">Loading keys...</div>
+                      ) : mcpKeys.filter(k => !k.revoked_at).length > 0 ? (
+                        <div className="space-y-2">
+                          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Your Keys
+                          </div>
+                          {mcpKeys
+                            .filter(k => !k.revoked_at)
+                            .map(key => (
+                              <div
+                                key={key.id}
+                                className="flex items-center justify-between p-2 bg-muted/30 rounded-md border border-border"
+                              >
+                                <div>
+                                  <div className="text-sm font-medium">{key.name}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    Created {new Date(key.created_at).toLocaleDateString()}
+                                  </div>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                  onClick={() => handleRevokeMcpKey(key.id)}
+                                >
+                                  Revoke
+                                </Button>
+                              </div>
+                            ))}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-muted-foreground">
+                          No keys yet. Create one above.
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1461,10 +514,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                             Add URL
                           </Button>
                         </div>
-                        <p className="text-[10px] text-muted-foreground mt-2">
-                          💡 Tip: Use Midjourney image URLs (e.g., https://s.mj.run/...) or any
-                          publicly accessible image URL
-                        </p>
                       </div>
 
                       {/* Save Button for Project Settings */}
@@ -1479,7 +528,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                                   style_reference_urls: styleReferenceUrls,
                                 }),
                               })
-                              // Show success feedback
                               toast.success('Project settings saved!')
                             } catch (error) {
                               console.error('Failed to save project settings:', error)

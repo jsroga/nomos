@@ -174,8 +174,8 @@ export async function POST(req: Request) {
                 .catch(() => ({ characters: [] })),
               episodeId
                 ? m.storytellerService
-                    .listBeats({ episodeId }, { userId: 'system-bypass' as any })
-                    .catch(() => ({ beats: [] }))
+                  .listBeats({ episodeId }, { userId: 'system-bypass' as any })
+                  .catch(() => ({ beats: [] }))
                 : Promise.resolve({ beats: [] }),
             ])
             return { characters: charsReq.characters || [], beats: beatsReq.beats || [] }
@@ -209,98 +209,132 @@ export async function POST(req: Request) {
         // masterPrompt is a TOP-LEVEL column on projects table, not nested in seriesBible
         const masterPrompt =
           projectData?.masterPrompt || bible.masterPrompt || storyPlan.masterPrompt || ''
-        const characters = serviceData.characters || []
+        // Merge characters from DB table AND storyPlan.keyCharacters/cast
+        // Users may define cast in the World Bible (stored in storyPlan) before syncing to the characters table
+        const dbCharacters = serviceData.characters || []
+        const planCast = (storyPlan.cast || storyPlan.keyCharacters || []) as any[]
+        const dbNames = new Set(dbCharacters.map((c: any) => c.name?.toLowerCase()))
+        const mergedCharacters = [
+          ...dbCharacters,
+          ...planCast.filter((c: any) => c?.name && !dbNames.has(c.name.toLowerCase())),
+        ]
+        const characters = mergedCharacters
         const beats = serviceData.beats || []
 
         // 2. Build context with token budget enforcement
         // Assemble each section separately, then run through budgetContext()
-        const systemCtx = `=== CRITICAL SYSTEM CONTEXT ===
+        const systemCtx = `=== IQ 200 CONTEXT ENGINEERING & ENTITY LINKS ===
+You are in a high-fidelity creative workspace. To maintain continuity and enable user interaction, you MUST use the following rules for entity references:
+1. ENTITY LINKS: Whenever you mention a Character, Faction, World Rule, or Episode, ALWAYS use the format: [Entity Name][entity-id].
+   Example: "[Marcus][char-123] challenged the [Council of Seven][faction-456]."
+2. CLICKABLE UI: These tags are rendered as clickable links and hover tooltips in the user's interface. Using them makes your intelligence visible and actionable.
+3. CONTEXT SYNTHESIS: Use the technical data below to weave a "connected" world. Don't just list facts; synthesize them into a brilliant narrative.
+4. IQ 200 REASONING: Your Council of Agents provides raw data; your job as Showrunner is to spot the "out of the box" connections they missed.
+
+=== SYSTEM CONTEXT ===
 projectId: ${projectId}
 ${episodeId ? `episodeId: ${episodeId}` : ''}
 currentPhase: ${currentPhase || 'premise'}
 IMPORTANT: When calling tools that require projectId, you MUST use: "${projectId}"
 ${episodeId ? `When calling tools that require episodeId, you MUST use: "${episodeId}"` : ''}
 CURRENT STORY PHASE: ${currentPhase || 'premise'}
-- premise: Planning the story concept, world building, episode premise
-- breaking: Breaking story into beats on the beat board
-- writing: Writing the actual script/prose
-- complete: Story is finished
-⚠️ EXISTING content below is REFERENCE ONLY. When asked to GENERATE/REGENERATE, create COMPLETELY NEW content.
-${masterPrompt ? `\n=== MASTER PROMPT ===\n${masterPrompt}` : ''}`
+- premise: Concept planning, world building, episode premise.
+- breaking: Plot structure, beat board organization.
+- writing: Scripting and dialogue execution.
+⚠️ REFERENCE ONLY: Content below is for world/history consistency. When asked to GENERATE, create NEW content.
+${masterPrompt ? `\n=== MASTER PROMPT ===\n${masterPrompt}` : ''}
+`
 
         const projectCtx = `=== PROJECT ===
 Title: ${projectData?.name || 'Untitled'} | Genre: ${Array.isArray(storyPlan.genre) ? storyPlan.genre.join(', ') : storyPlan.genre || bible.genre || 'Not set'} | Tone: ${Array.isArray(storyPlan.tone) ? storyPlan.tone.join(', ') : storyPlan.tone || bible.tone || 'Not set'} | Theme: ${storyPlan.centralTheme || bible.centralTheme || 'Not set'}
 
 === EPISODE PREMISE ===
-${
-  storyPlan.premise || storyPlan.episodePremise || bible.episodePremise
-    ? JSON.stringify(storyPlan.premise || storyPlan.episodePremise || bible.episodePremise)
-    : 'No episode premise yet'
-}
+${storyPlan.premise || storyPlan.episodePremise || bible.episodePremise
+            ? JSON.stringify(storyPlan.premise || storyPlan.episodePremise || bible.episodePremise)
+            : 'No episode premise yet'
+          }
 
 === WORLD ===
 ${storyPlan.worldDescription || bible.worldDescription || 'No world description yet'}
 
 === WORLD RULES ===
-${
-  Array.isArray(storyPlan.worldRules) && storyPlan.worldRules.length > 0
-    ? storyPlan.worldRules
-        .map(
-          (r: any) =>
-            `- [${r.category || 'General'}] ${r.rule}${r.consequence ? ` → ${r.consequence}` : ''}`
-        )
-        .join('\n')
-    : '(none)'
-}
+${Array.isArray(storyPlan.worldRules) && storyPlan.worldRules.length > 0
+            ? storyPlan.worldRules
+              .map(
+                (r: any) =>
+                  `- [${r.category || 'General'}] ${r.rule}${r.consequence ? ` → ${r.consequence}` : ''}`
+              )
+              .join('\n')
+            : '(none)'
+          }
 
 === FACTIONS ===
-${
-  Array.isArray(storyPlan.factions) && storyPlan.factions.length > 0
-    ? storyPlan.factions
-        .map((f: any) => {
-          const factionId = `faction-${f.id?.slice(0, 8) || f.name.toLowerCase().replace(/\s+/g, '-')}`
-          return `- [${f.name}][${factionId}]: ${f.ideology || f.description || 'No description'}`
-        })
-        .join('\n')
-    : '(none)'
-}
+${Array.isArray(storyPlan.factions) && storyPlan.factions.length > 0
+            ? storyPlan.factions
+              .map((f: any) => {
+                const factionId = `faction-${f.id?.slice(0, 8) || f.name.toLowerCase().replace(/\s+/g, '-')}`
+                return `- [${f.name}][${factionId}]: ${f.ideology || f.description || 'No description'}`
+              })
+              .join('\n')
+            : '(none)'
+          }
 
 === INSPIRATIONS ===
 ${storyPlan.inspirations ? `Movies: ${Array.isArray(storyPlan.inspirations.movies) ? storyPlan.inspirations.movies.map((m: any) => (typeof m === 'string' ? m : m.title)).join(', ') : 'None'} | Books: ${Array.isArray(storyPlan.inspirations.books) ? storyPlan.inspirations.books.map((b: any) => (typeof b === 'string' ? b : b.title)).join(', ') : 'None'} | Games: ${Array.isArray(storyPlan.inspirations.games) ? storyPlan.inspirations.games.map((g: any) => (typeof g === 'string' ? g : g.title)).join(', ') : 'None'}` : '(none)'}
 
 === SEQUENCES ===
-${
-  Array.isArray(storyPlan.sequences) && storyPlan.sequences.length > 0
-    ? storyPlan.sequences
-        .map((s: any, i: number) => `${i + 1}. ${s.name}: ${s.description || ''}`)
-        .join('\n')
-    : '(none)'
-}`
+${Array.isArray(storyPlan.sequences) && storyPlan.sequences.length > 0
+            ? storyPlan.sequences
+              .map((s: any, i: number) => `${i + 1}. ${s.name}: ${s.description || ''}`)
+              .join('\n')
+            : '(none)'
+          }`
 
-        // Characters: reduced from 15 to 5, with entity reference IDs inline (no separate duplicate section)
+        // Characters: Increased limit to ensure key cast is included, sorted by role
+        const rolePriority: Record<string, number> = {
+          'protagonist': 1,
+          'hero': 1,
+          'main': 1,
+          'antagonist': 2,
+          'villain': 2,
+          'mentor': 3,
+          'guide': 3,
+          'supporting': 4,
+          'side': 5,
+        }
+
+        const sortedChars = [...characters].sort((a, b) => {
+          const roleA = (a.role || '').toLowerCase()
+          const roleB = (b.role || '').toLowerCase()
+          const priorityA = rolePriority[roleA] || 99
+          const priorityB = rolePriority[roleB] || 99
+          if (priorityA !== priorityB) return priorityA - priorityB
+          return 0
+        })
+
         const charsCtx =
-          characters.length > 0
-            ? `=== CHARACTERS (${characters.length}) ===\n` +
-              characters
-                .slice(0, 5)
-                .map((c: any) => {
-                  const charId = `char-${c.id?.slice(0, 8) || c.name.toLowerCase().replace(/\s+/g, '-')}`
-                  return `- [${c.name}][${charId}] (${c.role || '?'}): ${c.description || 'No description'}`
-                })
-                .join('\n')
+          sortedChars.length > 0
+            ? `=== CHARACTERS (${sortedChars.length}) ===\n` +
+            sortedChars
+              .slice(0, 20)
+              .map((c: any) => {
+                const charId = `char-${c.id?.slice(0, 8) || c.name.toLowerCase().replace(/\s+/g, '-')}`
+                return `- [${c.name}][${charId}] (${c.role || '?'}): ${c.description || 'No description'}`
+              })
+              .join('\n')
             : ''
 
         // Beats: reduced from 8 to 3
         const beatsCtx =
           beats.length > 0
             ? `=== RECENT BEATS (${beats.length}) ===\n` +
-              beats
-                .slice(-3)
-                .map((b: any) => {
-                  const beatId = `beat-${b.id?.slice(0, 8)}`
-                  return `- [${b.logline || `Beat ${b.sequence}`}][${beatId}]`
-                })
-                .join('\n')
+            beats
+              .slice(-3)
+              .map((b: any) => {
+                const beatId = `beat-${b.id?.slice(0, 8)}`
+                return `- [${b.logline || `Beat ${b.sequence}`}][${beatId}]`
+              })
+              .join('\n')
             : ''
 
         // Apply token budget enforcement — truncates any section that exceeds its limit
@@ -398,7 +432,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
           })
           activeSpans.set(step, span)
         }
-      } catch {} // Safe
+      } catch { } // Safe
     })
 
     eventBus.on(WORKFLOW_EVENTS.STEP_COMPLETE, ({ step, output }) => {
@@ -415,7 +449,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
           span.end({ output: safeOutput })
           activeSpans.delete(step)
         }
-      } catch {} // Safe
+      } catch { } // Safe
     })
 
     // Detect generation requests that MUST use tools (no text-only responses)
@@ -930,10 +964,18 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
 
                   // Continue with action event mapping
                   try {
-                    console.log(
-                      `[Stream] Parsed tool result success=${parsed?.success}, keys:`,
-                      Object.keys(parsed || {})
-                    )
+                    // Safe logging of tool result status
+                    if (typeof parsed === 'object' && parsed !== null) {
+                      console.log(
+                        `[Stream] Parsed tool result success=${parsed.success}, keys:`,
+                        Object.keys(parsed)
+                      )
+                    } else {
+                      console.log(
+                        `[Stream] Parsed tool result type=${typeof parsed}, value preview:`,
+                        typeof parsed === 'string' ? parsed.substring(0, 50) + '...' : parsed
+                      )
+                    }
 
                     // Handle ask_character_questions tool - emit as question event
                     if (toolName === 'ask_character_questions' && parsed?.type === 'questions') {
@@ -1005,10 +1047,10 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
                           '[Stream] processedAction:',
                           processedAction
                             ? {
-                                actionType: processedAction.actionType,
-                                section: processedAction.section,
-                                payloadKeys: Object.keys(processedAction.payload),
-                              }
+                              actionType: processedAction.actionType,
+                              section: processedAction.section,
+                              payloadKeys: Object.keys(processedAction.payload),
+                            }
                             : 'null'
                         )
 
@@ -1343,7 +1385,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
               output: langfuseOutput,
               input: promptWithContext || '(no input)', // Ensure trace input is also set
             })
-            langfuseClient?.flush().catch(() => {})
+            langfuseClient?.flush().catch(() => { })
           } catch {
             /* ignore langfuse errors */
           }
@@ -1359,7 +1401,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
               level: 'ERROR',
               statusMessage: error instanceof Error ? error.message : 'Unknown error',
             })
-            langfuseClient?.flush().catch(() => {})
+            langfuseClient?.flush().catch(() => { })
           } catch {
             /* ignore */
           }

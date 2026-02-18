@@ -32,7 +32,7 @@ const SUGGESTION_STYLES: Record<Suggestion['type'], { icon: string; color: strin
   generic: { icon: '✨', color: 'border-primary/30 bg-primary/5' },
 }
 
-export const SuggestionCard: React.FC<SuggestionCardProps> = ({
+const SuggestionCard: React.FC<SuggestionCardProps> = ({
   suggestion,
   onApply,
   onDismiss,
@@ -160,7 +160,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
 }
 
 // Helper to detect suggestions in AI responses
-export const detectSuggestion = (
+const detectSuggestion = (
   content: string,
   actions?: Array<{ type: string; payload?: any }>
 ): Suggestion | null => {

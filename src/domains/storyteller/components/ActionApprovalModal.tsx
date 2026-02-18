@@ -21,6 +21,7 @@ import {
   ArrowRight,
   ChevronDown,
   ChevronUp,
+  Loader2,
 } from 'lucide-react'
 import { AgentAction } from '../actions/types'
 import ReactDiffViewer, { DiffMethod } from 'react-diff-viewer-continued'
@@ -44,19 +45,155 @@ interface ActionApprovalModalProps {
   onReject: () => void
   onClose: () => void
   isOpen: boolean
+  isProcessing?: boolean
 }
 
-export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = ({
+const GenericItemTable: React.FC<{ changes: ActionChange[] }> = ({ changes }) => {
+  if (changes.length === 0) return null
+
+  // Collect all fields present across all changes
+  const allFields = new Set<string>()
+  changes.forEach(c => {
+    const data = c.after || c.before
+    if (typeof data === 'object' && data !== null) {
+      Object.keys(data).forEach(k => {
+        if (
+          k !== 'id' &&
+          k !== 'projectId' &&
+          k !== 'episodeId' &&
+          k !== 'beatId' &&
+          k !== 'psychology' // Keep hiding complex nested objects for now
+        ) {
+          allFields.add(k)
+        }
+      })
+    }
+  })
+
+  // Heuristic for column ordering
+  const priorities = ['title', 'name', 'role', 'type', 'category', 'description', 'content']
+  const sortedColumns = Array.from(allFields).sort((a, b) => {
+    const idxA = priorities.indexOf(a)
+    const idxB = priorities.indexOf(b)
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB
+    if (idxA !== -1) return -1
+    if (idxB !== -1) return 1
+    return a.localeCompare(b)
+  })
+
+  return (
+    <div className="overflow-x-auto rounded-md border border-border/40">
+      <table className="w-full text-sm text-left">
+        <thead className="text-xs uppercase bg-muted/40 text-muted-foreground">
+          <tr>
+            <th className="px-3 py-2 font-medium w-10">Type</th>
+            {sortedColumns.map(col => (
+              <th key={col} className="px-3 py-2 font-medium whitespace-nowrap">
+                {formatFieldName(col)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border/20">
+          {changes.map((change, idx) => {
+            const data = (change.after || change.before || {}) as any
+            return (
+              <tr key={idx} className="bg-card/50 hover:bg-muted/20 transition-colors">
+                <td className="px-3 py-2 align-top">
+                  <ChangeTypeBadge type={change.changeType} />
+                </td>
+                {sortedColumns.map(col => (
+                  <td
+                    key={col}
+                    className="px-3 py-2 max-w-[300px] truncate align-top"
+                    title={String(data[col] || '')}
+                  >
+                    {data[col] ? String(data[col]) : <span className="text-muted-foreground/30">-</span>}
+                  </td>
+                ))}
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+const DIFF_STYLES = {
+  variables: {
+    dark: {
+      diffViewerBackground: 'transparent',
+      diffViewerColor: 'hsl(var(--foreground))',
+      addedBackground: 'rgba(34, 197, 94, 0.08)',
+      addedColor: 'rgb(134, 239, 172)',
+      removedBackground: 'rgba(239, 68, 68, 0.08)',
+      removedColor: 'rgb(252, 165, 165)',
+      wordAddedBackground: 'rgba(34, 197, 94, 0.25)',
+      wordRemovedBackground: 'rgba(239, 68, 68, 0.25)',
+      addedGutterBackground: 'rgba(34, 197, 94, 0.15)',
+      removedGutterBackground: 'rgba(239, 68, 68, 0.15)',
+      gutterBackground: 'hsl(var(--muted)/0.3)',
+      gutterColor: 'hsl(var(--muted-foreground))',
+      codeFoldGutterBackground: 'hsl(var(--muted)/0.5)',
+      codeFoldBackground: 'hsl(var(--muted)/0.3)',
+      emptyLineBackground: 'transparent',
+      highlightBackground: 'rgba(59, 130, 246, 0.1)',
+      highlightGutterBackground: 'rgba(59, 130, 246, 0.2)',
+    },
+  },
+  diffContainer: {
+    borderRadius: '0',
+    border: 'none',
+  },
+  line: {
+    padding: '4px 12px',
+    fontSize: '13px',
+    fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
+    lineHeight: '1.6',
+  },
+  gutter: {
+    padding: '4px 12px',
+    minWidth: '40px',
+    fontSize: '11px',
+  },
+  wordDiff: {
+    padding: '2px 4px',
+    borderRadius: '3px',
+  },
+  contentText: {
+    lineHeight: '1.6',
+  },
+} as const
+
+export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = React.memo(({
   action,
   agentName,
   onApprove,
   onReject,
   onClose,
   isOpen,
+  isProcessing = false,
 }) => {
   const [currentChangeIndex, setCurrentChangeIndex] = useState(0)
   const [viewMode, setViewMode] = useState<'summary' | 'diff'>('summary')
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
+  const [isApproving, setIsApproving] = useState(false)
+
+  // Reset approving state when isOpen changes
+  useEffect(() => {
+    if (isOpen) setIsApproving(false)
+  }, [isOpen])
+
+  const handleApprove = async () => {
+    setIsApproving(true)
+    try {
+      await onApprove()
+    } finally {
+      // Only reset if component is still mounted, though usually component unmounts on success
+      setIsApproving(false)
+    }
+  }
 
   const changes = useMemo(() => extractChanges(action), [action])
   const currentChange = changes[currentChangeIndex]
@@ -249,19 +386,8 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = ({
             /* Summary View - User Friendly */
             <div className="h-full overflow-auto p-6">
               {/* AI Reasoning Card */}
-              {action.reasoning && (
-                <div className="mb-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <Sparkles className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                    <div>
-                      <div className="text-sm font-medium text-primary mb-1">Why this change?</div>
-                      <p className="text-sm text-foreground/80 leading-relaxed">
-                        {action.reasoning}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* AI Reasoning Card */}
+              {/* AI Reasoning Card - REMOVED per user request */}
 
               {/* Changes by Category */}
               <div className="space-y-4">
@@ -292,74 +418,81 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = ({
                     {/* Category Changes */}
                     {expandedSections.has(category) && (
                       <div className="divide-y divide-border/30">
-                        {categoryChanges.map((change, idx) => (
-                          <div key={idx} className="p-4">
-                            <div className="flex items-start gap-3">
-                              <ChangeTypeIcon type={change.changeType} />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className="font-medium text-sm">{change.friendlyName}</span>
-                                  <ChangeTypeBadge type={change.changeType} />
-                                </div>
-
-                                {/* Visual Before/After for simple values */}
-                                {change.summary ? (
-                                  <p className="text-sm text-muted-foreground">{change.summary}</p>
-                                ) : isSimpleValue(change.after) ? (
-                                  <div className="flex items-center gap-2 text-sm">
-                                    {change.before !== null && (
-                                      <>
-                                        <span className="px-2 py-1 bg-red-500/10 text-red-400 rounded line-through">
-                                          {formatSimpleValue(change.before)}
-                                        </span>
-                                        <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                                      </>
-                                    )}
-                                    <span className="px-2 py-1 bg-green-500/10 text-green-400 rounded">
-                                      {formatSimpleValue(change.after)}
-                                    </span>
+                        {/* Table View for Lists (Characters, Story Items, Rules, etc.) */}
+                        {['Characters', 'Key Characters', 'Story', 'World Rules', 'Atmosphere', 'Roadmap'].includes(category) &&
+                          categoryChanges.some(c => typeof (c.after || c.before) === 'object' && (c.after || c.before) !== null && !Array.isArray(c.after || c.before)) ? (
+                          <div className="p-0">
+                            <GenericItemTable changes={categoryChanges} />
+                          </div>
+                        ) :
+                          categoryChanges.map((change, idx) => (
+                            <div key={idx} className="p-4">
+                              <div className="flex items-start gap-3">
+                                <ChangeTypeIcon type={change.changeType} />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="font-medium text-sm">{change.friendlyName}</span>
+                                    <ChangeTypeBadge type={change.changeType} />
                                   </div>
-                                ) : Array.isArray(change.after) ? (
-                                  <div className="mt-2 space-y-1">
-                                    {(change.after as any[]).slice(0, 5).map((item, i) => (
-                                      <div key={i} className="flex items-center gap-2 text-sm">
-                                        <Plus className="w-3 h-3 text-green-400" />
-                                        <span className="text-foreground/80">
-                                          {typeof item === 'object'
-                                            ? item.name ||
+
+                                  {/* Visual Before/After for simple values */}
+                                  {change.summary ? (
+                                    <p className="text-sm text-muted-foreground">{change.summary}</p>
+                                  ) : isSimpleValue(change.after) ? (
+                                    <div className="flex items-center gap-2 text-sm">
+                                      {change.before !== null && (
+                                        <>
+                                          <span className="px-2 py-1 bg-red-500/10 text-red-400 rounded line-through">
+                                            {formatSimpleValue(change.before)}
+                                          </span>
+                                          <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                                        </>
+                                      )}
+                                      <span className="px-2 py-1 bg-green-500/10 text-green-400 rounded">
+                                        {formatSimpleValue(change.after)}
+                                      </span>
+                                    </div>
+                                  ) : Array.isArray(change.after) ? (
+                                    <div className="mt-2 space-y-1">
+                                      {(change.after as any[]).slice(0, 5).map((item, i) => (
+                                        <div key={i} className="flex items-center gap-2 text-sm">
+                                          <Plus className="w-3 h-3 text-green-400" />
+                                          <span className="text-foreground/80">
+                                            {typeof item === 'object'
+                                              ? item.name ||
                                               item.title ||
                                               JSON.stringify(item).slice(0, 50)
-                                            : item}
+                                              : item}
+                                          </span>
+                                        </div>
+                                      ))}
+                                      {(change.after as any[]).length > 5 && (
+                                        <span className="text-xs text-muted-foreground">
+                                          +{(change.after as any[]).length - 5} more items
                                         </span>
-                                      </div>
-                                    ))}
-                                    {(change.after as any[]).length > 5 && (
-                                      <span className="text-xs text-muted-foreground">
-                                        +{(change.after as any[]).length - 5} more items
-                                      </span>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="mt-2 h-7 text-xs"
-                                    onClick={() => {
-                                      const idx = changes.findIndex(c => c === change)
-                                      if (idx >= 0) {
-                                        setCurrentChangeIndex(idx)
-                                        setViewMode('diff')
-                                      }
-                                    }}
-                                  >
-                                    <Code className="w-3 h-3 mr-1" />
-                                    View Details
-                                  </Button>
-                                )}
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="mt-2 h-7 text-xs"
+                                      onClick={() => {
+                                        const idx = changes.findIndex(c => c === change)
+                                        if (idx >= 0) {
+                                          setCurrentChangeIndex(idx)
+                                          setViewMode('diff')
+                                        }
+                                      }}
+                                    >
+                                      <Code className="w-3 h-3 mr-1" />
+                                      View Details
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
                       </div>
                     )}
                   </div>
@@ -429,52 +562,7 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = ({
                       compareMethod={DiffMethod.WORDS}
                       hideLineNumbers={false}
                       showDiffOnly={false}
-                      styles={{
-                        variables: {
-                          dark: {
-                            diffViewerBackground: 'transparent',
-                            diffViewerColor: 'hsl(var(--foreground))',
-                            addedBackground: 'rgba(34, 197, 94, 0.08)',
-                            addedColor: 'rgb(134, 239, 172)',
-                            removedBackground: 'rgba(239, 68, 68, 0.08)',
-                            removedColor: 'rgb(252, 165, 165)',
-                            wordAddedBackground: 'rgba(34, 197, 94, 0.25)',
-                            wordRemovedBackground: 'rgba(239, 68, 68, 0.25)',
-                            addedGutterBackground: 'rgba(34, 197, 94, 0.15)',
-                            removedGutterBackground: 'rgba(239, 68, 68, 0.15)',
-                            gutterBackground: 'hsl(var(--muted)/0.3)',
-                            gutterColor: 'hsl(var(--muted-foreground))',
-                            codeFoldGutterBackground: 'hsl(var(--muted)/0.5)',
-                            codeFoldBackground: 'hsl(var(--muted)/0.3)',
-                            emptyLineBackground: 'transparent',
-                            highlightBackground: 'rgba(59, 130, 246, 0.1)',
-                            highlightGutterBackground: 'rgba(59, 130, 246, 0.2)',
-                          },
-                        },
-                        diffContainer: {
-                          borderRadius: '0',
-                          border: 'none',
-                        },
-                        line: {
-                          padding: '4px 12px',
-                          fontSize: '13px',
-                          fontFamily:
-                            'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
-                          lineHeight: '1.6',
-                        },
-                        gutter: {
-                          padding: '4px 12px',
-                          minWidth: '40px',
-                          fontSize: '11px',
-                        },
-                        wordDiff: {
-                          padding: '2px 4px',
-                          borderRadius: '3px',
-                        },
-                        contentText: {
-                          lineHeight: '1.6',
-                        },
-                      }}
+                      styles={DIFF_STYLES}
                       useDarkTheme={true}
                     />
                   </div>
@@ -517,16 +605,26 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = ({
               <XCircle className="w-4 h-4" />
               Reject
             </Button>
-            <Button onClick={onApprove} className="gap-2 bg-emerald-500 hover:bg-emerald-600">
-              <Check className="w-4 h-4" />
-              Approve All Changes
+            <Button
+              onClick={handleApprove}
+              disabled={isProcessing || isApproving}
+              className="gap-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-70 text-white"
+            >
+              {isProcessing || isApproving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Check className="w-4 h-4" />
+              )}
+              {isProcessing || isApproving ? 'Processing...' : 'Approve'}
             </Button>
           </div>
         </div>
       </div>
     </div>
   )
-}
+})
+
+ActionApprovalModal.displayName = 'ActionApprovalModal'
 
 // Helper Components
 const ChangeTypeIcon: React.FC<{ type: ActionChange['changeType'] }> = ({ type }) => {
@@ -621,6 +719,10 @@ function extractChanges(action: AgentAction): ActionChange[] {
     script: 'Script',
     beatBoard: 'Story Beats',
     premise: 'Episode Premise',
+    protagonistHook: 'Protagonist Hook',
+    antagonistMove: 'Antagonist Move',
+    fatalFlaw: 'Fatal Flaw',
+    thematicQuestion: 'Thematic Question',
     updatedFields: 'Updated Fields',
     // New section fields
     soundtracks: 'Soundtracks',
@@ -630,6 +732,7 @@ function extractChanges(action: AgentAction): ActionChange[] {
     plotTwists: 'Plot Twists',
     sequences: 'Episode Roadmap',
     episodeRoadmap: 'Episode Roadmap',
+    tenPointsPlan: '10-Point Plan',
   }
 
   // Field to category mapping
@@ -667,6 +770,7 @@ function extractChanges(action: AgentAction): ActionChange[] {
     plotTwists: 'Story',
     sequences: 'Roadmap',
     episodeRoadmap: 'Roadmap',
+    tenPointsPlan: 'Premise',
   }
 
   // Generate summary for common types
@@ -691,6 +795,11 @@ function extractChanges(action: AgentAction): ActionChange[] {
                       : key === 'sequences' || key === 'episodeRoadmap'
                         ? 'episode'
                         : 'item'
+
+      // SKIP SUMMARY for complex table items, so they appear as individual rows
+      const tableKeys = ['characters', 'keyCharacters', 'worldRules', 'factions', 'plotTwists', 'soundtracks']
+      if (tableKeys.includes(key)) return undefined
+
       return `${count} ${itemType}${count !== 1 ? 's' : ''} ${action.type.startsWith('CREATE_') ? 'added' : 'updated'}`
     }
     if (typeof value === 'string' && value.length > 100) {
@@ -710,8 +819,8 @@ function extractChanges(action: AgentAction): ActionChange[] {
     const source =
       srcPayload.updatedFields ||
       (srcPayload.updates &&
-      typeof srcPayload.updates === 'object' &&
-      !Array.isArray(srcPayload.updates)
+        typeof srcPayload.updates === 'object' &&
+        !Array.isArray(srcPayload.updates)
         ? srcPayload.updates
         : srcPayload)
 
@@ -725,16 +834,63 @@ function extractChanges(action: AgentAction): ActionChange[] {
         key !== 'episodeId' &&
         key !== '_before'
       ) {
-        changes.push({
-          path: key,
-          before: beforeData, // Use the "before" data from stream
-          after: value,
-          reason: action.reasoning,
-          changeType: beforeData ? 'modify' : 'add',
-          category: fieldCategories[key] || 'General',
-          friendlyName: friendlyNames[key] || formatFieldName(key),
-          summary: generateSummary(key, value),
-        })
+        // Special handling for episodeRoadmap (object with episodes array)
+        if (key === 'episodeRoadmap' && value && typeof value === 'object') {
+          const episodes = (value as any).episodes
+          if (Array.isArray(episodes)) {
+            episodes.forEach((episode: any) => {
+              changes.push({
+                path: `episodeRoadmap.episodes[${episode.title || 'new'}]`,
+                before: null,
+                after: episode,
+                reason: action.reasoning,
+                changeType: 'add',
+                category: 'Roadmap',
+                friendlyName: episode.title || 'New Episode',
+                summary: undefined,
+              })
+            })
+          }
+          // Also handle seasonStructure if present
+          if ((value as any).seasonStructure) {
+            changes.push({
+              path: 'episodeRoadmap.seasonStructure',
+              before: null,
+              after: (value as any).seasonStructure,
+              reason: action.reasoning,
+              changeType: 'add',
+              category: 'Roadmap',
+              friendlyName: 'Season Structure',
+              summary: undefined // Force detail view or generic table
+            })
+          }
+        }
+        // Special handling for array items (Plot Twists, Rules, etc.) to expand them into individual changes
+        else if (Array.isArray(value) && ['plotTwists', 'worldRules', 'factions', 'soundtracks', 'sequences'].includes(key)) {
+          value.forEach((item: any) => {
+            changes.push({
+              path: `${key}[${(item.id || item.title || item.name || 'new')}]`,
+              before: null, // We generally don't have per-item diffs for these lists yet
+              after: item,
+              reason: action.reasoning,
+              changeType: 'add', // Treat as new/modified item
+              category: fieldCategories[key] || 'General',
+              friendlyName: item.title || item.name || item.rule || 'New Item',
+              summary: undefined // Force detail view
+            })
+          })
+        } else {
+          changes.push({
+            path: key,
+            before: beforeData, // Use the "before" data from stream
+            after: value,
+            reason: action.reasoning,
+            changeType: beforeData ? 'modify' : 'add',
+            category: fieldCategories[key] || 'General',
+            friendlyName: friendlyNames[key] || formatFieldName(key),
+            summary: generateSummary(key, value),
+          })
+        }
       }
     })
   }

@@ -137,9 +137,30 @@ export function useChatStream({
   const [thinkingAgent, setThinkingAgent] = useState<string | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  // Streaming state
+  // Streaming state — tokens are buffered via rAF to reduce re-renders
   const [streamingTokens, setStreamingTokens] = useState<string>('')
   const streamingTokensRef = useRef<string>('')
+  const rafIdRef = useRef<number | null>(null)
+
+  const flushStreamingTokens = useCallback(() => {
+    setStreamingTokens(streamingTokensRef.current)
+    rafIdRef.current = null
+  }, [])
+
+  const scheduleTokenFlush = useCallback(() => {
+    if (rafIdRef.current === null) {
+      rafIdRef.current = requestAnimationFrame(flushStreamingTokens)
+    }
+  }, [flushStreamingTokens])
+
+  // Cancel pending rAF on unmount
+  useEffect(() => {
+    return () => {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current)
+      }
+    }
+  }, [])
   const [streamingSections, setStreamingSections] = useState<ProgressSection[]>([])
   const [isTokenStreaming, setIsTokenStreaming] = useState(false)
   const [isAwaitingInput, setIsAwaitingInput] = useState(false)
@@ -202,9 +223,13 @@ export function useChatStream({
     }
   }, [persistKey])
 
-  // Persist full chat state to sessionStorage whenever it changes
+  // Persist full chat state to sessionStorage (debounced to avoid thrashing during streaming)
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
-    if (persistKey && typeof window !== 'undefined') {
+    if (!persistKey || typeof window === 'undefined') return
+
+    if (persistTimerRef.current) clearTimeout(persistTimerRef.current)
+    persistTimerRef.current = setTimeout(() => {
       try {
         saveChatState(persistKey, {
           messages,
@@ -215,6 +240,10 @@ export function useChatStream({
       } catch (e) {
         console.error('[useChatStream] Failed to persist state:', e)
       }
+    }, 500)
+
+    return () => {
+      if (persistTimerRef.current) clearTimeout(persistTimerRef.current)
     }
   }, [messages, isSending, thinkingAgent, streamingTokens, persistKey])
 
@@ -359,6 +388,31 @@ export function useChatStream({
   )
 
   /**
+   * Update action status by ID (for cross-component sync)
+   */
+  const updateActionStatusById = useCallback(
+    (actionId: string, newStatus: ActionStatus) => {
+      console.log(`🔄 [updateActionStatusById] Setting action ${actionId} status = ${newStatus}`)
+      setMessagesInternal(prev => {
+        return prev.map(msg => {
+          if (!msg.actions) return msg
+          const actionIndex = msg.actions.findIndex(a => a.id === actionId)
+          if (actionIndex === -1) return msg
+
+          // Found the action
+          return {
+            ...msg,
+            actions: msg.actions.map((a, idx) =>
+              idx === actionIndex ? { ...a, status: newStatus } : a
+            ),
+          }
+        })
+      })
+    },
+    []
+  )
+
+  /**
    * Process section progress events
    */
   const processSectionEvent = useCallback((data: any) => {
@@ -387,11 +441,11 @@ export function useChatStream({
         prev.map(s =>
           s.id === data.section
             ? {
-                ...s,
-                status: 'completed' as const,
-                endTime: Date.now(),
-                details: data.preview || data.details,
-              }
+              ...s,
+              status: 'completed' as const,
+              endTime: Date.now(),
+              details: data.preview || data.details,
+            }
             : s
         )
       )
@@ -400,11 +454,11 @@ export function useChatStream({
         prev.map(s =>
           s.id === data.section
             ? {
-                ...s,
-                status: 'error' as const,
-                endTime: Date.now(),
-                details: data.error,
-              }
+              ...s,
+              status: 'error' as const,
+              endTime: Date.now(),
+              details: data.error,
+            }
             : s
         )
       )
@@ -519,11 +573,8 @@ export function useChatStream({
                     ]
                   })
                 } else if (data.type === 'token') {
-                  setStreamingTokens(prev => {
-                    const next = prev + (data.token || '')
-                    streamingTokensRef.current = next
-                    return next
-                  })
+                  streamingTokensRef.current += data.token || ''
+                  scheduleTokenFlush()
                 } else if (data.type === 'node' || data.type === 'node_start') {
                   const agentName = data.node || data.agent
                   setThinkingAgent(agentName)
@@ -638,10 +689,16 @@ export function useChatStream({
                   }
                 } else if (data.type === 'action') {
                   const actionObj = data.action
+                  // Ensure action has a unique ID for synchronization
+                  if (!actionObj.id) {
+                    actionObj.id = `action-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+                  }
+
                   console.log(
                     '[useChatStream] Action received:',
                     actionObj?.type,
-                    actionObj?.payload?.label || actionObj?.payload?.id
+                    actionObj?.payload?.label || actionObj?.payload?.id,
+                    `[ID: ${actionObj.id}]`
                   )
 
                   // Persist action to Activity Log
@@ -900,6 +957,7 @@ export function useChatStream({
       updateAgentStatus,
       processSectionEvent,
       processCitationEvent,
+      scheduleTokenFlush,
     ]
   )
 
@@ -1041,6 +1099,7 @@ export function useChatStream({
 
     // Action approval
     updateActionStatus,
+    updateActionStatusById,
 
     // Citations
     citations,

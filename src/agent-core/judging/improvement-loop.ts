@@ -62,14 +62,20 @@ function buildRefinementPrompt(
   iterationNumber: number
 ): string {
   const weakest = judgment.refinementPriority[0]
-  const persona =
-    PERSONAS[
-      weakest === 'depth'
-        ? 'george-rr-martin'
-        : weakest === 'structure'
-          ? 'vince-gilligan'
-          : 'david-lynch'
-    ]
+  const personaMap: Record<string, keyof typeof PERSONAS> = {
+    depth: 'george-rr-martin',
+    structure: 'vince-gilligan',
+    feeling: 'david-lynch',
+    originality: 'ursula-le-guin',
+  }
+  const persona = PERSONAS[personaMap[weakest] || 'george-rr-martin']
+
+  const dimensionVerb: Record<string, string> = {
+    DEPTH: 'REAL',
+    STRUCTURE: 'WORK',
+    FEELING: 'HAUNT',
+    ORIGINALITY: 'NECESSARY',
+  }
 
   return `# ITERATION ${iterationNumber} - REFINEMENT REQUIRED
 
@@ -77,6 +83,7 @@ function buildRefinementPrompt(
 - Depth (GRRM): ${judgment.depth.score.toFixed(2)} ${judgment.depth.passes ? '✓' : '✗'}
 - Structure (Gilligan): ${judgment.structure.score.toFixed(2)} ${judgment.structure.passes ? '✓' : '✗'}
 - Feeling (Lynch): ${judgment.feeling.score.toFixed(2)} ${judgment.feeling.passes ? '✓' : '✗'}
+- Originality (Le Guin): ${judgment.originality.score.toFixed(2)} ${judgment.originality.passes ? '✓' : '✗'}
 - Overall: ${judgment.overallScore.toFixed(2)}
 - Slop Score: ${judgment.slopScore.toFixed(2)} (lower is better)
 
@@ -99,7 +106,7 @@ ${content}
 
 ## YOUR TASK
 Rewrite this content to address the weaknesses above.
-Channel ${persona.name}'s voice. Make it ${persona.dimension === 'DEPTH' ? 'REAL' : persona.dimension === 'STRUCTURE' ? 'WORK' : 'HAUNT'}.
+Channel ${persona.name}'s voice. Make it ${dimensionVerb[persona.dimension] || 'BETTER'}.
 
 RULES:
 - No hedging language ("It's worth noting...")
@@ -108,6 +115,7 @@ RULES:
 - Show don't tell
 - Every choice has consequences
 - Leave some mystery
+- Cut any sentence that could belong to ANY story - make it specific to THIS one
 
 Output the refined content only, no explanation.`
 }
@@ -151,7 +159,7 @@ SCORES:
 - Slop: ${judgment.slopScore.toFixed(2)}
 
 ALL WEAKNESSES:
-${[...judgment.depth.weaknesses, ...judgment.structure.weaknesses, ...judgment.feeling.weaknesses]
+${[...judgment.depth.weaknesses, ...judgment.structure.weaknesses, ...judgment.feeling.weaknesses, ...judgment.originality.weaknesses]
   .map(w => `- ${w}`)
   .join('\n')}
 
@@ -160,6 +168,7 @@ ${[
   ...judgment.depth.slopDetected,
   ...judgment.structure.slopDetected,
   ...judgment.feeling.slopDetected,
+  ...judgment.originality.slopDetected,
 ]
   .map(s => `- ${s}`)
   .join('\n')}

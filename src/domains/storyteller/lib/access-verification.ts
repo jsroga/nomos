@@ -32,20 +32,13 @@ export interface BeatAccessResult extends AccessResult {
  * Single query - most basic check
  */
 export async function verifyProjectAccess(projectId: string, userId: string): Promise<boolean> {
-  const result = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(eq(projects.id, projectId))
-    .limit(1)
-
-  if (result.length === 0) return false
-
-  // Note: With Drizzle we need to also check userId
   const [project] = await db
     .select({ userId: projects.userId })
     .from(projects)
     .where(eq(projects.id, projectId))
     .limit(1)
+
+  if (!project) return false
 
   // Allow E2E test user to bypass access checks in dev/test
   if (
@@ -55,7 +48,7 @@ export async function verifyProjectAccess(projectId: string, userId: string): Pr
     return true
   }
 
-  return project?.userId === userId
+  return project.userId === userId
 }
 
 // ============================================

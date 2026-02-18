@@ -253,7 +253,7 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
           ) : (
             <ImageIcon size={14} />
           )}
-          {isGeneratingBeats ? 'Generating Storyboard...' : 'Generate Storyboard'}
+          {isGeneratingBeats ? 'Generating Beats...' : 'Generate Beats'}
         </button>
       </div>
 

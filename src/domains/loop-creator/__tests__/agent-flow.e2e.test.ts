@@ -29,6 +29,11 @@ vi.mock('@langchain/langgraph-checkpoint-postgres', () => ({
   PostgresSaver: {
     fromConnString: vi.fn().mockReturnValue({
       setup: vi.fn().mockResolvedValue(undefined),
+      getTuple: vi.fn().mockResolvedValue(undefined),
+      list: vi.fn().mockReturnValue((async function* () {})()),
+      put: vi.fn().mockResolvedValue({ configurable: { thread_id: 'test', checkpoint_id: '1' } }),
+      putWrites: vi.fn().mockResolvedValue(undefined),
+      getNextVersion: vi.fn().mockImplementation((current: number | undefined) => (current ?? 0) + 1),
     }),
   },
 }))

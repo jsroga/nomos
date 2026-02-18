@@ -244,8 +244,10 @@ const creativeDecisionStep = createStep({
         proseScore: proseResult.score,
         refinementFocus,
       }
-    } catch {
-      return { approved: true, direction: 'proceed', critiqueScore: 0.7, proseScore: 0.7 }
+    } catch (error) {
+      // If quality gate fails, default to REJECT — don't let broken critiques auto-approve
+      console.warn('[CreativeDecision] Quality gate error, defaulting to refine:', error)
+      return { approved: false, direction: 'refine', critiqueScore: 0.5, proseScore: 0.5, refinementFocus: 'Quality gate failed — critique could not be parsed. Refine for safety.' }
     }
   },
 })
@@ -316,15 +318,15 @@ const synthesisStep = createStep({
       }
 
       const prompt = `
-### GENIUS MODE ENABLED (IQ 200)
-Synthesize the council inputs with the ruthless realism of George R. R. Martin and the "out of the box" narrative complexity of Vince Gilligan.
+### SYNTHESIS STEP
+Combine the council inputs into final output. Apply your writing constraints: show don't tell, specific over generic, consequences for every action.
 
-### CRITICAL: OBEY THE GOAL
-GOAL: ${input?.goal}
+### GOAL
+${input?.goal}
 
 ${isStructural
           ? `
-WARNING: This is a STRUCTURAL goal. 
+WARNING: This is a STRUCTURAL goal.
 1. YOU MUST call 'update_world_bible' with the fields requested in the GOAL.
 2. Put the rules in the 'worldRules' array.
 `
@@ -335,9 +337,9 @@ WARNING: This is a STRUCTURAL goal.
 Draft: "${draft}"
 Critique: "${critique}"
 
-### FINAL INSTRUCTION
+### INSTRUCTIONS
 1. Accomplish the GOAL: "${input?.goal}"
-2. Deliver an IQ 200 "out of the box" solution that surprises and enthralls.
+2. Every sentence must be specific to THIS story — cut anything generic.
 3. If lore/rules are involved, YOU MUST CALL 'update_world_bible' AND INCLUDE AN 'UPDATE_SERIES_BIBLE' ACTION.
 4. World Rules MUST be valid: { "category": "Physics|Magic|Technology|Society|Politics|Economics", "rule": "...", "consequence": "..." }
 5. Use projectId: ${input?.projectId}
@@ -370,7 +372,7 @@ export const storyCreationWorkflow = new Workflow({
   .then(synthesisStep)
   .commit()
 
-class StoryCreationWorkflow extends Workflow {
+export class StoryCreationWorkflow extends Workflow {
   constructor() {
     super({
       id: 'story-creation-pipeline',

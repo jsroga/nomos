@@ -111,7 +111,7 @@ function createEmptyBible(): SeriesBible {
 }
 
 // Convert bible to prompt context
-export function bibleToPrompt(bible: SeriesBible): string {
+export function bibleToPrompt(bible: SeriesBible, cast?: Array<{ name: string; role?: string; description?: string }>): string {
   if (!bible.title && !bible.logline) {
     return 'No series bible has been established yet. Work with the user to define the world.'
   }
@@ -219,6 +219,14 @@ Dialogue: ${bible.toneGuidelines.dialogue || 'Not specified'}
     prompt += `Cinematic Influences: ${bible.cinematicInfluences.join(', ')}\n`
   }
 
+  // Project-level cast (characters)
+  if (cast && cast.length > 0) {
+    prompt += '\n--- CAST ---\n'
+    cast.forEach(c => {
+      prompt += `- ${c.name} (${c.role || 'Unknown role'}): ${c.description || 'No description'}\n`
+    })
+  }
+
   prompt += '\n=== END SERIES BIBLE ==='
 
   return prompt
@@ -252,7 +260,7 @@ When evaluating this character's actions, ask:
 }
 
 // Extract visual prompts for world generation
-export function bibleToVisualPrompt(bible: SeriesBible): string {
+export function bibleToVisualPrompt(bible: SeriesBible, cast?: Array<{ name: string; role?: string; description?: string }>): string {
   // Priority 1: Use worldDescription if available
   if (bible.worldDescription) {
     // Extract first 3 sentences or truncate appropriately

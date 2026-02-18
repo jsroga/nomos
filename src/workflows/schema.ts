@@ -15,7 +15,7 @@ export const WorkflowStateSchema = z.object({
   error: z.string().optional(),
 })
 
-export type WorkflowState = z.infer<typeof WorkflowStateSchema>
+type WorkflowState = z.infer<typeof WorkflowStateSchema>
 
 // Payload for resuming a workflow (User Approval)
 export const ResumeWorkflowSchema = z.object({

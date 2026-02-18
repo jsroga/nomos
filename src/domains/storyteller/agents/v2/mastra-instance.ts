@@ -1,6 +1,8 @@
 import { Mastra } from '@mastra/core/mastra'
 import { LangfuseExporter } from '@mastra/langfuse'
 import { LibSQLStore } from '@mastra/libsql'
+import { PinoLogger } from '@mastra/loggers'
+import { Observability } from '@mastra/observability'
 import { Workspace, LocalFilesystem } from '@mastra/core/workspace'
 
 let mastraInstance: Mastra | null = null
@@ -77,14 +79,18 @@ export function getMastraInstance() {
       agents: {},
       storage, // Enables memory across all configured agents
       workspace, // Register workspace for skills
-      observability: {
+      logger: new PinoLogger({
+        name: 'Mastra',
+        level: 'info',
+      }),
+      observability: new Observability({
         configs: {
           storyteller: {
             serviceName: 'storyteller',
             exporters: [langfuseExporter],
           },
         },
-      },
+      }),
     })
 
     console.log('🚀 [Mastra] Centralized instance initialized with memory storage')

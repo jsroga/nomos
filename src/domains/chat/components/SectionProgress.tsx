@@ -268,7 +268,7 @@ export const SectionProgress: React.FC<SectionProgressProps> = ({
 /**
  * Hook to manage section progress state
  */
-function useSectionProgress(initialSections: ProgressSection[]) {
+export function useSectionProgress(initialSections: ProgressSection[]) {
   const [sections, setSections] = useState<ProgressSection[]>(initialSections)
 
   const startSection = (id: string) => {

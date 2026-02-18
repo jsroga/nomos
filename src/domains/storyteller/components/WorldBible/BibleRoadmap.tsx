@@ -6,7 +6,7 @@ import { EpisodeRoadmapCard } from '../EpisodeRoadmapCard'
 import { useBible } from './BibleContext'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
 
-interface BibleRoadmapProps {}
+interface BibleRoadmapProps { }
 
 export const BibleRoadmap: React.FC<BibleRoadmapProps> = () => {
   const {
@@ -20,8 +20,10 @@ export const BibleRoadmap: React.FC<BibleRoadmapProps> = () => {
     onSendMessage,
     loadingSections,
     pendingActions,
+    projectId,
   } = useBible()
-  const sequences = storyPlan.sequences || []
+  const sequences = storyPlan.episodeRoadmap?.episodes || storyPlan.episodeRoadmap?.sequences || storyPlan.sequences || []
+  const seasonStructure = storyPlan.seasonStructure || storyPlan.episodeRoadmap?.seasonStructure
 
   // Check for loading state - roadmap uses 'episodeRoadmap' section key
   const isLoading = loadingSections?.episodeRoadmap?.loading ?? false
@@ -87,7 +89,7 @@ export const BibleRoadmap: React.FC<BibleRoadmapProps> = () => {
               </div>
             ) : (
               (localPlan.sequences || []).map((seq, idx) => (
-                <EpisodeRoadmapCard key={idx} episode={seq} index={idx} />
+                <EpisodeRoadmapCard key={idx} episode={seq} index={idx} projectId={projectId} />
               ))
             )}
           </div>
@@ -95,8 +97,8 @@ export const BibleRoadmap: React.FC<BibleRoadmapProps> = () => {
       ) : (
         <div className="space-y-6">
           {/* Legend / Overview */}
-          {storyPlan.seasonStructure && (
-            <SeasonOverviewCard seasonStructure={storyPlan.seasonStructure} />
+          {seasonStructure && (
+            <SeasonOverviewCard seasonStructure={seasonStructure} />
           )}
 
           {/* Sequences List */}
@@ -105,9 +107,9 @@ export const BibleRoadmap: React.FC<BibleRoadmapProps> = () => {
               No roadmap defined yet. The journey is unwritten.
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
               {sequences.map((seq, idx) => (
-                <EpisodeRoadmapCard key={idx} episode={seq} index={idx} />
+                <EpisodeRoadmapCard key={idx} episode={seq} index={idx} projectId={projectId} />
               ))}
             </div>
           )}

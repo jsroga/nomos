@@ -170,7 +170,7 @@ export const regenerateTextTool = createTool({
   },
 })
 
-const scriptTools = [
+export const scriptTools = [
   expandSceneTool,
   condenseSceneTool,
   improveDialogueTool,

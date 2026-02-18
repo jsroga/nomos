@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-import { Torus } from 'lucide-react'
+import { Torus, X } from 'lucide-react'
 
 export interface TourStep {
   content: React.ReactNode
@@ -151,6 +151,20 @@ export function TourProvider({
     updateElementPosition()
     window.addEventListener('resize', updateElementPosition)
     window.addEventListener('scroll', updateElementPosition)
+    window.addEventListener('click', updateElementPosition) // Re-check on clicks too
+
+    // Add ResizeObserver for the target element
+    let observer: ResizeObserver | null = null
+    const targetId = steps[currentStep]?.selectorId
+    if (targetId) {
+      const element = document.getElementById(targetId)
+      if (element) {
+        observer = new ResizeObserver(() => {
+          updateElementPosition()
+        })
+        observer.observe(element)
+      }
+    }
 
     // Execute step action if present
     if (currentStep >= 0 && steps[currentStep]?.action) {
@@ -160,6 +174,10 @@ export function TourProvider({
     return () => {
       window.removeEventListener('resize', updateElementPosition)
       window.removeEventListener('scroll', updateElementPosition)
+      window.removeEventListener('click', updateElementPosition)
+      if (observer) {
+        observer.disconnect()
+      }
     }
   }, [updateElementPosition, currentStep, steps])
 
@@ -270,7 +288,7 @@ export function TourProvider({
                 width: steps[currentStep]?.width || elementPosition.width,
                 height: steps[currentStep]?.height || elementPosition.height,
               }}
-              className={cn('z-[100] border-2 border-muted-foreground', className)}
+              className={cn('z-[100] border-2 border-muted-foreground pointer-events-none', className)}
             />
 
             <motion.div
@@ -294,8 +312,15 @@ export function TourProvider({
               }}
               className="bg-background relative z-[100] rounded-lg border p-4 shadow-lg"
             >
-              <div className="text-muted-foreground absolute right-4 top-4 text-xs">
-                {currentStep + 1} / {steps.length}
+              <div className="text-muted-foreground absolute right-4 top-4 text-xs flex items-center gap-2">
+                <span>{currentStep + 1} / {steps.length}</span>
+                <button
+                  onClick={endTour}
+                  className="hover:text-foreground transition-colors p-1 -mr-2 -mt-1"
+                  aria-label="Close tour"
+                >
+                  <X size={14} />
+                </button>
               </div>
               <AnimatePresence mode="wait">
                 <div>
@@ -314,12 +339,23 @@ export function TourProvider({
                   >
                     {steps[currentStep]?.content}
                   </motion.div>
-                  <div className="mt-4 flex justify-between items-center">
+                  <div className="mt-4 flex items-center gap-2">
+                    {currentStep < steps.length - 1 && (
+                      <button
+                        onClick={endTour}
+                        className="text-xs text-muted-foreground hover:text-foreground mr-auto transition-colors"
+                      >
+                        Skip
+                      </button>
+                    )}
                     {currentStep > 0 && (
                       <button
                         onClick={previousStep}
                         disabled={currentStep === 0}
-                        className="text-sm text-muted-foreground hover:text-foreground"
+                        className={cn(
+                          "text-sm text-muted-foreground hover:text-foreground",
+                          currentStep === steps.length - 1 && "mr-auto" // Push finish button to right if it's the only other button
+                        )}
                       >
                         Previous
                       </button>

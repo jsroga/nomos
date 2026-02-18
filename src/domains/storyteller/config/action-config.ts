@@ -160,14 +160,15 @@ export const SECTION_CONFIGS: SectionConfig[] = [
     actionType: ActionType.UPDATE_EPISODE_ROADMAP,
     fieldNames: ['sequences', 'episodeRoadmap'],
     requiresApproval: true,
-    extractPayload: fields => {
-      const roadmapData = fields.episodeRoadmap || { sequences: fields.sequences }
-      return {
-        seasonStructure: roadmapData.seasonStructure,
-        sequences: roadmapData.sequences || fields.sequences,
-        executiveSummary: roadmapData.executiveSummary,
-      }
-    },
+    extractPayload: fields => ({
+      // Pass the whole object as-is, just like other sections
+      // Normalize 'sequences' to 'episodes' key — BibleRoadmap reads episodeRoadmap.episodes
+      episodeRoadmap: fields.episodeRoadmap || {
+        episodes: fields.sequences,
+        seasonStructure: fields.seasonStructure,
+        executiveSummary: fields.executiveSummary,
+      },
+    }),
   },
 ]
 
@@ -284,6 +285,7 @@ export const STORY_PLAN_FIELDS = [
   'moodboard',
   'masterPrompt',
   'centralTheme',
+  'episodeRoadmap',
 ] as const
 
 /**
@@ -298,26 +300,32 @@ export function applyUpdatesToStoryPlan<T extends Record<string, any>>(
   // Apply standard plan fields
   for (const field of STORY_PLAN_FIELDS) {
     if (updates[field] !== undefined) {
-      ;(result as any)[field] = updates[field]
+      if (field === 'episodeRoadmap') {
+        // deep merge episodeRoadmap to support partial updates
+        // (e.g. updating just the premise inside the roadmap)
+        ; (result as any)[field] = deepMerge((currentPlan as any)[field] || {}, updates[field] as any)
+      } else {
+        ; (result as any)[field] = updates[field]
+      }
     }
   }
 
   // Handle cast field aliases (cast is the canonical field)
   const cast = updates.cast || updates.characters
   if (cast) {
-    ;(result as any).cast = cast
+    ; (result as any).cast = cast
   }
 
   // Handle moodboard/moodImages aliases
   const moodImages = updates.moodImages || updates.moodboard
   if (moodImages) {
-    ;(result as any).moodImages = moodImages
+    ; (result as any).moodImages = moodImages
   }
 
   // Handle episode premise - MERGE, don't replace
   const premiseUpdate = updates.episodePremise || updates.premise
   if (premiseUpdate) {
-    ;(result as any).premise = deepMerge((currentPlan as any)?.premise || {}, premiseUpdate)
+    ; (result as any).premise = deepMerge((currentPlan as any)?.premise || {}, premiseUpdate)
   }
 
   return result

@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic'
  * Trigger tile generation task
  */
 export const POST = withRateLimit(
-  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
+  withAuth<any>(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
     const payload = await request.json()
 
     // Validate required fields
@@ -23,7 +23,7 @@ export const POST = withRateLimit(
       !payload.projectId ||
       payload.x === undefined ||
       payload.y === undefined ||
-      !payload.prompt
+      payload.prompt === undefined
     ) {
       return NextResponse.json(
         { error: 'Missing required fields: projectId, x, y, prompt' },
@@ -54,7 +54,7 @@ export const POST = withRateLimit(
         .from('projects')
         .select('style_reference_urls')
         .eq('id', payload.projectId)
-        .single()
+        .single() as { data: { style_reference_urls: string[] } | null }
 
       styleReferenceUrls = data?.style_reference_urls || []
     } else {

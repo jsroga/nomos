@@ -354,21 +354,21 @@ Your job is to:
 }
 
 // Factory functions
-async function createGRRMDirector(
+export async function createGRRMDirector(
   modelName: string = 'openai:gpt-4o',
   options?: { traceId?: string; projectId?: string; episodeId?: string }
 ): Promise<CreativeDirectorAgent> {
   return CreativeDirectorAgent.create('grrm', modelName, options)
 }
 
-async function createGilliganDirector(
+export async function createGilliganDirector(
   modelName: string = 'openai:gpt-4o',
   options?: { traceId?: string; projectId?: string; episodeId?: string }
 ): Promise<CreativeDirectorAgent> {
   return CreativeDirectorAgent.create('gilligan', modelName, options)
 }
 
-async function createCustomDirector(
+export async function createCustomDirector(
   directives: string,
   modelName: string = 'openai:gpt-4o',
   options?: { traceId?: string; projectId?: string; episodeId?: string }

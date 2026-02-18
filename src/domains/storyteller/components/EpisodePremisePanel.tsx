@@ -10,12 +10,16 @@ import {
   TrendingUp,
   Anchor,
   RefreshCw,
+  ListOrdered,
+  Trash2,
+  Plus,
 } from 'lucide-react'
 import { EpisodePremise, StoryPlan, Faction, WorldRule } from '../schemas/agent-schemas'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StorytellerImage } from './StorytellerImage'
 import { ImageVariantSelector } from './ImageVariantSelector'
+import { ReferenceText } from './ReferenceText'
 import { cn } from '@/lib/utils'
 
 interface EpisodePremisePanelProps {
@@ -28,7 +32,7 @@ interface EpisodePremisePanelProps {
   onGeneratePoster?: () => void
   onGenerateStoryboard?: () => void
   onGenerateSection?: (
-    section: 'protagonistHook' | 'fatalFlaw' | 'stakes' | 'inevitableConsequence' | 'logline'
+    section: 'protagonistHook' | 'fatalFlaw' | 'stakes' | 'inevitableConsequence' | 'logline' | 'tenPointsPlan'
   ) => void
   isGenerating?: boolean
   isGeneratingPoster?: boolean
@@ -371,8 +375,12 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
                   placeholder="The opening situation..."
                 />
               ) : localPremise.protagonistHook ? (
-                <div className="p-6 bg-card border border-border rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                  <p className="text-foreground leading-relaxed">{localPremise.protagonistHook}</p>
+                <div className="p-6 bg-card border border-border border-l-2 border-l-primary rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                  <ReferenceText
+                    text={localPremise.protagonistHook}
+                    projectId={projectId}
+                    className="text-foreground leading-relaxed"
+                  />
                 </div>
               ) : (
                 <div
@@ -423,11 +431,13 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
                   placeholder="The internal flaw driving the conflict..."
                 />
               ) : localPremise.fatalFlaw ? (
-                <div className="p-6 bg-card border border-red-500/20 rounded-xl shadow-sm relative overflow-hidden">
+                <div className="p-6 bg-card border border-red-500/20 border-l-2 border-l-red-400 rounded-xl shadow-sm relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-16 h-16 bg-red-500/10 rounded-bl-full -mr-8 -mt-8" />
-                  <p className="text-foreground leading-relaxed relative z-10">
-                    {localPremise.fatalFlaw}
-                  </p>
+                  <ReferenceText
+                    text={localPremise.fatalFlaw}
+                    projectId={projectId}
+                    className="text-foreground leading-relaxed relative z-10"
+                  />
                 </div>
               ) : (
                 <div
@@ -478,8 +488,12 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
                   placeholder="What is strictly at risk..."
                 />
               ) : localPremise.stakes ? (
-                <div className="p-6 bg-card border border-orange-500/20 rounded-xl shadow-sm">
-                  <p className="text-foreground leading-relaxed">{localPremise.stakes}</p>
+                <div className="p-6 bg-card border border-orange-500/20 border-l-2 border-l-orange-400 rounded-xl shadow-sm">
+                  <ReferenceText
+                    text={localPremise.stakes}
+                    projectId={projectId}
+                    className="text-foreground leading-relaxed"
+                  />
                 </div>
               ) : (
                 <div
@@ -533,11 +547,13 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
                   placeholder="The irreversible change..."
                 />
               ) : localPremise.inevitableConsequence ? (
-                <div className="p-6 bg-card border border-purple-500/20 rounded-xl shadow-sm relative overflow-hidden">
+                <div className="p-6 bg-card border border-purple-500/20 border-l-2 border-l-purple-400 rounded-xl shadow-sm relative overflow-hidden">
                   <div className="absolute bottom-0 right-0 w-24 h-24 bg-purple-500/10 rounded-tl-full -mr-4 -mb-4" />
-                  <p className="text-foreground leading-relaxed relative z-10">
-                    {localPremise.inevitableConsequence}
-                  </p>
+                  <ReferenceText
+                    text={localPremise.inevitableConsequence}
+                    projectId={projectId}
+                    className="text-foreground leading-relaxed relative z-10"
+                  />
                 </div>
               ) : (
                 <div
@@ -551,6 +567,134 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
                 </div>
               )}
             </div>
+          </div>
+
+          {/* 10-Point Episode Plan */}
+          <div className="mt-8 mb-12">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 text-primary font-bold uppercase tracking-wider text-sm">
+                <ListOrdered className="w-5 h-5" /> 10-Point Episode Plan
+              </div>
+              {!isEditing && onGenerateSection && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="gap-2 text-muted-foreground hover:text-primary"
+                  onClick={() => onGenerateSection('tenPointsPlan' as any)}
+                  disabled={isGenerating}
+                >
+                  <RefreshCw
+                    className={
+                      generatingSection === 'tenPointsPlan' ? 'w-4 h-4 animate-spin' : 'w-4 h-4'
+                    }
+                  />
+                  {localPremise.tenPointsPlan && localPremise.tenPointsPlan.length > 0
+                    ? 'Regenerate Plan'
+                    : 'Generate Plan'}
+                </Button>
+              )}
+            </div>
+
+            {generatingSection === 'tenPointsPlan' ? (
+              <div className="space-y-4 p-6 bg-card border border-border rounded-xl">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex gap-4">
+                    <Skeleton className="h-6 w-6 rounded-full flex-shrink-0" />
+                    <Skeleton className="h-4 w-full" />
+                  </div>
+                ))}
+              </div>
+            ) : isEditing ? (
+              <div className="space-y-4 p-6 bg-muted/30 border border-border rounded-xl">
+                {(localPremise.tenPointsPlan || []).map((point, index) => (
+                  <div key={index} className="flex gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                      {index + 1}
+                    </div>
+                    <textarea
+                      className="flex-1 p-2 bg-background border border-border rounded focus:ring-2 focus:ring-primary/50 outline-none min-h-[60px]"
+                      value={typeof point === 'object' ? JSON.stringify(point) : String(point)}
+                      onChange={e => {
+                        const newPlan = [...(localPremise.tenPointsPlan || [])]
+                        newPlan[index] = e.target.value
+                        handleChange('tenPointsPlan', newPlan)
+                      }}
+                    />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      onClick={() => {
+                        const newPlan = [...(localPremise.tenPointsPlan || [])]
+                        newPlan.splice(index, 1)
+                        handleChange('tenPointsPlan', newPlan)
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-2 border-dashed"
+                  onClick={() => {
+                    const newPlan = [...(localPremise.tenPointsPlan || [])]
+                    newPlan.push('')
+                    handleChange('tenPointsPlan', newPlan)
+                  }}
+                >
+                  <Plus className="w-4 h-4" /> Add Step
+                </Button>
+              </div>
+            ) : localPremise.tenPointsPlan && localPremise.tenPointsPlan.length > 0 ? (
+              <div className="space-y-6 p-8 bg-card border border-border rounded-xl shadow-sm">
+                {localPremise.tenPointsPlan.map((point, index) => (
+                  <div key={index} className="flex gap-6 group">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm group-hover:bg-primary group-hover:text-white transition-colors">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1 pt-1">
+                      {typeof point === 'object' && point !== null ? (
+                        Object.entries(point).map(([k, v]) => (
+                          <div key={k} className="mb-1">
+                            <span className="text-xs font-bold uppercase text-primary/70 mr-2">
+                              {k}:
+                            </span>
+                            <ReferenceText
+                              text={String(v)}
+                              projectId={projectId}
+                              className="text-foreground leading-relaxed"
+                            />
+                          </div>
+                        ))
+                      ) : (
+                        <ReferenceText
+                          text={String(point)}
+                          projectId={projectId}
+                          className="text-foreground leading-relaxed"
+                        />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div
+                className="p-12 bg-card border border-dashed border-border rounded-xl shadow-sm flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors min-h-[200px]"
+                onClick={() => onGenerateSection && onGenerateSection('tenPointsPlan' as any)}
+              >
+                <ListOrdered className="w-12 h-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-bold mb-2">No 10-Point Plan</h3>
+                <p className="text-sm text-muted-foreground text-center max-w-md">
+                  Generate a high-level outline from start to finish before breaking it down into
+                  individual beats.
+                </p>
+                <Button variant="outline" className="mt-6 gap-2 pointer-events-none">
+                  <Sparkles className="w-4 h-4" /> Generate Plan
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -593,10 +737,11 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
         )}
       </div>
 
-      {/* Variant Picker */}
+
       {showVariantPicker && gridImageUrl && (
         <ImageVariantSelector gridImageUrl={gridImageUrl} onSelect={handleVariantSelect} />
-      )}
+      )
+      }
     </>
   )
 }

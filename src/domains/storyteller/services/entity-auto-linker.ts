@@ -30,19 +30,37 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
   try {
     // Fetch all known entities from the project
     const { db } = await import('@/lib/db')
-    const { projects, storyPlans } = await import('@/domains/storyteller/db/schema')
+    const { projects, storyPlans, characters } = await import('@/domains/storyteller/db/schema')
     const { eq } = await import('drizzle-orm')
 
+    // Fetch project basics first (lighter query)
     const project = await db.query.projects.findFirst({
       where: eq(projects.id, projectId),
-      with: { storyPlanTable: true },
     })
 
     if (!project) return text
 
-    const storyPlan = (project.storyPlanTable?.content as any) || (project.storyPlan as any) || {}
+    // Fetch story plan content separately if needed (avoids heavy join)
+    let storyPlan = (project.storyPlan as any) || {}
+
+    // If no legacy storyPlan, check the table
+    if (!project.storyPlan) {
+      const sp = await db.query.storyPlans.findFirst({
+        where: eq(storyPlans.projectId, projectId),
+      })
+      if (sp?.content) {
+        storyPlan = sp.content
+      }
+    }
+
     const seriesBible = (project.seriesBible as any) || {}
-    const cast = (project as any).cast || []
+
+    // Fetch characters from the characters table
+    const projectCharacters = await db.query.characters.findMany({
+      where: eq(characters.projectId, projectId),
+    })
+
+    const cast = projectCharacters || []
 
     // Build entity lookup map: name -> {id, type}
     const entityMap = new Map<string, { id: string; type: string }>()
@@ -66,20 +84,28 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
     const keyCharacters = storyPlan.keyCharacters || []
     const allCharacters = [...cast, ...keyCharacters]
 
-    console.log(`[AutoLinker] Found ${allCharacters.length} total characters`)
+    // DEBUG: console.log(`[AutoLinker] Found ${allCharacters.length} total characters`)
 
     for (const char of allCharacters) {
       if (char?.name) {
         const charId = `char-${char.id?.slice(0, 8) || char.name.toLowerCase().replace(/\s+/g, '-')}`
         entityMap.set(char.name.toLowerCase(), { id: charId, type: 'character' })
 
-        console.log(`[AutoLinker] Added character: "${char.name}" -> ${charId}`)
+        // console.log(`[AutoLinker] Added character: "${char.name}" -> ${charId}`)
 
         // Also add first name only if it's unique
         const firstName = char.name.split(' ')[0]
         if (firstName && firstName.length > 2 && !entityMap.has(firstName.toLowerCase())) {
           entityMap.set(firstName.toLowerCase(), { id: charId, type: 'character' })
-          console.log(`[AutoLinker] Added first name: "${firstName}" -> ${charId}`)
+          // console.log(`[AutoLinker] Added first name: "${firstName}" -> ${charId}`)
+        }
+
+        // Also add "The" variant for titles (e.g. "The Commander")
+        if (char.name.startsWith('The ')) {
+          const withoutThe = char.name.slice(4)
+          if (withoutThe.length > 2 && !entityMap.has(withoutThe.toLowerCase())) {
+            entityMap.set(withoutThe.toLowerCase(), { id: charId, type: 'character' })
+          }
         }
       }
     }
@@ -133,21 +159,31 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
     }
 
     if (entityMap.size === 0) {
-      console.log('[AutoLinker] No entities found in project to link')
+      // console.log('[AutoLinker] No entities found in project to link')
       return text // No entities to link
     }
 
-    console.log(`[AutoLinker] Found ${entityMap.size} entities to potentially link`)
+    // console.log(`[AutoLinker] Found ${entityMap.size} entities to potentially link`)
+
+    // Find ranges of existing entity references to avoid re-linking inside them
+    const existingRefRanges: Array<{ start: number; end: number }> = []
+    const existingRefPattern = /\[([^\]]+)\]\[([a-zA-Z0-9_-]+)\]/g
+    let existingMatch
+    while ((existingMatch = existingRefPattern.exec(text)) !== null) {
+      existingRefRanges.push({
+        start: existingMatch.index,
+        end: existingMatch.index + existingMatch[0].length,
+      })
+    }
+
+    const isInsideExistingRef = (start: number, end: number) =>
+      existingRefRanges.some(r => start >= r.start && end <= r.end)
 
     // Find all entity name matches in text
     const matches: EntityMatch[] = []
 
     // Sort entity names by length (longest first) to match "The Mood Wardens" before "Mood Wardens"
     const sortedNames = Array.from(entityMap.keys()).sort((a, b) => b.length - a.length)
-
-    console.log(
-      `[AutoLinker] Searching text (${text.length} chars) for ${sortedNames.length} entity names`
-    )
 
     for (const entityName of sortedNames) {
       const entity = entityMap.get(entityName)!
@@ -159,7 +195,9 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
 
       let match
       while ((match = pattern.exec(text)) !== null) {
-        console.log(`[AutoLinker] Found match: "${match[1]}" -> ${entity.id}`)
+        // Skip matches that fall inside existing entity references
+        if (isInsideExistingRef(match.index, match.index + match[1].length)) continue
+
         matches.push({
           name: match[1], // Use actual matched text (preserves casing)
           id: entity.id,
@@ -170,7 +208,7 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
       }
     }
 
-    console.log(`[AutoLinker] Found ${matches.length} total matches before overlap removal`)
+    // console.log(`[AutoLinker] Found ${matches.length} total matches before overlap removal`)
 
     if (matches.length === 0) {
       return text // No matches found

@@ -48,6 +48,7 @@ export const EpisodePremiseSchema = z.object({
     .describe('The trap the character fell into by being themselves'),
   thematicFocus: z.string().describe('Central philosophical question'),
   charactersInvolved: z.array(z.string()).describe('Characters involved in this episode'),
+  tenPointsPlan: z.array(z.union([z.string(), z.record(z.string())])).describe('A 10-point plan from start to finish'),
 })
 
 /**
@@ -118,8 +119,13 @@ export class PremiseArchitectAgent {
       name: 'Premise Architect',
       instructions: EPISODE_PREMISE_PROMPT,
       model: modelString, // String model ID for Mastra AI SDK v5 compatibility
-      mastra: m,
+      tools: {}, // Explicitly pass empty tools to avoid auto-attaching faulty workspace tools
+      tools: {}, // Explicitly pass empty tools to avoid auto-attaching faulty workspace tools
+      // mastra: m, // DONT pass mastra here - it auto-attaches broken workspace tools
     })
+
+      // Manually attach mastra instance for observability/memory without tools
+      ; (this.agent as any).mastra = m
 
     this.createAgentTrace()
   }
@@ -224,31 +230,38 @@ Ensure strict adherence to the Ozymandias Framework.`
             // Log each iteration for Langfuse visibility
             console.log(
               `[PremiseArchitect] Iteration ${iteration.iteration}: ` +
-                `Score ${iteration.judgment.overallScore.toFixed(3)} ` +
-                `(${iteration.improved ? '+' : ''}${iteration.delta.toFixed(3)}) ` +
-                `Verdict: ${iteration.judgment.verdict}`
+              `Score ${iteration.judgment.overallScore.toFixed(3)} ` +
+              `(${iteration.improved ? '+' : ''}${iteration.delta.toFixed(3)}) ` +
+              `Verdict: ${iteration.judgment.verdict}`
             )
           },
         })
 
         // Record final scores
+        const finalJudgment = loopResult.iterations[loopResult.iterations.length - 1].judgment
         recordAgentScore(
           id,
           'mazur_depth',
-          loopResult.iterations[loopResult.iterations.length - 1].judgment.depth.score,
+          finalJudgment.depth.score,
           'GRRM dimension'
         )
         recordAgentScore(
           id,
           'mazur_structure',
-          loopResult.iterations[loopResult.iterations.length - 1].judgment.structure.score,
+          finalJudgment.structure.score,
           'Gilligan dimension'
         )
         recordAgentScore(
           id,
           'mazur_feeling',
-          loopResult.iterations[loopResult.iterations.length - 1].judgment.feeling.score,
+          finalJudgment.feeling.score,
           'Lynch dimension'
+        )
+        recordAgentScore(
+          id,
+          'mazur_originality',
+          finalJudgment.originality.score,
+          'Le Guin dimension'
         )
         recordAgentScore(id, 'mazur_final', loopResult.finalScore, 'Final Mazur score')
         recordAgentScore(id, 'mazur_iterations', loopResult.totalIterations, 'Iterations needed')
@@ -266,8 +279,8 @@ Ensure strict adherence to the Ozymandias Framework.`
 
         console.log(
           `[PremiseArchitect] Mazur loop complete: ${loopResult.exitReason} ` +
-            `after ${loopResult.totalIterations} iterations. ` +
-            `Final score: ${loopResult.finalScore.toFixed(3)}`
+          `after ${loopResult.totalIterations} iterations. ` +
+          `Final score: ${loopResult.finalScore.toFixed(3)}`
         )
 
         return {
@@ -287,7 +300,7 @@ Ensure strict adherence to the Ozymandias Framework.`
   /**
    * Quick generation without Mazur loop (for regenerating single sections)
    */
-  async generateSection(
+  async regenerateSection(
     section:
       | 'protagonistHook'
       | 'fatalFlaw'
@@ -295,7 +308,11 @@ Ensure strict adherence to the Ozymandias Framework.`
       | 'inevitableConsequence'
       | 'theHook'
       | 'theTurn'
-      | 'theAftermath',
+      | 'theAftermath'
+      | 'tenPointsPlan'
+      | 'title'
+      | 'logline'
+      | 'thematicFocus',
     existingPremise: any,
     context: string,
     traceId?: string
@@ -310,6 +327,11 @@ Ensure strict adherence to the Ozymandias Framework.`
       theHook: 'the opening image/situation that serves as a visual metaphor',
       theTurn: 'the moment of no return, the "Ozymandias" moment',
       theAftermath: 'the permanent scars left on the world/characters',
+      tenPointsPlan: 'the 10-point plan for the episode from start to finish',
+      title: 'the episode title',
+      logline: 'the single sentence logline',
+      thematicFocus: 'the central philosophical question',
+      transformation: 'the character/world transformation arc',
     }
 
     const prompt = `Regenerate ONLY the "${section}" section for this episode premise.
@@ -318,14 +340,16 @@ Current premise:
 ${JSON.stringify(existingPremise, null, 2)}
 
 Context:
-${context.slice(0, 500)}
+${context.slice(0, 6000)}
 
 Generate a new, stronger version of ${sectionPrompts[section]}.
 Make it more specific, more visceral, and more logically inevitable.`
 
     // Create dynamic schema for the specific section
     const sectionSchema = z.object({
-      [section]: z.string().describe(sectionPrompts[section]),
+      [section]: section === 'tenPointsPlan'
+        ? z.array(z.union([z.string(), z.record(z.string())])).describe(sectionPrompts[section])
+        : z.string().describe(sectionPrompts[section]),
     })
 
     // Use Mastra structured output for reliable typed responses

@@ -4,6 +4,7 @@
  */
 
 import { TERRAIN_QUALITY_RESOLUTION, TerrainQuality } from '../store/useInteriorStore'
+import { describe, it, expect } from 'vitest'
 
 describe('Terrain Quality Presets', () => {
   describe('TERRAIN_QUALITY_RESOLUTION', () => {

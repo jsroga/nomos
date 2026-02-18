@@ -41,19 +41,19 @@ type MazurElements = z.infer<typeof MazurElementsSchema>
 
 export const WorldRuleSchema = z.object({
   category: z.enum(['Physics', 'Magic', 'Technology', 'Society', 'Politics', 'Economics']),
-  rule: z.string().describe('The rule itself'),
-  consequence: z.string().describe('What happens if this rule is broken or ignored'),
+  rule: z.string().min(15).describe('The rule itself — be specific, not vague. Min 15 chars.'),
+  consequence: z.string().min(15).describe('What happens if this rule is broken or ignored — concrete consequence. Min 15 chars.'),
   exceptions: z.string().nullable().optional().describe('Are there exceptions?'),
 })
 
 export const FactionSchema = z.object({
   id: z.string().optional(),
-  name: z.string(),
-  description: z.string().describe('Brief summary of the faction'),
-  ideology: z.string().describe('Core belief or philosophy'),
-  goals: z.array(z.string()).describe('What they want'),
-  resources: z.string().describe('What power/assets they control'),
-  weaknesses: z.string().nullable().optional(),
+  name: z.string().min(2),
+  description: z.string().min(30).describe('Brief summary of the faction — be specific about what makes them unique. Min 30 chars.'),
+  ideology: z.string().min(10).describe('Core belief or philosophy — not just "power" or "justice". Min 10 chars.'),
+  goals: z.array(z.string().min(10)).describe('What they want — each goal must be specific'),
+  resources: z.string().min(10).describe('What power/assets they control'),
+  weaknesses: z.string().min(10).nullable().optional(),
   rivals: z.array(z.string()).nullable().optional(),
 })
 
@@ -74,16 +74,16 @@ export const BeatTypeSchema = z.enum([
 export const BeatProposalSchema = z.object({
   logline: z
     .string()
-    .min(10)
-    .describe('2-3 sentences. Be specific. Name names. Include visceral details.'),
-  content: z.string().nullable().optional().describe('Full paragraph expanding on the beat'),
+    .min(30)
+    .describe('2-3 sentences. Be specific. Name names. Include visceral details. Min 30 chars.'),
+  content: z.string().min(50).nullable().optional().describe('Full paragraph expanding on the beat. Min 50 chars when provided.'),
   beatType: BeatTypeSchema.nullable().optional().describe('Type of beat in story structure'),
   charactersInvolved: z
     .array(z.string())
     .nullable()
     .optional()
     .describe('Character names involved'),
-  visualHook: z.string().nullable().optional().describe('A SPECIFIC, MEMORABLE image'),
+  visualHook: z.string().min(15).nullable().optional().describe('A SPECIFIC, MEMORABLE image. Min 15 chars — no generic descriptions.'),
   emotionalShifts: z
     .array(
       z.object({
@@ -140,9 +140,43 @@ export const StoryArcSchema = z.object({
     .optional()
     .describe('Showrunner notes: Why this episode is necessary here'),
   actStructure: z.string().nullable().optional().describe('e.g. "3 Acts" or "Teaser + 4 Acts"'),
+  // New Roadmap Fields
+  protagonistHook: z.string().nullable().optional().describe('Character-specific entry point forcing action'),
+  antagonistMove: z.string().nullable().optional().describe('The antagonist\'s counter-move'),
+  fatalFlaw: z.string().nullable().optional().describe('Character flaw driving the conflict'),
+  thematicQuestion: z.string().nullable().optional().describe('The philosophical question at stake'),
 })
 
 export type StorySequence = z.infer<typeof StoryArcSchema>
+
+// ============================================
+// EPISODE ROADMAP SCHEMAS
+// ============================================
+
+export const RoadmapEpisodeSchema = z.object({
+  title: z.string(),
+  logline: z.string(),
+  incitingIncident: z.string().nullable().optional(),
+  midpoint: z.string().nullable().optional(),
+  finale: z.string().nullable().optional(),
+  // New Roadmap Fields
+  protagonistHook: z.string().nullable().optional(),
+  antagonistMove: z.string().nullable().optional(),
+  fatalFlaw: z.string().nullable().optional(),
+  thematicQuestion: z.string().nullable().optional(),
+})
+
+export type RoadmapEpisode = z.infer<typeof RoadmapEpisodeSchema>
+
+export const EpisodeRoadmapSchema = z.object({
+  episodes: z.array(RoadmapEpisodeSchema).optional().describe('List of episodes in the season'),
+  sequences: z.array(RoadmapEpisodeSchema).optional().describe('Legacy alias for episodes'),
+  seasonStructure: z.any().optional(), // Flexible for now
+  executiveSummary: z.string().optional(),
+})
+
+export type EpisodeRoadmap = z.infer<typeof EpisodeRoadmapSchema>
+
 
 // Season Structure Schema (New Root Level Object)
 export const SeasonStructureSchema = z.object({
@@ -219,8 +253,11 @@ export const StoryPlanSchema = z.object({
   // Season Structure (New)
   seasonStructure: SeasonStructureSchema.nullable().optional(),
 
+  // Episode Roadmap (List of episodes)
+  episodeRoadmap: EpisodeRoadmapSchema.nullable().optional(),
+
   // New World Premise fields
-  worldDescription: z.string().nullable().optional(),
+  worldDescription: z.string().min(100).nullable().optional().describe('World description must paint a vivid picture — min 100 chars.'),
   plotTwists: z
     .array(z.string())
     .nullable()
@@ -312,6 +349,7 @@ export const EpisodePremiseSchema = z.object({
   // Meta
   thematicFocus: z.string().describe('The specific theme explored in this episode (e.g. Hubris)'),
   charactersInvolved: z.array(z.string()).describe('Key characters in this episode'),
+  tenPointsPlan: z.array(z.union([z.string(), z.record(z.string())])).describe('A 10-point plan from start to finish'),
 })
 
 // Partial version with all fields nullable (required for OpenAI structured output)
@@ -368,6 +406,11 @@ export const EpisodePremisePartialSchema = z.object({
     .nullable()
     .optional()
     .describe('Key characters in this episode'),
+  tenPointsPlan: z
+    .array(z.union([z.string(), z.record(z.string())]))
+    .nullable()
+    .optional()
+    .describe('A 10-point plan from start to finish'),
 })
 
 export type EpisodePremise = z.infer<typeof EpisodePremiseSchema>
@@ -451,10 +494,10 @@ export const DefineMagicSystemActionSchema = z.object({
 export const CreateCharacterActionSchema = z.object({
   type: z.literal('CREATE_CHARACTER'),
   payload: z.object({
-    name: z.string(),
-    role: z.string(),
-    description: z.string().nullable().optional(),
-    archetype: z.string().nullable().optional(),
+    name: z.string().min(2),
+    role: z.string().min(3),
+    description: z.string().min(50).nullable().optional().describe('Min 50 chars — include physical details AND personality contradiction.'),
+    archetype: z.string().min(3).nullable().optional(),
   }),
 })
 

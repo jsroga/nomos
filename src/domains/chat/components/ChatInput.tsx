@@ -46,6 +46,7 @@ import {
 } from '../mentions/types'
 import { buildMessageWithContext } from '../mentions/context-builder'
 import { MentionChipBar } from './MentionChip'
+import { TOUR_STEP_IDS } from '@/lib/tour-constants'
 
 // Icon component map
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -399,7 +400,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   }
 
   return (
-    <div className="border-t bg-card relative z-30">
+    <div className="border-t bg-card relative z-30" id={TOUR_STEP_IDS.STORYTELLER_CHAT}>
       {/* Selected Mentions Bar */}
       <MentionChipBar mentions={selectedMentions} onRemove={removeSelectedMention} />
 

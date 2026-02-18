@@ -232,7 +232,7 @@ export const CitationPreview: React.FC<CitationPreviewProps> = ({
 /**
  * Main CitationDisplay component
  */
-export const CitationDisplay: React.FC<CitationDisplayProps> = ({
+const CitationDisplay: React.FC<CitationDisplayProps> = ({
   citations,
   showConfidence = true,
   collapsible = true,
@@ -317,7 +317,7 @@ export const CitationDisplay: React.FC<CitationDisplayProps> = ({
 /**
  * Inline citations parser - replaces [1], [2] markers with interactive components
  */
-export function parseInlineCitations(
+function parseInlineCitations(
   text: string,
   citations: Citation[],
   onCitationClick?: (citation: Citation) => void

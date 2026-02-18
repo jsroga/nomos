@@ -46,15 +46,10 @@ export const worldGenTourSteps: TourStep[] = [
         <p className="text-sm text-muted-foreground leading-relaxed">
           Click on any grid square to select it. This opens the generation and upscaling tools.
         </p>
-        <div className="mt-2 p-2 bg-primary/10 rounded border border-primary/20 text-[10px] text-primary uppercase tracking-widest font-bold animate-pulse">
-          Select a tile to advance
-        </div>
       </div>
     ),
     selectorId: TOUR_STEP_IDS.WORLDGEN_CANVAS,
     position: 'right',
-    hideNext: true,
-    advanceEvent: 'tile-selected',
   },
   {
     content: (

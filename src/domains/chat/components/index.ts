@@ -14,13 +14,7 @@ export {
 
 export { SectionProgress, useSectionProgress, type ProgressSection } from './SectionProgress'
 
-export {
-  CitationDisplay,
-  CitationMarker,
-  CitationPreview,
-  parseInlineCitations,
-  type Citation,
-} from './CitationDisplay'
+export { CitationMarker, CitationPreview, type Citation } from './CitationDisplay'
 
 export { ChatInterface } from './ChatInterface'
 export { ChatInput } from './ChatInput'
@@ -33,20 +27,10 @@ export {
   type ThinkingMessageStep,
 } from '../types'
 
-export {
-  QuickActions,
-  SmartQuickActions,
-  createQuickActions,
-  type QuickAction,
-} from './QuickActions'
+export { QuickActions, SmartQuickActions, type QuickAction } from './QuickActions'
 
-export { HoverActions, WithHoverActions } from './HoverActions'
+export { HoverActions } from './HoverActions'
 
-export {
-  ContextChips,
-  ContextBar,
-  extractContextFromMessage,
-  type ContextItem,
-} from './ContextChips'
+export { ContextChips, type ContextItem } from './ContextChips'
 
-export { SuggestionCard, detectSuggestion, type Suggestion } from './SuggestionCard'
+export { type Suggestion } from './SuggestionCard'

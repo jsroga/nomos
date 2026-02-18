@@ -43,7 +43,9 @@
       "Skill(security-review)",
       "Skill(security-review:*)",
       "Bash(npx knip:*)",
-      "Bash(npm run lint:*)"
+      "Bash(npm run lint:*)",
+      "Skill(dead-code)",
+      "Skill(dead-code:*)"
     ]
   }
 }

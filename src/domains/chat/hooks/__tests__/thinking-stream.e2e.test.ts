@@ -92,12 +92,14 @@ describe('Thinking Stream Processing', () => {
       await result.current.processStream(mockResponse, abortController.signal)
     })
 
-    // Verify thinking was attached to the message
+    // Verify thinking was attached to the stream message
+    // processStream creates a new AI message on start, so we expect 2 messages
     await waitFor(() => {
       const messages = result.current.messages
-      expect(messages).toHaveLength(1)
-      expect(messages[0].thinking).toContain('Analyzing the story structure')
-      expect(messages[0].additional_kwargs?.hasThinking).toBe(true)
+      expect(messages).toHaveLength(2)
+      const lastMsg = messages[messages.length - 1]
+      expect(lastMsg.thinking).toContain('Analyzing the story structure')
+      expect(lastMsg.additional_kwargs?.hasThinking).toBe(true)
     })
   })
 
@@ -129,11 +131,12 @@ describe('Thinking Stream Processing', () => {
       await result.current.processStream(mockResponse, abortController.signal)
     })
 
-    // Verify both thinking chunks were accumulated
+    // Verify both thinking chunks were accumulated on the stream message
     await waitFor(() => {
       const messages = result.current.messages
-      expect(messages[0].thinking).toContain('First thought')
-      expect(messages[0].thinking).toContain('Second thought')
+      const lastMsg = messages[messages.length - 1]
+      expect(lastMsg.thinking).toContain('First thought')
+      expect(lastMsg.thinking).toContain('Second thought')
     })
   })
 
@@ -163,8 +166,8 @@ describe('Thinking Stream Processing', () => {
       await result.current.processStream(mockResponse, abortController.signal)
     })
 
-    // Messages should still be empty (no crash)
-    expect(result.current.messages).toHaveLength(0)
+    // processStream creates a new AI message on start, so we expect 1 message (no crash)
+    expect(result.current.messages).toHaveLength(1)
   })
 
   it('preserves thinking in messages when updated', async () => {

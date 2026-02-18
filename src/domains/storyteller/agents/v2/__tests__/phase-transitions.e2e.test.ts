@@ -142,7 +142,7 @@ describe('Dynamic Model Selection', () => {
     })
 
     it('should return correct model for medium effort', () => {
-      expect(getModelByEffort('medium')).toBe('openai:gpt-4o')
+      expect(getModelByEffort('medium')).toBe('openai:gpt-4o-mini')
     })
 
     it('should return correct model for high effort', () => {
@@ -150,7 +150,7 @@ describe('Dynamic Model Selection', () => {
     })
 
     it('should default to medium effort', () => {
-      expect(getModelByEffort()).toBe('openai:gpt-4o')
+      expect(getModelByEffort()).toBe('openai:gpt-4o-mini')
     })
   })
 

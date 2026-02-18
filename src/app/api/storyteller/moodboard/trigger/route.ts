@@ -53,7 +53,6 @@ export async function POST(req: NextRequest) {
     // Define Prompt Types
     const promptTypes = [
       'Wide establishing shot of the main environment, focusing on scale and atmosphere.',
-      'Close up detail of a significant object, tool, or artifact unique to this world.',
       'Street level or interior view showing daily life and culture.',
       'Portrait of a typical inhabitant or faction member, highlighting attire and traits.',
     ]
@@ -61,7 +60,7 @@ export async function POST(req: NextRequest) {
     let prompts: string[] = []
 
     try {
-      let systemPrompt = `You are a creative director for a film or game project. Generate 4 distinct, highly visual image generation prompts for an AI art generator (like Midjourney or Imagen).
+      let systemPrompt = `You are a creative director for a film or game project. Generate 3 distinct, highly visual image generation prompts for an AI art generator (like Midjourney or Imagen).
 Project: ${projectTitle}
 Genre: ${genre}
 Tone: ${tone}
@@ -69,13 +68,12 @@ World Description: ${worldDesc}
 
 The prompts should correspond to these categories:
 1. Environment/Landscape
-2. Key Object/Artifact
-3. Daily Life/Scene
-4. Character Portrait
+2. Daily Life/Scene
+3. Character Portrait
 
-Output ONLY the 4 prompts as a JSON array of strings. Do not include markdown formatting or numbering.`
+Output ONLY the 3 prompts as a JSON array of strings. Do not include markdown formatting or numbering.`
 
-      if (typeof promptIndex === 'number' && promptIndex >= 0 && promptIndex < 4) {
+      if (typeof promptIndex === 'number' && promptIndex >= 0 && promptIndex < 3) {
         systemPrompt = `You are a creative director. Generate ONE highly visual image generation prompt for:
 Project: ${projectTitle}
 Genre: ${genre}
@@ -95,7 +93,7 @@ Output ONLY the single prompt string.`
 
       const content = gptResponse.choices[0]?.message?.content?.trim() || ''
 
-      if (typeof promptIndex === 'number' && promptIndex >= 0 && promptIndex < 4) {
+      if (typeof promptIndex === 'number' && promptIndex >= 0 && promptIndex < 3) {
         prompts = [content.replace(/^"|"$/g, '')]
       } else {
         try {
@@ -111,7 +109,6 @@ Output ONLY the single prompt string.`
           )
           prompts = [
             `Movie concept art, ${projectTitle}, ${genre}, ${tone}. ${worldDesc}. Wide environment shot.`,
-            `Movie concept art, ${projectTitle}, ${genre}, ${tone}. ${worldDesc}. Key artifact close-up.`,
             `Movie concept art, ${projectTitle}, ${genre}, ${tone}. ${worldDesc}. Daily life scene.`,
             `Movie concept art, ${projectTitle}, ${genre}, ${tone}. ${worldDesc}. Character portrait.`,
           ]
@@ -122,7 +119,6 @@ Output ONLY the single prompt string.`
       const baseContext = `Project: ${projectTitle}. Genre: ${genre}. Tone: ${tone}. World: ${worldDesc}.`
       const allPrompts = [
         `${baseContext} Wide establishing shot of the main environment. Grand scale.`,
-        `${baseContext} Close up detail of a significant object or artifact. Texture focused.`,
         `${baseContext} Street level view of daily life in this world. Atmospheric.`,
         `${baseContext} Portrait of a typical inhabitant or faction member. Character study.`,
       ]

@@ -42,11 +42,6 @@ export interface LangfuseScoreConfig {
   id?: string
 }
 
-// Accessor for current trace context (simplification)
-export function getTrace(traceId: string): LangfuseTraceClient {
-  return langfuse.trace({ id: traceId })
-}
-
 function getSpan(traceId: string, name: string): Span {
   return langfuse.span({ traceId, name })
 }

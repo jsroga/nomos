@@ -402,7 +402,7 @@ export const getUserPreferencesTool = createTool({
 // EXPORTS
 // ==========================================
 
-const ragTools = [
+export const ragTools = [
   searchKnowledgeBaseTool,
   storeKnowledgeTool,
   searchCharacterHistoryTool,

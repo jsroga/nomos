@@ -1,9 +1,24 @@
 import React from 'react'
 import { TourStep } from '@/components/tour'
 import { TOUR_STEP_IDS } from '@/lib/tour-constants'
-import { ClipboardList, Scissors, Cuboid, Palette, Sparkles } from 'lucide-react'
+import { ClipboardList, Scissors, Cuboid, Palette, Sparkles, Upload } from 'lucide-react'
 
 export const assetExporterTourSteps: TourStep[] = [
+  {
+    content: (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 text-primary">
+          <Upload className="w-5 h-5" />
+          <h3 className="font-bold">📤 Upload Assets</h3>
+        </div>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Start here! Upload your 2D images or 3D models to add them to your project assets.
+        </p>
+      </div>
+    ),
+    selectorId: TOUR_STEP_IDS.ASSET_UPLOAD_ZONE,
+    position: 'bottom',
+  },
   {
     content: (
       <div className="space-y-4">
@@ -14,15 +29,10 @@ export const assetExporterTourSteps: TourStep[] = [
         <p className="text-sm text-muted-foreground leading-relaxed">
           Tiles you've exported from World Gen show up here. Pick one to turn into 3D.
         </p>
-        <div className="mt-2 p-2 bg-primary/10 rounded border border-primary/20 text-[10px] text-primary uppercase tracking-widest font-bold animate-pulse">
-          Select an asset to advance
-        </div>
       </div>
     ),
     selectorId: TOUR_STEP_IDS.EXPORTED_ASSETS_LIST,
     position: 'right',
-    hideNext: true,
-    advanceEvent: 'asset-selected',
   },
   {
     content: (

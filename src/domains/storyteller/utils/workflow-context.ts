@@ -39,6 +39,7 @@ export const WORKFLOW_EVENTS = {
   QUESTION_ASKED: 'question_asked',
   WORKFLOW_SUSPENDED: 'workflow_suspended',
   WORKFLOW_RESUMED: 'workflow_resumed',
+  AGENT_PROGRESS: 'agent_progress',
 }
 
 // ============================================

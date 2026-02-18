@@ -16,6 +16,9 @@ import { createGardenerAgent } from '../../agents/v2/gardener-agent'
 import { createPremiseArchitectAgent } from '../../agents/v2/premise-architect-agent'
 import { getWorkflowTraceId, getWorkflowEventBus } from '../../utils/workflow-context'
 import { langfuse } from '../../../../agent-core/observability'
+import { db } from '@/lib/db'
+import { characters, storyPlans } from '../../db/schema'
+import { eq } from 'drizzle-orm'
 
 import { WORKFLOW_EVENTS } from '../../utils/workflow-context'
 import { getErrorMessage } from '@/lib/error-utils'
@@ -333,6 +336,7 @@ const PREMISE_SECTIONS = [
   'thematicFocus',
   'logline',
   'title',
+  'tenPointsPlan',
 ] as const
 
 type PremiseSection = (typeof PREMISE_SECTIONS)[number]
@@ -380,14 +384,40 @@ Valid sections for regenerate_section: ${PREMISE_SECTIONS.join(', ')}`,
 
     emitConsultEvent('PremiseArchitect', 'start')
 
+    // Enrich context with cast from DB if not already included
+    let enrichedContext = storyContext || ''
+    if (projectId && !enrichedContext.includes('--- CAST ---')) {
+      try {
+        const [castRows, planRows] = await Promise.all([
+          db.select({ name: characters.name, role: characters.role, description: characters.description })
+            .from(characters).where(eq(characters.projectId, projectId)),
+          db.select({ content: storyPlans.content })
+            .from(storyPlans).where(eq(storyPlans.projectId, projectId)).limit(1),
+        ])
+        if (castRows.length > 0) {
+          enrichedContext += '\n\n--- CAST ---\n'
+          castRows.forEach(c => {
+            enrichedContext += `- ${c.name} (${c.role || 'Unknown role'}): ${c.description || 'No description'}\n`
+          })
+        }
+        // Also include key story plan fields if missing from context
+        const plan = (planRows[0]?.content as any) || {}
+        if (plan.worldDescription && !enrichedContext.includes('WORLD DESCRIPTION')) {
+          enrichedContext += `\n--- WORLD DESCRIPTION ---\n${plan.worldDescription}\n`
+        }
+      } catch (e) {
+        console.warn('[consult_premise_architect] Failed to enrich context with cast:', e)
+      }
+    }
+
     try {
       const agent = await createPremiseArchitectAgent('openai:gpt-4o', {
         traceId: traceId || undefined,
         projectId,
         episodeId,
         useMazurLoop: task === 'generate_premise', // Only use Mazur loop for full generation
-        maxIterations: 20,
-        qualityThreshold: 0.85,
+        maxIterations: 25,
+        qualityThreshold: 0.92,
         onIteration: iteration => {
           const eventBus = getWorkflowEventBus()
           eventBus?.emit(WORKFLOW_EVENTS.AGENT_PROGRESS, {
@@ -407,7 +437,7 @@ Valid sections for regenerate_section: ${PREMISE_SECTIONS.join(', ')}`,
         result = await agent.regenerateSection(
           section as PremiseSection,
           existingPremise,
-          storyContext,
+          enrichedContext,
           traceId || undefined
         )
 
@@ -434,7 +464,7 @@ Valid sections for regenerate_section: ${PREMISE_SECTIONS.join(', ')}`,
         }
       } else {
         // Full premise generation
-        const fullResult: PremiseGenerationResult = await agent.generatePremise(storyContext, projectId, traceId || undefined)
+        const fullResult: PremiseGenerationResult = await agent.generatePremise(enrichedContext, projectId, traceId || undefined)
         result = fullResult
       }
 

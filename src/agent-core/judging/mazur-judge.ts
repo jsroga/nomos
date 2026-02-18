@@ -29,11 +29,12 @@ export const MazurJudgmentSchema = z.object({
   depth: PersonaJudgmentSchema.describe('GRRM dimension - Is this REAL?'),
   structure: PersonaJudgmentSchema.describe('Gilligan dimension - Does this WORK?'),
   feeling: PersonaJudgmentSchema.describe('Lynch dimension - Does this HAUNT?'),
+  originality: PersonaJudgmentSchema.describe('Le Guin dimension - Is this NECESSARY?'),
   overallScore: z.number().min(0).max(1),
   slopScore: z.number().min(0).max(1).describe('0 = authentic, 1 = pure AI slop'),
   verdict: z.enum(['PASS', 'REFINE', 'REJECT']),
   refinementPriority: z
-    .array(z.enum(['depth', 'structure', 'feeling']))
+    .array(z.enum(['depth', 'structure', 'feeling', 'originality']))
     .describe('Which dimension to fix first'),
 })
 
@@ -129,19 +130,24 @@ export async function judgeMazur(
   context?: string
 ): Promise<MazurJudgment> {
   return withSpan(traceId, 'MazurJudge.full', async span => {
-    // Run all three judges in parallel
-    const [depth, structure, feeling] = await Promise.all([
+    // Run all four judges in parallel
+    const [depth, structure, feeling, originality] = await Promise.all([
       judgeWithPersona(content, 'george-rr-martin', traceId, context),
       judgeWithPersona(content, 'vince-gilligan', traceId, context),
       judgeWithPersona(content, 'david-lynch', traceId, context),
+      judgeWithPersona(content, 'ursula-le-guin', traceId, context),
     ])
 
-    // Calculate overall scores
-    const overallScore = (depth.score + structure.score + feeling.score) / 3
+    // Calculate overall scores (4 dimensions now)
+    const overallScore = (depth.score + structure.score + feeling.score + originality.score) / 4
 
     // Slop score is inverse of quality, weighted by detected slop
+    // Originality dimension has heavier weight on slop since it's the primary slop detector
     const totalSlopSignals =
-      depth.slopDetected.length + structure.slopDetected.length + feeling.slopDetected.length
+      depth.slopDetected.length +
+      structure.slopDetected.length +
+      feeling.slopDetected.length +
+      originality.slopDetected.length * 1.5
     const slopScore = Math.min(1, totalSlopSignals * 0.1 + (1 - overallScore) * 0.5)
 
     // Determine verdict
@@ -159,6 +165,7 @@ export async function judgeMazur(
       { name: 'depth' as const, score: depth.score },
       { name: 'structure' as const, score: structure.score },
       { name: 'feeling' as const, score: feeling.score },
+      { name: 'originality' as const, score: originality.score },
     ].sort((a, b) => a.score - b.score)
 
     const refinementPriority = dimensions.map(d => d.name)
@@ -167,6 +174,7 @@ export async function judgeMazur(
       depth,
       structure,
       feeling,
+      originality,
       overallScore,
       slopScore,
       verdict,
@@ -176,6 +184,7 @@ export async function judgeMazur(
     // Log overall scores to Langfuse
     langfuse.score({ traceId, name: 'mazur_overall', value: overallScore })
     langfuse.score({ traceId, name: 'mazur_slop', value: slopScore, comment: 'Lower is better' })
+    langfuse.score({ traceId, name: 'mazur_originality', value: originality.score })
 
     span.end({ output: { overallScore, slopScore, verdict } })
     return judgment
@@ -255,7 +264,7 @@ Analyze this content for AI slop patterns. Be specific about what you find.`
 // =============================================================================
 
 const ImprovementSchema = z.object({
-  targetDimension: z.enum(['depth', 'structure', 'feeling']),
+  targetDimension: z.enum(['depth', 'structure', 'feeling', 'originality']),
   originalText: z.string().describe('The specific text that needs improvement'),
   improvedText: z.string().describe('The rewritten version'),
   explanation: z.string().describe('Why this is better'),
@@ -269,12 +278,13 @@ async function generateImprovement(
   return withSpan(traceId, 'MazurJudge.improve', async span => {
     const model = getJudgingModel('primary')
     const weakestDimension = judgment.refinementPriority[0]
-    const persona =
-      weakestDimension === 'depth'
-        ? PERSONAS['george-rr-martin']
-        : weakestDimension === 'structure'
-          ? PERSONAS['vince-gilligan']
-          : PERSONAS['david-lynch']
+    const personaMap: Record<string, keyof typeof PERSONAS> = {
+      depth: 'george-rr-martin',
+      structure: 'vince-gilligan',
+      feeling: 'david-lynch',
+      originality: 'ursula-le-guin',
+    }
+    const persona = PERSONAS[personaMap[weakestDimension] || 'george-rr-martin']
 
     const dimensionJudgment = judgment[weakestDimension]
 

@@ -8,7 +8,7 @@ import {
   characters,
   episodes,
 } from '@/domains/storyteller/db/schema'
-import { eq } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 import { requireAuth } from '@/lib/auth'
 import {
@@ -243,12 +243,110 @@ export async function POST(req: NextRequest) {
         })
       }
 
+      case 'UPDATE_KEY_CHARACTERS':
+      case 'UPDATE_CAST': {
+        console.log(`[API] UPDATE_CAST Payload keys:`, Object.keys(action.payload || {}))
+        if (action.payload.cast) console.log(`[API] UPDATE_CAST cast length:`, (action.payload.cast as any[]).length)
+        if (action.payload.keyCharacters) console.log(`[API] UPDATE_CAST keyCharacters length:`, (action.payload.keyCharacters as any[]).length)
+
+        // cast is the project-level list of characters (Story Plan)
+        const castData = action.payload.cast || action.payload.keyCharacters || action.payload.characters
+        const updates = { cast: castData }
+        console.log(`💾 [API] UPDATE_CAST - Saving ${updates.cast?.length} characters`)
+        const updated = await updateStoryPlan(updates)
+
+        // SYNC characters to the characters TABLE so CharacterPanel sees them
+        if (Array.isArray(castData) && projectId) {
+          console.log(`🔄 [API] UPDATE_CAST - Syncing ${castData.length} characters to characters table`)
+
+          // Strip entity link markers [Text][entity-id] → Text
+          const stripLinks = (s: any) => typeof s === 'string' ? s.replace(/\[([^\]]+)\]\[[^\]]+\]/g, '$1') : s
+
+          for (const rawChar of castData as any[]) {
+            if (!rawChar.name) continue
+            // Clean all string fields of entity link markers
+            const char = {
+              ...rawChar,
+              name: stripLinks(rawChar.name),
+              description: stripLinks(rawChar.description),
+              motivation: stripLinks(rawChar.motivation),
+              fatalFlaw: stripLinks(rawChar.fatalFlaw),
+              voiceSignature: stripLinks(rawChar.voiceSignature || rawChar.voice_signature),
+              ...(rawChar.psychology && typeof rawChar.psychology === 'object' ? {
+                psychology: Object.fromEntries(
+                  Object.entries(rawChar.psychology).map(([k, v]) => [k, stripLinks(v)])
+                )
+              } : {}),
+            }
+            if (!char.name) continue
+            try {
+              const existing = await db
+                .select()
+                .from(characters)
+                .where(and(eq(characters.projectId, projectId), eq(characters.name, char.name)))
+                .limit(1)
+
+              if (existing.length > 0) {
+                const current = existing[0]
+                const buildPsychology = (existingPsych: any = {}) => ({
+                  ...existingPsych,
+                  ...(char.archetype ? { archetype: char.archetype } : {}),
+                  ...(char.motivation ? { actualMotivation: char.motivation } : {}),
+                  ...(char.fatalFlaw ? { fatalFlaw: char.fatalFlaw } : {}),
+                  ...(char.psychology && typeof char.psychology === 'object' ? char.psychology : {}),
+                })
+                await db
+                  .update(characters)
+                  .set({
+                    role: char.role || current.role,
+                    description: char.description || current.description,
+                    gender: char.gender || current.gender,
+                    mbti: char.mbti || current.mbti,
+                    voiceSignature: char.voiceSignature || char.voice_signature || current.voiceSignature,
+                    psychology: buildPsychology((current.psychology as any) || {}),
+                    updatedAt: new Date(),
+                  })
+                  .where(eq(characters.id, current.id))
+              } else {
+                const buildPsychology = () => ({
+                  ...(char.archetype ? { archetype: char.archetype } : {}),
+                  ...(char.motivation ? { actualMotivation: char.motivation } : {}),
+                  ...(char.fatalFlaw ? { fatalFlaw: char.fatalFlaw } : {}),
+                  ...(char.psychology && typeof char.psychology === 'object' ? char.psychology : {}),
+                })
+                await db.insert(characters).values({
+                  projectId,
+                  name: char.name,
+                  role: char.role || 'Supporting',
+                  description: char.description || '',
+                  gender: char.gender,
+                  mbti: char.mbti,
+                  voiceSignature: char.voiceSignature || char.voice_signature,
+                  psychology: buildPsychology(),
+                  valence: 0,
+                  arousal: 50,
+                  autonomy: 50,
+                  competence: 50,
+                  relatedness: 50,
+                })
+              }
+            } catch (err) {
+              console.error(`[API] UPDATE_CAST - Failed to sync character ${char.name}:`, err)
+            }
+          }
+        }
+
+        return NextResponse.json({
+          success: true,
+          result: { type: 'bible_updated', seriesBible: { storyPlan: updated }, characters_synced: true },
+        })
+      }
+
       case 'UPDATE_WORLD_RULES':
       case 'UPDATE_FACTIONS':
       case 'UPDATE_INSPIRATIONS':
       case 'UPDATE_WORLD_DESCRIPTION':
       case 'UPDATE_PLOT_TWISTS':
-      case 'UPDATE_KEY_CHARACTERS':
       case 'UPDATE_SOUNDTRACKS':
       case 'ADD_WORLD_RULE': // Legacy
       case 'ADD_THEME': // Legacy
@@ -308,6 +406,19 @@ export async function POST(req: NextRequest) {
         if (payload.sequences) updates.sequences = payload.sequences
         if (payload.seasonStructure) updates.seasonStructure = payload.seasonStructure
         if (payload.executiveSummary) updates.executiveSummary = payload.executiveSummary
+
+        // Handle episodeRoadmap object (contains episodes list)
+        if (payload.episodeRoadmap) {
+          updates.episodeRoadmap = payload.episodeRoadmap
+          // Also hoist seasonStructure/executiveSummary to top level if nested inside episodeRoadmap
+          if (!updates.seasonStructure && payload.episodeRoadmap.seasonStructure) {
+            updates.seasonStructure = payload.episodeRoadmap.seasonStructure
+          }
+          if (!updates.executiveSummary && payload.episodeRoadmap.executiveSummary) {
+            updates.executiveSummary = payload.episodeRoadmap.executiveSummary
+          }
+        }
+
         const updatedPlan = await updateStoryPlan(updates)
         return NextResponse.json({
           success: true,
@@ -497,7 +608,7 @@ export async function POST(req: NextRequest) {
       default:
         console.log(`⚠️ Unhandled action type: ${action.type}`)
         // Flush Langfuse before returning
-        await flushObservability().catch(() => {})
+        await flushObservability().catch(() => { })
         return NextResponse.json({
           success: true,
           result: { type: 'acknowledged', message: `Action ${action.type} acknowledged` },
@@ -506,7 +617,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Actions API error:', error)
     // Flush any recorded data before error response
-    await flushObservability().catch(() => {})
+    await flushObservability().catch(() => { })
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Action execution failed' },
       { status: 500 }

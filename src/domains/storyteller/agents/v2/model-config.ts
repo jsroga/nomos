@@ -149,17 +149,17 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
   // === TIER 1: CHEAP + FAST (analysis, scoring, structured output) ===
   psychologist: {
     model: 'anthropic:claude-4-5-sonnet-20250101',
-    temperature: 0.3,
+    temperature: 0.55,
     topP: 0.9,
     maxOutputTokens: 4000,
-    rationale: 'High EQ required. Sonnet 4.5 provides best-in-class empathy simulation.',
+    rationale: 'High EQ required. Temp 0.55 balances analytical rigor with narrative voice — too cold produces formulaic psychology.',
   },
   consequence: {
     model: 'openai:gpt-5.2',
-    temperature: 0.2,
+    temperature: 0.45,
     topP: 0.9,
     maxOutputTokens: 4000,
-    rationale: 'Causality tracking requires strict logic. GPT-5.2 is cost-effective for high intelligence.',
+    rationale: 'Causality tracking needs logic but also narrative awareness. Temp 0.45 avoids clinical tone while staying rigorous.',
   },
   'consequence-scoring': {
     model: 'openai:gpt-4o-mini',
@@ -195,11 +195,11 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
   },
   'gardener-standard': {
     model: 'anthropic:claude-4-5-sonnet-20250101',
-    temperature: 0.85,
-    topP: 0.95,
+    temperature: 0.72,
+    topP: 0.92,
     maxOutputTokens: 6000,
     rationale:
-      'Standard scene writing. Sonnet 4.5 offers superior prose quality.',
+      'Standard scene writing. Temp 0.72 narrows quality band — still creative but less prone to purple prose.',
   },
   autocomplete: {
     model: 'openai:gpt-4o-mini',
@@ -212,11 +212,11 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
   // === TIER 3: FULL CREATIVE POWER (important scenes, orchestration) ===
   storyteller: {
     model: 'anthropic:claude-4-5-sonnet-20250101',
-    temperature: 0.85,
-    topP: 0.95,
+    temperature: 0.75,
+    topP: 0.92,
     maxOutputTokens: 8000,
     rationale:
-      'Orchestrator and main writer. Sonnet 4.5 is the "Hard Gun" for creative output.',
+      'Orchestrator and main writer. Temp 0.75 balances originality with consistency — high enough for surprise, low enough to avoid slop.',
   },
   'premise-architect': {
     model: 'openai:gpt-5.2',
@@ -229,18 +229,18 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
   // === TIER 4: PRESTIGE (climactic scenes, refinement passes) ===
   'gardener-climax': {
     model: 'anthropic:claude-4-5-sonnet-20250101',
-    temperature: 0.85,
-    topP: 0.95,
+    temperature: 0.78,
+    topP: 0.93,
     maxOutputTokens: 8000,
     rationale:
-      'Climactic scenes deserve the best prose model available.',
+      'Climactic scenes get slightly higher temp for peak creativity, but still controlled.',
   },
   'gardener-refinement': {
     model: 'anthropic:claude-4-5-sonnet-20250101',
-    temperature: 0.8,
-    topP: 0.95,
+    temperature: 0.65,
+    topP: 0.9,
     maxOutputTokens: 6000,
-    rationale: 'Refinement passes. Claude excels at targeted rewrites and stylistic polish.',
+    rationale: 'Refinement passes need precision over creativity. Lower temp for targeted, controlled rewrites.',
   },
 
   // === TIER 5: REASONING (complex planning, multi-step logic) ===

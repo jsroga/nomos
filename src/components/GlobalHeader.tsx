@@ -22,9 +22,9 @@ export function GlobalHeader() {
           {/* <img src="/logo.svg" alt="Logo" className="h-6 w-auto brightness-0 invert opacity-50" /> */}
           <Link
             href="/app"
-            className="text-xl font-normal tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent hover:to-primary/80 transition-all cursor-pointer font-mono"
+            className="text-sm font-mono font-bold uppercase tracking-widest text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
           >
-            PROJECT
+            / PROJECT /
           </Link>
         </div>
 

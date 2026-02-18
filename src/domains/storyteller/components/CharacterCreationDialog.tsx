@@ -15,6 +15,12 @@ interface InitialCharacterData {
   gender?: string
   mbti?: string
   portraitUrl?: string
+  voiceSignature?: string
+  archetype?: string
+  motivation?: string
+  fatalFlaw?: string
+  secrets?: string
+  psychology?: Record<string, any>
   // Metrics
   valence?: number
   arousal?: number
@@ -30,8 +36,8 @@ interface InitialCharacterData {
 interface CharacterCreationDialogProps {
   isOpen: boolean
   onClose: () => void
-  onCreate: (character: any) => void
-  onUpdate?: (characterId: string, updates: any) => void // For editing
+  onCreate: (character: any) => void | Promise<void>
+  onUpdate?: (characterId: string, updates: any) => void | Promise<void> // For editing
   projectId?: string // Optional: for project-scoped style references
   initialData?: InitialCharacterData // Optional: for pre-filling from key player or editing
   mode?: 'create' | 'edit' // Default: create
@@ -64,10 +70,16 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
   const [description, setDescription] = useState('')
   const [mbti, setMbti] = useState('')
   const [portraitUrl, setPortraitUrl] = useState('')
+  const [voiceSignature, setVoiceSignature] = useState('')
+  const [archetype, setArchetype] = useState('')
+  const [motivation, setMotivation] = useState('')
+  const [fatalFlaw, setFatalFlaw] = useState('')
+  const [secrets, setSecrets] = useState('')
   const [metrics, setMetrics] = useState(INITIAL_METRICS)
 
   const [isGeneratingPortrait, setIsGeneratingPortrait] = useState(false)
   const [isGeneratingMetrics, setIsGeneratingMetrics] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [showVariantPicker, setShowVariantPicker] = useState(false)
   const [gridImageUrl, setGridImageUrl] = useState<string | null>(null)
 
@@ -80,6 +92,13 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
       if (initialData.gender) setGender(initialData.gender)
       if (initialData.mbti) setMbti(initialData.mbti)
       if (initialData.portraitUrl) setPortraitUrl(initialData.portraitUrl)
+      if (initialData.voiceSignature) setVoiceSignature(initialData.voiceSignature)
+      // Load psychology-stored fields
+      const psych = initialData.psychology || {}
+      setArchetype(initialData.archetype || psych.archetype || '')
+      setMotivation(initialData.motivation || psych.actualMotivation || '')
+      setFatalFlaw(initialData.fatalFlaw || psych.fatalFlaw || '')
+      setSecrets(initialData.secrets || psych.secrets || '')
       // Load metrics if editing
       setMetrics(prev => ({
         ...prev,
@@ -145,6 +164,11 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
     setDescription('')
     setMbti('')
     setPortraitUrl('')
+    setVoiceSignature('')
+    setArchetype('')
+    setMotivation('')
+    setFatalFlaw('')
+    setSecrets('')
     setMetrics(INITIAL_METRICS)
     setShowVariantPicker(false)
     setGridImageUrl(null)
@@ -264,25 +288,39 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
 
   // ... (rest of the file until return)
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const characterData = {
       name,
       gender,
       description,
       mbti,
       portraitUrl,
+      voiceSignature,
       ...metrics,
       role: role || 'Supporting',
       transformation: 0,
       characterPrompt: `You are ${name}. ${description}`,
+      psychology: {
+        ...(archetype ? { archetype } : {}),
+        ...(motivation ? { actualMotivation: motivation } : {}),
+        ...(fatalFlaw ? { fatalFlaw } : {}),
+        ...(secrets ? { secrets } : {}),
+      },
     }
 
-    if (mode === 'edit' && initialData?.id && onUpdate) {
-      onUpdate(initialData.id, characterData)
-    } else {
-      onCreate(characterData)
+    setIsSaving(true)
+    try {
+      if (mode === 'edit' && initialData?.id && onUpdate) {
+        await onUpdate(initialData.id, characterData)
+      } else {
+        await onCreate(characterData)
+      }
+      handleClose()
+    } catch (error) {
+      console.error('Failed to save character:', error)
+    } finally {
+      setIsSaving(false)
     }
-    handleClose()
   }
 
   // Use Portal to render modal at document root, escaping sidebar CSS containment
@@ -434,6 +472,60 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
                   {portraitUrl
                     ? 'Click "Pick Variant" to refine selection'
                     : 'Powered by Midjourney'}
+                </div>
+              </div>
+            </div>
+
+            {/* Character Psychology */}
+            <div className="space-y-4 pt-4 border-t border-border">
+              <h3 className="text-sm font-bold">Character Psychology</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Archetype</label>
+                  <input
+                    className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                    value={archetype}
+                    onChange={e => setArchetype(e.target.value)}
+                    placeholder="e.g. The Reluctant Hero, The Trickster"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Voice Signature</label>
+                  <input
+                    className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                    value={voiceSignature}
+                    onChange={e => setVoiceSignature(e.target.value)}
+                    placeholder="e.g. Clipped military cadence, dry humor"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Motivation</label>
+                <input
+                  className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                  value={motivation}
+                  onChange={e => setMotivation(e.target.value)}
+                  placeholder="What truly drives this character?"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-destructive/80">Fatal Flaw</label>
+                  <input
+                    className="w-full bg-background border border-destructive/20 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-destructive/50 focus:outline-none"
+                    value={fatalFlaw}
+                    onChange={e => setFatalFlaw(e.target.value)}
+                    placeholder="The weakness that could undo them"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-amber-500/80">Secret</label>
+                  <input
+                    className="w-full bg-background border border-amber-500/20 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500/50 focus:outline-none"
+                    value={secrets}
+                    onChange={e => setSecrets(e.target.value)}
+                    placeholder="What they hide from everyone"
+                  />
                 </div>
               </div>
             </div>
@@ -672,9 +764,11 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
             <Button
               variant="default"
               onClick={handleSubmit}
-              disabled={!name || !gender || !description || !mbti}
+              disabled={!name || !gender || !description || !mbti || isSaving}
             >
-              {mode === 'edit'
+              {isSaving ? (
+                <><Loader2 className="animate-spin w-4 h-4 mr-2" />Saving...</>
+              ) : mode === 'edit'
                 ? 'Save Changes'
                 : initialData
                   ? 'Convert to Cast'

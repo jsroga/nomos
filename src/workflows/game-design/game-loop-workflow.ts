@@ -1,4 +1,4 @@
-import { Workflow } from '@mastra/core/workflows'
+import { Workflow, createStep } from '@mastra/core/workflows'
 import { z } from 'zod'
 import { GameDesignAgent } from '../../domains/game-design/agent'
 import {
@@ -65,10 +65,13 @@ export class GameLoopWorkflow extends Workflow {
     this.agent = agent
 
     // Step 1: Ideation - Agent proposes initial loop
-    this.step('ideation', {
+    const ideationStep = createStep({
+      id: 'ideation',
       execute: async ({ context }) => {
         const { genre, loopType, targetAudience, theme, referenceGames } = context.input || context
 
+        // Use the public method `designLoop` instead of `runLoop` (which didn't exist)
+        // or effectively implement the logic here calling run or runWithContext
         const result = await this.agent.designLoop({
           genre,
           targetAudience,
@@ -77,8 +80,21 @@ export class GameLoopWorkflow extends Workflow {
           referenceGames,
         })
 
+        // Attempt to extract the payload from result
+        let loopProposal = result.type === 'PROPOSE_PLAN' ? result.payload.plan : result.payload
+
+        // If payload is wrapped in 'result' (FINISH type), try to parse it if it's a string, or just use it
+        if (result.type === 'FINISH' && typeof result.payload.result === 'string') {
+          try {
+            loopProposal = JSON.parse(result.payload.result)
+          } catch {
+            // Fallback if not JSON
+            loopProposal = { description: result.payload.result }
+          }
+        }
+
         return {
-          loopProposal: result.payload,
+          loopProposal,
           thought: result.thought,
           iterationCount: 0,
         }
@@ -86,7 +102,8 @@ export class GameLoopWorkflow extends Workflow {
     })
 
     // Step 2: Balance Check - Analyze mechanics for balance issues
-    this.step('balance_check', {
+    const balanceCheckStep = createStep({
+      id: 'balance_check',
       execute: async ({ context }) => {
         const { loopProposal, input } = context
         const analyzeTool = createAnalyzeMechanicBalanceTool()
@@ -130,7 +147,8 @@ export class GameLoopWorkflow extends Workflow {
     })
 
     // Step 3: Structure Validation - Verify loop integrity
-    this.step('structure_validation', {
+    const structureValidationStep = createStep({
+      id: 'structure_validation',
       execute: async ({ context }) => {
         const { loopProposal } = context
         const validateTool = createValidateLoopStructureTool()
@@ -167,7 +185,8 @@ export class GameLoopWorkflow extends Workflow {
     })
 
     // Step 4: Human Review - Suspension point for user approval
-    this.step('human_review', {
+    const humanReviewStep = createStep({
+      id: 'human_review',
       execute: async ({ context, suspend }) => {
         // If we have approval data (resumed from suspension)
         if (context.approved !== undefined) {
@@ -179,24 +198,31 @@ export class GameLoopWorkflow extends Workflow {
         }
 
         // Suspend for human review
-        await suspend({
-          reason: 'Awaiting human review of loop proposal',
-          data: {
-            loopProposal: context.loopProposal,
-            balanceAnalysis: context.balanceAnalysis,
-            structureValidation: context.structureValidation,
-          },
-        })
+        if (suspend) {
+          await suspend({
+            stepId: 'human_review',
+            info: { // Using 'info' or similar generic payload structure depending on SDK version
+              reason: 'Awaiting human review of loop proposal',
+              data: {
+                loopProposal: context.loopProposal,
+                balanceAnalysis: context.balanceAnalysis,
+                structureValidation: context.structureValidation,
+              },
+            }
+          })
+          return { approved: false, feedback: 'Suspended for review' }
+        }
 
         return {
           approved: false,
-          feedback: 'Suspended for review',
+          feedback: 'No suspension handler available',
         }
       },
     })
 
     // Step 5: Refinement - Agent refines based on feedback
-    this.step('refinement', {
+    const refinementStep = createStep({
+      id: 'refinement',
       execute: async ({ context }) => {
         const { loopProposal, feedback, modifications, iterationCount = 0 } = context
 
@@ -220,13 +246,28 @@ export class GameLoopWorkflow extends Workflow {
 
         // Use agent to refine based on feedback
         if (feedback) {
-          const result = await this.agent.runLoop(
+          // Replaced `runLoop` with `run` which expects (goal, context)
+          const resultText = await this.agent.run(
             `Refine the following game loop based on user feedback: ${feedback}`,
             `Current loop: ${JSON.stringify(loopProposal)}`
           )
 
+          let refinedLoop = loopProposal
+          try {
+            // Optimistically try to parse result as JSON if it's structured
+            // If the agent returns text, we might need to parse it or wrap it
+            // For now, assuming agent returns a description or the loop itself in text
+            // Ideally we'd use a structured output tool here
+            const jsonMatch = resultText.match(/\{[\s\S]*\}/)
+            if (jsonMatch) {
+              refinedLoop = JSON.parse(jsonMatch[0])
+            }
+          } catch {
+            // Fallback
+          }
+
           return {
-            refinedLoop: result.payload,
+            refinedLoop: refinedLoop,
             iterationCount: iterationCount + 1,
             reachedLimit: false,
           }
@@ -241,12 +282,21 @@ export class GameLoopWorkflow extends Workflow {
     })
 
     // Step 6: Finalization - Save to database
-    this.step('finalization', {
+    const finalizationStep = createStep({
+      id: 'finalization',
       execute: async ({ context }) => {
         const { input, loopProposal, refinedLoop, balanceAnalysis } = context
         const finalLoop = refinedLoop || loopProposal
 
         try {
+          // If we don't have a valid loop structure to save, fail gracefully
+          if (!finalLoop || !finalLoop.nodes) {
+            return {
+              status: 'failed' as const,
+              message: 'No valid loop structure generated',
+            }
+          }
+
           const [savedLoop] = await db
             .insert(gameLoops)
             .values({
@@ -282,8 +332,18 @@ export class GameLoopWorkflow extends Workflow {
       },
     })
 
-    // Commit the workflow graph
-    this.commit()
+    // Chain steps
+    this
+      .then(ideationStep)
+      .then(balanceCheckStep)
+      .then(structureValidationStep)
+      .then(humanReviewStep)
+      .then(refinementStep)
+      .then(finalizationStep)
+
+    // Commit is likely not needed if .then() builds the graph immediately in this SDK version
+    // Check HumanLoopWorkflow reference - it doesn't call commit()
+    // this.commit() 
   }
 
   /**

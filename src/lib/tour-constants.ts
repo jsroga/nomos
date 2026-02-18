@@ -1,6 +1,7 @@
 export const TOUR_STEP_IDS = {
   // === STORYTELLER ===
   STORYTELLER_BIBLE: 'tour-storyteller-bible',
+  STORYTELLER_MASTER_PROMPT: 'tour-storyteller-master-prompt',
   SUGGEST_IDEA_BUTTON: 'tour-suggest-idea',
   GENERATE_BIBLE_BUTTON: 'tour-generate-bible',
   STORYTELLER_EPISODES: 'tour-storyteller-episodes',
@@ -33,4 +34,5 @@ export const TOUR_STEP_IDS = {
   ASSET_EDITOR_PANEL: 'tour-asset-editor-panel',
   ASSET_3D_PREVIEW: 'tour-asset-3d-preview',
   GENERATE_3D_BUTTON: 'tour-generate-3d-button',
+  ASSET_UPLOAD_ZONE: 'tour-asset-upload-zone',
 } as const

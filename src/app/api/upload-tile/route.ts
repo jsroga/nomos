@@ -8,10 +8,12 @@ import {
   type AuthenticatedRequest,
 } from '@/lib/api-utils'
 
+
+
 export const dynamic = 'force-dynamic'
 
 export const POST = withRateLimit(
-  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
+  withAuth<any>(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
     const { projectId, x, y, imageBase64, prompt } = await request.json()
 
     if (!projectId || x === undefined || y === undefined || !imageBase64) {
@@ -45,7 +47,7 @@ export const POST = withRateLimit(
     fs.writeFileSync(filePath, buffer)
 
     // Update database using authenticated client (RLS enforced)
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('tiles')
       .upsert(
         {
