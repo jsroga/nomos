@@ -619,9 +619,14 @@ class EntityGraphService {
     if (sourceType === 'faction' && targetType === 'character') return 'has_member'
     if (sourceType === 'character' && targetType === 'place') return 'associated_with'
     if (sourceType === 'character' && targetType === 'event') return 'involved_in'
+    if (sourceType === 'character' && targetType === 'item') return 'uses'
+    if (sourceType === 'faction' && targetType === 'item') return 'owns'
     if (sourceType === 'faction' && targetType === 'place') return 'controls'
     if (sourceType === 'event' && targetType === 'character') return 'involves'
     if (sourceType === 'event' && targetType === 'place') return 'occurred_at'
+    if (sourceType === 'event' && targetType === 'item') return 'caused_by'
+    if (sourceType === 'event' && targetType === 'event') return 'temporal'
+    if (sourceType === 'item' && targetType === 'place') return 'located_in'
 
     return 'related'
   }
@@ -747,6 +752,69 @@ class EntityGraphService {
       console.warn('[EntityGraphService] Failed to build project graph:', err)
       return { nodes: [], edges: [] }
     }
+  }
+
+  /**
+   * Extract literal relationships from text based on regex patterns.
+   * Finds sentences matching "[A] owns/uses/caused [B]" and generates structured edges.
+   */
+  extractRelationshipsFromText(text: string): Array<{ sourceId: string; targetId: string; type: string; evidence: string }> {
+    const relationships: Array<{ sourceId: string; targetId: string; type: string; evidence: string }> = []
+
+    // Split into sentences for context boundary
+    const sentences = text.split(/[.!?]+/)
+
+    // Pattern to match explicit verbs between two references
+    // E.g., "[Marcus][char-123] uses the [One Ring][item-456]"
+    const verbPatterns = [
+      { regex: /owns|possesses|has/i, type: 'owns' },
+      { regex: /uses|wields|utilizes/i, type: 'uses' },
+      { regex: /caused|created|triggered/i, type: 'caused_by' },
+      { regex: /happened at|took place at|occurred at/i, type: 'happened_at' },
+      { regex: /located in|found in|hidden in/i, type: 'located_in' },
+      { regex: /before|after|during/i, type: 'temporal' }
+    ]
+
+    for (const sentence of sentences) {
+      // Find all references in the sentence
+      // A reference looks like [Name][id-123]
+      const refRegex = /\[([^\]]+)\]\[([a-z]+-[a-zA-Z0-9-]+)\]/g
+      let match
+      const refs: Array<{ name: string; id: string; index: number }> = []
+
+      while ((match = refRegex.exec(sentence)) !== null) {
+        refs.push({ name: match[1], id: match[2], index: match.index })
+      }
+
+      // Need at least 2 references to form a relationship
+      if (refs.length >= 2) {
+        for (let i = 0; i < refs.length - 1; i++) {
+          const source = refs[i]
+          const target = refs[i + 1]
+
+          // Get text between the two references
+          const textBetween = sentence.substring(
+            source.index + source.name.length + source.id.length + 4, // length of '[name][id]'
+            target.index
+          )
+
+          // Check if any verb pattern matches the text exactly between them
+          for (const pattern of verbPatterns) {
+            if (pattern.regex.test(textBetween)) {
+              relationships.push({
+                sourceId: source.id,
+                targetId: target.id,
+                type: pattern.type,
+                evidence: sentence.trim()
+              })
+              break // Only one relation per pair based on first match
+            }
+          }
+        }
+      }
+    }
+
+    return relationships
   }
 }
 

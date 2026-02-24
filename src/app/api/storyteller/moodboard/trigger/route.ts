@@ -7,6 +7,7 @@ import { StoryPlan } from '@/domains/storyteller/schemas/agent-schemas'
 import OpenAI from 'openai'
 import { requireAuth } from '@/lib/auth'
 import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
+import { resolveStyleReferenceUrls } from '@/config/style-presets'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -37,8 +38,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    // Get style references from project settings
-    const styleReferenceUrls = (project.styleReferenceUrls as any) || []
+    // Get style references from project settings (preset or custom URLs)
+    const styleReferenceUrls = resolveStyleReferenceUrls(project)
     if (styleReference) {
       styleReferenceUrls.push(styleReference)
     }

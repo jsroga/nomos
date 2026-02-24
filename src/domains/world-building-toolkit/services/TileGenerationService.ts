@@ -127,6 +127,21 @@ export class TileGenerationService {
 
       const isFirstTile = !hasNeighbors
 
+      // First tile (0,0) uses the selected provider (typically Midjourney),
+      // follow-up tiles automatically switch to Gemini for context-aware inpainting
+      let effectiveProvider = aiProvider
+      let effectiveConfig = aiConfig
+      if (!isFirstTile && aiProvider !== 'gemini') {
+        effectiveProvider = 'gemini'
+        effectiveConfig = aiService.getConfig('gemini')
+        if (!effectiveConfig?.apiKey) {
+          throw new Error(
+            'Gemini API key is required for follow-up tile generation. Please configure it in Settings.'
+          )
+        }
+        console.log(`Follow-up tile - switching provider from ${aiProvider} to gemini`)
+      }
+
       if (!isFirstTile) {
         console.log('Follow-up tile generation - neighbor URLs passing to server for assembly')
       } else {
@@ -135,7 +150,7 @@ export class TileGenerationService {
 
       // Trigger the tile generation task
       console.log(
-        `Triggering generate-tile task with provider: ${aiProvider}, isFirstTile: ${isFirstTile}`
+        `Triggering generate-tile task with provider: ${effectiveProvider}, isFirstTile: ${isFirstTile}`
       )
 
       const triggerResponse = await fetch('/api/trigger-tile', {
@@ -146,8 +161,8 @@ export class TileGenerationService {
           x,
           y,
           prompt,
-          aiProvider,
-          aiConfig,
+          aiProvider: effectiveProvider,
+          aiConfig: effectiveConfig,
           isFirstTile,
           // Pass neighbors for server-side assembly
           neighbors,
@@ -185,6 +200,7 @@ export class TileGenerationService {
     } catch (error) {
       console.error('Tile generation error:', error)
       // Clean up status on error
+      useWorldStore.getState().setTileError(x, y, error instanceof Error ? error.message : 'Generation failed')
       useWorldStore.getState().removeGeneratingTile(x, y)
       useGlobalStatusStore.getState().removeOperation(opId)
       throw error
@@ -211,6 +227,7 @@ export class TileGenerationService {
           consecutiveErrors++
           if (consecutiveErrors > 5) {
             console.warn('Tile generation run not found after retries, clearing state')
+            useWorldStore.getState().setTileError(runState.x, runState.y, 'Generation task not found')
             this.clearRunState(runState, opId)
             return
           }
@@ -244,7 +261,9 @@ export class TileGenerationService {
 
         // Check if failed
         if (!ACTIVE_TASK_STATUSES.includes(statusData.status)) {
-          console.error('Tile generation failed:', statusData.error || statusData.status)
+          const errorMsg = statusData.error || `Generation failed (${statusData.status})`
+          console.error('Tile generation failed:', errorMsg)
+          useWorldStore.getState().setTileError(runState.x, runState.y, errorMsg)
           this.clearRunState(runState, opId)
           return
         }

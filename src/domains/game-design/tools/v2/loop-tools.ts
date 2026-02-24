@@ -15,7 +15,7 @@ export const createGetLoopsTool = () =>
     id: 'get_game_loops',
     description: 'Retrieve all game retention loops and their metadata for a project.',
     schema: GetLoopsSchema,
-    execute: async ({ context: { projectId } }) => {
+    execute: async ({ projectId }) => {
       try {
         const results = await db.query.gameLoops.findMany({
           where: eq(gameLoops.projectId, projectId),
@@ -38,7 +38,7 @@ export const createGetLoopByIdTool = () =>
     id: 'get_game_loop_by_id',
     description: 'Retrieve a specific game loop with full nodes and edges data.',
     schema: GetLoopByIdSchema,
-    execute: async ({ context: { loopId } }) => {
+    execute: async ({ loopId }) => {
       try {
         const result = await db.query.gameLoops.findFirst({
           where: eq(gameLoops.id, loopId),
@@ -64,7 +64,7 @@ export const createGetMarketAnalysisTool = () =>
     id: 'get_market_analysis',
     description: 'Retrieve the latest market analysis for a specific game loop.',
     schema: GetMarketAnalysisSchema,
-    execute: async ({ context: { loopId } }) => {
+    execute: async ({ loopId }) => {
       try {
         const result = await db.query.marketAnalyses.findFirst({
           where: eq(marketAnalyses.gameLoopId, loopId),

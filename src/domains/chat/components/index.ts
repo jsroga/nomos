@@ -12,7 +12,7 @@ export {
   type AgentStatusInfo,
 } from './AgentLog'
 
-export { SectionProgress, useSectionProgress, type ProgressSection } from './SectionProgress'
+export { SectionProgress, type ProgressSection } from './SectionProgress'
 
 export { CitationMarker, CitationPreview, type Citation } from './CitationDisplay'
 
@@ -34,3 +34,6 @@ export { HoverActions } from './HoverActions'
 export { ContextChips, type ContextItem } from './ContextChips'
 
 export { type Suggestion } from './SuggestionCard'
+
+export { StreamingTerminal } from './StreamingTerminal'
+export { StreamingSectionsInline } from './StreamingSectionsInline'

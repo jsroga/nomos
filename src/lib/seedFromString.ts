@@ -19,11 +19,3 @@ export function seedFromString(str: string): number {
   // Meshy accepts seeds as integers, typically positive
   return Math.abs(hash) % 2147483647 // Max 32-bit signed integer
 }
-
-/**
- * Combines multiple strings into a single seed.
- * Useful for combining master prompt with object-specific prompt.
- */
-function combinedSeed(...strings: string[]): number {
-  return seedFromString(strings.filter(Boolean).join('|'))
-}

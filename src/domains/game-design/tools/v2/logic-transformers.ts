@@ -30,16 +30,25 @@ export const createIdentifyCoreLoopTool = () =>
 This tool uses AI to determine which mechanics form the central engagement cycle,
 what psychological hooks are at play, and how long each cycle typically takes.`,
     schema: IdentifyCoreLoopInputSchema,
-    execute: async ({ context }) => {
+    execute: async (args) => {
       try {
-        const { mechanics, genre, targetAudience } = context
+        const mechanics = args.mechanics || []
+        const genre = args.genre || 'unknown game genre'
+        const targetAudience = args.targetAudience || 'casual'
+
+        if (mechanics.length === 0) {
+          return {
+            success: false,
+            error: 'You must provide at least one mechanic to identify a core loop. Please generate some mechanics first.',
+          }
+        }
 
         const prompt = `You are a senior game designer specializing in game loop analysis.
 
 Analyze these game mechanics and identify the CORE LOOP - the central repeating engagement cycle.
 
 ## Mechanics
-${mechanics.map(m => `- ${m.name} (${m.type}): ${m.description}`).join('\n')}
+${mechanics.map((m: any) => `- ${m.name} (${m.type}): ${m.description}`).join('\n')}
 
 ## Context
 - Genre: ${genre}
@@ -114,9 +123,17 @@ export const createAnalyzeMechanicBalanceTool = () =>
 Checks for reward imbalances, effort mismatches, dead ends, and grind detection.
 Returns a comprehensive balance report with actionable recommendations.`,
     schema: AnalyzeMechanicBalanceInputSchema,
-    execute: async ({ context }) => {
+    execute: async (args) => {
       try {
-        const { mechanics, resources, targetAudience, sessionDurationMinutes } = context
+        const mechanics = args.mechanics || []
+        const resources = args.resources || []
+        const targetAudience = args.targetAudience || 'casual'
+        const sessionDurationMinutes = args.sessionDurationMinutes || 30
+        const loopId = args.loopId || 'unknown'
+
+        if (mechanics.length === 0) {
+          return { success: false, error: 'No mechanics provided to analyze.' }
+        }
 
         const prompt = `You are a game economy and balance expert.
 
@@ -124,20 +141,20 @@ Analyze the balance of these game mechanics and provide a detailed assessment.
 
 ## Mechanics
 ${mechanics
-  .map(m => {
-    const transformerInfo =
-      m.transformers
-        ?.map(
-          t =>
-            `  - ${t.type}: inputs=${JSON.stringify(t.inputs)}, outputs=${JSON.stringify(t.outputs)}`
-        )
-        .join('\n') || '  (no transformers)'
-    return `- ${m.name} (${m.type}):\n  ${m.description}\n${transformerInfo}`
-  })
-  .join('\n\n')}
+            .map((m: any) => {
+              const transformerInfo =
+                m.transformers
+                  ?.map(
+                    (t: any) =>
+                      `  - ${t.type}: inputs=${JSON.stringify(t.inputs)}, outputs=${JSON.stringify(t.outputs)}`
+                  )
+                  .join('\n') || '  (no transformers)'
+              return `- ${m.name} (${m.type}):\n  ${m.description}\n${transformerInfo}`
+            })
+            .join('\n\n')}
 
 ## Resources in Economy
-${resources.map(r => `- ${r.name} (${r.type}): starts at ${r.initialValue}`).join('\n')}
+${resources.map((r: any) => `- ${r.name} (${r.type}): starts at ${r.initialValue}`).join('\n')}
 
 ## Context
 - Target Audience: ${targetAudience}
@@ -189,7 +206,7 @@ Respond with JSON matching this schema:
         const parsed = JSON.parse(jsonMatch[0])
         const validated = AnalyzeBalanceOutputSchema.parse(parsed)
 
-        return { success: true, loopId: context.loopId, ...validated }
+        return { success: true, loopId, ...validated }
       } catch (error: unknown) {
         return { success: false, error: getErrorMessage(error) }
       }
@@ -216,24 +233,32 @@ export const createSuggestProgressionTool = () =>
 Can suggest new mechanics, balance tweaks, or progression gates based on the
 desired expansion direction (depth, breadth, or complexity).`,
     schema: SuggestProgressionToolInputSchema,
-    execute: async ({ context }) => {
+    execute: async (args) => {
       try {
-        const { currentLoop, existingMechanics, expansionDirection, theme, genre, targetAudience } =
-          context
+        const currentLoop = args.currentLoop
+        const existingMechanics = args.existingMechanics || []
+        const expansionDirection = args.expansionDirection || 'depth'
+        const theme = args.theme || 'Not specified'
+        const genre = args.genre || 'Not specified'
+        const targetAudience = args.targetAudience || 'Not specified'
+
+        if (!currentLoop) {
+          return { success: false, error: 'currentLoop is required to suggest progression.' }
+        }
 
         const prompt = `You are a game design consultant specializing in progression systems.
 
 Analyze this game loop and suggest ways to expand its progression.
 
 ## Current Loop
-- Name: ${currentLoop.name}
-- Type: ${currentLoop.type}
-- Resources: ${currentLoop.resources?.map(r => r.name).join(', ') || 'None defined'}
+- Name: ${currentLoop.name || 'Unknown'}
+- Type: ${currentLoop.type || 'Unknown'}
+- Resources: ${currentLoop.resources?.map((r: any) => r.name).join(', ') || 'None defined'}
 - Nodes: ${currentLoop.nodes?.length || 0}
 - Edges: ${currentLoop.edges?.length || 0}
 
 ## Existing Mechanics
-${existingMechanics?.map(m => `- ${m.name}: ${m.description}`).join('\n') || 'None'}
+${existingMechanics.map((m: any) => `- ${m.name}: ${m.description}`).join('\n') || 'None'}
 
 ## Expansion Direction
 - Direction: ${expansionDirection}
@@ -242,9 +267,9 @@ ${existingMechanics?.map(m => `- ${m.name}: ${m.description}`).join('\n') || 'No
   ${expansionDirection === 'complexity' ? '(Increase interconnection and emergent gameplay)' : ''}
 
 ## Context
-- Theme: ${theme || 'Not specified'}
-- Genre: ${genre || 'Not specified'}
-- Target Audience: ${targetAudience || 'Not specified'}
+- Theme: ${theme}
+- Genre: ${genre}
+- Target Audience: ${targetAudience}
 
 ## Your Task
 1. Suggest 3-5 specific improvements
@@ -333,13 +358,18 @@ export const createValidateLoopStructureTool = () =>
 Checks for orphan nodes, missing mechanics, broken cycles, and unreachable states.
 Returns validation results with specific issues and graph metrics.`,
     schema: ValidateLoopStructureInputSchema,
-    execute: async ({ context }) => {
+    execute: async (args) => {
       try {
-        const { loop, mechanics } = context
+        const loop = args.loop
+        const mechanics = args.mechanics || []
         const issues: z.infer<typeof ValidateLoopStructureOutputSchema>['issues'] = []
 
-        const nodeIds = new Set(loop.nodes.map(n => n.id))
-        const mechanicIds = new Set(mechanics.map(m => m.id))
+        if (!loop || !loop.nodes || !loop.edges) {
+          return { success: false, error: 'loop is missing or malformed. loop.nodes and loop.edges are required.' }
+        }
+
+        const nodeIds = new Set(loop.nodes.map((n: any) => n.id))
+        const mechanicIds = new Set(mechanics.map((m: any) => m.id))
 
         // Check for orphan nodes (no edges)
         const connectedNodes = new Set<string>()

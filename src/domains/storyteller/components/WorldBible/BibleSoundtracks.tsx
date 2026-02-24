@@ -7,7 +7,7 @@ import { extractVideoId } from '../../utils/youtube-utils'
 import { useBible } from './BibleContext'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
 
-interface BibleSoundtracksProps {}
+interface BibleSoundtracksProps { }
 
 export const BibleSoundtracks: React.FC<BibleSoundtracksProps> = () => {
   const {
@@ -53,7 +53,7 @@ export const BibleSoundtracks: React.FC<BibleSoundtracksProps> = () => {
           <button
             onClick={() =>
               onSendMessage?.(
-                'Suggest 3-5 real YouTube soundtrack recommendations for this world. For each track, provide the song title, artist name, and actual YouTube URL. Choose music that reinforces the tone and atmosphere.',
+                'Suggest 3-5 BRAND NEW real YouTube soundtrack recommendations for this world. For each track, provide the song title, artist name, and actual YouTube URL. Choose music that reinforces the tone and atmosphere. IMPORTANT: Take a completely new, unexpected creative direction and do NOT repeat previous suggestions.',
                 'soundtracks'
               )
             }
@@ -72,7 +72,7 @@ export const BibleSoundtracks: React.FC<BibleSoundtracksProps> = () => {
             type="text"
             className="w-full p-2 bg-background border border-border rounded text-sm font-mono focus:ring-1 focus:ring-primary/50 outline-none"
             value={localPlan.moodSoundtrack || ''}
-            onChange={e => onChange('moodSoundtrack', e.target.value as any)}
+            onChange={e => onChange({ moodSoundtrack: e.target.value })}
             placeholder="General mood/atmosphere description..."
           />
           <p className="text-xs text-muted-foreground font-mono">
@@ -82,24 +82,24 @@ export const BibleSoundtracks: React.FC<BibleSoundtracksProps> = () => {
       ) : (
         <div className="space-y-2">
           {/* Legacy mood description */}
-          {storyPlan.moodSoundtrack && (
+          {(localPlan.moodSoundtrack || storyPlan.moodSoundtrack) && (
             <div className="p-3 bg-muted/10 border border-border rounded">
               <span className="text-sm text-muted-foreground font-mono">
-                {storyPlan.moodSoundtrack}
+                {localPlan.moodSoundtrack || storyPlan.moodSoundtrack}
               </span>
             </div>
           )}
 
           {/* YouTube Tracks */}
-          {storyPlan.soundtracks && storyPlan.soundtracks.length > 0 ? (
+          {((localPlan.soundtracks && localPlan.soundtracks.length > 0) || (storyPlan.soundtracks && storyPlan.soundtracks.length > 0)) ? (
             <div className="space-y-1">
-              {storyPlan.soundtracks.map((track: SoundtrackTrack, i: number) => (
+              {(localPlan.soundtracks || storyPlan.soundtracks || []).map((track: SoundtrackTrack, i: number) => (
                 <YouTubePlayer
                   key={i}
                   title={track.title}
                   artist={track.artist}
                   youtubeUrl={track.youtubeUrl}
-                  mood={track.mood}
+                  mood={track.mood || undefined}
                   isCurrentlyPlaying={playingTrackIndex === i}
                   onPlay={() => {
                     const videoId = extractVideoId(track.youtubeUrl)
@@ -127,7 +127,7 @@ export const BibleSoundtracks: React.FC<BibleSoundtracksProps> = () => {
               )}
             </div>
           ) : (
-            !storyPlan.moodSoundtrack && (
+            !(localPlan.moodSoundtrack || storyPlan.moodSoundtrack) && (
               <div className="p-3 border border-dashed border-border rounded text-sm text-muted-foreground font-mono italic">
                 No soundtrack defined.
               </div>

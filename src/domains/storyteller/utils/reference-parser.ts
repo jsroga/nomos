@@ -8,7 +8,7 @@
  */
 
 // Entity types supported by the reference system (duplicated to keep this client-safe)
-export type EntityType = 'character' | 'place' | 'event' | 'faction' | 'rule' | 'beat' | 'episode'
+export type EntityType = 'character' | 'place' | 'event' | 'faction' | 'rule' | 'beat' | 'episode' | 'item'
 
 // Entity type prefixes for reference IDs
 export const ENTITY_PREFIXES: Record<EntityType, string> = {
@@ -19,6 +19,7 @@ export const ENTITY_PREFIXES: Record<EntityType, string> = {
   rule: 'rule',
   beat: 'beat',
   episode: 'ep',
+  item: 'item',
 }
 
 // Reverse lookup: prefix -> type

@@ -3,6 +3,12 @@ import { createClient } from '@supabase/supabase-js'
 import fs from 'fs'
 import path from 'path'
 import { getErrorMessage } from '@/lib/error-utils'
+import {
+  logLLMRequestStart,
+  logLLMRequestComplete,
+  logLLMRequestError,
+  extractImageUrls,
+} from './utils/llm-logger'
 
 interface GenerateMoodboardPayload {
   projectId: string
@@ -134,6 +140,23 @@ export const generateMoodboard = task({
 
           logger.info('Using prompt', { fullPrompt })
 
+          const diffusionPayload = {
+            text: fullPrompt,
+          }
+
+          // Log LLM request start
+          logLLMRequestStart({
+            provider: 'midjourney',
+            model: 'legnext-diffusion',
+            prompt: fullPrompt,
+            inputImageUrls: allStyleRefs.length > 0 ? allStyleRefs : undefined,
+            input: diffusionPayload,
+            metadata: {
+              task: 'moodboard-generation',
+              promptIndex: i,
+            },
+          })
+
           // Submit diffusion task
           await metadata.set('stage', 'submitting_diffusion')
           const diffusionResponse = await fetch('https://api.legnext.ai/api/v1/diffusion', {
@@ -142,15 +165,20 @@ export const generateMoodboard = task({
               'x-api-key': apiKey,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              text: fullPrompt,
-            }),
+            body: JSON.stringify(diffusionPayload),
           })
 
           if (!diffusionResponse.ok) {
             const errorText = await diffusionResponse.text()
             logger.error(`LegNext diffusion failed: ${diffusionResponse.status}`, {
               error: errorText,
+            })
+            logLLMRequestError({
+              provider: 'midjourney',
+              model: 'legnext-diffusion',
+              prompt: fullPrompt,
+              error: `HTTP ${diffusionResponse.status}: ${errorText}`,
+              input: diffusionPayload,
             })
             continue
           }
@@ -160,6 +188,14 @@ export const generateMoodboard = task({
 
           if (!jobId) {
             logger.error('LegNext diffusion failed: No job_id returned')
+            logLLMRequestError({
+              provider: 'midjourney',
+              model: 'legnext-diffusion',
+              prompt: fullPrompt,
+              error: 'No job_id returned',
+              input: diffusionPayload,
+              output: diffusionData,
+            })
             continue
           }
 
@@ -175,8 +211,25 @@ export const generateMoodboard = task({
 
           if (!imageUrl) {
             logger.error('LegNext diffusion result missing image_url')
+            logLLMRequestError({
+              provider: 'midjourney',
+              model: 'legnext-diffusion',
+              prompt: fullPrompt,
+              error: 'Result missing image_url',
+              input: diffusionPayload,
+              output: result,
+            })
             continue
           }
+
+          // Log successful completion
+          logLLMRequestComplete({
+            provider: 'midjourney',
+            model: 'legnext-diffusion',
+            prompt: fullPrompt,
+            outputImageUrls: [imageUrl],
+            output: result.output,
+          })
 
           logger.info('Midjourney generation completed', { imageUrl })
 
@@ -194,27 +247,50 @@ export const generateMoodboard = task({
           const targetModel = modelId || 'gemini-2.0-flash-preview-image-generation'
           logger.info('Generating with Nano Banana', { model: targetModel, promptIndex: i })
 
+          const payload = {
+            contents: [
+              {
+                parts: [{ text: enhancedPrompt }],
+              },
+            ],
+            generationConfig: {
+              responseModalities: ['TEXT', 'IMAGE'],
+            },
+          }
+
+          // Log LLM request start
+          logLLMRequestStart({
+            provider: 'gemini',
+            model: targetModel,
+            prompt: enhancedPrompt,
+            inputImageUrls: allStyleRefs.length > 0 ? allStyleRefs : undefined,
+            input: payload,
+            metadata: {
+              task: 'moodboard-generation',
+              promptIndex: i,
+              provider: 'nanobanana',
+            },
+          })
+
           const response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                contents: [
-                  {
-                    parts: [{ text: enhancedPrompt }],
-                  },
-                ],
-                generationConfig: {
-                  responseModalities: ['TEXT', 'IMAGE'],
-                },
-              }),
+              body: JSON.stringify(payload),
             }
           )
 
           if (!response.ok) {
             const errText = await response.text()
             logger.error('Nano Banana API Error', { model: targetModel, error: errText })
+            logLLMRequestError({
+              provider: 'gemini',
+              model: targetModel,
+              prompt: enhancedPrompt,
+              error: `HTTP ${response.status}: ${errText}`,
+              input: payload,
+            })
             continue
           }
 
@@ -238,6 +314,26 @@ export const generateMoodboard = task({
 
           if (!imageBase64) {
             logger.warn('Nano Banana did not return an image', { model: targetModel })
+            logLLMRequestError({
+              provider: 'gemini',
+              model: targetModel,
+              prompt: enhancedPrompt,
+              error: 'No image returned in response',
+              input: payload,
+              output: data,
+            })
+          } else {
+            // Log successful completion
+            logLLMRequestComplete({
+              provider: 'gemini',
+              model: targetModel,
+              prompt: enhancedPrompt,
+              outputImageUrls: ['[Base64 Image Data]'],
+              output: {
+                finishReason: data.candidates?.[0]?.finishReason,
+                hasImage: true,
+              },
+            })
           }
         }
 

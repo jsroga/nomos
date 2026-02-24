@@ -39,7 +39,7 @@ export const GlobalSidebar = () => {
   }
 
   return (
-    <div className="w-16 h-screen bg-card border-r border-border flex flex-col items-center pt-2 pb-4 gap-4 z-50">
+    <div id={TOUR_STEP_IDS.GLOBAL_SIDEBAR} className="w-16 h-screen bg-card border-r border-border flex flex-col items-center pt-2 pb-4 gap-4 z-50">
       <div className="mb-4">
         <Link href="/" className="w-10 h-10 flex items-center justify-center relative group z-50">
           <GlowEffect

@@ -29,121 +29,123 @@ export const DoorMesh: React.FC<DoorMeshProps> = ({
 
   return (
     <group>
-      {/* Main Door Panel */}
-      <mesh position={[0, 0, 0]} castShadow receiveShadow>
-        <boxGeometry args={[width, height, depth]} />
-        <meshStandardMaterial
-          color={doorColor}
-          roughness={0.7}
-          metalness={0.1}
-          opacity={opacity}
-          transparent={opacity < 1}
-        />
-      </mesh>
-
-      {/* Door Frame - Top */}
-      <mesh position={[0, height / 2 + 0.03, 0]} castShadow>
-        <boxGeometry args={[width + 0.1, 0.06, depth + 0.02]} />
-        <meshStandardMaterial
-          color={doorColor}
-          roughness={0.8}
-          metalness={0.1}
-          opacity={opacity}
-          transparent={opacity < 1}
-        />
-      </mesh>
-
-      {/* Door Frame - Left */}
-      <mesh position={[-width / 2 - 0.03, 0, 0]} castShadow>
-        <boxGeometry args={[0.06, height, depth + 0.02]} />
-        <meshStandardMaterial
-          color={doorColor}
-          roughness={0.8}
-          metalness={0.1}
-          opacity={opacity}
-          transparent={opacity < 1}
-        />
-      </mesh>
-
-      {/* Door Frame - Right */}
-      <mesh position={[width / 2 + 0.03, 0, 0]} castShadow>
-        <boxGeometry args={[0.06, height, depth + 0.02]} />
-        <meshStandardMaterial
-          color={doorColor}
-          roughness={0.8}
-          metalness={0.1}
-          opacity={opacity}
-          transparent={opacity < 1}
-        />
-      </mesh>
-
-      {/* Upper Panel Inset */}
-      <mesh position={[0, height / 4 + 0.1, depth / 2 + 0.005]}>
-        <boxGeometry args={[width * 0.7, height * 0.35, 0.01]} />
-        <meshStandardMaterial
-          color={doorColor}
-          roughness={0.6}
-          metalness={0.15}
-          opacity={opacity}
-          transparent={opacity < 1}
-        />
-      </mesh>
-
-      {/* Lower Panel Inset */}
-      <mesh position={[0, -height / 4 - 0.1, depth / 2 + 0.005]}>
-        <boxGeometry args={[width * 0.7, height * 0.35, 0.01]} />
-        <meshStandardMaterial
-          color={doorColor}
-          roughness={0.6}
-          metalness={0.15}
-          opacity={opacity}
-          transparent={opacity < 1}
-        />
-      </mesh>
-
-      {/* Door Handle - Base Plate */}
-      <mesh position={[width / 2 - 0.12, 0, depth / 2 + 0.015]} castShadow>
-        <boxGeometry args={[0.03, 0.12, 0.015]} />
-        <meshStandardMaterial
-          color={handleColor}
-          roughness={0.3}
-          metalness={0.8}
-          opacity={opacity}
-          transparent={opacity < 1}
-        />
-      </mesh>
-
-      {/* Door Handle - Lever */}
-      <mesh position={[width / 2 - 0.12, 0, depth / 2 + 0.04]} castShadow>
-        <cylinderGeometry args={[0.015, 0.015, 0.1, 16]} />
-        <meshStandardMaterial
-          color={handleColor}
-          roughness={0.3}
-          metalness={0.8}
-          opacity={opacity}
-          transparent={opacity < 1}
-        />
-      </mesh>
-
-      {/* Door Handle - Knob */}
-      <mesh position={[width / 2 - 0.17, 0, depth / 2 + 0.04]} castShadow>
-        <sphereGeometry args={[0.02, 16, 16]} />
-        <meshStandardMaterial
-          color={handleColor}
-          roughness={0.2}
-          metalness={0.9}
-          opacity={opacity}
-          transparent={opacity < 1}
-        />
-      </mesh>
-
-      {/* Selection highlight */}
-      {isSelected && (
-        <mesh>
-          <boxGeometry args={[width + 0.15, height + 0.1, depth + 0.1]} />
-          <meshBasicMaterial color="#4f46e5" wireframe transparent opacity={0.5} />
+      <group position={[0, height / 2, 0]}>
+        {/* Main Door Panel */}
+        <mesh position={[0, 0, 0]} castShadow receiveShadow>
+          <boxGeometry args={[width, height, depth]} />
+          <meshStandardMaterial
+            color={doorColor}
+            roughness={0.7}
+            metalness={0.1}
+            opacity={opacity}
+            transparent={opacity < 1}
+          />
         </mesh>
-      )}
+
+        {/* Door Frame - Top */}
+        <mesh position={[0, height / 2 + 0.03, 0]} castShadow>
+          <boxGeometry args={[width + 0.1, 0.06, depth + 0.02]} />
+          <meshStandardMaterial
+            color={doorColor}
+            roughness={0.8}
+            metalness={0.1}
+            opacity={opacity}
+            transparent={opacity < 1}
+          />
+        </mesh>
+
+        {/* Door Frame - Left */}
+        <mesh position={[-width / 2 - 0.03, 0, 0]} castShadow>
+          <boxGeometry args={[0.06, height, depth + 0.02]} />
+          <meshStandardMaterial
+            color={doorColor}
+            roughness={0.8}
+            metalness={0.1}
+            opacity={opacity}
+            transparent={opacity < 1}
+          />
+        </mesh>
+
+        {/* Door Frame - Right */}
+        <mesh position={[width / 2 + 0.03, 0, 0]} castShadow>
+          <boxGeometry args={[0.06, height, depth + 0.02]} />
+          <meshStandardMaterial
+            color={doorColor}
+            roughness={0.8}
+            metalness={0.1}
+            opacity={opacity}
+            transparent={opacity < 1}
+          />
+        </mesh>
+
+        {/* Upper Panel Inset */}
+        <mesh position={[0, height / 4 + 0.1, depth / 2 + 0.005]}>
+          <boxGeometry args={[width * 0.7, height * 0.35, 0.01]} />
+          <meshStandardMaterial
+            color={doorColor}
+            roughness={0.6}
+            metalness={0.15}
+            opacity={opacity}
+            transparent={opacity < 1}
+          />
+        </mesh>
+
+        {/* Lower Panel Inset */}
+        <mesh position={[0, -height / 4 - 0.1, depth / 2 + 0.005]}>
+          <boxGeometry args={[width * 0.7, height * 0.35, 0.01]} />
+          <meshStandardMaterial
+            color={doorColor}
+            roughness={0.6}
+            metalness={0.15}
+            opacity={opacity}
+            transparent={opacity < 1}
+          />
+        </mesh>
+
+        {/* Door Handle - Base Plate */}
+        <mesh position={[width / 2 - 0.12, 0, depth / 2 + 0.015]} castShadow>
+          <boxGeometry args={[0.03, 0.12, 0.015]} />
+          <meshStandardMaterial
+            color={handleColor}
+            roughness={0.3}
+            metalness={0.8}
+            opacity={opacity}
+            transparent={opacity < 1}
+          />
+        </mesh>
+
+        {/* Door Handle - Lever */}
+        <mesh position={[width / 2 - 0.12, 0, depth / 2 + 0.04]} castShadow>
+          <cylinderGeometry args={[0.015, 0.015, 0.1, 16]} />
+          <meshStandardMaterial
+            color={handleColor}
+            roughness={0.3}
+            metalness={0.8}
+            opacity={opacity}
+            transparent={opacity < 1}
+          />
+        </mesh>
+
+        {/* Door Handle - Knob */}
+        <mesh position={[width / 2 - 0.17, 0, depth / 2 + 0.04]} castShadow>
+          <sphereGeometry args={[0.02, 16, 16]} />
+          <meshStandardMaterial
+            color={handleColor}
+            roughness={0.2}
+            metalness={0.9}
+            opacity={opacity}
+            transparent={opacity < 1}
+          />
+        </mesh>
+
+        {/* Selection highlight */}
+        {isSelected && (
+          <mesh>
+            <boxGeometry args={[width + 0.15, height + 0.1, depth + 0.1]} />
+            <meshBasicMaterial color="#4f46e5" wireframe transparent opacity={0.5} />
+          </mesh>
+        )}
+      </group>
     </group>
   )
 }

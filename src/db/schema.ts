@@ -31,6 +31,7 @@ export const projects = pgTable('projects', {
   seriesBible: jsonb('series_bible').notNull().default({}),
   storyPlan: jsonb('story_plan'),
   styleReferenceUrls: jsonb('style_reference_urls').default([]),
+  stylePreset: text('style_preset'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })

@@ -60,6 +60,21 @@ export const FactionSchema = z.object({
 export type WorldRule = z.infer<typeof WorldRuleSchema>
 export type Faction = z.infer<typeof FactionSchema>
 
+export const ItemSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(2),
+  description: z.string().min(20).describe('Description of the item, its history, or its unique properties. Min 20 chars.'),
+})
+
+export const EventSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(2),
+  description: z.string().min(20).describe('Description of the event, its impact, and its legacy. Min 20 chars.'),
+})
+
+export type Item = z.infer<typeof ItemSchema>
+export type StoryEvent = z.infer<typeof EventSchema>
+
 export const BeatTypeSchema = z.enum([
   'setup',
   'complication',
@@ -166,16 +181,12 @@ export const RoadmapEpisodeSchema = z.object({
   thematicQuestion: z.string().nullable().optional(),
 })
 
-export type RoadmapEpisode = z.infer<typeof RoadmapEpisodeSchema>
-
 export const EpisodeRoadmapSchema = z.object({
   episodes: z.array(RoadmapEpisodeSchema).optional().describe('List of episodes in the season'),
   sequences: z.array(RoadmapEpisodeSchema).optional().describe('Legacy alias for episodes'),
   seasonStructure: z.any().optional(), // Flexible for now
   executiveSummary: z.string().optional(),
 })
-
-export type EpisodeRoadmap = z.infer<typeof EpisodeRoadmapSchema>
 
 
 // Season Structure Schema (New Root Level Object)
@@ -257,7 +268,7 @@ export const StoryPlanSchema = z.object({
   episodeRoadmap: EpisodeRoadmapSchema.nullable().optional(),
 
   // New World Premise fields
-  worldDescription: z.string().min(100).nullable().optional().describe('World description must paint a vivid picture — min 100 chars.'),
+  worldDescription: z.string().min(100).nullable().optional().describe('World description must paint a vivid picture — min 100 chars. MUST weave in key cast and item/event/rule links in the prose using [Name][item-id], [Name][event-id], [Name][rule-id]. Minimum counts are in storyteller config (entityLinks). Only links in the narrative text count.'),
   plotTwists: z
     .array(z.string())
     .nullable()
@@ -284,6 +295,10 @@ export const StoryPlanSchema = z.object({
   moodImages: z.array(z.string()),
 
   themes: z.array(z.string()),
+
+  // Items and Events
+  items: z.array(ItemSchema).nullable().optional(),
+  events: z.array(EventSchema).nullable().optional(),
 
   // Episode Poster / Combined Storyboard
   posterUrl: z.string().nullable().optional(),

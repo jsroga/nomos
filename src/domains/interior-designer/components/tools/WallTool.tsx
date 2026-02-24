@@ -113,6 +113,7 @@ export const WallTool: React.FC = () => {
         end: newWallEnd,
         height: 3,
         thickness: 0.2,
+        level: activeLevel,
       })
 
       // If a closed polygon was formed, auto-create a floor
@@ -121,6 +122,7 @@ export const WallTool: React.FC = () => {
         addFloor({
           points: closedPolygon,
           y: 0,
+          level: activeLevel,
         })
         // If we closed a room, stop the chain
         setStartPoint(null)

@@ -279,47 +279,6 @@ export const Toolbar: React.FC = () => {
 
         <div className="w-8 h-px bg-border/50 my-1" />
 
-        {/* Vertical Level Navigator / Slice Stack */}
-        <div className="flex flex-col items-center gap-3 pt-2">
-          <span className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-1">
-            {mode === 'TERRAIN' ? 'Slice' : 'Level'}
-          </span>
-          <div className="flex flex-col-reverse gap-2">
-            {[0, 1, 2].map(level => {
-              const isActive = activeLevel === level
-              return (
-                <Tooltip key={level}>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => setActiveLevel(level)}
-                      className={cn(
-                        'relative w-9 h-9 flex items-center justify-center rounded-2xl transition-all duration-500 overflow-hidden border group',
-                        isActive
-                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)] scale-110 z-10'
-                          : 'bg-muted/10 border-border/40 text-zinc-500 hover:text-zinc-300 hover:border-border'
-                      )}
-                    >
-                      {/* Depth effect for inactive ones */}
-                      {!isActive && (
-                        <div className="absolute inset-0 bg-gradient-to-tr from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      )}
-
-                      <span className="relative z-10 text-[10px] font-black">L{level}</span>
-
-                      {/* Active indicator bar */}
-                      {isActive && (
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3 bg-white rounded-r-full shadow-[0_0_8px_white]" />
-                      )}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    <p>{mode === 'TERRAIN' ? `Terrain Slice ${level}` : `Level ${level}`}</p>
-                  </TooltipContent>
-                </Tooltip>
-              )
-            })}
-          </div>
-        </div>
       </div>
     </TooltipProvider>
   )

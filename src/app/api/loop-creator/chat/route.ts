@@ -3,18 +3,19 @@
  *
  * Streaming endpoint for game loop design conversations.
  * Uses Server-Sent Events for real-time updates.
- *
- * Migrated to Mastra-based GameDesignAgent (Phase 8)
+ * Runs on Mastra framework (same pattern as Storyteller).
  */
 
 import { NextRequest } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
-import { GameDesignAgent } from '@/domains/game-design/agent'
-import { PlanPersistence } from '@/agent-core/planner'
+import { streamLoopCreator } from '@/domains/loop-creator/graph/loop-graph'
+import { LoopCreatorState } from '@/domains/loop-creator/graph/state'
+import { HumanMessage, AIMessage } from '@langchain/core/messages'
 import { langfuse, isLangfuseEnabled } from '@/agent-core/observability'
 
 export const maxDuration = 120
+export const runtime = 'nodejs'
 
 interface CanvasNode {
   id: string
@@ -32,25 +33,14 @@ interface CanvasEdge {
   label?: string
 }
 
-interface LoopSessionState {
-  mechanics: unknown[]
-  connections: unknown[]
-  loops: unknown[]
-  progressionSystems: unknown[]
-  balanceAnalysis: { overallScore?: number } | null
-  currentPhase: string
-  gameGenre: string
-  gamePlatform: string
-  gameDescription: string
-  targetAudience: string
-}
-
 interface ChatRequest {
   message: string
   projectId: string
   threadId?: string
   sessionId?: string // Langfuse session ID for grouped traces
   userId?: string // User ID for tracking
+  /** Recent conversation so the agent has context (avoids stateless replies) */
+  recentMessages?: { role: 'user' | 'assistant'; content: string }[]
   context?: {
     gameGenre?: string
     gamePlatform?: string
@@ -68,15 +58,15 @@ interface ChatRequest {
 // StreamEvent interface for UI compatibility
 interface StreamEvent {
   type:
-    | 'node'
-    | 'message'
-    | 'action'
-    | 'questions'
-    | 'token'
-    | 'error'
-    | 'start'
-    | 'state'
-    | 'complete'
+  | 'node'
+  | 'message'
+  | 'action'
+  | 'questions'
+  | 'token'
+  | 'error'
+  | 'start'
+  | 'state'
+  | 'complete'
   node?: string
   agent?: string
   content?: string
@@ -109,56 +99,6 @@ function formatSSE(data: StreamEvent): string {
   return `data: ${jsonStr}\n\n`
 }
 
-// In-memory session storage (for thread persistence)
-// In production, this should use a database
-const sessionStore = new Map<string, LoopSessionState>()
-
-// Simple in-memory plan persistence
-class InMemoryPlanPersistence implements PlanPersistence {
-  private plans = new Map<string, unknown>()
-
-  constructor(private threadId: string) {}
-
-  async loadPlan() {
-    return this.plans.get(this.threadId) || null
-  }
-
-  async savePlan(plan: unknown) {
-    this.plans.set(this.threadId, plan)
-  }
-}
-
-async function getAgent(threadId: string): Promise<GameDesignAgent> {
-  const persistence = new InMemoryPlanPersistence(threadId)
-  return GameDesignAgent.create({
-    modelName: process.env.GAME_DESIGN_MODEL || 'openai:gpt-4o',
-    persistence,
-  })
-}
-
-function convertCanvasToMechanics(nodes: CanvasNode[], edges: CanvasEdge[]) {
-  const mechanics = (nodes || [])
-    .filter(n => n.type !== 'group')
-    .map(n => ({
-      id: n.id,
-      name: n.label || n.data?.label || n.id,
-      type: (n.data?.nodeType || 'core') as string,
-      description: n.data?.description || n.description || '',
-      inputs: [] as string[],
-      outputs: [] as string[],
-      balanceFactors: { effort: 5, reward: 5, frequency: 5 },
-    }))
-
-  const connections = (edges || []).map(e => ({
-    id: e.id,
-    source: e.source,
-    target: e.target,
-    type: 'triggers' as string,
-    label: e.label || '',
-  }))
-
-  return { mechanics, connections }
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -176,6 +116,7 @@ export async function POST(req: NextRequest) {
       projectId,
       threadId,
       context,
+      recentMessages,
       modelConfig,
       sessionId: bodySessionId,
       userId,
@@ -246,154 +187,47 @@ export async function POST(req: NextRequest) {
         try {
           const currentThreadId = threadId || crypto.randomUUID()
 
-          // Get or create session state
-          let sessionState = sessionStore.get(currentThreadId) || {
-            mechanics: [],
-            connections: [],
-            loops: [],
-            progressionSystems: [],
-            balanceAnalysis: null,
-            currentPhase: 'ideation',
-            gameGenre: context?.gameGenre || '',
-            gamePlatform: context?.gamePlatform || '',
-            gameDescription: context?.gameDescription || '',
-            targetAudience: context?.targetAudience || 'midcore',
-          }
-
-          // Update with canvas state if provided
-          if (context?.nodes || context?.edges) {
-            const { mechanics, connections } = convertCanvasToMechanics(
-              context?.nodes || [],
-              context?.edges || []
-            )
-            if (mechanics.length > 0) {
-              sessionState.mechanics = mechanics
-            }
-            if (connections.length > 0) {
-              sessionState.connections = connections
-            }
-          }
-
-          // Update context
-          if (context?.gameGenre) sessionState.gameGenre = context.gameGenre
-          if (context?.gamePlatform) sessionState.gamePlatform = context.gamePlatform
-          if (context?.gameDescription) sessionState.gameDescription = context.gameDescription
-          if (context?.targetAudience) sessionState.targetAudience = context.targetAudience
-
           safeEnqueue({
             type: 'start',
             threadId: currentThreadId,
             timestamp: Date.now(),
           })
 
-          // Get Mastra agent
-          const agent = await getAgent(currentThreadId)
-
-          // Emit node event for agent starting
-          safeEnqueue({
-            type: 'node',
-            node: 'game_design_agent',
-            agent: 'game_design_agent',
-            timestamp: Date.now(),
-          })
-
-          // Run the agent
-          const result = await agent.runWithContext({
-            projectId,
-            genre: sessionState.gameGenre || 'game',
-            targetAudience: sessionState.targetAudience as 'casual' | 'midcore' | 'hardcore',
-            existingMechanics: sessionState.mechanics,
-            userMessage: message,
-          })
-
-          // Emit message event with agent response
-          if (result.thought) {
-            safeEnqueue({
-              type: 'message',
-              message: {
-                type: 'ai',
-                content: result.thought,
-                sender: 'game_design_agent',
-                name: 'Game Design Agent',
-              },
-              timestamp: Date.now(),
-            })
+          const initialState: LoopCreatorState = {
+            messages: [
+              ...(recentMessages?.map(m =>
+                m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content)
+              ) || []),
+              new HumanMessage(message),
+            ],
+            roundCount: 0,
+            gameContext: {
+              gameGenre: context?.gameGenre,
+              gamePlatform: context?.gamePlatform,
+              targetAudience: context?.targetAudience,
+              gameDescription: context?.gameDescription,
+            },
+            currentPhase: 'ideation',
+            nextAgent: 'supervisor',
           }
 
-          // Handle different response types
-          if (result.type === 'ASK_USER' && result.payload?.question) {
-            safeEnqueue({
-              type: 'questions',
-              questions: [
-                {
-                  id: crypto.randomUUID(),
-                  question: result.payload.question,
-                  options: result.payload.options || [],
-                },
-              ],
-              timestamp: Date.now(),
-            })
-          }
-
-          if (result.type === 'EXECUTE_STEP' && result.payload) {
-            // Emit action for tool execution
-            safeEnqueue({
-              type: 'action',
-              action: {
-                type: result.payload.tool || 'tool_call',
-                payload: result.payload,
-                reasoning: result.thought,
-              },
-              timestamp: Date.now(),
-            })
-
-            // If the action created mechanics or loops, update session state
-            if (result.payload.mechanics) {
-              sessionState.mechanics = result.payload.mechanics
+          // Let the LoopGraph run and stream events
+          const finalState = await streamLoopCreator(
+            initialState,
+            { configurable: { thread_id: currentThreadId } },
+            (event) => {
+              safeEnqueue(event as StreamEvent)
             }
-            if (result.payload.loops) {
-              sessionState.loops = result.payload.loops
-            }
-            if (result.payload.balanceAnalysis) {
-              sessionState.balanceAnalysis = result.payload.balanceAnalysis
-            }
-          }
+          )
 
-          if (result.type === 'PROPOSE_PLAN' && result.payload?.plan) {
-            safeEnqueue({
-              type: 'action',
-              action: {
-                type: 'propose_plan',
-                payload: result.payload.plan,
-                reasoning: result.thought,
-              },
-              timestamp: Date.now(),
-            })
-          }
-
-          if (result.type === 'FINISH') {
-            sessionState.currentPhase = 'complete'
-            if (result.payload) {
-              // Update state with final results
-              if (result.payload.mechanics) sessionState.mechanics = result.payload.mechanics
-              if (result.payload.loops) sessionState.loops = result.payload.loops
-              if (result.payload.balanceAnalysis)
-                sessionState.balanceAnalysis = result.payload.balanceAnalysis
-            }
-          }
-
-          // Save session state
-          sessionStore.set(currentThreadId, sessionState)
-
-          // Emit final state
           safeEnqueue({
             type: 'state',
-            mechanics: sessionState.mechanics?.length || 0,
-            connections: sessionState.connections?.length || 0,
-            loops: sessionState.loops?.length || 0,
-            progressionSystems: sessionState.progressionSystems?.length || 0,
-            balanceScore: sessionState.balanceAnalysis?.overallScore,
-            phase: sessionState.currentPhase,
+            mechanics: finalState.mechanics?.length ?? 0,
+            connections: finalState.connections?.length ?? 0,
+            loops: finalState.loops?.length ?? 0,
+            progressionSystems: finalState.progressionSystems?.length ?? 0,
+            balanceScore: finalState.balanceAnalysis?.overallScore,
+            phase: finalState.currentPhase || 'ideation',
             timestamp: Date.now(),
           })
 

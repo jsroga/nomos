@@ -41,7 +41,7 @@ const mockResponse = {
 
 vi.mock('@langchain/openai', () => ({
   ChatOpenAI: class {
-    constructor() {}
+    constructor() { }
     async invoke() {
       return mockResponse
     }
@@ -73,9 +73,9 @@ describe('Loop Planner Agent', () => {
     const addNodeActions = result.pendingActions!.filter(a => a.type === 'ADD_NODE')
     expect(addNodeActions.length).toBe(2)
 
-    // Check first node payload
+    // Check first node payload (it's now a group node)
     expect(addNodeActions[0].payload.label).toBe('Internal Dialogue Loop')
-    expect(addNodeActions[0].payload.nodeType).toBe('challenge') // core -> challenge
+    expect(addNodeActions[0].payload.nodeType).toBe('group')
     expect(addNodeActions[0].payload.loopData).toBeDefined()
     expect(addNodeActions[0].payload.loopData.type).toBe('core')
   })
@@ -85,10 +85,10 @@ describe('Loop Planner Agent', () => {
 
     const edgeActions = result.pendingActions!.filter(a => a.type === 'ADD_EDGE')
 
-    // Should connect core -> session
+    // Should connect core group -> session group
     expect(edgeActions.length).toBeGreaterThanOrEqual(1)
-    expect(edgeActions[0].payload.source).toBe('dialogue-loop')
-    expect(edgeActions[0].payload.target).toBe('investigation-loop')
+    expect(edgeActions[0].payload.source).toBe('group-dialogue-loop')
+    expect(edgeActions[0].payload.target).toBe('group-investigation-loop')
   })
 
   it('should return a message', async () => {

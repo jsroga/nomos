@@ -3,8 +3,8 @@ import { Trash2, Edit2, Check, X, GripVertical, Sparkles, ImageIcon } from 'luci
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-
 import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 
 interface Beat {
   id: string
@@ -67,32 +67,32 @@ export const BeatCard: React.FC<BeatCardProps> = ({
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'setup':
-        return 'border-l-blue-500 bg-blue-500/5'
+        return 'border-l-blue-500 bg-card'
       case 'complication':
-        return 'border-l-red-500 bg-red-500/5'
+        return 'border-l-red-500 bg-card'
       case 'revelation':
-        return 'border-l-yellow-500 bg-yellow-500/5'
+        return 'border-l-amber-500 bg-card'
       case 'decision':
-        return 'border-l-purple-500 bg-purple-500/5'
+        return 'border-l-purple-500 bg-card'
       case 'consequence':
-        return 'border-l-orange-500 bg-orange-500/5'
+        return 'border-l-orange-500 bg-card'
       case 'resolution':
-        return 'border-l-green-500 bg-green-500/5'
+        return 'border-l-emerald-500 bg-card'
       default:
-        return 'border-l-neutral-500 bg-neutral-500/5'
+        return 'border-l-border bg-card'
     }
   }
 
   const getStatusBadge = (status?: string) => {
     switch (status) {
       case 'approved':
-        return 'bg-green-500/20 text-green-400'
+        return 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
       case 'proposed':
-        return 'bg-yellow-500/20 text-yellow-400'
+        return 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
       case 'locked':
-        return 'bg-blue-500/20 text-blue-400'
+        return 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
       default:
-        return 'bg-neutral-500/20 text-neutral-400'
+        return 'bg-muted text-muted-foreground border border-border'
     }
   }
 
@@ -111,19 +111,18 @@ export const BeatCard: React.FC<BeatCardProps> = ({
       onDragStart={e => onDragStart(e, beat.id)}
       onDragOver={e => onDragOver(e, beat.id)}
       onDrop={e => onDrop(e, beat.id)}
-      className={`min-h-[140px] bg-card/80 backdrop-blur border border-border/50 text-foreground p-4 rounded-lg shadow-xl transform transition-all duration-200 border-l-4 ${getTypeColor(beatType)} flex flex-col group relative ${!isEditing ? 'hover:-translate-y-1 hover:shadow-2xl cursor-grab active:cursor-grabbing' : ''}`}
+      className={`min-h-[120px] border border-border text-foreground p-4 rounded-md border-l-[3px] ${getTypeColor(beatType)} flex flex-col group relative transition-colors ${!isEditing ? 'cursor-grab active:cursor-grabbing hover:border-l-opacity-100' : ''}`}
     >
-      {/* Drag handle */}
       {!isEditing && (
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-50 transition-opacity">
-          <GripVertical size={14} className="text-muted-foreground" />
+        <div className="absolute top-3 right-3 opacity-40 group-hover:opacity-70 transition-opacity pointer-events-none">
+          <GripVertical size={12} className="text-muted-foreground" />
         </div>
       )}
 
-      <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex justify-between items-center">
+      <div className="flex justify-between items-center mb-2 gap-2">
         {isEditing ? (
           <select
-            className="bg-background border border-border rounded px-2 py-1 text-xs"
+            className="bg-muted border border-border rounded-md px-2 py-1.5 text-xs font-mono uppercase tracking-wider text-foreground focus:border-primary outline-none"
             value={editState.type || editState.beatType}
             onChange={e =>
               setEditState({ ...editState, type: e.target.value, beatType: e.target.value })
@@ -137,156 +136,160 @@ export const BeatCard: React.FC<BeatCardProps> = ({
             <option value="resolution">Resolution</option>
           </select>
         ) : (
-          <div className="flex items-center gap-2">
-            <span className="text-primary">{beatType}</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-mono text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+              {beatType}
+            </span>
             {beat.status && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded ${getStatusBadge(beat.status)}`}>
+              <span
+                className={`font-mono text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-md ${getStatusBadge(beat.status)}`}
+              >
                 {beat.status}
               </span>
             )}
           </div>
         )}
-        <span className="text-primary font-mono">#{beat.sequence}</span>
+        <span className="font-mono text-[10px] text-muted-foreground tabular-nums flex-shrink-0">
+          #{beat.sequence}
+        </span>
       </div>
 
       {isEditing ? (
         <Textarea
-          className="flex-1 resize-none text-sm bg-background border-border p-2 mb-2 min-h-[80px]"
+          className="flex-1 resize-none text-sm bg-muted/50 border border-border rounded-md p-3 mb-3 min-h-[72px] focus:border-primary outline-none"
           value={editState.logline}
           onChange={e => setEditState({ ...editState, logline: e.target.value })}
         />
       ) : (
-        <p className="text-sm leading-relaxed flex-1 overflow-y-auto scrollbar-hide text-foreground/90">
+        <p className="text-sm leading-relaxed flex-1 overflow-y-auto scrollbar-hide text-foreground/95 min-h-[2.5rem]">
           {beat.logline}
         </p>
       )}
 
-      {/* Storyboard Image or Skeleton */}
       {(beat.imageUrl || beat.imagePrompt) && !isEditing && (
         <div
-          className="mt-2 w-full aspect-video rounded overflow-hidden border border-border/50 relative group/image cursor-zoom-in"
+          className="mt-3 w-full aspect-video rounded-md overflow-hidden border border-border relative group/image cursor-zoom-in"
           onClick={() => beat.imageUrl && onExpand?.(beat.id)}
         >
           {beat.imageUrl ? (
             <img
               src={`/projects/${projectId}/${beat.imageUrl}`}
               alt={beat.imagePrompt || 'Beat storyboard'}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover/image:scale-105"
+              className="w-full h-full object-cover transition-transform duration-300 group-hover/image:scale-[1.02]"
             />
           ) : (
             <div className="w-full h-full relative">
-              <Skeleton className="w-full h-full absolute inset-0 bg-white/5" />
+              <Skeleton className="w-full h-full absolute inset-0 rounded-none" />
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-xs text-white/30 font-medium animate-pulse">
-                  Generating Scene...
+                <span className="font-mono text-[10px] text-muted-foreground animate-pulse">
+                  Generating…
                 </span>
               </div>
             </div>
           )}
-
           {beat.imagePrompt && beat.imageUrl && (
-            <div className="absolute inset-0 bg-black/80 p-2 text-[10px] text-white opacity-0 group-hover/image:opacity-100 transition-opacity overflow-y-auto">
+            <div className="absolute inset-0 bg-black/80 p-2 font-mono text-[10px] text-white opacity-0 group-hover/image:opacity-100 transition-opacity overflow-y-auto">
               {beat.imagePrompt}
             </div>
           )}
         </div>
       )}
 
-      <div className="mt-3 flex justify-between items-end pt-2 border-t border-border/30">
-        <div className="flex gap-1">
-          {/* Character Avatars (Mock) */}
-          <div className="w-5 h-5 rounded-full bg-primary/20 border border-primary/30"></div>
+      <div className="mt-3 flex justify-between items-center pt-3 border-t border-border">
+        <div className="flex gap-1" aria-hidden>
+          <div className="w-4 h-4 rounded-md bg-muted border border-border" />
         </div>
-
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className={cn('flex gap-0.5', !isEditing && 'opacity-70 group-hover:opacity-100 transition-opacity')}>
           {isEditing ? (
             <>
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-6 w-6 p-0 text-green-400 hover:text-green-300 hover:bg-green-500/10"
+                className="h-7 w-7 p-0 rounded-md text-emerald-400 hover:bg-emerald-500/10"
                 onClick={handleSave}
               >
-                <Check size={14} />
+                <Check size={12} />
               </Button>
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground hover:bg-muted"
+                className="h-7 w-7 p-0 rounded-md text-muted-foreground hover:bg-muted"
                 onClick={() => setIsEditing(false)}
               >
-                <X size={14} />
+                <X size={12} />
               </Button>
             </>
           ) : (
-            <TooltipProvider delayDuration={300}>
-              {/* Generate Content Button */}
+            <TooltipProvider delayDuration={200}>
               {onSendMessage && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className={`h-6 w-6 p-0 text-muted-foreground hover:text-purple-400 hover:bg-purple-500/10 ${isGenerating === 'content' ? 'animate-pulse text-purple-400' : ''}`}
+                      className={cn(
+                        'h-7 w-7 p-0 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10',
+                        isGenerating === 'content' && 'animate-pulse text-primary'
+                      )}
                       onClick={handleGenerateContent}
                       disabled={isGenerating !== null}
                     >
-                      <Sparkles size={14} />
+                      <Sparkles size={12} />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs">
+                  <TooltipContent side="top" className="text-xs rounded-md">
                     Generate scene content
                   </TooltipContent>
                 </Tooltip>
               )}
-              {/* Generate Image Button */}
               {onSendMessage && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className={`h-6 w-6 p-0 text-muted-foreground hover:text-cyan-400 hover:bg-cyan-500/10 ${isGenerating === 'image' ? 'animate-pulse text-cyan-400' : ''}`}
+                      className={cn(
+                        'h-7 w-7 p-0 rounded-md text-muted-foreground hover:text-cyan-400 hover:bg-cyan-500/10',
+                        isGenerating === 'image' && 'animate-pulse text-cyan-400'
+                      )}
                       onClick={handleGenerateImage}
                       disabled={isGenerating !== null}
                     >
-                      <ImageIcon size={14} />
+                      <ImageIcon size={12} />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs">
+                  <TooltipContent side="top" className="text-xs rounded-md">
                     Generate storyboard image
                   </TooltipContent>
                 </Tooltip>
               )}
-              {/* Edit Button */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-6 w-6 p-0 text-muted-foreground hover:text-blue-400 hover:bg-blue-500/10"
+                    className="h-7 w-7 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
                     onClick={() => setIsEditing(true)}
                   >
-                    <Edit2 size={14} />
+                    <Edit2 size={12} />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">
+                <TooltipContent side="top" className="text-xs rounded-md">
                   Edit beat
                 </TooltipContent>
               </Tooltip>
-              {/* Delete Button */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-6 w-6 p-0 text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
+                    className="h-7 w-7 p-0 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                     onClick={() => onDelete(beat.id)}
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={12} />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">
+                <TooltipContent side="top" className="text-xs rounded-md">
                   Delete beat
                 </TooltipContent>
               </Tooltip>

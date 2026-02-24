@@ -210,15 +210,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               size="sm"
               onClick={runEvaluation}
               disabled={isEvaluating || messages.length === 0}
-              className="h-8 gap-2 text-xs font-medium border border-purple-500/40 hover:border-purple-500/60"
+              className="group h-8 gap-2 text-xs font-medium text-purple-400 border border-purple-500/40 hover:bg-purple-500 hover:text-white hover:border-purple-500 transition-colors duration-200"
               title="Run LLM-as-Judge evaluation on this conversation"
             >
               {isEvaluating ? (
-                <Loader2 size={14} className="animate-spin text-purple-400" />
+                <Loader2 size={14} className="animate-spin text-purple-400 group-hover:text-white transition-colors duration-200" />
               ) : (
-                <FlaskConical size={14} className="text-purple-400" />
+                <FlaskConical size={14} className="text-purple-400 group-hover:text-white transition-colors duration-200" />
               )}
-              <span className="text-purple-400">
+              <span className="text-purple-400 group-hover:text-white transition-colors duration-200">
                 {isEvaluating
                   ? 'Evaluating...'
                   : evalResult

@@ -129,7 +129,7 @@ export class UpscaleService {
 
     try {
       // 1. Fetch the tile image and convert to base64
-      const imageUrl = `/projects/${tile.project_id}/${tile.image_filename}`
+      const imageUrl = tile.image_filename.startsWith('http') ? tile.image_filename : `/projects/${tile.project_id}/${tile.image_filename}`
       const response = await fetch(imageUrl)
       if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`)
       const blob = await response.blob()
@@ -191,6 +191,7 @@ export class UpscaleService {
     } catch (error) {
       console.error('Upscale error:', error)
       // Clean up status on error
+      useWorldStore.getState().setTileError(tile.x, tile.y, error instanceof Error ? error.message : 'Upscale failed')
       useWorldStore.getState().removeUpscalingTile(tile.x, tile.y)
       useGlobalStatusStore.getState().removeOperation(opId)
       throw error
@@ -215,6 +216,7 @@ export class UpscaleService {
           consecutiveErrors++
           if (consecutiveErrors > 5) {
             console.warn('Upscale run not found after retries, clearing state')
+            useWorldStore.getState().setTileError(runState.tileX, runState.tileY, 'Upscale task not found')
             this.clearRunState(runState, opId)
             return
           }
@@ -248,7 +250,9 @@ export class UpscaleService {
 
         // Check if failed
         if (!ACTIVE_TASK_STATUSES.includes(statusData.status)) {
-          console.error('Upscale failed:', statusData.error || statusData.status)
+          const errorMsg = statusData.error || `Upscale failed (${statusData.status})`
+          console.error('Upscale failed:', errorMsg)
+          useWorldStore.getState().setTileError(runState.tileX, runState.tileY, errorMsg)
           this.clearRunState(runState, opId)
           return
         }
@@ -307,7 +311,7 @@ export class UpscaleService {
         const tiles = useWorldStore.getState().tiles
         const existingTile = tiles[`${runState.tileX},${runState.tileY}`]
         const originalUrl = existingTile?.image_filename
-          ? `/projects/${runState.projectId}/${existingTile.image_filename}`
+          ? (existingTile.image_filename.startsWith('http') ? existingTile.image_filename : `/projects/${runState.projectId}/${existingTile.image_filename}`)
           : output.originalUrl
 
         // Store pending upscale in store

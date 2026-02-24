@@ -107,7 +107,7 @@ export class RepaintService {
 
           // If tile exists, load and draw the existing image first
           if (existingTile) {
-            const existingImageUrl = `/projects/${currentProject.id}/${existingTile.image_filename}`
+            const existingImageUrl = existingTile.image_filename.startsWith('http') ? existingTile.image_filename : `/projects/${currentProject.id}/${existingTile.image_filename}`
             try {
               const existingImg = await this.loadImageFromUrl(existingImageUrl)
               ctx.drawImage(existingImg, 0, 0, this.TILE_SIZE, this.TILE_SIZE)
@@ -350,7 +350,7 @@ export class RepaintService {
       img.crossOrigin = 'Anonymous'
       img.onload = () => resolve(img)
       img.onerror = reject
-      img.src = `/projects/${projectId}/${filename}`
+      img.src = filename.startsWith('http') ? filename : `/projects/${projectId}/${filename}`
     })
   }
 }

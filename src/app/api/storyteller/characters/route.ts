@@ -426,12 +426,7 @@ export async function PATCH(req: NextRequest) {
     if (portraitUrl !== undefined) dbUpdates.portraitUrl = portraitUrl
 
     // Metrics
-    // if (stress !== undefined) dbUpdates.stressLevel = stress // REMOVED
-    // if (trust !== undefined) dbUpdates.trustLevel = trust // REMOVED
-    // if (power !== undefined) dbUpdates.powerLevel = power // REMOVED
-    if (morality !== undefined) dbUpdates.moralAlignment = morality // Mapped
-    // if (hope !== undefined) dbUpdates.hopeLevel = hope // REMOVED
-    // if (isolation !== undefined) dbUpdates.isolationLevel = isolation // REMOVED
+    if (morality !== undefined) dbUpdates.moralAlignment = morality
     if (transformation !== undefined) dbUpdates.transformationProgress = transformation
 
     // Approximate mappings for new schema if legacy values provided

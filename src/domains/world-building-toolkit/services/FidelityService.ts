@@ -134,6 +134,7 @@ export class FidelityService {
     } catch (error) {
       console.error('Fidelity enhancement error:', error)
       // Clean up status on error
+      useWorldStore.getState().setTileError(tile.x, tile.y, error instanceof Error ? error.message : 'Enhancement failed')
       useWorldStore.getState().removeEnhancingTile(tile.x, tile.y)
       useGlobalStatusStore.getState().removeOperation(opId)
       throw error
@@ -157,6 +158,7 @@ export class FidelityService {
           consecutiveErrors++
           if (consecutiveErrors > 5) {
             console.warn('Fidelity run not found after retries, clearing state')
+            useWorldStore.getState().setTileError(runState.tileX, runState.tileY, 'Enhancement task not found')
             this.clearRunState(runState, opId)
             return
           }
@@ -186,7 +188,9 @@ export class FidelityService {
         }
 
         if (!ACTIVE_TASK_STATUSES.includes(statusData.status)) {
-          console.error('Fidelity enhancement failed:', statusData.error || statusData.status)
+          const errorMsg = statusData.error || `Enhancement failed (${statusData.status})`
+          console.error('Fidelity enhancement failed:', errorMsg)
+          useWorldStore.getState().setTileError(runState.tileX, runState.tileY, errorMsg)
           this.clearRunState(runState, opId)
           return
         }
@@ -251,7 +255,7 @@ export class FidelityService {
         const tiles = useWorldStore.getState().tiles
         const existingTile = tiles[`${runState.tileX},${runState.tileY}`]
         const originalUrl = existingTile?.image_filename
-          ? `/projects/${runState.projectId}/${existingTile.image_filename}`
+          ? (existingTile.image_filename.startsWith('http') ? existingTile.image_filename : `/projects/${runState.projectId}/${existingTile.image_filename}`)
           : output.originalUrl || ''
 
         // Store pending fidelity in store

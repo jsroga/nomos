@@ -8,12 +8,13 @@ vi.mock('@/mcp/core/auth', () => ({
   getServiceContext: vi.fn(),
 }))
 
-import { validateApiKey, getServiceContext } from '@/mcp/core/auth'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { validateApiKey, getServiceContext, type ApiKeyValidationResult } from '@/mcp/core/auth'
 
 describe('Request Context (AsyncLocalStorage)', () => {
   const mockContext: MCPServiceContext = {
     userId: 'test-user-id',
-    supabase: {} as any,
+    supabase: {} as unknown as SupabaseClient,
     apiKeyId: 'key-id',
     apiKeyName: 'Test Key',
     scopes: ['*'],
@@ -85,7 +86,7 @@ describe('Request Context (AsyncLocalStorage)', () => {
         userId: 'env-user',
       }
 
-      vi.mocked(validateApiKey).mockResolvedValue(mockAuthResult as any)
+      vi.mocked(validateApiKey).mockResolvedValue(mockAuthResult as ApiKeyValidationResult)
       vi.mocked(getServiceContext).mockResolvedValue(mockEnvContext)
 
       const result = await getCurrentContext()

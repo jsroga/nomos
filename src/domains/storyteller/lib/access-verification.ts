@@ -217,39 +217,4 @@ export async function getUserProjects(userId: string): Promise<string[]> {
   return result.map(r => r.id)
 }
 
-/**
- * Verify multiple entities at once
- * More efficient for batch operations
- */
-async function verifyMultipleBeatAccess(
-  beatIds: string[],
-  userId: string
-): Promise<Map<string, boolean>> {
-  if (beatIds.length === 0) return new Map()
 
-  // Get user's project IDs first
-  const userProjectIds = await getUserProjects(userId)
-  const projectIdSet = new Set(userProjectIds)
-
-  // Query all beats with their project chain
-  const results = await db
-    .select({
-      beatId: beats.id,
-      projectId: projects.id,
-    })
-    .from(beats)
-    .innerJoin(episodes, eq(beats.episodeId, episodes.id))
-    .innerJoin(projects, eq(episodes.projectId, projects.id))
-  // Note: We'd need to use SQL IN clause for beatIds filtering
-  // For now, filter in memory for simplicity
-
-  const accessMap = new Map<string, boolean>()
-  const resultMap = new Map(results.map(r => [r.beatId, r.projectId]))
-
-  for (const beatId of beatIds) {
-    const projectId = resultMap.get(beatId)
-    accessMap.set(beatId, projectId ? projectIdSet.has(projectId) : false)
-  }
-
-  return accessMap
-}

@@ -7,6 +7,7 @@ import {
   verifyProjectAccess,
   type AuthenticatedRequest,
 } from '@/lib/api-utils'
+import { resolveStyleReferenceUrls } from '@/config/style-presets'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,16 +45,19 @@ export const POST = withRateLimit(
       return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
     }
 
-    // Fetch project style references using authenticated client
+    // Fetch project style references using authenticated client (preset or custom URLs)
     let styleReferenceUrls = payload.styleReferenceUrls
     if (!styleReferenceUrls) {
       const { data } = await supabase
         .from('projects')
-        .select('style_reference_urls')
+        .select('style_reference_urls, style_preset')
         .eq('id', payload.projectId)
         .single()
 
-      styleReferenceUrls = data?.style_reference_urls || []
+      styleReferenceUrls = resolveStyleReferenceUrls({
+        stylePreset: data?.style_preset,
+        styleReferenceUrls: data?.style_reference_urls,
+      })
     }
 
     // Trigger the upscale task with style references

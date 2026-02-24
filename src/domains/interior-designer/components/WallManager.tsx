@@ -29,7 +29,14 @@ const WallMesh: React.FC<{
       position={[midPoint.x, wall.height / 2, midPoint.z]}
       rotation={[0, -angle, 0]}
       onClick={onClick}
-      userData={{ id: wall.id }}
+      userData={{
+        id: wall.id,
+        type: 'wall',
+        start: wall.start,
+        end: wall.end,
+        thickness: wall.thickness,
+        height: wall.height,
+      }}
     >
       <boxGeometry args={[length, wall.height, wall.thickness]} />
       {textureUrl ? (

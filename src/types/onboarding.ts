@@ -14,7 +14,8 @@ export interface ModuleOnboardingState {
 
 export interface OnboardingState {
   skipAll: boolean
-  modules: Record<ModuleId, ModuleOnboardingState>
+  modules: Record<ModuleId, ModuleOnboardingState> // Legacy: kept for backward compatibility
+  routes: Record<string, ModuleOnboardingState> // New: per-route tracking (pathname as key)
 }
 
 export const DEFAULT_ONBOARDING_STATE: OnboardingState = {
@@ -26,6 +27,7 @@ export const DEFAULT_ONBOARDING_STATE: OnboardingState = {
     'world-gen': { completed: false, skipped: false },
     'asset-exporter': { completed: false, skipped: false },
   },
+  routes: {}, // Per-route onboarding state
 }
 
 export interface ModuleTourConfig {

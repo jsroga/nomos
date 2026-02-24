@@ -585,6 +585,53 @@ async function test_E2E_LinksExtraction() {
   }
 }
 
+async function test_E2E_WorldDescription_LinkGateAndNoLoop() {
+  console.log('  📤 Requesting world description (may reject then accept; must not loop)...')
+
+  const events = await sendChatMessage(
+    'Generate a brand new rich world description with setting, atmosphere, and key details. Weave in items, events, and world rules as [Name][id] links in the prose.',
+    TEST_PROJECT_ID
+  )
+
+  const toolResults = findEvents(events, 'tool_result')
+  const worldBibleCalls = toolResults.filter(t => t.toolName === 'update_world_bible')
+
+  if (worldBibleCalls.length === 0) {
+    throw new Error('update_world_bible was never called for world description')
+  }
+
+  // System must not loop: at most 4 calls (2 rejections + 1 accept, or 1 accept; allow some slack)
+  if (worldBibleCalls.length > 5) {
+    throw new Error(`Loop detected: update_world_bible called ${worldBibleCalls.length} times (max 5 expected)`)
+  }
+
+  const lastResult = worldBibleCalls[worldBibleCalls.length - 1]
+  const raw = lastResult.result
+  const lastPayload =
+    typeof raw === 'string'
+      ? (() => {
+          try {
+            return JSON.parse(raw || '{}')
+          } catch {
+            return {}
+          }
+        })()
+      : typeof raw === 'object' && raw !== null
+        ? raw
+        : {}
+  if (lastPayload.success === false && String(lastPayload.error || '').includes('REJECTED')) {
+    // Last call was still rejected - escape hatch should have accepted by 3rd attempt
+    throw new Error('Last update_world_bible call was still REJECTED; escape hatch should accept after 2 rejections')
+  }
+
+  const completeEvent = findEvent(events, 'complete')
+  if (!completeEvent) {
+    throw new Error('Stream did not complete')
+  }
+
+  console.log(`  ✓ update_world_bible called ${worldBibleCalls.length} time(s), stream completed`)
+}
+
 async function test_E2E_GraphRAG_ContextRetrieval() {
   // To test retrieval, we need to ask something that requires memory of previous turns
   // OR memory of the database state (RAG).
@@ -646,6 +693,7 @@ async function main() {
 
   // LAYER 4: ADVANCED FEATURES
   console.log('\n─── LAYER 4: ADVANCED FEATURES ───\n')
+  await runTest('E2E: World Description - Link gate & no loop', test_E2E_WorldDescription_LinkGateAndNoLoop)
   await runTest('E2E: Character Creation - Tool & Persistence', test_E2E_CharacterCreation)
   await runTest('E2E: Links Extraction - Entity Auto-Linking', test_E2E_LinksExtraction)
   await runTest('E2E: Graph RAG - Context Retrieval', test_E2E_GraphRAG_ContextRetrieval)

@@ -17,17 +17,18 @@ interface ToolButtonProps {
   onClick: () => void
 }
 
-const ToolButton: React.FC<ToolButtonProps> = ({ icon, label, isActive, onClick }) => (
+const ToolButton: React.FC<ToolButtonProps & { id?: string }> = ({ icon, label, isActive, onClick, id }) => (
   <Tooltip>
     <TooltipTrigger asChild>
       <Button
+        id={id}
         variant={isActive ? 'default' : 'ghost'}
         size="icon"
         onClick={onClick}
         className={cn(
           'transition-all',
           isActive &&
-            'bg-indigo-600 hover:bg-indigo-700 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)]'
+          'bg-indigo-600 hover:bg-indigo-700 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)]'
         )}
       >
         {icon}
@@ -189,7 +190,7 @@ export const WorldGenToolbar: React.FC = () => {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex flex-col items-center gap-2 p-2">
+      <div id={TOUR_STEP_IDS.WORLDGEN_TOOLBAR} className="flex flex-col items-center gap-2 p-2">
         <ToolButton
           icon={<Hand size={20} />}
           label="Grab Tool (G)"
@@ -197,7 +198,7 @@ export const WorldGenToolbar: React.FC = () => {
           onClick={handleGrabMode}
         />
 
-        <div id={TOUR_STEP_IDS.GENERATION_TRIGGER}>
+        <div id={TOUR_STEP_IDS.WORLDGEN_SELECT_TOOL}>
           <ToolButton
             icon={<Square size={20} />}
             label="Select Mode (S)"

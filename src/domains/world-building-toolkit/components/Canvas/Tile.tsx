@@ -1,7 +1,7 @@
 import React from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { cn } from '@/lib/utils'
-import { Loader2 } from 'lucide-react'
+import { AlertCircle, Loader2 } from 'lucide-react'
 
 interface TileProps {
   x: number
@@ -19,6 +19,7 @@ export const Tile: React.FC<TileProps> = ({ x, y, size }) => {
   const upscalingTiles = useWorldStore(state => state.upscalingTiles)
   const repaintingTiles = useWorldStore(state => state.repaintingTiles)
   const enhancingTiles = useWorldStore(state => state.enhancingTiles)
+  const tileError = useWorldStore(state => state.failedTiles[`${x},${y}`])
 
   const isSelected = selectedTiles.some(t => t.x === x && t.y === y)
   const isGenerating = !!generatingTiles[`${x},${y}`]
@@ -85,7 +86,8 @@ export const Tile: React.FC<TileProps> = ({ x, y, size }) => {
         isGenerating && 'border-yellow-500 border-2',
         isUpscaling && 'border-orange-500 border-2',
         isRepainting && 'border-purple-500 border-2',
-        isEnhancing && 'border-violet-500 border-2'
+        isEnhancing && 'border-violet-500 border-2',
+        tileError && !isGenerating && !isUpscaling && !isRepainting && !isEnhancing && 'border-red-500 border-2'
       )}
       style={{
         width: size,
@@ -116,6 +118,15 @@ export const Tile: React.FC<TileProps> = ({ x, y, size }) => {
       ) : (
         <div className="w-full h-full bg-[#282828] flex items-center justify-center text-muted-foreground/40 text-4xl select-none hover:bg-[#333333] transition-colors cursor-pointer">
           {isGenerating ? <Loader2 className="animate-spin text-primary" size={32} /> : '+'}
+        </div>
+      )}
+
+      {tileError && !isGenerating && !isUpscaling && !isRepainting && !isEnhancing && (
+        <div
+          className="absolute top-1 right-1 z-20 rounded-full bg-red-500 p-0.5 cursor-help"
+          title={tileError}
+        >
+          <AlertCircle className="text-white" size={14} />
         </div>
       )}
 

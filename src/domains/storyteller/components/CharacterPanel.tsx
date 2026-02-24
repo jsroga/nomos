@@ -389,9 +389,17 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary border border-primary/30">
-            {character.name[0]}
-          </div>
+          {character.portraitUrl || (character as any).portrait_url ? (
+            <img
+              src={character.portraitUrl || (character as any).portrait_url}
+              alt={character.name}
+              className="w-8 h-8 rounded-full object-cover border border-primary/30 shrink-0"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary border border-primary/30 shrink-0">
+              {character.name?.[0] || '?'}
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <div className="font-bold text-sm leading-none truncate">{character.name}</div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider leading-tight break-words mt-0.5">

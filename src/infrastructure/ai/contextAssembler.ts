@@ -55,6 +55,14 @@ export async function assembleContextImage(
   // Helper to load image
   const loadImage = (src: string): Promise<HTMLImageElement> => {
     return new Promise((resolve, reject) => {
+      // Reject non-image data URIs (e.g. data:text/html) that the browser can't load as images
+      if (src.startsWith('data:') && !src.startsWith('data:image/')) {
+        const mimeType = src.substring(0, src.indexOf(';')) || src.substring(0, 50)
+        console.warn('[contextAssembler] Skipping non-image data URI:', mimeType)
+        reject(new Error(`Cannot load non-image data URI: ${mimeType}`))
+        return
+      }
+
       const img = new Image()
       img.crossOrigin = 'Anonymous'
       img.onload = () => {

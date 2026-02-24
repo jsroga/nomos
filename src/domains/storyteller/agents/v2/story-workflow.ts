@@ -371,13 +371,3 @@ export const storyCreationWorkflow = new Workflow({
   .then(creativeDecisionStep)
   .then(synthesisStep)
   .commit()
-
-export class StoryCreationWorkflow extends Workflow {
-  constructor() {
-    super({
-      id: 'story-creation-pipeline',
-      inputSchema: StoryInputSchema,
-      outputSchema: z.object({ finalOutput: z.string() }),
-    } as any)
-  }
-}

@@ -34,7 +34,7 @@
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/supabase-js": "^2.86.0",
     "@tanstack/react-query": "^5.90.20",
-    "@trigger.dev/sdk": "4.3.3",
+    "@trigger.dev/sdk": "4.4.1",
     "@types/earcut": "^3.0.0",
     "@types/lodash": "^4.17.21",
     "@types/node": "^24.10.1",
@@ -117,7 +117,8 @@
   },
   "scripts": {
     "build": "next build",
-    "dev": "next dev",
+    "dev": "next dev --turbo",
+    "dev:webpack": "next dev",
     "mcp:dev": "npx tsx src/mcp/stdio.ts",
     "mcp:build": "tsc src/mcp/stdio.ts --outDir dist/mcp --esModuleInterop --module nodenext --moduleResolution nodenext",
     "db:generate": "drizzle-kit generate",

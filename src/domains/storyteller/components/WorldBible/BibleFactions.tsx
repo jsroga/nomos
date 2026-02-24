@@ -6,7 +6,7 @@ import { FactionCard } from '../FactionCard'
 import { useBible } from './BibleContext'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
 
-interface BibleFactionsProps {}
+interface BibleFactionsProps { }
 
 export const BibleFactions: React.FC<BibleFactionsProps> = () => {
   const {
@@ -22,7 +22,10 @@ export const BibleFactions: React.FC<BibleFactionsProps> = () => {
     pendingActions,
     projectId,
   } = useBible()
-  const factions = storyPlan.factions || []
+  // Use localPlan for display when not editing to show latest saved data
+  const displayFactions = isEditing
+    ? (localPlan.factions || [])
+    : (localPlan.factions || storyPlan.factions || [])
   const isLoading = loadingSections?.factions?.loading ?? false
   const pendingAction = pendingActions?.factions
 
@@ -60,7 +63,7 @@ export const BibleFactions: React.FC<BibleFactionsProps> = () => {
             <button
               onClick={() =>
                 onSendMessage?.(
-                  'Generate the major factions, power structures, and political forces in this world.',
+                  'Generate completely BRAND NEW major factions, power structures, and political forces in this world. IMPORTANT: Take a completely new creative direction and do NOT repeat any previously generated factions.',
                   'factions'
                 )
               }
@@ -146,9 +149,9 @@ export const BibleFactions: React.FC<BibleFactionsProps> = () => {
                       'rivals',
                       e.target.value
                         ? e.target.value
-                            .split(',')
-                            .map(s => s.trim())
-                            .filter(Boolean)
+                          .split(',')
+                          .map(s => s.trim())
+                          .filter(Boolean)
                         : null
                     )
                   }
@@ -157,13 +160,13 @@ export const BibleFactions: React.FC<BibleFactionsProps> = () => {
             ))
           )}
         </div>
-      ) : factions.length === 0 ? (
+      ) : displayFactions.length === 0 ? (
         <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
           No factions defined. Power is a vacuum.
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {factions.map((faction, idx) => {
+          {displayFactions.map((faction, idx) => {
             if (!faction) return null
             return <FactionCard key={idx} faction={faction as Faction} projectId={projectId} />
           })}

@@ -18,6 +18,8 @@ import { BibleOverview } from './WorldBible/BibleOverview'
 import { BibleSoundtracks } from './WorldBible/BibleSoundtracks'
 import { BibleInspirations } from './WorldBible/BibleInspirations'
 import { BibleWorldLogic } from './WorldBible/BibleWorldLogic'
+import { BibleItems } from './WorldBible/BibleItems'
+import { BibleEvents } from './WorldBible/BibleEvents'
 import { BibleFactions } from './WorldBible/BibleFactions'
 // BibleCharacters (Key Players) removed - Cast is managed via CharacterPanel sidebar
 import { BibleRoadmap } from './WorldBible/BibleRoadmap'
@@ -304,7 +306,7 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
   }
 
   return (
-    <div className="h-full relative flex flex-col">
+    <div className="h-full min-h-0 relative flex flex-col">
       <div
         className="bg-background/80 backdrop-blur-xl border-b border-border/40 h-[60px] flex items-center justify-between rounded-lg"
         style={{
@@ -315,7 +317,7 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
         }}
       >
         <div className="flex items-center gap-4">
-          <h2 className="text-xl font-bold font-syne text-primary">World Bible</h2>
+          <h2 className="text-xl font-bold font-syne text-primary">Storybible</h2>
 
           {/* Tab buttons */}
           <div className="flex gap-1 p-1 bg-muted/30 rounded-lg">
@@ -379,7 +381,7 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
               </TooltipTrigger>
               <TooltipContent side="bottom" className="max-w-[250px]">
                 <p className="text-sm font-medium">
-                  {isBibleLocked ? '🔒 Bible is locked' : '🔓 Bible is unlocked'}
+                  {isBibleLocked ? '🔒 Storybible is locked' : '🔓 Storybible is unlocked'}
                 </p>
                 {isBibleLocked && lockedBy && (
                   <p className="text-xs text-muted-foreground mt-1">
@@ -452,7 +454,7 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
                 </TooltipTrigger>
                 <TooltipContent>
                   <p className="text-xs font-medium tracking-tight">
-                    🔒 Bible is locked (Admin Only)
+                    🔒 Storybible is locked (Admin Only)
                   </p>
                 </TooltipContent>
               </Tooltip>
@@ -462,7 +464,7 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
       </div>
 
       {activeTab === 'content' ? (
-        <div className="flex-1 overflow-y-auto pr-2 pt-6">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-2 pt-6">
           <div className="space-y-8 pb-20">
             <BibleOverview
               primaryImageIndex={primaryImageIndex}
@@ -476,13 +478,17 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
 
             <BibleWorldLogic />
 
+            <BibleItems />
+
+            <BibleEvents />
+
             <BibleFactions />
 
             <BibleRoadmap />
           </div>
         </div>
       ) : (
-        <div className="flex-1 overflow-hidden pt-4">
+        <div className="flex-1 min-h-0 overflow-hidden pt-4">
           <Suspense
             fallback={
               <div className="flex-1 flex items-center justify-center h-full">

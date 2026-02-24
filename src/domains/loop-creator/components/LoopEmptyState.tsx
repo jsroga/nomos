@@ -31,16 +31,16 @@ export function LoopEmptyState({ onCreateLoop }: LoopEmptyStateProps) {
         className="relative max-w-xl text-center px-8"
       >
         {/* Technical card container */}
-        <div className="relative border border-white/5 bg-black/40 backdrop-blur-sm p-12 rounded-2xl overflow-hidden">
+        <div className="relative border border-zinc-800 bg-black/95 backdrop-blur-xl p-12 rounded-2xl overflow-hidden shadow-2xl">
           {/* Corner accents */}
-          <div className="absolute top-0 left-0 w-12 h-12 border-t-2 border-l-2 border-cyan-500/30 rounded-tl-2xl" />
-          <div className="absolute bottom-0 right-0 w-12 h-12 border-b-2 border-r-2 border-cyan-500/30 rounded-br-2xl" />
+          <div className="absolute top-0 left-0 w-12 h-12 border-t-2 border-l-2 border-primary/30 rounded-tl-2xl" />
+          <div className="absolute bottom-0 right-0 w-12 h-12 border-b-2 border-r-2 border-primary/30 rounded-br-2xl" />
 
           {/* Code badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full mb-6">
-            <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse" />
-            <span className="text-[10px] font-mono uppercase tracking-widest text-white/40">
-              LOP_DES
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-full mb-6">
+            <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+            <span className="text-[10px] font-mono uppercase tracking-widest text-primary/80">
+              loop_design_agent
             </span>
           </div>
 
@@ -50,24 +50,24 @@ export function LoopEmptyState({ onCreateLoop }: LoopEmptyStateProps) {
           </h2>
 
           {/* Description */}
-          <p className="text-white/40 mb-8 leading-relaxed max-w-md mx-auto font-light">
+          <p className="text-zinc-400 mb-8 leading-relaxed max-w-md mx-auto font-light">
             Design compulsion loops that hook players. Psychology-driven mechanics. Challenge →
             Action → Feedback cycles that define genres.
           </p>
 
           {/* Technical specs */}
           <div className="flex justify-center gap-8 mb-10 text-xs font-mono">
-            <div className="text-white/30">
-              <span className="text-cyan-400/60">01</span> MICRO
+            <div className="text-zinc-600">
+              <span className="text-primary/60">01</span> MICRO
             </div>
-            <div className="text-white/30">
-              <span className="text-cyan-400/60">02</span> CORE
+            <div className="text-zinc-600">
+              <span className="text-primary/60">02</span> CORE
             </div>
-            <div className="text-white/30">
-              <span className="text-cyan-400/60">03</span> SESSION
+            <div className="text-zinc-600">
+              <span className="text-primary/60">03</span> SESSION
             </div>
-            <div className="text-white/30">
-              <span className="text-cyan-400/60">04</span> META
+            <div className="text-zinc-600">
+              <span className="text-primary/60">04</span> META
             </div>
           </div>
 
@@ -75,15 +75,25 @@ export function LoopEmptyState({ onCreateLoop }: LoopEmptyStateProps) {
           <Button
             size="lg"
             onClick={onCreateLoop}
-            className="group gap-3 px-8 bg-white text-black hover:bg-white/90 transition-all duration-300"
+            className="group gap-3 px-8 h-12 relative overflow-hidden rounded-md bg-gradient-to-r from-primary via-purple-500 to-primary text-white font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+            style={{
+              backgroundSize: '200% 100%',
+              backgroundPosition: '0% 50%',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundPosition = '100% 50%'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundPosition = '0% 50%'
+            }}
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 mr-2 group-hover:translate-x-0.5 transition-transform" />
             <span className="font-medium">Initialize Loop</span>
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </Button>
 
           {/* Subtle hint */}
-          <p className="text-[11px] text-white/20 mt-6 font-mono">
+          <p className="text-[11px] text-zinc-600 mt-6 font-mono">
             CTRL+N to quick-create • JSON import available
           </p>
         </div>
@@ -92,12 +102,12 @@ export function LoopEmptyState({ onCreateLoop }: LoopEmptyStateProps) {
         <motion.div
           animate={{ y: [0, -8, 0] }}
           transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -top-4 -right-4 w-2 h-2 bg-cyan-500/40 rounded-full"
+          className="absolute -top-4 -right-4 w-2 h-2 bg-primary/40 rounded-full"
         />
         <motion.div
           animate={{ y: [0, 8, 0] }}
           transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-          className="absolute -bottom-4 -left-4 w-3 h-3 border border-white/10 rounded-full"
+          className="absolute -bottom-4 -left-4 w-3 h-3 border border-zinc-800 rounded-full"
         />
       </motion.div>
     </div>

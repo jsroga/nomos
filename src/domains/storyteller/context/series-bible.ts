@@ -28,6 +28,8 @@ export interface WorldRule {
   description: string
   constraints: string[] // What this rule prevents
   examples: string[] // How this manifests
+  rule?: string // Legacy support
+  consequence?: string // Legacy support
 }
 
 export interface ThematicElement {
@@ -83,6 +85,10 @@ export interface SeriesBible {
   }
   moodSoundtrack: string
   moodImages: string[]
+
+  // Flexible fields for merged data
+  factions?: any[]
+  updatedFields?: Record<string, any>
 }
 
 // Default empty bible
@@ -112,12 +118,22 @@ function createEmptyBible(): SeriesBible {
 
 // Convert bible to prompt context
 export function bibleToPrompt(bible: SeriesBible, cast?: Array<{ name: string; role?: string; description?: string }>): string {
-  if (!bible.title && !bible.logline) {
-    return 'No series bible has been established yet. Work with the user to define the world.'
+  // Relaxed check: consider a bible "started" if it has ANY meaningful content
+  const hasContent =
+    bible.title ||
+    bible.logline ||
+    bible.worldDescription ||
+    (bible.setting && (bible.setting.place || bible.setting.time || bible.setting.socialContext)) ||
+    (bible.worldRules && bible.worldRules.length > 0) ||
+    (bible.thematicElements && bible.thematicElements.length > 0) ||
+    (bible.genre && bible.genre.length > 0)
+
+  if (!hasContent) {
+    return 'No series bible has been established yet. Describe your world concept to begin generating.'
   }
 
   let prompt = `
-=== SERIES BIBLE: ${bible.title || 'Untitled'} ===
+=== STORY BIBLE: ${bible.title || 'Untitled'} ===
 
 LOGLINE: ${bible.logline || 'Not defined'}
 
@@ -261,18 +277,32 @@ When evaluating this character's actions, ask:
 
 // Extract visual prompts for world generation
 export function bibleToVisualPrompt(bible: SeriesBible, cast?: Array<{ name: string; role?: string; description?: string }>): string {
+  // Helper to remove markdown style links [Name][id] or [Name](url)
+  const stripLinks = (text: string) => {
+    return text
+      .replace(/\[([^\]]+)\]\[[^\]]+\]/g, '$1')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+  }
+
   // Priority 1: Use worldDescription if available
   if (bible.worldDescription) {
-    // Extract first 3 sentences or truncate appropriately
-    const sentences = bible.worldDescription.split(/(?<=[.!?])\s+/).filter(s => s.trim())
-    return sentences.slice(0, 3).join(' ')
+    // Clean text first
+    const cleanedDesc = stripLinks(bible.worldDescription)
+    // Extract first 1 sentence to make it much shorter
+    const sentences = cleanedDesc.split(/(?<=[.!?])\s+/).filter(s => s.trim())
+    return sentences.slice(0, 1).join(' ')
   }
 
   // Fallback: Build from setting info
   const parts: string[] = []
-  if (bible.setting?.place) parts.push(bible.setting.place)
-  if (bible.setting?.time) parts.push(`Set in ${bible.setting.time}.`)
-  if (bible.setting?.socialContext) parts.push(bible.setting.socialContext)
+  if (bible.setting?.place) parts.push(stripLinks(bible.setting.place))
+  if (bible.setting?.time) parts.push(`Set in ${stripLinks(bible.setting.time)}.`)
+  if (bible.setting?.socialContext) parts.push(stripLinks(bible.setting.socialContext))
 
-  return parts.join(' ') || ''
+  const settingPrompt = parts.join(' ')
+  if (settingPrompt) return settingPrompt
+
+  // Final fallback if nothing exists
+  if (bible.title) return `A visual representation of ${stripLinks(bible.title)}`
+  return 'A detailed fantasy world landscape with unique terrain features.'
 }

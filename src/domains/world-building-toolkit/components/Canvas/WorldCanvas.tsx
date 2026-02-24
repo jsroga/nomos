@@ -5,6 +5,8 @@ import { RepaintCanvas } from './RepaintCanvas'
 import { selectModeService } from '@/domains/world-building-toolkit/services/SelectModeService'
 import { Sparkles, X, ArrowRight } from 'lucide-react'
 import { getErrorMessage } from '@/lib/error-utils'
+import { useTour } from '@/components/tour'
+import { TOUR_STEP_IDS } from '@/lib/tour-constants'
 
 const TILE_SIZE = 512
 
@@ -58,6 +60,20 @@ export const WorldCanvas: React.FC = () => {
   // Text prompt for segmentation
   const selectTextPrompt = useWorldStore(state => state.selectTextPrompt)
   const setSelectTextPrompt = useWorldStore(state => state.setSelectTextPrompt)
+
+  // Tour integration: Auto-select (0,0) when reaching the Canvas step
+  const { currentStep, isActive: isTourOpen } = useTour()
+  const selectedTile = useWorldStore(state => state.selectedTile)
+
+  useEffect(() => {
+    // Step 1 is "Your Canvas" (index 1)
+    if (isTourOpen && currentStep === 1) {
+      // Only set if not already selected to avoid loop
+      if (!selectedTile || selectedTile.x !== 0 || selectedTile.y !== 0) {
+        setSelectedTile({ x: 0, y: 0 })
+      }
+    }
+  }, [currentStep, isTourOpen, selectedTile, setSelectedTile])
 
   // Helper to convert screen coordinates to world coordinates
   const screenToWorld = (screenX: number, screenY: number) => {
@@ -552,9 +568,8 @@ export const WorldCanvas: React.FC = () => {
             return (
               <div
                 key={asset.id}
-                className={`absolute pointer-events-none transition-all ${
-                  isPreview ? 'z-20' : 'z-5'
-                }`}
+                className={`absolute pointer-events-none transition-all ${isPreview ? 'z-20' : 'z-5'
+                  }`}
                 style={{
                   left: bounds.x,
                   top: bounds.y,
@@ -571,7 +586,7 @@ export const WorldCanvas: React.FC = () => {
                   }}
                 />
                 <img
-                  src={`/projects/${currentProject.id}/assets/${asset.image_filename}`}
+                  src={asset.image_filename.startsWith('http') ? asset.image_filename : `/projects/${currentProject.id}/assets/${asset.image_filename}`}
                   alt="Asset"
                   className="w-full h-full relative"
                   style={{

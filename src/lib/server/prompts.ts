@@ -1,5 +1,3 @@
-// import 'server-only'
-
 /**
  * Prompt Strategy Constants
  *
@@ -19,20 +17,24 @@
 // GENERATION PROMPTS
 // ============================================================================
 
+/** Default art direction context for the initial tile — injected behind the scenes */
+const FIRST_TILE_STYLE_CONTEXT =
+  'Isometric painted world in the style of Disco Elysium, painterly art style with expressive brushwork, rich atmospheric detail, hand-painted aesthetic.'
+
 export const GENERATION_PROMPTS = {
   /** First tile - no neighbors, full creative generation */
   FIRST_TILE: {
     GEMINI: (prompt: string) =>
-      `Generate an isometric tile image: ${prompt}. The image should be 512x512 pixels, isometric perspective, suitable for a tile-based game world. Style: painterly, detailed, vibrant colors.`,
+      `Generate an isometric tile image: ${prompt}. ${FIRST_TILE_STYLE_CONTEXT} The image should be 512x512 pixels, isometric perspective, suitable for a tile-based game world. Detailed, vibrant colors.`,
 
     MIDJOURNEY: (prompt: string) =>
-      `Isometric tile for a game world: ${prompt}. 512x512, painterly style, detailed, vibrant colors, seamless edges --v 6.1 --ar 1:1`,
+      `Isometric tile for a game world: ${prompt}. ${FIRST_TILE_STYLE_CONTEXT} 512x512, detailed, vibrant colors, seamless edges --v 6.1 --ar 1:1`,
 
     OPENAI: (prompt: string) =>
-      `Isometric tile for a game world: ${prompt}. 512x512, painterly style, detailed.`,
+      `Isometric tile for a game world: ${prompt}. ${FIRST_TILE_STYLE_CONTEXT} 512x512, detailed.`,
 
     STABILITY: (prompt: string) =>
-      `Isometric tile for a game world: ${prompt}. Painterly style, detailed, vibrant colors.`,
+      `Isometric tile for a game world: ${prompt}. ${FIRST_TILE_STYLE_CONTEXT} Detailed, vibrant colors.`,
   },
 
   /** Follow-up tile - has neighbors, must match edges */

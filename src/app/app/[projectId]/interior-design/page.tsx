@@ -4,10 +4,8 @@ import React, { useEffect, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import { Loader2 } from 'lucide-react'
 import { Toolbar } from '@/domains/interior-designer/components/UI/Toolbar'
-import { PropertiesPanel } from '@/domains/interior-designer/components/UI/PropertiesPanel'
-import { AssetLibrary } from '@/domains/interior-designer/components/UI/AssetLibrary'
+import { InteriorRightSidebar } from '@/domains/interior-designer/components/UI/InteriorRightSidebar'
 import { DesignManager } from '@/domains/interior-designer/components/DesignManager'
-import { LayerPanel } from '@/domains/interior-designer/components/UI/LayerPanel'
 import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
 
 // Dynamic import with SSR disabled to avoid React reconciler issues with Three.js
@@ -250,27 +248,7 @@ export default function InteriorDesignerPage() {
             defaultWidth={400}
             rawContent
           >
-            <div className="flex flex-col h-full bg-background/20">
-              {/* Upper Section: Asset Library (only for OBJECT mode) */}
-              {mode === 'OBJECT' && (
-                <div
-                  id={TOUR_STEP_IDS.INTERIOR_ASSETS}
-                  className="h-[40%] border-b border-border/50"
-                >
-                  <AssetLibrary />
-                </div>
-              )}
-
-              {/* Middle Section: Main Properties / Terrain */}
-              <div id={TOUR_STEP_IDS.INTERIOR_TERRAIN} className="flex-1 min-h-0">
-                <PropertiesPanel />
-              </div>
-
-              {/* Lower Section: Layer Panel */}
-              <div className="h-[30%] border-t border-border/50 overflow-hidden">
-                <LayerPanel />
-              </div>
-            </div>
+            <InteriorRightSidebar />
           </DomainSidebar>
         </div>
       </div>

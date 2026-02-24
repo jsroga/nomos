@@ -7,6 +7,13 @@ import sharp from 'sharp'
 import { v4 as uuidv4 } from 'uuid'
 import { storageService } from '@/infrastructure/storage/StorageService'
 import { getErrorMessage } from '@/lib/error-utils'
+import {
+  logLLMRequestStart,
+  logLLMRequestComplete,
+  logLLMRequestError,
+  extractImageUrls,
+  extractPrompt,
+} from './utils/llm-logger'
 
 export const generateTileTask = task({
   id: 'generate-tile',
@@ -204,6 +211,7 @@ async function generateWithGemini(
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.apiKey}`
 
   let payload: any
+  let finalPrompt: string
 
   if (isFirstTile || !contextImageBase64) {
     // FIRST TILE: Text-only generation with style references
@@ -213,12 +221,14 @@ async function generateWithGemini(
       ? ` Use these style references for visual guidance: ${styleReferenceUrls.join(', ')}.`
       : ''
 
+    finalPrompt = GENERATION_PROMPTS.FIRST_TILE.GEMINI(prompt) + styleRefHint
+
     payload = {
       contents: [
         {
           parts: [
             {
-              text: GENERATION_PROMPTS.FIRST_TILE.GEMINI(prompt) + styleRefHint,
+              text: finalPrompt,
             },
           ],
         },
@@ -236,13 +246,13 @@ async function generateWithGemini(
 
     // The context image has the target area in gray (center 512x512 of 1024x1024)
     // with neighbor edges around it
-    const inpaintPrompt = GENERATION_PROMPTS.FOLLOW_UP.GEMINI(prompt)
+    finalPrompt = GENERATION_PROMPTS.FOLLOW_UP.GEMINI(prompt)
 
     payload = {
       contents: [
         {
           parts: [
-            { text: inpaintPrompt },
+            { text: finalPrompt },
             {
               inline_data: {
                 mime_type: 'image/png',
@@ -261,60 +271,146 @@ async function generateWithGemini(
     }
   }
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+  // Log LLM request start
+  logLLMRequestStart({
+    provider: 'gemini',
+    model,
+    prompt: finalPrompt,
+    inputImageUrls: styleReferenceUrls,
+    input: payload,
+    metadata: {
+      isFirstTile,
+      hasContextImage: !!contextImageBase64,
+    },
   })
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`Gemini API error: ${response.status} - ${errorText}`)
-  }
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
 
-  const data = await response.json()
-  const candidate = data.candidates?.[0]
-
-  if (!candidate) {
-    throw new Error('No candidates returned from Gemini')
-  }
-
-  if (candidate.finishReason === 'SAFETY') {
-    throw new Error('Generation blocked by safety filters')
-  }
-
-  const parts = candidate.content?.parts
-  if (!parts || parts.length === 0) {
-    throw new Error('No content parts returned')
-  }
-
-  // Find image in response
-  const imagePart = parts.find((p: any) => p.inline_data || p.inlineData)
-  if (imagePart) {
-    const inlineData = imagePart.inline_data || imagePart.inlineData
-    let imageData = inlineData.data
-
-    // For follow-up tiles, we need to crop the center 512x512 from the 1024x1024 result
-    if (!isFirstTile && contextImageBase64) {
-      const buffer = await imageService.crop(Buffer.from(imageData, 'base64'), {
-        x: 256,
-        y: 256,
-        width: 512,
-        height: 512,
+    if (!response.ok) {
+      const errorText = await response.text()
+      logLLMRequestError({
+        provider: 'gemini',
+        model,
+        prompt: finalPrompt,
+        error: `HTTP ${response.status}: ${errorText}`,
+        input: payload,
       })
-      imageData = buffer.toString('base64')
+      throw new Error(`Gemini API error: ${response.status} - ${errorText}`)
     }
 
-    return imageData
-  }
+    const data = await response.json()
+    const candidate = data.candidates?.[0]
 
-  // Check for text response (error case)
-  const textPart = parts.find((p: any) => p.text)
-  if (textPart) {
-    throw new Error(`Gemini returned text instead of image: ${textPart.text.substring(0, 100)}...`)
-  }
+    if (!candidate) {
+      logLLMRequestError({
+        provider: 'gemini',
+        model,
+        prompt: finalPrompt,
+        error: 'No candidates returned from Gemini',
+        input: payload,
+        output: data,
+      })
+      throw new Error('No candidates returned from Gemini')
+    }
 
-  throw new Error('No image found in Gemini response')
+    if (candidate.finishReason === 'SAFETY') {
+      logLLMRequestError({
+        provider: 'gemini',
+        model,
+        prompt: finalPrompt,
+        error: 'Generation blocked by safety filters',
+        input: payload,
+        output: data,
+      })
+      throw new Error('Generation blocked by safety filters')
+    }
+
+    const parts = candidate.content?.parts
+    if (!parts || parts.length === 0) {
+      logLLMRequestError({
+        provider: 'gemini',
+        model,
+        prompt: finalPrompt,
+        error: 'No content parts returned',
+        input: payload,
+        output: data,
+      })
+      throw new Error('No content parts returned')
+    }
+
+    // Find image in response
+    const imagePart = parts.find((p: any) => p.inline_data || p.inlineData)
+    if (imagePart) {
+      const inlineData = imagePart.inline_data || imagePart.inlineData
+      let imageData = inlineData.data
+
+      // For follow-up tiles, we need to crop the center 512x512 from the 1024x1024 result
+      if (!isFirstTile && contextImageBase64) {
+        const buffer = await imageService.crop(Buffer.from(imageData, 'base64'), {
+          x: 256,
+          y: 256,
+          width: 512,
+          height: 512,
+        })
+        imageData = buffer.toString('base64')
+      }
+
+      // Log successful completion
+      logLLMRequestComplete({
+        provider: 'gemini',
+        model,
+        prompt: finalPrompt,
+        outputImageUrls: ['[Base64 Image Data]'],
+        output: {
+          finishReason: candidate.finishReason,
+          hasImage: true,
+        },
+      })
+
+      return imageData
+    }
+
+    // Check for text response (error case)
+    const textPart = parts.find((p: any) => p.text)
+    if (textPart) {
+      const errorMsg = `Gemini returned text instead of image: ${textPart.text.substring(0, 100)}...`
+      logLLMRequestError({
+        provider: 'gemini',
+        model,
+        prompt: finalPrompt,
+        error: errorMsg,
+        input: payload,
+        output: data,
+      })
+      throw new Error(errorMsg)
+    }
+
+    logLLMRequestError({
+      provider: 'gemini',
+      model,
+      prompt: finalPrompt,
+      error: 'No image found in Gemini response',
+      input: payload,
+      output: data,
+    })
+    throw new Error('No image found in Gemini response')
+  } catch (error) {
+    if (error instanceof Error && !error.message.includes('Gemini API error')) {
+      logLLMRequestError({
+        provider: 'gemini',
+        model,
+        prompt: finalPrompt,
+        error: error.message,
+        input: payload,
+      })
+    }
+    throw error
+  }
 }
 
 // Server-side OpenAI image generation
@@ -335,38 +431,94 @@ async function generateWithOpenAI(
       ? ` Style references: ${styleReferenceUrls.join(', ')}.`
       : ''
 
+    const finalPrompt = `Isometric tile for a game world: ${prompt}. 512x512, painterly style, detailed.${styleRefHint}`
     const payload = {
       model,
-      prompt: `Isometric tile for a game world: ${prompt}. 512x512, painterly style, detailed.${styleRefHint}`,
+      prompt: finalPrompt,
       n: 1,
       size: '1024x1024',
       response_format: 'b64_json',
     }
 
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.apiKey}`,
+    // Log LLM request start
+    logLLMRequestStart({
+      provider: 'openai',
+      model,
+      prompt: finalPrompt,
+      inputImageUrls: styleReferenceUrls,
+      input: payload,
+      metadata: {
+        isFirstTile,
+        endpoint: 'images/generations',
       },
-      body: JSON.stringify(payload),
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`)
+    try {
+      const response = await fetch('https://api.openai.com/v1/images/generations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${config.apiKey}`,
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        logLLMRequestError({
+          provider: 'openai',
+          model,
+          prompt: finalPrompt,
+          error: `HTTP ${response.status}: ${errorText}`,
+          input: payload,
+        })
+        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`)
+      }
+
+      const data = await response.json()
+
+      if (!data.data?.[0]?.b64_json) {
+        logLLMRequestError({
+          provider: 'openai',
+          model,
+          prompt: finalPrompt,
+          error: 'No image data in OpenAI response',
+          input: payload,
+          output: data,
+        })
+        throw new Error('No image data in OpenAI response')
+      }
+
+      // Log successful completion
+      logLLMRequestComplete({
+        provider: 'openai',
+        model,
+        prompt: finalPrompt,
+        outputImageUrls: ['[Base64 Image Data]'],
+        output: {
+          size: data.data[0].size,
+          revised_prompt: data.data[0].revised_prompt,
+        },
+      })
+
+      return data.data[0].b64_json
+    } catch (error) {
+      if (error instanceof Error && !error.message.includes('OpenAI API error')) {
+        logLLMRequestError({
+          provider: 'openai',
+          model,
+          prompt: finalPrompt,
+          error: error.message,
+          input: payload,
+        })
+      }
+      throw error
     }
-
-    const data = await response.json()
-
-    if (!data.data?.[0]?.b64_json) {
-      throw new Error('No image data in OpenAI response')
-    }
-
-    return data.data[0].b64_json
   } else {
     // FOLLOW-UP TILE: Use DALL-E 2 edit API with context image and mask
     logger.info('OpenAI: Generating follow-up tile with context image')
+
+    const finalPrompt = `Fill seamlessly: ${prompt}. Match surrounding style, continuous edges, isometric perspective.`
 
     // DALL-E edit requires FormData with image and mask files
     // The contextImageBase64 already has the gray center (to be edited)
@@ -391,41 +543,95 @@ async function generateWithOpenAI(
     // Convert Buffer to Uint8Array for Blob compatibility if needed
     formData.append('mask', new Blob([new Uint8Array(mask)], { type: 'image/png' }), 'mask.png')
 
-    formData.append(
-      'prompt',
-      `Fill seamlessly: ${prompt}. Match surrounding style, continuous edges, isometric perspective.`
-    )
+    formData.append('prompt', finalPrompt)
     formData.append('n', '1')
     formData.append('size', '1024x1024')
     formData.append('response_format', 'b64_json')
 
-    const response = await fetch('https://api.openai.com/v1/images/edits', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${config.apiKey}`,
+    // Log LLM request start
+    logLLMRequestStart({
+      provider: 'openai',
+      model: 'dall-e-2',
+      prompt: finalPrompt,
+      inputImageUrls: ['[Context Image Base64]'],
+      input: {
+        prompt: finalPrompt,
+        size: '1024x1024',
+        hasMask: true,
       },
-      body: formData,
+      metadata: {
+        isFirstTile: false,
+        endpoint: 'images/edits',
+      },
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`OpenAI Edit API error: ${response.status} - ${errorText}`)
+    try {
+      const response = await fetch('https://api.openai.com/v1/images/edits', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${config.apiKey}`,
+        },
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        logLLMRequestError({
+          provider: 'openai',
+          model: 'dall-e-2',
+          prompt: finalPrompt,
+          error: `HTTP ${response.status}: ${errorText}`,
+          input: { prompt: finalPrompt },
+        })
+        throw new Error(`OpenAI Edit API error: ${response.status} - ${errorText}`)
+      }
+
+      const data = await response.json()
+
+      if (!data.data?.[0]?.b64_json) {
+        logLLMRequestError({
+          provider: 'openai',
+          model: 'dall-e-2',
+          prompt: finalPrompt,
+          error: 'No image data in OpenAI response',
+          input: { prompt: finalPrompt },
+          output: data,
+        })
+        throw new Error('No image data in OpenAI response')
+      }
+
+      // Crop center 512x512 from the 1024x1024 result
+      const croppedBuffer = await imageService.crop(Buffer.from(data.data[0].b64_json, 'base64'), {
+        x: 256,
+        y: 256,
+        width: 512,
+        height: 512,
+      })
+
+      // Log successful completion
+      logLLMRequestComplete({
+        provider: 'openai',
+        model: 'dall-e-2',
+        prompt: finalPrompt,
+        outputImageUrls: ['[Base64 Image Data]'],
+        output: {
+          size: data.data[0].size,
+        },
+      })
+
+      return croppedBuffer.toString('base64')
+    } catch (error) {
+      if (error instanceof Error && !error.message.includes('OpenAI Edit API error')) {
+        logLLMRequestError({
+          provider: 'openai',
+          model: 'dall-e-2',
+          prompt: finalPrompt,
+          error: error.message,
+          input: { prompt: finalPrompt },
+        })
+      }
+      throw error
     }
-
-    const data = await response.json()
-
-    if (!data.data?.[0]?.b64_json) {
-      throw new Error('No image data in OpenAI response')
-    }
-
-    // Crop center 512x512 from the 1024x1024 result
-    const croppedBuffer = await imageService.crop(Buffer.from(data.data[0].b64_json, 'base64'), {
-      x: 256,
-      y: 256,
-      width: 512,
-      height: 512,
-    })
-    return croppedBuffer.toString('base64')
   }
 }
 
@@ -445,10 +651,11 @@ async function generateWithStability(
       ? ` Style reference: ${styleReferenceUrls.join(', ')}`
       : ''
 
+    const finalPrompt = `Isometric tile for a game world: ${prompt}. Painterly style, detailed, vibrant colors.${styleRefHint}`
     const payload = {
       text_prompts: [
         {
-          text: `Isometric tile for a game world: ${prompt}. Painterly style, detailed, vibrant colors.${styleRefHint}`,
+          text: finalPrompt,
           weight: 1,
         },
       ],
@@ -459,34 +666,88 @@ async function generateWithStability(
       steps: 30,
     }
 
-    const response = await fetch(
-      'https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${config.apiKey}`,
-          Accept: 'application/json',
-        },
-        body: JSON.stringify(payload),
+    // Log LLM request start
+    logLLMRequestStart({
+      provider: 'stability',
+      model: config.model || 'stable-diffusion-xl-1024-v1-0',
+      prompt: finalPrompt,
+      inputImageUrls: styleReferenceUrls,
+      input: payload,
+      metadata: {
+        isFirstTile,
+        endpoint: 'text-to-image',
+      },
+    })
+
+    try {
+      const response = await fetch(
+        'https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${config.apiKey}`,
+            Accept: 'application/json',
+          },
+          body: JSON.stringify(payload),
+        }
+      )
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        logLLMRequestError({
+          provider: 'stability',
+          model: config.model || 'stable-diffusion-xl-1024-v1-0',
+          prompt: finalPrompt,
+          error: `HTTP ${response.status}: ${errorText}`,
+          input: payload,
+        })
+        throw new Error(`Stability API error: ${response.status} - ${errorText}`)
       }
-    )
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`Stability API error: ${response.status} - ${errorText}`)
+      const data = await response.json()
+
+      if (!data.artifacts?.[0]?.base64) {
+        logLLMRequestError({
+          provider: 'stability',
+          model: config.model || 'stable-diffusion-xl-1024-v1-0',
+          prompt: finalPrompt,
+          error: 'No image data in Stability response',
+          input: payload,
+          output: data,
+        })
+        throw new Error('No image data in Stability response')
+      }
+
+      // Log successful completion
+      logLLMRequestComplete({
+        provider: 'stability',
+        model: config.model || 'stable-diffusion-xl-1024-v1-0',
+        prompt: finalPrompt,
+        outputImageUrls: ['[Base64 Image Data]'],
+        output: {
+          artifactCount: data.artifacts?.length || 0,
+        },
+      })
+
+      return data.artifacts[0].base64
+    } catch (error) {
+      if (error instanceof Error && !error.message.includes('Stability API error')) {
+        logLLMRequestError({
+          provider: 'stability',
+          model: config.model || 'stable-diffusion-xl-1024-v1-0',
+          prompt: finalPrompt,
+          error: error.message,
+          input: payload,
+        })
+      }
+      throw error
     }
-
-    const data = await response.json()
-
-    if (!data.artifacts?.[0]?.base64) {
-      throw new Error('No image data in Stability response')
-    }
-
-    return data.artifacts[0].base64
   } else {
     // FOLLOW-UP TILE: Use inpainting with context image
     logger.info('Stability: Generating follow-up tile with context image')
+
+    const finalPrompt = `Fill seamlessly: ${prompt}. Match surrounding style and edges perfectly, isometric perspective.`
 
     // Create mask for center region
     const { mask } = await imageService.assembleContext(
@@ -512,47 +773,102 @@ async function generateWithStability(
     const maskBlob = new Blob([maskBuffer], { type: 'image/png' })
     formData.append('mask_image', maskBlob, 'mask.png')
 
-    formData.append(
-      'text_prompts[0][text]',
-      `Fill seamlessly: ${prompt}. Match surrounding style and edges perfectly, isometric perspective.`
-    )
+    formData.append('text_prompts[0][text]', finalPrompt)
     formData.append('text_prompts[0][weight]', '1')
     formData.append('cfg_scale', '7')
     formData.append('samples', '1')
     formData.append('steps', '30')
     formData.append('mask_source', 'MASK_IMAGE_BLACK')
 
-    const response = await fetch(
-      'https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/image-to-image/masking',
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${config.apiKey}`,
-          Accept: 'application/json',
-        },
-        body: formData,
-      }
-    )
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`Stability Inpaint API error: ${response.status} - ${errorText}`)
-    }
-
-    const data = await response.json()
-
-    if (!data.artifacts?.[0]?.base64) {
-      throw new Error('No image data in Stability response')
-    }
-
-    // Crop center 512x512 from the 1024x1024 result
-    const croppedBuffer = await imageService.crop(Buffer.from(data.artifacts[0].base64, 'base64'), {
-      x: 256,
-      y: 256,
-      width: 512,
-      height: 512,
+    // Log LLM request start
+    logLLMRequestStart({
+      provider: 'stability',
+      model: config.model || 'stable-diffusion-xl-1024-v1-0',
+      prompt: finalPrompt,
+      inputImageUrls: ['[Context Image Base64]'],
+      input: {
+        prompt: finalPrompt,
+        cfg_scale: 7,
+        steps: 30,
+        hasMask: true,
+      },
+      metadata: {
+        isFirstTile: false,
+        endpoint: 'image-to-image/masking',
+      },
     })
-    return croppedBuffer.toString('base64')
+
+    try {
+      const response = await fetch(
+        'https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/image-to-image/masking',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${config.apiKey}`,
+            Accept: 'application/json',
+          },
+          body: formData,
+        }
+      )
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        logLLMRequestError({
+          provider: 'stability',
+          model: config.model || 'stable-diffusion-xl-1024-v1-0',
+          prompt: finalPrompt,
+          error: `HTTP ${response.status}: ${errorText}`,
+          input: { prompt: finalPrompt },
+        })
+        throw new Error(`Stability Inpaint API error: ${response.status} - ${errorText}`)
+      }
+
+      const data = await response.json()
+
+      if (!data.artifacts?.[0]?.base64) {
+        logLLMRequestError({
+          provider: 'stability',
+          model: config.model || 'stable-diffusion-xl-1024-v1-0',
+          prompt: finalPrompt,
+          error: 'No image data in Stability response',
+          input: { prompt: finalPrompt },
+          output: data,
+        })
+        throw new Error('No image data in Stability response')
+      }
+
+      // Crop center 512x512 from the 1024x1024 result
+      const croppedBuffer = await imageService.crop(Buffer.from(data.artifacts[0].base64, 'base64'), {
+        x: 256,
+        y: 256,
+        width: 512,
+        height: 512,
+      })
+
+      // Log successful completion
+      logLLMRequestComplete({
+        provider: 'stability',
+        model: config.model || 'stable-diffusion-xl-1024-v1-0',
+        prompt: finalPrompt,
+        outputImageUrls: ['[Base64 Image Data]'],
+        output: {
+          artifactCount: data.artifacts?.length || 0,
+        },
+      })
+
+      return croppedBuffer.toString('base64')
+    } catch (error) {
+      if (error instanceof Error && !error.message.includes('Stability Inpaint API error')) {
+        logLLMRequestError({
+          provider: 'stability',
+          model: config.model || 'stable-diffusion-xl-1024-v1-0',
+          prompt: finalPrompt,
+          error: error.message,
+          input: { prompt: finalPrompt },
+        })
+      }
+      throw error
+    }
   }
 }
 
@@ -760,6 +1076,19 @@ async function generateWithLegNext(
 
   logger.info('Submitting upload_paint with payload', { uploadPaintPayload })
 
+  // Log LLM request start
+  logLLMRequestStart({
+    provider: 'midjourney',
+    model: 'legnext-upload-paint',
+    prompt: remixPrompt,
+    inputImageUrls: publicImageUrl ? [publicImageUrl] : undefined,
+    input: uploadPaintPayload,
+    metadata: {
+      isFirstTile,
+      endpoint: 'upload-paint',
+    },
+  })
+
   const uploadPaintResponse = await fetch('https://api.legnext.ai/api/v1/upload-paint', {
     method: 'POST',
     headers: {
@@ -771,6 +1100,13 @@ async function generateWithLegNext(
 
   if (!uploadPaintResponse.ok) {
     const errorText = await uploadPaintResponse.text()
+    logLLMRequestError({
+      provider: 'midjourney',
+      model: 'legnext-upload-paint',
+      prompt: remixPrompt,
+      error: `HTTP ${uploadPaintResponse.status}: ${errorText}`,
+      input: uploadPaintPayload,
+    })
     throw new Error(
       `LegNext upload_paint submission failed: ${uploadPaintResponse.status} - ${errorText}`
     )
@@ -780,6 +1116,14 @@ async function generateWithLegNext(
   const jobId = uploadPaintData.job_id
 
   if (!jobId) {
+    logLLMRequestError({
+      provider: 'midjourney',
+      model: 'legnext-upload-paint',
+      prompt: remixPrompt,
+      error: 'No job_id returned',
+      input: uploadPaintPayload,
+      output: uploadPaintData,
+    })
     throw new Error('LegNext upload_paint failed: No job_id returned')
   }
 
@@ -791,6 +1135,17 @@ async function generateWithLegNext(
   await metadata.set('progress', 40)
 
   const uploadPaintResult = await pollLegNextTask(jobId, config.apiKey, 300, 40)
+
+  // Log upload_paint completion
+  const uploadPaintImageUrl =
+    uploadPaintResult.output?.image_url || uploadPaintResult.output?.image_urls?.[0]
+  logLLMRequestComplete({
+    provider: 'midjourney',
+    model: 'legnext-upload-paint',
+    prompt: remixPrompt,
+    outputImageUrls: uploadPaintImageUrl ? [uploadPaintImageUrl] : undefined,
+    output: uploadPaintResult.output,
+  })
 
   logger.info('Upload_paint completed, submitting upscale', { jobId })
 
@@ -806,6 +1161,18 @@ async function generateWithLegNext(
 
   logger.info('Submitting upscale with payload', { upscalePayload })
 
+  // Log upscale request start
+  logLLMRequestStart({
+    provider: 'midjourney',
+    model: 'legnext-upscale',
+    prompt: remixPrompt,
+    inputImageUrls: uploadPaintImageUrl ? [uploadPaintImageUrl] : undefined,
+    input: upscalePayload,
+    metadata: {
+      endpoint: 'upscale',
+    },
+  })
+
   const upscaleResponse = await fetch('https://api.legnext.ai/api/v1/upscale', {
     method: 'POST',
     headers: {
@@ -817,6 +1184,13 @@ async function generateWithLegNext(
 
   if (!upscaleResponse.ok) {
     const errorText = await upscaleResponse.text()
+    logLLMRequestError({
+      provider: 'midjourney',
+      model: 'legnext-upscale',
+      prompt: remixPrompt,
+      error: `HTTP ${upscaleResponse.status}: ${errorText}`,
+      input: upscalePayload,
+    })
     throw new Error(`LegNext upscale submission failed: ${upscaleResponse.status} - ${errorText}`)
   }
 
@@ -824,6 +1198,14 @@ async function generateWithLegNext(
   const upscaleJobId = upscaleData.job_id
 
   if (!upscaleJobId) {
+    logLLMRequestError({
+      provider: 'midjourney',
+      model: 'legnext-upscale',
+      prompt: remixPrompt,
+      error: 'No job_id returned',
+      input: upscalePayload,
+      output: upscaleData,
+    })
     throw new Error('LegNext upscale failed: No job_id returned')
   }
 
@@ -838,8 +1220,25 @@ async function generateWithLegNext(
   const imageUrl = upscaleResult.output?.image_url || upscaleResult.output?.image_urls?.[0]
 
   if (!imageUrl) {
+    logLLMRequestError({
+      provider: 'midjourney',
+      model: 'legnext-upscale',
+      prompt: remixPrompt,
+      error: 'LegNext upscale result missing image_url',
+      input: upscalePayload,
+      output: upscaleResult,
+    })
     throw new Error('LegNext upscale result missing image_url')
   }
+
+  // Log upscale completion
+  logLLMRequestComplete({
+    provider: 'midjourney',
+    model: 'legnext-upscale',
+    prompt: remixPrompt,
+    outputImageUrls: [imageUrl],
+    output: upscaleResult.output,
+  })
 
   logger.info('Midjourney generation via LegNext completed', { imageUrl })
 
@@ -851,5 +1250,18 @@ async function generateWithLegNext(
 
   const arrayBuffer = await response.arrayBuffer()
   const buffer = Buffer.from(arrayBuffer)
+
+  // For follow-up tiles, crop the center 512x512 from the 1024x1024 context canvas
+  // (matches behavior of Gemini, OpenAI, and Stability providers)
+  if (!isFirstTile && contextImageBase64) {
+    const croppedBuffer = await imageService.crop(buffer, {
+      x: 256,
+      y: 256,
+      width: 512,
+      height: 512,
+    })
+    return croppedBuffer.toString('base64')
+  }
+
   return buffer.toString('base64')
 }

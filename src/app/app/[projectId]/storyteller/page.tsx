@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { TOUR_STEP_IDS } from '@/lib/tour-constants'
-import { useSearchParams, useRouter, useParams } from 'next/navigation'
+import { useSearchParams, useRouter, useParams, usePathname } from 'next/navigation'
 import { toast } from 'sonner'
 import { CorkBoard } from '@/domains/storyteller/components/CorkBoard'
 import { CharacterPanel } from '@/domains/storyteller/components/CharacterPanel'
@@ -16,7 +16,7 @@ import {
   applyUpdatesToStoryPlan,
 } from '@/domains/storyteller/config/action-config'
 import { QuestionSession } from '@/domains/storyteller/questions/types'
-import { ChatInterface, SmartQuickActions } from '@/domains/chat/components'
+import { ChatInterface, SmartQuickActions, StreamingTerminal, StreamingSectionsInline } from '@/domains/chat/components'
 import { useChatStream } from '@/domains/chat/hooks/useChatStream'
 import { Message, AgentConfigMap } from '@/domains/chat/types'
 import {
@@ -255,6 +255,7 @@ export default function StorytellerPage() {
   const searchParams = useSearchParams()
   const params = useParams()
   const router = useRouter()
+  const pathname = usePathname()
 
   const currentProject = useWorldStore(state => state.currentProject)
   const setCurrentProject = useWorldStore(state => state.setCurrentProject)
@@ -404,7 +405,7 @@ export default function StorytellerPage() {
   ])
 
   // Initialize episode from URL param
-  const episodeParam = searchParams.get('episodeId')
+  const episodeParam = searchParams?.get('episodeId') ?? null
   const [currentEpisodeId, setCurrentEpisodeId] = useState<string | null>(episodeParam)
   const [currentEpisodeTitle, setCurrentEpisodeTitle] = useState<string>('')
   const [currentEpisode, setCurrentEpisode] = useState<{
@@ -414,6 +415,7 @@ export default function StorytellerPage() {
 
   // Fetch current episode details when ID changes
   const [hasEpisodes, setHasEpisodes] = useState(false)
+  const [firstEpisodeId, setFirstEpisodeId] = useState<string | null>(null)
   const [overrideState, setOverrideState] = useState<string | null>(null)
 
   // Check for override
@@ -455,7 +457,9 @@ export default function StorytellerPage() {
         } else if (overrideState === 'NO_EPISODES') {
           setHasEpisodes(false)
         } else if (Array.isArray(data)) {
-          setHasEpisodes(data.length > 0)
+          const hasAny = data.length > 0
+          setHasEpisodes(hasAny)
+          setFirstEpisodeId(hasAny && data[0]?.id ? data[0].id : null)
         }
       })
       .catch(() => {
@@ -492,8 +496,20 @@ export default function StorytellerPage() {
   const [selectedBeatId, setSelectedBeatId] = useState<string | null>(null)
 
   // Bible State - Derived from URL
-  const bibleParamValue = searchParams.get('bible')
-  const isWorldBibleOpen = bibleParamValue === 'open'
+  // Bible State check (derived from URL + local optimistic override)
+  const bibleParamValue = searchParams?.get('bible') ?? null
+  const [optimisticBibleOpen, setOptimisticBibleOpen] = useState<boolean | null>(null)
+
+  // Reset optimistic state when URL actually changes to match
+  useEffect(() => {
+    if (optimisticBibleOpen === null) return
+    const urlState = bibleParamValue === 'open'
+    if (optimisticBibleOpen === urlState) {
+      setOptimisticBibleOpen(null)
+    }
+  }, [bibleParamValue, optimisticBibleOpen])
+
+  const isWorldBibleOpen = optimisticBibleOpen ?? (bibleParamValue === 'open')
 
   // Character State
   const [characters, setCharacters] = useState<Character[]>([])
@@ -506,7 +522,6 @@ export default function StorytellerPage() {
   const [isScriptLoading, setIsScriptLoading] = useState(false)
   const [currentPhase, setCurrentPhase] = useState<string>('premise')
   const [activeTab, setActiveTab] = useState<string>('plan')
-  const [lastEpisodeTab, setLastEpisodeTab] = useState<string>('plan') // Remember last non-bible tab
   const [focusEntityId, setFocusEntityId] = useState<string | null>(null)
 
   // Listen for entity navigation events (from clicking entity references)
@@ -607,39 +622,33 @@ export default function StorytellerPage() {
     }
   }, [episodeParam])
 
-  // Note: We no longer auto-redirect to bible=open.
-  // The component will naturally show Bible as a fallback when no episode is selected.
-  // This prevents the flash where Bible shows then gets replaced by episode.
+  // If no bible param, default to bible=open on first visit
+  useEffect(() => {
+    if (!pathname || searchParams?.has('bible')) return
+    const next = new URLSearchParams(searchParams?.toString() || '')
+    next.set('bible', 'open')
+    router.replace(`${pathname}?${next.toString()}`, { scroll: false })
+  }, [pathname, router, searchParams])
 
-  // Update active tab when bible param changes
+  // Notify components when bible opens/closes
   useEffect(() => {
     if (bibleParamValue === 'open') {
-      // Save current tab before switching to bible (if not already bible)
-      if (activeTab !== 'bible') {
-        setLastEpisodeTab(activeTab)
-      }
-      setActiveTab('bible')
       window.dispatchEvent(new CustomEvent('bible-opened'))
-    } else if (activeTab === 'bible') {
-      // Closing bible: restore last episode tab
-      setActiveTab(lastEpisodeTab)
     }
   }, [bibleParamValue])
 
   // Listen for world bible toggle
   useEffect(() => {
     const handleToggle = () => {
-      if (isWorldBibleOpen) {
-        // Close: Remove param
-        const params = new URLSearchParams(searchParams.toString())
-        params.delete('bible')
-        router.push(`?${params.toString()}`)
-      } else {
-        // Open: Add param
-        const params = new URLSearchParams(searchParams.toString())
+      const nextState = !isWorldBibleOpen
+      setOptimisticBibleOpen(nextState)
+      const params = new URLSearchParams(searchParams?.toString() || '')
+      if (nextState) {
         params.set('bible', 'open')
-        router.push(`?${params.toString()}`)
+      } else {
+        params.set('bible', 'off')
       }
+      router.push(`?${params.toString()}`)
     }
     window.addEventListener('toggle-world-bible', handleToggle)
     return () => window.removeEventListener('toggle-world-bible', handleToggle)
@@ -842,6 +851,25 @@ export default function StorytellerPage() {
                 return updated
               })
 
+              // For roadmap updates, also sync storyPlan directly from the API response
+              // to guarantee UI reflects the saved state regardless of merge edge cases
+              if (action.type === 'UPDATE_EPISODE_ROADMAP' && bible.storyPlan) {
+                const plan = bible.storyPlan as any
+                console.log(
+                  '🗺️ [executeAction] Roadmap sync - sequences:',
+                  plan.sequences?.length,
+                  'episodeRoadmap.episodes:',
+                  plan.episodeRoadmap?.episodes?.length
+                )
+                setStoryPlan(prev => ({
+                  ...(prev || {} as any),
+                  sequences: plan.sequences || (prev as any)?.sequences,
+                  episodeRoadmap: plan.episodeRoadmap || (prev as any)?.episodeRoadmap,
+                  seasonStructure: plan.seasonStructure || (prev as any)?.seasonStructure,
+                  executiveSummary: plan.executiveSummary || (prev as any)?.executiveSummary,
+                }))
+              }
+
               // If characters were synced to table, refetch CharacterPanel data
               if (data.result.characters_synced && currentProject?.id) {
                 console.log('🔄 [executeAction] Characters synced - refetching from characters table')
@@ -1003,8 +1031,8 @@ export default function StorytellerPage() {
                 const handleSectionAccept = async () => {
                   console.log(`[Section Accept] Approving ${action.type} for section ${section}`)
                   // Set processing state on both section overlay AND chat widget
-                  if (action.id) {
-                    updateActionStatusById(action.id, 'executing')
+                  if ('id' in action && action.id) {
+                    updateActionStatusById(action.id as string, 'executing')
                   }
                   setSectionPendingActions(prev => {
                     if (!prev[section]) return prev
@@ -1017,8 +1045,8 @@ export default function StorytellerPage() {
                   try {
                     await executeAction(action as any)
                     // Sync chat status using ID
-                    if (action.id) {
-                      updateActionStatusById(action.id, 'committed')
+                    if ('id' in action && action.id) {
+                      updateActionStatusById(action.id as string, 'committed')
                     }
 
                     // Clear pending action on success
@@ -1040,8 +1068,8 @@ export default function StorytellerPage() {
                   } catch (e) {
                     console.error('[Section Accept] Failed:', e)
                     // Reset processing state on failure for both section and chat
-                    if (action.id) {
-                      updateActionStatusById(action.id, 'pending')
+                    if ('id' in action && action.id) {
+                      updateActionStatusById(action.id as string, 'pending')
                     }
                     setSectionPendingActions(prev => {
                       if (!prev[section]) return prev
@@ -1056,8 +1084,8 @@ export default function StorytellerPage() {
                 const handleSectionReject = () => {
                   console.log(`[Section Reject] Rejecting ${action.type} for section ${section}`)
                   // Sync chat status using ID
-                  if (action.id) {
-                    updateActionStatusById(action.id, 'rejected')
+                  if ('id' in action && action.id) {
+                    updateActionStatusById(action.id as string, 'rejected')
                   }
 
                   // Clear pending action
@@ -1257,8 +1285,8 @@ export default function StorytellerPage() {
       const section = getActionSection(action.type)
 
       const handleApprove = async () => {
-        if (action.id) {
-          updateActionStatusById(action.id, 'executing')
+        if ('id' in action && action.id) {
+          updateActionStatusById(action.id as string, 'executing')
         } else {
           updateActionStatus(messageIndex, actionIndex, 'executing')
         }
@@ -1288,8 +1316,8 @@ export default function StorytellerPage() {
         try {
           await executeAction(action as any)
 
-          if (action.id) {
-            updateActionStatusById(action.id, 'committed')
+          if ('id' in action && action.id) {
+            updateActionStatusById(action.id as string, 'committed')
           } else {
             updateActionStatus(messageIndex, actionIndex, 'committed')
           }
@@ -1315,8 +1343,8 @@ export default function StorytellerPage() {
         } catch (e) {
           console.error('Approval failed', e)
 
-          if (action.id) {
-            updateActionStatusById(action.id, 'pending')
+          if ('id' in action && action.id) {
+            updateActionStatusById(action.id as string, 'pending')
           } else {
             updateActionStatus(messageIndex, actionIndex, 'pending')
           }
@@ -1341,8 +1369,8 @@ export default function StorytellerPage() {
       }
 
       const handleReject = () => {
-        if (action.id) {
-          updateActionStatusById(action.id, 'rejected')
+        if ('id' in action && action.id) {
+          updateActionStatusById(action.id as string, 'rejected')
         } else {
           updateActionStatus(messageIndex, actionIndex, 'rejected')
         }
@@ -1368,11 +1396,12 @@ export default function StorytellerPage() {
         }
 
         // Handle Character Creation Undo
-        if (
-          action.type === 'create_character' ||
-          (action.type === 'tool_use' && action.tool === 'create_character')
-        ) {
-          const charName = action.payload?.name || (action.payload as any)?.character?.name
+        if (action.type === 'CREATE_CHARACTER') {
+          const charName = 'payload' in action && action.payload && typeof action.payload === 'object' && 'name' in action.payload
+            ? (action.payload as any).name
+            : ('payload' in action && action.payload && typeof action.payload === 'object' && 'character' in action.payload
+              ? (action.payload as any).character?.name
+              : undefined)
           if (charName) {
             console.log('↩️ [Undo] Removing character:', charName)
             setCharacters(prev => prev.filter(c => c.name.toLowerCase() !== charName.toLowerCase()))
@@ -1388,8 +1417,7 @@ export default function StorytellerPage() {
 
       const canUndo =
         (action.type.startsWith('UPDATE_') && undoStack.some(u => u.actionId === actionId)) ||
-        action.type === 'create_character' ||
-        (action.type === 'tool_use' && action.tool === 'create_character')
+        action.type === 'CREATE_CHARACTER'
 
       if (status === 'committed') {
         return (
@@ -1528,7 +1556,7 @@ export default function StorytellerPage() {
         currentPhase: effectivePhase,
         seriesBible: {
           ...((currentProject?.series_bible as any) || {}),
-          masterPrompt: currentProject?.masterPrompt || currentProject?.master_prompt || '',
+          masterPrompt: currentProject?.master_prompt ?? '',
           userDecisions: storyDecisions,
         },
         characters: characters.map((c: any) => ({
@@ -2109,7 +2137,8 @@ export default function StorytellerPage() {
               ...episodePlan,
               // Explicitly ensure critical fields are not lost if they are missing in one layer
               // Priority: episode > seasonPlan (storyPlan table) > bible > updatedFields
-              sequences: episodePlan.sequences || seasonPlan.sequences || [],
+              sequences: episodePlan.sequences || seasonPlan.sequences ||
+                seasonPlan.episodeRoadmap?.episodes || seasonPlan.episodeRoadmap?.sequences || [],
               factions:
                 episodePlan.factions ||
                 seasonPlan.factions ||
@@ -2498,7 +2527,7 @@ export default function StorytellerPage() {
         if (!prev) return prev
         return {
           ...prev,
-          sequences: prev.sequences.map(seq =>
+          sequences: (prev.sequences || []).map(seq =>
             seq.id === sequenceId ? { ...seq, ...updates } : seq
           ),
         }
@@ -2543,7 +2572,7 @@ export default function StorytellerPage() {
 
       if (newEpisode?.id) {
         // 2. Select it (Update URL and state)
-        const params = new URLSearchParams(searchParams.toString())
+        const params = new URLSearchParams(searchParams?.toString() || '')
         params.set('episodeId', newEpisode.id)
         router.push(`?${params.toString()}`)
         setCurrentEpisodeId(newEpisode.id)
@@ -2563,7 +2592,7 @@ export default function StorytellerPage() {
   }, [currentProject?.id, isSending, handleSendMessage, searchParams, router])
 
   const handleGenerateBible = useCallback(() => {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(searchParams?.toString() || '')
     params.set('bible', 'open')
     router.push(`?${params.toString()}`)
 
@@ -2902,7 +2931,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
         setIsSending(true)
 
         const payload = {
-          message: `Please regenerate ONLY the ${readableSection} (${sectionName}) for the episode premise. Return a JSON object containing ONLY this field. Do not include unchanged fields. Delegate to the Episode Premise Architect.`,
+          message: `Please regenerate ONLY the ${readableSection} (${sectionName}) for the episode premise. Return a JSON object containing ONLY this field. Do not include unchanged fields. Take a completely new, bold, and distinct creative direction. Do not just rephrase the previous version - give me a brand new idea. Delegate to the Episode Premise Architect.`,
           projectId: currentProject?.id,
           threadId: currentEpisodeId || 'general',
           episodeId: currentEpisodeId,
@@ -2970,9 +2999,14 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
       // 1. Optimistic Update
       setStoryPlan(prev => {
         if (!prev) return { premise: detail } as any
+
+        // If the top-level storyPlan object is actually just a premise, 
+        // merge directly. Otherwise merge into the premise property.
+        // It's usually nested under .premise for episodes.
         return {
           ...prev,
           premise: { ...(prev as any).premise, ...detail },
+          title: detail.title || (prev as any).title,
         } as any
       })
 
@@ -3023,7 +3057,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
         if (res.ok && currentProject) {
           useWorldStore.getState().setCurrentProject({
             ...currentProject,
-            masterPrompt: prompt,
+            master_prompt: prompt,
           })
         }
       } catch (err) {
@@ -3075,28 +3109,48 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
         const latestProject = useWorldStore.getState().currentProject
         if (!latestProject?.id) return
 
-        // Use current project's series bible as base
-        const currentBible = (latestProject.series_bible as StoryPlan) || {}
-        const newBible = { ...currentBible, ...updates }
+        const updateKeys = Object.keys(updates)
+        const isMoodImagesOnly =
+          updateKeys.length === 1 && updateKeys[0] === 'moodImages'
 
-        // 1. Update Store immediately
-        useWorldStore.getState().setCurrentProject({
-          ...latestProject,
-          series_bible: newBible,
-        })
-
-        // If we are NOT in an episode context, also update the local storyPlan state
-        // to keep the UI consistent if it's relying on it.
-        if (!currentEpisodeId) {
-          setStoryPlan(newBible)
+        if (isMoodImagesOnly) {
+          // Refetch-after-delete path: only merge moodImages into state/store and persist a merge-only PATCH so we never overwrite the rest of the bible/plan
+          const newMoodImages = updates.moodImages
+          if (!currentEpisodeId) {
+            setStoryPlan(prev => (prev ? { ...prev, moodImages: newMoodImages } : prev))
+          }
+          useWorldStore.getState().setCurrentProject({
+            ...latestProject,
+            series_bible: {
+              ...(latestProject.series_bible as Record<string, unknown> || {}),
+              moodImages: newMoodImages,
+            },
+          })
+          await fetch(`/api/storyteller/projects/${latestProject.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              seriesBible: { moodImages: newMoodImages },
+              storyPlan: { moodImages: newMoodImages },
+            }),
+          })
+        } else {
+          // Full replace path
+          const currentBible = (latestProject.series_bible as StoryPlan) || {}
+          const newBible = { ...currentBible, ...updates }
+          useWorldStore.getState().setCurrentProject({
+            ...latestProject,
+            series_bible: newBible,
+          })
+          if (!currentEpisodeId) {
+            setStoryPlan(newBible)
+          }
+          await fetch(`/api/storyteller/projects/${latestProject.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ series_bible: newBible, story_plan: newBible }),
+          })
         }
-
-        // 2. Persist to DB
-        await fetch(`/api/storyteller/projects/${latestProject.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ series_bible: newBible }),
-        })
       } catch (e) {
         console.error('Failed to save global bible:', e)
       } finally {
@@ -3132,7 +3186,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
       await fetch(`/api/storyteller/projects/${currentProject.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ series_bible: newBible }),
+        body: JSON.stringify({ series_bible: newBible, story_plan: newBible }),
       })
     } catch (e) {
       console.error('Failed to save bible:', e)
@@ -3171,19 +3225,20 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 variant={isWorldBibleOpen ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => {
-                  const params = new URLSearchParams(searchParams.toString())
-                  if (isWorldBibleOpen) {
-                    params.delete('bible')
-                  } else {
+                  const nextState = !isWorldBibleOpen
+                  setOptimisticBibleOpen(nextState)
+                  const params = new URLSearchParams(searchParams?.toString() || '')
+                  if (nextState) {
                     params.set('bible', 'open')
-                    // Dispatch event for tour
                     window.dispatchEvent(new Event('bible-opened'))
+                  } else {
+                    params.set('bible', 'off')
                   }
                   router.push(`?${params.toString()}`)
                 }}
                 disabled={isSending}
                 className={cn(
-                  'h-7 px-3 gap-1.5 text-[10px] font-black border-2 transition-all rounded-md uppercase tracking-widest relative overflow-hidden',
+                  'h-7 px-3 gap-1.5 text-[10px] font-black border-2 transition-all duration-150 rounded-md uppercase tracking-widest relative overflow-hidden active:scale-[0.98]',
                   isWorldBibleOpen && isBibleLocked
                     ? 'bg-transparent text-white border-red-400 shadow-[0_0_15px_rgba(239,68,68,0.5)] scale-105' // Locked & Open
                     : isWorldBibleOpen && !isBibleLocked
@@ -3195,12 +3250,12 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 )}
                 title={
                   isSending
-                    ? 'Bible unavailable while agents are working'
+                    ? 'Storybible unavailable while agents are working'
                     : isBibleLocked
-                      ? `🔒 Bible Locked by ${bibleLockedBy || 'Admin'} - ${isWorldBibleOpen ? 'Close' : 'Open'} (Read-Only)`
+                      ? `🔒 Storybible Locked by ${bibleLockedBy || 'Admin'} - ${isWorldBibleOpen ? 'Close' : 'Open'} (Read-Only)`
                       : isWorldBibleOpen
-                        ? 'Close World Bible'
-                        : 'Open World Bible'
+                        ? 'Close Storybible'
+                        : 'Open Storybible'
                 }
                 id={TOUR_STEP_IDS.STORYTELLER_BIBLE}
               >
@@ -3224,7 +3279,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                     )}
                   />
                 )}
-                <span className="relative z-10">BIBLE</span>
+                <span className="relative z-10">STORYBIBLE</span>
 
                 {isWorldBibleOpen && (
                   <div
@@ -3248,23 +3303,40 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 <SidebarSection icon={<Scroll size={12} />}>
                   <MasterPromptEditor
                     scope="Project"
-                    initialPrompt={currentProject.masterPrompt || currentProject.master_prompt || ''}
+                    initialPrompt={currentProject.master_prompt || ''}
                     onSave={handleSaveProjectPrompt}
                   />
                 </SidebarSection>
               </div>
 
+              {/* 2. Cast List - Characters displayed directly in sidebar */}
+              <div id={TOUR_STEP_IDS.STORYTELLER_CHARACTERS}>
+                <SidebarSection separator icon={<Users size={12} />}>
+                  <CharacterPanel
+                    characters={characters}
+                    onUpdate={handleUpdateCharacter}
+                    onCreate={handleCreateCharacter}
+                    onDelete={handleDeleteCharacter}
+                    projectId={currentProject?.id || ''}
+                    selectedBeatId={selectedBeatId}
+                    episodeId={currentEpisodeId}
+                    isLoading={isFetchingCharacters || isDeletingCharacter}
+                  />
+                </SidebarSection>
+              </div>
+
               {/* 3. Episode Manager - disabled while agents working */}
-              <div>
+              <div id={TOUR_STEP_IDS.STORYTELLER_EPISODES}>
                 <SidebarSection separator>
                   <div className={isSending ? 'opacity-50 pointer-events-none' : ''}>
                     <EpisodeManager
                       projectId={currentProject.id}
                       currentEpisodeId={currentEpisodeId}
                       onEpisodeChange={id => {
-                        const params = new URLSearchParams(searchParams.toString())
+                        // Optimistic update
+                        setCurrentEpisodeId(id)
+                        const params = new URLSearchParams(searchParams?.toString() || '')
                         params.set('episodeId', id)
-                        params.delete('bible') // Implicitly close bible if opening episode
                         router.push(`?${params.toString()}`)
                       }}
                       onEpisodeTitleChange={title => setCurrentEpisodeTitle(title)}
@@ -3289,21 +3361,6 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                   />
                 </SidebarSection>
               )}
-
-              {/* 5. Cast List - Characters displayed directly in sidebar */}
-              <SidebarSection separator icon={<Users size={12} />}>
-                <CharacterPanel
-                  characters={characters}
-                  onUpdate={handleUpdateCharacter}
-                  onCreate={handleCreateCharacter}
-                  onDelete={handleDeleteCharacter}
-                  projectId={currentProject?.id || ''}
-                  selectedBeatId={selectedBeatId}
-                  episodeId={currentEpisodeId}
-                  isLoading={isFetchingCharacters || isDeletingCharacter}
-                  isDeleting={isDeletingCharacter}
-                />
-              </SidebarSection>
             </div>
           ) : (
             <SidebarEmptyState
@@ -3329,39 +3386,8 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/70 to-black" />
             </div>
           )}
-          {isWorldBibleOpen ? (
-            <div className="flex-1 overflow-hidden px-6 pb-6 z-10 relative animate-in fade-in zoom-in-95 duration-200">
-              <WorldBiblePanel
-                storyPlan={
-                  storyPlan || {
-                    title: currentProject?.name || 'Untitled',
-                    genre: '', // Empty triggers placeholder in UI
-                    tone: '', // Empty triggers placeholder in UI
-                    centralQuestion: '', // Empty triggers placeholder in UI
-                    themes: [],
-                    worldRules: [],
-                    factions: [],
-                    keyCharacters: characters,
-                    protagonist: null,
-                    antagonist: null,
-                  }
-                }
-                projectId={currentProject?.id || ''}
-                onUpdate={handleUpdateGlobalBible}
-                onSendMessage={handleBibleSendMessage}
-                isReadOnly={isSending}
-                onConvertToCast={handleCreateCharacter}
-                isLoading={isFetchingPlan}
-                loadingSections={loadingSections}
-                pendingActions={sectionPendingActions}
-                onClose={() => {
-                  const params = new URLSearchParams(searchParams.toString())
-                  params.delete('bible')
-                  router.push(`?${params.toString()}`)
-                }}
-              />
-            </div>
-          ) : currentEpisodeId ? (
+          {/* Layer 1: Episode content or empty state (always base layer) */}
+          {currentEpisodeId ? (
             <>
               {/* Header Bar */}
               <div className="shrink-0 border-b border-border flex items-center px-4 bg-card justify-between z-40 relative py-2 gap-4 flex-wrap min-h-[60px]">
@@ -3455,34 +3481,6 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                     />
                   </div>
                 )}
-                {activeTab === 'bible' && (
-                  <div className="flex-1 overflow-y-auto w-full h-full p-6">
-                    <WorldBiblePanel
-                      storyPlan={
-                        storyPlan || {
-                          title: currentProject?.name || 'Untitled',
-                          genre: '',
-                          tone: '',
-                          centralQuestion: '',
-                          themes: [],
-                          worldRules: [],
-                          factions: [],
-                          keyCharacters: characters,
-                          protagonist: null,
-                          antagonist: null,
-                        }
-                      }
-                      projectId={currentProject?.id || ''}
-                      onUpdate={handleUpdateBible}
-                      onSendMessage={handleBibleSendMessage}
-                      isReadOnly={isSending}
-                      isLoading={isFetchingPlan}
-                      loadingSections={loadingSections}
-                      pendingActions={sectionPendingActions}
-                      onConvertToCast={handleCreateCharacter}
-                    />
-                  </div>
-                )}
                 {activeTab === 'relationships' && (
                   <div className="flex-1 overflow-hidden relative h-full">
                     <CharacterWeb
@@ -3499,36 +3497,8 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 )}
               </div>
             </>
-          ) : isWorldBibleOpen ? (
-            /* No episode selected but Bible is open - show World Bible */
-            <div className="flex-1 overflow-hidden px-6 pb-6 z-10 relative">
-              <WorldBiblePanel
-                storyPlan={
-                  storyPlan || {
-                    title: currentProject?.name || 'Untitled',
-                    genre: '',
-                    tone: '',
-                    centralQuestion: '',
-                    themes: [],
-                    worldRules: [],
-                    factions: [],
-                    keyCharacters: characters,
-                    protagonist: null,
-                    antagonist: null,
-                  }
-                }
-                projectId={currentProject?.id || ''}
-                onUpdate={handleUpdateGlobalBible}
-                onSendMessage={handleBibleSendMessage}
-                isReadOnly={isSending}
-                isLoading={isFetchingPlan}
-                loadingSections={loadingSections}
-                pendingActions={sectionPendingActions}
-                onConvertToCast={handleCreateCharacter}
-              />
-            </div>
           ) : (
-            /* No episode selected and Bible closed - Show create episode prompt */
+            /* No episode selected - Show create episode prompt */
             <div className="flex-1 overflow-hidden flex items-center justify-center p-12 z-10 relative">
               <div className="max-w-2xl w-full text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
                 <div className="space-y-3">
@@ -3540,9 +3510,9 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                   <h2 className="text-3xl font-bold text-foreground">
                     {hasBible
                       ? hasEpisodes
-                        ? 'Select an Episode to Continue'
+                        ? 'Select First Episode'
                         : 'Ready to Create Your First Episode?'
-                      : "Let's Build Your World Bible First"}
+                      : "Let's Build Your Storybible First"}
                   </h2>
                   <p className="text-muted-foreground text-lg leading-relaxed">
                     {hasBible
@@ -3568,14 +3538,14 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                         ) : (
                           <BookOpen className="w-5 h-5" />
                         )}
-                        Generate World Bible First
+                        Generate Storybible First
                       </Button>
 
                       <Button
                         size="lg"
                         variant="outline"
                         onClick={() => {
-                          const params = new URLSearchParams(searchParams.toString())
+                          const params = new URLSearchParams(searchParams?.toString() || '')
                           params.set('bible', 'open')
                           router.push(`?${params.toString()}`)
                         }}
@@ -3588,34 +3558,50 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                     </>
                   ) : (
                     <>
-                      <Button
-                        id={TOUR_STEP_IDS.STORYTELLER_AI_DRAFT}
-                        size="lg"
-                        variant="outline"
-                        onClick={handleDraftFirstEpisode}
-                        disabled={isSending}
-                        className="gap-2 text-base px-8 font-bold text-primary transition-all duration-300 rounded-lg overflow-hidden border border-primary/50 hover:border-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm hover:shadow-[0_0_20px_-5px_rgba(92,124,250,0.5)] hover:scale-[1.02]"
-                      >
-                        {isSending ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                          <Sparkles className="w-5 h-5" />
-                        )}
-                        AI Draft First Episode
-                      </Button>
+                      {hasEpisodes && firstEpisodeId ? (
+                        <Button
+                          size="lg"
+                          variant="default"
+                          onClick={() => {
+                            setCurrentEpisodeId(firstEpisodeId)
+                            const params = new URLSearchParams(searchParams?.toString() || '')
+                            params.set('episodeId', firstEpisodeId)
+                            router.push(`?${params.toString()}`)
+                          }}
+                          className="gap-2 text-base px-8 font-bold bg-primary text-primary-foreground hover:bg-primary/90"
+                        >
+                          Select First Episode
+                        </Button>
+                      ) : (
+                        <Button
+                          id={TOUR_STEP_IDS.STORYTELLER_AI_DRAFT}
+                          size="lg"
+                          variant="outline"
+                          onClick={handleDraftFirstEpisode}
+                          disabled={isSending}
+                          className="gap-2 text-base px-8 font-bold text-primary transition-all duration-300 rounded-lg overflow-hidden border border-primary/50 hover:border-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm hover:shadow-[0_0_20px_-5px_rgba(92,124,250,0.5)] hover:scale-[1.02]"
+                        >
+                          {isSending ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <Sparkles className="w-5 h-5" />
+                          )}
+                          AI Draft First Episode
+                        </Button>
+                      )}
 
                       <Button
                         size="lg"
                         variant="outline"
                         onClick={() => {
-                          const params = new URLSearchParams(searchParams.toString())
+                          const params = new URLSearchParams(searchParams?.toString() || '')
                           params.set('bible', 'open')
                           router.push(`?${params.toString()}`)
                         }}
                         className="gap-2 text-base px-8 shadow-sm"
                       >
                         <BookOpen className="w-5 h-5" />
-                        Open World Bible
+                        Open Storybible
                       </Button>
                     </>
                   )}
@@ -3627,12 +3613,48 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                     <p>
                       <strong className="text-foreground/80">Tip:</strong>{' '}
                       {hasBible
-                        ? 'Your World Bible is ready. Use it as a reference while drafting episodes to maintain consistency.'
-                        : 'Starting with the World Bible helps the AI understand your vision and maintain consistency across episodes.'}
+                        ? 'Your Storybible is ready. Use it as a reference while drafting episodes to maintain consistency.'
+                        : 'Starting with the Storybible helps the AI understand your vision and maintain consistency across episodes.'}
                     </p>
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Layer 2: Bible overlay — floats on top based on bible=open param */}
+          {isWorldBibleOpen && (
+            <div className="absolute inset-0 z-20 bg-black overflow-hidden px-6 pb-6 animate-in fade-in zoom-in-95 duration-200">
+              <WorldBiblePanel
+                storyPlan={
+                  (storyPlan || {
+                    title: currentProject?.name || 'Untitled',
+                    genre: '',
+                    tone: '',
+                    centralQuestion: '',
+                    themes: [],
+                    worldRules: [],
+                    factions: [],
+                    keyCharacters: characters as any,
+                    protagonist: null,
+                    antagonist: null,
+                    executiveSummary: null,
+                    moodImages: [],
+                  }) as any
+                }
+                projectId={currentProject?.id || ''}
+                onUpdate={handleUpdateGlobalBible}
+                onSendMessage={handleBibleSendMessage}
+                isReadOnly={isSending}
+                isLoading={isFetchingPlan}
+                loadingSections={loadingSections}
+                pendingActions={sectionPendingActions}
+                onClose={() => {
+                  const params = new URLSearchParams(searchParams?.toString() || '')
+                  params.set('bible', 'off')
+                  router.push(`?${params.toString()}`)
+                }}
+              />
             </div>
           )}
         </div>
@@ -3645,7 +3667,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           defaultWidth={384}
           rawContent
         >
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full" id={TOUR_STEP_IDS.STORYTELLER_CHAT}>
             <ChatInterface
               isActivityPanelOpen={isActivityPanelOpen}
               onActivityToggle={() => setIsActivityPanelOpen(!isActivityPanelOpen)}
@@ -3676,62 +3698,23 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
               ActionComponent={MemoizedActionComponent}
               QuestionComponent={StableQuestionComponent}
             >
-              {/* Streaming Tokens Injection - ONLY when Activity ON */}
-              {/* NOTE: When Activity OFF, AgentLog's bottom indicator handles the "Processing..." status */}
+              {/* Streaming Terminal - Only when Activity ON */}
               {isActivityPanelOpen && isTokenStreaming && streamingTokens && (
                 <div className="mb-4 ml-8 animate-in fade-in duration-300">
-                  {/* Activity ON: Developer terminal view */}
-                  <div className="rounded-lg overflow-hidden border border-zinc-700/50 shadow-xl">
-                    {/* Terminal header */}
-                    <div className="flex items-center gap-2 px-3 py-2 bg-zinc-900 border-b border-zinc-700/50">
-                      <div className="flex gap-1.5">
-                        <div className="w-3 h-3 rounded-full bg-red-500/80" />
-                        <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-                        <div className="w-3 h-3 rounded-full bg-green-500/80" />
-                      </div>
-                      <span className="text-[10px] text-zinc-500 font-mono ml-2">
-                        {thinkingAgent === 'RunnableSequence'
-                          ? 'agent'
-                          : thinkingAgent || 'writers-room'}{' '}
-                        — streaming
-                      </span>
-                      <span className="ml-auto flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                        <span className="text-[9px] text-cyan-400 font-mono uppercase tracking-wider">
-                          LIVE
-                        </span>
-                      </span>
-                    </div>
-                    {/* Terminal body */}
-                    <div className="bg-zinc-950 p-3 max-h-[250px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
-                      <pre className="m-0 text-[11px] font-mono leading-relaxed whitespace-pre-wrap break-words text-emerald-400/90">
-                        {streamingTokens}
-                        <span className="inline-block w-2 h-4 ml-0.5 bg-emerald-400 animate-pulse align-middle" />
-                      </pre>
-                    </div>
-                  </div>
+                  <StreamingTerminal
+                    streamingTokens={streamingTokens}
+                    thinkingAgent={
+                      thinkingAgent === 'RunnableSequence' ? 'agent' : thinkingAgent
+                    }
+                    fallbackAgentLabel="writers-room"
+                  />
                 </div>
               )}
 
-              {/* Streaming Sections Injection - Only show when Activity ON */}
+              {/* Streaming Sections Inline - Only when Activity ON */}
               {isActivityPanelOpen && streamingSections.length > 0 && (
-                <div className="mb-4 ml-8 space-y-2">
-                  {streamingSections.map(section => (
-                    <div
-                      key={section.id}
-                      className="flex items-center gap-2 text-sm p-2 rounded bg-muted/30 border border-muted"
-                    >
-                      {section.status === 'in_progress' && (
-                        <div className="w-3 h-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                      )}
-                      {section.status === 'completed' && (
-                        <Check className="w-3 h-3 text-green-500" />
-                      )}
-                      <span className="font-medium text-muted-foreground">
-                        Generating {section.label}...
-                      </span>
-                    </div>
-                  ))}
+                <div className="mb-4 ml-8">
+                  <StreamingSectionsInline sections={streamingSections} />
                 </div>
               )}
 
@@ -3754,7 +3737,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
             </ChatInterface>
           </div>
         </DomainSidebar>
-      </div>
+      </div >
 
       {/* Action Toasts - DISABLED (User prefers inline approvals only) */}
       {/* <ActionToastContainer entries={showToasts} onDismiss={handleDismissToast} /> */}
@@ -3774,119 +3757,26 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
       {/* Cast Modal removed - Cast is now in left sidebar */}
 
       {/* Action Review Modal */}
-      {reviewModalAction && (
-        <ActionApprovalModal
-          action={reviewModalAction.action}
-          agentName={reviewModalAction.agentName}
-          isOpen={!!reviewModalAction}
-          isProcessing={
-            messages[reviewModalAction.messageIndex]?.actions?.[reviewModalAction.actionIndex]?.status === 'executing'
-          }
-          onClose={() => setReviewModalAction(null)}
-          onApprove={async () => {
-            const { action, messageIndex, actionIndex } = reviewModalAction
-
-            if (action.id) {
-              updateActionStatusById(action.id, 'executing')
-            } else if (messageIndex >= 0) {
-              updateActionStatus(messageIndex, actionIndex, 'executing')
-            } else {
-              // Fallback: Try to find action in messages by finding matching payload/type
-              // This handles the case where action came from sectionPendingActions with index -1
-              const found = messages.map((m, mIdx) => ({
-                mIdx,
-                aIdx: m.actions?.findIndex(a =>
-                  a.type === action.type &&
-                  JSON.stringify(a.payload) === JSON.stringify(action.payload)
-                ) ?? -1
-              })).find(res => res.aIdx !== -1)
-
-              if (found) {
-                updateActionStatus(found.mIdx, found.aIdx, 'executing')
-              }
+      {
+        reviewModalAction && (
+          <ActionApprovalModal
+            action={reviewModalAction.action}
+            agentName={reviewModalAction.agentName}
+            isOpen={!!reviewModalAction}
+            isProcessing={
+              messages[reviewModalAction.messageIndex]?.actions?.[reviewModalAction.actionIndex]?.status === 'executing'
             }
+            onClose={() => setReviewModalAction(null)}
+            onApprove={async () => {
+              const { action, messageIndex, actionIndex } = reviewModalAction
 
-            // Set processing state on section pending action (so Bible overlay shows loading)
-            const section = getActionSection(action.type)
-            if (section) {
-              setSectionPendingActions(prev => {
-                if (!prev[section]) return prev
-                return {
-                  ...prev,
-                  [section]: { ...prev[section], isProcessing: true },
-                }
-              })
-            }
-
-            // Save current state for undo
-            if (action.type.startsWith('UPDATE_')) {
-              const actionId = `${messageIndex}-${actionIndex}`
-              setUndoStack(prev => [
-                ...prev.slice(-4),
-                { storyPlan: storyPlan ? { ...storyPlan } : null, actionId },
-              ])
-            }
-
-            try {
-              // Execute the action (calls the backend)
-              await executeAction(action as any)
-
-              // Clear pending review overlay if it exists for this section
-              if (section) {
-                setSectionPendingActions(prev => {
-                  const { [section]: _, ...rest } = prev
-                  return rest
-                })
-              }
-
-              // MANUAL STATE UPDATE:
-              // For bible updates, we must update the local state immediately so the UI reflects it
-              // and the entity extractor sees the new data for tooltips.
-              if (action.type === 'UPDATE_FACTIONS') {
-                const factions = (action.payload as any).factions
-                if (factions) {
-                  setStoryPlan(prev => (prev ? { ...prev, factions: factions } : prev))
-                  // Also update store to be safe
-                  const latest = useWorldStore.getState().currentProject
-                  if (latest) {
-                    useWorldStore.getState().setCurrentProject({
-                      ...latest,
-                      series_bible: { ...(latest.series_bible as any), factions },
-                    })
-                  }
-                  toast.success('Factions updated')
-                }
-              } else if (action.type === 'UPDATE_WORLD_RULES') {
-                const rules = (action.payload as any).worldRules
-                if (rules) {
-                  setStoryPlan(prev => (prev ? { ...prev, worldRules: rules } : prev))
-                  toast.success('World rules updated')
-                }
-              } else if (action.type === 'UPDATE_EPISODE_ROADMAP') {
-                const payload = action.payload as any
-                // Support both new nested format and legacy flat format if any
-                const roadmap = payload.episodeRoadmap || payload
-
-                if (roadmap) {
-                  setStoryPlan(prev => {
-                    if (!prev) return prev
-                    return {
-                      ...prev,
-                      sequences: roadmap.episodes || roadmap.sequences || prev.sequences,
-                      seasonStructure: roadmap.seasonStructure || prev.seasonStructure,
-                      executiveSummary: roadmap.executiveSummary || prev.executiveSummary,
-                    }
-                  })
-                  toast.success('Roadmap updated')
-                }
-              }
-
-              if (action.id) {
-                updateActionStatusById(action.id, 'committed')
+              if ('id' in action && action.id) {
+                updateActionStatusById(action.id as string, 'executing')
               } else if (messageIndex >= 0) {
-                updateActionStatus(messageIndex, actionIndex, 'committed')
+                updateActionStatus(messageIndex, actionIndex, 'executing')
               } else {
-                // Fallback for committed status
+                // Fallback: Try to find action in messages by finding matching payload/type
+                // This handles the case where action came from sectionPendingActions with index -1
                 const found = messages.map((m, mIdx) => ({
                   mIdx,
                   aIdx: m.actions?.findIndex(a =>
@@ -3896,58 +3786,153 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                 })).find(res => res.aIdx !== -1)
 
                 if (found) {
-                  updateActionStatus(found.mIdx, found.aIdx, 'committed')
+                  updateActionStatus(found.mIdx, found.aIdx, 'executing')
                 }
               }
-              setActionHistory(prev => [
-                {
-                  id: `${messageIndex}-${actionIndex}`,
-                  action,
-                  agentName: reviewModalAction.agentName,
-                  status: ActionStatus.COMMITTED,
-                  timestamp: new Date(),
-                },
-                ...prev,
-              ])
-            } catch (e) {
-              console.error('Approval failed', e)
-              if (action.id) {
-                updateActionStatusById(action.id, 'pending')
-              } else if (messageIndex >= 0) {
-                updateActionStatus(messageIndex, actionIndex, 'pending')
-              }
-              // Reset processing state on section overlay
+
+              // Set processing state on section pending action (so Bible overlay shows loading)
+              const section = getActionSection(action.type)
               if (section) {
                 setSectionPendingActions(prev => {
                   if (!prev[section]) return prev
                   return {
                     ...prev,
-                    [section]: { ...prev[section], isProcessing: false },
+                    [section]: { ...prev[section], isProcessing: true },
                   }
                 })
               }
-            }
-            setReviewModalAction(null)
-          }}
-          onReject={() => {
-            const { action, messageIndex, actionIndex } = reviewModalAction
-            if (action.id) {
-              updateActionStatusById(action.id, 'rejected')
-            } else if (messageIndex >= 0) {
-              updateActionStatus(messageIndex, actionIndex, 'rejected')
-            }
-            // Clear section pending action overlay
-            const section = getActionSection(action.type)
-            if (section) {
-              setSectionPendingActions(prev => {
-                const { [section]: _, ...rest } = prev
-                return rest
-              })
-            }
-            setReviewModalAction(null)
-          }}
-        />
-      )}
-    </div>
+
+              // Save current state for undo
+              if (action.type.startsWith('UPDATE_')) {
+                const actionId = `${messageIndex}-${actionIndex}`
+                setUndoStack(prev => [
+                  ...prev.slice(-4),
+                  { storyPlan: storyPlan ? { ...storyPlan } : null, actionId },
+                ])
+              }
+
+              try {
+                // Execute the action (calls the backend)
+                await executeAction(action as any)
+
+                // Clear pending review overlay if it exists for this section
+                if (section) {
+                  setSectionPendingActions(prev => {
+                    const { [section]: _, ...rest } = prev
+                    return rest
+                  })
+                }
+
+                // MANUAL STATE UPDATE:
+                // For bible updates, we must update the local state immediately so the UI reflects it
+                // and the entity extractor sees the new data for tooltips.
+                if (action.type === 'UPDATE_FACTIONS') {
+                  const factions = (action.payload as any).factions
+                  if (factions) {
+                    setStoryPlan(prev => (prev ? { ...prev, factions: factions } : prev))
+                    // Also update store to be safe
+                    const latest = useWorldStore.getState().currentProject
+                    if (latest) {
+                      useWorldStore.getState().setCurrentProject({
+                        ...latest,
+                        series_bible: { ...(latest.series_bible as any), factions },
+                      })
+                    }
+                    toast.success('Factions updated')
+                  }
+                } else if (action.type === 'UPDATE_WORLD_RULES') {
+                  const rules = (action.payload as any).worldRules
+                  if (rules) {
+                    setStoryPlan(prev => (prev ? { ...prev, worldRules: rules } : prev))
+                    toast.success('World rules updated')
+                  }
+                } else if (action.type === 'UPDATE_EPISODE_ROADMAP') {
+                  const payload = action.payload as any
+                  // Support both new nested format and legacy flat format if any
+                  const roadmap = payload.episodeRoadmap || payload
+
+                  if (roadmap) {
+                    setStoryPlan(prev => {
+                      const base = prev || ({} as StoryPlan)
+                      return {
+                        ...base,
+                        sequences: roadmap.episodes || roadmap.sequences || base.sequences,
+                        seasonStructure: roadmap.seasonStructure || base.seasonStructure,
+                        executiveSummary: roadmap.executiveSummary || base.executiveSummary,
+                      }
+                    })
+                    toast.success('Roadmap updated')
+                  }
+                }
+
+                if ('id' in action && action.id) {
+                  updateActionStatusById(action.id as string, 'committed')
+                } else if (messageIndex >= 0) {
+                  updateActionStatus(messageIndex, actionIndex, 'committed')
+                } else {
+                  // Fallback for committed status
+                  const found = messages.map((m, mIdx) => ({
+                    mIdx,
+                    aIdx: m.actions?.findIndex(a =>
+                      a.type === action.type &&
+                      JSON.stringify(a.payload) === JSON.stringify(action.payload)
+                    ) ?? -1
+                  })).find(res => res.aIdx !== -1)
+
+                  if (found) {
+                    updateActionStatus(found.mIdx, found.aIdx, 'committed')
+                  }
+                }
+                setActionHistory(prev => [
+                  {
+                    id: `${messageIndex}-${actionIndex}`,
+                    action,
+                    agentName: reviewModalAction.agentName,
+                    status: ActionStatus.COMMITTED,
+                    timestamp: new Date(),
+                  },
+                  ...prev,
+                ])
+              } catch (e) {
+                console.error('Approval failed', e)
+                if ('id' in action && action.id) {
+                  updateActionStatusById(action.id as string, 'pending')
+                } else if (messageIndex >= 0) {
+                  updateActionStatus(messageIndex, actionIndex, 'pending')
+                }
+                // Reset processing state on section overlay
+                if (section) {
+                  setSectionPendingActions(prev => {
+                    if (!prev[section]) return prev
+                    return {
+                      ...prev,
+                      [section]: { ...prev[section], isProcessing: false },
+                    }
+                  })
+                }
+              }
+              setReviewModalAction(null)
+            }}
+            onReject={() => {
+              const { action, messageIndex, actionIndex } = reviewModalAction
+              if ('id' in action && action.id) {
+                updateActionStatusById(action.id as string, 'rejected')
+              } else if (messageIndex >= 0) {
+                updateActionStatus(messageIndex, actionIndex, 'rejected')
+              }
+              // Clear section pending action overlay
+              const section = getActionSection(action.type)
+              if (section) {
+                setSectionPendingActions(prev => {
+                  const { [section]: _, ...rest } = prev
+                  return rest
+                })
+              }
+              setReviewModalAction(null)
+            }}
+          />
+        )
+      }
+    </div >
   )
 }

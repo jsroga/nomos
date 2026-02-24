@@ -116,6 +116,7 @@ RULES:
 - Every choice has consequences
 - Leave some mystery
 - Cut any sentence that could belong to ANY story - make it specific to THIS one
+- Add or sharpen one creative risk or moment of invention—a detail, choice, or turn that could only exist in this story and that might surprise the reader. Don't just fix weaknesses; make one thing bolder.
 
 Output the refined content only, no explanation.`
 }

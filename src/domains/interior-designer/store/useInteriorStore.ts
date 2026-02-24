@@ -799,12 +799,12 @@ export const useInteriorStore = create<InteriorState>()(
               // Remove any existing preview for this surface
               const filteredObjects = objects.filter(o => o.id !== previewId)
 
-              // Position at centerX/Z, and minY (usually 0 for walls starting at ground)
+              // Position at centerX/Z, always Y=0 (snapped to bottom of level)
               // GLBModel will auto-rebase the pivot to bottom-center of the loaded geometry
               const newObject: SceneObject = {
                 id: previewId, // Use preview ID
                 modelUrl: retexturedUrl,
-                position: [centerX, minY, centerZ], // Use minY from original bounding box
+                position: [centerX, 0, centerZ], // Always Y=0 - objects must be snapped to bottom of level
                 rotation: [0, 0, 0],
                 scale: [1, 1, 1],
                 targetDimensions: [width || 1, height, depth || 1],
@@ -1151,17 +1151,24 @@ export const useInteriorStore = create<InteriorState>()(
             }
           }),
 
-        addObject: obj =>
-          set(state => ({
-            objects: [...state.objects, { ...obj, id: uuidv4(), level: state.activeLevel }],
+        addObject: obj => {
+          // The level offset is handled by the parent group position in ObjectManager
+          const normalizedObj = { ...obj }
+          return set(state => ({
+            objects: [...state.objects, { ...normalizedObj, id: uuidv4(), level: state.activeLevel }],
             hasUnsavedChanges: true,
-          })),
+          }))
+        },
 
         updateObject: (id, updates) =>
-          set(state => ({
-            objects: state.objects.map(o => (o.id === id ? { ...o, ...updates } : o)),
-            hasUnsavedChanges: true,
-          })),
+          set(state => {
+            // The level offset is handled by the parent group position in ObjectManager
+            const normalizedUpdates = { ...updates }
+            return {
+              objects: state.objects.map(o => (o.id === id ? { ...o, ...normalizedUpdates } : o)),
+              hasUnsavedChanges: true,
+            }
+          }),
         removeObject: id =>
           set(state => {
             // Clear selection if removed object was selected
@@ -1524,6 +1531,11 @@ export const useInteriorStore = create<InteriorState>()(
 
             if (design && design.sceneData) {
               const savedTerrain = design.sceneData.terrainSettings
+              // Normalize loaded objects to ensure Y=0 (snapped to bottom of level)
+              const normalizedObjects = (design.sceneData.objects || []).map((obj: SceneObject) => ({
+                ...obj,
+                position: obj.position ? [obj.position[0], 0, obj.position[2]] : [0, 0, 0],
+              }))
               set({
                 currentDesignId: design.id,
                 currentDesignName: design.name,
@@ -1531,28 +1543,28 @@ export const useInteriorStore = create<InteriorState>()(
                 floors: design.sceneData.floors || [],
                 water: design.sceneData.water || [],
                 surfaces: design.sceneData.surfaces || [],
-                objects: design.sceneData.objects || [],
+                objects: normalizedObjects,
                 activeLevel: design.sceneData.activeLevel || 0,
                 terrainSettings: savedTerrain
                   ? {
-                      baseGroundHeight: savedTerrain.baseGroundHeight ?? 0,
-                      waterSurfaceHeight: savedTerrain.waterSurfaceHeight ?? -3,
-                      showWaterPlane: savedTerrain.showWaterPlane ?? true,
-                      gridResolution: savedTerrain.gridResolution ?? 'medium',
-                      quality: savedTerrain.quality ?? 'medium',
-                      groundColor: savedTerrain.groundColor ?? '#4a7c59',
-                      waterColor: savedTerrain.waterColor ?? '#06b6d4',
-                      waterOpacity: savedTerrain.waterOpacity ?? 0.4,
-                      sunAngle: savedTerrain.sunAngle ?? 45,
-                      heightmapSize: savedTerrain.heightmapSize ?? 64,
-                      heightmap: savedTerrain.heightmap
-                        ? new Float32Array(savedTerrain.heightmap)
-                        : null,
-                      heightmapVersion: savedTerrain.heightmapVersion ?? 0,
-                      materialMap: savedTerrain.materialMap
-                        ? new Uint8Array(savedTerrain.materialMap)
-                        : null,
-                    }
+                    baseGroundHeight: savedTerrain.baseGroundHeight ?? 0,
+                    waterSurfaceHeight: savedTerrain.waterSurfaceHeight ?? -3,
+                    showWaterPlane: savedTerrain.showWaterPlane ?? true,
+                    gridResolution: savedTerrain.gridResolution ?? 'medium',
+                    quality: savedTerrain.quality ?? 'medium',
+                    groundColor: savedTerrain.groundColor ?? '#4a7c59',
+                    waterColor: savedTerrain.waterColor ?? '#06b6d4',
+                    waterOpacity: savedTerrain.waterOpacity ?? 0.4,
+                    sunAngle: savedTerrain.sunAngle ?? 45,
+                    heightmapSize: savedTerrain.heightmapSize ?? 64,
+                    heightmap: savedTerrain.heightmap
+                      ? new Float32Array(savedTerrain.heightmap)
+                      : null,
+                    heightmapVersion: savedTerrain.heightmapVersion ?? 0,
+                    materialMap: savedTerrain.materialMap
+                      ? new Uint8Array(savedTerrain.materialMap)
+                      : null,
+                  }
                   : createDefaultTerrainSettings(),
 
                 lastSaved: new Date(design.updatedAt),

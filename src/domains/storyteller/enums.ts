@@ -112,6 +112,8 @@ export enum BibleSection {
   SOUNDTRACKS = 'soundtracks',
   MOODBOARD = 'moodboard',
   EPISODE_PREMISE = 'episodePremise',
+  ITEMS = 'items',
+  EVENTS = 'events',
   FULL = 'full',
 }
 
@@ -163,6 +165,8 @@ export enum ActionType {
   UPDATE_EPISODE_ROADMAP = 'UPDATE_EPISODE_ROADMAP',
   UPDATE_ROADMAP_SUMMARY = 'UPDATE_ROADMAP_SUMMARY',
   UPDATE_EPISODE_PREMISE = 'UPDATE_EPISODE_PREMISE',
+  UPDATE_ITEMS = 'UPDATE_ITEMS',
+  UPDATE_EVENTS = 'UPDATE_EVENTS',
   UPDATE_STORY_PHASE = 'UPDATE_STORY_PHASE',
 
   // Story Plan

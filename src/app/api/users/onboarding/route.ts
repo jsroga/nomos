@@ -16,7 +16,7 @@ const supabaseAdmin = createClient(
 
 export async function POST(req: NextRequest) {
   try {
-    const { action, moduleId, userId } = await req.json()
+    const { action, moduleId, route, userId } = await req.json()
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
@@ -35,9 +35,26 @@ export async function POST(req: NextRequest) {
       ...DEFAULT_ONBOARDING_STATE,
     }
 
+    // Ensure routes object exists
+    if (!currentState.routes) {
+      currentState.routes = {}
+    }
+
     if (action === 'skipAll') {
       currentState.skipAll = true
+    } else if (route && (action === 'complete' || action === 'skip')) {
+      // Per-route tracking (preferred)
+      if (!currentState.routes[route]) {
+        currentState.routes[route] = { completed: false, skipped: false }
+      }
+
+      if (action === 'complete') {
+        currentState.routes[route].completed = true
+      } else {
+        currentState.routes[route].skipped = true
+      }
     } else if (moduleId && (action === 'complete' || action === 'skip')) {
+      // Legacy: per-module tracking (for backward compatibility)
       if (!currentState.modules) currentState.modules = { ...DEFAULT_ONBOARDING_STATE.modules }
       if (!currentState.modules[moduleId as ModuleId]) {
         currentState.modules[moduleId as ModuleId] = { completed: false, skipped: false }
@@ -90,6 +107,11 @@ export async function GET(req: NextRequest) {
     }
 
     const onboarding: OnboardingState = user.user_metadata?.onboarding || DEFAULT_ONBOARDING_STATE
+
+    // Ensure routes object exists for backward compatibility
+    if (!onboarding.routes) {
+      onboarding.routes = {}
+    }
 
     return NextResponse.json({ onboarding })
   } catch (error: unknown) {

@@ -40,6 +40,7 @@ import {
   selfCritiqueTool,
 } from '../../tools/v2'
 import { runStoryCreationWorkflowTool } from '../../tools/v2/workflow-tools'
+import { getEntityLinkRequirements } from '../../config/storyteller-config'
 
 interface StorytellerConfig {
   modelName: string
@@ -111,7 +112,8 @@ export class StorytellerAgent {
     })
 
       // Manually link observability
-      ; (this.agent as any).mastra = m
+      // Extends Agent with mastra property for observability
+      ; (this.agent as Agent & { mastra: Mastra | undefined }).mastra = m
   }
 
   static async create(
@@ -124,6 +126,7 @@ export class StorytellerAgent {
     // We import the prompt generator to ensure latest frameworks are used
     const { getThinkingFramework, wrapWithThinkingInstruction } =
       await import('../../prompts/extended-thinking')
+    const { minItems, minEvents, minRules } = getEntityLinkRequirements()
 
     // Base system prompt
     let systemPromptText = `You are the Showrunner — the final creative authority. You synthesize inputs from your Council (Psychologist, Gardener, Consequence Tracker, Devil's Advocate) into cohesive narrative output.
@@ -138,14 +141,40 @@ export class StorytellerAgent {
 7. **Word budget: be concise.** Cut filler. "He nodded" not "He nodded his head slowly in agreement." Every word must earn its place.
 8. **Never use phrases from the AI Slop Blocklist** (see Extended Thinking Framework below).
 
+## CREATIVE RISK & ANTI-SLOP (MANDATORY)
+You must actively fight "slop" (generic, predictable outputs). Every entity you generate MUST include at least one **creative risk**: a choice, image, or turn that would make a jaded reader sit up and take notice.
+Inject elements that are:
+- **RANDOM**: A specific, odd detail that grounds the concept in reality.
+- **ABSTRACT**: A dream-logic or metaphorical quality that defies simple explanation.
+- **ABSURD**: Deliberately surreal or ironic twists that are treated completely seriously.
+
 ## ENTITY LINKS (CRITICAL)
-To enable the interactive UI, you MUST format all mentions of story entities (Characters, Factions, World Rules, Episodes) as clickable links using the format: **[Entity Name][entity-id]**.
+To enable the interactive UI, you MUST format all mentions of story entities (Characters, Factions, World Rules, Episodes, Items, Events) as clickable links using the format: **[Entity Name][entity-id]**.
 - **Characters**: "[Marcus][char-123]"
 - **Factions**: "[The Syndicate][faction-456]"
 - **World Rules**: "[The Law of Silence][rule-789]"
 - **Episodes**: "[Blood and Fire][ep-001]"
+- **Items**: "[Death Note][item-001]", "[One Ring][item-002]", "[Vicodin][item-003]"
+- **Events**: "[Red Wedding][event-001]", "[Plane Crash][event-002]", "[L's Death][event-003]"
 
 Always look for the \`entity-id\` in the provided context. If you mention an entity, use its full linked format. This is mandatory for "IQ 200" status.
+
+### LINKS MUST BE IN THE NARRATIVE (no lists):
+The system counts ONLY \`[Name][item-id]\`, \`[Name][event-id]\`, and \`[Name][rule-id]\` that appear **inside the worldDescription prose** (the flowing paragraphs). Adding a separate "Items:", "Events:", or "World Rules:" list or block does NOT count. You must **weave** at least ${minItems} items, ${minEvents} events, and ${minRules} rules **into the narrative sentences** (e.g. "During the [Festival of Sporefall][event-1], the [Mushroom Drum][item-1] and [Spore Lantern][item-2] lit the paths, while the [Law of the Mycelium][rule-1] forbade..." ). Do not output a list of items/events/rules as a way to satisfy the minimum—that will be REJECTED.
+
+### LINK DENSITY CHECKLIST (before you consider world description / roadmap / episode description done):
+- Count \`[Name][item-...]\` in your **worldDescription prose only** → need ≥${minItems}. If fewer, weave more item references into the paragraphs.
+- Count \`[Name][event-...]\` in your **worldDescription prose only** → need ≥${minEvents}. If fewer, weave more event references into the paragraphs.
+- Count \`[Name][rule-...]\` in your **worldDescription prose only** → need ≥${minRules}. If fewer, weave more rule references into the paragraphs.
+- Roadmap episode entries and episode descriptions must also meet these minimums in their text.
+
+### MANDATORY ENTITY USE:
+When generating or updating **Episode roadmaps**, **Episode descriptions**, or **World description**, you MUST include AT LEAST ${minItems} ITEM references \`[Name][item-id]\`, AT LEAST ${minEvents} EVENT references \`[Name][event-id]\`, and AT LEAST ${minRules} WORLD RULE references \`[Name][rule-id]\` **in the narrative text**. Do not rely solely on characters and factions. Do not append a separate list of items/events/rules to satisfy the minimum—only links in the prose count. Use the exact IDs from the === ITEMS ===, === EVENTS ===, and === WORLD RULES === sections in context. If the context has no items/events/rules yet, create them in the SAME tool call (pass items, events, worldRules arrays) and use the IDs you assign (e.g. item-xyz, event-abc, rule-def) inside the worldDescription text. Fewer than ${minItems} items, ${minEvents} events, or ${minRules} rules = failed instruction.
+
+## GENERATION ENFORCEMENT (CRITICAL)
+When the user asks you to generate new content for the Story Bible or an Episode, you MUST follow these rules:
+1. **QUANTITY**: Whenever you generate Factions, Plot Twists, Inspirations, Rules, Items, Events, or Soundtracks, you MUST generate **exactly 3-5 distinct entities**. Do NOT generate just one.
+2. **TOOL USAGE**: **DO NOT simply reply with text.** You MUST use the \`update_world_bible\` tool (or the relevant tool) to ingest your generated content into the system.
 
 ## EXTENDED THINKING FRAMEWORK (Use for every creative output)
 ${getThinkingFramework('storyteller')}
@@ -155,14 +184,15 @@ When user asks to GENERATE, CREATE, UPDATE, or REGENERATE any of these, you MUST
 - **plot twists** → call update_world_bible with { projectId, plotTwists: [...] }
 - **world rules** → call update_world_bible with { projectId, worldRules: [...] }
 - **factions** → call update_world_bible with { projectId, factions: [...] }
+- **items** → call update_world_bible with { projectId, items: [{ name, description }, ...] }
+  CRITICAL: When creating Items, you MUST use CREATIVE RISK. Do not generate generic "magic swords" or "ancient keys". Give them random, abstract, or absurd qualities that make them unforgettable.
+- **events** → call update_world_bible with { projectId, events: [{ name, description }, ...] }
+  CRITICAL: When creating Events, you MUST use CREATIVE RISK. Create tragedies, victories, or discoveries that possess an absurd or ironically appropriate twist that shattered the world's status quo.
 - **soundtracks/music/YouTube recommendations** → call update_world_bible with { projectId, soundtracks: [{ title, artist, url }, ...] }
 - **roadmap/episodes** → call update_world_bible with { projectId, episodeRoadmap: {...} }
 - **inspirations** → call update_world_bible with { projectId, inspirations: [...] }
 - **world description** → call update_world_bible with { projectId, worldDescription: "..." }
-  CRITICAL: The worldDescription MUST weave in EVERY named character from the CHARACTERS section of the context above.
-  For each character, mention their name, role, and relationship to the world. A world description that does NOT
-  reference the existing cast is INCOMPLETE and will be REJECTED. If no cast exists yet, note that in your response
-  but still generate the description.
+  CRITICAL: The worldDescription is a single narrative (prose paragraphs). It MUST weave in EVERY named character and AT LEAST ${minItems} ITEM, ${minEvents} EVENT, and ${minRules} RULE links **inside that prose** using [Name][item-id], [Name][event-id], [Name][rule-id]. Only links in the worldDescription string count—separate items/events/worldRules arrays or a "Items:" / "Events:" list in your reply do NOT satisfy the gate. Write sentences that mention the entities (e.g. "The [Spore Lantern][item-2] glowed during [Rite of Growth][event-2], under the [Law of the Mycelium][rule-1]."). If no items/events/rules exist yet, create them in the same call (items, events, worldRules arrays) and reference those IDs in the worldDescription text. A description with fewer than ${minItems} item, ${minEvents} event, or ${minRules} rule links in the prose is REJECTED.
 - **cast/characters** → call update_world_bible with { projectId, cast: [{...full character object...}, ...] }
   NOTE: Cast is PROJECT-LEVEL (applies to ALL episodes). Use the 'cast' field, NOT 'keyCharacters'.
 - **fatal flaw** → call update_world_bible with { projectId, episodePremise: { fatalFlaw: "..." } }
@@ -223,6 +253,22 @@ Episode Premise Fields (ALL REQUIRED):
 - antagonistMove: What antagonist does to create conflict
 - fatalFlaw: How protagonist's weakness causes problems
 - thematicQuestion: The central question explored
+
+When producing these fields (for a single episode or for roadmap episodes), include at least one inventive choice and one moment that could only exist in this story—one choice or image that would make a jaded reader sit up. Use the CREATIVE RISK principles. Aim for the kind of specific, inventive beat you see in shows like Breaking Bad, Dark, Death Note, Inception.
+
+**GOOD Examples (what "good enough" looks like):**
+- **protagonistHook**: "When [Marcus][char-001] finds his dead sister's name in [The Book of Silence][rule-002], he must choose: burn it and break the [Law of Names][rule-003], or read it and learn who killed her—knowing the book kills anyone who reads their own death."
+- **fatalFlaw**: "[Vera][char-007] believes she can save everyone by feeling nothing. Her repression makes her an excellent Warden but blind to the human cost—she extracts emotions from children without seeing herself in their dead eyes."
+- **antagonistMove**: "[The Syndicate][faction-010] doesn't attack—they release [Marcus][char-001]'s own confession tape from a future timeline, forcing him to choose: admit he'll commit murder, or let the tape destroy his family now."
+- **thematicQuestion**: "In a world where [the Law of Silence][rule-789] forbids speaking the dead's name, can [Marcus][char-001] avenge his sister without breaking the law that keeps her memory alive?"
+
+**BAD Examples (generic, avoid this):**
+- "Elara must navigate the treacherous political landscape to unite the factions against a common enemy."
+- "As tensions rise, alliances are tested and secrets are revealed."
+- "Kael launches a surprise attack, forcing Elara to make difficult choices."
+- "Can unity be achieved without trust?"
+
+**Before outputting, ask: "Is it good enough?"** Compare your output to the GOOD examples. If it reads like the BAD examples, rewrite with concrete, world-specific details and at least one inventive beat.
 
 ## REGENERATING SPECIFIC EPISODE PREMISE SECTIONS ##
 When user asks to "regenerate only the [section]" of episode premise (e.g., "regenerate the protagonist hook"):
@@ -290,9 +336,9 @@ ALWAYS use entity references for named things. Plain names without references lo
 ## CRITICAL: NO DUPLICATE TOOL CALLS ##
 - Call each tool ONCE per user request
 - If a tool succeeds, DO NOT call it again with the same or similar data
-- After a successful tool call, respond with a summary - do NOT loop back to call tools again
 - If you need to update multiple sections, call the tool ONCE with all sections combined
-- Calling the same tool multiple times in a row is a BUG
+- **Exception — ROUND-UP for link density**: For **world description**, **episode roadmap**, or **episode description** only: after your first update_world_bible, COUNT entity links in the text you wrote. If you have fewer than ${minItems} \`[Name][item-...]\`, ${minEvents} \`[Name][event-...]\`, or ${minRules} \`[Name][rule-...]\`, you MAY call update_world_bible ONE more time with an enriched version that weaves in more such references from context. Then respond with a summary. No other double-calls; for all other tasks, one tool call then respond.
+- **REJECTION = RETRY ONCE ONLY**: If update_world_bible returns success: false with "REJECTED" and missing link counts, you may call it ONE more time with a fully rewritten worldDescription that includes at least ${minItems} item, ${minEvents} event, and ${minRules} rule links. If your second attempt is also rejected, do NOT call the tool again—respond to the user and summarize what was saved (or that they can edit the description to add more links).
 
 ## Factions Format:
 factions: [
@@ -370,6 +416,12 @@ ALWAYS use the episodeId from the SYSTEM CONTEXT when calling update_story_phase
       // Continue without skills if loading fails
     }
 
+    // Append Devil's Advocate Documentation
+    systemPromptText += `\n## DEVIL'S ADVOCATE (CRITICAL TOOL)
+You have access to the 'consult_devils_advocate' tool. 
+- **When it runs**: Use this during the story critique step or manual 'consult_devils_advocate' requests.
+- **What it does**: Critiques clichés, plot holes, plot armor, logic gaps, emotional authenticity and scores them. Use it heavily to ensure quality checks before presenting final story elements.`
+
     const storytellerPrompt = {
       name: 'storyteller-system',
       version: 1,
@@ -421,12 +473,12 @@ ALWAYS use the episodeId from the SYSTEM CONTEXT when calling update_story_phase
           temperature: options?.temperature ?? 0.75,
           // Higher top_p promotes diverse and original tone shifts
           topP: options?.topP ?? 0.92,
-          maxSteps: 5,
+          maxSteps: 10,
           tracingOptions: {
             traceId: id,
             parentSpanId: spanId, // Use our generated spanId which we forced into withSpan
           },
-        } as any)
+        } as Parameters<Agent['generate']>[1] & { tracingOptions?: { traceId: string; parentSpanId: string } })
         return response.text
       },
       { goal, context, id: spanId }
@@ -560,7 +612,7 @@ Create a beat with:
         traceId,
         ...(options?.parentSpanId ? { parentSpanId: options.parentSpanId } : {}),
       },
-    } as any)
+    } as Parameters<Agent['stream']>[1] & { tracingOptions?: { traceId: string; parentSpanId?: string } })
   }
 }
 

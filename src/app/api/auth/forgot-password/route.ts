@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { forgotPasswordSchema } from '@/lib/validation/auth'
 import { getSiteURL } from '@/lib/url'
+import { ValidationError } from 'yup'
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,11 +12,14 @@ export async function POST(request: NextRequest) {
     // Server-side validation
     try {
       await forgotPasswordSchema.validate(body, { abortEarly: false })
-    } catch (validationError: any) {
-      return NextResponse.json(
-        { error: 'Validation failed', errors: validationError.errors },
-        { status: 400 }
-      )
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        return NextResponse.json(
+          { error: 'Validation failed', errors: error.errors },
+          { status: 400 }
+        )
+      }
+      throw error
     }
 
     const { email } = body

@@ -7,6 +7,8 @@ import {
   Faction,
   KeyCharacter,
   StorySequence,
+  Item,
+  StoryEvent,
 } from '../../schemas/agent-schemas'
 import { isCentralUser, canEditBible } from '@/lib/bible-permissions'
 import { cachedFetch, clearFetchCache } from '@/lib/fetch-cache'
@@ -81,6 +83,14 @@ interface BibleContextType {
   removePlotTwist: (index: number) => void
 
   updateInspiration: (category: 'books' | 'movies' | 'games', value: string) => void
+
+  updateItem: <K extends keyof Item>(index: number, field: K, value: Item[K]) => void
+  addItem: () => void
+  removeItem: (index: number) => void
+
+  updateEvent: <K extends keyof StoryEvent>(index: number, field: K, value: StoryEvent[K]) => void
+  addEvent: () => void
+  removeEvent: (index: number) => void
 }
 
 const BibleContext = createContext<BibleContextType | undefined>(undefined)
@@ -141,12 +151,30 @@ export const BibleProvider: React.FC<{
     const canEdit = canEditBible(userEmail, isLocked)
     const effectiveReadOnly = isReadOnly || !canEdit
 
+    const lastSavedPlan = React.useRef<string | null>(null)
+
     // Sync local plan with incoming storyPlan if not editing
     useEffect(() => {
-      if (!isEditing) {
+      if (isEditing) return
+
+      const planStr = JSON.stringify(storyPlan)
+
+      if (lastSavedPlan.current) {
+        if (lastSavedPlan.current === planStr) {
+          console.info('[BibleContext] Parent caught up with saved data. Clearing lock.')
+          lastSavedPlan.current = null
+          // Continue to sync just in case
+        } else {
+          // Parent still stale
+          return
+        }
+      }
+
+      // No lock or lock just cleared, so sync if different
+      if (JSON.stringify(localPlan) !== planStr) {
         setLocalPlan(storyPlan)
       }
-    }, [storyPlan, isEditing])
+    }, [storyPlan, isEditing, localPlan])
 
     // Fetch lock status - using cachedFetch to prevent infinite loops on remount
     useEffect(() => {
@@ -193,7 +221,9 @@ export const BibleProvider: React.FC<{
 
     const savePlan = async () => {
       if (!onUpdate) return
-      await onUpdate(localPlan)
+      const toSave = localPlan as StoryPlan
+      lastSavedPlan.current = JSON.stringify(toSave)
+      await onUpdate(toSave)
       setIsEditing(false)
       toast.success('World Bible updated')
     }
@@ -294,7 +324,7 @@ export const BibleProvider: React.FC<{
 
     const addKeyCharacter = () => {
       const characters = [...(localPlan.keyCharacters || [])]
-      characters.push({ name: '', role: '', archetype: '', motivation: '' })
+      characters.push({ name: '', role: '', archetype: '', motivation: '', factionId: null })
       updateLocalPlan({ keyCharacters: characters })
     }
 
@@ -374,6 +404,48 @@ export const BibleProvider: React.FC<{
       })
     }
 
+    // Items helpers
+    const updateItem = <K extends keyof Item>(index: number, field: K, value: Item[K]) => {
+      const items = [...(localPlan.items || [])]
+      if (items[index]) {
+        items[index] = { ...items[index], [field]: value }
+        updateLocalPlan({ items })
+      }
+    }
+
+    const addItem = () => {
+      const items = [...(localPlan.items || [])]
+      items.push({ name: '', description: '' })
+      updateLocalPlan({ items })
+    }
+
+    const removeItem = (index: number) => {
+      const items = [...(localPlan.items || [])]
+      items.splice(index, 1)
+      updateLocalPlan({ items })
+    }
+
+    // Events helpers
+    const updateEvent = <K extends keyof StoryEvent>(index: number, field: K, value: StoryEvent[K]) => {
+      const events = [...(localPlan.events || [])]
+      if (events[index]) {
+        events[index] = { ...events[index], [field]: value }
+        updateLocalPlan({ events })
+      }
+    }
+
+    const addEvent = () => {
+      const events = [...(localPlan.events || [])]
+      events.push({ name: '', description: '' })
+      updateLocalPlan({ events })
+    }
+
+    const removeEvent = (index: number) => {
+      const events = [...(localPlan.events || [])]
+      events.splice(index, 1)
+      updateLocalPlan({ events })
+    }
+
     const value: BibleContextType = {
       storyPlan,
       localPlan,
@@ -411,6 +483,12 @@ export const BibleProvider: React.FC<{
       addPlotTwist,
       removePlotTwist,
       updateInspiration,
+      updateItem,
+      addItem,
+      removeItem,
+      updateEvent,
+      addEvent,
+      removeEvent,
     }
 
     return <BibleContext.Provider value={value}>{children}</BibleContext.Provider>

@@ -6,6 +6,7 @@ import { tasks } from '@trigger.dev/sdk/v3'
 import type { generatePortrait } from '@/trigger/generate-portrait'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/lib/api-utils'
 import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
+import { resolveStyleReferenceUrls } from '@/config/style-presets'
 
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
@@ -38,12 +39,12 @@ export const POST = withRateLimit(
       )
     }
 
-    // Fetch project style references
+    // Fetch project style references (preset or custom URLs)
     let styleReferenceUrls: string[] = []
     try {
       const project = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1)
       if (project && project.length > 0) {
-        styleReferenceUrls = (project[0].styleReferenceUrls as any) || []
+        styleReferenceUrls = resolveStyleReferenceUrls(project[0])
       }
     } catch (error) {
       console.error('Failed to fetch project style references:', error)

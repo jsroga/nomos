@@ -82,7 +82,16 @@ export interface RelationshipMatrixResponse {
     name: string
     type: 'character' | 'faction' | 'place' | 'event' | 'rule'
     description?: string
-    metadata: Record<string, unknown>
+    metadata: {
+      role?: string
+      archetype?: string
+      description?: string
+      metrics?: {
+        perceivedStakes?: number
+        transformation?: number
+      }
+      [key: string]: unknown
+    }
   }>
   edges: Array<{
     source: string

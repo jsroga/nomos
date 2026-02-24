@@ -365,6 +365,7 @@ export interface StreamEvent {
   node?: string
   agent?: string
   content?: string
+  token?: string
   message?: {
     type: string
     content: string

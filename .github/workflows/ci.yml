@@ -1,0 +1,190 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ───────────────────────────────────────────────
+  # Job 1: Lint (ESLint + TypeScript)
+  # ───────────────────────────────────────────────
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: ESLint
+        run: npx eslint .
+
+      - name: TypeScript
+        run: npx tsc --noEmit
+
+  # ───────────────────────────────────────────────
+  # Job 2: Unit Tests
+  # ───────────────────────────────────────────────
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Vitest
+        run: npm run test:unit
+
+  # ───────────────────────────────────────────────
+  # Job 3: Dead Code Detection (Knip)
+  # ───────────────────────────────────────────────
+  dead-code:
+    name: Dead Code (Knip)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run Knip
+        run: npx knip --reporter json 2>/dev/null | grep -v '^\[dotenv' > knip-report.json || true
+
+      - name: Generate report
+        run: node scripts/knip-report.mjs
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dead-code-report
+          path: docs/DEAD-CODE.md
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('docs/DEAD-CODE.md', 'utf8');
+            const lines = report.split('\n');
+            const summaryEnd = lines.findIndex((l, i) => i > 5 && l.startsWith('## ') && !l.includes('Summary'));
+            const summary = lines.slice(0, summaryEnd > 0 ? summaryEnd : 30).join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body?.includes('<!-- knip-report -->'));
+
+            const body = `<!-- knip-report -->\n## Dead Code Report\n\n${summary}\n\n> Full report in \`docs/DEAD-CODE.md\``;
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+  # ───────────────────────────────────────────────
+  # Job 4: AI Security Review (Claude)
+  # ───────────────────────────────────────────────
+  security:
+    name: AI Security Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Perform a thorough security review of the changes in this PR. Check for:
+
+            1. **OWASP Top 10**: SQL injection, XSS, CSRF, SSRF, broken auth, security misconfig
+            2. **Secrets & credentials**: Hardcoded API keys, tokens, passwords, connection strings
+            3. **Input validation**: Unsanitized user input, missing validation at boundaries
+            4. **Authentication & authorization**: Missing auth checks, privilege escalation
+            5. **Dependency risks**: Known vulnerable patterns, unsafe dynamic imports
+            6. **Data exposure**: PII leaks, verbose error messages, debug info in production
+            7. **Injection vectors**: Command injection, path traversal, template injection
+
+            For each finding, provide:
+            - Severity (Critical / High / Medium / Low)
+            - File and line number
+            - Description of the vulnerability
+            - Recommended fix
+
+            If no security issues are found, confirm the PR looks clean.
+          claude_args: "--max-turns 5 --model claude-sonnet-4-5-20250929"
+
+  # ───────────────────────────────────────────────
+  # Job 5: Self-Healing Docs
+  # ───────────────────────────────────────────────
+  docs:
+    name: Update Reports
+    runs-on: ubuntu-latest
+    needs: [dead-code]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download dead code report
+        uses: actions/download-artifact@v4
+        with:
+          name: dead-code-report
+          path: docs/
+
+      - name: Commit reports
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/DEAD-CODE.md
+          git diff --cached --quiet || git commit -m "docs: update dead code report [skip ci]"
+          git push

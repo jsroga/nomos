@@ -101,7 +101,7 @@ export class GardenerAgent {
       async span => {
         const prompt = `Goal: ${goal}\n\nContext:\n${context}`
         const response = await this.agent.generate(prompt, {
-          maxSteps: 5,
+          maxSteps: 10,
           tracingOptions: {
             traceId: id,
           },

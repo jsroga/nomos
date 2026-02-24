@@ -37,6 +37,35 @@ export async function PATCH(req: Request, props: { params: Promise<{ episodeId: 
       updateData.posterUrl = posterUrl
     }
 
+    // Map episode_prompt or master_prompt to schema's masterPrompt
+    if (body.episode_prompt !== undefined) {
+      updateData.masterPrompt = body.episode_prompt
+      delete updateData.episode_prompt
+    }
+    if (body.master_prompt !== undefined) {
+      updateData.masterPrompt = body.master_prompt
+      delete updateData.master_prompt
+    }
+
+    // Merge premise into storyPlan
+    if (body.premise !== undefined) {
+      const currentEpisode = await db.query.episodes.findFirst({
+        where: eq(episodes.id, episodeId),
+      })
+
+      if (currentEpisode) {
+        const currentPlan = (currentEpisode.storyPlan as any) || {}
+        updateData.storyPlan = {
+          ...currentPlan,
+          premise: {
+            ...((currentPlan.premise as any) || {}),
+            ...body.premise,
+          },
+        }
+      }
+      delete updateData.premise
+    }
+
     // If storyboardUrl is provided, we need to save it into the storyPlan JSONB
     // because there is no top-level column for it yet.
     if (storyboardUrl) {
@@ -45,7 +74,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ episodeId: 
       })
 
       if (currentEpisode) {
-        const currentPlan = (currentEpisode.storyPlan as any) || {}
+        const currentPlan = (updateData.storyPlan || currentEpisode.storyPlan || {}) as any
         updateData.storyPlan = {
           ...currentPlan,
           storyboardUrl,

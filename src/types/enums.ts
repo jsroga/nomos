@@ -11,18 +11,6 @@ export enum AIProvider {
   Mock = 'mock',
 }
 
-enum AppTab {
-  General = 'general',
-  Upscaling = 'upscaling',
-  APIKeys = 'apikeys',
-}
-
-enum AppRoute {
-  WorldBuilding = '/world-building',
-  AssetExporter = '/asset-exporter',
-  Login = '/login',
-}
-
 export enum EditorTool {
   None = 'none',
   Eraser = 'eraser',
@@ -43,29 +31,3 @@ export enum JobType {
   Generate3D = 'generate-3d',
 }
 
-// Helper types for configs
-interface AIConfig {
-  apiKey?: string
-  baseUrl?: string
-  model?: string
-  params?: Record<string, unknown>
-}
-
-const ProviderConfigKeys: Record<AIProvider, string> = {
-  [AIProvider.OpenAI]: 'ai-config-openai',
-  [AIProvider.Gemini]: 'ai-config-gemini',
-  [AIProvider.NanoBanana]: 'ai-config-nano-banana',
-  [AIProvider.Stability]: 'ai-config-stability',
-  [AIProvider.Replicate]: 'ai-config-replicate',
-  [AIProvider.Fal]: 'ai-config-fal',
-  [AIProvider.Hyper3D]: 'ai-config-hyper3d',
-  [AIProvider.Meshy]: 'ai-config-meshy',
-  [AIProvider.Custom]: 'ai-config-custom',
-  [AIProvider.Mock]: 'ai-config-mock',
-}
-
-const getEnumKeyByValue = (enumObj: unknown, value: string): string | undefined => {
-  return Object.keys(enumObj as object).find(
-    key => (enumObj as Record<string, unknown>)[key] === value
-  )
-}

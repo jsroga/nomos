@@ -50,7 +50,17 @@ export interface PromptConfig {
   fallbackToLocal: boolean // Use local prompts if Hub fails
 }
 
+/** Minimum entity links required in world description / roadmap / episode description. Easy to set to 5-6 via env. */
+export interface EntityLinkRequirements {
+  minItems: number
+  minEvents: number
+  minRules: number
+}
+
 export interface StorytellerConfig {
+  /** Minimum [Name][item-id], [Name][event-id], [Name][rule-id] in world description & roadmap. Default 3; set STORYTELLER_MIN_*_LINKS=5 or 6 for more. */
+  entityLinks: EntityLinkRequirements
+
   // Feature flags
   features: {
     hitlEnabled: boolean // Human-in-the-loop confirmation
@@ -93,6 +103,12 @@ export interface StorytellerConfig {
 // ============================================
 
 const DEFAULT_CONFIG: StorytellerConfig = {
+  entityLinks: {
+    minItems: parseInt(process.env.STORYTELLER_MIN_ITEM_LINKS || '3', 10) || 3,
+    minEvents: parseInt(process.env.STORYTELLER_MIN_EVENT_LINKS || '3', 10) || 3,
+    minRules: parseInt(process.env.STORYTELLER_MIN_RULE_LINKS || '3', 10) || 3,
+  },
+
   features: {
     hitlEnabled: process.env.STORYTELLER_HITL_ENABLED !== 'false',
     ragEnabled: true,
@@ -205,6 +221,15 @@ function getAntiSlopConfig(): AntiSlopConfig {
 }
 
 /**
+ * Get required minimum entity links for world description / roadmap.
+ * Used by agent prompt and update_world_bible tool. Change to 5-6 via env:
+ * STORYTELLER_MIN_ITEM_LINKS=5 STORYTELLER_MIN_EVENT_LINKS=5 STORYTELLER_MIN_RULE_LINKS=5
+ */
+export function getEntityLinkRequirements(): EntityLinkRequirements {
+  return getStorytellerConfig().entityLinks
+}
+
+/**
  * Get prompt hub configuration
  */
 export function getPromptConfig(): PromptConfig {
@@ -272,6 +297,11 @@ function getPromptHubPath(
  * Environment variable names for documentation
  */
 const ENV_VARS = {
+  // Entity link minimums (world description & roadmap). Default 3; set to 5 or 6 for richer linking.
+  STORYTELLER_MIN_ITEM_LINKS: 'Minimum [Name][item-id] in world description (default 3)',
+  STORYTELLER_MIN_EVENT_LINKS: 'Minimum [Name][event-id] in world description (default 3)',
+  STORYTELLER_MIN_RULE_LINKS: 'Minimum [Name][rule-id] in world description (default 3)',
+
   // Feature flags
   STORYTELLER_HITL_ENABLED: 'Enable human-in-the-loop confirmation',
   STORYTELLER_GUARDRAILS_ENABLED: 'Enable all guardrails (master switch)',

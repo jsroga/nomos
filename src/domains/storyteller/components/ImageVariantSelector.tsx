@@ -70,7 +70,7 @@ export const ImageVariantSelector: React.FC<ImageVariantSelectorProps> = ({
   ]
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-200">
+    <div className="fixed inset-0 bg-black/80 z-[10000] flex items-center justify-center p-6 animate-in fade-in duration-200">
       <div className="bg-card w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
@@ -116,7 +116,6 @@ export const ImageVariantSelector: React.FC<ImageVariantSelectorProps> = ({
               src={gridImageUrl}
               alt="Variations Grid"
               className="w-full h-full object-contain"
-              crossOrigin="anonymous"
               onLoad={() => setImageLoaded(true)}
             />
 

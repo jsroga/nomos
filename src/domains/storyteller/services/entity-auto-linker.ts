@@ -121,6 +121,34 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
       }
     }
 
+    // Add items
+    const items = storyPlan.items || []
+    for (const item of items) {
+      if (item?.name) {
+        const itemId = `item-${item.id?.slice(0, 8) || item.name.toLowerCase().replace(/\s+/g, '-')}`
+        entityMap.set(item.name.toLowerCase(), { id: itemId, type: 'item' })
+
+        if (item.name.startsWith('The ')) {
+          const withoutThe = item.name.slice(4)
+          entityMap.set(withoutThe.toLowerCase(), { id: itemId, type: 'item' })
+        }
+      }
+    }
+
+    // Add events
+    const events = storyPlan.events || []
+    for (const event of events) {
+      if (event?.name) {
+        const eventId = `event-${event.id?.slice(0, 8) || event.name.toLowerCase().replace(/\s+/g, '-')}`
+        entityMap.set(event.name.toLowerCase(), { id: eventId, type: 'event' })
+
+        if (event.name.startsWith('The ')) {
+          const withoutThe = event.name.slice(4)
+          entityMap.set(withoutThe.toLowerCase(), { id: eventId, type: 'event' })
+        }
+      }
+    }
+
     // Extract potential places from world description (proper nouns with "The")
     const worldDesc = storyPlan.worldDescription || seriesBible.worldDescription || ''
     if (worldDesc) {

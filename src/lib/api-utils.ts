@@ -93,34 +93,6 @@ export function withAuth<T = any>(handler: ApiHandler<T>) {
   }
 }
 
-/**
- * Optional auth wrapper - provides session if available, but doesn't require it
- */
-function withOptionalAuth<T = any>(
-  handler: (
-    request: NextRequest,
-    auth: Partial<AuthenticatedRequest>,
-    context?: { params: Record<string, string> }
-  ) => Promise<NextResponse<T>>
-) {
-  return async (request: NextRequest, context?: { params: Record<string, string> }) => {
-    const { session, supabase } = await getUserSession()
-
-    try {
-      return await handler(request, { session: session || undefined, supabase }, context)
-    } catch (err) {
-      console.error('API Error:', err)
-      return NextResponse.json(
-        {
-          error: 'Internal Server Error',
-          message: err instanceof Error ? err.message : 'Unknown error',
-        },
-        { status: 500 }
-      )
-    }
-  }
-}
-
 // ============================================
 // RATE LIMITING
 // ============================================
@@ -209,23 +181,6 @@ export function withRateLimit<T = any>(
   }
 }
 
-/**
- * Combined auth + rate limit wrapper
- */
-function withAuthAndRateLimit<T = any>(
-  handler: ApiHandler<T>,
-  rateLimitConfig: RateLimitConfig = {}
-) {
-  return withRateLimit(withAuth(handler), {
-    ...rateLimitConfig,
-    // Rate limit by user ID when authenticated
-    getKey: async request => {
-      const { session } = await getUserSession()
-      return session?.user?.id || request.ip || 'anonymous'
-    },
-  })
-}
-
 // ============================================
 // CSRF PROTECTION
 // ============================================
@@ -262,27 +217,6 @@ export function validateOrigin(request: NextRequest): boolean {
   return false
 }
 
-/**
- * CSRF protection wrapper
- */
-function withCsrfProtection<T = any>(
-  handler: (request: NextRequest, context?: any) => Promise<NextResponse<T>>
-) {
-  return async (request: NextRequest, context?: any) => {
-    // Only validate state-changing methods
-    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) {
-      if (!validateOrigin(request)) {
-        return NextResponse.json(
-          { error: 'Forbidden', message: 'Invalid request origin' },
-          { status: 403 }
-        )
-      }
-    }
-
-    return handler(request, context)
-  }
-}
-
 // ============================================
 // PROJECT ACCESS VERIFICATION
 // ============================================
@@ -300,83 +234,3 @@ export async function verifyProjectAccess(
   return !error && !!data
 }
 
-/**
- * Verify user has access to an entity through project ownership
- * Uses a single JOIN query instead of multiple sequential queries
- */
-async function verifyEntityAccess(
-  supabase: ReturnType<typeof createRouteHandlerClient>,
-  tableName: 'characters' | 'episodes' | 'beats' | 'game_loops' | 'interior_designs' | 'assets',
-  entityId: string
-): Promise<{ hasAccess: boolean; projectId?: string }> {
-  // Use RLS - if user can see it, they have access
-  const { data, error } = await supabase
-    .from(tableName)
-    .select('id, project_id')
-    .eq('id', entityId)
-    .single()
-
-  if (error || !data) {
-    return { hasAccess: false }
-  }
-
-  return { hasAccess: true, projectId: data.project_id }
-}
-
-/**
- * Verify beat access with optimized single query
- */
-async function verifyBeatAccess(
-  supabase: ReturnType<typeof createRouteHandlerClient>,
-  beatId: string
-): Promise<{ hasAccess: boolean; projectId?: string; episodeId?: string }> {
-  // Single query with join through episodes to projects
-  const { data, error } = await supabase
-    .from('beats')
-    .select(
-      `
-      id,
-      episode_id,
-      episodes!inner (
-        id,
-        project_id
-      )
-    `
-    )
-    .eq('id', beatId)
-    .single()
-
-  if (error || !data) {
-    return { hasAccess: false }
-  }
-
-  return {
-    hasAccess: true,
-    episodeId: data.episode_id,
-    projectId: (data.episodes as any).project_id,
-  }
-}
-
-// ============================================
-// RESPONSE HELPERS
-// ============================================
-
-function jsonResponse<T>(data: T, status = 200) {
-  return NextResponse.json(data, { status })
-}
-
-function errorResponse(message: string, status = 400) {
-  return NextResponse.json({ error: message }, { status })
-}
-
-function unauthorizedResponse(message = 'Unauthorized') {
-  return NextResponse.json({ error: message }, { status: 401 })
-}
-
-function forbiddenResponse(message = 'Forbidden') {
-  return NextResponse.json({ error: message }, { status: 403 })
-}
-
-function notFoundResponse(message = 'Not found') {
-  return NextResponse.json({ error: message }, { status: 404 })
-}

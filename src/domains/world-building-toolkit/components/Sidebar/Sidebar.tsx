@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react'
+import { TOUR_STEP_IDS } from '@/lib/tour-constants'
 import { useWorldStore, Tile } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { assembleContextImage } from '@/infrastructure/ai/contextAssembler'
 import { upscaleService } from '@/domains/world-building-toolkit/services/UpscaleService'
@@ -227,11 +228,25 @@ export const Sidebar: React.FC = () => {
   ): Promise<(Tile & { imageUrl?: string }) | undefined> => {
     if (!tile || !currentProject) return tile
 
-    const imageUrl = `/projects/${currentProject.id}/${tile.image_filename}`
+    // If the filename is already a full URL, use it directly; otherwise build a local path
+    const imageUrl = tile.image_filename.startsWith('http')
+      ? tile.image_filename
+      : `/projects/${currentProject.id}/${tile.image_filename}`
 
     try {
-      // Fetch the local image and convert to base64
+      // Fetch the image and convert to base64
       const response = await fetch(imageUrl)
+      if (!response.ok) {
+        console.error(`Failed to fetch neighbor image (${response.status}):`, imageUrl)
+        return tile
+      }
+
+      const contentType = response.headers.get('content-type') || ''
+      if (!contentType.startsWith('image/')) {
+        console.error(`Neighbor image returned non-image content-type (${contentType}):`, imageUrl)
+        return tile
+      }
+
       const blob = await response.blob()
 
       return new Promise(resolve => {
@@ -461,54 +476,55 @@ export const Sidebar: React.FC = () => {
       ) : (
         <div className="space-y-6">
           {/* Master Prompt */}
-          {/* Master Prompt */}
-          <SidebarSection
-            icon={<Palette size={12} />}
-            title="Style Prompt"
-            rightContent={
-              <div className="flex items-center gap-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info size={12} className="text-muted-foreground/60 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    <p className="max-w-[200px]">
-                      Define the overall art style that will be applied to all generated tiles
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
+          <div id={TOUR_STEP_IDS.WORLDGEN_STYLE_PROMPT}>
+            <SidebarSection
+              icon={<Palette size={12} />}
+              title="Style Prompt"
+              rightContent={
+                <div className="flex items-center gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info size={12} className="text-muted-foreground/60 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p className="max-w-[200px]">
+                        Define the overall art style that will be applied to all generated tiles
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-6 text-[10px] gap-1 font-mono"
-                      onClick={fetchWorldSummary}
-                      disabled={isFetchingSummary || !currentProject}
-                    >
-                      {isFetchingSummary ? (
-                        <Loader2 size={10} className="animate-spin" />
-                      ) : (
-                        <BookOpen size={10} />
-                      )}
-                      Fetch
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Import style from Storyteller World Bible</p>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            }
-          >
-            <SidebarTextarea
-              value={masterPrompt}
-              onChange={e => handleMasterPromptChange(e.target.value)}
-              placeholder="Define the overall art style and aesthetic..."
-              className="h-24"
-            />
-          </SidebarSection>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-6 text-[10px] gap-1 font-mono"
+                        onClick={fetchWorldSummary}
+                        disabled={isFetchingSummary || !currentProject}
+                      >
+                        {isFetchingSummary ? (
+                          <Loader2 size={10} className="animate-spin" />
+                        ) : (
+                          <BookOpen size={10} />
+                        )}
+                        Fetch
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Import style from Storyteller World Bible</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              }
+            >
+              <SidebarTextarea
+                value={masterPrompt}
+                onChange={e => handleMasterPromptChange(e.target.value)}
+                placeholder="Define the overall art style and aesthetic..."
+                className="h-24"
+              />
+            </SidebarSection>
+          </div>
 
           {/* Generation Group */}
           <SidebarSection separator title="Generation" icon={<ImagePlus size={12} />}>
@@ -534,7 +550,7 @@ export const Sidebar: React.FC = () => {
               </div>
             )}
 
-            <div className="space-y-1 mb-3">
+            <div className="space-y-1 mb-3" id={TOUR_STEP_IDS.WORLDGEN_PROMPT}>
               <SidebarLabel className="flex items-center gap-1">
                 Tile Description
                 <Tooltip>
@@ -554,102 +570,113 @@ export const Sidebar: React.FC = () => {
               />
             </div>
 
-            {selectedTiles.length > 0 ? (
-              <div className="space-y-3">
-                <div className="text-xs font-mono text-muted-foreground flex items-center gap-1">
-                  <MousePointer2 size={10} />
-                  Selected: {selectedTiles[0].x}, {selectedTiles[0].y}
-                  {generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] && (
-                    <span className="ml-2 text-yellow-500">(generating)</span>
+            {/* Selection Status */}
+            {selectedTiles.length > 0 && (
+              <div className="text-xs font-mono text-muted-foreground flex items-center gap-1 mb-3">
+                <MousePointer2 size={10} />
+                Selected: {selectedTiles[0].x}, {selectedTiles[0].y}
+                {generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] && (
+                  <span className="ml-2 text-yellow-500">(generating)</span>
+                )}
+              </div>
+            )}
+
+            <div className="flex gap-2 mb-3">
+              <div id={TOUR_STEP_IDS.WORLDGEN_GENERATE} className="flex-1">
+                <Button
+                  variant="ghost"
+                  onClick={handleGenerate}
+                  disabled={
+                    selectedTiles.length === 0 ||
+                    (selectedTiles.length > 0 &&
+                      !!generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`]) ||
+                    isUploading
+                  }
+                  className="group w-full gap-2 text-purple-400 border border-purple-500/40 hover:bg-purple-500 hover:text-white hover:border-purple-500 font-mono disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                >
+                  {selectedTiles.length > 0 &&
+                    generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] ? (
+                    <>
+                      <Loader2 className="animate-spin text-purple-400 group-hover:text-white transition-colors duration-200" size={14} />
+                      <span className="text-purple-400 group-hover:text-white transition-colors duration-200">Generating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="text-purple-400 group-hover:text-white transition-colors duration-200" size={14} />
+                      <span className="text-purple-400 group-hover:text-white transition-colors duration-200">Generate</span>
+                    </>
                   )}
-                </div>
-                <div className="flex gap-2">
+                </Button>
+              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
                   <Button
-                    variant="ghost"
-                    onClick={handleGenerate}
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
                     disabled={
-                      !!generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] ||
+                      selectedTiles.length === 0 ||
+                      (selectedTiles.length > 0 &&
+                        !!generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`]) ||
                       isUploading
                     }
-                    className="flex-1 gap-2 bg-primary/20 text-primary border border-primary hover:bg-primary hover:text-white font-mono"
+                    size="icon"
+                    className="disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] ? (
-                      <>
-                        <Loader2 className="animate-spin" size={14} />
-                        Generating...
-                      </>
+                    {isUploading ? (
+                      <Loader2 className="animate-spin" size={16} />
                     ) : (
-                      <>
-                        <Sparkles size={14} />
-                        Generate
-                      </>
+                      <Upload size={16} />
                     )}
                   </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Upload image</p>
+                </TooltipContent>
+              </Tooltip>
+              {/* Delete tile button - only show if tile exists */}
+              {selectedTiles.length > 0 &&
+                tiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         variant="outline"
-                        onClick={() => fileInputRef.current?.click()}
+                        onClick={async () => {
+                          const tile = selectedTiles[0]
+                          if (confirm(`Delete tile at (${tile.x}, ${tile.y})?`)) {
+                            try {
+                              await useWorldStore.getState().removeTile(tile.x, tile.y)
+                              toast.success(`Tile (${tile.x}, ${tile.y}) deleted`)
+                            } catch (err) {
+                              toast.error('Failed to delete tile')
+                            }
+                          }
+                        }}
                         disabled={
-                          !!generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] ||
-                          isUploading
+                          !!generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`]
                         }
                         size="icon"
+                        className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
                       >
-                        {isUploading ? (
-                          <Loader2 className="animate-spin" size={16} />
-                        ) : (
-                          <Upload size={16} />
-                        )}
+                        <Trash2 size={16} />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Upload image</p>
+                      <p>Delete tile</p>
                     </TooltipContent>
                   </Tooltip>
-                  {/* Delete tile button - only show if tile exists */}
-                  {tiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="outline"
-                          onClick={async () => {
-                            const tile = selectedTiles[0]
-                            if (confirm(`Delete tile at (${tile.x}, ${tile.y})?`)) {
-                              try {
-                                await useWorldStore.getState().removeTile(tile.x, tile.y)
-                                toast.success(`Tile (${tile.x}, ${tile.y}) deleted`)
-                              } catch (err) {
-                                toast.error('Failed to delete tile')
-                              }
-                            }
-                          }}
-                          disabled={
-                            !!generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`]
-                          }
-                          size="icon"
-                          className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Delete tile</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleUploadTile}
-                  className="hidden"
-                />
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground text-center py-4 border border-dashed border-border rounded-md">
-                Select a tile on the canvas to generate or upload
+                )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleUploadTile}
+              className="hidden"
+            />
+
+            {selectedTiles.length === 0 && (
+              <div className="text-[10px] text-muted-foreground text-center mb-3 opacity-60">
+                Select a tile to enable generation
               </div>
             )}
 
@@ -750,32 +777,34 @@ export const Sidebar: React.FC = () => {
                 step={0.1}
                 onChange={setUpscaleCreativity}
               />
-              <Button
-                variant="ghost"
-                className="w-full gap-2 bg-primary/20 text-primary border border-primary hover:bg-primary hover:text-white font-mono"
-                onClick={async () => {
-                  if (selectedTile) {
-                    const fullTile = tiles[`${selectedTile.x},${selectedTile.y}`]
-                    if (fullTile) {
-                      toast.promise(
-                        upscaleService.upscale(fullTile, upscaleCreativity, styleReferenceUrls),
-                        {
-                          loading: 'Upscaling...',
-                          success: 'Tile queued for upscaling!',
-                          error: 'Upscale failed',
-                        }
-                      )
+              <div id={TOUR_STEP_IDS.WORLDGEN_UPSCALE}>
+                <Button
+                  variant="ghost"
+                  className="w-full gap-2 hover:bg-accent hover:text-accent-foreground text-primary border border-primary/40 hover:border-primary/60 font-mono"
+                  onClick={async () => {
+                    if (selectedTile) {
+                      const fullTile = tiles[`${selectedTile.x},${selectedTile.y}`]
+                      if (fullTile) {
+                        toast.promise(
+                          upscaleService.upscale(fullTile, upscaleCreativity, styleReferenceUrls),
+                          {
+                            loading: 'Upscaling...',
+                            success: 'Tile queued for upscaling!',
+                            error: 'Upscale failed',
+                          }
+                        )
+                      }
                     }
+                  }}
+                  disabled={
+                    !selectedTile ||
+                    (selectedTile && !!upscalingTiles[`${selectedTile.x},${selectedTile.y}`])
                   }
-                }}
-                disabled={
-                  !selectedTile ||
-                  (selectedTile && !!upscalingTiles[`${selectedTile.x},${selectedTile.y}`])
-                }
-              >
-                <ZoomIn size={14} />
-                Upscale (4x)
-              </Button>
+                >
+                  <ZoomIn size={14} />
+                  Upscale (4x)
+                </Button>
+              </div>
             </div>
           </SidebarSection>
 
@@ -813,7 +842,7 @@ export const Sidebar: React.FC = () => {
                   }
                 }}
                 variant="ghost"
-                className="w-full gap-2 bg-primary/20 text-primary border border-primary hover:bg-primary hover:text-white font-mono"
+                className="w-full gap-2 hover:bg-accent hover:text-accent-foreground text-primary border border-primary/40 hover:border-primary/60 font-mono"
                 disabled={
                   !selectedTile ||
                   (selectedTile && !!enhancingTiles[`${selectedTile.x},${selectedTile.y}`])

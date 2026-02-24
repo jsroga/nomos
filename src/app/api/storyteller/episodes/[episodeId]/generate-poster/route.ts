@@ -4,6 +4,7 @@ import { episodes, projects } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'
 import { tasks } from '@trigger.dev/sdk/v3'
 import type { generatePoster } from '@/trigger/generate-poster'
+import { resolveStyleReferenceUrls } from '@/config/style-presets'
 
 export async function POST(req: Request, props: { params: Promise<{ episodeId: string }> }) {
   const params = await props.params
@@ -26,6 +27,7 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
       .select({
         projectId: projects.id,
         styleReferenceUrls: projects.styleReferenceUrls,
+        stylePreset: projects.stylePreset,
       })
       .from(episodes)
       .innerJoin(projects, eq(episodes.projectId, projects.id))
@@ -37,7 +39,8 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
       return NextResponse.json({ error: 'Episode/Project not found' }, { status: 404 })
     }
 
-    const { projectId, styleReferenceUrls } = episodeData
+    const { projectId } = episodeData
+    const styleReferenceUrls = resolveStyleReferenceUrls(episodeData)
 
     // 2. Trigger Background Task
     console.log(`[API] Triggering poster generation for episode ${episodeId}`)

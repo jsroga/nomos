@@ -61,9 +61,9 @@ export const createAtomicLoomTool = () =>
 Creates elegant rule systems where simple elements combine into emergent complexity.
 Inspired by Klei's design philosophy: few rules, many outcomes.`,
     schema: AtomicLoomInputSchema,
-    execute: async ({ context }) => {
+    execute: async (args) => {
       try {
-        const { gameDescription, genre, existingMechanics, complexityTarget } = context
+        const { gameDescription, genre, existingMechanics, complexityTarget } = args
 
         const prompt = `You are a systems designer inspired by Klei Entertainment (Don't Starve, Oxygen Not Included).
 
@@ -150,9 +150,9 @@ export const createMemoryKeeperTool = () =>
 NPCs witness events, rumors spread, and past actions seed future quests.
 Inspired by CDPR's narrative depth: every quest connects, nothing is throwaway.`,
     schema: MemoryKeeperInputSchema,
-    execute: async ({ context }) => {
+    execute: async (args) => {
       try {
-        const { gameContext, playerActions, npcs, timeScope } = context
+        const { gameContext, playerActions, npcs, timeScope } = args
 
         const prompt = `You are a narrative systems designer inspired by CD Projekt Red (Witcher 3, Cyberpunk 2077).
 
@@ -227,9 +227,9 @@ export const createGreyPaletteTool = () =>
 Every choice has real cost, factions react, and consequences ripple through time.
 Inspired by CDPR: "Evil is evil, lesser, greater, middling... makes no difference."`,
     schema: GreyPaletteInputSchema,
-    execute: async ({ context }) => {
+    execute: async (args) => {
       try {
-        const { situation, factions, stakes, genre } = context
+        const { situation, factions, stakes, genre } = args
 
         const prompt = `You are a narrative designer inspired by CD Projekt Red's moral complexity.
 
@@ -321,9 +321,9 @@ export const createStrandWeaverTool = () =>
 Not lobbies or chat - legacies, echoes, inherited consequences.
 Inspired by Kojima: "Games should connect strangers in ways social media never could."`,
     schema: StrandWeaverInputSchema,
-    execute: async ({ context }) => {
+    execute: async (args) => {
       try {
-        const { gameType, multiplayerModel, persistenceLevel, connectionTheme } = context
+        const { gameType, multiplayerModel, persistenceLevel, connectionTheme } = args
 
         const prompt = `You are a connection systems designer inspired by Hideo Kojima (Death Stranding, MGS5).
 
@@ -414,9 +414,9 @@ export const createSilentTeacherTool = () =>
 No tutorials, no markers, no "press X to not die." Trust players to discover.
 Inspired by Klei: Death should teach, not punish.`,
     schema: SilentTeacherInputSchema,
-    execute: async ({ context }) => {
+    execute: async (args) => {
       try {
-        const { mechanicsToTeach, playerSkillCurve, genre } = context
+        const { mechanicsToTeach, playerSkillCurve, genre } = args
 
         const prompt = `You are a learning designer inspired by Klei Entertainment's respect for players.
 
@@ -504,9 +504,9 @@ export const createMundanePoetTool = () =>
 Walking, cooking, waiting - these can be profound when designed with intention.
 Inspired by Kojima: "Death Stranding taught us walking can be profound."`,
     schema: MundanePoetInputSchema,
-    execute: async ({ context }) => {
+    execute: async (args) => {
       try {
-        const { routineMechanics, gameTheme, pacing } = context
+        const { routineMechanics, gameTheme, pacing } = args
 
         const prompt = `You are a ritual designer inspired by Hideo Kojima's attention to the mundane.
 

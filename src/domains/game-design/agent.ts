@@ -42,6 +42,12 @@ export interface GameDesignContext {
   targetAudience?: 'casual' | 'midcore' | 'hardcore'
   theme?: string
   userMessage?: string
+  /** High-level game concept from the user; critical for coherent suggestions */
+  gameDescription?: string
+  /** Platform (e.g. PC, mobile, console) */
+  platform?: string
+  /** Recent conversation turns so the agent can stay on topic and avoid repeating */
+  recentMessages?: { role: 'user' | 'assistant'; content: string }[]
 }
 
 // Response types matching CoPilot protocol for UI compatibility
@@ -195,7 +201,16 @@ The ultimate test: "Would players tell stories about what happened to them?"`
           }
 
           const goal = context.userMessage || 'Analyze and improve the game loop design'
-          const prompt = `Goal: ${goal}\n\nContext:\n${enrichedContext}
+          let prompt = ''
+
+          if (context.recentMessages?.length) {
+            const convo = context.recentMessages
+              .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
+              .join('\n\n')
+            prompt += `## Recent conversation\n${convo}\n\n`
+          }
+
+          prompt += `Goal (current message): ${goal}\n\nContext:\n${enrichedContext}
 
 Please analyze and respond with your thoughts and recommendations.
 If you use any tools, describe what you learned from them.`
@@ -254,10 +269,15 @@ If you use any tools, describe what you learned from them.`
   }
 
   /**
-   * Stream response from the agent
+   * Stream response from the agent (Mastra pattern, same as StorytellerAgent).
+   * Options: memory (resource, thread), maxSteps, toolChoice, etc.
    */
-  async stream(prompt: string) {
-    return this.agent.stream(prompt)
+  async stream(prompt: string, options?: Record<string, unknown>) {
+    return this.agent.stream(prompt, {
+      toolChoice: options?.toolChoice ?? 'auto',
+      maxSteps: options?.maxSteps ?? 10,
+      ...options,
+    } as Parameters<Agent['stream']>[1])
   }
 
   /**
@@ -282,8 +302,16 @@ If you use any tools, describe what you learned from them.`
       parts.push(`## Genre: ${context.genre}`)
     }
 
+    if (context.platform) {
+      parts.push(`## Platform: ${context.platform}`)
+    }
+
     if (context.targetAudience) {
       parts.push(`## Target Audience: ${context.targetAudience}`)
+    }
+
+    if (context.gameDescription) {
+      parts.push(`## Game concept / description\n${context.gameDescription}`)
     }
 
     if (context.theme) {
@@ -310,8 +338,31 @@ If you use any tools, describe what you learned from them.`
   }
 
   private parseResponse(text: string): GameDesignResponse {
-    // Try to extract structured response
-    const thought = text
+    // Extract <thinking> block content
+    const thinkingMatch = text.match(/<thinking>([\s\S]*?)<\/thinking>/i)
+    const thought = thinkingMatch ? thinkingMatch[1].trim() : text
+
+    // Extract text after </thinking> tag, or use full text if no thinking block
+    const afterThinking = thinkingMatch
+      ? text.slice(text.indexOf('</thinking>') + '</thinking>'.length).trim()
+      : text.trim()
+
+    // Try to parse structured JSON response (e.g. { "type": "PROPOSE_PLAN", "payload": ... })
+    const jsonMatch = afterThinking.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[0])
+        if (parsed.type && ['ASK_USER', 'EXECUTE_STEP', 'PROPOSE_PLAN', 'FINISH'].includes(parsed.type)) {
+          return {
+            type: parsed.type,
+            payload: parsed.payload,
+            thought,
+          }
+        }
+      } catch {
+        // Not valid JSON, continue
+      }
+    }
 
     // Check if there are tool results in the response
     const toolMatch = text.match(/Tool Result:?\s*({[\s\S]*?})/i)

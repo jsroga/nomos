@@ -22,8 +22,30 @@ export const BibleRoadmap: React.FC<BibleRoadmapProps> = () => {
     pendingActions,
     projectId,
   } = useBible()
-  const sequences = storyPlan.episodeRoadmap?.episodes || storyPlan.episodeRoadmap?.sequences || storyPlan.sequences || []
-  const seasonStructure = storyPlan.seasonStructure || storyPlan.episodeRoadmap?.seasonStructure
+  // Use localPlan for display when not editing to show latest saved data
+  // Note: prefer non-empty arrays — an empty [] from a stale episode plan fetch must not block
+  // episodeRoadmap.episodes from showing after a roadmap approval.
+  const resolveSequences = (seqs: any[] | undefined | null) =>
+    seqs && seqs.length > 0 ? seqs : undefined
+  const displaySequences = isEditing
+    ? (localPlan.sequences || [])
+    : (resolveSequences(localPlan.sequences) ||
+      storyPlan.episodeRoadmap?.episodes ||
+      storyPlan.episodeRoadmap?.sequences ||
+      resolveSequences(storyPlan.sequences) ||
+      [])
+
+  // Debug: log roadmap data to help diagnose display issues
+  if (typeof window !== 'undefined') {
+    console.log('[BibleRoadmap] sequences:', displaySequences.length, {
+      localPlanSequences: localPlan.sequences?.length,
+      storyPlanSequences: (storyPlan as any).sequences?.length,
+      storyPlanEpisodeRoadmapEpisodes: (storyPlan as any).episodeRoadmap?.episodes?.length,
+    })
+  }
+  const displaySeasonStructure = isEditing
+    ? localPlan.seasonStructure
+    : (localPlan.seasonStructure || storyPlan.seasonStructure || storyPlan.episodeRoadmap?.seasonStructure)
 
   // Check for loading state - roadmap uses 'episodeRoadmap' section key
   const isLoading = loadingSections?.episodeRoadmap?.loading ?? false
@@ -63,7 +85,7 @@ export const BibleRoadmap: React.FC<BibleRoadmapProps> = () => {
             <button
               onClick={() =>
                 onSendMessage?.(
-                  'Break the season into a roadmap of 8-12 episodes. Use a professional showrunner approach: define the inciting incident, midpoint, and finale first, then fill in the connective tissue.',
+                  'Break the season into a completely BRAND NEW roadmap of 8-12 episodes. Use a professional showrunner approach: define the inciting incident, midpoint, and finale first, then fill in the connective tissue. IMPORTANT: Take a completely new creative direction and do NOT repeat previous episodes.',
                   'episodeRoadmap'
                 )
               }
@@ -97,18 +119,18 @@ export const BibleRoadmap: React.FC<BibleRoadmapProps> = () => {
       ) : (
         <div className="space-y-6">
           {/* Legend / Overview */}
-          {seasonStructure && (
-            <SeasonOverviewCard seasonStructure={seasonStructure} />
+          {displaySeasonStructure && (
+            <SeasonOverviewCard seasonStructure={displaySeasonStructure} />
           )}
 
           {/* Sequences List */}
-          {sequences.length === 0 ? (
+          {displaySequences.length === 0 ? (
             <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
               No roadmap defined yet. The journey is unwritten.
             </div>
           ) : (
             <div className="space-y-1">
-              {sequences.map((seq, idx) => (
+              {displaySequences.map((seq, idx) => (
                 <EpisodeRoadmapCard key={idx} episode={seq} index={idx} projectId={projectId} />
               ))}
             </div>

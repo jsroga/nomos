@@ -27,7 +27,13 @@ import toast from 'react-hot-toast'
 import { LocalStorageKeys } from '@/constants/localStorage'
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
 import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/constants/polling'
-import { SidebarSection, SidebarLabel } from '@/components/ui/domain-sidebar'
+import {
+  SidebarSection,
+  SidebarLabel,
+  SidebarInput,
+  SidebarSliderRow,
+  SidebarEmptyState,
+} from '@/components/ui/domain-sidebar'
 import { getErrorMessage } from '@/lib/error-utils'
 
 export const PropertiesPanel: React.FC = () => {
@@ -84,11 +90,7 @@ export const PropertiesPanel: React.FC = () => {
 
   // Check Surface Selection First
   if (selectedSurface) {
-    return (
-      <div className="h-full overflow-y-auto">
-        <SurfaceProperties />
-      </div>
-    )
+    return <SurfaceProperties />
   }
 
   const selectedItem =
@@ -106,11 +108,11 @@ export const PropertiesPanel: React.FC = () => {
     const allAreWalls = selectedWalls.length === multiSelectedIds.length
 
     return (
-      <div className="p-6 space-y-8 h-full overflow-y-auto">
+      <div className="space-y-6">
         <SidebarSection
           title="Multi-Selection"
           rightContent={
-            <span className="text-[10px] font-bold text-zinc-500 uppercase ml-2">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase ml-2">
               {multiSelectedIds.length} items
             </span>
           }
@@ -119,10 +121,18 @@ export const PropertiesPanel: React.FC = () => {
             <div className="space-y-6 pt-2">
               {/* Batch Height */}
               <div className="space-y-3">
-                <div className="flex justify-between text-[11px] font-semibold text-zinc-400">
-                  <SidebarLabel>Batch Height</SidebarLabel>
-                  <span className="font-mono text-zinc-500">{batchHeight}m</span>
-                </div>
+                <SidebarSliderRow
+                  label="Batch Height"
+                  value={batchHeight}
+                  min={0.5}
+                  max={10}
+                  step={0.5}
+                  onChange={h => {
+                    setBatchHeight(h)
+                    multiSelectedIds.forEach(id => updateWall(id, { height: h }))
+                  }}
+                  formatValue={val => `${val.toFixed(1)}m`}
+                />
                 <Slider
                   value={[batchHeight]}
                   min={0.5}
@@ -137,20 +147,18 @@ export const PropertiesPanel: React.FC = () => {
               </div>
 
               {/* Combine Actions */}
-              <div className="pt-6 border-t border-white/5 space-y-6">
-                <div className="space-y-3">
-                  <div className="flex justify-between text-[11px] font-semibold text-zinc-400">
-                    <SidebarLabel>Combine Roundness</SidebarLabel>
-                    <span className="font-mono text-zinc-500">{combineRoundness}</span>
-                  </div>
-                  <Slider
-                    value={[combineRoundness]}
+              <div className="pt-6 border-t border-border space-y-6">
+                <div className="space-y-2">
+                  <SidebarSliderRow
+                    label="Combine Roundness"
+                    value={combineRoundness}
                     min={0}
                     max={1}
                     step={0.05}
-                    onValueChange={vals => setCombineRoundness(vals[0])}
+                    onChange={setCombineRoundness}
+                    formatValue={val => val.toFixed(2)}
                   />
-                  <div className="flex justify-between text-[10px] text-zinc-600 font-medium">
+                  <div className="flex justify-between text-[10px] text-muted-foreground font-medium">
                     <span>Sharp</span>
                     <span>Round</span>
                   </div>
@@ -158,13 +166,14 @@ export const PropertiesPanel: React.FC = () => {
 
                 <Button
                   onClick={() => combineWalls({ roundness: combineRoundness })}
-                  className="w-full bg-indigo-600 text-white font-bold py-2 rounded-2xl text-xs hover:bg-indigo-700 flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(79,70,229,0.3)] transition-all"
+                  variant="default"
+                  className="w-full font-mono text-[10px] uppercase tracking-widest py-3 flex items-center justify-center gap-2"
                 >
                   <Layers size={14} />
                   Combine Walls
                 </Button>
 
-                <div className="text-[10px] text-zinc-500 bg-white/5 p-3 rounded-2xl border border-white/5 leading-relaxed">
+                <div className="text-[10px] text-muted-foreground bg-muted/30 p-3 rounded-lg border border-border leading-relaxed text-center">
                   Merges selected walls into a single curved surface with the specified roundness.
                 </div>
               </div>
@@ -173,7 +182,7 @@ export const PropertiesPanel: React.FC = () => {
 
           {!allAreWalls && (
             <div className="space-y-4 pt-2">
-              <div className="text-[10px] text-zinc-500 bg-white/5 p-3 rounded-2xl border border-white/5">
+              <div className="text-[10px] text-muted-foreground bg-muted/30 p-3 rounded-lg border border-border text-center">
                 {multiSelectedIds.length} items selected
               </div>
 
@@ -207,40 +216,42 @@ export const PropertiesPanel: React.FC = () => {
   }
 
   return (
-    <div className="p-6 h-full overflow-y-auto">
-      <SidebarSection title="Element Properties">
-        <div className="space-y-8 pt-2">
+    <div className="space-y-6">
+      <SidebarSection
+        title="Element Properties"
+        className="px-1"
+        icon={<Sparkles size={14} className="text-indigo-400" />}
+      >
+        <div className="space-y-6 pt-4">
           {/* Show snap controls in OBJECT mode when nothing selected */}
           {mode === 'OBJECT' && !selectedId && (
             <div className="space-y-6">
-              <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500 mb-4 flex items-center gap-2">
+                <div className="h-px bg-white/10 flex-1" />
                 Object Placement
+                <div className="h-px bg-white/10 flex-1" />
               </div>
               <SnapControls />
             </div>
           )}
 
           {!selectedId && mode !== 'OBJECT' && (
-            <div className="text-sm text-zinc-500 italic">
-              {mode === 'SELECT' ? 'Select an object to edit properties' : `Mode: ${mode}`}
-            </div>
+            <SidebarEmptyState
+              message={mode === 'SELECT' ? 'Select an object to edit properties' : `Mode: ${mode}`}
+            />
           )}
 
           {selectedItem && (
-            <div className="space-y-8">
-              <div className="text-[10px] font-mono font-bold bg-muted/10 p-3 rounded-xl text-muted-foreground border border-border/50 flex items-center justify-between">
-                <span className="uppercase tracking-widest opacity-70">Reference ID</span>
-                <span className="font-mono text-zinc-300">{selectedItem.id.slice(0, 8)}</span>
+            <div className="space-y-6">
+              <div className="text-[10px] font-mono font-bold bg-muted/30 p-3 rounded-lg text-muted-foreground border border-border flex items-center justify-between">
+                <span className="uppercase tracking-widest text-[9px]">Reference ID</span>
+                <span className="font-mono text-foreground bg-background/50 px-2 py-0.5 rounded">{selectedItem.id.slice(0, 8)}</span>
               </div>
 
               {/* Color/Texture Input */}
-              <div className="space-y-3">
-                <SidebarLabel className="text-indigo-400 font-bold uppercase tracking-widest">
-                  Color / Texture
-                </SidebarLabel>
-                <input
+              <div className="space-y-2">
+                <SidebarInput
                   type="text"
-                  className="w-full bg-background/40 border border-border rounded-xl py-2 px-3 text-xs font-mono text-foreground focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 focus:outline-none transition-all placeholder:text-muted-foreground/40"
                   value={
                     isObject(selectedItem) ? selectedItem.modelUrl : selectedItem.texture || ''
                   }
@@ -257,68 +268,55 @@ export const PropertiesPanel: React.FC = () => {
               {/* Height Input (Walls only) */}
               {isWall(selectedItem) && (
                 <div className="space-y-2">
-                  <SidebarLabel className="text-zinc-400 font-semibold text-[11px]">
-                    Height
-                  </SidebarLabel>
-                  <input
-                    type="number"
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-2.5 px-4 text-xs text-zinc-100 focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all"
+                  <SidebarSliderRow
+                    label="Height"
                     value={selectedItem.height}
-                    onChange={e => updateWall(selectedId!, { height: Number(e.target.value) })}
+                    min={0.5}
+                    max={10}
+                    step={0.1}
+                    onChange={val => updateWall(selectedId!, { height: val })}
+                    formatValue={val => `${val.toFixed(1)}m`}
                   />
                 </div>
               )}
 
               {/* Object Transform Controls */}
               {isObject(selectedItem) && (
-                <div className="space-y-6 pt-6 border-t border-white/5">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-                    Transform Settings
-                  </h3>
-
+                <SidebarSection title="Transform" separator={false}>
                   <SnapControls />
 
                   {/* Mode Switcher */}
-                  <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10">
-                    <button
-                      className={cn(
-                        'flex-1 flex items-center justify-center py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all',
-                        transformMode === 'translate'
-                          ? 'bg-indigo-600 text-white shadow-lg'
-                          : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
-                      )}
+                  <div className="flex gap-1 p-1 bg-muted/30 rounded-lg">
+                    <Button
+                      variant={transformMode === 'translate' ? 'default' : 'ghost'}
+                      size="sm"
                       onClick={() => setTransformMode('translate')}
                       title="Move (G)"
+                      className="flex-1 text-[10px] font-mono uppercase tracking-widest h-8"
                     >
                       <Move size={12} className="mr-1.5" />
                       Move
-                    </button>
-                    <button
-                      className={cn(
-                        'flex-1 flex items-center justify-center py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all',
-                        transformMode === 'rotate'
-                          ? 'bg-indigo-600 text-white shadow-lg'
-                          : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
-                      )}
+                    </Button>
+                    <Button
+                      variant={transformMode === 'rotate' ? 'default' : 'ghost'}
+                      size="sm"
                       onClick={() => setTransformMode('rotate')}
                       title="Rotate (R)"
+                      className="flex-1 text-[10px] font-mono uppercase tracking-widest h-8"
                     >
                       <RotateCw size={12} className="mr-1.5" />
                       Rotate
-                    </button>
-                    <button
-                      className={cn(
-                        'flex-1 flex items-center justify-center py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all',
-                        transformMode === 'scale'
-                          ? 'bg-indigo-600 text-white shadow-lg'
-                          : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
-                      )}
+                    </Button>
+                    <Button
+                      variant={transformMode === 'scale' ? 'default' : 'ghost'}
+                      size="sm"
                       onClick={() => setTransformMode('scale')}
                       title="Scale (S)"
+                      className="flex-1 text-[10px] font-mono uppercase tracking-widest h-8"
                     >
                       <Maximize size={12} className="mr-1.5" />
                       Scale
-                    </button>
+                    </Button>
                   </div>
 
                   {/* Height Slider - Shows when scale mode is active */}
@@ -329,14 +327,14 @@ export const PropertiesPanel: React.FC = () => {
                       onScaleChange={newScale => updateObject(selectedItem.id, { scale: newScale })}
                     />
                   )}
-                </div>
+                </SidebarSection>
               )}
 
               {/* COLOR PICKER for Window/Door */}
               {isObject(selectedItem) &&
                 (selectedItem.modelUrl === 'window' || selectedItem.modelUrl === 'door') && (
                   <div className="pt-6 border-t border-white/5 space-y-3">
-                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                    <h3 className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
                       Object Color
                     </h3>
                     <div className="flex items-center gap-2">
@@ -368,32 +366,28 @@ export const PropertiesPanel: React.FC = () => {
 
               {/* RETEXTURE UI */}
               {(isObject(selectedItem) || isWall(selectedItem)) && (
-                <div className="pt-6 border-t border-white/5">
-                  <RetextureControls
-                    objectId={selectedItem.id}
-                    modelUrl={
-                      isObject(selectedItem) ? selectedItem.modelUrl : selectedItem.texture || ''
-                    }
-                  />
-                </div>
+                <RetextureControls
+                  objectId={selectedItem.id}
+                  modelUrl={
+                    isObject(selectedItem) ? selectedItem.modelUrl : selectedItem.texture || ''
+                  }
+                />
               )}
 
               {/* TEXT TO 3D UI */}
               {isObject(selectedItem) && (
-                <div className="pt-6 border-t border-white/5">
-                  <TextTo3DControls
-                    objectId={selectedItem.id}
-                    onModelGenerated={modelUrl =>
-                      updateObject(selectedItem.id, { modelUrl, isLoading: false })
-                    }
-                  />
-                </div>
+                <TextTo3DControls
+                  objectId={selectedItem.id}
+                  onModelGenerated={modelUrl =>
+                    updateObject(selectedItem.id, { modelUrl, isLoading: false })
+                  }
+                />
               )}
 
               <Button
                 onClick={handleDelete}
                 variant="ghost"
-                className="w-full text-red-400 hover:text-red-300 hover:bg-red-500/10 py-3 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all"
+                className="w-full text-red-400 hover:text-red-300 hover:bg-red-500/10 py-6 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all mt-4 border border-transparent hover:border-red-500/20"
               >
                 Delete Object
               </Button>
@@ -507,6 +501,52 @@ function HeightScaleControl({
   )
 }
 
+// Elevation Control Component - for precise Y axis placement
+function ObjectElevationControl({
+  currentPosition,
+  onElevationChange,
+}: {
+  currentPosition: [number, number, number]
+  onElevationChange: (newY: number) => void
+}) {
+  const currentY = currentPosition[1]
+
+  const [yValue, setYValue] = React.useState(currentY)
+
+  React.useEffect(() => {
+    setYValue(currentPosition[1])
+  }, [currentPosition[1]])
+
+  const handleYChange = (newY: number) => {
+    setYValue(newY)
+    onElevationChange(newY)
+  }
+
+  return (
+    <div className="space-y-3 p-4 bg-zinc-900/30 rounded-lg border border-zinc-800/50 mt-2">
+      <div className="flex items-center justify-between">
+        <label className="text-xs font-mono font-medium flex items-center gap-1.5">
+          <Move size={12} />
+          Elevation (Y-Axis)
+        </label>
+        <span className="text-xs text-muted-foreground font-mono">{yValue.toFixed(2)}m</span>
+      </div>
+      <Slider
+        value={[yValue]}
+        min={-5}
+        max={15}
+        step={0.1}
+        onValueChange={vals => handleYChange(vals[0])}
+      />
+      <div className="flex justify-between text-[10px] text-muted-foreground">
+        <span>-5m</span>
+        <span>Vertical Placement</span>
+        <span>15m</span>
+      </div>
+    </div>
+  )
+}
+
 // Retexture Controls Component
 function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl: string }) {
   const [prompt, setPrompt] = React.useState('')
@@ -520,8 +560,6 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
   const removeOperation = useGlobalStatusStore(state => state.removeOperation)
 
   const approveRetexture = useInteriorStore(state => state.approveRetexture)
-  // const cancelRetexture = useInteriorStore(state => state.cancelRetexture) // Handled locally now for revert
-
   const previewRetexture = useInteriorStore(state => state.previewRetexture)
   const cancelRetexture = useInteriorStore(state => state.cancelRetexture)
 
@@ -1208,7 +1246,7 @@ function TextTo3DControls({
     try {
       const metadata = JSON.parse(currentOperation.details || '{ }')
       thumbnailUrl = metadata.thumbnailUrl || ''
-    } catch {}
+    } catch { }
 
     return (
       <div className="pt-4 border-t border-border animate-in fade-in">

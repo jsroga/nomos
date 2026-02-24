@@ -15,6 +15,43 @@ import { ActionType, BibleSection } from '../enums'
 // ============================================
 
 /**
+ * Smart merge two arrays based on common identifier keys.
+ * If an item with the same identifier exists, merge them. Otherwise, append.
+ */
+export function smartMergeArray(targetArr: any[], sourceArr: any[]): any[] {
+  if (!targetArr || !targetArr.length) return [...sourceArr]
+
+  const result = [...targetArr]
+
+  for (const sourceItem of sourceArr) {
+    if (!sourceItem) continue
+
+    // Try to find a matching item based on common identifier keys
+    const identifierKey = ['id', 'name', 'rule', 'title'].find(k => typeof sourceItem === 'object' && sourceItem[k])
+
+    if (identifierKey) {
+      const matchIndex = result.findIndex(targetItem => targetItem && typeof targetItem === 'object' && targetItem[identifierKey] === sourceItem[identifierKey])
+      if (matchIndex >= 0) {
+        // Merge the objects
+        result[matchIndex] = deepMerge(result[matchIndex], sourceItem)
+      } else {
+        // Append new
+        result.push(sourceItem)
+      }
+    } else {
+      // If primitive, append if not already exists
+      if (typeof sourceItem === 'string' || typeof sourceItem === 'number') {
+        if (!result.includes(sourceItem)) result.push(sourceItem)
+      } else {
+        result.push(sourceItem)
+      }
+    }
+  }
+
+  return result
+}
+
+/**
  * Deep merge objects, handling nested objects while replacing arrays
  */
 export function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T {
@@ -27,18 +64,20 @@ export function deepMerge<T extends Record<string, any>>(target: T, source: Part
     // Skip undefined/null source values
     if (sourceVal === undefined || sourceVal === null) continue
 
+    // If both are arrays, smart merge them
+    if (Array.isArray(sourceVal) && Array.isArray(targetVal)) {
+      result[key] = smartMergeArray(targetVal, sourceVal) as any
+    }
     // If both are plain objects (not arrays), merge recursively
-    if (
+    else if (
       sourceVal &&
       typeof sourceVal === 'object' &&
-      !Array.isArray(sourceVal) &&
       targetVal &&
-      typeof targetVal === 'object' &&
-      !Array.isArray(targetVal)
+      typeof targetVal === 'object'
     ) {
       result[key] = deepMerge(targetVal, sourceVal as any)
     } else {
-      // Otherwise replace (including arrays)
+      // Otherwise replace
       result[key] = sourceVal as T[keyof T]
     }
   }
@@ -170,6 +209,20 @@ export const SECTION_CONFIGS: SectionConfig[] = [
       },
     }),
   },
+  {
+    section: BibleSection.ITEMS,
+    actionType: ActionType.UPDATE_ITEMS,
+    fieldNames: ['items'],
+    requiresApproval: true,
+    extractPayload: fields => ({ items: fields.items }),
+  },
+  {
+    section: BibleSection.EVENTS,
+    actionType: ActionType.UPDATE_EVENTS,
+    fieldNames: ['events'],
+    requiresApproval: true,
+    extractPayload: fields => ({ events: fields.events }),
+  },
 ]
 
 // ============================================
@@ -286,6 +339,8 @@ export const STORY_PLAN_FIELDS = [
   'masterPrompt',
   'centralTheme',
   'episodeRoadmap',
+  'items',
+  'events',
 ] as const
 
 /**
@@ -300,11 +355,15 @@ export function applyUpdatesToStoryPlan<T extends Record<string, any>>(
   // Apply standard plan fields
   for (const field of STORY_PLAN_FIELDS) {
     if (updates[field] !== undefined) {
-      if (field === 'episodeRoadmap') {
-        // deep merge episodeRoadmap to support partial updates
-        // (e.g. updating just the premise inside the roadmap)
-        ; (result as any)[field] = deepMerge((currentPlan as any)[field] || {}, updates[field] as any)
+      if (typeof updates[field] === 'object' && updates[field] !== null && !Array.isArray(updates[field])) {
+        // e.g. episodeRoadmap, inspirations
+        ; (result as any)[field] = deepMerge((currentPlan as any)?.[field] || {}, updates[field] as any)
+      } else if (Array.isArray(updates[field])) {
+        // e.g. factions, worldRules, cast, sequences, items, events
+        const currentArr = Array.isArray((currentPlan as any)?.[field]) ? (currentPlan as any)[field] : []
+          ; (result as any)[field] = smartMergeArray(currentArr, updates[field] as any[])
       } else {
+        // Primitives like strings
         ; (result as any)[field] = updates[field]
       }
     }
@@ -313,7 +372,8 @@ export function applyUpdatesToStoryPlan<T extends Record<string, any>>(
   // Handle cast field aliases (cast is the canonical field)
   const cast = updates.cast || updates.characters
   if (cast) {
-    ; (result as any).cast = cast
+    const currentCast = Array.isArray((currentPlan as any)?.cast) ? (currentPlan as any).cast : []
+      ; (result as any).cast = Array.isArray(cast) ? smartMergeArray(currentCast, cast) : cast
   }
 
   // Handle moodboard/moodImages aliases

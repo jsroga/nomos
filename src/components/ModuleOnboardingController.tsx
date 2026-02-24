@@ -46,13 +46,37 @@ export function ModuleOnboardingController() {
       localStorage.getItem(LocalStorageKeys.FORCE_ONBOARDING) === 'true'
 
     const isSkippedAll = onboarding?.skipAll
+    
+    // Check per-route onboarding state first (preferred)
+    const routeState = onboarding?.routes?.[pathname]
+    const isRouteCompleted = routeState?.completed
+    const isRouteSkipped = routeState?.skipped
+    
+    // Fallback to per-module state for backward compatibility
     const isModuleCompleted = onboarding?.modules?.[config.id as ModuleId]?.completed
     const isModuleSkipped = onboarding?.modules?.[config.id as ModuleId]?.skipped
 
-    if (forceOnboarding || (!isSkippedAll && !isModuleCompleted && !isModuleSkipped)) {
+    // In debug mode: ignore skip/finish state, always show on refresh (but still respect skip/finish actions during session)
+    // In normal mode: respect skip/finish state
+    const shouldShowTour = forceOnboarding 
+      ? true // Debug mode: always show on refresh
+      : (!isSkippedAll && 
+         !isRouteCompleted && 
+         !isRouteSkipped && 
+         !isModuleCompleted && 
+         !isModuleSkipped)
+
+    if (shouldShowTour) {
       setSteps(config.steps)
-      // Delay slightly to ensure UI is ready
-      const timer = setTimeout(() => setIsOpen(true), 1000)
+      // Wait for everything to load before showing popup
+      const timer = setTimeout(() => {
+        // Double-check that DOM is ready and elements exist
+        if (document.readyState === 'complete') {
+          setIsOpen(true)
+        } else {
+          window.addEventListener('load', () => setIsOpen(true), { once: true })
+        }
+      }, 1500)
       return () => clearTimeout(timer)
     } else {
       setSteps([])
@@ -73,6 +97,7 @@ export function ModuleOnboardingController() {
           body: JSON.stringify({
             action,
             moduleId,
+            route: pathname, // Send route for per-route tracking
             userId: user.id,
           }),
         })
@@ -92,7 +117,7 @@ export function ModuleOnboardingController() {
         console.error('Failed to update onboarding status:', error)
       }
     },
-    [user, moduleConfig?.id]
+    [user, moduleConfig?.id, pathname]
   )
 
   const handleStart = () => {
@@ -100,21 +125,45 @@ export function ModuleOnboardingController() {
   }
 
   const handleSkip = () => {
-    handleAction('skip')
+    const forceOnboarding =
+      typeof window !== 'undefined' &&
+      localStorage.getItem(LocalStorageKeys.FORCE_ONBOARDING) === 'true'
+    
+    // In debug mode: don't persist skip to user metadata (will reappear on refresh)
+    // In normal mode: persist skip (normal user functionality)
+    if (!forceOnboarding) {
+      handleAction('skip')
+    }
   }
 
   const handleSkipAll = () => {
-    handleAction('skipAll')
+    const forceOnboarding =
+      typeof window !== 'undefined' &&
+      localStorage.getItem(LocalStorageKeys.FORCE_ONBOARDING) === 'true'
+    
+    // In debug mode: don't persist skipAll to user metadata (will reappear on refresh)
+    // In normal mode: persist skipAll (normal user functionality)
+    if (!forceOnboarding) {
+      handleAction('skipAll')
+    }
   }
 
   // Effect to detect tour completion
   const { currentStep, steps } = useTour()
   useEffect(() => {
     if (currentStep >= 0 && currentStep === steps.length - 1) {
-      // When user reaches the last step, mark as complete
-      handleAction('complete')
+      const forceOnboarding =
+        typeof window !== 'undefined' &&
+        localStorage.getItem(LocalStorageKeys.FORCE_ONBOARDING) === 'true'
+      
+      // In debug mode: don't persist completion to user metadata (will reappear on refresh)
+      // In normal mode: persist completion (normal user functionality)
+      if (!forceOnboarding) {
+        handleAction('complete')
+      }
     }
   }, [currentStep, steps.length, handleAction])
+
 
   if (!moduleConfig) return null
 

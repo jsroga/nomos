@@ -27,6 +27,9 @@ import { getGameEntityProvider } from '@/domains/chat/mentions/game-entity-provi
 import { SectionProgress } from '@/domains/chat/components/SectionProgress'
 import { ActiveAgentsPanel } from '@/domains/chat/components/AgentLog'
 import { SmartQuickActions } from '@/domains/chat/components/QuickActions'
+import { StreamingTerminal } from '@/domains/chat/components/StreamingTerminal'
+import { StreamingSectionsInline } from '@/domains/chat/components/StreamingSectionsInline'
+import { isAdminUser } from '@/lib/admin-users'
 import {
   Sparkles,
   Bot,
@@ -124,8 +127,11 @@ interface LoopCreatorLayoutProps {
 }
 
 import { TOUR_STEP_IDS } from '@/lib/tour-constants'
+import { useTour } from '@/components/tour'
 
 export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
+  const { currentStep } = useTour()
+  const isTourActive = currentStep >= 0
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
   const [threadId, setThreadId] = useState<string | null>(null)
@@ -145,6 +151,19 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
   const [isMarketAnalysisOpen, setIsMarketAnalysisOpen] = useState(false)
   const [marketAnalysisKey, setMarketAnalysisKey] = useState(0) // Key to force refresh panel
   const [showCreateLoopDialog, setShowCreateLoopDialog] = useState(false)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+
+  // Fetch user email for admin features (eval button)
+  useEffect(() => {
+    const fetchUser = async () => {
+      const supabase = (await import('@supabase/auth-helpers-nextjs')).createClientComponentClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      setUserEmail(user?.email || null)
+    }
+    fetchUser()
+  }, [])
 
   // Trigger the LoopSelector dialog to create a new loop
   const handleCreateLoopFromEmptyState = useCallback(() => {
@@ -657,7 +676,7 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
   const handleNodeUpdate = useCallback(
     (nodeId: string, updates: Record<string, unknown>) => {
       // Check if we need to change the node type
-      const changeNodeType = updates._changeNodeType
+      const changeNodeType = updates._changeNodeType as string | undefined
       delete updates._changeNodeType
 
       setNodes(nds =>
@@ -1031,10 +1050,19 @@ To get started, tell me about the game you're designing. What **genre** and **pl
       // Optimistic update
       setMessages(prev => [...prev, { sender: 'User', content: msg, type: 'human' }])
 
+      const recentMessages = messages
+        .slice(-10)
+        .map(m => ({
+          role: (m.type === 'human' ? 'user' : 'assistant') as 'user' | 'assistant',
+          content: typeof m.content === 'string' ? m.content : '',
+        }))
+        .filter(m => m.content.length > 0)
+
       await sendMessage('/api/loop-creator/chat', {
         message: msg,
         projectId,
         threadId, // Continue conversation if we have a threadId
+        recentMessages: recentMessages.length ? recentMessages : undefined,
         context: {
           ...gameContext,
           nodes: nodes.map(n => ({
@@ -1047,7 +1075,7 @@ To get started, tell me about the game you're designing. What **genre** and **pl
         },
       })
     },
-    [projectId, threadId, sendMessage, setMessages, nodes, edges, gameContext]
+    [projectId, threadId, sendMessage, setMessages, nodes, edges, gameContext, messages]
   )
 
   // Effect to send pending auto-message when a loop is created
@@ -1397,7 +1425,7 @@ To get started, tell me about the game you're designing. What **genre** and **pl
                 />
 
                 {/* Empty State - No loop selected */}
-                {!currentLoopId && <LoopEmptyState onCreateLoop={handleCreateLoopFromEmptyState} />}
+                {!currentLoopId && !isTourActive && <LoopEmptyState onCreateLoop={handleCreateLoopFromEmptyState} />}
               </div>
             </div>
           </div>
@@ -1413,15 +1441,15 @@ To get started, tell me about the game you're designing. What **genre** and **pl
           className="bg-card/30"
         >
           <div className="flex flex-col h-full" id={TOUR_STEP_IDS.LOOP_CHAT}>
-            {/* Active Agents Display */}
-            {activeAgents.length > 0 && (
+            {/* Active Agents Display - Only when Activity ON */}
+            {isActivityPanelOpen && activeAgents.length > 0 && (
               <div className="px-4 py-2 border-b bg-card/30">
                 <ActiveAgentsPanel activeAgents={activeAgents} agentConfig={LOOP_AGENT_CONFIG} />
               </div>
             )}
 
-            {/* Section Progress */}
-            {streamingSections.length > 0 && (
+            {/* Section Progress - Only when Activity ON */}
+            {isActivityPanelOpen && streamingSections.length > 0 && (
               <div className="px-4 py-2 border-b">
                 <SectionProgress
                   sections={streamingSections}
@@ -1441,52 +1469,29 @@ To get started, tell me about the game you're designing. What **genre** and **pl
                 onStopStream={stopStream}
                 isActivityPanelOpen={isActivityPanelOpen}
                 onActivityToggle={() => setIsActivityPanelOpen(!isActivityPanelOpen)}
+                isAdmin={isAdminUser(userEmail)}
+                thinkingAgent={thinkingAgent}
+                streamingTokens={streamingTokens}
+                projectId={projectId}
+                showThinking={!!thinkingAgent}
+                currentPhase="loop_design"
                 mentionProviders={mentionProviders}
                 projectContext={projectContextForMentions}
               >
-                {/* Streaming Tokens Injection */}
-                {isTokenStreaming && streamingTokens && (
+                {/* Streaming Terminal - Only when Activity ON */}
+                {isActivityPanelOpen && isTokenStreaming && streamingTokens && (
                   <div className="mb-4 animate-in fade-in duration-300">
-                    {isActivityPanelOpen ? (
-                      /* Activity ON: Developer terminal view */
-                      <div className="rounded-lg overflow-hidden border border-zinc-700/50 shadow-xl">
-                        {/* Terminal header */}
-                        <div className="flex items-center gap-2 px-3 py-2 bg-zinc-900 border-b border-zinc-700/50">
-                          <div className="flex gap-1.5">
-                            <div className="w-3 h-3 rounded-full bg-red-500/80" />
-                            <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-                            <div className="w-3 h-3 rounded-full bg-green-500/80" />
-                          </div>
-                          <span className="text-[10px] text-zinc-500 font-mono ml-2">
-                            {thinkingAgent || 'agent'} — streaming
-                          </span>
-                          <span className="ml-auto flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                            <span className="text-[9px] text-cyan-400 font-mono uppercase tracking-wider">
-                              LIVE
-                            </span>
-                          </span>
-                        </div>
-                        {/* Terminal body */}
-                        <div className="bg-zinc-950 p-3 max-h-[250px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
-                          <pre className="m-0 text-[11px] font-mono leading-relaxed whitespace-pre-wrap break-words text-emerald-400/90">
-                            {streamingTokens}
-                            <span className="inline-block w-2 h-4 ml-0.5 bg-emerald-400 animate-pulse align-middle" />
-                          </pre>
-                        </div>
-                      </div>
-                    ) : (
-                      /* Activity OFF: Simple processing indicator */
-                      <div className="flex items-center gap-2 mb-1 text-primary">
-                        <div className="p-1 rounded bg-primary/10 border-primary/30">
-                          <Sparkles className="w-4 h-4" />
-                        </div>
-                        <span className="font-bold text-xs uppercase tracking-wider">
-                          {thinkingAgent || 'Processing'}
-                        </span>
-                        <span className="inline-block w-1.5 h-4 ml-1 bg-primary animate-pulse" />
-                      </div>
-                    )}
+                    <StreamingTerminal
+                      streamingTokens={streamingTokens}
+                      thinkingAgent={thinkingAgent}
+                    />
+                  </div>
+                )}
+
+                {/* Streaming Sections Inline - Only when Activity ON */}
+                {isActivityPanelOpen && streamingSections.length > 0 && (
+                  <div className="mb-4 space-y-2">
+                    <StreamingSectionsInline sections={streamingSections} />
                   </div>
                 )}
 
@@ -1542,22 +1547,30 @@ To get started, tell me about the game you're designing. What **genre** and **pl
                   </div>
                 )}
 
-                {/* Smart Quick Actions - Only show when loop is selected */}
-                {!isSending && !isTokenStreaming && currentLoopId && (
-                  <div className="mt-4 border-t border-border/10 pt-4 px-4 pb-2">
-                    <div className="flex items-center gap-2 mb-1.5 px-1">
-                      <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">
-                        Suggested
-                      </span>
+                {/* Smart Quick Actions - Always render container for tour selector */}
+                <div id={TOUR_STEP_IDS.LOOP_QUICK_ACTIONS} className="mt-4 border-t border-border/10 pt-4 px-4 pb-2">
+                  {!isSending && !isTokenStreaming && currentLoopId ? (
+                    <>
+                      <div className="flex items-center gap-2 mb-1.5 px-1">
+                        <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">
+                          Suggested
+                        </span>
+                      </div>
+                      <SmartQuickActions
+                        currentPhase="loop_design"
+                        onSendMessage={handleSendMessage}
+                        proposeLabel="Analyze loops"
+                        proposePrompt="Analyze the current game loops and suggest improvements or next steps."
+                      />
+                    </>
+                  ) : (
+                    <div className="text-center py-2">
+                      <p className="text-xs text-muted-foreground">
+                        Quick actions appear when a loop is selected
+                      </p>
                     </div>
-                    <SmartQuickActions
-                      currentPhase="loop_design"
-                      onSendMessage={handleSendMessage}
-                      proposeLabel="Analyze loops"
-                      proposePrompt="Analyze the current game loops and suggest improvements or next steps."
-                    />
-                  </div>
-                )}
+                  )}
+                </div>
 
                 {/* No Loop Selected Message */}
                 {!currentLoopId && !isSending && (

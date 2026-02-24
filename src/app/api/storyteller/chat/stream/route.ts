@@ -10,9 +10,53 @@ import {
   getActionTypeForSection,
 } from '@/domains/storyteller/config/action-config'
 import { budgetContext, type RawContextParts } from '@/domains/storyteller/context/token-budget'
+import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
 
 // Node.js Runtime required for Mastra core dependencies
+// Node.js Runtime required for Mastra core dependencies
 export const runtime = 'nodejs'
+
+// Interfaces for structured data
+interface Character {
+  id: string
+  name: string
+  role?: string
+  description?: string
+  psychology?: Record<string, unknown>
+}
+
+interface Beat {
+  id: string
+  logline?: string
+  sequence?: number
+  title?: string
+  beatType?: string
+}
+
+interface StreamChunk {
+  type: string
+  payload?: any
+}
+
+interface StoryPlan {
+  cast?: Character[]
+  keyCharacters?: Character[]
+  premise?: Record<string, unknown>
+  episodePremise?: Record<string, unknown>
+  worldDescription?: string
+  genre?: string | string[]
+  tone?: string | string[]
+  centralTheme?: string
+  worldRules?: Array<{ category?: string; rule: string; consequence?: string }>
+  factions?: Array<{ id?: string; name: string; ideology?: string; description?: string }>
+  inspirations?: {
+    movies?: Array<string | { title: string }>
+    books?: Array<string | { title: string }>
+    games?: Array<string | { title: string }>
+  }
+  sequences?: Array<{ name: string; description?: string }>
+  masterPrompt?: string
+}
 
 // Import Langfuse observability with enhanced tracing
 import {
@@ -170,11 +214,11 @@ export async function POST(req: Request) {
           import('@/services/storyteller.service').then(async m => {
             const [charsReq, beatsReq] = await Promise.all([
               m.storytellerService
-                .listCharacters({ projectId }, { userId: 'system-bypass' as any })
+                .listCharacters({ projectId }, { userId: session.user.id })
                 .catch(() => ({ characters: [] })),
               episodeId
                 ? m.storytellerService
-                  .listBeats({ episodeId }, { userId: 'system-bypass' as any })
+                  .listBeats({ episodeId }, { userId: session.user.id })
                   .catch(() => ({ beats: [] }))
                 : Promise.resolve({ beats: [] }),
             ])
@@ -185,7 +229,7 @@ export async function POST(req: Request) {
         ])
 
         const rawBible = (projectData?.seriesBible as Record<string, unknown>) || {}
-        const storyPlan = (storyPlanData?.content as Record<string, unknown>) || {}
+        const storyPlan = ((storyPlanData?.content as unknown) as StoryPlan) || ({} as StoryPlan)
 
         // Flatten nested category objects from seriesBible (e.g., 'Setting', 'History', etc.)
         const knownCategories = [
@@ -211,25 +255,27 @@ export async function POST(req: Request) {
           projectData?.masterPrompt || bible.masterPrompt || storyPlan.masterPrompt || ''
         // Merge characters from DB table AND storyPlan.keyCharacters/cast
         // Users may define cast in the World Bible (stored in storyPlan) before syncing to the characters table
-        const dbCharacters = serviceData.characters || []
-        const planCast = (storyPlan.cast || storyPlan.keyCharacters || []) as any[]
-        const dbNames = new Set(dbCharacters.map((c: any) => c.name?.toLowerCase()))
+        const dbCharacters = (serviceData.characters as Character[]) || []
+        const planCast = storyPlan.cast || storyPlan.keyCharacters || []
+        const dbNames = new Set(dbCharacters.map(c => c.name?.toLowerCase()))
         const mergedCharacters = [
           ...dbCharacters,
-          ...planCast.filter((c: any) => c?.name && !dbNames.has(c.name.toLowerCase())),
+          ...planCast.filter(c => c?.name && !dbNames.has(c.name.toLowerCase())),
         ]
         const characters = mergedCharacters
         const beats = serviceData.beats || []
 
         // 2. Build context with token budget enforcement
         // Assemble each section separately, then run through budgetContext()
+        const linkReqs = getEntityLinkRequirements()
         const systemCtx = `=== IQ 200 CONTEXT ENGINEERING & ENTITY LINKS ===
 You are in a high-fidelity creative workspace. To maintain continuity and enable user interaction, you MUST use the following rules for entity references:
-1. ENTITY LINKS: Whenever you mention a Character, Faction, World Rule, or Episode, ALWAYS use the format: [Entity Name][entity-id].
-   Example: "[Marcus][char-123] challenged the [Council of Seven][faction-456]."
-2. CLICKABLE UI: These tags are rendered as clickable links and hover tooltips in the user's interface. Using them makes your intelligence visible and actionable.
-3. CONTEXT SYNTHESIS: Use the technical data below to weave a "connected" world. Don't just list facts; synthesize them into a brilliant narrative.
-4. IQ 200 REASONING: Your Council of Agents provides raw data; your job as Showrunner is to spot the "out of the box" connections they missed.
+1. ENTITY LINKS: Whenever you mention a Character, Faction, World Rule, Episode, Item, or Event, ALWAYS use the format: [Entity Name][entity-id].
+   Example: "[Marcus][char-123] challenged the [Council of Seven][faction-456] for the [One Ring][item-001]."
+2. REQUIRED MINIMUMS (in the prose only): The worldDescription narrative text (the paragraphs) MUST contain at least ${linkReqs.minItems} ITEM, ${linkReqs.minEvents} EVENT, and ${linkReqs.minRules} RULE links woven into the prose. Separate "Items:" / "Events:" / "Rules:" lists do NOT count—only [Name][item-id] etc. inside the worldDescription string. Weave entities into sentences; if below minimum, the tool will REJECT.
+3. CLICKABLE UI: These tags are rendered as clickable links and hover tooltips in the user's interface. Using them makes your intelligence visible and actionable.
+4. CONTEXT SYNTHESIS: Use the technical data below to weave a "connected" world. Don't just list facts; synthesize them into a brilliant narrative.
+5. IQ 200 REASONING: Your Council of Agents provides raw data; your job as Showrunner is to spot the "out of the box" connections they missed.
 
 === SYSTEM CONTEXT ===
 projectId: ${projectId}
@@ -274,6 +320,39 @@ ${Array.isArray(storyPlan.factions) && storyPlan.factions.length > 0
               .map((f: any) => {
                 const factionId = `faction-${f.id?.slice(0, 8) || f.name.toLowerCase().replace(/\s+/g, '-')}`
                 return `- [${f.name}][${factionId}]: ${f.ideology || f.description || 'No description'}`
+              })
+              .join('\n')
+            : '(none)'
+          }
+
+=== ITEMS ===
+${Array.isArray((storyPlan as any).items) && (storyPlan as any).items.length > 0
+            ? (storyPlan as any).items
+              .map((i: any) => {
+                const itemId = 'item-' + (i.id?.slice(0, 8) || i.name.toLowerCase().replace(/\s+/g, '-'))
+                return '- [' + i.name + '][' + itemId + ']: ' + (i.description || 'No description')
+              })
+              .join('\n')
+            : '(none)'
+          }
+
+=== EVENTS ===
+${Array.isArray((storyPlan as any).events) && (storyPlan as any).events.length > 0
+            ? (storyPlan as any).events
+              .map((e: any) => {
+                const eventId = 'event-' + (e.id?.slice(0, 8) || e.name.toLowerCase().replace(/\s+/g, '-'))
+                return '- [' + e.name + '][' + eventId + ']: ' + (e.description || 'No description')
+              })
+              .join('\n')
+            : '(none)'
+          }
+
+=== WORLD RULES ===
+${Array.isArray((storyPlan as any).worldRules) && (storyPlan as any).worldRules.length > 0
+            ? (storyPlan as any).worldRules
+              .map((r: any) => {
+                const ruleId = 'rule-' + (r.id?.slice(0, 8) || r.name?.toLowerCase().replace(/\s+/g, '-') || 'unknown')
+                return `- [${r.name || r.category || 'Rule'}][${ruleId}]: ${r.rule || 'No description'}`
               })
               .join('\n')
             : '(none)'
@@ -368,12 +447,15 @@ ${Array.isArray(storyPlan.sequences) && storyPlan.sequences.length > 0
 
     // No pattern matching - LLM decides what to update via tool calls
     // Section is extracted from the tool result's `keys` array
-    let detectedSection: BibleSection = 'full'
+    // No pattern matching - LLM decides what to update via tool calls
+    // Section is extracted from the tool result's `keys` array
+    let detectedSection: BibleSection | 'beats' = BibleSection.FULL
     const isSectionUpdate = false // Will be determined by tool call
     const sectionPrompt = '' // No forced section mode
 
     // Prepend context and AGENTIC INSTRUCTION
     let agenticInstruction = ''
+
     if (agenticMode) {
       agenticInstruction = `
 ### GENIUS MODE ENABLED (IQ 200)
@@ -452,60 +534,15 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
       } catch { } // Safe
     })
 
-    // Detect generation requests that MUST use tools (no text-only responses)
-    const generationKeywords = [
-      'soundtrack',
-      'music',
-      'youtube',
-      'track',
-      'song',
-      'inspiration',
-      'book',
-      'movie',
-      'game',
-      'reference',
-      'world rule',
-      'rule',
-      'law',
-      'constraint',
-      'plot twist',
-      'twist',
-      'faction',
-      'organization',
-      'group',
-      'character',
-      'cast',
-      'roadmap',
-      'episode',
-      'sequence',
-      'premise',
-      'hook',
-      'flaw',
-      'stake',
-      'generate',
-      'create',
-      'add',
-      'suggest',
-      'recommend',
-    ]
-    const messageLC = message.toLowerCase()
-    const isGenerationRequest =
-      generationKeywords.some(kw => messageLC.includes(kw)) &&
-      (messageLC.includes('generate') ||
-        messageLC.includes('create') ||
-        messageLC.includes('add') ||
-        messageLC.includes('suggest') ||
-        messageLC.includes('recommend') ||
-        messageLC.includes('give'))
-
+    // Log generation request detection (detection logic moved up before prompt construction)
     // Prepare context wrapper with memory for multi-turn conversations
     // See: https://mastra.ai/docs/agents/agent-memory
     const streamOptions: Record<string, unknown> = {
       // Use 'auto' for tool choice - 'required' causes infinite loops
       // The agent prompt already instructs to use tools for generation
       toolChoice: 'auto',
-      // Allow up to 5 steps for complex multi-tool workflows
-      maxSteps: 5,
+      // Allow up to 10 steps for complex multi-tool workflows
+      maxSteps: 10,
       telemetry: {
         isEnabled: true,
         traceId,
@@ -521,11 +558,6 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
         resource: projectId || 'anonymous',
         thread: episodeId || `project-${projectId}` || 'general',
       },
-    }
-
-    // Log generation request detection
-    if (isGenerationRequest) {
-      console.log('[Stream] Generation request detected')
     }
 
     // Track existing bible data for "before" comparison in diff viewer
@@ -571,8 +603,8 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
     function getActionDedupeKey(toolName: string, section: string, payload: Record<string, unknown>): string {
       // For beat management, use beat ID or title for deduplication
       if (toolName === 'manage_beat') {
-        const beatId = payload?.id || payload?.beatId || payload?.beat?.id
-        const beatTitle = payload?.title || payload?.beat?.title || 'untitled'
+        const beatId = (payload as any)?.id || (payload as any)?.beatId || (payload as any)?.beat?.id
+        const beatTitle = (payload as any)?.title || (payload as any)?.beat?.title || 'untitled'
         return `manage_beat:${beatId || beatTitle}`
       }
 
@@ -752,7 +784,8 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
           }
 
           try {
-            for await (const part of result.fullStream as any) {
+            for await (const chunk of result.fullStream) {
+              const part = chunk as StreamChunk
               try {
                 const { type, payload } = part || {}
                 if (!type) continue
@@ -1157,7 +1190,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
                     // FALLBACK: If we detected a section update but no action was mapped,
                     // create a generic action based on the section
                     if (!actionType && isSectionUpdate && toolName === 'update_world_bible') {
-                      actionType = getActionTypeForSection(detectedSection)
+                      actionType = getActionTypeForSection(detectedSection as BibleSection)
                       actionPayload = parsed?.updatedFields || parsed || {}
                       requiresApproval = true
                       console.log(
@@ -1279,20 +1312,21 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
           } catch (streamIterationError: unknown) {
             // The fullStream iterator threw - extract error details and send to client
             console.error('Stream iteration error:', streamIterationError)
+            const err = streamIterationError as any
 
             // Extract user-friendly error message
             let errorMessage = 'An error occurred while processing your request.'
             let errorCode = 'STREAM_ERROR'
 
-            if (streamIterationError?.error?.code === 'insufficient_quota') {
+            if (err?.error?.code === 'insufficient_quota') {
               errorMessage =
                 '⚠️ OpenAI API quota exceeded. Please check your billing details or try again later.'
               errorCode = 'QUOTA_EXCEEDED'
-            } else if (streamIterationError?.error?.message) {
-              errorMessage = streamIterationError.error.message
-              errorCode = streamIterationError.error.code || 'API_ERROR'
-            } else if (streamIterationError?.message) {
-              errorMessage = getErrorMessage(streamIterationError)
+            } else if (err?.error?.message) {
+              errorMessage = err.error.message
+              errorCode = err.error.code || 'API_ERROR'
+            } else if (err?.message) {
+              errorMessage = getErrorMessage(err)
             }
 
             // Send error event to client
@@ -1385,7 +1419,11 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
               output: langfuseOutput,
               input: promptWithContext || '(no input)', // Ensure trace input is also set
             })
-            langfuseClient?.flush().catch(() => { })
+            if (langfuseClient) {
+              try {
+                await langfuseClient.flush()
+              } catch { }
+            }
           } catch {
             /* ignore langfuse errors */
           }
@@ -1401,7 +1439,11 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
               level: 'ERROR',
               statusMessage: error instanceof Error ? error.message : 'Unknown error',
             })
-            langfuseClient?.flush().catch(() => { })
+            if (langfuseClient) {
+              try {
+                await langfuseClient.flush()
+              } catch { }
+            }
           } catch {
             /* ignore */
           }

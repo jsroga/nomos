@@ -28,17 +28,59 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    const [project] = await db
-      .select({ seriesBible: projects.seriesBible })
-      .from(projects)
-      .where(eq(projects.id, projectId))
-      .limit(1)
+    const project = await db.query.projects.findFirst({
+      where: eq(projects.id, projectId),
+      with: {
+        seriesBibleTable: true,
+        storyPlanTable: true,
+      },
+    })
 
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    const bible = project.seriesBible as SeriesBible
+    // Priority 1: Use dedicated series_bibles / story_plans table content
+    // Priority 2: Use project.series_bible / project.story_plan column (legacy/fallback)
+    const rawBible = (project.seriesBibleTable?.content ||
+      project.seriesBible ||
+      {}) as SeriesBible
+
+    // StoryPlan often contains the latest world rules, factions, etc.
+    const rawStoryPlan = (project.storyPlanTable?.content ||
+      project.storyPlan ||
+      {}) as any
+
+    // Merge logic matching the client-side hydration for consistency
+    const bible = { ...rawBible } as SeriesBible
+
+    // If storyPlan has updated fields, apply them
+    if (rawStoryPlan) {
+      // Arrays that should be merged or overridden from storyPlan if present
+      if (rawStoryPlan.worldRules?.length > 0) bible.worldRules = rawStoryPlan.worldRules
+      if (rawStoryPlan.factions?.length > 0) bible.factions = rawStoryPlan.factions
+      // If bible doesn't have setting but storyPlan does (unlikely but possible)
+      if (!bible.setting && rawStoryPlan.setting) bible.setting = rawStoryPlan.setting
+      // If bible lacks description but storyPlan has it
+      if (!bible.worldDescription && rawStoryPlan.worldDescription) bible.worldDescription = rawStoryPlan.worldDescription
+
+      // Also check updatedFields pattern
+      if (rawBible.updatedFields) {
+        if (rawBible.updatedFields.worldRules?.length > 0) bible.worldRules = rawBible.updatedFields.worldRules
+        if (rawBible.updatedFields.factions?.length > 0) bible.factions = rawBible.updatedFields.factions
+      }
+    }
+
+    console.log('[WorldSummary] Project fetched:', {
+      id: project.id,
+      hasSeriesBibleTable: !!project.seriesBibleTable,
+      hasStoryPlanTable: !!project.storyPlanTable,
+      bibleContentKeys: Object.keys(bible),
+      bibleTitle: bible.title,
+      bibleSetting: bible.setting,
+      bibleRules: bible.worldRules?.length,
+      fromStoryPlan: !!rawStoryPlan
+    })
 
     if (!bible || (!bible.title && !bible.logline && !bible.premise)) {
       console.warn('Series Bible not created, returning empty summary')

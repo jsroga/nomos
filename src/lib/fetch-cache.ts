@@ -73,24 +73,3 @@ export function clearFetchCache(key?: string): void {
     fetchCache.clear()
   }
 }
-
-/**
- * Creates a scoped cache with a prefix for all keys.
- * Useful for per-project or per-feature caching.
- */
-function createScopedCache(prefix: string) {
-  return {
-    fetch: <T>(key: string, fetcher: () => Promise<T>, options?: { ttlMs?: number }) =>
-      cachedFetch<T>(`${prefix}:${key}`, fetcher, options),
-    clear: (key?: string) => clearFetchCache(key ? `${prefix}:${key}` : undefined),
-    clearAll: () => {
-      // Clear all keys with this prefix
-      const keys = Array.from(fetchCache.keys())
-      for (const k of keys) {
-        if (k.startsWith(`${prefix}:`)) {
-          fetchCache.delete(k)
-        }
-      }
-    },
-  }
-}

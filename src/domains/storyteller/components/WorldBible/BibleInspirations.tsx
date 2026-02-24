@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useBible } from './BibleContext'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
 
-interface BibleInspirationsProps {}
+interface BibleInspirationsProps { }
 
 export const BibleInspirations: React.FC<BibleInspirationsProps> = () => {
   const {
@@ -24,8 +24,9 @@ export const BibleInspirations: React.FC<BibleInspirationsProps> = () => {
   const pendingAction = pendingActions?.inspirations
 
   // Normalize inspirations - handle both flat array and categorized object formats
+  // Use localPlan for display when not editing to show latest saved data
   const normalizedInspirations = React.useMemo(() => {
-    const raw = storyPlan.inspirations
+    const raw = isEditing ? localPlan.inspirations : (localPlan.inspirations || storyPlan.inspirations)
 
     // If already in correct format (object with books/movies/games keys)
     if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
@@ -76,7 +77,7 @@ export const BibleInspirations: React.FC<BibleInspirationsProps> = () => {
     }
 
     return { books: [], movies: [], games: [] }
-  }, [storyPlan.inspirations])
+  }, [isEditing, localPlan.inspirations, storyPlan.inspirations])
 
   return (
     <section className={isLoading || pendingAction ? 'relative' : ''}>
@@ -101,7 +102,7 @@ export const BibleInspirations: React.FC<BibleInspirationsProps> = () => {
           <button
             onClick={() =>
               onSendMessage?.(
-                "Generate diverse inspirations for this world - include relevant books, movies, and games. For each, provide the exact title and 1-2 sentences describing what it is and why it's thematically relevant.",
+                "Generate BRAND NEW diverse inspirations for this world - include relevant books, movies, and games. For each, provide the exact title and 1-2 sentences describing what it is and why it's thematically relevant. IMPORTANT: Take a completely new creative direction and do NOT repeat previous suggestions.",
                 'inspirations'
               )
             }

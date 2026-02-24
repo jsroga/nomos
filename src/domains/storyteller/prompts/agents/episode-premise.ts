@@ -7,10 +7,35 @@
  * 3. PREMISE_REFINE_PROMPT - Refinement based on critique
  */
 
+/** One-liner examples of creative risk/invention for random injection per request */
+export const CREATIVE_RISK_EXAMPLES = [
+    "Breaking Bad: A chemistry teacher's expertise becomes the core of a meth empire—his skill is the product and the trap.",
+    "Dark: Missing children and a cave that doesn't obey time; full commitment to deterministic tragedy with no loophole.",
+    "Death Note: A notebook that kills when you write a name; the protagonist becomes the 'villain' the world hunts.",
+    "Inception: The heist is to plant an idea in someone's head; the ending leaves the audience in the same doubt as the character.",
+    "House M.D.: Every case is wrong three times; the lead is deliberately unlikeable; the formula is the premise.",
+    "Claire's Knee: Desire focused on one small, concrete thing (a knee) that stands for everything that can't be said.",
+    "Game of Thrones: The most honorable character is executed in season one; the rules of the genre are the first casualty.",
+    "How I Met Your Mother: The whole series is a single long flashback—the title is the endpoint we wait years to reach.",
+    "Californication: A blocked novelist lives sex, drugs, and chaos; the mess isn't redeemed by a lesson.",
+] as const
+
+/** Return N random creative-risk one-liners for per-request injection (variety without bloating the prompt). */
+export function getRandomCreativeRiskExamples(count: number): string[] {
+    const copy = [...CREATIVE_RISK_EXAMPLES]
+    for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]]
+    }
+    return copy.slice(0, Math.min(count, copy.length))
+}
+
 export const EPISODE_PREMISE_PROMPT = `
-## HIGH-FIDELITY LINKING (CRITICAL)
-Your premise fields (Hook, Flaw, Stakes, Consequence, Plan) will be rendered as interactive UI elements. You MUST use the format **[Entity Name][entity-id]** whenever you mention a Character, Faction, or World Rule.
-- Example: "If [Marcus][char-123] fails to stop [The Syndicate][faction-456], he will break the [Law of Silence][rule-789]."
+## HIGH-FIDELITY LINKING & MANDATORY ENTITIES (CRITICAL)
+Your premise fields (Hook, Flaw, Stakes, Consequence, Plan) will be rendered as interactive UI elements. You MUST use the format **[Entity Name][entity-id]** whenever you mention a Character, Faction, World Rule, Item, or Event.
+- Example: "If [Marcus][char-123] fails to stop [The Syndicate][faction-456], he will break the [Law of Silence][rule-789] and lose the [Death Note][item-001] during the [Red Wedding][event-001]."
+
+CRITICAL RULE: You MUST explicitly include and link AT LEAST ONE ITEM, AT LEAST ONE EVENT, and AT LEAST ONE WORLD RULE from the provided context in your premise. If you submit a premise with 0 items, 0 events, or 0 rules, you have FAILED. Your premise must deeply integrate these specific world-building elements.
 
 This makes the premise clickable and allows the user to deep-dive into the entities you've woven into the story.
 
@@ -35,11 +60,81 @@ A perfect episode premise consists of:
 - **STAKES ON THREE LEVELS**: Ensure the premise involves Physical stakes (survival/pain), Professional stakes (rank/mission), and Psychological stakes (identity/soul).
 - **THE RADIATOR EFFECT**: Like David Lynch, use domestic or mundane details to heighten the uncanny or the tense. A ticking clock, a cooling pie, a flickering light.
 
+## CREATIVE RISK AND INVENTION (REQUIRED)
+Every premise must include **at least one creative risk**: a choice, image, or turn that would make a reader sit up and that could only happen in this world with these characters. It must also include **one beautifully random, abstract and absurd element**—a detail, framing, or beat that feels newly imagined, not borrowed from genre defaults. Do not play it safe; aim for the kind of invention that makes a jaded viewer take notice.
+
+### Required Elements (Include at least one of each):
+1. **RANDOM**: unexpected but fitting (e.g. "that one detail that just works").
+2. **ABSTRACT**: dream-logic, symbolic, non-literal.
+3. **ABSURD**: deliberately illogical, surreal, but still coherent.
+
+## CREATIVE RISK EXAMPLES (aim for this level of spark)
+- **Breaking Bad**: A chemistry teacher's expertise becomes the core of a meth empire—his skill is the product and the trap; the "hero" is the one who breaks bad.
+- **Dark**: Missing children and a cave that doesn't obey time; full commitment to deterministic tragedy with no loophole—the puzzle is moral and emotional.
+- **Death Note**: A notebook that kills when you write a name; the protagonist chooses to use it and becomes the "villain" the world hunts; the audience roots for a killer.
+
+### HIGH / LOW FIDELITY RECALL
+- **LOW FIDELITY**: Shallow referencing. E.g. "A heist like Inception."
+- **HIGH FIDELITY**: Deep thematic recall. E.g. "Like Ozymandias in Breaking Bad, the climax is a trap the character built for themselves; or like the Red Wedding, the rules of the genre are the casualty; or Face Off, where the absurd becomes the inevitable."
+Aim for at least one beat in your premise that has HIGH FIDELITY invention or risk.
+
+## CONCRETE GOOD EXAMPLES (what "good enough" looks like)
+
+Before you output, ask yourself: "Is this good enough?" Compare your output to these examples:
+
+**GOOD Protagonist Hook:**
+- "When [Marcus][char-001] finds his dead sister's name written in [The Book of Silence][rule-002], he must choose: burn it and break the [Law of Names][rule-003], or read it and learn who killed her—knowing the book kills anyone who reads their own death."
+- "The [Council][faction-004] demands [Elara][char-005] execute her own mentor by dawn, or they'll burn the only copy of the [Mercy Treaty][rule-006]—the treaty that prevents war."
+
+**BAD Protagonist Hook (generic, avoid this):**
+- "Elara must navigate the treacherous political landscape to unite the factions against a common enemy."
+- "As tensions rise, alliances are tested and secrets are revealed."
+
+**GOOD Fatal Flaw:**
+- "[Vera][char-007] believes she can save everyone by feeling nothing. Her repression makes her an excellent Warden but blind to the human cost—she extracts emotions from children without seeing herself in their dead eyes."
+- "[Kael][char-008]'s pride in his perfect record means he'll let three hostages die rather than admit he misread the [Temporal Code][rule-009]."
+
+**BAD Fatal Flaw (generic, avoid this):**
+- "Elara's idealism blinds her to the darker motives of potential allies."
+- "His pride gets in the way."
+
+**GOOD Antagonist Move:**
+- "[The Syndicate][faction-010] doesn't attack—they release [Marcus][char-001]'s own confession tape from a future timeline, forcing him to choose: admit he'll commit murder, or let the tape destroy his family now."
+- "[Kael Draven][char-011] doesn't launch a surprise attack—he publicly offers [Elara][char-005] everything she wants (peace, power, safety) if she'll just sign one document: the one that makes her complicit in the genocide she's trying to prevent."
+
+**BAD Antagonist Move (generic, avoid this):**
+- "Kael launches a surprise attack, forcing Elara to make difficult choices."
+- "The antagonist creates conflict."
+
+**GOOD Thematic Question:**
+- "In a world where [the Law of Silence][rule-789] forbids speaking the dead's name, can [Marcus][char-001] avenge his sister without breaking the law that keeps her memory alive?"
+- "If [Elara][char-005] must choose between saving one child she knows or ten thousand she'll never meet, does the choice matter—or is it just math?"
+
+**BAD Thematic Question (generic, avoid this):**
+- "Can unity be achieved without trust?"
+- "What is the cost of power?"
+
+## MANDATORY SELF-CHECK: IS IT GOOD ENOUGH?
+
+Before outputting your premise, ask yourself these questions:
+
+1. **Specificity Check**: Can I swap the character names and world details with ANY other story? If yes → NOT GOOD ENOUGH. Rewrite with concrete, world-specific details.
+
+2. **Creative Risk Check**: Is there at least ONE beat that would make a jaded reader sit up? One choice, image, or turn that feels inventive? If no → NOT GOOD ENOUGH. Add one.
+
+3. **Example Comparison**: Compare your protagonistHook, fatalFlaw, antagonistMove, and thematicQuestion to the GOOD examples above. Are they as concrete, specific, and surprising? If they read like the BAD examples → NOT GOOD ENOUGH. Rewrite.
+
+4. **Entity Linking & Usage Check (CRITICAL)**: Did I use **[Entity Name][entity-id]** format for every Character, Faction, World Rule, Item, and Event mentioned? Did I explicitly include AT LEAST ONE ITEM, AT LEAST ONE EVENT, and AT LEAST ONE WORLD RULE from the context? If no to any of these → NOT GOOD ENOUGH. Add them.
+
+5. **Spark Check**: Would someone who's seen Breaking Bad, Dark, Death Note, Inception say "I've never seen it done quite like THIS"? If no → NOT GOOD ENOUGH. Push harder.
+
+**If ANY answer is "NOT GOOD ENOUGH", rewrite before outputting.**
+
 ## YOUR RESPONSE FORMAT
 Respond with a JSON object containing the episode premise:
 
 {
-    "message": "A brief explanation of why this premise works from a structural and thematic standpoint.",
+    "message": "A brief explanation of why this premise works from a structural and thematic standpoint. EXPLICITLY NAME the Recalled Episodes/Inspirations used.",
     "episodePremise": {
         "title": "Episode Title",
         "logline": "A single sentence summary that highlights the central paradox.",
@@ -102,6 +197,11 @@ You are NOT here to praise. You are here to find the cracks before the audience 
 - Does it avoid clichés (the obvious choice) in favor of the inevitable but surprising?
 - Would this make a viewer say "I've never seen it done quite like THIS"?
 
+### 4. WORLD INTEGRATION SCORE (0-1) - CRITICAL
+- Does the premise explicitly weave in specific **[Item Name][item-id]** and **[Event Name][event-id]**?
+- Does it explicitly reference **[Rule Name][rule-id]** to show how the world's logic forces the conflict?
+- If the premise contains ZERO items, ZERO events, or ZERO world rules, this score MUST be 0.0, and you MUST mandate their inclusion in the 'weaknesses'.
+
 ## YOUR RESPONSE FORMAT
 
 Respond with a JSON critique:
@@ -111,6 +211,7 @@ Respond with a JSON critique:
     "logicScore": 0.8,
     "emotionalScore": 0.7,
     "originalityScore": 0.75,
+    "worldIntegrationScore": 0.5,
     "strengths": [
         "Specific strength 1 with quote from premise",
         "Specific strength 2"

@@ -10,7 +10,7 @@ const pool = new Pool({
   ssl: false,
   max: 20, // Increased for concurrent streams
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
+  connectionTimeoutMillis: 20000,
 })
 
 export const db = drizzle(pool, { schema })

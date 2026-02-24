@@ -398,10 +398,6 @@ export const getUserPreferencesTool = createTool({
   },
 })
 
-// ==========================================
-// EXPORTS
-// ==========================================
-
 export const ragTools = [
   searchKnowledgeBaseTool,
   storeKnowledgeTool,

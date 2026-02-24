@@ -9,6 +9,7 @@ import { Plus, Palette, Package, Info, Eye, EyeOff } from 'lucide-react'
 import { LocalStorageKeys } from '@/constants/localStorage'
 import { DomainSidebar, SidebarSection, SidebarEmptyState } from '@/components/ui/domain-sidebar'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { TOUR_STEP_IDS } from '@/lib/tour-constants'
 
 export const AssetExporterSidebar: React.FC = () => {
   const defaultMasterPrompt = ''
@@ -41,7 +42,7 @@ export const AssetExporterSidebar: React.FC = () => {
         {currentProject ? (
           <div className="space-y-6">
             {/* Master Prompt */}
-            {/* Master Prompt */}
+            <div id={TOUR_STEP_IDS.ASSET_MASTER_PROMPT}>
             <SidebarSection
               title="Master Prompt (Style)"
               icon={<Palette size={12} />}
@@ -68,6 +69,7 @@ export const AssetExporterSidebar: React.FC = () => {
                 This style will be applied to generated assets
               </p>
             </SidebarSection>
+            </div>
 
             {/* Assets */}
             <SidebarSection
@@ -90,7 +92,7 @@ export const AssetExporterSidebar: React.FC = () => {
               }
             >
               {/* Upload Zone */}
-              <div className="mb-4" id="tour-asset-upload-zone">
+              <div className="mb-4" id={TOUR_STEP_IDS.ASSET_UPLOAD_ZONE}>
                 <AssetUploadZone
                   projectId={currentProject.id}
                   onUploadComplete={assetIds => {

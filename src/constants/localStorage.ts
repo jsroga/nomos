@@ -4,7 +4,6 @@ export enum LocalStorageKeys {
   FORCE_STORYTELLER_STATE = 'forceStorytellerState',
 
   // AI Configuration
-  AI_CONFIG_OPENAI = 'ai-config-openai',
   AI_CONFIG_GEMINI = 'ai-config-gemini',
   AI_CONFIG_NANO_BANANA = 'ai-config-nano-banana',
   AI_CONFIG_STABILITY = 'ai-config-stability',

@@ -48,6 +48,13 @@ export type MazurJudgment = z.infer<typeof MazurJudgmentSchema>
 function buildPersonaPrompt(personaId: keyof typeof PERSONAS): string {
   const p = PERSONAS[personaId]
 
+  const originalityAddendum =
+    personaId === 'ursula-le-guin'
+      ? `
+
+ORIGINALITY / SPARK (you must answer): Is there a spark of invention or a creative risk? Would any line make a jaded reader sit up? If everything is competent but unsurprising—no bold choice, no moment that could only exist in this story—score originality LOWER.`
+      : ''
+
   return `You are ${p.name} (${p.alias}), judging creative writing.
 
 YOUR DIMENSION: ${p.dimension}
@@ -64,6 +71,7 @@ AI SLOP SIGNALS (you can smell these a mile away):
 ${p.slopSignals.map(s => `- ${s}`).join('\n')}
 
 YOUR VOICE: ${p.voice}
+${originalityAddendum}
 
 SCORING:
 - 0.9-1.0: Exceptional. You would be proud to put your name on this.

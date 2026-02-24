@@ -2,6 +2,11 @@ import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import { put } from '@vercel/blob'
 import { FIDELITY_PROMPTS, getCreativityPrompt } from '@/lib/server/prompts'
+import {
+  logLLMRequestStart,
+  logLLMRequestComplete,
+  logLLMRequestError,
+} from './utils/llm-logger'
 
 // NOTE: getCreativityPrompt is now imported from @/constants/prompts
 
@@ -56,37 +61,59 @@ export const enhanceFidelityTask = task({
 
     const finalPrompt = FIDELITY_PROMPTS.GEMINI(stylePrompt, creativityPrompt, styleRefHint)
 
+    const geminiPayload = {
+      contents: [
+        {
+          parts: [
+            { text: finalPrompt },
+            {
+              inline_data: {
+                mime_type: 'image/png',
+                data: imageBase64.replace(/^data:image\/\w+;base64,/, ''),
+              },
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        responseModalities: ['TEXT', 'IMAGE'],
+      },
+    }
+
     logger.info('Calling Gemini API for fidelity enhancement', {
       model,
       promptLength: finalPrompt.length,
     })
 
+    // Log LLM request start
+    logLLMRequestStart({
+      provider: 'gemini',
+      model,
+      prompt: finalPrompt,
+      inputImageUrls: ['[Input Image Base64]'],
+      input: geminiPayload,
+      metadata: {
+        task: 'fidelity-enhancement',
+        creativity,
+      },
+    })
+
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: finalPrompt },
-              {
-                inline_data: {
-                  mime_type: 'image/png',
-                  data: imageBase64.replace(/^data:image\/\w+;base64,/, ''),
-                },
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          responseModalities: ['TEXT', 'IMAGE'],
-        },
-      }),
+      body: JSON.stringify(geminiPayload),
     })
 
     if (!response.ok) {
       const errorText = await response.text()
       logger.error('Gemini API error', { status: response.status, errorText })
+      logLLMRequestError({
+        provider: 'gemini',
+        model,
+        prompt: finalPrompt,
+        error: `HTTP ${response.status}: ${errorText}`,
+        input: geminiPayload,
+      })
       throw new Error(`Gemini API error: ${response.status} - ${errorText}`)
     }
 
@@ -94,15 +121,39 @@ export const enhanceFidelityTask = task({
     const candidate = data.candidates?.[0]
 
     if (!candidate) {
+      logLLMRequestError({
+        provider: 'gemini',
+        model,
+        prompt: finalPrompt,
+        error: 'No candidates returned from Gemini',
+        input: geminiPayload,
+        output: data,
+      })
       throw new Error('No candidates returned from Gemini')
     }
 
     if (candidate.finishReason === 'SAFETY') {
+      logLLMRequestError({
+        provider: 'gemini',
+        model,
+        prompt: finalPrompt,
+        error: 'Generation blocked by safety filters',
+        input: geminiPayload,
+        output: data,
+      })
       throw new Error('Generation blocked by safety filters')
     }
 
     const parts = candidate.content?.parts
     if (!parts || parts.length === 0) {
+      logLLMRequestError({
+        provider: 'gemini',
+        model,
+        prompt: finalPrompt,
+        error: 'No content parts returned',
+        input: geminiPayload,
+        output: data,
+      })
       throw new Error('No content parts returned')
     }
 
@@ -111,15 +162,42 @@ export const enhanceFidelityTask = task({
     if (!imagePart) {
       const textPart = parts.find((p: any) => p.text)
       if (textPart) {
-        throw new Error(
-          `Gemini returned text instead of image: ${textPart.text.substring(0, 100)}...`
-        )
+        const errorMsg = `Gemini returned text instead of image: ${textPart.text.substring(0, 100)}...`
+        logLLMRequestError({
+          provider: 'gemini',
+          model,
+          prompt: finalPrompt,
+          error: errorMsg,
+          input: geminiPayload,
+          output: data,
+        })
+        throw new Error(errorMsg)
       }
+      logLLMRequestError({
+        provider: 'gemini',
+        model,
+        prompt: finalPrompt,
+        error: 'No image found in Gemini response',
+        input: geminiPayload,
+        output: data,
+      })
       throw new Error('No image found in Gemini response')
     }
 
     const inlineData = imagePart.inline_data || imagePart.inlineData
     const enhancedImageBase64 = inlineData.data
+
+    // Log successful completion
+    logLLMRequestComplete({
+      provider: 'gemini',
+      model,
+      prompt: finalPrompt,
+      outputImageUrls: ['[Enhanced Image Base64]'],
+      output: {
+        finishReason: candidate.finishReason,
+        hasImage: true,
+      },
+    })
 
     logger.info('Gemini fidelity enhancement completed', {
       imageLength: enhancedImageBase64?.length,

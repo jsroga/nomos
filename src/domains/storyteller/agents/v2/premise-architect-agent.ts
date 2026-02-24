@@ -24,10 +24,11 @@ import {
   langfuse,
 } from '../../../../agent-core/observability'
 import { getWorkflowTraceId } from '../../utils/workflow-context'
-import { EPISODE_PREMISE_PROMPT } from '../../prompts/agents/episode-premise'
+import { EPISODE_PREMISE_PROMPT, getRandomCreativeRiskExamples } from '../../prompts/agents/episode-premise'
 import { MODELS, IMPROVEMENT_LOOP } from '../../../../agent-core/models'
 import { getMastraInstance } from './mastra-instance'
 import { runImprovementLoop, judgeMazur, MazurJudgment } from '../../../../agent-core/judging'
+import { ReferenceValidator } from '../../services/reference-validator'
 
 /**
  * Zod Schema for Episode Premise (Ozymandias Framework)
@@ -165,11 +166,14 @@ export class PremiseArchitectAgent {
       'PremiseArchitectAgent.generatePremise',
       async () => {
         // === STEP 1: Initial Generation with Structured Output ===
+        const randomExamples = getRandomCreativeRiskExamples(3)
         const initialPrompt = `Generate a new episode premise.
 Context:
 ${context}
 
-Ensure strict adherence to the Ozymandias Framework.`
+Ensure strict adherence to the Ozymandias Framework.
+
+This request, emphasize this level of invention (random examples):\n- ${randomExamples.join('\n- ')}`
 
         // Use Mastra structured output for reliable typed responses
         // See: https://mastra.ai/docs/agents/structured-output
@@ -283,8 +287,11 @@ Ensure strict adherence to the Ozymandias Framework.`
           `Final score: ${loopResult.finalScore.toFixed(3)}`
         )
 
+        // Validate references inside the generated JSON text
+        const validatedText = await ReferenceValidator.validate(loopResult.finalContent, projectId)
+
         return {
-          text: loopResult.finalContent,
+          text: validatedText,
           thinking,
           mazurJudgment: loopResult.iterations[loopResult.iterations.length - 1].judgment,
           iterations: loopResult.totalIterations,
@@ -312,7 +319,8 @@ Ensure strict adherence to the Ozymandias Framework.`
       | 'tenPointsPlan'
       | 'title'
       | 'logline'
-      | 'thematicFocus',
+      | 'thematicFocus'
+      | 'transformation',
     existingPremise: any,
     context: string,
     traceId?: string
@@ -334,6 +342,19 @@ Ensure strict adherence to the Ozymandias Framework.`
       transformation: 'the character/world transformation arc',
     }
 
+    const goodExamples: Record<string, string> = {
+      protagonistHook: 'GOOD: "When [Marcus][char-001] finds his dead sister\'s name in [The Book of Silence][rule-002], he must choose: burn it and break the [Law of Names][rule-003], or read it and learn who killed her—knowing the book kills anyone who reads their own death."\nBAD: "Elara must navigate the treacherous political landscape to unite the factions against a common enemy."',
+      fatalFlaw: 'GOOD: "[Vera][char-007] believes she can save everyone by feeling nothing. Her repression makes her an excellent Warden but blind to the human cost—she extracts emotions from children without seeing herself in their dead eyes."\nBAD: "Elara\'s idealism blinds her to the darker motives of potential allies."',
+      antagonistMove: 'GOOD: "[The Syndicate][faction-010] doesn\'t attack—they release [Marcus][char-001]\'s own confession tape from a future timeline, forcing him to choose: admit he\'ll commit murder, or let the tape destroy his family now."\nBAD: "Kael launches a surprise attack, forcing Elara to make difficult choices."',
+      thematicQuestion: 'GOOD: "In a world where [the Law of Silence][rule-789] forbids speaking the dead\'s name, can [Marcus][char-001] avenge his sister without breaking the law that keeps her memory alive?"\nBAD: "Can unity be achieved without trust?"',
+      theHook: 'GOOD: "Opening: [Marcus][char-001] stands over [The Book of Silence][rule-002], his sister\'s name glowing on the page. He knows reading it will kill him, but burning it will erase her from history forever."\nBAD: "As tensions rise, alliances are tested."',
+      logline: 'GOOD: "A man must choose between avenging his sister\'s death and preserving the law that keeps her memory alive—knowing both choices will destroy him."\nBAD: "A hero must unite factions against a common enemy."',
+    }
+
+    const exampleText = goodExamples[section]
+      ? `\n\n**Examples of "good enough" for ${section}:**\n${goodExamples[section]}\n\nBefore outputting, ask: "Is it good enough?" Compare your output to the GOOD example. If it reads like the BAD example, rewrite with concrete, world-specific details.`
+      : '\n\nBefore outputting, ask: "Is it good enough?" Is it specific to this world and these characters? Does it include at least one inventive beat? If not, rewrite.'
+
     const prompt = `Regenerate ONLY the "${section}" section for this episode premise.
 
 Current premise:
@@ -343,7 +364,8 @@ Context:
 ${context.slice(0, 6000)}
 
 Generate a new, stronger version of ${sectionPrompts[section]}.
-Make it more specific, more visceral, and more logically inevitable.`
+Make it more specific, more visceral, and more logically inevitable.
+Include at least one surprising or inventive choice specific to this world and these characters—something that could make a reader sit up.${exampleText}`
 
     // Create dynamic schema for the specific section
     const sectionSchema = z.object({

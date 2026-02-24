@@ -80,7 +80,15 @@ export const TransformManager: React.FC = () => {
       mode={transformMode}
       translationSnap={snapEnabled ? snapSize : undefined}
       rotationSnap={snapEnabled ? Math.PI / 12 : undefined}
-      showY={transformMode === 'translate' ? !lockY : true}
+      // Always hide Y handle for objects in translate mode - objects must be at Y=0
+      // For surfaces, respect lockY setting
+      showY={
+        transformMode === 'translate'
+          ? selectedObject
+            ? false // Objects always locked to Y=0
+            : !lockY // Surfaces respect lockY setting
+          : true
+      }
       onMouseDown={() => {
         const orbitControls = controls as unknown as { enabled: boolean }
         if (orbitControls) {
@@ -96,8 +104,10 @@ export const TransformManager: React.FC = () => {
         // Update store on drag end
         if (target) {
           if (selectedObject) {
+            // Always enforce Y=0 for objects - they must be snapped to bottom of level
+            // The level offset is handled by the parent group position in ObjectManager
             updateObject(selectedObject.id, {
-              position: [target.position.x, target.position.y, target.position.z],
+              position: [target.position.x, 0, target.position.z],
               rotation: [target.rotation.x, target.rotation.y, target.rotation.z],
               scale: [target.scale.x, target.scale.y, target.scale.z],
             })

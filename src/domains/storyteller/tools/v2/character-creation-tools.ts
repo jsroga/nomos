@@ -17,12 +17,12 @@ const CreateCharacterInputSchema = z.object({
   role: z.string().describe('Character role: Protagonist, Antagonist, Supporting, etc.'),
   description: z.string().optional().describe('Physical/personality description'),
   shortDescription: z.string().optional().describe('Brief one-line description'),
-  gender: z.string().optional().describe('Character gender'),
+  gender: z.string().describe('Character gender'),
   archetype: z.string().optional().describe('Character archetype (e.g., Mentor, Hero, Trickster)'),
   motivation: z.string().optional().describe('Core motivation'),
   fatalFlaw: z.string().optional().describe('Fatal flaw or weakness'),
   traits: z.array(z.string()).optional().describe('Key personality traits'),
-  mbti: z.string().optional().describe('MBTI personality type'),
+  mbti: z.string().describe('MBTI personality type'),
   voiceSignature: z.string().optional().describe('How they speak/communicate'),
 })
 

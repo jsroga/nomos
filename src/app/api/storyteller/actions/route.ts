@@ -20,7 +20,10 @@ import { recordUserAction, flushObservability } from '@/agent-core/observability
 /**
  * Deep merge two objects, with special handling for arrays (replace, not concat)
  */
-function deepMerge(target: any, source: any): any {
+function deepMerge(
+  target: Record<string, unknown>,
+  source: Record<string, unknown>
+): Record<string, unknown> {
   if (!source) return target
   if (!target) return source
 
@@ -38,10 +41,16 @@ function deepMerge(target: any, source: any): any {
       result[key] = sourceValue
     } else if (
       typeof sourceValue === 'object' &&
+      sourceValue !== null &&
       typeof targetValue === 'object' &&
-      !Array.isArray(targetValue)
+      targetValue !== null &&
+      !Array.isArray(targetValue) &&
+      !Array.isArray(sourceValue)
     ) {
-      result[key] = deepMerge(targetValue, sourceValue)
+      result[key] = deepMerge(
+        targetValue as Record<string, unknown>,
+        sourceValue as Record<string, unknown>
+      )
     } else {
       result[key] = sourceValue
     }
@@ -87,7 +96,7 @@ export async function POST(req: NextRequest) {
       /* ignore tracing errors */
     }
 
-    async function updateSeriesBible(updates: Record<string, unknown>) {
+    const updateSeriesBible = async (updates: Record<string, unknown>) => {
       if (!projectId) throw new Error('Project ID required')
 
       const [existing] = await db
@@ -115,7 +124,7 @@ export async function POST(req: NextRequest) {
       return updatedContent
     }
 
-    async function updateStoryPlan(updates: Record<string, unknown>) {
+    const updateStoryPlan = async (updates: Record<string, unknown>) => {
       if (!projectId) throw new Error('Project ID required')
 
       const [existing] = await db
@@ -243,11 +252,12 @@ export async function POST(req: NextRequest) {
         })
       }
 
-      case 'UPDATE_KEY_CHARACTERS':
       case 'UPDATE_CAST': {
         console.log(`[API] UPDATE_CAST Payload keys:`, Object.keys(action.payload || {}))
-        if (action.payload.cast) console.log(`[API] UPDATE_CAST cast length:`, (action.payload.cast as any[]).length)
-        if (action.payload.keyCharacters) console.log(`[API] UPDATE_CAST keyCharacters length:`, (action.payload.keyCharacters as any[]).length)
+        if (action.payload.cast && Array.isArray(action.payload.cast))
+          console.log(`[API] UPDATE_CAST cast length:`, action.payload.cast.length)
+        if (action.payload.keyCharacters && Array.isArray(action.payload.keyCharacters))
+          console.log(`[API] UPDATE_CAST keyCharacters length:`, action.payload.keyCharacters.length)
 
         // cast is the project-level list of characters (Story Plan)
         const castData = action.payload.cast || action.payload.keyCharacters || action.payload.characters
@@ -262,7 +272,7 @@ export async function POST(req: NextRequest) {
           // Strip entity link markers [Text][entity-id] → Text
           const stripLinks = (s: any) => typeof s === 'string' ? s.replace(/\[([^\]]+)\]\[[^\]]+\]/g, '$1') : s
 
-          for (const rawChar of castData as any[]) {
+          for (const rawChar of castData as Record<string, unknown>[]) {
             if (!rawChar.name) continue
             // Clean all string fields of entity link markers
             const char = {
@@ -272,6 +282,10 @@ export async function POST(req: NextRequest) {
               motivation: stripLinks(rawChar.motivation),
               fatalFlaw: stripLinks(rawChar.fatalFlaw),
               voiceSignature: stripLinks(rawChar.voiceSignature || rawChar.voice_signature),
+              archetype: stripLinks(rawChar.archetype),
+              role: stripLinks(rawChar.role),
+              gender: stripLinks(rawChar.gender),
+              mbti: stripLinks(rawChar.mbti),
               ...(rawChar.psychology && typeof rawChar.psychology === 'object' ? {
                 psychology: Object.fromEntries(
                   Object.entries(rawChar.psychology).map(([k, v]) => [k, stripLinks(v)])
@@ -302,8 +316,8 @@ export async function POST(req: NextRequest) {
                     description: char.description || current.description,
                     gender: char.gender || current.gender,
                     mbti: char.mbti || current.mbti,
-                    voiceSignature: char.voiceSignature || char.voice_signature || current.voiceSignature,
-                    psychology: buildPsychology((current.psychology as any) || {}),
+                    voiceSignature: char.voiceSignature || current.voiceSignature,
+                    psychology: buildPsychology((current.psychology as Record<string, unknown>) || {}),
                     updatedAt: new Date(),
                   })
                   .where(eq(characters.id, current.id))
@@ -321,7 +335,7 @@ export async function POST(req: NextRequest) {
                   description: char.description || '',
                   gender: char.gender,
                   mbti: char.mbti,
-                  voiceSignature: char.voiceSignature || char.voice_signature,
+                  voiceSignature: char.voiceSignature,
                   psychology: buildPsychology(),
                   valence: 0,
                   arousal: 50,
@@ -376,8 +390,8 @@ export async function POST(req: NextRequest) {
             .from(storyPlans)
             .where(eq(storyPlans.projectId, projectId))
             .limit(1)
-          const curr = (proj?.content as any) || {}
-          updates = { worldRules: [...(curr.worldRules || []), action.payload.rule] }
+          const curr = (proj?.content as Record<string, unknown>) || {}
+          updates = { worldRules: [...((curr.worldRules as any[]) || []), action.payload.rule] }
         } else if (action.type === 'SET_GENRE_AND_TONE') {
           updates = {
             genre: action.payload.genre,
@@ -417,6 +431,11 @@ export async function POST(req: NextRequest) {
           if (!updates.executiveSummary && payload.episodeRoadmap.executiveSummary) {
             updates.executiveSummary = payload.episodeRoadmap.executiveSummary
           }
+          // Sync episodes to top-level sequences so displaySequences in BibleRoadmap can find it
+          const episodes = payload.episodeRoadmap.episodes || payload.episodeRoadmap.sequences
+          if (episodes && !updates.sequences) {
+            updates.sequences = episodes
+          }
         }
 
         const updatedPlan = await updateStoryPlan(updates)
@@ -444,7 +463,10 @@ export async function POST(req: NextRequest) {
         const existingPlan = (existing?.storyPlan as Record<string, unknown>) || {}
         const newPlan = {
           ...existingPlan,
-          premise: { ...((existingPlan.premise as any) || {}), ...premise },
+          premise: {
+            ...((existingPlan.premise as Record<string, unknown>) || {}),
+            ...premise,
+          },
         }
 
         await db

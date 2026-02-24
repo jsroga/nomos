@@ -8,8 +8,23 @@ export const loopCreatorTourSteps: TourStep[] = [
     content: (
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-primary">
+          <Layers className="w-5 h-5" />
+          <h3 className="font-bold">Create & Manage Loops</h3>
+        </div>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Click here to create a new game loop or switch between existing loops (combat, meta, etc).
+        </p>
+      </div>
+    ),
+    selectorId: TOUR_STEP_IDS.LOOP_SELECTOR,
+    position: 'bottom',
+  },
+  {
+    content: (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 text-primary">
           <MessageSquare className="w-5 h-5" />
-          <h3 className="font-bold">💬 Describe your game</h3>
+          <h3 className="font-bold">Describe your game</h3>
         </div>
         <p className="text-sm text-muted-foreground leading-relaxed">
           "It's like Vampire Survivors but with deck building" — tell the AI and watch it create
@@ -24,24 +39,8 @@ export const loopCreatorTourSteps: TourStep[] = [
     content: (
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-primary">
-          <Zap className="w-5 h-5" />
-          <h3 className="font-bold">⚡ Quick Actions</h3>
-        </div>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Use these one-click buttons to instantly generate loop common patterns or brainstorm new
-          mechanics.
-        </p>
-      </div>
-    ),
-    selectorId: TOUR_STEP_IDS.LOOP_SUGGESTIONS, // Reusing suggestions area for quick actions
-    position: 'left',
-  },
-  {
-    content: (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-primary">
           <GitMerge className="w-5 h-5" />
-          <h3 className="font-bold">🔀 Your loop diagram</h3>
+          <h3 className="font-bold">Your loop diagram</h3>
         </div>
         <p className="text-sm text-muted-foreground leading-relaxed">
           Here's your game's heartbeat — challenge, action, reward, feedback. Drag nodes to
@@ -56,32 +55,15 @@ export const loopCreatorTourSteps: TourStep[] = [
     content: (
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-primary">
-          <Layers className="w-5 h-5" />
-          <h3 className="font-bold">🎮 Switch loops</h3>
+          <Zap className="w-5 h-5" />
+          <h3 className="font-bold">Quick Actions</h3>
         </div>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Most games have multiple loops (combat, progression, meta). Create and switch between them
-          here.
+          Use these one-click buttons to instantly generate loop patterns or brainstorm mechanics.
         </p>
       </div>
     ),
-    selectorId: TOUR_STEP_IDS.LOOP_SELECTOR,
-    position: 'bottom',
-  },
-  {
-    content: (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-primary">
-          <CheckCircle2 className="w-5 h-5" />
-          <h3 className="font-bold">✅ Review changes</h3>
-        </div>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Before anything changes your diagram, you'll see a preview. Accept or reject the AI's
-          modular suggestions.
-        </p>
-      </div>
-    ),
-    selectorId: TOUR_STEP_IDS.LOOP_SUGGESTIONS,
+    selectorId: TOUR_STEP_IDS.LOOP_QUICK_ACTIONS,
     position: 'left',
   },
 ]

@@ -30,6 +30,12 @@ export type RelationshipType =
   | 'leader_of'
   | 'associated'
   | 'related'
+  | 'owns'
+  | 'uses'
+  | 'caused_by'
+  | 'happened_at'
+  | 'located_in'
+  | 'temporal'
 
 export interface Relationship {
   targetId: string
@@ -38,6 +44,12 @@ export interface Relationship {
   relationshipType: RelationshipType
   strength: number // 0-1
   description?: string
+  confidence?: number
+  evidence?: string
+  notes?: string
+  sinceBeatId?: string
+  untilBeatId?: string
+  episodeId?: string
 }
 
 export interface EnrichedEntity {

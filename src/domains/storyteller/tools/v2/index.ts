@@ -86,8 +86,3 @@ export {
 // Self-Critique Tool
 export { selfCritiqueTool } from './self-critique-tool'
 
-// All tools combined for easy registration
-const allStorytellerTools = [
-  // Using the already-exported arrays
-  // Note: Import these using: import { beatTools, characterTools, ... } from './v2'
-]

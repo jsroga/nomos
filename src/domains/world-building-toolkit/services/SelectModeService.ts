@@ -133,7 +133,8 @@ export class SelectModeService {
         if (tile) {
           try {
             const pid = projectId || tile.project_id
-            const img = await this.loadImage(`/projects/${pid}/${tile.image_filename}`)
+            const imgUrl = tile.image_filename.startsWith('http') ? tile.image_filename : `/projects/${pid}/${tile.image_filename}`
+            const img = await this.loadImage(imgUrl)
             tileResolution = img.naturalWidth // Actual pixel size of tile
             console.log(`[SelectModeService] Detected tile resolution: ${tileResolution}px`)
           } catch (e) {
@@ -230,7 +231,7 @@ export class SelectModeService {
 
         if (tile) {
           const pid = projectId || tile.project_id
-          const imagePath = `/projects/${pid}/${tile.image_filename}`
+          const imagePath = tile.image_filename.startsWith('http') ? tile.image_filename : `/projects/${pid}/${tile.image_filename}`
 
           const promise = this.loadImage(imagePath)
             .then(img => {

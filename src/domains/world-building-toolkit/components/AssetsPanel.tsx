@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { getSupabaseClient } from '@/infrastructure/storage/supabaseClient'
-import { Loader2, Trash2, AlertTriangle } from 'lucide-react'
+import { Loader2, Trash2, AlertTriangle, Cuboid } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -15,9 +15,10 @@ import toast from 'react-hot-toast'
 
 interface AssetsPanelProps {
   showHelpText?: boolean
+  onSelectAsset?: (url: string, is3D: boolean) => void
 }
 
-export const AssetsPanel: React.FC<AssetsPanelProps> = ({ showHelpText = true }) => {
+export const AssetsPanel: React.FC<AssetsPanelProps> = ({ showHelpText = true, onSelectAsset }) => {
   const currentProject = useWorldStore(state => state.currentProject)
   const assets = useWorldStore(state => state.assets)
   const setAssets = useWorldStore(state => state.setAssets)
@@ -83,13 +84,20 @@ export const AssetsPanel: React.FC<AssetsPanelProps> = ({ showHelpText = true })
     }
   }
 
-  const handlePreview = (id: string) => {
+  const handlePreview = (id: string, modelFilename?: string) => {
     // Toggle preview - if same asset clicked, turn off preview
     const isSelecting = previewAssetId !== id
     setPreviewAssetId(isSelecting ? id : null)
 
     if (isSelecting) {
       window.dispatchEvent(new CustomEvent('asset-selected'))
+      if (onSelectAsset && modelFilename && currentProject) {
+        const glbUrl =
+          modelFilename.startsWith('http') || modelFilename.startsWith('https')
+            ? modelFilename
+            : `/projects/${currentProject.id}/assets/${modelFilename}`
+        onSelectAsset(glbUrl, true)
+      }
     }
   }
 
@@ -110,49 +118,96 @@ export const AssetsPanel: React.FC<AssetsPanelProps> = ({ showHelpText = true })
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-2">
-            {assets.map(asset => (
-              <div
-                key={asset.id}
-                className={`relative group aspect-square bg-muted rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
-                  previewAssetId === asset.id
-                    ? 'border-indigo-500 ring-2 ring-indigo-500/30'
-                    : 'border-zinc-800 hover:border-indigo-500/50'
-                }`}
-                onClick={() => handlePreview(asset.id)}
-              >
-                <img
-                  src={`/projects/${currentProject.id}/assets/${asset.image_filename}`}
-                  alt="Asset"
-                  className="w-full h-full object-contain bg-[#1a1a1a]"
-                />
+            {assets.map(asset => {
+              const has3D = !!asset.model_filename
 
-                {/* Preview indicator */}
-                {previewAssetId === asset.id && (
-                  <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-[8px] px-1 py-0.5 rounded font-medium">
-                    PREVIEW
-                  </div>
-                )}
+              const handleDragStart = (e: React.DragEvent) => {
+                const thumbnailUrl = asset.image_filename.startsWith('http')
+                  ? asset.image_filename
+                  : `/projects/${currentProject.id}/assets/${asset.image_filename}`
 
-                {/* Delete button */}
-                <button
-                  onClick={e => {
-                    e.stopPropagation()
-                    handleDeleteClick(asset.id, asset.image_filename)
-                  }}
-                  className="absolute top-1 right-1 p-1 bg-black/60 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                  title="Delete asset"
+                const glbUrl = has3D
+                  ? asset.model_filename!.startsWith('http') || asset.model_filename!.startsWith('https')
+                    ? asset.model_filename
+                    : `/projects/${currentProject.id}/assets/${asset.model_filename}`
+                  : undefined
+
+                e.dataTransfer.setData(
+                  'application/json',
+                  JSON.stringify({
+                    type: 'asset',
+                    assetId: asset.id,
+                    glbUrl: glbUrl,
+                    thumbnailUrl: thumbnailUrl,
+                    has3D: has3D,
+                  })
+                )
+                e.dataTransfer.effectAllowed = 'copy'
+              }
+
+              return (
+                <div
+                  key={asset.id}
+                  draggable={has3D}
+                  onDragStart={has3D ? handleDragStart : undefined}
+                  className={`relative group aspect-square bg-muted rounded-lg overflow-hidden border-2 transition-all ${has3D ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+                    } ${previewAssetId === asset.id
+                      ? 'border-indigo-500 ring-2 ring-indigo-500/30'
+                      : 'border-zinc-800 hover:border-indigo-500/50'
+                    }`}
+                  onClick={() => handlePreview(asset.id, asset.model_filename)}
                 >
-                  <Trash2 size={12} />
-                </button>
+                  <img
+                    src={asset.image_filename.startsWith('http') ? asset.image_filename : `/projects/${currentProject.id}/assets/${asset.image_filename}`}
+                    alt="Asset"
+                    draggable={false}
+                    className="w-full h-full object-contain bg-[#1a1a1a] pointer-events-none"
+                  />
 
-                {/* Show on canvas indicator */}
-                {showAllAssetMasks && asset.metadata?.bounds && (
-                  <div className="absolute bottom-1 left-1 bg-green-600 text-white text-[8px] px-1 py-0.5 rounded">
-                    ON
-                  </div>
-                )}
-              </div>
-            ))}
+                  {/* Preview indicator */}
+                  {previewAssetId === asset.id && (
+                    <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-[8px] px-1 py-0.5 rounded font-medium">
+                      PREVIEW
+                    </div>
+                  )}
+
+                  {/* Delete button */}
+                  <button
+                    onClick={e => {
+                      e.stopPropagation()
+                      handleDeleteClick(asset.id, asset.image_filename)
+                    }}
+                    className="absolute top-1 right-1 p-1 bg-black/60 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                    title="Delete asset"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+
+                  {/* 3D Model indicator */}
+                  {asset.model_filename && (
+                    <div className="absolute bottom-1 right-1 bg-blue-600/90 text-white text-[9px] px-1.5 py-0.5 rounded font-bold shadow-sm flex items-center gap-1 backdrop-blur-[2px] z-10 pointer-events-none">
+                      <Cuboid size={10} />
+                      3D
+                    </div>
+                  )}
+
+                  {/* 3D Model indicator */}
+                  {asset.model_filename && (
+                    <div className="absolute bottom-1 right-1 bg-blue-600/90 text-white text-[9px] px-1.5 py-0.5 rounded font-bold shadow-sm flex items-center gap-1 backdrop-blur-[2px] z-10 pointer-events-none">
+                      <Cuboid size={10} />
+                      3D
+                    </div>
+                  )}
+
+                  {/* Show on canvas indicator */}
+                  {showAllAssetMasks && asset.metadata?.bounds && (
+                    <div className="absolute bottom-1 left-1 bg-green-600 text-white text-[8px] px-1 py-0.5 rounded">
+                      ON
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -177,7 +232,7 @@ export const AssetsPanel: React.FC<AssetsPanelProps> = ({ showHelpText = true })
               {assetToDelete && (
                 <div className="mt-3 p-2 bg-muted rounded-md">
                   <img
-                    src={`/projects/${currentProject.id}/assets/${assetToDelete.filename}`}
+                    src={assetToDelete.filename.startsWith('http') ? assetToDelete.filename : `/projects/${currentProject.id}/assets/${assetToDelete.filename}`}
                     alt="Asset to delete"
                     className="w-full h-32 object-contain bg-[#1a1a1a] rounded"
                   />

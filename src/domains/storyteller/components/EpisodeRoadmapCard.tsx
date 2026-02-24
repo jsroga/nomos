@@ -172,9 +172,9 @@ export const EpisodeRoadmapCard: React.FC<EpisodeRoadmapCardProps> = ({
             {episodeTitle}
           </h4>
           {synopsis && (
-            <p className="text-xs text-muted-foreground/70 mt-1 line-clamp-2 leading-relaxed">
-              {synopsis}
-            </p>
+            <div className="text-xs text-muted-foreground/70 mt-1 line-clamp-2 leading-relaxed">
+              <RefText text={synopsis} />
+            </div>
           )}
         </div>
 
@@ -237,8 +237,8 @@ export const EpisodeRoadmapCard: React.FC<EpisodeRoadmapCardProps> = ({
             <div className={cn(
               'grid gap-4',
               structuralBeats.length === 1 ? 'grid-cols-1' :
-              structuralBeats.length <= 2 ? 'grid-cols-1 md:grid-cols-2' :
-              'grid-cols-1 md:grid-cols-2'
+                structuralBeats.length <= 2 ? 'grid-cols-1 md:grid-cols-2' :
+                  'grid-cols-1 md:grid-cols-2'
             )}>
               {structuralBeats.map(beat => {
                 const Icon = beat.icon

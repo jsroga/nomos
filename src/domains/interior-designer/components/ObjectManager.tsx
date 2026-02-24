@@ -181,23 +181,25 @@ const ObjectRenderer: React.FC<{
     >
       {/* Primitives */}
       {effectiveModelUrl === 'cube' && (
-        <Box args={[1, 1, 1]}>
+        <mesh position={[0, 0.5, 0]}>
+          <boxGeometry args={[1, 1, 1]} />
           <meshStandardMaterial color={isSelected ? '#4f46e5' : '#f59e0b'} />
-        </Box>
+        </mesh>
       )}
       {effectiveModelUrl === 'sphere' && (
-        <Sphere args={[0.5]}>
+        <mesh position={[0, 0.5, 0]}>
+          <sphereGeometry args={[0.5, 32, 32]} />
           <meshStandardMaterial color={isSelected ? '#4f46e5' : '#10b981'} />
-        </Sphere>
+        </mesh>
       )}
       {effectiveModelUrl === 'cylinder' && (
-        <mesh>
+        <mesh position={[0, 0.5, 0]}>
           <cylinderGeometry args={[0.5, 0.5, 1]} />
           <meshStandardMaterial color={isSelected ? '#4f46e5' : '#ec4899'} />
         </mesh>
       )}
       {effectiveModelUrl === 'cone' && (
-        <mesh>
+        <mesh position={[0, 0.5, 0]}>
           <coneGeometry args={[0.5, 1]} />
           <meshStandardMaterial color={isSelected ? '#4f46e5' : '#8b5cf6'} />
         </mesh>
@@ -240,12 +242,9 @@ const ObjectRenderer: React.FC<{
         </group>
       )}
 
-      {/* Window Primitive */}
       {effectiveModelUrl === 'window' && (
         <WindowMesh color={obj.color || '#7a6f5e'} isSelected={isSelected} opacity={opacity} />
       )}
-
-      {/* Door Primitive */}
       {effectiveModelUrl === 'door' && (
         <DoorMesh color={obj.color || '#7a6f5e'} isSelected={isSelected} opacity={opacity} />
       )}

@@ -7,7 +7,7 @@ import { RichText } from '../RichText'
 import { useBible } from './BibleContext'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
 
-interface BibleWorldLogicProps {}
+interface BibleWorldLogicProps { }
 
 export const BibleWorldLogic: React.FC<BibleWorldLogicProps> = () => {
   const {
@@ -26,9 +26,14 @@ export const BibleWorldLogic: React.FC<BibleWorldLogicProps> = () => {
     pendingActions,
     projectId,
   } = useBible()
-  const rules = Array.isArray(storyPlan.worldRules) ? storyPlan.worldRules : []
+  // Use localPlan for display when not editing to show latest saved data
+  const displayRules = isEditing
+    ? (Array.isArray(localPlan.worldRules) ? localPlan.worldRules : [])
+    : (Array.isArray(localPlan.worldRules) ? localPlan.worldRules : (Array.isArray(storyPlan.worldRules) ? storyPlan.worldRules : []))
   const localRules = Array.isArray(localPlan.worldRules) ? localPlan.worldRules : []
-  const plotTwists = Array.isArray(storyPlan.plotTwists) ? storyPlan.plotTwists : []
+  const displayPlotTwists = isEditing
+    ? (Array.isArray(localPlan.plotTwists) ? localPlan.plotTwists : [])
+    : (Array.isArray(localPlan.plotTwists) ? localPlan.plotTwists : (Array.isArray(storyPlan.plotTwists) ? storyPlan.plotTwists : []))
   const localPlotTwists = Array.isArray(localPlan.plotTwists) ? localPlan.plotTwists : []
 
   // Check loading states for each section
@@ -79,7 +84,7 @@ export const BibleWorldLogic: React.FC<BibleWorldLogicProps> = () => {
               <button
                 onClick={() =>
                   onSendMessage?.(
-                    'Generate the fundamental laws and rules that govern this world - magic systems, physics, social contracts, etc. Mention examples of excellent world rules like in Death Note, Case of Golden Idol (game), Game of Thrones, Pluribus.',
+                    'Generate BRAND NEW fundamental laws and rules that govern this world - magic systems, physics, social contracts, etc. Mention examples of excellent world rules like in Death Note, Case of Golden Idol (game), Game of Thrones, Pluribus. IMPORTANT: Take a completely new creative direction and do NOT repeat previous rules.',
                     'worldRules'
                   )
                 }
@@ -154,13 +159,13 @@ export const BibleWorldLogic: React.FC<BibleWorldLogicProps> = () => {
               ))
             )}
           </div>
-        ) : rules.length === 0 ? (
+        ) : displayRules.length === 0 ? (
           <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
             No world rules defined yet. The laws of nature (or magic) are unspoken.
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {rules.map((rule, idx) => {
+            {displayRules.map((rule, idx) => {
               if (!rule) return null
               return <WorldRuleCard key={idx} rule={rule as WorldRule} projectId={projectId} />
             })}
@@ -205,7 +210,7 @@ export const BibleWorldLogic: React.FC<BibleWorldLogicProps> = () => {
             {!isReadOnly && onSendMessage && (
               <button
                 onClick={() =>
-                  onSendMessage?.('Generate 3 major plot twists for this story.', 'plotTwists')
+                  onSendMessage?.('Generate 3 completely BRAND NEW major plot twists for this story. IMPORTANT: Take a completely new creative direction and do NOT repeat previous twists.', 'plotTwists')
                 }
                 className={`p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105 ${isPlotTwistsLoading ? 'pointer-events-none opacity-50' : ''}`}
                 title="Generate Twists"
@@ -244,9 +249,9 @@ export const BibleWorldLogic: React.FC<BibleWorldLogicProps> = () => {
               ))
             )}
           </div>
-        ) : plotTwists.length > 0 ? (
+        ) : displayPlotTwists.length > 0 ? (
           <div className="space-y-4">
-            {plotTwists.map((twist, i) => {
+            {displayPlotTwists.map((twist, i) => {
               // Handle both string and object formats
               if (typeof twist === 'string') {
                 return (

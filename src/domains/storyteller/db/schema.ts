@@ -20,6 +20,7 @@ export const projects = pgTable('projects', {
   seriesBible: jsonb('series_bible').notNull().default({}), // Stores the immutable truths
   storyPlan: jsonb('story_plan'), // Series-level story plan (applies to all episodes)
   styleReferenceUrls: jsonb('style_reference_urls').default([]), // Midjourney --sref URLs
+  stylePreset: text('style_preset'), // Predefined style preset key (overrides styleReferenceUrls)
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })

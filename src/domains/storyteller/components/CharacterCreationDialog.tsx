@@ -77,15 +77,53 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
   const [secrets, setSecrets] = useState('')
   const [metrics, setMetrics] = useState(INITIAL_METRICS)
 
-  const [isGeneratingPortrait, setIsGeneratingPortrait] = useState(false)
   const [isGeneratingMetrics, setIsGeneratingMetrics] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [showVariantPicker, setShowVariantPicker] = useState(false)
-  const [gridImageUrl, setGridImageUrl] = useState<string | null>(null)
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
+  const hasInitializedRef = React.useRef<string | null>(null)
+
+  // Track generation state per character so background polls survive hide/show toggles
+  const [genStates, setGenStates] = useState<Record<string, {
+    isGenerating: boolean;
+    gridImageUrl: string | null;
+    needsVariantPick: boolean;
+    portraitUrlOverride: string | null;
+  }>>({})
+  const generationIdsRef = React.useRef<Record<string, number>>({})
+
+  const activeCharId = initialData?.id || 'new'
+  const activeGenState = genStates[activeCharId] || {
+    isGenerating: false,
+    gridImageUrl: null,
+    needsVariantPick: false,
+    portraitUrlOverride: null,
+  }
+
+  const isGeneratingPortrait = activeGenState.isGenerating
+  const gridImageUrl = activeGenState.gridImageUrl
+  const needsVariantPick = activeGenState.needsVariantPick
+
+  const updateGenState = (charId: string, updates: Partial<typeof activeGenState>) => {
+    setGenStates(prev => ({
+      ...prev,
+      [charId]: { ...(prev[charId] || { isGenerating: false, gridImageUrl: null, needsVariantPick: false, portraitUrlOverride: null }), ...updates }
+    }))
+  }
+
+  // Reset init ref when dialog closes so reopening the same character re-initializes the form
+  useEffect(() => {
+    if (!isOpen) hasInitializedRef.current = null
+  }, [isOpen])
 
   // Pre-fill form when initialData changes (e.g., converting from key player or editing)
   useEffect(() => {
     if (isOpen && initialData) {
+      // Only initialize if we haven't for this character ID yet (avoids overwriting while open)
+      const charId = initialData.id || 'new'
+      if (hasInitializedRef.current === charId) return
+
+      console.log('[CharacterDialog] Initializing form with data for:', charId)
       if (initialData.name) setName(initialData.name)
       if (initialData.description) setDescription(initialData.description)
       if (initialData.role) setRole(initialData.role)
@@ -99,6 +137,11 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
       setMotivation(initialData.motivation || psych.actualMotivation || '')
       setFatalFlaw(initialData.fatalFlaw || psych.fatalFlaw || '')
       setSecrets(initialData.secrets || psych.secrets || '')
+
+      // Removed problematic cross-character state wiping logic
+
+      hasInitializedRef.current = charId
+
       // Load metrics if editing
       setMetrics(prev => ({
         ...prev,
@@ -121,37 +164,21 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
     }
   }, [isOpen, initialData])
 
-  // Auto-show variant picker when a new portrait is generated
-  const prevPortraitUrlRef = React.useRef(portraitUrl)
-  const prevIsGeneratingRef = React.useRef(isGeneratingPortrait)
-  const hasCheckedInitialRef = React.useRef(false)
-
+  // Sync generated portraits to the local form state when generation completes
   useEffect(() => {
-    // Condition 1: Just finished generating (transition from generating -> not generating with new URL)
-    const justFinished =
-      prevIsGeneratingRef.current &&
-      !isGeneratingPortrait &&
-      portraitUrl &&
-      portraitUrl !== prevPortraitUrlRef.current
+    if (activeGenState.portraitUrlOverride) {
+      setPortraitUrl(activeGenState.portraitUrlOverride)
+      updateGenState(activeCharId, { portraitUrlOverride: null })
+    }
+  }, [activeCharId, activeGenState.portraitUrlOverride])
 
-    // Condition 2: Initial load with a grid URL (resume/return flow)
-    // A URL is a "grid" ONLY if it's an external HTTP URL. Saved variants are local paths.
-    const isGrid = portraitUrl && portraitUrl.startsWith('http')
-
-    if (justFinished || (isOpen && !hasCheckedInitialRef.current && isGrid && !showVariantPicker)) {
-      setGridImageUrl(portraitUrl)
+  // Auto-show variant picker when generation completes
+  useEffect(() => {
+    if (needsVariantPick && portraitUrl && !isGeneratingPortrait) {
       setShowVariantPicker(true)
-      hasCheckedInitialRef.current = true
+      updateGenState(activeCharId, { needsVariantPick: false })
     }
-
-    prevPortraitUrlRef.current = portraitUrl
-    prevIsGeneratingRef.current = isGeneratingPortrait
-
-    // Reset initial check if dialog closes
-    if (!isOpen) {
-      hasCheckedInitialRef.current = false
-    }
-  }, [portraitUrl, isGeneratingPortrait, isOpen, showVariantPicker])
+  }, [needsVariantPick, portraitUrl, isGeneratingPortrait, activeCharId])
 
   // Only render when open - check after all hooks
   if (!isOpen) return null
@@ -171,13 +198,23 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
     setSecrets('')
     setMetrics(INITIAL_METRICS)
     setShowVariantPicker(false)
-    setGridImageUrl(null)
+    setTouched({})
     onClose()
   }
 
   const handleGeneratePortrait = async () => {
     if (!description && !name) return
-    setIsGeneratingPortrait(true)
+    const targetCharId = activeCharId
+    updateGenState(targetCharId, {
+      isGenerating: true,
+      gridImageUrl: null,
+      needsVariantPick: false,
+      portraitUrlOverride: null
+    })
+
+    generationIdsRef.current[targetCharId] = (generationIdsRef.current[targetCharId] || 0) + 1
+    const currentGenId = generationIdsRef.current[targetCharId]
+
     try {
       // Get LegNext API key from localStorage
       let apiKey = ''
@@ -200,6 +237,7 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
 
       if (!data.handleId) {
         console.error('No handleId returned:', data)
+        updateGenState(targetCharId, { isGenerating: false })
         return
       }
 
@@ -208,6 +246,11 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
       for (let i = 0; i < maxAttempts; i++) {
         await new Promise(r => setTimeout(r, 5000)) // Poll every 5s
 
+        if (currentGenId !== generationIdsRef.current[targetCharId]) {
+          console.log('[CharacterDialog] Portrait generation polling cancelled for', targetCharId)
+          break
+        }
+
         const statusRes = await fetch(
           `/api/storyteller/generate-portrait/status?runId=${data.handleId}`
         )
@@ -215,19 +258,27 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
 
         if (statusData.status === 'COMPLETED') {
           if (statusData.output?.imageUrl) {
-            setPortraitUrl(statusData.output.imageUrl)
+            const newUrl = statusData.output.imageUrl
+            updateGenState(targetCharId, {
+              isGenerating: false,
+              gridImageUrl: newUrl,
+              needsVariantPick: true,
+              portraitUrlOverride: newUrl
+            })
+          } else {
+            updateGenState(targetCharId, { isGenerating: false })
           }
           break
         } else if (statusData.status === 'FAILED' || statusData.error) {
           console.error('Portrait generation failed:', statusData.error)
+          updateGenState(targetCharId, { isGenerating: false })
           break
         }
         // Continue polling if PENDING, EXECUTING, etc.
       }
     } catch (error) {
       console.error('Failed to generate portrait:', error)
-    } finally {
-      setIsGeneratingPortrait(false)
+      updateGenState(targetCharId, { isGenerating: false })
     }
   }
 
@@ -251,10 +302,9 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
     }
   }
 
-  // Handle variant selection from the picker
   const handleVariantSelect = async (croppedDataUrl: string, variantIndex: number) => {
     setShowVariantPicker(false)
-    setGridImageUrl(null)
+    updateGenState(activeCharId, { gridImageUrl: null })
 
     // Optimistically update to cropped image (base64)
     setPortraitUrl(croppedDataUrl)
@@ -289,6 +339,17 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
   // ... (rest of the file until return)
 
   const handleSubmit = async () => {
+    if (!name || !gender || !role || !description || !mbti) {
+      setTouched({
+        name: true,
+        gender: true,
+        role: true,
+        description: true,
+        mbti: true,
+      })
+      return
+    }
+
     const characterData = {
       name,
       gender,
@@ -351,11 +412,13 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
                   Name <span className="text-destructive">*</span>
                 </label>
                 <input
-                  className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                  className={`w-full bg-background border rounded-md px-3 py-2 text-sm focus:outline-none ${touched.name && !name ? 'border-destructive focus:ring-2 focus:ring-destructive' : 'border-input focus:ring-2 focus:ring-primary'}`}
                   value={name}
                   onChange={e => setName(e.target.value)}
+                  onBlur={() => setTouched(prev => ({ ...prev, name: true }))}
                   placeholder="Character Name"
                 />
+                {touched.name && !name && <p className="text-xs text-destructive mt-1">Name is required</p>}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -363,23 +426,26 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
                     Role <span className="text-destructive">*</span>
                   </label>
                   <select
-                    className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                    className={`w-full bg-background border rounded-md px-3 py-2 text-sm focus:outline-none ${touched.role && !role ? 'border-destructive focus:ring-2 focus:ring-destructive' : 'border-input focus:ring-2 focus:ring-primary'}`}
                     value={role}
                     onChange={e => setRole(e.target.value)}
+                    onBlur={() => setTouched(prev => ({ ...prev, role: true }))}
                   >
                     <option value="Protagonist">Protagonist</option>
                     <option value="Antagonist">Antagonist</option>
                     <option value="Supporting">Supporting</option>
                   </select>
+                  {touched.role && !role && <p className="text-xs text-destructive mt-1">Role is required</p>}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">
                     Gender <span className="text-destructive">*</span>
                   </label>
                   <select
-                    className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                    className={`w-full bg-background border rounded-md px-3 py-2 text-sm focus:outline-none ${touched.gender && !gender ? 'border-destructive focus:ring-2 focus:ring-destructive' : 'border-input focus:ring-2 focus:ring-primary'}`}
                     value={gender}
                     onChange={e => setGender(e.target.value)}
+                    onBlur={() => setTouched(prev => ({ ...prev, gender: true }))}
                   >
                     <option value="">Select Gender</option>
                     <option value="Male">Male</option>
@@ -387,6 +453,7 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
                     <option value="Non-binary">Non-binary</option>
                     <option value="Other">Other</option>
                   </select>
+                  {touched.gender && !gender && <p className="text-xs text-destructive mt-1">Gender is required</p>}
                 </div>
               </div>
             </div>
@@ -398,19 +465,22 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
                   Description <span className="text-destructive">*</span>
                 </label>
                 <textarea
-                  className="w-full h-32 bg-background border border-input rounded-md px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-primary focus:outline-none"
+                  className={`w-full h-32 bg-background border rounded-md px-3 py-2 text-sm resize-none focus:outline-none ${touched.description && !description ? 'border-destructive focus:ring-2 focus:ring-destructive' : 'border-input focus:ring-2 focus:ring-primary'}`}
                   value={description}
                   onChange={e => setDescription(e.target.value)}
+                  onBlur={() => setTouched(prev => ({ ...prev, description: true }))}
                   placeholder="Describe appearance, personality, and background..."
                 />
+                {touched.description && !description && <p className="text-xs text-destructive mt-1">Description is required</p>}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">
                     MBTI <span className="text-destructive">*</span>
                   </label>
                   <select
-                    className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                    className={`w-full bg-background border rounded-md px-3 py-2 text-sm focus:outline-none ${touched.mbti && !mbti ? 'border-destructive focus:ring-2 focus:ring-destructive' : 'border-input focus:ring-2 focus:ring-primary'}`}
                     value={mbti}
                     onChange={e => setMbti(e.target.value)}
+                    onBlur={() => setTouched(prev => ({ ...prev, mbti: true }))}
                   >
                     <option value="">Select MBTI Type</option>
                     <optgroup label="Analysts">
@@ -438,6 +508,7 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
                       <option value="ESFP">ESFP - Entertainer</option>
                     </optgroup>
                   </select>
+                  {touched.mbti && !mbti && <p className="text-xs text-destructive mt-1">MBTI is required</p>}
                 </div>
               </div>
 
@@ -454,6 +525,22 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
                     onGenerate={!name && !description ? undefined : handleGeneratePortrait}
                     overlay={
                       <div className="flex flex-col gap-2 w-full px-2">
+                        {((portraitUrl && !/_(v\d|cropped)_/.test(portraitUrl) && !portraitUrl.startsWith('data:')) || gridImageUrl) && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="w-full text-xs backdrop-blur-md bg-primary/60 hover:bg-primary/80 border-primary/40 text-white"
+                            onClick={() => {
+                              if (!gridImageUrl && portraitUrl) {
+                                setGridImageUrl(portraitUrl)
+                              }
+                              setShowVariantPicker(true)
+                            }}
+                          >
+                            <Wand2 className="w-3 h-3 mr-1" />
+                            Pick Variant
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="secondary"
@@ -469,9 +556,11 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
                   />
                 </div>
                 <div className="text-[10px] text-muted-foreground text-center">
-                  {portraitUrl
-                    ? 'Click "Pick Variant" to refine selection'
-                    : 'Powered by Midjourney'}
+                  {portraitUrl && !/_(v\d|cropped)_/.test(portraitUrl)
+                    ? 'Hover image & click "Pick Variant" to choose'
+                    : portraitUrl
+                      ? 'Variant selected'
+                      : 'Powered by Midjourney'}
                 </div>
               </div>
             </div>
@@ -764,7 +853,7 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
             <Button
               variant="default"
               onClick={handleSubmit}
-              disabled={!name || !gender || !description || !mbti || isSaving}
+              disabled={isSaving}
             >
               {isSaving ? (
                 <><Loader2 className="animate-spin w-4 h-4 mr-2" />Saving...</>
@@ -785,7 +874,6 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
           onSelect={(index, croppedDataUrl) => handleVariantSelect(croppedDataUrl, index)}
           onCancel={() => {
             setShowVariantPicker(false)
-            setGridImageUrl(null)
           }}
         />
       )}

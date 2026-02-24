@@ -61,8 +61,11 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
 
   // Determine if we are specifically adding a new image (index out of bounds of current array)
   // or generating the initial set (index 0,1,2,3 for empty)
+  const displayMoodImages = isEditing
+    ? (localPlan.moodImages || storyPlan.moodImages || [])
+    : (localPlan.moodImages || storyPlan.moodImages || [])
   const isAddingNew = Array.from(generatingIndices).some(idx => {
-    const currentCount = storyPlan.moodImages?.length || 0
+    const currentCount = displayMoodImages.length || 0
     return idx >= currentCount
   })
 
@@ -100,7 +103,7 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
               icon={<RefreshCw size={14} className={isWorldDescLoading ? 'animate-spin' : ''} />}
               onClick={() =>
                 onSendMessage?.(
-                  'Generate a rich world description including setting, atmosphere, and key details.',
+                  'Generate a completely BRAND NEW, rich world description including setting, atmosphere, and key details. IMPORTANT: Take a completely new creative direction and do NOT repeat previous content.',
                   'worldDescription'
                 )
               }
@@ -113,32 +116,32 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
 
         {/* High Level Meta Info (Title, Genre, Tone) */}
         {!isEditing &&
-        (storyPlan.title || storyPlan.genre || storyPlan.tone || storyPlan.centralQuestion) ? (
+          ((localPlan.title || storyPlan.title) || (localPlan.genre || storyPlan.genre) || (localPlan.tone || storyPlan.tone) || (localPlan.centralQuestion || storyPlan.centralQuestion)) ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {/* Title, Genre, Tone Card */}
-            {(storyPlan.title || storyPlan.genre || storyPlan.tone) && (
-              <div className="md:col-span-2 p-6 rounded-xl bg-muted/20 border border-border/50 flex flex-col justify-center">
-                {storyPlan.title && (
+            {/* Title, Genre, Tone Card — full width */}
+            {((localPlan.title || storyPlan.title) || (localPlan.genre || storyPlan.genre) || (localPlan.tone || storyPlan.tone)) && (
+              <div className="md:col-span-3 p-6 rounded-xl bg-muted/20 border border-border/50 flex flex-col justify-center">
+                {(localPlan.title || storyPlan.title) && (
                   <h1 className="text-3xl font-bold font-syne text-foreground mb-4 tracking-tight leading-tight">
-                    {storyPlan.title}
+                    {localPlan.title || storyPlan.title}
                   </h1>
                 )}
                 <div className="flex flex-wrap gap-x-8 gap-y-3 text-sm font-mono text-muted-foreground">
-                  {storyPlan.genre && (
+                  {(localPlan.genre || storyPlan.genre) && (
                     <div className="flex flex-col gap-1">
                       <span className="text-[10px] uppercase tracking-widest font-bold opacity-60">
                         Genre
                       </span>
-                      <span className="font-medium text-foreground/80">{storyPlan.genre}</span>
+                      <span className="font-medium text-foreground/80">{localPlan.genre || storyPlan.genre}</span>
                     </div>
                   )}
-                  {storyPlan.tone && (
+                  {(localPlan.tone || storyPlan.tone) && (
                     <div className="flex flex-col gap-1">
                       <span className="text-[10px] uppercase tracking-widest font-bold opacity-60">
                         Tone
                       </span>
                       <span className="font-medium text-foreground/80 leading-snug max-w-md">
-                        {storyPlan.tone}
+                        {localPlan.tone || storyPlan.tone}
                       </span>
                     </div>
                   )}
@@ -147,7 +150,7 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
             )}
 
             {/* Central Question Card */}
-            {storyPlan.centralQuestion && (
+            {(localPlan.centralQuestion || storyPlan.centralQuestion) && (
               <div className="md:col-span-1 p-6 rounded-xl bg-muted/10 border border-border/40 flex flex-col justify-center">
                 <div className="flex items-center gap-2 mb-3">
                   <Zap className="w-3.5 h-3.5 text-muted-foreground/60" />
@@ -156,7 +159,7 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
                   </div>
                 </div>
                 <div className="text-lg font-syne italic text-foreground/90 leading-snug">
-                  "{storyPlan.centralQuestion}"
+                  "{localPlan.centralQuestion || storyPlan.centralQuestion}"
                 </div>
               </div>
             )}
@@ -164,7 +167,7 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
         ) : null}
 
         {/* Executive Summary */}
-        {!isEditing && storyPlan.executiveSummary && (
+        {!isEditing && (localPlan.executiveSummary || storyPlan.executiveSummary) && (
           <div className="mb-8 p-6 rounded-xl bg-orange-500/5 border border-orange-500/10">
             <div className="flex items-center gap-2 mb-3">
               <Star className="w-4 h-4 text-orange-400" />
@@ -173,7 +176,7 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
               </h4>
             </div>
             <p className="text-lg font-medium text-foreground/90 leading-relaxed font-syne">
-              {storyPlan.executiveSummary}
+              {localPlan.executiveSummary || storyPlan.executiveSummary}
             </p>
           </div>
         )}
@@ -190,7 +193,7 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
             <div className="p-8 bg-muted/5 border border-border/20 rounded-2xl">
               <div className="max-w-4xl mx-auto text-foreground/80 text-[15px] leading-relaxed font-sans">
                 <RichText
-                  text={storyPlan.worldDescription}
+                  text={localPlan.worldDescription || storyPlan.worldDescription}
                   projectId={projectId}
                   showPlaceholder
                   placeholder="No world description available."
@@ -222,9 +225,9 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
           )}
         </div>
 
-        {storyPlan.moodImages && storyPlan.moodImages.length > 0 ? (
+        {displayMoodImages && displayMoodImages.length > 0 ? (
           <div className="grid grid-cols-3 gap-2 mb-4">
-            {storyPlan.moodImages.map((img, i) => {
+            {displayMoodImages.map((img, i) => {
               if (typeof img !== 'string') return null
               const isPrimary = primaryImageIndex === i
               const isFile = img.match(/\.(png|jpg|jpeg|webp)$/i) || img.startsWith('http')
@@ -317,7 +320,7 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
                             if (!confirmed) return
 
                             try {
-                              const updatedImages = [...(storyPlan.moodImages || [])].filter(
+                              const updatedImages = [...displayMoodImages].filter(
                                 (_, idx) => idx !== i
                               )
                               const res = await fetch(`/api/storyteller/projects/${projectId}`, {
@@ -336,11 +339,10 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
                             }
                           }}
                           disabled={isGenerating}
-                          className={`p-2 rounded-full text-white transition-all shadow-md ${
-                            isGenerating
-                              ? 'bg-red-500/30 cursor-not-allowed'
-                              : 'bg-red-500/80 hover:bg-red-500 hover:scale-110 active:scale-95 backdrop-blur-md'
-                          }`}
+                          className={`p-2 rounded-full text-white transition-all shadow-md ${isGenerating
+                            ? 'bg-red-500/30 cursor-not-allowed'
+                            : 'bg-red-500/80 hover:bg-red-500 hover:scale-110 active:scale-95 backdrop-blur-md'
+                            }`}
                           title="Remove"
                         >
                           <Trash2 size={16} />
@@ -382,7 +384,7 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
                   }
                   try {
                     // Generate a new image at the next index
-                    const nextIndex = storyPlan.moodImages?.length || 0
+                    const nextIndex = displayMoodImages.length || 0
                     await moodboardGenerationService.generate(
                       projectId,
                       [],
@@ -398,11 +400,10 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
                   }
                 }}
                 disabled={isGenerating}
-                className={`aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all ${
-                  isGenerating
-                    ? 'border-muted-foreground/20 bg-muted/5 cursor-not-allowed opacity-50'
-                    : 'border-pink-500/30 bg-pink-500/5 hover:border-pink-500/60 hover:bg-pink-500/10 cursor-pointer'
-                }`}
+                className={`aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all ${isGenerating
+                  ? 'border-muted-foreground/20 bg-muted/5 cursor-not-allowed opacity-50'
+                  : 'border-pink-500/30 bg-pink-500/5 hover:border-pink-500/60 hover:bg-pink-500/10 cursor-pointer'
+                  }`}
                 title="Add new moodboard image"
               >
                 <Plus
@@ -435,7 +436,7 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
               <button
                 onClick={async () => {
                   if (isGenerating) return
-                  if (!storyPlan.worldDescription) {
+                  if (!(localPlan.worldDescription || storyPlan.worldDescription)) {
                     toast.error('Please add a world description first.')
                     return
                   }
@@ -462,11 +463,10 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
                   }
                 }}
                 disabled={isGenerating}
-                className={`w-full p-4 rounded-xl border-2 border-dashed flex items-center justify-center gap-3 transition-all ${
-                  isGenerating
-                    ? 'border-muted-foreground/20 bg-muted/5 cursor-not-allowed opacity-50'
-                    : 'border-pink-500/30 bg-pink-500/5 hover:border-pink-500/60 hover:bg-pink-500/10 cursor-pointer'
-                }`}
+                className={`w-full p-4 rounded-xl border-2 border-dashed flex items-center justify-center gap-3 transition-all ${isGenerating
+                  ? 'border-muted-foreground/20 bg-muted/5 cursor-not-allowed opacity-50'
+                  : 'border-pink-500/30 bg-pink-500/5 hover:border-pink-500/60 hover:bg-pink-500/10 cursor-pointer'
+                  }`}
               >
                 {isAddingNew || isGenerating ? (
                   <>

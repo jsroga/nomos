@@ -140,7 +140,19 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
   }
 
   const handleGenerateBeats = async () => {
-    if (!projectId || beats.length === 0) return
+    if (!projectId) return
+
+    // When no beats exist, ask the agent to generate 8-12 beats
+    if (beats.length === 0) {
+      if (onSendMessage) {
+        onSendMessage(
+          'Generate 8-12 story beats for this episode. Each beat should have a logline, beat type, visual hook, and characters involved. Cover the full arc from setup through climax to resolution.'
+        )
+      }
+      return
+    }
+
+    // When beats exist, generate images for them
     setIsGeneratingBeats(true)
     if (onAddMessage) {
       onAddMessage({
@@ -150,12 +162,10 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
       })
     }
     try {
-      let generatedCount = 0
       for (const beat of beats) {
         await beatImageService.generateImageForBeat(projectId, beat, (id, updates) => {
           setBeats(prev => prev.map(b => (b.id === id ? { ...b, ...updates } : b)))
         })
-        generatedCount++
       }
     } catch (e) {
       console.error('Storyboard generation failed', e)
@@ -175,14 +185,14 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
     <div className="space-y-4 pb-20">
       <div className="grid grid-cols-1 gap-4 mb-6">
         {/* SECTION 2: COMBINED STORYBOARD (Gemini) */}
-        <div className="bg-card border border-border rounded-lg p-4 shadow-sm flex flex-col">
+        <div className="bg-card border border-border rounded-md p-4 flex flex-col">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h3 className="text-sm font-bold flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-blue-500" />
+              <h3 className="font-mono text-[11px] font-medium uppercase tracking-widest text-foreground flex items-center gap-2">
+                <ImageIcon className="w-3.5 h-3.5 text-primary" />
                 Combined Storyboard
               </h3>
-              <p className="text-xs text-muted-foreground mt-1">Gemini Visual Summary</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Gemini Visual Summary</p>
             </div>
             {onGenerateCombined && (
               <Button
@@ -190,7 +200,7 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
                 size="sm"
                 onClick={onGenerateCombined}
                 disabled={isGeneratingCombined || beats.length === 0}
-                className="gap-2"
+                className="gap-2 rounded-md"
               >
                 {isGeneratingCombined ? (
                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -202,7 +212,7 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
             )}
           </div>
 
-          <div className="flex-1 min-h-[200px] flex items-center justify-center bg-black/20 rounded border border-border/50 relative overflow-hidden group">
+          <div className="flex-1 min-h-[200px] flex items-center justify-center bg-muted/30 rounded-md border border-border relative overflow-hidden group">
             {isGeneratingCombined ? (
               <div className="text-center space-y-2">
                 <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-500" />
@@ -239,25 +249,31 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
         hasPrev={false}
       />
 
-      <div className="flex justify-between items-center px-1">
-        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+      <div className="flex justify-between items-center px-1 mb-1">
+        <h3 className="font-mono text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
           Beat Board
         </h3>
         <button
           onClick={handleGenerateBeats}
-          disabled={isGeneratingBeats || beats.length === 0}
-          className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-md text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isGeneratingBeats}
+          className="flex items-center gap-2 px-3 py-1.5 bg-muted border border-border text-foreground hover:bg-primary/10 hover:border-primary/30 rounded-md text-[11px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isGeneratingBeats ? (
-            <Loader2 size={14} className="animate-spin" />
+            <Loader2 size={12} className="animate-spin" />
+          ) : beats.length === 0 ? (
+            <Sparkles size={12} />
           ) : (
-            <ImageIcon size={14} />
+            <ImageIcon size={12} />
           )}
-          {isGeneratingBeats ? 'Generating Beats...' : 'Generate Beats'}
+          {isGeneratingBeats
+            ? 'Generating…'
+            : beats.length === 0
+              ? 'Generate Beats'
+              : 'Generate Images'}
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {beats
           .sort((a, b) => a.sequence - b.sequence)
           .map(beat => (
@@ -276,15 +292,16 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
           ))}
 
         {/* Add New Card Placeholder */}
-        <div
+        <button
+          type="button"
           onClick={handleCreate}
-          className="aspect-[5/3] border-2 border-dashed border-white/20 rounded-lg flex flex-col items-center justify-center hover:bg-white/5 cursor-pointer transition-colors group"
+          className="min-h-[120px] border-2 border-dashed border-border rounded-md flex flex-col items-center justify-center hover:bg-muted/30 hover:border-primary/40 cursor-pointer transition-colors group text-left"
         >
-          <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-2 group-hover:bg-white/20 transition-colors">
-            <Plus className="text-white/60" />
+          <div className="w-10 h-10 rounded-md bg-muted border border-border flex items-center justify-center mb-2 group-hover:border-primary/30 group-hover:bg-primary/10 transition-colors">
+            <Plus className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
           </div>
-          <span className="text-white/40 font-medium group-hover:text-white/60">Add Beat</span>
-        </div>
+          <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground group-hover:text-foreground">Add Beat</span>
+        </button>
         {ConfirmDialogComponent}
       </div>
 

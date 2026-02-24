@@ -71,6 +71,7 @@ interface WorldState {
   upscalingTiles: Record<string, boolean>
   repaintingTiles: Record<string, boolean>
   enhancingTiles: Record<string, boolean>
+  failedTiles: Record<string, string> // Key: "x,y", Value: error message
 
   // Repaint State
   isRepaintMode: boolean
@@ -148,6 +149,8 @@ interface WorldState {
   removeRepaintingTile: (x: number, y: number) => void
   addEnhancingTile: (x: number, y: number) => void
   removeEnhancingTile: (x: number, y: number) => void
+  setTileError: (x: number, y: number, message: string) => void
+  clearTileError: (x: number, y: number) => void
 
   getTile: (x: number, y: number) => Tile | undefined
 
@@ -221,6 +224,7 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   upscalingTiles: {},
   repaintingTiles: {},
   enhancingTiles: {},
+  failedTiles: {},
   isRepaintMode: false,
   brushSize: 50,
   repaintStrokes: [],
@@ -269,6 +273,7 @@ export const useWorldStore = create<WorldState>((set, get) => ({
       // Map API response to store state (handling snake/camel case)
       const project = {
         ...projectData,
+        master_prompt: projectData.masterPrompt || projectData.master_prompt || '',
         series_bible: projectData.seriesBible || projectData.series_bible || {},
         story_plan: projectData.storyPlan || projectData.story_plan || {},
       }
@@ -501,9 +506,12 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   // Tile operation flag actions
   addGeneratingTile: (x, y) => {
     // Note: Global status operation is managed by TileGenerationService for better detail
-    set(state => ({
-      generatingTiles: { ...state.generatingTiles, [`${x},${y}`]: true },
-    }))
+    const key = `${x},${y}`
+    set(state => {
+      const failedTiles = { ...state.failedTiles }
+      delete failedTiles[key]
+      return { generatingTiles: { ...state.generatingTiles, [key]: true }, failedTiles }
+    })
   },
   removeGeneratingTile: (x, y) => {
     // Note: Global status operation is managed by TileGenerationService
@@ -515,9 +523,12 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   },
   addUpscalingTile: (x, y) => {
     // Note: Global status operation is managed by UpscaleService for better detail
-    set(state => ({
-      upscalingTiles: { ...state.upscalingTiles, [`${x},${y}`]: true },
-    }))
+    const key = `${x},${y}`
+    set(state => {
+      const failedTiles = { ...state.failedTiles }
+      delete failedTiles[key]
+      return { upscalingTiles: { ...state.upscalingTiles, [key]: true }, failedTiles }
+    })
   },
   removeUpscalingTile: (x, y) => {
     // Note: Global status operation is managed by UpscaleService
@@ -535,9 +546,12 @@ export const useWorldStore = create<WorldState>((set, get) => ({
       details: `(${x}, ${y})`,
       status: 'in-progress',
     })
-    set(state => ({
-      repaintingTiles: { ...state.repaintingTiles, [`${x},${y}`]: true },
-    }))
+    const key = `${x},${y}`
+    set(state => {
+      const failedTiles = { ...state.failedTiles }
+      delete failedTiles[key]
+      return { repaintingTiles: { ...state.repaintingTiles, [key]: true }, failedTiles }
+    })
   },
   removeRepaintingTile: (x, y) => {
     useGlobalStatusStore.getState().removeOperation(`rep-${x},${y}`)
@@ -549,9 +563,12 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   },
   addEnhancingTile: (x, y) => {
     // Note: Global status operation is managed by FidelityService for better detail
-    set(state => ({
-      enhancingTiles: { ...state.enhancingTiles, [`${x},${y}`]: true },
-    }))
+    const key = `${x},${y}`
+    set(state => {
+      const failedTiles = { ...state.failedTiles }
+      delete failedTiles[key]
+      return { enhancingTiles: { ...state.enhancingTiles, [key]: true }, failedTiles }
+    })
   },
   removeEnhancingTile: (x, y) => {
     // Note: Global status operation is managed by FidelityService
@@ -559,6 +576,18 @@ export const useWorldStore = create<WorldState>((set, get) => ({
       const newTiles = { ...state.enhancingTiles }
       delete newTiles[`${x},${y}`]
       return { enhancingTiles: newTiles }
+    })
+  },
+  setTileError: (x, y, message) => {
+    set(state => ({
+      failedTiles: { ...state.failedTiles, [`${x},${y}`]: message },
+    }))
+  },
+  clearTileError: (x, y) => {
+    set(state => {
+      const failedTiles = { ...state.failedTiles }
+      delete failedTiles[`${x},${y}`]
+      return { failedTiles }
     })
   },
 

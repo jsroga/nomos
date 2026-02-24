@@ -122,16 +122,16 @@ const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
         isGeneratingStoryboard={isGeneratingStoryboard}
       />
 
-      {/* Plan Ready Button - Only show when premise is complete */}
+      {/* Plan Ready - sharp CTA when premise is complete */}
       {isPlanComplete && (
-        <div className="p-4 border-t bg-background/95 backdrop-blur">
+        <div className="p-4 border-t border-border bg-background/95 backdrop-blur">
           <Button
             onClick={onApprove}
-            className="w-full gap-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white shadow-lg shadow-emerald-500/25"
+            className="w-full gap-2 rounded-md font-medium"
             size="lg"
           >
-            <CheckCircle className="w-5 h-5" />
-            Plan Ready - Proceed to Beats
+            <CheckCircle className="w-4 h-4" />
+            Plan Ready — Proceed to Beats
           </Button>
         </div>
       )}

@@ -47,7 +47,7 @@ export const ScatterTool: React.FC = () => {
 
     addObject({
       modelUrl: activeModelUrl,
-      position: [x, 0.5 * scale, z], // Adjust y based on scale
+      position: [x, 0, z], // Always Y=0 - objects must be snapped to bottom of level
       rotation: [0, Math.random() * Math.PI * 2, 0],
       scale: [scale, scale, scale],
     })

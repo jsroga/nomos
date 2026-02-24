@@ -7,6 +7,7 @@ import {
   verifyProjectAccess,
   type AuthenticatedRequest,
 } from '@/lib/api-utils'
+import { resolveStyleReferenceUrls } from '@/config/style-presets'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,16 +48,19 @@ export const POST = withRateLimit(
     // Determine if this is a first tile (no neighbors) or follow-up tile
     const isFirstTile = payload.isFirstTile ?? true
 
-    // Fetch style references using authenticated client
+    // Fetch style references using authenticated client (preset or custom URLs)
     let styleReferenceUrls: string[] | undefined
     if (isFirstTile && !payload.styleReferenceUrls) {
       const { data } = await supabase
         .from('projects')
-        .select('style_reference_urls')
+        .select('style_reference_urls, style_preset')
         .eq('id', payload.projectId)
-        .single() as { data: { style_reference_urls: string[] } | null }
+        .single() as { data: { style_reference_urls: string[]; style_preset: string | null } | null }
 
-      styleReferenceUrls = data?.style_reference_urls || []
+      styleReferenceUrls = resolveStyleReferenceUrls({
+        stylePreset: data?.style_preset,
+        styleReferenceUrls: data?.style_reference_urls,
+      })
     } else {
       styleReferenceUrls = isFirstTile ? payload.styleReferenceUrls : undefined
     }
@@ -76,6 +80,8 @@ export const POST = withRateLimit(
         ...(styleReferenceUrls ? { styleReferenceUrls } : {}),
         // Pass context image for follow-up tiles
         ...(payload.contextImageBase64 ? { contextImageBase64: payload.contextImageBase64 } : {}),
+        // Pass neighbors for server-side context assembly
+        ...(!isFirstTile && payload.neighbors ? { neighbors: payload.neighbors } : {}),
       },
       {
         ttl: '10m', // Match maxDuration

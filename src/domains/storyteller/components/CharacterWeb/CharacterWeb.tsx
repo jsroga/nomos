@@ -85,13 +85,13 @@ function applyForceLayout(
   const centerY = height / 2
 
   // Initial placement: radial by type for natural clustering
-  const typeOrder = ['faction', 'character', 'place', 'event', 'rule']
   const grouped = new Map<string, CharacterWebNode[]>()
   for (const node of nodes) {
-    const t = (node.data as any)?.type || 'character'
+    const t = node.data.type || 'character'
     if (!grouped.has(t)) grouped.set(t, [])
     grouped.get(t)!.push(node)
   }
+  const typeOrder = Array.from(new Set(['faction', 'character', 'place', 'event', 'rule', 'item', ...grouped.keys()]))
 
   let globalIdx = 0
   const baseRadius = Math.min(width, height) * 0.3
@@ -121,7 +121,7 @@ function applyForceLayout(
   const edgeMap = new Map<string, number>() // "a|b" -> weight
   for (const edge of edges) {
     const key = [edge.source, edge.target].sort().join('|')
-    edgeMap.set(key, (edge.data as any)?.strength || 0.5)
+    edgeMap.set(key, edge.data?.strength || 0.5)
   }
 
   // Force simulation parameters
@@ -137,9 +137,11 @@ function applyForceLayout(
 
     // Repulsion: all pairs
     for (let i = 0; i < nodes.length; i++) {
-      const posA = positions.get(nodes[i].id)!
+      const posA = positions.get(nodes[i].id)
+      if (!posA) continue
       for (let j = i + 1; j < nodes.length; j++) {
-        const posB = positions.get(nodes[j].id)!
+        const posB = positions.get(nodes[j].id)
+        if (!posB) continue
 
         let dx = posA.x - posB.x
         let dy = posA.y - posB.y
@@ -174,7 +176,7 @@ function applyForceLayout(
       const dist = Math.sqrt(dx * dx + dy * dy) || 1
 
       // Spring force - stronger edges = closer together, but enforce minimum distance
-      const weight = (edge.data as any)?.strength || 0.5
+      const weight = edge.data?.strength || 0.5
       const idealDist = minDist + (1 - weight) * 300 // High similarity = closer
       const displacement = dist - idealDist
       const force = displacement * springStrength * weight * cooling
@@ -190,14 +192,16 @@ function applyForceLayout(
 
     // Center gravity
     for (const node of nodes) {
-      const pos = positions.get(node.id)!
+      const pos = positions.get(node.id)
+      if (!pos) continue
       pos.vx += (centerX - pos.x) * centerGravity
       pos.vy += (centerY - pos.y) * centerGravity
     }
 
     // Apply velocities with damping
     for (const node of nodes) {
-      const pos = positions.get(node.id)!
+      const pos = positions.get(node.id)
+      if (!pos) continue
       pos.vx *= damping
       pos.vy *= damping
       pos.x += pos.vx
@@ -232,10 +236,10 @@ function convertToFlowData(data: RelationshipMatrixResponse): {
     data: {
       name: n.name,
       type: n.type,
-      role: n.metadata?.role || n.metadata?.archetype,
-      description: n.description || n.metadata?.description || '',
-      stressLevel: n.metadata?.metrics?.perceivedStakes,
-      transformationProgress: n.metadata?.metrics?.transformation,
+      role: n.metadata.role || n.metadata.archetype,
+      description: n.description || n.metadata.description || '',
+      stressLevel: n.metadata.metrics?.perceivedStakes,
+      transformationProgress: n.metadata.metrics?.transformation,
       isCentral: n.id === data.centralCharacter || n.name === data.centralCharacter,
     },
   }))
@@ -386,7 +390,7 @@ export function CharacterWeb({
         ...e,
         style: {
           ...e.style,
-          opacity: Math.max(0.3, (e.data as any)?.strength || 0.5),
+          opacity: Math.max(0.3, e.data?.strength || 0.5),
           transition: 'opacity 0.3s ease',
         },
         labelStyle: { ...((e.labelStyle as any) || {}), opacity: 1 },
@@ -404,7 +408,7 @@ export function CharacterWeb({
         n.id === focusEntityId ||
         n.id.includes(focusEntityId) ||
         n.data.name?.toLowerCase().replace(/\s+/g, '-') ===
-          focusEntityId.split('-').slice(1).join('-')
+        focusEntityId.split('-').slice(1).join('-')
     )
 
     if (targetNode) {
@@ -560,6 +564,7 @@ export function CharacterWeb({
                 place: '#10b981',
                 event: '#f59e0b',
                 rule: '#f43f5e',
+                item: '#8b5cf6',
               }
               return colors[data.type] || '#6b7280'
             }}
@@ -634,7 +639,9 @@ function NodeDetailsPanel({
                     ? 'bg-blue-900/20 text-blue-200'
                     : type === 'place'
                       ? 'bg-emerald-900/20 text-emerald-200'
-                      : 'bg-zinc-800/50 text-zinc-300'
+                      : type === 'item'
+                        ? 'bg-violet-900/20 text-violet-200'
+                        : 'bg-zinc-800/50 text-zinc-300'
               )}
             >
               {data.name.charAt(0)}

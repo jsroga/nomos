@@ -23,6 +23,7 @@ import { eq } from 'drizzle-orm'
 import { WORKFLOW_EVENTS } from '../../utils/workflow-context'
 import { getErrorMessage } from '@/lib/error-utils'
 import type { MazurJudgment } from '../../../../agent-core/judging'
+import { ReferenceValidator } from '../../services/reference-validator'
 
 /** Shape returned by PremiseArchitectAgent.generatePremise */
 interface PremiseGenerationResult {
@@ -322,6 +323,39 @@ export const consultGardenerTool = createTool({
 })
 
 /**
+ * Validate References Tool
+ */
+export const validateReferencesTool = createTool({
+  id: 'validate_references',
+  description:
+    'Validate and autofix entity references within text. Use this to ensure all references (like Characters and Places) are valid or to formally register new items or events you just invented.',
+  inputSchema: z.object({
+    content: z.string().describe('The text containing MD-style [Entity Name][entity-id] references to validate'),
+    projectId: z.string().describe('Project ID for context tracking'),
+  }),
+  execute: async (args: any) => {
+    const context = args
+    const traceId = getWorkflowTraceId()
+
+    const span = langfuse.span({
+      traceId: traceId || undefined,
+      name: 'validate_references',
+      input: { textPreview: context.content?.slice(0, 100) },
+      metadata: { agentType: 'ReferenceValidator' },
+    })
+
+    try {
+      const validated = await ReferenceValidator.validate(context.content, context.projectId)
+      span.end({ output: { textPreview: validated.slice(0, 100) } })
+      return validated
+    } catch (error: unknown) {
+      span.end({ level: 'ERROR', statusMessage: getErrorMessage(error) })
+      return context.content // fallback to unvalidated text
+    }
+  }
+})
+
+/**
  * Valid episode premise sections that can be regenerated
  */
 const PREMISE_SECTIONS = [
@@ -405,6 +439,24 @@ Valid sections for regenerate_section: ${PREMISE_SECTIONS.join(', ')}`,
         if (plan.worldDescription && !enrichedContext.includes('WORLD DESCRIPTION')) {
           enrichedContext += `\n--- WORLD DESCRIPTION ---\n${plan.worldDescription}\n`
         }
+        if (Array.isArray(plan.items) && plan.items.length > 0 && !enrichedContext.includes('--- ITEMS ---')) {
+          enrichedContext += `\n--- ITEMS ---\n${plan.items.map((i: any) => {
+            const itemId = 'item-' + (i.id?.slice(0, 8) || i.name.toLowerCase().replace(/\s+/g, '-'));
+            return '- [' + i.name + '][' + itemId + ']: ' + (i.description || 'No description');
+          }).join('\n')}\n`
+        }
+        if (Array.isArray(plan.events) && plan.events.length > 0 && !enrichedContext.includes('--- EVENTS ---')) {
+          enrichedContext += `\n--- EVENTS ---\n${plan.events.map((e: any) => {
+            const eventId = 'event-' + (e.id?.slice(0, 8) || e.name.toLowerCase().replace(/\s+/g, '-'));
+            return '- [' + e.name + '][' + eventId + ']: ' + (e.description || 'No description');
+          }).join('\n')}\n`
+        }
+        if (Array.isArray(plan.worldRules) && plan.worldRules.length > 0 && !enrichedContext.includes('--- WORLD RULES ---')) {
+          enrichedContext += `\n--- WORLD RULES ---\n${plan.worldRules.map((r: any) => {
+            const ruleId = 'rule-' + (r.id?.slice(0, 8) || r.name?.toLowerCase().replace(/\s+/g, '-') || 'unknown');
+            return '- [' + (r.name || r.category || 'Rule') + '][' + ruleId + ']: ' + (r.rule || 'No description');
+          }).join('\n')}\n`
+        }
       } catch (e) {
         console.warn('[consult_premise_architect] Failed to enrich context with cast:', e)
       }
@@ -433,7 +485,7 @@ Valid sections for regenerate_section: ${PREMISE_SECTIONS.join(', ')}`,
 
       if (task === 'regenerate_section' && section && existingPremise) {
         // Regenerate only the specified section
-        console.log(`[PremiseArchitect] Regenerating section: ${section}`)
+        console.log(`[PremiseArchitect] Regenerating section: ${section} `)
         result = await agent.regenerateSection(
           section as PremiseSection,
           existingPremise,
@@ -518,4 +570,5 @@ export const agentTools = [
   consultDevilsAdvocateTool,
   consultGardenerTool,
   consultPremiseArchitectTool,
+  validateReferencesTool,
 ]

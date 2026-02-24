@@ -80,6 +80,11 @@ export class StorageService {
    * Abstraction to handle the difference between local paths and storage URLs.
    */
   getImageUrl(projectId: string, filename: string): string {
+    // If filename is already a full URL (e.g. from Vercel Blob), return as-is
+    if (filename.startsWith('http://') || filename.startsWith('https://')) {
+      return filename
+    }
+
     if (isProduction) {
       const {
         data: { publicUrl },

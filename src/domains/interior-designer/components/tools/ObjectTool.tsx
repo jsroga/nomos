@@ -15,6 +15,8 @@ export const ObjectTool: React.FC = () => {
   const { raycaster, pointer, camera, scene } = useThree()
 
   const [currentPoint, setCurrentPoint] = useState<THREE.Vector3 | null>(null)
+  const [currentRotation, setCurrentRotation] = useState<[number, number, number]>([0, 0, 0])
+  const [isPlacable, setIsPlacable] = useState<boolean>(true)
 
   // Only active in OBJECT mode
   if (mode !== 'OBJECT') return null
@@ -22,101 +24,152 @@ export const ObjectTool: React.FC = () => {
   const getIntersection = () => {
     raycaster.setFromCamera(pointer, camera)
 
+    const isWindowOrDoor = activeModelUrl === 'window' || activeModelUrl === 'door'
+
     // First, try to intersect with the scene (surfaces, etc)
-    // Filter for objects that are strictly surfaces or ground-like
-    // Using a broad check for now, can refine if needed
     const intersects = raycaster.intersectObjects(scene.children, true)
 
-    // Find the first intersection that is visible and NOT the ghost object or cursor helpers
-    // We can assume surfaces are meshes.
-    const groundHit = intersects.find(hit => {
-      // Simple heuristic: ignore if it's the ghost object (which might be in the scene?)
-      // Our ghost object is inside <group> in this component.
-      // It's safer to rely on the fact that the ghost is likely transparent or transient?
-      // Actually, raycaster can hit the ghost if we aren't careful.
-      // But since the Ghost is in THIS component, and this component is a child of the scene...
-      // We probably get self-intersection.
-      // We can ignore objects with specific userData or just checking distance?
+    if (isWindowOrDoor) {
+      // Filter hits to only walls
+      const wallHit = intersects.find(hit => {
+        return hit.object.type === 'Mesh' && hit.object.visible && hit.object.userData?.type === 'wall'
+      })
 
-      // Let's filter out non-surface type objects if possible.
-      // Or better: Prioritize surfaces.
-      return hit.object.type === 'Mesh' && hit.object.visible
+      if (wallHit) {
+        // Extract wall data
+        const { start, end, thickness, height } = wallHit.object.userData
+        const dx = end[0] - start[0]
+        const dz = end[2] - start[2]
+
+        // Match WallManager.tsx calculation exactly
+        const wallAngle = Math.atan2(dz, dx)
+
+        // Windows generally sit inside the wall, so snap to the raycast hit point
+        // but perhaps center it vertically based on activeLevel or just use hit Y.
+        // Let's strictly place it at Y=0 relative to the group for now or specific wall height.
+        let y = 0
+        if (activeModelUrl === 'window') {
+          // Constrain window vertically to the center of the wall
+          y = height / 2
+        }
+
+        // Return exact point on the wall bounding box, rotation matches wall rotation.
+        // WallMesh has `rotation={[0, -angle, 0]}` where `angle = Math.atan2(dz, dx)`.
+        const rotationY = -wallAngle
+
+        return {
+          point: new THREE.Vector3(wallHit.point.x, y, wallHit.point.z),
+          rotation: [0, rotationY, 0] as [number, number, number],
+          placable: true
+        }
+      } else {
+        // No wall hit
+        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)
+        const target = new THREE.Vector3()
+        raycaster.ray.intersectPlane(plane, target)
+
+        if (target) {
+          return {
+            point: target,
+            rotation: [0, 0, 0] as [number, number, number],
+            placable: false
+          }
+        }
+      }
+      return null
+    }
+
+    // Default object placement logic
+    const groundHit = intersects.find(hit => {
+      // Prioritize surfaces, ignore ghosts
+      return hit.object.type === 'Mesh' && hit.object.visible && hit.object.userData?.type !== 'wall'
     })
 
     if (groundHit) {
-      // Snap logic for objects (optional grid snap)
       const x = Math.round(groundHit.point.x * 2) / 2
       const z = Math.round(groundHit.point.z * 2) / 2
-      const y = groundHit.point.y
-
-      // Determine offset based on object type
-      let yOffset = 0
-      if (['cube', 'cylinder', 'sphere'].includes(activeModelUrl)) {
-        yOffset = 0.5
-      }
-
-      return new THREE.Vector3(x, y + yOffset, z)
+      const y = 0
+      return { point: new THREE.Vector3(x, y, z), rotation: [0, 0, 0] as [number, number, number], placable: true }
     }
 
-    // Fallback plane intersection
-    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -activeLevel * 3)
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)
     const target = new THREE.Vector3()
     raycaster.ray.intersectPlane(plane, target)
 
     if (target) {
       target.x = Math.round(target.x * 2) / 2
       target.z = Math.round(target.z * 2) / 2
-      target.y = 0.5 // Default half height
-      return target
+      target.y = 0
+      return { point: target, rotation: [0, 0, 0] as [number, number, number], placable: true }
     }
     return null
   }
 
   const handlePointerMove = () => {
-    const point = getIntersection()
-    if (point) {
-      setCurrentPoint(point)
+    const intersection = getIntersection()
+    if (intersection) {
+      setCurrentPoint(intersection.point)
+      setCurrentRotation(intersection.rotation)
+      setIsPlacable(intersection.placable)
     }
   }
 
   const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
-    const point = getIntersection()
-    if (!point) return
+    const intersection = getIntersection()
+    if (!intersection) return
+
+    if (!intersection.placable) return
 
     addObject({
       modelUrl: activeModelUrl,
-      position: [point.x, point.y, point.z],
-      rotation: [0, 0, 0],
+      position: [intersection.point.x, intersection.point.y, intersection.point.z],
+      rotation: intersection.rotation,
       scale: [1, 1, 1],
+      level: activeLevel,
     })
   }
+
+  const ghostColor = isPlacable ? '#f59e0b' : '#ef4444'
 
   return (
     <group position={[0, activeLevel * 3, 0]}>
       {/* Preview Ghost Object */}
       {currentPoint && (
-        <group position={currentPoint}>
+        <group position={currentPoint} rotation={currentRotation} raycast={() => null}>
+          {activeModelUrl === 'window' && (
+            <mesh position={[0, 0, 0]}>
+              <boxGeometry args={[1, 1.2, 0.1]} />
+              <meshStandardMaterial color={ghostColor} transparent opacity={0.5} />
+            </mesh>
+          )}
+          {activeModelUrl === 'door' && (
+            <mesh position={[0, 1.05, 0]}>
+              <boxGeometry args={[0.9, 2.1, 0.05]} />
+              <meshStandardMaterial color={ghostColor} transparent opacity={0.5} />
+            </mesh>
+          )}
           {activeModelUrl === 'cube' && (
-            <Box args={[1, 1, 1]}>
-              <meshStandardMaterial color="#f59e0b" transparent opacity={0.5} />
-            </Box>
+            <mesh position={[0, 0.5, 0]}>
+              <boxGeometry args={[1, 1, 1]} />
+              <meshStandardMaterial color={ghostColor} transparent opacity={0.5} />
+            </mesh>
           )}
           {activeModelUrl === 'sphere' && (
-            <mesh>
+            <mesh position={[0, 0.5, 0]}>
               <sphereGeometry args={[0.5]} />
-              <meshStandardMaterial color="#f59e0b" transparent opacity={0.5} />
+              <meshStandardMaterial color={ghostColor} transparent opacity={0.5} />
             </mesh>
           )}
           {activeModelUrl === 'cylinder' && (
-            <mesh>
+            <mesh position={[0, 0.5, 0]}>
               <cylinderGeometry args={[0.5, 0.5, 1]} />
-              <meshStandardMaterial color="#f59e0b" transparent opacity={0.5} />
+              <meshStandardMaterial color={ghostColor} transparent opacity={0.5} />
             </mesh>
           )}
           {activeModelUrl === 'cone' && (
-            <mesh>
+            <mesh position={[0, 0.5, 0]}>
               <coneGeometry args={[0.5, 1]} />
-              <meshStandardMaterial color="#f59e0b" transparent opacity={0.5} />
+              <meshStandardMaterial color={ghostColor} transparent opacity={0.5} />
             </mesh>
           )}
         </group>

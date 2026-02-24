@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-import { Torus, X } from 'lucide-react'
+import { X, ArrowLeft, ArrowRight, Play, SkipForward, XCircle } from 'lucide-react'
 
 export interface TourStep {
   content: React.ReactNode
@@ -22,7 +22,7 @@ export interface TourStep {
   width?: number
   height?: number
   onClickWithinArea?: () => void
-  position?: 'top' | 'bottom' | 'left' | 'right'
+  position?: 'top' | 'bottom' | 'left' | 'right' | 'center'
   action?: () => void
   hideNext?: boolean
   advanceEvent?: string
@@ -56,8 +56,21 @@ const CONTENT_WIDTH = 300
 const CONTENT_HEIGHT = 200
 
 function getElementPosition(id: string) {
+  // Special case for body
+  if (id === 'body') {
+    return {
+      top: 0,
+      left: 0,
+      width: window.innerWidth,
+      height: window.innerHeight,
+    }
+  }
+
   const element = document.getElementById(id)
-  if (!element) return null
+  if (!element) {
+    console.warn(`[Tour] Element with id '${id}' not found`)
+    return null
+  }
   const rect = element.getBoundingClientRect()
   return {
     top: rect.top + window.scrollY,
@@ -69,7 +82,7 @@ function getElementPosition(id: string) {
 
 function calculateContentPosition(
   elementPos: { top: number; left: number; width: number; height: number },
-  position: 'top' | 'bottom' | 'left' | 'right' = 'bottom'
+  position: 'top' | 'bottom' | 'left' | 'right' | 'center' = 'bottom'
 ) {
   const viewportWidth = window.innerWidth
   const viewportHeight = window.innerHeight
@@ -93,6 +106,11 @@ function calculateContentPosition(
     case 'right':
       left = elementPos.left + elementPos.width + PADDING
       top = elementPos.top + elementPos.height / 2 - CONTENT_HEIGHT / 2
+      break
+    case 'center':
+      // Center the content in the viewport
+      left = (viewportWidth - CONTENT_WIDTH) / 2
+      top = (viewportHeight - CONTENT_HEIGHT) / 2
       break
   }
 
@@ -143,6 +161,14 @@ export function TourProvider({
       const position = getElementPosition(steps[currentStep]?.selectorId ?? '')
       if (position) {
         setElementPosition(position)
+      } else {
+        // If element not found, retry after a short delay for dynamically rendered elements
+        setTimeout(() => {
+          const retryPosition = getElementPosition(steps[currentStep]?.selectorId ?? '')
+          if (retryPosition) {
+            setElementPosition(retryPosition)
+          }
+        }, 500)
       }
     }
   }, [currentStep, steps])
@@ -343,7 +369,7 @@ export function TourProvider({
                     {currentStep < steps.length - 1 && (
                       <button
                         onClick={endTour}
-                        className="text-xs text-muted-foreground hover:text-foreground mr-auto transition-colors"
+                        className="text-xs text-muted-foreground hover:text-foreground mr-auto transition-colors font-medium"
                       >
                         Skip
                       </button>
@@ -353,19 +379,21 @@ export function TourProvider({
                         onClick={previousStep}
                         disabled={currentStep === 0}
                         className={cn(
-                          "text-sm text-muted-foreground hover:text-foreground",
+                          "text-xs font-medium text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors bg-secondary/50 hover:bg-secondary px-3 py-1.5 rounded-md",
                           currentStep === steps.length - 1 && "mr-auto" // Push finish button to right if it's the only other button
                         )}
                       >
-                        Previous
+                        <ArrowLeft size={12} />
+                        Prev
                       </button>
                     )}
                     {!steps[currentStep]?.hideNext && (
                       <button
                         onClick={nextStep}
-                        className="ml-auto text-sm font-medium text-primary hover:text-primary/90"
+                        className="ml-auto text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 px-4 py-1.5 rounded-md shadow-sm flex items-center gap-1.5 transition-all hover:scale-105"
                       >
                         {currentStep === steps.length - 1 ? 'Finish' : 'Next'}
+                        {currentStep < steps.length - 1 && <ArrowRight size={12} />}
                       </button>
                     )}
                     {steps[currentStep]?.hideNext && (
@@ -407,9 +435,11 @@ export function TourAlertDialog({
   onSkipAll?: () => void
   moduleName?: string
 }) {
-  const { startTour, steps, isTourCompleted, currentStep } = useTour()
+  const { startTour, steps, currentStep } = useTour()
 
-  if (isTourCompleted || steps.length === 0 || currentStep > -1) {
+  // Only hide if tour is active or no steps configured
+  // Don't check isTourCompleted here - ModuleOnboardingController handles route-specific logic
+  if (steps.length === 0 || currentStep > -1) {
     return null
   }
 
@@ -419,12 +449,16 @@ export function TourAlertDialog({
   }
 
   const handleStart = () => {
-    setIsOpen(false)
+    // Start the tour first, then close the dialog
     if (onStartTour) {
       onStartTour()
     } else {
       startTour()
     }
+    // Small delay to ensure tour starts before dialog closes
+    setTimeout(() => {
+      setIsOpen(false)
+    }, 100)
   }
 
   const handleSkipAll = () => {
@@ -432,9 +466,17 @@ export function TourAlertDialog({
     onSkipAll?.()
   }
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      // Dialog is being closed (via backdrop click or ESC)
+      // Treat as skip
+      handleSkip()
+    }
+  }
+
   return (
-    <AlertDialog open={isOpen}>
-      <AlertDialogContent className="max-w-md p-6">
+    <AlertDialog open={isOpen} onOpenChange={handleOpenChange}>
+      <AlertDialogContent className="max-w-md p-6 bg-black border-gray-800">
         <AlertDialogHeader className="flex flex-col items-center justify-center">
           <div className="relative mb-4">
             <motion.div
@@ -442,50 +484,64 @@ export function TourAlertDialog({
               animate={{
                 scale: 1,
                 filter: 'blur(0px)',
-                y: [0, -8, 0],
-                rotate: [42, 48, 42],
               }}
               transition={{
                 duration: 0.4,
                 ease: 'easeOut',
-                y: {
-                  duration: 2.5,
-                  repeat: Number.POSITIVE_INFINITY,
-                  ease: 'easeInOut',
-                },
-                rotate: {
-                  duration: 3,
-                  repeat: Number.POSITIVE_INFINITY,
-                  ease: 'easeInOut',
-                },
               }}
+              className="w-full aspect-square max-w-[240px] mx-auto"
             >
-              <Torus className="size-32 stroke-1 text-primary" />
+              <video
+                src="/storyteller-tour-graphic.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-contain drop-shadow-2xl"
+              />
             </motion.div>
           </div>
-          <AlertDialogTitle className="text-center text-xl font-medium">
+          <AlertDialogTitle className="text-center text-xl font-medium text-white">
             Welcome to {moduleName}
           </AlertDialogTitle>
-          <AlertDialogDescription className="text-muted-foreground mt-2 text-center text-sm">
+          <AlertDialogDescription className="text-gray-300 mt-2 text-center text-sm">
             Take a quick tour to learn about the key features and functionality of the{' '}
             {moduleName.toLowerCase()}.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="mt-6 space-y-3">
-          <Button onClick={handleStart} className="w-full">
+          <button
+            onClick={handleStart}
+            className="w-full h-12 relative overflow-hidden rounded-md bg-gradient-to-r from-primary via-purple-500 to-primary text-white font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group flex items-center justify-center"
+            style={{
+              backgroundSize: '200% 100%',
+              backgroundPosition: '0% 50%',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundPosition = '100% 50%'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundPosition = '0% 50%'
+            }}
+          >
+            <Play className="w-4 h-4 mr-2 group-hover:translate-x-0.5 transition-transform" />
             Start Tour
-          </Button>
+          </button>
           <div className="flex gap-2">
-            <Button onClick={handleSkip} variant="ghost" className="flex-1">
-              Skip
-            </Button>
-            <Button
-              onClick={handleSkipAll}
-              variant="ghost"
-              className="flex-1 text-muted-foreground text-[10px]"
+            <button
+              onClick={handleSkip}
+              className="flex-1 h-10 rounded-md border border-gray-700/50 bg-black/40 hover:bg-gray-800/60 hover:border-gray-600 text-gray-300 hover:text-white transition-all duration-200 backdrop-blur-sm flex items-center justify-center text-sm font-medium"
             >
-              Skip All Tours
-            </Button>
+              <SkipForward className="w-3.5 h-3.5 mr-1.5" />
+              Skip
+            </button>
+            <button
+              onClick={handleSkipAll}
+              className="flex-1 h-10 rounded-md border border-gray-700/50 bg-black/40 hover:bg-gray-800/60 hover:border-gray-600 text-gray-400 hover:text-gray-200 transition-all duration-200 backdrop-blur-sm text-xs font-medium flex items-center justify-center"
+            >
+              <XCircle className="w-3 h-3 mr-1.5" />
+              Skip All
+            </button>
           </div>
         </div>
       </AlertDialogContent>

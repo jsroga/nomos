@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { LocalStorageKeys } from '@/constants/localStorage'
 import { getErrorMessage } from '@/lib/error-utils'
+import { STYLE_PRESETS } from '@/config/style-presets'
 
 interface SettingsDialogProps {
   isOpen: boolean
@@ -43,6 +44,7 @@ interface ProviderStatus {
 interface ProjectData {
   name?: string
   styleReferenceUrls?: string[]
+  stylePreset?: string | null
   [key: string]: unknown
 }
 
@@ -87,6 +89,30 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
   const [projectData, setProjectData] = useState<ProjectData | null>(null)
   const [styleReferenceUrls, setStyleReferenceUrls] = useState<string[]>([])
   const [newStyleUrl, setNewStyleUrl] = useState<string>('')
+  const [styleMode, setStyleMode] = useState<'preset' | 'custom'>('custom')
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
+
+  const saveStyleSettings = async (mode: 'preset' | 'custom', preset: string | null, urls: string[]) => {
+    if (!projectId) return
+    try {
+      const body: Record<string, unknown> = {}
+      if (mode === 'preset') {
+        body.stylePreset = preset
+        body.style_reference_urls = []
+      } else {
+        body.stylePreset = null
+        body.style_reference_urls = urls
+      }
+      await fetch(`/api/storyteller/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+    } catch (error) {
+      console.error('Failed to save project settings:', error)
+      toast.error('Failed to save project settings')
+    }
+  }
 
   // MCP API Keys state
   const [mcpKeys, setMcpKeys] = useState<McpApiKey[]>([])
@@ -119,6 +145,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
           .then(data => {
             setProjectData(data)
             setStyleReferenceUrls(data.styleReferenceUrls || [])
+            if (data.stylePreset) {
+              setStyleMode('preset')
+              setSelectedPreset(data.stylePreset)
+            } else {
+              setStyleMode('custom')
+              setSelectedPreset(null)
+            }
           })
           .catch(err => console.error('Failed to load project:', err))
       }
@@ -457,87 +490,137 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                     </p>
 
                     <div className="space-y-6">
-                      {/* Style Reference URLs */}
+                      {/* Style Reference Section */}
                       <div>
                         <h4 className="text-sm font-semibold mb-3">
-                          Character Portrait Style References
+                          Style References
                         </h4>
                         <p className="text-xs text-muted-foreground mb-4">
-                          Add Midjourney image URLs to use as style references (--sref parameter)
-                          for character portrait generation. Multiple URLs can be added for style
-                          blending.
+                          Choose a predefined style preset or provide your own Midjourney style
+                          reference URLs (--sref parameter). Applied to all image generation.
                         </p>
 
-                        {/* Current URLs */}
-                        {styleReferenceUrls.length > 0 && (
-                          <div className="space-y-2 mb-4">
-                            {styleReferenceUrls.map((url, index) => (
-                              <div
-                                key={index}
-                                className="flex items-center gap-2 p-2 bg-muted/30 rounded-md border border-border"
+                        {/* Mode Toggle */}
+                        <div className="flex gap-1 p-1 bg-muted/40 rounded-lg mb-4 w-fit">
+                          <button
+                            onClick={() => setStyleMode('custom')}
+                            className={cn(
+                              'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
+                              styleMode === 'custom'
+                                ? 'bg-background shadow-sm text-foreground'
+                                : 'text-muted-foreground hover:text-foreground'
+                            )}
+                          >
+                            Custom URLs
+                          </button>
+                          <button
+                            onClick={() => setStyleMode('preset')}
+                            className={cn(
+                              'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
+                              styleMode === 'preset'
+                                ? 'bg-background shadow-sm text-foreground'
+                                : 'text-muted-foreground hover:text-foreground'
+                            )}
+                          >
+                            Presets
+                          </button>
+                        </div>
+
+                        {/* Preset Mode */}
+                        {styleMode === 'preset' && (
+                          <div className="grid grid-cols-2 gap-2">
+                            {STYLE_PRESETS.map(preset => (
+                              <button
+                                key={preset.id}
+                                onClick={() => {
+                                  const newPreset = selectedPreset === preset.id ? null : preset.id
+                                  setSelectedPreset(newPreset)
+                                  saveStyleSettings('preset', newPreset, [])
+                                }}
+                                className={cn(
+                                  'flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left',
+                                  selectedPreset === preset.id
+                                    ? 'border-primary bg-primary/5 shadow-sm'
+                                    : 'border-border hover:border-muted-foreground/30 bg-muted/20'
+                                )}
                               >
-                                <span className="text-xs flex-1 truncate font-mono">{url}</span>
-                                <button
-                                  onClick={() =>
-                                    setStyleReferenceUrls(urls =>
-                                      urls.filter((_, i) => i !== index)
-                                    )
-                                  }
-                                  className="text-destructive hover:text-destructive/80 text-xs px-2 py-1"
+                                <div
+                                  className="w-10 h-10 rounded-lg flex items-center justify-center text-xl shrink-0"
+                                  style={{ backgroundColor: preset.color + '25' }}
                                 >
-                                  Remove
-                                </button>
-                              </div>
+                                  {preset.emoji}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="text-sm font-medium">{preset.name}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {preset.description}
+                                  </div>
+                                </div>
+                                {selectedPreset === preset.id && (
+                                  <Check className="w-4 h-4 text-primary shrink-0" />
+                                )}
+                              </button>
                             ))}
                           </div>
                         )}
 
-                        {/* Add New URL */}
-                        <div className="flex gap-2">
-                          <input
-                            type="url"
-                            value={newStyleUrl}
-                            onChange={e => setNewStyleUrl(e.target.value)}
-                            placeholder="https://s.mj.run/..."
-                            className="flex-1 p-2 rounded-md border border-input bg-background text-sm"
-                          />
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              if (newStyleUrl && newStyleUrl.startsWith('http')) {
-                                setStyleReferenceUrls([...styleReferenceUrls, newStyleUrl])
-                                setNewStyleUrl('')
-                              }
-                            }}
-                            disabled={!newStyleUrl || !newStyleUrl.startsWith('http')}
-                          >
-                            Add URL
-                          </Button>
-                        </div>
+                        {/* Custom Mode */}
+                        {styleMode === 'custom' && (
+                          <div>
+                            {/* Current URLs */}
+                            {styleReferenceUrls.length > 0 && (
+                              <div className="space-y-2 mb-4">
+                                {styleReferenceUrls.map((url, index) => (
+                                  <div
+                                    key={index}
+                                    className="flex items-center gap-2 p-2 bg-muted/30 rounded-md border border-border"
+                                  >
+                                    <span className="text-xs flex-1 truncate font-mono">
+                                      {url}
+                                    </span>
+                                    <button
+                                      onClick={() => {
+                                        const updated = styleReferenceUrls.filter((_, i) => i !== index)
+                                        setStyleReferenceUrls(updated)
+                                        saveStyleSettings('custom', null, updated)
+                                      }}
+                                      className="text-destructive hover:text-destructive/80 text-xs px-2 py-1"
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Add New URL */}
+                            <div className="flex gap-2">
+                              <input
+                                type="url"
+                                value={newStyleUrl}
+                                onChange={e => setNewStyleUrl(e.target.value)}
+                                placeholder="https://s.mj.run/..."
+                                className="flex-1 p-2 rounded-md border border-input bg-background text-sm"
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  if (newStyleUrl && newStyleUrl.startsWith('http')) {
+                                    const updated = [...styleReferenceUrls, newStyleUrl]
+                                    setStyleReferenceUrls(updated)
+                                    setNewStyleUrl('')
+                                    saveStyleSettings('custom', null, updated)
+                                  }
+                                }}
+                                disabled={!newStyleUrl || !newStyleUrl.startsWith('http')}
+                              >
+                                Add URL
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
-                      {/* Save Button for Project Settings */}
-                      <div className="pt-4 border-t border-border">
-                        <Button
-                          onClick={async () => {
-                            try {
-                              await fetch(`/api/storyteller/projects/${projectId}`, {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  style_reference_urls: styleReferenceUrls,
-                                }),
-                              })
-                              toast.success('Project settings saved!')
-                            } catch (error) {
-                              console.error('Failed to save project settings:', error)
-                              toast.error('Failed to save project settings')
-                            }
-                          }}
-                        >
-                          Save Project Settings
-                        </Button>
-                      </div>
                     </div>
                   </div>
                 </div>

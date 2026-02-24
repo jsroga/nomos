@@ -282,6 +282,8 @@ export const PERSONAS = {
       'necessity - every element must serve the story or be cut',
       'authentic voice - prose that sounds like a person, not an algorithm',
       'original framing - familiar themes approached from unexpected angles',
+      'creative risk - at least one bold choice that could only exist here',
+      'invention - a spark: a detail, turn, or framing that feels newly imagined, not borrowed',
     ],
     hates: [
       'borrowed ideas - plot points lifted from popular media without transformation',

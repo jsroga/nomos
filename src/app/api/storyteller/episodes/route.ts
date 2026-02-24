@@ -5,13 +5,7 @@ import { db } from '@/lib/db'
 import { projects } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'
 
-async function verifyProjectAccess(projectId: string, userId: string) {
-  const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
-  if (!project || project.userId !== userId) {
-    return false
-  }
-  return true
-}
+import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)

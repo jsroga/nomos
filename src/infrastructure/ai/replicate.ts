@@ -10,6 +10,16 @@ function getReplicateClient(apiKey: string): Replicate {
   return clientCache.get(apiKey)!
 }
 
+import { z } from 'zod'
+
+// Schema for Replicate SAM-2 output
+const ReplicateSAM2Schema = z.object({
+  individual_masks: z.array(z.any()).optional(),
+  masks: z.array(z.any()).optional(),
+  scores: z.array(z.number()).optional(),
+  logits: z.array(z.any()).optional(),
+}).passthrough()
+
 export class ReplicateClient {
   private replicate: Replicate
 
@@ -38,9 +48,17 @@ export class ReplicateClient {
     )
 
     console.log('[ReplicateClient] Raw output:', JSON.stringify(output, null, 2))
-    console.log('[ReplicateClient] Output type:', typeof output)
-    console.log('[ReplicateClient] Output keys:', Object.keys(output || {}))
-    const typedOutput = output as any
+
+    // Validate output structure instead of blind casting
+    const parsed = ReplicateSAM2Schema.safeParse(output)
+    if (!parsed.success) {
+      console.warn('[ReplicateClient] Unexpected output format:', parsed.error)
+      // Fallback to returning raw output but logged warning
+      return output
+    }
+
+    const typedOutput = parsed.data
+
     if (typedOutput?.individual_masks && typedOutput.individual_masks.length > 0) {
       console.log('[ReplicateClient] First mask type:', typeof typedOutput.individual_masks[0])
       console.log(

@@ -435,7 +435,10 @@ const SidebarToggleRow: React.FC<SidebarToggleRowProps> = ({
   )
 }
 
-// Standardized empty state for sidebar
+// Standardized empty state for sidebar – same spacing and text size everywhere
+const SIDEBAR_EMPTY_STATE_CLASS =
+  'text-center text-muted-foreground flex flex-col items-center gap-3 py-3 text-[10px]'
+
 interface SidebarEmptyStateProps {
   icon?: React.ReactNode
   message: string
@@ -450,7 +453,7 @@ export const SidebarEmptyState: React.FC<SidebarEmptyStateProps> = ({
   return (
     <div
       className={cn(
-        'text-center text-muted-foreground mt-10 flex flex-col items-center gap-3',
+        SIDEBAR_EMPTY_STATE_CLASS,
         className
       )}
     >

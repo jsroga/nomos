@@ -142,8 +142,20 @@ export default function ProjectSelectionPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen w-screen bg-black text-foreground">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex flex-col items-center justify-center h-screen w-screen bg-black text-foreground relative z-50">
+        <div className="flex flex-col items-center justify-center w-full h-full p-4 relative z-20">
+          <div className="relative">
+            <img
+              alt="Loading..."
+              className="w-12 h-12 opacity-80 animate-pulse drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]"
+              src="/favicon.svg"
+            />
+            <div className="absolute inset-[-8px] rounded-full border-2 border-primary/30 border-t-white/80 animate-spin"></div>
+          </div>
+          <p className="mt-4 text-xs font-mono text-white/90 font-bold tracking-widest uppercase animate-pulse">
+            Dreaming...
+          </p>
+        </div>
       </div>
     )
   }
