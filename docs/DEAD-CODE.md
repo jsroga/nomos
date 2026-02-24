@@ -1,16 +1,22 @@
 # Dead Code Report
 
-> Auto-generated on 2026-02-19 by [Knip](https://knip.dev). Do not edit manually.
+> Auto-generated on 2026-02-24 by [Knip](https://knip.dev). Do not edit manually.
 > Updates automatically via CI on every push to main and on PRs.
 
 ## Summary
 
 | Category | Count |
 |----------|-------|
+| Unused files | 1 |
 | Unlisted dependencies | 5 |
 | Unresolved imports | 7 |
-| Unused exports | 5 |
-| **Total** | **17** |
+| Unused exports | 7 |
+| Unused types | 1 |
+| **Total** | **21** |
+
+## Unused Files
+
+- `src/domains/storyteller/config/entity-links-config.ts`
 
 ## Unlisted Dependencies
 
@@ -40,11 +46,17 @@ Exported but never imported. Remove `export` or delete.
 
 | Export | File |
 |--------|------|
+| `validateOrigin` | `src/lib/api-utils.ts:198` |
+| `getUserProjects` | `src/domains/storyteller/lib/access-verification.ts:211` |
 | `beatTools` | `src/domains/storyteller/tools/v2/beat-tools.ts:482` |
 | `characterTools` | `src/domains/storyteller/tools/v2/character-tools.ts:482` |
 | `continuityTools` | `src/domains/storyteller/tools/v2/continuity-tools.ts:295` |
 | `scriptTools` | `src/domains/storyteller/tools/v2/script-tools.ts:173` |
 | `ragTools` | `src/domains/storyteller/tools/v2/rag-tools.ts:401` |
+
+## Unused Types
+
+- `EntityRelationship` in `src/hooks/useGameEntities.ts:23`
 
 ## How to Fix
 
