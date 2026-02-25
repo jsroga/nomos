@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { POST } from '@/app/api/storyteller/actions/route'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 
 // Mock dependencies
@@ -22,19 +22,7 @@ vi.mock('@/domains/storyteller/lib/access-verification', () => ({
     verifyEpisodeAccess: vi.fn().mockResolvedValue(true),
 }))
 
-// Mock Drizzle specific chain methods
-const mockChain = () => {
-    const chain = {
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockReturnThis(),
-        values: vi.fn().mockReturnThis(),
-        set: vi.fn().mockReturnThis(),
-        onConflictDoUpdate: vi.fn().mockReturnThis(),
-        then: vi.fn(),
-    }
-    return chain
-}
+// Removed unused mockChain
 
 describe('API Route: Actions Persistence', () => {
     beforeEach(() => {
@@ -62,20 +50,20 @@ describe('API Route: Actions Persistence', () => {
         })
 
         // Assign spy to db.insert
-        db.insert = insertSpy as any
+        db.insert = insertSpy as unknown as typeof db.insert
         // Also mock update for other paths
         db.update = vi.fn().mockReturnValue({
             set: vi.fn().mockReturnThis(),
             where: vi.fn().mockReturnThis(),
             then: thenMock
-        }) as any
+        }) as unknown as typeof db.update
         db.select = vi.fn().mockReturnValue({
             from: vi.fn().mockReturnThis(),
             where: vi.fn().mockReturnThis(),
             limit: vi.fn().mockReturnValue({
                 then: thenMock
             }),
-        }) as any
+        }) as unknown as typeof db.select
 
     })
 
@@ -119,18 +107,18 @@ describe('API Route: Actions Persistence', () => {
         const valuesMock = chainObject.values as ReturnType<typeof vi.fn>
 
         // Extract the arguments from the calls to values()
-        const allPayloads = valuesMock.mock.calls.map((call: any[]) => call[0].content || call[0])
+        const allPayloads = valuesMock.mock.calls.map((call: unknown[]) => (call[0] as Record<string, unknown>).content || call[0])
 
         // One should have magicSystem (Series Bible)
         // Note: The structure passed to values() is { projectId, content: {...}, updatedAt }
         // So we need to check the .content property
 
-        const bibleUpdate = allPayloads.find((p: any) => p.magicSystem === 'Hard Magic')
+        const bibleUpdate = allPayloads.find((p: unknown) => (p as Record<string, unknown>).magicSystem === 'Hard Magic')
         expect(bibleUpdate).toBeDefined()
         expect(bibleUpdate.genre).toBeUndefined() // should NOT be here
 
         // One should have genre/tone (Story Plan)
-        const planUpdate = allPayloads.find((p: any) => p.genre === 'Fantasy')
+        const planUpdate = allPayloads.find((p: unknown) => (p as Record<string, unknown>).genre === 'Fantasy')
         expect(planUpdate).toBeDefined()
         expect(planUpdate.magicSystem).toBeUndefined() // should NOT be here
     })

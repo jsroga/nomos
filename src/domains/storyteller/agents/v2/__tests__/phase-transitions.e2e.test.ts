@@ -232,6 +232,7 @@ describe('Structured Output Schemas', () => {
         inevitableConsequence: 'His own actions sealed his fate.',
         thematicFocus: 'Can we escape our own nature?',
         charactersInvolved: ['Father', 'Son', 'Mother'],
+        tenPointsPlan: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
       }
 
       const result = EpisodePremiseSchema.safeParse(validPremise)
@@ -266,6 +267,7 @@ describe('Structured Output Schemas', () => {
           inevitableConsequence: 'The consequence.',
           thematicFocus: 'The theme.',
           charactersInvolved: ['Char A'],
+          tenPointsPlan: ['Point 1'],
         },
         confidence: 0.95,
       }
@@ -290,6 +292,7 @@ describe('Structured Output Schemas', () => {
           inevitableConsequence: 'Test',
           thematicFocus: 'Test',
           charactersInvolved: [],
+          tenPointsPlan: [],
         },
         confidence: 1.5, // Invalid - above 1
       }

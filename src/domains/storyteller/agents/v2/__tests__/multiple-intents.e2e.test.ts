@@ -62,7 +62,7 @@ describe('Storyteller Agent - Multiple Intents E2E', () => {
             args: {
                 projectId: 'test-project-id',
                 plotTwists: [{ title: 'The Betrayal', description: 'Et tu, Brute?' }],
-                cast: [{ name: 'Caesar', role: 'Protagonist', description: 'Emperor' }]
+                cast: [{ name: 'Caesar', role: 'Protagonist', description: 'Emperor', gender: 'Male', mbti: 'ENTJ' }]
             }
         }
 
@@ -110,9 +110,9 @@ describe('Storyteller Agent - Multiple Intents E2E', () => {
 
         // Verify the tool result contains both updates
         expect(result.updatedFields).toHaveProperty('plotTwists')
-        expect(result.updatedFields).toHaveProperty('cast')
+        expect(result.updatedFields).toHaveProperty('keyCharacters')
         expect(result.updatedFields.plotTwists).toHaveLength(1)
-        expect(result.updatedFields.cast).toHaveLength(1)
+        expect(result.updatedFields.keyCharacters).toHaveLength(1)
         expect(result.success).toBe(true)
     })
 
@@ -136,11 +136,11 @@ describe('Storyteller Agent - Multiple Intents E2E', () => {
         // Call 2: Update Cast
         const rawResult2 = await updateWorldBibleTool.execute({
             projectId: 'test-project-id',
-            cast: [{ name: 'Char 1', role: 'Role 1', description: 'Desc 1' }]
+            cast: [{ name: 'Char 1', role: 'Role 1', description: 'Desc 1', gender: 'Female', mbti: 'INTJ' }]
         })
         const result2 = typeof rawResult2 === 'string' ? JSON.parse(rawResult2) : rawResult2
 
-        expect(result2.updatedFields).toHaveProperty('cast')
+        expect(result2.updatedFields).toHaveProperty('keyCharacters')
         expect(result2.updatedFields).not.toHaveProperty('plotTwists')
     })
 })

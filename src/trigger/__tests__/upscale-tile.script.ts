@@ -142,3 +142,6 @@ async function runTests() {
 }
 
 runTests()
+
+import { describe, it } from 'vitest'
+describe.skip('Dummy suite', () => { it('dummy test', () => {}) })

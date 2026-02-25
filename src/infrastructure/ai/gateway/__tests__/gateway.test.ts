@@ -155,6 +155,7 @@ describe('AIGateway', () => {
         prompt: 'test',
         preferredProvider: 'failing',
         fallbackProviders: ['working'],
+        retryCount: 1,
       })
 
       expect(result.success).toBe(true)

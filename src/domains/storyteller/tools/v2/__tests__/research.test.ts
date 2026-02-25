@@ -18,8 +18,7 @@ describe('Research Tools (v2)', () => {
   it('should return error if API key missing', async () => {
     delete process.env.TAVILY_API_KEY
     const result = await researchTool.execute({
-      context: { query: 'test', focus: 'general' },
-      runtimeContext: undefined as any,
+      query: 'test', focus: 'general'
     })
     const parsed = JSON.parse(result as string)
     expect(parsed.success).toBe(false)
@@ -35,8 +34,7 @@ describe('Research Tools (v2)', () => {
     })
 
     const result = await researchTool.execute({
-      context: { query: 'Napoleon', focus: 'historical' },
-      runtimeContext: undefined as any,
+      query: 'Napoleon', focus: 'historical'
     })
 
     const parsed = JSON.parse(result as string)
@@ -55,8 +53,7 @@ describe('Research Tools (v2)', () => {
     })
 
     const result = await researchTool.execute({
-      context: { query: 'Napoleon', focus: 'historical' },
-      runtimeContext: undefined as any,
+      query: 'Napoleon', focus: 'historical'
     })
 
     const parsed = JSON.parse(result as string)

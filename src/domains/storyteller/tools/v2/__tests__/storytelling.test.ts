@@ -5,8 +5,7 @@ describe('Storytelling Tools (v2)', () => {
   describe('get_plot_phase', () => {
     it('should return correct phase for chapter 1', async () => {
       const result = await getPlotPhaseTool.execute({
-        context: { currentChapter: 1 },
-        runtimeContext: undefined as any,
+        currentChapter: 1
       })
       const parsed = JSON.parse(result as string)
       expect(parsed.phase).toBe('Ordinary World')
@@ -15,8 +14,7 @@ describe('Storytelling Tools (v2)', () => {
 
     it('should cap at the last phase', async () => {
       const result = await getPlotPhaseTool.execute({
-        context: { currentChapter: 100 },
-        runtimeContext: undefined as any,
+        currentChapter: 100
       })
       const parsed = JSON.parse(result as string)
       expect(parsed.phase).toBe('Return with the Elixir')
@@ -26,11 +24,8 @@ describe('Storytelling Tools (v2)', () => {
   describe('validate_plot_consistency', () => {
     it('should detect dead/alive conflict', async () => {
       const result = await validateConsistencyTool.execute({
-        context: {
-          proposedBeat: 'John visits the store alive.',
-          establishedFacts: ['John is dead'],
-        },
-        runtimeContext: undefined as any,
+        proposedBeat: 'John visits the store alive.',
+        establishedFacts: ['John is dead'],
       })
       const parsed = JSON.parse(result as string)
       expect(parsed.isConsistent).toBe(false)
@@ -39,11 +34,8 @@ describe('Storytelling Tools (v2)', () => {
 
     it('should pass if no conflict', async () => {
       const result = await validateConsistencyTool.execute({
-        context: {
-          proposedBeat: 'Mary visits the store.',
-          establishedFacts: ['John is dead'],
-        },
-        runtimeContext: undefined as any,
+        proposedBeat: 'Mary visits the store.',
+        establishedFacts: ['John is dead'],
       })
       const parsed = JSON.parse(result as string)
       expect(parsed.isConsistent).toBe(true)

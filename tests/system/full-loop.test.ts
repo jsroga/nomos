@@ -2,11 +2,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ExecutiveAgent } from '../../src/agent-core/executive'
 import { createPlannerTool, PlanPersistence } from '../../src/agent-core/planner'
-import { testResearchTool } from '../mocks/tools-mock' // Or import real one if mocking fetch
 import { researchTool } from '../../src/domains/storyteller/tools/v2/research-adapter'
 import { Plan } from '../../src/agent-core/schemas'
 import { registerCorePrompts } from '../../src/prompts/registry'
-import { InMemoryStore } from '@mastra/core/storage'
 
 class MockPersistence implements PlanPersistence {
     public plan: Plan | null = null

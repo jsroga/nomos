@@ -42,7 +42,6 @@ describe('Tool Execution (Mastra 1.x API)', () => {
       // Mastra 1.x passes args directly to execute, not wrapped in { context }
       const args = {
         projectId: 'test-project-id',
-        worldDescription: 'A dark and stormy world',
         genre: 'Fantasy',
       }
 

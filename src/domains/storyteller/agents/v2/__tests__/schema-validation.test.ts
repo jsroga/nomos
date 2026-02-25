@@ -210,6 +210,7 @@ describe('Schema OpenAI Compatibility', () => {
         inevitableConsequence: 'Consequence',
         thematicFocus: 'Theme',
         charactersInvolved: ['Char A', 'Char B'],
+        tenPointsPlan: ['Step 1', 'Step 2'],
       }
 
       const result = EpisodePremiseSchema.safeParse(validData)
@@ -232,6 +233,7 @@ describe('Schema OpenAI Compatibility', () => {
           inevitableConsequence: 'Consequence',
           thematicFocus: 'Theme',
           charactersInvolved: [],
+          tenPointsPlan: [],
         },
         actions: [{ type: 'UPDATE_CHARACTER', description: 'Update character arc' }],
         confidence: 0.9,

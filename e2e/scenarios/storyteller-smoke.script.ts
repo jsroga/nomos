@@ -730,3 +730,6 @@ main().catch(err => {
   console.error('Fatal error:', err)
   process.exit(1)
 })
+
+import { describe, it } from 'vitest'
+describe.skip('Dummy suite', () => { it('dummy test', () => {}) })

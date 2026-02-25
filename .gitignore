@@ -32,3 +32,18 @@ public/projects/
 
 *storybook.log
 storybook-static
+
+# Lighthouse reports
+lighthouse-*.report.html
+lighthouse-*.report.json
+
+# Lint / test output and scratch artifacts
+lint_results.txt
+test_results.txt
+test-tool-output.ts
+test-*-output.*
+
+# Local dev DBs (e.g. Mastra memory)
+mastra-memory.db
+mastra-memory.db-shm
+mastra-memory.db-wal

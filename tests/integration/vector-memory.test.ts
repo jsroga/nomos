@@ -14,12 +14,12 @@ describe.skipIf(!DATABASE_URL)('AgentMemory Integration with PgVector', () => {
             id: 'test-messages',
             connectionString: DATABASE_URL!,
         })
-        await vector.createIndex({ indexName: 'test_messages', dimension: 3, metric: 'cosine' })
+        await vector.createIndex({ indexName: 'messages', dimension: 3, metric: 'cosine' })
     })
 
     afterAll(async () => {
         try {
-            await vector.deleteIndex({ indexName: 'test_messages' })
+            await vector.deleteIndex({ indexName: 'messages' })
         } catch {
             // Index might not exist
         }
@@ -37,11 +37,25 @@ describe.skipIf(!DATABASE_URL)('AgentMemory Integration with PgVector', () => {
                     embeddings: values.map(() => [0.1, 0.2, 0.3]) // Fixed vector for consistent testing
                 }
             }
-        } as any
+        } as unknown
+
+        const mockStorage = new InMemoryStore()
+        const storageMessages: any[] = []
+        if (!('saveMessages' in mockStorage)) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (mockStorage as any).saveMessages = async (args: any) => {
+                storageMessages.push(...args.messages)
+                return args
+            }
+        }
+        if (!('listMessages' in mockStorage)) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (mockStorage as any).listMessages = async () => ({ messages: storageMessages })
+        }
 
         const memory = new AgentMemory({
             name: 'test-agent',
-            storage: new InMemoryStore(),
+            storage: mockStorage,
             vector: vector
         })
 
@@ -66,10 +80,11 @@ describe.skipIf(!DATABASE_URL)('AgentMemory Integration with PgVector', () => {
             }
         ]
 
-        await memory.saveMessages({ messages: messages as any })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await memory.saveMessages({ messages: messages as any[] })
 
         // Query (Standard)
-        const recent = await memory.query({ threadId })
+        const recent = await memory.recall({ threadId })
         expect(recent.messages.length).toBe(2)
 
         // Remember (Vector Search)

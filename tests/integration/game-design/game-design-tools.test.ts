@@ -50,11 +50,9 @@ describe.skipIf(!hasOpenAI)('Game Design Logic Transformer Tools', () => {
 
             const result = (await tool.execute!(
                 {
-                    context: {
-                        mechanics: mechanics as GameMechanic[],
-                        genre: 'farming sim',
-                        targetAudience: 'casual',
-                    },
+                    mechanics: mechanics as GameMechanic[],
+                    genre: 'farming sim',
+                    targetAudience: 'casual',
                 },
                 {} as any
             )) as any
@@ -96,13 +94,11 @@ describe.skipIf(!hasOpenAI)('Game Design Logic Transformer Tools', () => {
 
             const result = (await tool.execute!(
                 {
-                    context: {
-                        loopId: crypto.randomUUID(),
-                        mechanics: mechanics as GameMechanic[],
-                        resources: resources as any,
-                        targetAudience: 'midcore',
-                        sessionDurationMinutes: 30,
-                    },
+                    loopId: crypto.randomUUID(),
+                    mechanics: mechanics as GameMechanic[],
+                    resources: resources as any,
+                    targetAudience: 'midcore',
+                    sessionDurationMinutes: 30,
                 },
                 {} as any
             )) as any
@@ -138,12 +134,10 @@ describe.skipIf(!hasOpenAI)('Game Design Logic Transformer Tools', () => {
 
             const result = (await tool.execute!(
                 {
-                    context: {
-                        currentLoop: loop as GameLoop,
-                        expansionDirection: 'depth',
-                        genre: 'farming sim',
-                        targetAudience: 'casual',
-                    },
+                    currentLoop: loop as GameLoop,
+                    expansionDirection: 'depth',
+                    genre: 'farming sim',
+                    targetAudience: 'casual',
                 },
                 {} as any
             )) as any
@@ -189,10 +183,8 @@ describe.skipIf(!hasOpenAI)('Game Design Logic Transformer Tools', () => {
 
             const result = (await tool.execute!(
                 {
-                    context: {
-                        loop: loop as GameLoop,
-                        mechanics: mechanics as GameMechanic[],
-                    },
+                    loop: loop as GameLoop,
+                    mechanics: mechanics as GameMechanic[],
                 },
                 {} as any
             )) as any
@@ -230,10 +222,8 @@ describe.skipIf(!hasOpenAI)('Game Design Logic Transformer Tools', () => {
 
             const result = (await tool.execute!(
                 {
-                    context: {
-                        loop: loop as GameLoop,
-                        mechanics: mechanics as GameMechanic[],
-                    },
+                    loop: loop as GameLoop,
+                    mechanics: mechanics as GameMechanic[],
                 },
                 {} as any
             )) as any

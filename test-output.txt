@@ -1,0 +1,2625 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/Users/jaceksroga/tilemap[39m
+
+ [31m❯[39m src/domains/interior-designer/__tests__/terrain-cdt.test.ts [2m([22m[2m8 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 6[2mms[22m[39m
+       [32m✓[39m should detect point inside square[32m 1[2mms[22m[39m
+       [32m✓[39m should detect point outside square[32m 0[2mms[22m[39m
+[31m       [31m×[31m should handle point on edge as outside[39m[32m 3[2mms[22m[39m
+       [32m✓[39m should generate Steiner points inside a square[32m 1[2mms[22m[39m
+       [32m✓[39m should generate more points with smaller spacing[32m 0[2mms[22m[39m
+       [32m✓[39m should triangulate a square[32m 0[2mms[22m[39m
+       [32m✓[39m should triangulate a more complex polygon[32m 0[2mms[22m[39m
+       [32m✓[39m should handle concave polygons[32m 0[2mms[22m[39m
+[90mstdout[2m | e2e/scenarios/storyteller-smoke.test.ts
+[22m[39m
+██████████████████████████████████████████████████████████████████████
+██  STORYTELLER SMOKE TEST
+██  Verifying core functionality
+██████████████████████████████████████████████████████████████████████
+
+📡 Testing against: http://localhost:3000/api/storyteller/chat/stream
+📁 Project ID: 168b5a14-11dc-428a-b5a0-67d62dd32b71
+
+
+─── LAYER 1: API ───
+
+
+ [31m❯[39m e2e/scenarios/storyteller-smoke.test.ts [2m([22m[2m0 test[22m[2m)[22m
+[90mstdout[2m | src/domains/interior-designer/__tests__/unity-export.test.ts
+[22m[39m
+=== UnityExporter ===
+Test: prepares export with asset bundling
+
+✅ All tests passed!
+
+[90mstdout[2m | src/domains/interior-designer/__tests__/unity-export.test.ts
+[22m[39mZip Files: [
+  [32m'Assets/'[39m,
+  [32m'Assets/InteriorDesign/'[39m,
+  [32m'Assets/InteriorDesign/Models/'[39m,
+  [32m'Assets/InteriorDesign/Textures/'[39m,
+  [32m'Assets/InteriorDesign/Models/model_obj-1.glb'[39m,
+  [32m'Assets/InteriorDesign/Models/model_obj-1.glb.meta'[39m,
+  [32m'Assets/InteriorDesign/InteriorScene.unity'[39m,
+  [32m'Assets/InteriorDesign/README.txt'[39m
+]
+
+[90mstderr[2m | src/domains/interior-designer/__tests__/unity-export.test.ts
+[22m[39m  FAIL: Expected to contain Assets/InteriorDesign/Scenes/design.json, got Assets/,Assets/InteriorDesign/,Assets/InteriorDesign/Models/,Assets/InteriorDesign/Textures/,Assets/InteriorDesign/Models/model_obj-1.glb,Assets/InteriorDesign/Models/model_obj-1.glb.meta,Assets/InteriorDesign/InteriorScene.unity,Assets/InteriorDesign/README.txt
+
+ [31m❯[39m src/domains/interior-designer/__tests__/unity-export.test.ts [2m([22m[2m0 test[22m[2m)[22m
+[90mstdout[2m | tests/integration/game-design/game-design-agent.test.ts
+[22m[39m✅ Langfuse observability enabled
+
+[90mstdout[2m | tests/integration/psychologist-verification.test.ts
+[22m[39m✅ Langfuse observability enabled
+
+[90mstdout[2m | tests/integration/council-verification.test.ts
+[22m[39m✅ Langfuse observability enabled
+
+[90mstdout[2m | src/trigger/__tests__/upscale-tile.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
+🧪 Running upscale-tile task tests...
+
+
+=== Testing Payload Validation ===
+✓ Task ID is correct
+✓ Valid payload structure
+✓ Provider is valid
+✓ Creativity value is in range
+✓ Provider config has API key
+
+✅ All payload validation tests passed!
+
+[90mstdout[2m | src/trigger/__tests__/upscale-tile.test.ts
+[22m[39m
+=== Testing Provider Configurations ===
+✓ Midjourney config valid
+✓ Replicate config valid
+✓ Stability config valid
+
+✅ All provider config tests passed!
+
+[90mstdout[2m | src/trigger/__tests__/upscale-tile.test.ts
+[22m[39m
+=== Testing Task Metadata ===
+✓ Task exists
+✓ Task has id property
+✓ Task is a valid object
+
+✅ Task metadata tests passed!
+
+[90mstdout[2m | src/trigger/__tests__/upscale-tile.test.ts
+[22m[39m
+==================================================
+🎉 All tests passed!
+==================================================
+
+[90mstderr[2m | src/trigger/__tests__/upscale-tile.test.ts
+[22m[39m
+❌ Test failed: process.exit unexpectedly called with "0"
+
+ [31m❯[39m src/trigger/__tests__/upscale-tile.test.ts [2m([22m[2m0 test[22m[2m)[22m
+[90mstdout[2m | src/trigger/__tests__/generate-tile.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  enable debug logging with { debug: true }
+🧪 Running generate-tile task tests...
+
+
+=== Testing Payload Validation ===
+✓ Task ID is correct
+✓ projectId is present
+✓ Coordinates are present
+✓ Prompt is present
+✓ AI configuration is present
+
+✅ All payload validation tests passed!
+
+[90mstdout[2m | src/trigger/__tests__/generate-tile.test.ts
+[22m[39m
+=== Testing Coordinate Handling ===
+✓ Positive coordinates valid
+✓ Negative coordinates valid
+✓ Zero coordinates valid
+
+✅ Coordinate handling tests passed!
+
+[90mstdout[2m | src/trigger/__tests__/generate-tile.test.ts
+[22m[39m
+=== Testing AI Provider Configurations ===
+✓ All providers accept API key
+
+✅ AI provider config tests passed!
+
+[90mstdout[2m | src/trigger/__tests__/generate-tile.test.ts
+[22m[39m
+=== Testing Task Metadata ===
+✓ Task exists
+✓ Task has id property
+✓ Task ID format is valid
+✓ Task is a valid object
+
+✅ Task metadata tests passed!
+
+[90mstdout[2m | src/trigger/__tests__/generate-tile.test.ts
+[22m[39m
+=== Testing Filename Generation ===
+✓ Filename follows expected pattern
+✓ Filename handles negative coordinates
+
+✅ Filename generation tests passed!
+
+[90mstderr[2m | src/trigger/__tests__/generate-tile.test.ts
+[22m[39m
+❌ Test failed: process.exit unexpectedly called with "0"
+
+[90mstdout[2m | src/trigger/__tests__/generate-tile.test.ts
+[22m[39m
+==================================================
+🎉 All tests passed!
+==================================================
+
+[90mstdout[2m | src/trigger/__tests__/tile-generation-service.test.ts
+[22m[39m🧪 Running TileGenerationService tests...
+
+
+=== Testing Task Configuration ===
+✓ Task ID is correct
+✓ Task exists
+
+✅ Task configuration tests passed!
+
+[90mstdout[2m | src/trigger/__tests__/tile-generation-service.test.ts
+[22m[39m
+=== Testing API Payload Validation ===
+✓ All required fields present
+✓ Coordinates are valid numbers
+✓ AI config has API key
+
+✅ API payload validation tests passed!
+
+ [31m❯[39m src/trigger/__tests__/generate-tile.test.ts [2m([22m[2m0 test[22m[2m)[22m
+[90mstdout[2m | src/trigger/__tests__/tile-generation-service.test.ts
+[22m[39m
+=== Testing Run State Structure ===
+✓ runId format is valid
+✓ projectId is present
+✓ Coordinates are present
+✓ startedAt is valid ISO date
+
+✅ Run state structure tests passed!
+
+[90mstdout[2m | src/trigger/__tests__/tile-generation-service.test.ts
+[22m[39m
+=== Testing Status Handling ===
+✓ Active statuses defined correctly
+✓ Terminal statuses not in active list
+
+✅ Status handling tests passed!
+
+[90mstdout[2m | src/trigger/__tests__/tile-generation-service.test.ts
+[22m[39m
+=== Testing LocalStorage Key Format ===
+✓ Key format handles positive coordinates
+✓ Key format handles negative coordinates
+
+✅ LocalStorage key format tests passed!
+
+[90mstderr[2m | src/trigger/__tests__/tile-generation-service.test.ts
+[22m[39m
+❌ Test failed: process.exit unexpectedly called with "0"
+
+[90mstdout[2m | src/trigger/__tests__/tile-generation-service.test.ts
+[22m[39m
+==================================================
+🎉 All TileGenerationService tests passed!
+==================================================
+
+ [31m❯[39m src/trigger/__tests__/tile-generation-service.test.ts [2m([22m[2m0 test[22m[2m)[22m
+[90mstdout[2m | tests/integration/game-design/game-design-tools.test.ts[2m > [22m[2mGame Design Logic Transformer Tools[2m > [22m[2mcreateIdentifyCoreLoopTool[2m > [22m[2mshould identify core loop from mechanics
+[22m[39mIdentify core loop error: You must provide at least one mechanic to identify a core loop. Please generate some mechanics first.
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts
+[22m[39m✅ Langfuse observability enabled
+
+[90mstdout[2m | tests/integration/executive-agent.test.ts
+[22m[39m✅ Langfuse observability enabled
+
+ [31m❯[39m tests/integration/game-design/game-design-tools.test.ts [2m([22m[2m8 tests[22m[2m | [22m[31m5 failed[39m[2m)[22m[32m 32[2mms[22m[39m
+[31m       [31m×[31m should identify core loop from mechanics[39m[32m 14[2mms[22m[39m
+[31m       [31m×[31m should analyze balance of mechanics[39m[32m 4[2mms[22m[39m
+[31m       [31m×[31m should suggest progression improvements[39m[32m 7[2mms[22m[39m
+[31m       [31m×[31m should validate a well-formed loop structure[39m[32m 2[2mms[22m[39m
+[31m       [31m×[31m should detect orphan nodes[39m[32m 1[2mms[22m[39m
+       [32m✓[39m should be callable[32m 1[2mms[22m[39m
+       [32m✓[39m should be callable[32m 1[2mms[22m[39m
+       [32m✓[39m should be callable[32m 1[2mms[22m[39m
+[90mstdout[2m | src/infrastructure/ai/gateway/__tests__/gateway.test.ts[2m > [22m[2mAIGateway[2m > [22m[2mProvider Registration[2m > [22m[2mshould register a provider
+[22m[39m[AIGateway] Registered provider: Mock Provider (mock)
+
+[90mstdout[2m | src/infrastructure/ai/gateway/__tests__/gateway.test.ts[2m > [22m[2mAIGateway[2m > [22m[2mProvider Registration[2m > [22m[2mshould unregister a provider
+[22m[39m[AIGateway] Registered provider: Mock Provider (mock)
+
+[90mstdout[2m | src/infrastructure/ai/gateway/__tests__/gateway.test.ts[2m > [22m[2mAIGateway[2m > [22m[2mProvider Registration[2m > [22m[2mshould return providers for type
+[22m[39m[AIGateway] Registered provider: Mock Provider (mock)
+
+[90mstdout[2m | src/infrastructure/ai/gateway/__tests__/gateway.test.ts[2m > [22m[2mAIGateway[2m > [22m[2mRequest Execution[2m > [22m[2mshould execute request successfully
+[22m[39m[AIGateway] Registered provider: Mock Provider (mock)
+
+[90mstdout[2m | src/infrastructure/ai/gateway/__tests__/gateway.test.ts[2m > [22m[2mAIGateway[2m > [22m[2mRequest Execution[2m > [22m[2mshould fail when config is invalid
+[22m[39m[AIGateway] Registered provider: Mock Provider (mock)
+
+[90mstderr[2m | src/infrastructure/ai/gateway/__tests__/gateway.test.ts[2m > [22m[2mAIGateway[2m > [22m[2mRequest Execution[2m > [22m[2mshould fail when config is invalid
+[22m[39m[AIGateway] Provider mock config invalid, skipping
+
+[90mstdout[2m | src/infrastructure/ai/gateway/__tests__/gateway.test.ts[2m > [22m[2mAIGateway[2m > [22m[2mProvider Fallback[2m > [22m[2mshould fallback to next provider on failure
+[22m[39m[AIGateway] Registered provider: Mock Provider (failing)
+[AIGateway] Registered provider: Mock Provider (working)
+
+[90mstdout[2m | src/infrastructure/ai/gateway/__tests__/gateway.test.ts[2m > [22m[2mAIGateway[2m > [22m[2mMetrics[2m > [22m[2mshould track request metrics
+[22m[39m[AIGateway] Registered provider: Mock Provider (mock)
+
+[90mstdout[2m | src/infrastructure/ai/gateway/__tests__/gateway.test.ts[2m > [22m[2mAIGateway[2m > [22m[2mMetrics[2m > [22m[2mshould track failures
+[22m[39m[AIGateway] Registered provider: Mock Provider (mock)
+
+[2m4:56:14 PM[22m [33m[1m[vite][22m[39m (ssr) warning: Duplicate key "tools" in object literal
+122 |        model: modelString, // String model ID for Mastra AI SDK v5 compatibility
+123 |        tools: {}, // Explicitly pass empty tools to avoid auto-attaching faulty workspace tools
+124 |        tools: {}, // Explicitly pass empty tools to avoid auto-attaching faulty workspace tools
+    |        ^
+125 |        // mastra: m, // DONT pass mastra here - it auto-attaches broken workspace tools
+126 |      })
+
+  Plugin: vite:esbuild
+  File: /Users/jaceksroga/tilemap/src/domains/storyteller/agents/v2/premise-architect-agent.ts
+[90mstdout[2m | tests/integration/psychologist-verification.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould route user request through supervisor to mechanics_designer and emit actions
+[22m[39m[LoopGraph] Starting stream...
+
+[90mstdout[2m | tests/integration/psychologist-verification.test.ts[2m > [22m[2mPsychologist Agent V2[2m > [22m[2mshould analyze a character profile
+[22m[39m💾 [Mastra] Storage initialized: file:./mastra-memory.db
+🚀 [Mastra] Centralized instance initialized with memory storage
+
+[90mstdout[2m | tests/integration/council-verification.test.ts[2m > [22m[2mCouncil Integration (V2)[2m > [22m[2mshould consult the Psychologist
+[22m[39m💾 [Mastra] Storage initialized: file:./mastra-memory.db
+🚀 [Mastra] Centralized instance initialized with memory storage
+
+[90mstdout[2m | src/domains/loop-creator/agents/market-analyst/__tests__/professional.test.ts[2m > [22m[2mPerformance Benchmarks
+[22m[39m
+📊 Performance Benchmark Results:
+==================================================
+competitor_finder_quick:
+  avg: 0.00ms | min: 0ms | max: 0ms | p95: 0ms
+competitor_finder_comprehensive:
+  avg: 0.10ms | min: 0ms | max: 1ms | p95: 1ms
+metrics_planner:
+  avg: 0.00ms | min: 0ms | max: 0ms | p95: 0ms
+scorers_parallel:
+  avg: 0.60ms | min: 0ms | max: 1ms | p95: 1ms
+report_generator:
+  avg: 0.20ms | min: 0ms | max: 1ms | p95: 1ms
+
+[90mstdout[2m | tests/integration/psychologist-verification.test.ts[2m > [22m[2mPsychologist Agent V2[2m > [22m[2mshould analyze a character profile
+[22m[39m--- Analyzing Profile ---
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39m💾 [Mastra] Storage initialized: file:./mastra-memory.db
+🚀 [Mastra] Centralized instance initialized with memory storage
+
+[90mstderr[2m | tests/integration/psychologist-verification.test.ts[2m > [22m[2mPsychologist Agent V2[2m > [22m[2mshould analyze a character profile
+[22m[39m[Mastra Tracing] Invalid traceId: must be 1-32 hexadecimal characters, got "dbacc76f-bb29-481d-b73e-0f620176c54a". Generating new trace ID.
+
+[90mstdout[2m | src/domains/loop-creator/agents/market-analyst/__tests__/professional.test.ts[2m > [22m[2mChaos Engineering[2m > [22m[2mConcurrent Access[2m > [22m[2mshould handle 50 concurrent tool calls
+[22m[39m50 concurrent calls completed in 3ms
+
+ [32m✓[39m src/domains/loop-creator/agents/market-analyst/__tests__/professional.test.ts [2m([22m[2m37 tests[22m[2m)[22m[32m 205[2mms[22m[39m
+[90mstdout[2m | tests/integration/council-verification.test.ts[2m > [22m[2mCouncil Integration (V2)[2m > [22m[2mshould consult the Psychologist
+[22m[39m--- Consulting Psychologist ---
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould route user request through supervisor to mechanics_designer and emit actions
+[22m[39m[LoopGraph] Invoking supervisor...
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mStream Result Type: object
+Stream Result Keys: [
+  [32m'component'[39m,
+  [32m'logger'[39m,
+  [32m'name'[39m,
+  [32m'runId'[39m,
+  [32m'processorRunner'[39m,
+  [32m'messageList'[39m,
+  [32m'traceId'[39m,
+  [32m'messageId'[39m
+]
+Result has textStream
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/loop-planner-agent.test.ts[2m > [22m[2mLoop Planner Agent[2m > [22m[2mshould generate loops with ADD_NODE actions
+[22m[39m[LoopPlanner] Starting...
+[LoopPlanner] Task: Design game loops like Disco Elysium
+[LoopPlanner] Game context: A dialogue-heavy detective RPG similar to Disco Elysium
+[LoopPlanner] Calling LLM...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/loop-planner-agent.test.ts[2m > [22m[2mLoop Planner Agent[2m > [22m[2mshould generate loops with ADD_NODE actions
+[22m[39m[LoopPlanner] LLM response received
+[LoopPlanner] Response length: [33m869[39m
+[LoopPlanner] Parsing response...
+[LoopPlanner] Successfully parsed JSON
+[LoopPlanner] Parsed 2 loops: [ [32m'Internal Dialogue Loop'[39m, [32m'Investigation Session Loop'[39m ]
+[LoopPlanner] Created 2 loops
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/loop-planner-agent.test.ts[2m > [22m[2mLoop Planner Agent[2m > [22m[2mshould generate ADD_EDGE actions connecting loops
+[22m[39m[LoopPlanner] Starting...
+[LoopPlanner] Task: Design game loops like Disco Elysium
+[LoopPlanner] Game context: A dialogue-heavy detective RPG similar to Disco Elysium
+[LoopPlanner] Calling LLM...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/loop-planner-agent.test.ts[2m > [22m[2mLoop Planner Agent[2m > [22m[2mshould generate ADD_EDGE actions connecting loops
+[22m[39m[LoopPlanner] LLM response received
+[LoopPlanner] Response length: [33m869[39m
+[LoopPlanner] Parsing response...
+[LoopPlanner] Successfully parsed JSON
+[LoopPlanner] Parsed 2 loops: [ [32m'Internal Dialogue Loop'[39m, [32m'Investigation Session Loop'[39m ]
+[LoopPlanner] Created 2 loops
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/loop-planner-agent.test.ts[2m > [22m[2mLoop Planner Agent[2m > [22m[2mshould return a message
+[22m[39m[LoopPlanner] Starting...
+[LoopPlanner] Task: Design game loops like Disco Elysium
+[LoopPlanner] Game context: A dialogue-heavy detective RPG similar to Disco Elysium
+[LoopPlanner] Calling LLM...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/loop-planner-agent.test.ts[2m > [22m[2mLoop Planner Agent[2m > [22m[2mshould return a message
+[22m[39m[LoopPlanner] LLM response received
+[LoopPlanner] Response length: [33m869[39m
+[LoopPlanner] Parsing response...
+[LoopPlanner] Successfully parsed JSON
+[LoopPlanner] Parsed 2 loops: [ [32m'Internal Dialogue Loop'[39m, [32m'Investigation Session Loop'[39m ]
+[LoopPlanner] Created 2 loops
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/loop-planner-agent.test.ts[2m > [22m[2mLoop Planner Agent[2m > [22m[2mshould set nextAgent to supervisor
+[22m[39m[LoopPlanner] Starting...
+[LoopPlanner] Task: Design game loops like Disco Elysium
+[LoopPlanner] Game context: A dialogue-heavy detective RPG similar to Disco Elysium
+[LoopPlanner] Calling LLM...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/loop-planner-agent.test.ts[2m > [22m[2mLoop Planner Agent[2m > [22m[2mshould set nextAgent to supervisor
+[22m[39m[LoopPlanner] LLM response received
+[LoopPlanner] Response length: [33m869[39m
+[LoopPlanner] Parsing response...
+[LoopPlanner] Successfully parsed JSON
+[LoopPlanner] Parsed 2 loops: [ [32m'Internal Dialogue Loop'[39m, [32m'Investigation Session Loop'[39m ]
+[LoopPlanner] Created 2 loops
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/loop-planner-agent.test.ts[2m > [22m[2mLoop Planner Response Parsing[2m > [22m[2mshould handle empty loops array
+[22m[39m[LoopPlanner] Starting...
+[LoopPlanner] Task: Test empty
+[LoopPlanner] Game context: None
+[LoopPlanner] Calling LLM...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/loop-planner-agent.test.ts[2m > [22m[2mLoop Planner Response Parsing[2m > [22m[2mshould handle empty loops array
+[22m[39m[LoopPlanner] LLM response received
+[LoopPlanner] Response length: [33m869[39m
+[LoopPlanner] Parsing response...
+[LoopPlanner] Successfully parsed JSON
+[LoopPlanner] Parsed 2 loops: [ [32m'Internal Dialogue Loop'[39m, [32m'Investigation Session Loop'[39m ]
+[LoopPlanner] Created 2 loops
+
+ [32m✓[39m src/domains/loop-creator/__tests__/loop-planner-agent.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 57[2mms[22m[39m
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould route user request through supervisor to mechanics_designer and emit actions
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould route user request through supervisor to mechanics_designer and emit actions
+[22m[39m[Supervisor] Thinking: User wants game loop nodes. Delegating to mechanics designer.
+[Supervisor] Next: mechanics_designer, Phase: mechanics_design
+[Supervisor] Last agent was: null
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould route user request through supervisor to mechanics_designer and emit actions
+[22m[39m[LoopGraph] supervisor completed in 299ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould route user request through supervisor to mechanics_designer and emit actions
+[22m[39m[LoopGraph Router] state.nextAgent=mechanics_designer, roundCount=1, phase=mechanics_design
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Delegating to specialist: mechanics_designer
+[LoopGraph Router] routeToNextAgent returned: mechanics_designer
+[LoopGraph Router] ✅ Routing to: mechanics_designer
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould route user request through supervisor to mechanics_designer and emit actions
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: mechanics_designer
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Let me have the Mechanics Designer create some innovative game loop nodes......
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould route user request through supervisor to mechanics_designer and emit actions
+[22m[39m[LoopGraph] Invoking mechanics_designer...
+[MechanicsDesigner] Starting...
+[MechanicsDesigner] Task: generate game loop nodes for a survivors-style game
+[MechanicsDesigner] Calling LLM...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould route user request through supervisor to mechanics_designer and emit actions
+[22m[39m[MechanicsDesigner] LLM response received
+[MechanicsDesigner] Response length: [33m799[39m
+[MechanicsDesigner] Created 2 mechanics, 1 connections
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould route user request through supervisor to mechanics_designer and emit actions
+[22m[39m[ConceptEvaluator] Parse error: ZodError: [
+  {
+    "code": "invalid_type",
+    "expected": "number",
+    "received": "undefined",
+    "path": [
+      "overallAlignment"
+    ],
+    "message": "Required"
+  },
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "received": "undefined",
+    "path": [
+      "summary"
+    ],
+    "message": "Required"
+  }
+]
+    at Object.get error [as error] [90m(file:///Users/jaceksroga/tilemap/[39mnode_modules/[4mzod[24m/v3/types.js:39:31[90m)[39m
+    at ZodObject.parse [90m(file:///Users/jaceksroga/tilemap/[39mnode_modules/[4mzod[24m/v3/types.js:114:22[90m)[39m
+    at evaluateConceptAlignment [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/agents/concept-evaluator.ts:183:38[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at mechanicsDesignerAgent [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/agents/mechanics-designer.ts:358:24[90m)[39m
+    at RunnableLambda.func [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/graph/loop-graph.ts:139:22[90m)[39m
+    at [90mfile:///Users/jaceksroga/tilemap/[39mnode_modules/[4m@langchain[24m/core/dist/runnables/base.js:1257:19 {
+  issues: [
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'number'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    },
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'string'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    }
+  ],
+  addIssue: [36m[Function (anonymous)][39m,
+  addIssues: [36m[Function (anonymous)][39m,
+  errors: [
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'number'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    },
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'string'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    }
+  ]
+}
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould route user request through supervisor to mechanics_designer and emit actions
+[22m[39m[MechanicsDesigner] Concept alignment: 0/100
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould route user request through supervisor to mechanics_designer and emit actions
+[22m[39m[MechanicsDesigner] Evaluation error: TypeError: Cannot read properties of null (reading 'missingElements')
+    at mechanicsDesignerAgent [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/agents/mechanics-designer.ts:367:35[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at RunnableLambda.func [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/graph/loop-graph.ts:139:22[90m)[39m
+    at [90mfile:///Users/jaceksroga/tilemap/[39mnode_modules/[4m@langchain[24m/core/dist/runnables/base.js:1257:19
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould route user request through supervisor to mechanics_designer and emit actions
+[22m[39m[LoopGraph] mechanics_designer completed in 16ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould route user request through supervisor to mechanics_designer and emit actions
+[22m[39m[LoopGraph] Received event keys: [ [32m'mechanics_designer'[39m ]
+[LoopGraph] Processing node: mechanics_designer, nextAgent: supervisor
+[LoopGraph] Node mechanics_designer has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from mechanics_designer: Created 2 innovative mechanics with 1 connection.
+
+⚠️ **Concept Alignment: 0/100**
+Evaluation failed...
+[LoopGraph] Emitting 3 actions from mechanics_designer
+[LoopGraph] Action: ADD_NODE - Orbital Weapons
+[LoopGraph] Action: ADD_NODE - XP Magnetism
+[LoopGraph] Action: ADD_EDGE - kills generate XP
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould route user request through supervisor to mechanics_designer and emit actions
+[22m[39m[LoopGraph] Invoking supervisor...
+
+ [32m✓[39m src/domains/loop-creator/agents/market-analyst/__tests__/tools.test.ts [2m([22m[2m44 tests[22m[2m)[22m[32m 102[2mms[22m[39m
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould route user request through supervisor to mechanics_designer and emit actions
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould route user request through supervisor to mechanics_designer and emit actions
+[22m[39m[Supervisor] Thinking: Mechanics designer completed. Acknowledging to user.
+[Supervisor] Next: END, Phase: mechanics_design
+[Supervisor] Last agent was: mechanics_designer
+[Supervisor] Coming from specialist mechanics_designer - forcing END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould route user request through supervisor to mechanics_designer and emit actions
+[22m[39m[LoopGraph] supervisor completed in 338ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould route user request through supervisor to mechanics_designer and emit actions
+[22m[39m[LoopGraph Router] state.nextAgent=END, roundCount=2, phase=mechanics_design
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Returning state.nextAgent: END
+[LoopGraph Router] routeToNextAgent returned: END
+[LoopGraph Router] Routing to END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould route user request through supervisor to mechanics_designer and emit actions
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: END
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Done! I've created innovative game loop nodes. Check the suggestion panel to approve them....
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould emit node events in correct order
+[22m[39m[LoopGraph] Starting stream...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould emit node events in correct order
+[22m[39m[LoopGraph] Invoking supervisor...
+
+ [32m✓[39m tests/integration/vector-memory.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1126[2mms[22m[39m
+     [33m[2m✓[22m[39m should save and recall messages using vector search [33m 353[2mms[22m[39m
+ [32m✓[39m src/domains/storyteller/components/__tests__/agent-log-features.e2e.test.tsx [2m([22m[2m15 tests[22m[2m)[22m[33m 347[2mms[22m[39m
+[90mstdout[2m | src/domains/storyteller/agents/v2/__tests__/full-flow.e2e.test.ts
+[22m[39m✅ Langfuse observability enabled
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould emit node events in correct order
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould emit node events in correct order
+[22m[39m[Supervisor] Thinking: User wants game loop nodes. Delegating to mechanics designer.
+[Supervisor] Next: mechanics_designer, Phase: mechanics_design
+[Supervisor] Last agent was: null
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould emit node events in correct order
+[22m[39m[LoopGraph] supervisor completed in 351ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould emit node events in correct order
+[22m[39m[LoopGraph Router] state.nextAgent=mechanics_designer, roundCount=1, phase=mechanics_design
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Delegating to specialist: mechanics_designer
+[LoopGraph Router] routeToNextAgent returned: mechanics_designer
+[LoopGraph Router] ✅ Routing to: mechanics_designer
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould emit node events in correct order
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: mechanics_designer
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Let me have the Mechanics Designer create some innovative game loop nodes......
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould emit node events in correct order
+[22m[39m[LoopGraph] Invoking mechanics_designer...
+[MechanicsDesigner] Starting...
+[MechanicsDesigner] Task: create mechanics
+[MechanicsDesigner] Calling LLM...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould emit node events in correct order
+[22m[39m[MechanicsDesigner] LLM response received
+[MechanicsDesigner] Response length: [33m799[39m
+[MechanicsDesigner] Created 2 mechanics, 1 connections
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould emit node events in correct order
+[22m[39m[ConceptEvaluator] Parse error: ZodError: [
+  {
+    "code": "invalid_type",
+    "expected": "number",
+    "received": "undefined",
+    "path": [
+      "overallAlignment"
+    ],
+    "message": "Required"
+  },
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "received": "undefined",
+    "path": [
+      "summary"
+    ],
+    "message": "Required"
+  }
+]
+    at Object.get error [as error] [90m(file:///Users/jaceksroga/tilemap/[39mnode_modules/[4mzod[24m/v3/types.js:39:31[90m)[39m
+    at ZodObject.parse [90m(file:///Users/jaceksroga/tilemap/[39mnode_modules/[4mzod[24m/v3/types.js:114:22[90m)[39m
+    at evaluateConceptAlignment [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/agents/concept-evaluator.ts:183:38[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at mechanicsDesignerAgent [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/agents/mechanics-designer.ts:358:24[90m)[39m
+    at RunnableLambda.func [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/graph/loop-graph.ts:139:22[90m)[39m
+    at [90mfile:///Users/jaceksroga/tilemap/[39mnode_modules/[4m@langchain[24m/core/dist/runnables/base.js:1257:19 {
+  issues: [
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'number'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    },
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'string'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    }
+  ],
+  addIssue: [36m[Function (anonymous)][39m,
+  addIssues: [36m[Function (anonymous)][39m,
+  errors: [
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'number'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    },
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'string'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    }
+  ]
+}
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould emit node events in correct order
+[22m[39m[MechanicsDesigner] Concept alignment: 0/100
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould emit node events in correct order
+[22m[39m[MechanicsDesigner] Evaluation error: TypeError: Cannot read properties of null (reading 'missingElements')
+    at mechanicsDesignerAgent [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/agents/mechanics-designer.ts:367:35[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at RunnableLambda.func [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/graph/loop-graph.ts:139:22[90m)[39m
+    at [90mfile:///Users/jaceksroga/tilemap/[39mnode_modules/[4m@langchain[24m/core/dist/runnables/base.js:1257:19
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould emit node events in correct order
+[22m[39m[LoopGraph] mechanics_designer completed in 1ms
+
+ [32m✓[39m src/domains/loop-creator/agents/market-analyst/__tests__/integration.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 61[2mms[22m[39m
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould emit node events in correct order
+[22m[39m[LoopGraph] Received event keys: [ [32m'mechanics_designer'[39m ]
+[LoopGraph] Processing node: mechanics_designer, nextAgent: supervisor
+[LoopGraph] Node mechanics_designer has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from mechanics_designer: Created 2 innovative mechanics with 1 connection.
+
+⚠️ **Concept Alignment: 0/100**
+Evaluation failed...
+[LoopGraph] Emitting 3 actions from mechanics_designer
+[LoopGraph] Action: ADD_NODE - Orbital Weapons
+[LoopGraph] Action: ADD_NODE - XP Magnetism
+[LoopGraph] Action: ADD_EDGE - kills generate XP
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould emit node events in correct order
+[22m[39m[LoopGraph] Invoking supervisor...
+
+[90mstdout[2m | src/domains/storyteller/agents/v2/__tests__/phase-transitions.e2e.test.ts
+[22m[39m✅ Langfuse observability enabled
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould emit node events in correct order
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould emit node events in correct order
+[22m[39m[Supervisor] Thinking: Mechanics designer completed. Acknowledging to user.
+[Supervisor] Next: END, Phase: mechanics_design
+[Supervisor] Last agent was: mechanics_designer
+[Supervisor] Coming from specialist mechanics_designer - forcing END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould emit node events in correct order
+[22m[39m[LoopGraph] supervisor completed in 289ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould emit node events in correct order
+[22m[39m[LoopGraph Router] state.nextAgent=END, roundCount=2, phase=mechanics_design
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Returning state.nextAgent: END
+[LoopGraph Router] routeToNextAgent returned: END
+[LoopGraph Router] Routing to END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mFull Flow: User -> Supervisor -> Specialist -> Actions[2m > [22m[2mshould emit node events in correct order
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: END
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Done! I've created innovative game loop nodes. Check the suggestion panel to approve them....
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould generate non-generic mechanic names
+[22m[39m[LoopGraph] Starting stream...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould generate non-generic mechanic names
+[22m[39m[LoopGraph] Invoking supervisor...
+
+[90mstdout[2m | src/domains/storyteller/agents/v2/__tests__/multiple-intents.e2e.test.ts
+[22m[39m✅ Langfuse observability enabled
+
+[90mstdout[2m | src/domains/storyteller/agents/v2/__tests__/full-flow.e2e.test.ts[2m > [22m[2mFull Storyteller Flow E2E (43 Tests)[2m > [22m[2mFINAL: Should pass at least 44/50 tests (88%)
+[22m[39m
+🎯 Final Score: 50/50
+
+[90mstdout[2m | src/domains/storyteller/agents/v2/__tests__/full-flow.e2e.test.ts[2m > [22m[2mFull Storyteller Flow E2E (43 Tests)
+[22m[39m
+════════════════════════════════════════════════════════════
+  📊 EVALUATION SUMMARY: 50/50 PASSED
+  📈 Average Score: 8.75/10
+════════════════════════════════════════════════════════════
+
+ [32m✓[39m src/domains/storyteller/agents/v2/__tests__/full-flow.e2e.test.ts [2m([22m[2m51 tests[22m[2m)[22m[32m 70[2mms[22m[39m
+[90mstdout[2m | src/domains/storyteller/agents/v2/__tests__/phase-transitions.e2e.test.ts[2m > [22m[2mPhase Transitions[2m > [22m[2mStorytellerAgent phase awareness[2m > [22m[2mshould have update_story_phase tool available
+[22m[39m💾 [Mastra] Storage initialized: file:./mastra-memory.db
+🚀 [Mastra] Centralized instance initialized with memory storage
+
+ [32m✓[39m src/domains/storyteller/agents/v2/__tests__/phase-transitions.e2e.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 48[2mms[22m[39m
+[90mstdout[2m | src/domains/storyteller/agents/v2/__tests__/multiple-intents.e2e.test.ts[2m > [22m[2mStoryteller Agent - Multiple Intents E2E[2m > [22m[2mshould handle updating plot twists and creating a character in one request
+[22m[39m💾 [Mastra] Storage initialized: file:./mastra-memory.db
+🚀 [Mastra] Centralized instance initialized with memory storage
+
+[90mstdout[2m | src/domains/storyteller/agents/v2/__tests__/multiple-intents.e2e.test.ts[2m > [22m[2mStoryteller Agent - Multiple Intents E2E[2m > [22m[2mshould handle updating plot twists and creating a character in one request
+[22m[39mAgent keys: [ [32m'toolsMap'[39m, [32m'agent'[39m ]
+Inner Agent keys: [
+  [32m'component'[39m,
+  [32m'logger'[39m,
+  [32m'name'[39m,
+  [32m'id'[39m,
+  [32m'source'[39m,
+  [32m'model'[39m,
+  [32m'maxRetries'[39m,
+  [32m'_agentNetworkAppend'[39m,
+  [32m'mastra'[39m
+]
+
+[90mstdout[2m | src/domains/storyteller/agents/v2/__tests__/multiple-intents.e2e.test.ts[2m > [22m[2mStoryteller Agent - Multiple Intents E2E[2m > [22m[2mshould handle updating plot twists and creating a character in one request
+[22m[39m[update_world_bible] Syncing 1 characters to DB...
+
+[90mstdout[2m | src/domains/storyteller/agents/v2/__tests__/multiple-intents.e2e.test.ts[2m > [22m[2mStoryteller Agent - Multiple Intents E2E[2m > [22m[2mshould handle updating plot twists and creating a character in one request
+[22m[39mRaw result type: string
+Result 1: {
+  "success": true,
+  "message": "Updated Story Plan successfully.",
+  "updatedCount": 2,
+  "keys": [
+    "keyCharacters",
+    "plotTwists"
+  ],
+  "updatedFields": {
+    "keyCharacters": [
+      {
+        "name": "Caesar",
+        "role": "Protagonist",
+        "gender": "Male",
+        "description": "Emperor",
+        "mbti": "ENTJ"
+      }
+    ],
+    "plotTwists": [
+      {
+        "title": "The Betrayal",
+        "description": "Et tu, Brute?"
+      }
+    ]
+  }
+}
+
+[90mstdout[2m | src/domains/storyteller/agents/v2/__tests__/multiple-intents.e2e.test.ts[2m > [22m[2mStoryteller Agent - Multiple Intents E2E[2m > [22m[2mshould handle sequential tool calls (simulated)
+[22m[39m[update_world_bible] Syncing 1 characters to DB...
+
+ [32m✓[39m src/domains/storyteller/agents/v2/__tests__/multiple-intents.e2e.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+[90mstdout[2m | src/domains/storyteller/agents/v2/__tests__/storyteller-features.e2e.test.ts
+[22m[39m✅ Langfuse observability enabled
+
+[90mstdout[2m | src/domains/chat/hooks/__tests__/thinking-stream.e2e.test.ts[2m > [22m[2mThinking Stream Processing[2m > [22m[2mprocesses thinking events and attaches to last AI message
+[22m[39m📝 [useChatStream] setMessages: 0 -> 1 messages
+
+[90mstdout[2m | src/domains/chat/hooks/__tests__/thinking-stream.e2e.test.ts[2m > [22m[2mThinking Stream Processing[2m > [22m[2mprocesses thinking events and attaches to last AI message
+[22m[39m[useChatStream] Stream Start - Last Msg: { sender: [32m'Storyteller'[39m, type: [32m'ai'[39m, content: [32m'Hello'[39m }
+📝 [useChatStream] setMessages: 1 -> 2 messages
+📝 [useChatStream] setMessages: 2 -> 2 messages
+📝 [useChatStream] setMessages: 2 -> 2 messages
+
+[90mstdout[2m | src/domains/chat/hooks/__tests__/thinking-stream.e2e.test.ts[2m > [22m[2mThinking Stream Processing[2m > [22m[2maccumulates multiple thinking events
+[22m[39m📝 [useChatStream] setMessages: 0 -> 1 messages
+
+[90mstdout[2m | src/domains/chat/hooks/__tests__/thinking-stream.e2e.test.ts[2m > [22m[2mThinking Stream Processing[2m > [22m[2maccumulates multiple thinking events
+[22m[39m[useChatStream] Stream Start - Last Msg: { sender: [32m'Storyteller'[39m, type: [32m'ai'[39m, content: [32m'Processing...'[39m }
+📝 [useChatStream] setMessages: 1 -> 2 messages
+📝 [useChatStream] setMessages: 2 -> 2 messages
+📝 [useChatStream] setMessages: 2 -> 2 messages
+📝 [useChatStream] setMessages: 2 -> 2 messages
+📝 [useChatStream] setMessages: 2 -> 2 messages
+
+[90mstdout[2m | src/domains/chat/hooks/__tests__/thinking-stream.e2e.test.ts[2m > [22m[2mThinking Stream Processing[2m > [22m[2mhandles thinking events with no prior message gracefully
+[22m[39m[useChatStream] Stream Start - Last Msg: { sender: [90mundefined[39m, type: [90mundefined[39m, content: [90mundefined[39m }
+📝 [useChatStream] setMessages: 0 -> 1 messages
+📝 [useChatStream] setMessages: 1 -> 1 messages
+📝 [useChatStream] setMessages: 1 -> 1 messages
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould generate non-generic mechanic names
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould generate non-generic mechanic names
+[22m[39m[Supervisor] Thinking: User wants game loop nodes. Delegating to mechanics designer.
+[Supervisor] Next: mechanics_designer, Phase: mechanics_design
+[Supervisor] Last agent was: null
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould generate non-generic mechanic names
+[22m[39m[LoopGraph] supervisor completed in 850ms
+
+[90mstdout[2m | src/domains/chat/hooks/__tests__/thinking-stream.e2e.test.ts[2m > [22m[2mThinking Stream Processing[2m > [22m[2mpreserves thinking in messages when updated
+[22m[39m📝 [useChatStream] setMessages: 0 -> 1 messages
+📝 [useChatStream] setMessages: 1 -> 1 messages
+
+[90mstdout[2m | src/domains/chat/hooks/__tests__/thinking-stream.e2e.test.ts[2m > [22m[2mAction Status Updates[2m > [22m[2mupdates action status correctly
+[22m[39m📝 [useChatStream] setMessages: 0 -> 1 messages
+🔄 [updateActionStatus] Setting msg[0].actions[0].status = committed
+🔄 [updateActionStatus] Updated messages, action status now: committed
+
+[90mstdout[2m | src/domains/chat/hooks/__tests__/thinking-stream.e2e.test.ts[2m > [22m[2mAction Status Updates[2m > [22m[2mhandles action events from stream
+[22m[39m📝 [useChatStream] setMessages: 0 -> 1 messages
+
+[90mstdout[2m | src/domains/chat/hooks/__tests__/thinking-stream.e2e.test.ts[2m > [22m[2mAction Status Updates[2m > [22m[2mhandles action events from stream
+[22m[39m[useChatStream] Action received: CREATE_CHARACTER [90mundefined[39m [ID: action-1772034976837-cgoidbsew]
+
+[90mstdout[2m | src/domains/chat/hooks/__tests__/thinking-stream.e2e.test.ts[2m > [22m[2mAction Status Updates[2m > [22m[2mhandles action events from stream
+[22m[39m[useChatStream] Stream Start - Last Msg: { sender: [32m'Storyteller'[39m, type: [32m'ai'[39m, content: [32m'Working on it...'[39m }
+📝 [useChatStream] setMessages: 1 -> 2 messages
+📝 [useChatStream] setMessages: 2 -> 2 messages
+📝 [useChatStream] setMessages: 2 -> 2 messages
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould generate non-generic mechanic names
+[22m[39m[LoopGraph Router] state.nextAgent=mechanics_designer, roundCount=1, phase=mechanics_design
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Delegating to specialist: mechanics_designer
+[LoopGraph Router] routeToNextAgent returned: mechanics_designer
+[LoopGraph Router] ✅ Routing to: mechanics_designer
+
+ [32m✓[39m src/domains/chat/hooks/__tests__/thinking-stream.e2e.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould generate non-generic mechanic names
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: mechanics_designer
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Let me have the Mechanics Designer create some innovative game loop nodes......
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould generate non-generic mechanic names
+[22m[39m[LoopGraph] Invoking mechanics_designer...
+[MechanicsDesigner] Starting...
+[MechanicsDesigner] Task: generate innovative mechanics
+[MechanicsDesigner] Calling LLM...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould generate non-generic mechanic names
+[22m[39m[MechanicsDesigner] LLM response received
+[MechanicsDesigner] Response length: [33m799[39m
+[MechanicsDesigner] Created 2 mechanics, 1 connections
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould generate non-generic mechanic names
+[22m[39m[ConceptEvaluator] Parse error: ZodError: [
+  {
+    "code": "invalid_type",
+    "expected": "number",
+    "received": "undefined",
+    "path": [
+      "overallAlignment"
+    ],
+    "message": "Required"
+  },
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "received": "undefined",
+    "path": [
+      "summary"
+    ],
+    "message": "Required"
+  }
+]
+    at Object.get error [as error] [90m(file:///Users/jaceksroga/tilemap/[39mnode_modules/[4mzod[24m/v3/types.js:39:31[90m)[39m
+    at ZodObject.parse [90m(file:///Users/jaceksroga/tilemap/[39mnode_modules/[4mzod[24m/v3/types.js:114:22[90m)[39m
+    at evaluateConceptAlignment [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/agents/concept-evaluator.ts:183:38[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at mechanicsDesignerAgent [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/agents/mechanics-designer.ts:358:24[90m)[39m
+    at RunnableLambda.func [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/graph/loop-graph.ts:139:22[90m)[39m
+    at [90mfile:///Users/jaceksroga/tilemap/[39mnode_modules/[4m@langchain[24m/core/dist/runnables/base.js:1257:19 {
+  issues: [
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'number'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    },
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'string'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    }
+  ],
+  addIssue: [36m[Function (anonymous)][39m,
+  addIssues: [36m[Function (anonymous)][39m,
+  errors: [
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'number'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    },
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'string'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    }
+  ]
+}
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould generate non-generic mechanic names
+[22m[39m[MechanicsDesigner] Concept alignment: 0/100
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould generate non-generic mechanic names
+[22m[39m[MechanicsDesigner] Evaluation error: TypeError: Cannot read properties of null (reading 'missingElements')
+    at mechanicsDesignerAgent [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/agents/mechanics-designer.ts:367:35[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at RunnableLambda.func [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/graph/loop-graph.ts:139:22[90m)[39m
+    at [90mfile:///Users/jaceksroga/tilemap/[39mnode_modules/[4m@langchain[24m/core/dist/runnables/base.js:1257:19
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould generate non-generic mechanic names
+[22m[39m[LoopGraph] mechanics_designer completed in 5ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould generate non-generic mechanic names
+[22m[39m[LoopGraph] Received event keys: [ [32m'mechanics_designer'[39m ]
+[LoopGraph] Processing node: mechanics_designer, nextAgent: supervisor
+[LoopGraph] Node mechanics_designer has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from mechanics_designer: Created 2 innovative mechanics with 1 connection.
+
+⚠️ **Concept Alignment: 0/100**
+Evaluation failed...
+[LoopGraph] Emitting 3 actions from mechanics_designer
+[LoopGraph] Action: ADD_NODE - Orbital Weapons
+[LoopGraph] Action: ADD_NODE - XP Magnetism
+[LoopGraph] Action: ADD_EDGE - kills generate XP
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould generate non-generic mechanic names
+[22m[39m[LoopGraph] Invoking supervisor...
+
+[90mstdout[2m | src/infrastructure/ai/gateway/__tests__/gateway.test.ts[2m > [22m[2mAIGateway[2m > [22m[2mA/B Testing[2m > [22m[2mshould bucket users consistently
+[22m[39m[AIGateway] Registered provider: Mock Provider (provider1)
+[AIGateway] Registered provider: Mock Provider (provider2)
+[AIGateway] Registered A/B test: Test (test-1)
+
+ [32m✓[39m src/infrastructure/ai/gateway/__tests__/gateway.test.ts [2m([22m[2m12 tests[22m[2m)[22m[33m 3011[2mms[22m[39m
+       [33m[2m✓[22m[39m should track failures [33m 3005[2mms[22m[39m
+ [32m✓[39m src/mcp/core/request-context.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m src/domains/storyteller/agents/v2/__tests__/storyteller-features.e2e.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould generate non-generic mechanic names
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould generate non-generic mechanic names
+[22m[39m[Supervisor] Thinking: Mechanics designer completed. Acknowledging to user.
+[Supervisor] Next: END, Phase: mechanics_design
+[Supervisor] Last agent was: mechanics_designer
+[Supervisor] Coming from specialist mechanics_designer - forcing END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould generate non-generic mechanic names
+[22m[39m[LoopGraph] supervisor completed in 246ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould generate non-generic mechanic names
+[22m[39m[LoopGraph Router] state.nextAgent=END, roundCount=2, phase=mechanics_design
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Returning state.nextAgent: END
+[LoopGraph Router] routeToNextAgent returned: END
+[LoopGraph Router] Routing to END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould generate non-generic mechanic names
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: END
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Done! I've created innovative game loop nodes. Check the suggestion panel to approve them....
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould include examples from reference games
+[22m[39m[LoopGraph] Starting stream...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould include examples from reference games
+[22m[39m[LoopGraph] Invoking supervisor...
+
+ [32m✓[39m src/domains/chat/components/__tests__/AgentLog.e2e.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 21[2mms[22m[39m
+[90mstdout[2m | tests/integration/research-tools.test.ts[2m > [22m[2mResearch Tools Integration[2m > [22m[2mresearchTool[2m > [22m[2mshould execute research query and format results
+[22m[39mResearch Result: "{\"success\":true,\"query\":\"Knights historical facts accuracy period authentic\",\"focus\":\"historical\",\"resultCount\":1,\"results\":[{\"rank\":1,\"title\":\"History of Knights\",\"source\":\"history\",\"url\":\"https://history.com/knights\",\"excerpt\":\"Knights were medieval warriors...\",\"relevance\":\"95%\"}]}"
+
+[90mstderr[2m | tests/integration/research-tools.test.ts[2m > [22m[2mResearch Tools Integration[2m > [22m[2mresearchTool[2m > [22m[2mshould handle API errors gracefully
+[22m[39mResearch tool error: Error: Tavily API error: Unauthorized
+    at execute [90m(/Users/jaceksroga/tilemap/[39msrc/domains/storyteller/tools/v2/research-adapter.ts:140:15[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at Tool.execute [90m(file:///Users/jaceksroga/tilemap/[39mnode_modules/[4m@mastra[24m/core/dist/chunk-IW3BNL7A.js:373:24[90m)[39m
+    at [90m/Users/jaceksroga/tilemap/[39mtests/integration/research-tools.test.ts:74:28
+    at [90mfile:///Users/jaceksroga/tilemap/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:915:20
+
+[90mstdout[2m | tests/integration/research-tools.test.ts[2m > [22m[2mResearch Tools Integration[2m > [22m[2mresearchTool[2m > [22m[2mshould handle API errors gracefully
+[22m[39mAPI Error Result: "{\"success\":false,\"error\":\"Tavily API error: Unauthorized\",\"suggestion\":\"Try a simplified query.\"}"
+
+ [32m✓[39m tests/integration/research-tools.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+[90mstdout[2m | tests/integration/storyteller-agent.test.ts
+[22m[39m✅ Langfuse observability enabled
+
+[90mstdout[2m | src/domains/storyteller/components/__tests__/chat-persistence.e2e.test.tsx[2m > [22m[2mChat Persistence (useChatStream)[2m > [22m[2mrestores messages when persistKey becomes available asynchronously
+[22m[39m📦 [useChatStream] Restored 2 messages for key: storyteller-proj-123-global
+
+[90mstdout[2m | src/domains/storyteller/components/__tests__/chat-persistence.e2e.test.tsx[2m > [22m[2mChat Persistence (useChatStream)[2m > [22m[2mrestores pending actions with their status
+[22m[39m📦 [useChatStream] Restored 1 messages from sessionStorage
+📦 [useChatStream] Restored 1 messages for key: storyteller-proj-123-global
+
+[90mstdout[2m | src/domains/storyteller/components/__tests__/chat-persistence.e2e.test.tsx[2m > [22m[2mChat Persistence (useChatStream)[2m > [22m[2mcorrectly persists new messages to storage
+[22m[39m📝 [useChatStream] setMessages: 0 -> 1 messages
+
+ [32m✓[39m src/domains/storyteller/components/__tests__/chat-persistence.e2e.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+[90mstdout[2m | tests/unit/api/storyteller/actions/route.test.ts
+[22m[39m✅ Langfuse observability enabled
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould include examples from reference games
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould include examples from reference games
+[22m[39m[Supervisor] Thinking: User wants game loop nodes. Delegating to mechanics designer.
+[Supervisor] Next: mechanics_designer, Phase: mechanics_design
+[Supervisor] Last agent was: null
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould include examples from reference games
+[22m[39m[LoopGraph] supervisor completed in 259ms
+
+[90mstdout[2m | tests/unit/api/storyteller/actions/route.test.ts[2m > [22m[2mAPI Route: Actions Persistence[2m > [22m[2mshould split UPDATE_SERIES_BIBLE payload into seriesBible and storyPlan tables
+[22m[39m📥 Actions API: UPDATE_SERIES_BIBLE for project test-project-id
+🔍 [API] Detailed Updates: {
+  bibleKeys: [ [32m'magicSystem'[39m ],
+  planKeys: [ [32m'genre'[39m, [32m'tone'[39m ],
+  rawPayload: [32m'{"magicSystem":"Hard Magic","genre":"Fantasy","tone":"Dark"}...'[39m
+}
+💾 [API] Updating Series Bible Table...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould include examples from reference games
+[22m[39m[LoopGraph Router] state.nextAgent=mechanics_designer, roundCount=1, phase=mechanics_design
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Delegating to specialist: mechanics_designer
+[LoopGraph Router] routeToNextAgent returned: mechanics_designer
+[LoopGraph Router] ✅ Routing to: mechanics_designer
+
+[90mstdout[2m | tests/unit/api/storyteller/actions/route.test.ts[2m > [22m[2mAPI Route: Actions Persistence[2m > [22m[2mshould split UPDATE_SERIES_BIBLE payload into seriesBible and storyPlan tables
+[22m[39m💾 [API] Updating Story Plan Table...
+
+[90mstdout[2m | tests/unit/api/storyteller/actions/route.test.ts[2m > [22m[2mAPI Route: Actions Persistence[2m > [22m[2mshould split UPDATE_SERIES_BIBLE payload into seriesBible and storyPlan tables
+[22m[39m📖 [updateStoryPlan] BEFORE - currentContent keys: []
+📖 [updateStoryPlan] BEFORE - worldDescription: [90mundefined[39m
+📖 [updateStoryPlan] INCOMING - updates keys: [ [32m'genre'[39m, [32m'tone'[39m ]
+📖 [updateStoryPlan] INCOMING - worldDescription: [90mundefined[39m
+📖 [updateStoryPlan] AFTER MERGE - updatedContent keys: [ [32m'genre'[39m, [32m'tone'[39m ]
+📖 [updateStoryPlan] AFTER MERGE - worldDescription: [90mundefined[39m
+
+[90mstdout[2m | tests/unit/api/storyteller/actions/route.test.ts[2m > [22m[2mAPI Route: Actions Persistence[2m > [22m[2mshould split UPDATE_SERIES_BIBLE payload into seriesBible and storyPlan tables
+[22m[39m✅ [updateStoryPlan] WRITE COMPLETE - saved to database
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould include examples from reference games
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: mechanics_designer
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Let me have the Mechanics Designer create some innovative game loop nodes......
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould include examples from reference games
+[22m[39m[LoopGraph] Invoking mechanics_designer...
+[MechanicsDesigner] Starting...
+[MechanicsDesigner] Task: create mechanics with examples
+[MechanicsDesigner] Calling LLM...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould include examples from reference games
+[22m[39m[MechanicsDesigner] LLM response received
+[MechanicsDesigner] Response length: [33m799[39m
+[MechanicsDesigner] Created 2 mechanics, 1 connections
+
+[90mstdout[2m | tests/unit/api/storyteller/actions/route.test.ts[2m > [22m[2mAPI Route: Actions Persistence[2m > [22m[2mshould split UPDATE_SERIES_BIBLE payload into seriesBible and storyPlan tables
+[22m[39m✅ [API] Success. Returning: [ [32m'magicSystem'[39m, [32m'storyPlan'[39m ]
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould include examples from reference games
+[22m[39m[ConceptEvaluator] Parse error: ZodError: [
+  {
+    "code": "invalid_type",
+    "expected": "number",
+    "received": "undefined",
+    "path": [
+      "overallAlignment"
+    ],
+    "message": "Required"
+  },
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "received": "undefined",
+    "path": [
+      "summary"
+    ],
+    "message": "Required"
+  }
+]
+    at Object.get error [as error] [90m(file:///Users/jaceksroga/tilemap/[39mnode_modules/[4mzod[24m/v3/types.js:39:31[90m)[39m
+    at ZodObject.parse [90m(file:///Users/jaceksroga/tilemap/[39mnode_modules/[4mzod[24m/v3/types.js:114:22[90m)[39m
+    at evaluateConceptAlignment [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/agents/concept-evaluator.ts:183:38[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at mechanicsDesignerAgent [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/agents/mechanics-designer.ts:358:24[90m)[39m
+    at RunnableLambda.func [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/graph/loop-graph.ts:139:22[90m)[39m
+    at [90mfile:///Users/jaceksroga/tilemap/[39mnode_modules/[4m@langchain[24m/core/dist/runnables/base.js:1257:19 {
+  issues: [
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'number'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    },
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'string'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    }
+  ],
+  addIssue: [36m[Function (anonymous)][39m,
+  addIssues: [36m[Function (anonymous)][39m,
+  errors: [
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'number'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    },
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'string'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    }
+  ]
+}
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould include examples from reference games
+[22m[39m[MechanicsDesigner] Concept alignment: 0/100
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould include examples from reference games
+[22m[39m[MechanicsDesigner] Evaluation error: TypeError: Cannot read properties of null (reading 'missingElements')
+    at mechanicsDesignerAgent [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/agents/mechanics-designer.ts:367:35[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at RunnableLambda.func [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/graph/loop-graph.ts:139:22[90m)[39m
+    at [90mfile:///Users/jaceksroga/tilemap/[39mnode_modules/[4m@langchain[24m/core/dist/runnables/base.js:1257:19
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould include examples from reference games
+[22m[39m[LoopGraph] mechanics_designer completed in 1ms
+
+ [32m✓[39m tests/unit/api/storyteller/actions/route.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 10[2mms[22m[39m
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould include examples from reference games
+[22m[39m[LoopGraph] Received event keys: [ [32m'mechanics_designer'[39m ]
+[LoopGraph] Processing node: mechanics_designer, nextAgent: supervisor
+[LoopGraph] Node mechanics_designer has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from mechanics_designer: Created 2 innovative mechanics with 1 connection.
+
+⚠️ **Concept Alignment: 0/100**
+Evaluation failed...
+[LoopGraph] Emitting 3 actions from mechanics_designer
+[LoopGraph] Action: ADD_NODE - Orbital Weapons
+[LoopGraph] Action: ADD_NODE - XP Magnetism
+[LoopGraph] Action: ADD_EDGE - kills generate XP
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould include examples from reference games
+[22m[39m[LoopGraph] Invoking supervisor...
+
+[90mstdout[2m | src/domains/storyteller/agents/v2/__tests__/schema-validation.test.ts
+[22m[39m✅ Langfuse observability enabled
+
+[90mstderr[2m | src/domains/storyteller/tools/v2/__tests__/research.test.ts[2m > [22m[2mResearch Tools (v2)[2m > [22m[2mshould handle API failure gracefully
+[22m[39mResearch tool error: Error: Tavily API error: Internal Server Error
+    at execute [90m(/Users/jaceksroga/tilemap/[39msrc/domains/storyteller/tools/v2/research-adapter.ts:140:15[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at Tool.execute [90m(file:///Users/jaceksroga/tilemap/[39mnode_modules/[4m@mastra[24m/core/dist/chunk-IW3BNL7A.js:373:24[90m)[39m
+    at [90m/Users/jaceksroga/tilemap/[39msrc/domains/storyteller/tools/v2/__tests__/research.test.ts:55:20
+    at [90mfile:///Users/jaceksroga/tilemap/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:915:20
+
+ [32m✓[39m src/domains/storyteller/tools/v2/__tests__/research.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/domains/storyteller/tools/v2/__tests__/tool-execution.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/integration/storyteller-agent.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m src/domains/loop-creator/__tests__/loop-creator-ui.e2e.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m src/domains/storyteller/agents/v2/__tests__/schema-validation.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould include examples from reference games
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould include examples from reference games
+[22m[39m[Supervisor] Thinking: Mechanics designer completed. Acknowledging to user.
+[Supervisor] Next: END, Phase: mechanics_design
+[Supervisor] Last agent was: mechanics_designer
+[Supervisor] Coming from specialist mechanics_designer - forcing END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould include examples from reference games
+[22m[39m[LoopGraph] supervisor completed in 283ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould include examples from reference games
+[22m[39m[LoopGraph Router] state.nextAgent=END, roundCount=2, phase=mechanics_design
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Returning state.nextAgent: END
+[LoopGraph Router] routeToNextAgent returned: END
+[LoopGraph Router] Routing to END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mInnovation Quality[2m > [22m[2mshould include examples from reference games
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: END
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Done! I've created innovative game loop nodes. Check the suggestion panel to approve them....
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mError Handling[2m > [22m[2mshould handle max rounds gracefully
+[22m[39m[LoopGraph] Starting stream...
+
+ [32m✓[39m src/domains/chat/hooks/useChatStream.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mError Handling[2m > [22m[2mshould handle max rounds gracefully
+[22m[39m[LoopGraph] Invoking supervisor...
+
+ [32m✓[39m src/domains/interior-designer/__tests__/windows-doors.e2e.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+[90mstdout[2m | src/evaluation/experiments/game-design-sanity.test.ts
+[22m[39m✅ Langfuse observability enabled
+
+ [32m✓[39m src/evaluation/experiments/game-design-sanity.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m src/evaluation/judges/__tests__/game-design-judges.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m src/evaluation/judges/__tests__/haute-game-judge.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/domains/storyteller/components/__tests__/youtube-player.e2e.test.tsx [2m([22m[2m22 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+[90mstdout[2m | tests/system/full-loop.test.ts
+[22m[39m✅ Langfuse observability enabled
+
+[90mstdout[2m | tests/system/full-loop.test.ts[2m > [22m[2mSystem Full Loop Connectivity[2m > [22m[2mshould wire Agent -> Tools -> Persistence correctly
+[22m[39mExecuting research_topic for step task-1...
+
+ [32m✓[39m tests/system/full-loop.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 5[2mms[22m[39m
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mError Handling[2m > [22m[2mshould handle max rounds gracefully
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mError Handling[2m > [22m[2mshould handle max rounds gracefully
+[22m[39m[Supervisor] Thinking: Looping back...
+[Supervisor] Next: supervisor, Phase: initial
+[Supervisor] Last agent was: null
+[Supervisor] Has message but routing to self - forcing END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mError Handling[2m > [22m[2mshould handle max rounds gracefully
+[22m[39m[LoopGraph] supervisor completed in 268ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mError Handling[2m > [22m[2mshould handle max rounds gracefully
+[22m[39m[LoopGraph Router] state.nextAgent=END, roundCount=1, phase=initial
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Returning state.nextAgent: END
+[LoopGraph Router] routeToNextAgent returned: END
+[LoopGraph Router] Routing to END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mError Handling[2m > [22m[2mshould handle max rounds gracefully
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: END
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Let me think more......
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mError Handling[2m > [22m[2mshould handle agent errors and emit error events
+[22m[39m[LoopGraph] Starting stream...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mError Handling[2m > [22m[2mshould handle agent errors and emit error events
+[22m[39m[LoopGraph] Invoking supervisor...
+
+ [32m✓[39m src/domains/storyteller/tools/v2/__tests__/storytelling.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m src/domains/loop-creator/agents/market-analyst/__tests__/api.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+[90mstdout[2m | tests/evaluation/judges.test.ts
+[22m[39m✅ Langfuse observability enabled
+
+ [32m✓[39m tests/evaluation/judges.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/integration/storytelling-tools.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/integration/game-design-tools.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m src/domains/interior-designer/__tests__/terrain-quality.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m src/domains/storyteller/context/__tests__/series-bible.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+[90mstdout[2m | src/evaluation/judges/__tests__/judges.test.ts
+[22m[39m✅ Langfuse observability enabled
+
+ [32m✓[39m src/evaluation/judges/__tests__/judges.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mError Handling[2m > [22m[2mshould handle agent errors and emit error events
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mError Handling[2m > [22m[2mshould handle agent errors and emit error events
+[22m[39m[LoopGraph] ❌ Agent supervisor FAILED: LLM API Error
+[LoopGraph] Stack: Error: LLM API Error
+    at /Users/jaceksroga/tilemap/src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts:271:40
+    at file:///Users/jaceksroga/tilemap/node_modules/@vitest/runner/dist/index.js:145:11
+    at file:///Users/jaceksroga/tilemap/node_modules/@vitest/runner/dist/index.js:915:26
+    at file:///Users/jaceksroga/tilemap/node_modules/@vitest/runner/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///Users/jaceksroga/tilemap/node_modules/@vitest/runner/dist/index.js:1209:10)
+    at file:///Users/jaceksroga/tilemap/node_modules/@vitest/runner/dist/index.js:1653:37
+    at Traces.$ (file:///Users/jaceksroga/tilemap/node_modules/vitest/dist/chunks/traces.CCmnQaNT.js:142:27)
+    at trace (file:///Users/jaceksroga/tilemap/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)
+    at runTest (file:///Users/jaceksroga/tilemap/node_modules/@vitest/runner/dist/index.js:1653:12)
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mError Handling[2m > [22m[2mshould handle agent errors and emit error events
+[22m[39m[LoopGraph Router] state.nextAgent=END, roundCount=0, phase=initial
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Returning state.nextAgent: END
+[LoopGraph Router] routeToNextAgent returned: END
+[LoopGraph Router] Routing to END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mError Handling[2m > [22m[2mshould handle agent errors and emit error events
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: END
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: ⚠️ Error in supervisor: LLM API Error. Please try again....
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould track lastAgent correctly
+[22m[39m[LoopGraph] Starting stream...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould track lastAgent correctly
+[22m[39m[LoopGraph] Invoking supervisor...
+
+ [31m❯[39m tests/integration/workflow-engine.test.ts [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 5007[2mms[22m[39m
+[31m     [31m×[31m should initialize and run a workflow[39m[33m 5006[2mms[22m[39m
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould track lastAgent correctly
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould track lastAgent correctly
+[22m[39m[Supervisor] Thinking: User wants game loop nodes. Delegating to mechanics designer.
+[Supervisor] Next: mechanics_designer, Phase: mechanics_design
+[Supervisor] Last agent was: null
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould track lastAgent correctly
+[22m[39m[LoopGraph] supervisor completed in 268ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould track lastAgent correctly
+[22m[39m[LoopGraph Router] state.nextAgent=mechanics_designer, roundCount=1, phase=mechanics_design
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Delegating to specialist: mechanics_designer
+[LoopGraph Router] routeToNextAgent returned: mechanics_designer
+[LoopGraph Router] ✅ Routing to: mechanics_designer
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould track lastAgent correctly
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: mechanics_designer
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Let me have the Mechanics Designer create some innovative game loop nodes......
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould track lastAgent correctly
+[22m[39m[LoopGraph] Invoking mechanics_designer...
+[MechanicsDesigner] Starting...
+[MechanicsDesigner] Task: test state tracking
+[MechanicsDesigner] Calling LLM...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould track lastAgent correctly
+[22m[39m[MechanicsDesigner] LLM response received
+[MechanicsDesigner] Response length: [33m799[39m
+[MechanicsDesigner] Created 2 mechanics, 1 connections
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould track lastAgent correctly
+[22m[39m[ConceptEvaluator] Parse error: ZodError: [
+  {
+    "code": "invalid_type",
+    "expected": "number",
+    "received": "undefined",
+    "path": [
+      "overallAlignment"
+    ],
+    "message": "Required"
+  },
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "received": "undefined",
+    "path": [
+      "summary"
+    ],
+    "message": "Required"
+  }
+]
+    at Object.get error [as error] [90m(file:///Users/jaceksroga/tilemap/[39mnode_modules/[4mzod[24m/v3/types.js:39:31[90m)[39m
+    at ZodObject.parse [90m(file:///Users/jaceksroga/tilemap/[39mnode_modules/[4mzod[24m/v3/types.js:114:22[90m)[39m
+    at evaluateConceptAlignment [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/agents/concept-evaluator.ts:183:38[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at mechanicsDesignerAgent [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/agents/mechanics-designer.ts:358:24[90m)[39m
+    at RunnableLambda.func [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/graph/loop-graph.ts:139:22[90m)[39m
+    at [90mfile:///Users/jaceksroga/tilemap/[39mnode_modules/[4m@langchain[24m/core/dist/runnables/base.js:1257:19 {
+  issues: [
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'number'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    },
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'string'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    }
+  ],
+  addIssue: [36m[Function (anonymous)][39m,
+  addIssues: [36m[Function (anonymous)][39m,
+  errors: [
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'number'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    },
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'string'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    }
+  ]
+}
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould track lastAgent correctly
+[22m[39m[MechanicsDesigner] Concept alignment: 0/100
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould track lastAgent correctly
+[22m[39m[MechanicsDesigner] Evaluation error: TypeError: Cannot read properties of null (reading 'missingElements')
+    at mechanicsDesignerAgent [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/agents/mechanics-designer.ts:367:35[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at RunnableLambda.func [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/graph/loop-graph.ts:139:22[90m)[39m
+    at [90mfile:///Users/jaceksroga/tilemap/[39mnode_modules/[4m@langchain[24m/core/dist/runnables/base.js:1257:19
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould track lastAgent correctly
+[22m[39m[LoopGraph] mechanics_designer completed in 1ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould track lastAgent correctly
+[22m[39m[LoopGraph] Received event keys: [ [32m'mechanics_designer'[39m ]
+[LoopGraph] Processing node: mechanics_designer, nextAgent: supervisor
+[LoopGraph] Node mechanics_designer has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from mechanics_designer: Created 2 innovative mechanics with 1 connection.
+
+⚠️ **Concept Alignment: 0/100**
+Evaluation failed...
+[LoopGraph] Emitting 3 actions from mechanics_designer
+[LoopGraph] Action: ADD_NODE - Orbital Weapons
+[LoopGraph] Action: ADD_NODE - XP Magnetism
+[LoopGraph] Action: ADD_EDGE - kills generate XP
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould track lastAgent correctly
+[22m[39m[LoopGraph] Invoking supervisor...
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould track lastAgent correctly
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould track lastAgent correctly
+[22m[39m[Supervisor] Thinking: Mechanics designer completed. Acknowledging to user.
+[Supervisor] Next: END, Phase: mechanics_design
+[Supervisor] Last agent was: mechanics_designer
+[Supervisor] Coming from specialist mechanics_designer - forcing END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould track lastAgent correctly
+[22m[39m[LoopGraph] supervisor completed in 275ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould track lastAgent correctly
+[22m[39m[LoopGraph Router] state.nextAgent=END, roundCount=2, phase=mechanics_design
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Returning state.nextAgent: END
+[LoopGraph Router] routeToNextAgent returned: END
+[LoopGraph Router] Routing to END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould track lastAgent correctly
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: END
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Done! I've created innovative game loop nodes. Check the suggestion panel to approve them....
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould accumulate messages from all agents
+[22m[39m[LoopGraph] Starting stream...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould accumulate messages from all agents
+[22m[39m[LoopGraph] Invoking supervisor...
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould accumulate messages from all agents
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould accumulate messages from all agents
+[22m[39m[Supervisor] Thinking: User wants game loop nodes. Delegating to mechanics designer.
+[Supervisor] Next: mechanics_designer, Phase: mechanics_design
+[Supervisor] Last agent was: null
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould accumulate messages from all agents
+[22m[39m[LoopGraph] supervisor completed in 272ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould accumulate messages from all agents
+[22m[39m[LoopGraph Router] state.nextAgent=mechanics_designer, roundCount=1, phase=mechanics_design
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Delegating to specialist: mechanics_designer
+[LoopGraph Router] routeToNextAgent returned: mechanics_designer
+[LoopGraph Router] ✅ Routing to: mechanics_designer
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould accumulate messages from all agents
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: mechanics_designer
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Let me have the Mechanics Designer create some innovative game loop nodes......
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould accumulate messages from all agents
+[22m[39m[LoopGraph] Invoking mechanics_designer...
+[MechanicsDesigner] Starting...
+[MechanicsDesigner] Task: test message accumulation
+[MechanicsDesigner] Calling LLM...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould accumulate messages from all agents
+[22m[39m[MechanicsDesigner] LLM response received
+[MechanicsDesigner] Response length: [33m799[39m
+[MechanicsDesigner] Created 2 mechanics, 1 connections
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould accumulate messages from all agents
+[22m[39m[ConceptEvaluator] Parse error: ZodError: [
+  {
+    "code": "invalid_type",
+    "expected": "number",
+    "received": "undefined",
+    "path": [
+      "overallAlignment"
+    ],
+    "message": "Required"
+  },
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "received": "undefined",
+    "path": [
+      "summary"
+    ],
+    "message": "Required"
+  }
+]
+    at Object.get error [as error] [90m(file:///Users/jaceksroga/tilemap/[39mnode_modules/[4mzod[24m/v3/types.js:39:31[90m)[39m
+    at ZodObject.parse [90m(file:///Users/jaceksroga/tilemap/[39mnode_modules/[4mzod[24m/v3/types.js:114:22[90m)[39m
+    at evaluateConceptAlignment [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/agents/concept-evaluator.ts:183:38[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at mechanicsDesignerAgent [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/agents/mechanics-designer.ts:358:24[90m)[39m
+    at RunnableLambda.func [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/graph/loop-graph.ts:139:22[90m)[39m
+    at [90mfile:///Users/jaceksroga/tilemap/[39mnode_modules/[4m@langchain[24m/core/dist/runnables/base.js:1257:19 {
+  issues: [
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'number'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    },
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'string'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    }
+  ],
+  addIssue: [36m[Function (anonymous)][39m,
+  addIssues: [36m[Function (anonymous)][39m,
+  errors: [
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'number'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    },
+    {
+      code: [32m'invalid_type'[39m,
+      expected: [32m'string'[39m,
+      received: [32m'undefined'[39m,
+      path: [36m[Array][39m,
+      message: [32m'Required'[39m
+    }
+  ]
+}
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould accumulate messages from all agents
+[22m[39m[MechanicsDesigner] Concept alignment: 0/100
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould accumulate messages from all agents
+[22m[39m[MechanicsDesigner] Evaluation error: TypeError: Cannot read properties of null (reading 'missingElements')
+    at mechanicsDesignerAgent [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/agents/mechanics-designer.ts:367:35[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at RunnableLambda.func [90m(/Users/jaceksroga/tilemap/[39msrc/domains/loop-creator/graph/loop-graph.ts:139:22[90m)[39m
+    at [90mfile:///Users/jaceksroga/tilemap/[39mnode_modules/[4m@langchain[24m/core/dist/runnables/base.js:1257:19
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould accumulate messages from all agents
+[22m[39m[LoopGraph] mechanics_designer completed in 1ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould accumulate messages from all agents
+[22m[39m[LoopGraph] Received event keys: [ [32m'mechanics_designer'[39m ]
+[LoopGraph] Processing node: mechanics_designer, nextAgent: supervisor
+[LoopGraph] Node mechanics_designer has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from mechanics_designer: Created 2 innovative mechanics with 1 connection.
+
+⚠️ **Concept Alignment: 0/100**
+Evaluation failed...
+[LoopGraph] Emitting 3 actions from mechanics_designer
+[LoopGraph] Action: ADD_NODE - Orbital Weapons
+[LoopGraph] Action: ADD_NODE - XP Magnetism
+[LoopGraph] Action: ADD_EDGE - kills generate XP
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould accumulate messages from all agents
+[22m[39m[LoopGraph] Invoking supervisor...
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould accumulate messages from all agents
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould accumulate messages from all agents
+[22m[39m[Supervisor] Thinking: Mechanics designer completed. Acknowledging to user.
+[Supervisor] Next: END, Phase: mechanics_design
+[Supervisor] Last agent was: mechanics_designer
+[Supervisor] Coming from specialist mechanics_designer - forcing END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould accumulate messages from all agents
+[22m[39m[LoopGraph] supervisor completed in 263ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould accumulate messages from all agents
+[22m[39m[LoopGraph Router] state.nextAgent=END, roundCount=2, phase=mechanics_design
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Returning state.nextAgent: END
+[LoopGraph Router] routeToNextAgent returned: END
+[LoopGraph Router] Routing to END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mAgent Flow E2E[2m > [22m[2mState Management[2m > [22m[2mshould accumulate messages from all agents
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: END
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Done! I've created innovative game loop nodes. Check the suggestion panel to approve them....
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mLoop Planner Flow[2m > [22m[2mshould route to loop_planner for structure requests
+[22m[39m[LoopGraph] Starting stream...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mLoop Planner Flow[2m > [22m[2mshould route to loop_planner for structure requests
+[22m[39m[LoopGraph] Invoking supervisor...
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mLoop Planner Flow[2m > [22m[2mshould route to loop_planner for structure requests
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mLoop Planner Flow[2m > [22m[2mshould route to loop_planner for structure requests
+[22m[39m[Supervisor] Thinking: User wants loop structure. Delegating to loop planner.
+[Supervisor] Next: loop_planner, Phase: planning
+[Supervisor] Last agent was: null
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mLoop Planner Flow[2m > [22m[2mshould route to loop_planner for structure requests
+[22m[39m[LoopGraph] supervisor completed in 265ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mLoop Planner Flow[2m > [22m[2mshould route to loop_planner for structure requests
+[22m[39m[LoopGraph Router] state.nextAgent=loop_planner, roundCount=1, phase=planning
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Delegating to specialist: loop_planner
+[LoopGraph Router] routeToNextAgent returned: loop_planner
+[LoopGraph Router] ✅ Routing to: loop_planner
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mLoop Planner Flow[2m > [22m[2mshould route to loop_planner for structure requests
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: loop_planner
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Let me have the Loop Planner design the structure......
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mLoop Planner Flow[2m > [22m[2mshould route to loop_planner for structure requests
+[22m[39m[LoopGraph] Invoking loop_planner...
+[LoopPlanner] Starting...
+[LoopPlanner] Task: design the game loop structure
+[LoopPlanner] Game context: design the game loop structure
+[LoopPlanner] Calling LLM...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mLoop Planner Flow[2m > [22m[2mshould route to loop_planner for structure requests
+[22m[39m[LoopPlanner] LLM response received
+[LoopPlanner] Response length: [33m442[39m
+[LoopPlanner] Parsing response...
+[LoopPlanner] Successfully parsed JSON
+[LoopPlanner] Parsed 1 loops: [ [32m'Power Escalation Cycle'[39m ]
+[LoopPlanner] Created 1 loops
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mLoop Planner Flow[2m > [22m[2mshould route to loop_planner for structure requests
+[22m[39m[LoopGraph] loop_planner completed in 0ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mLoop Planner Flow[2m > [22m[2mshould route to loop_planner for structure requests
+[22m[39m[LoopGraph] Received event keys: [ [32m'loop_planner'[39m ]
+[LoopGraph] Processing node: loop_planner, nextAgent: supervisor
+[LoopGraph] Node loop_planner has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from loop_planner: Created 1 innovative loop structure....
+[LoopGraph] Emitting 1 actions from loop_planner
+[LoopGraph] Action: ADD_NODE - Power Escalation Cycle
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mLoop Planner Flow[2m > [22m[2mshould route to loop_planner for structure requests
+[22m[39m[LoopGraph] Invoking supervisor...
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mLoop Planner Flow[2m > [22m[2mshould route to loop_planner for structure requests
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mLoop Planner Flow[2m > [22m[2mshould route to loop_planner for structure requests
+[22m[39m[Supervisor] Thinking: Loop planner completed.
+[Supervisor] Next: END, Phase: planning
+[Supervisor] Last agent was: loop_planner
+[Supervisor] Coming from specialist loop_planner - forcing END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mLoop Planner Flow[2m > [22m[2mshould route to loop_planner for structure requests
+[22m[39m[LoopGraph] supervisor completed in 274ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mLoop Planner Flow[2m > [22m[2mshould route to loop_planner for structure requests
+[22m[39m[LoopGraph Router] state.nextAgent=END, roundCount=2, phase=planning
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Returning state.nextAgent: END
+[LoopGraph Router] routeToNextAgent returned: END
+[LoopGraph Router] Routing to END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mLoop Planner Flow[2m > [22m[2mshould route to loop_planner for structure requests
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: END
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Done! Loop structure created....
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould handle "CS + Fallout" style hybrid game concepts
+[22m[39m[LoopGraph] Starting stream...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould handle "CS + Fallout" style hybrid game concepts
+[22m[39m[LoopGraph] Invoking supervisor...
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould handle "CS + Fallout" style hybrid game concepts
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould handle "CS + Fallout" style hybrid game concepts
+[22m[39m[Supervisor] Thinking: User mentioned CS and Fallout - hybrid FPS/RPG concept.
+[Supervisor] Next: loop_planner, Phase: planning
+[Supervisor] Last agent was: null
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould handle "CS + Fallout" style hybrid game concepts
+[22m[39m[LoopGraph] supervisor completed in 284ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould handle "CS + Fallout" style hybrid game concepts
+[22m[39m[LoopGraph Router] state.nextAgent=loop_planner, roundCount=1, phase=planning
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Delegating to specialist: loop_planner
+[LoopGraph Router] routeToNextAgent returned: loop_planner
+[LoopGraph Router] ✅ Routing to: loop_planner
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould handle "CS + Fallout" style hybrid game concepts
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: loop_planner
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Interesting! A tactical shooter with RPG elements. Let me design the loop structure......
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould handle "CS + Fallout" style hybrid game concepts
+[22m[39m[LoopGraph] Invoking loop_planner...
+[LoopPlanner] Starting...
+[LoopPlanner] Task: I want to create a game like CS + Fallout
+[LoopPlanner] Game context: I want to create a game like CS + Fallout
+[LoopPlanner] Calling LLM...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould handle "CS + Fallout" style hybrid game concepts
+[22m[39m[LoopPlanner] LLM response received
+[LoopPlanner] Response length: [33m827[39m
+[LoopPlanner] Parsing response...
+[LoopPlanner] Successfully parsed JSON
+[LoopPlanner] Parsed 2 loops: [ [32m'Tactical Encounter Loop'[39m, [32m'Character Progression Loop'[39m ]
+[LoopPlanner] Created 2 loops
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould handle "CS + Fallout" style hybrid game concepts
+[22m[39m[LoopGraph] loop_planner completed in 1ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould handle "CS + Fallout" style hybrid game concepts
+[22m[39m[LoopGraph] Received event keys: [ [32m'loop_planner'[39m ]
+[LoopGraph] Processing node: loop_planner, nextAgent: supervisor
+[LoopGraph] Node loop_planner has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from loop_planner: Created hybrid CS-Fallout loop structure....
+[LoopGraph] Emitting 3 actions from loop_planner
+[LoopGraph] Action: ADD_NODE - Tactical Encounter Loop
+[LoopGraph] Action: ADD_NODE - Character Progression Loop
+[LoopGraph] Action: ADD_EDGE - →
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould handle "CS + Fallout" style hybrid game concepts
+[22m[39m[LoopGraph] Invoking supervisor...
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39m[Tool] regenerate_text called
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould handle "CS + Fallout" style hybrid game concepts
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould handle "CS + Fallout" style hybrid game concepts
+[22m[39m[Supervisor] Thinking: Loop planner completed.
+[Supervisor] Next: END, Phase: planning
+[Supervisor] Last agent was: loop_planner
+[Supervisor] Coming from specialist loop_planner - forcing END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould handle "CS + Fallout" style hybrid game concepts
+[22m[39m[LoopGraph] supervisor completed in 267ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould handle "CS + Fallout" style hybrid game concepts
+[22m[39m[LoopGraph Router] state.nextAgent=END, roundCount=2, phase=planning
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Returning state.nextAgent: END
+[LoopGraph Router] routeToNextAgent returned: END
+[LoopGraph Router] Routing to END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould handle "CS + Fallout" style hybrid game concepts
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: END
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Done! Created a hybrid tactical-RPG loop structure....
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould not crash when referenceGames is undefined in initial state
+[22m[39m[LoopGraph] Starting stream...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould not crash when referenceGames is undefined in initial state
+[22m[39m[LoopGraph] Invoking supervisor...
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould not crash when referenceGames is undefined in initial state
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould not crash when referenceGames is undefined in initial state
+[22m[39m[Supervisor] Thinking: User mentioned CS and Fallout - hybrid FPS/RPG concept.
+[Supervisor] Next: loop_planner, Phase: planning
+[Supervisor] Last agent was: null
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould not crash when referenceGames is undefined in initial state
+[22m[39m[LoopGraph] supervisor completed in 263ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould not crash when referenceGames is undefined in initial state
+[22m[39m[LoopGraph Router] state.nextAgent=loop_planner, roundCount=1, phase=planning
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Delegating to specialist: loop_planner
+[LoopGraph Router] routeToNextAgent returned: loop_planner
+[LoopGraph Router] ✅ Routing to: loop_planner
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould not crash when referenceGames is undefined in initial state
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: loop_planner
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Interesting! A tactical shooter with RPG elements. Let me design the loop structure......
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould not crash when referenceGames is undefined in initial state
+[22m[39m[LoopGraph] Invoking loop_planner...
+[LoopPlanner] Starting...
+[LoopPlanner] Task: create a simple game
+[LoopPlanner] Game context: None
+[LoopPlanner] Calling LLM...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould not crash when referenceGames is undefined in initial state
+[22m[39m[LoopPlanner] LLM response received
+[LoopPlanner] Response length: [33m827[39m
+[LoopPlanner] Parsing response...
+[LoopPlanner] Successfully parsed JSON
+[LoopPlanner] Parsed 2 loops: [ [32m'Tactical Encounter Loop'[39m, [32m'Character Progression Loop'[39m ]
+[LoopPlanner] Created 2 loops
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould not crash when referenceGames is undefined in initial state
+[22m[39m[LoopGraph] loop_planner completed in 1ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould not crash when referenceGames is undefined in initial state
+[22m[39m[LoopGraph] Received event keys: [ [32m'loop_planner'[39m ]
+[LoopGraph] Processing node: loop_planner, nextAgent: supervisor
+[LoopGraph] Node loop_planner has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from loop_planner: Created hybrid CS-Fallout loop structure....
+[LoopGraph] Emitting 3 actions from loop_planner
+[LoopGraph] Action: ADD_NODE - Tactical Encounter Loop
+[LoopGraph] Action: ADD_NODE - Character Progression Loop
+[LoopGraph] Action: ADD_EDGE - →
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould not crash when referenceGames is undefined in initial state
+[22m[39m[LoopGraph] Invoking supervisor...
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould not crash when referenceGames is undefined in initial state
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould not crash when referenceGames is undefined in initial state
+[22m[39m[Supervisor] Thinking: Loop planner completed.
+[Supervisor] Next: END, Phase: planning
+[Supervisor] Last agent was: loop_planner
+[Supervisor] Coming from specialist loop_planner - forcing END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould not crash when referenceGames is undefined in initial state
+[22m[39m[LoopGraph] supervisor completed in 266ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould not crash when referenceGames is undefined in initial state
+[22m[39m[LoopGraph Router] state.nextAgent=END, roundCount=2, phase=planning
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Returning state.nextAgent: END
+[LoopGraph Router] routeToNextAgent returned: END
+[LoopGraph Router] Routing to END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mReference Games Extraction[2m > [22m[2mshould not crash when referenceGames is undefined in initial state
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: END
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Done! Created a hybrid tactical-RPG loop structure....
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mComplex Multi-Turn Conversation Flow[2m > [22m[2mshould handle multi-specialist routing in sequence
+[22m[39m[LoopGraph] Starting stream...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mComplex Multi-Turn Conversation Flow[2m > [22m[2mshould handle multi-specialist routing in sequence
+[22m[39m[LoopGraph] Invoking supervisor...
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mComplex Multi-Turn Conversation Flow[2m > [22m[2mshould handle multi-specialist routing in sequence
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mComplex Multi-Turn Conversation Flow[2m > [22m[2mshould handle multi-specialist routing in sequence
+[22m[39m[Supervisor] Thinking: User said "CS" - need clarification on what they mean.
+[Supervisor] Next: END, Phase: initial
+[Supervisor] Last agent was: null
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mComplex Multi-Turn Conversation Flow[2m > [22m[2mshould handle multi-specialist routing in sequence
+[22m[39m[LoopGraph] supervisor completed in 265ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mComplex Multi-Turn Conversation Flow[2m > [22m[2mshould handle multi-specialist routing in sequence
+[22m[39m[LoopGraph Router] state.nextAgent=END, roundCount=1, phase=initial
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Has pending questions, ending
+[LoopGraph Router] routeToNextAgent returned: END
+[LoopGraph Router] Routing to END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mComplex Multi-Turn Conversation Flow[2m > [22m[2mshould handle multi-specialist routing in sequence
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: END
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Could you clarify what "CS" refers to? Are you thinking of Counter-Strike?...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mComplex Multi-Turn Conversation Flow[2m > [22m[2mshould accumulate state across multiple turns
+[22m[39m[LoopGraph] Starting stream...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mComplex Multi-Turn Conversation Flow[2m > [22m[2mshould accumulate state across multiple turns
+[22m[39m[LoopGraph] Invoking supervisor...
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mComplex Multi-Turn Conversation Flow[2m > [22m[2mshould accumulate state across multiple turns
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mComplex Multi-Turn Conversation Flow[2m > [22m[2mshould accumulate state across multiple turns
+[22m[39m[Supervisor] Thinking: User said "CS" - need clarification on what they mean.
+[Supervisor] Next: END, Phase: initial
+[Supervisor] Last agent was: null
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mComplex Multi-Turn Conversation Flow[2m > [22m[2mshould accumulate state across multiple turns
+[22m[39m[LoopGraph] supervisor completed in 266ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mComplex Multi-Turn Conversation Flow[2m > [22m[2mshould accumulate state across multiple turns
+[22m[39m[LoopGraph Router] state.nextAgent=END, roundCount=1, phase=initial
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Has pending questions, ending
+[LoopGraph Router] routeToNextAgent returned: END
+[LoopGraph Router] Routing to END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mComplex Multi-Turn Conversation Flow[2m > [22m[2mshould accumulate state across multiple turns
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: END
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Could you clarify what "CS" refers to? Are you thinking of Counter-Strike?...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mNull Safety Edge Cases[2m > [22m[2mshould handle state with empty referenceGames array
+[22m[39m[LoopGraph] Starting stream...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mNull Safety Edge Cases[2m > [22m[2mshould handle state with empty referenceGames array
+[22m[39m[LoopGraph] Invoking supervisor...
+
+[90mstderr[2m | tests/integration/executive-agent.test.ts[2m > [22m[2mExecutiveAgent Integration[2m > [22m[2mshould create a plan and execute a step
+[22m[39mFailed to run agent loop Error: No JSON found parsing response: 
+    at goal.goal [90m(/Users/jaceksroga/tilemap/[39msrc/agent-core/executive.ts:78:31[90m)[39m
+    at withSpan [90m(/Users/jaceksroga/tilemap/[39msrc/agent-core/observability.ts:510:20[90m)[39m
+    at [90m/Users/jaceksroga/tilemap/[39mtests/integration/executive-agent.test.ts:44:28
+    at [90mfile:///Users/jaceksroga/tilemap/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:915:20
+
+ [32m✓[39m tests/integration/executive-agent.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 7918[2mms[22m[39m
+     [33m[2m✓[22m[39m should create a plan and execute a step [33m 7917[2mms[22m[39m
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mNull Safety Edge Cases[2m > [22m[2mshould handle state with empty referenceGames array
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mNull Safety Edge Cases[2m > [22m[2mshould handle state with empty referenceGames array
+[22m[39m[Supervisor] Thinking: Simple response
+[Supervisor] Next: END, Phase: initial
+[Supervisor] Last agent was: null
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mNull Safety Edge Cases[2m > [22m[2mshould handle state with empty referenceGames array
+[22m[39m[LoopGraph] supervisor completed in 266ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mNull Safety Edge Cases[2m > [22m[2mshould handle state with empty referenceGames array
+[22m[39m[LoopGraph Router] state.nextAgent=END, roundCount=1, phase=initial
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Returning state.nextAgent: END
+[LoopGraph Router] routeToNextAgent returned: END
+[LoopGraph Router] Routing to END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mNull Safety Edge Cases[2m > [22m[2mshould handle state with empty referenceGames array
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: END
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Hello!...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mNull Safety Edge Cases[2m > [22m[2mshould handle state with null messages array gracefully
+[22m[39m[LoopGraph] Starting stream...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mNull Safety Edge Cases[2m > [22m[2mshould handle state with null messages array gracefully
+[22m[39m[LoopGraph] Invoking supervisor...
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mNull Safety Edge Cases[2m > [22m[2mshould handle state with null messages array gracefully
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mNull Safety Edge Cases[2m > [22m[2mshould handle state with null messages array gracefully
+[22m[39m[Supervisor] Thinking: Simple response
+[Supervisor] Next: END, Phase: initial
+[Supervisor] Last agent was: null
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mNull Safety Edge Cases[2m > [22m[2mshould handle state with null messages array gracefully
+[22m[39m[LoopGraph] supervisor completed in 257ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mNull Safety Edge Cases[2m > [22m[2mshould handle state with null messages array gracefully
+[22m[39m[LoopGraph Router] state.nextAgent=END, roundCount=1, phase=initial
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Returning state.nextAgent: END
+[LoopGraph Router] routeToNextAgent returned: END
+[LoopGraph Router] Routing to END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mNull Safety Edge Cases[2m > [22m[2mshould handle state with null messages array gracefully
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: END
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Hello!...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mNull Safety Edge Cases[2m > [22m[2mshould handle missing optional state fields
+[22m[39m[LoopGraph] Starting stream...
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mNull Safety Edge Cases[2m > [22m[2mshould handle missing optional state fields
+[22m[39m[LoopGraph] Invoking supervisor...
+
+[90mstderr[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mNull Safety Edge Cases[2m > [22m[2mshould handle missing optional state fields
+[22m[39m[CrossDomainContext] Failed to fetch entities
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mNull Safety Edge Cases[2m > [22m[2mshould handle missing optional state fields
+[22m[39m[Supervisor] Thinking: Simple response
+[Supervisor] Next: END, Phase: initial
+[Supervisor] Last agent was: null
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mNull Safety Edge Cases[2m > [22m[2mshould handle missing optional state fields
+[22m[39m[LoopGraph] supervisor completed in 266ms
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mNull Safety Edge Cases[2m > [22m[2mshould handle missing optional state fields
+[22m[39m[LoopGraph Router] state.nextAgent=END, roundCount=1, phase=initial
+[LoopGraph routeToNextAgent] Checking termination conditions...
+[LoopGraph routeToNextAgent] Returning state.nextAgent: END
+[LoopGraph Router] routeToNextAgent returned: END
+[LoopGraph Router] Routing to END
+
+[90mstdout[2m | src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts[2m > [22m[2mNull Safety Edge Cases[2m > [22m[2mshould handle missing optional state fields
+[22m[39m[LoopGraph] Received event keys: [ [32m'supervisor'[39m ]
+[LoopGraph] Processing node: supervisor, nextAgent: END
+[LoopGraph] Node supervisor has 1 messages
+[LoopGraph] Message type check: instanceof=true, _getType=ai
+[LoopGraph] Emitting AI message from supervisor: Hello!...
+
+ [32m✓[39m src/domains/loop-creator/__tests__/agent-flow.e2e.test.ts [2m([22m[2m16 tests[22m[2m)[22m[33m 7921[2mms[22m[39m
+       [33m[2m✓[22m[39m should route user request through supervisor to mechanics_designer and emit actions [33m 904[2mms[22m[39m
+       [33m[2m✓[22m[39m should emit node events in correct order [33m 668[2mms[22m[39m
+       [33m[2m✓[22m[39m should generate non-generic mechanic names [33m 1137[2mms[22m[39m
+       [33m[2m✓[22m[39m should include examples from reference games [33m 556[2mms[22m[39m
+       [33m[2m✓[22m[39m should track lastAgent correctly [33m 555[2mms[22m[39m
+       [33m[2m✓[22m[39m should accumulate messages from all agents [33m 545[2mms[22m[39m
+     [33m[2m✓[22m[39m should route to loop_planner for structure requests [33m 549[2mms[22m[39m
+     [33m[2m✓[22m[39m should handle "CS + Fallout" style hybrid game concepts [33m 563[2mms[22m[39m
+     [33m[2m✓[22m[39m should not crash when referenceGames is undefined in initial state [33m 540[2mms[22m[39m
+[90mstderr[2m | tests/integration/council-verification.test.ts[2m > [22m[2mCouncil Integration (V2)[2m > [22m[2mshould consult the Psychologist
+[22m[39m[Mastra Tracing] Invalid traceId: must be 1-32 hexadecimal characters, got "7f028331-5eb9-4781-81f6-b79f5b0b714b". Generating new trace ID.
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk: The
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  cat
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  perched
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  on
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  the
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  sun
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk: -w
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk: armed
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  windows
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk: ill
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk: ,
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  its
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  tail
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  flick
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk: ing
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  like
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  a
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  met
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk: ron
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk: ome
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk: ,
+
+[90mstdout[2m | tests/integration/psychologist-verification.test.ts[2m > [22m[2mPsychologist Agent V2[2m > [22m[2mshould analyze a character profile
+[22m[39mResult: {
+  text: [32m"Here's the psychological analysis of Walter White:\n"[39m +
+    [32m'\n'[39m +
+    [32m'### Big 5 Traits\n'[39m +
+    [32m'- **Openness:** Moderate (0.5) - Walter is creative and intelligent, but his actions are often driven by practical needs rather than abstract ideals.\n'[39m +
+    [32m'- **Conscientiousness:** Moderate (0.5) - He is meticulous in his work, especially in cooking meth, but his moral compass is flexible.\n'[39m +
+    [32m'- **Extraversion:** Moderate (0.5) - Walter is not particularly outgoing, but he becomes more assertive and dominant as he gains power.\n'[39m +
+    [32m'- **Agreeableness:** Moderate (0.5) - Initially cooperative, but becomes increasingly manipulative and self-serving.\n'[39m +
+    [32m'- **Neuroticism:** Moderate (0.5) - Experiences stress and anxiety, especially related to his health and family, but becomes more controlled and ruthless over time.\n'[39m +
+    [32m'\n'[39m +
+    [32m'### Core Needs\n'[39m +
+    [32m'- **Primary Need:** To be understood - Walter desires recognition for his intelligence and capabilities.\n'[39m +
+    [32m"- **Secondary Need:** Safety - Initially motivated by the need to secure his family's future.\n"[39m +
+    [32m'- **Deficiency:** Lack of self-worth - Feels undervalued and unappreciated in his personal and professional life.\n'[39m +
+    [32m'\n'[39m +
+    [32m'### False Belief\n'[39m +
+    [32m`- **Belief:** "I am only valuable when I am useful" - Walter's actions are driven by a need to prove his worth through his abilities and achievements.\n`[39m +
+    [32m'\n'[39m +
+    [32m"Walter's transformation from a mild-mannered teacher to a ruthless drug lord is driven by these psychological factors, revealing deep-seated desires and insecurities."[39m,
+  thinking: []
+}
+
+[90mstdout[2m | tests/integration/psychologist-verification.test.ts[2m > [22m[2mPsychologist Agent V2[2m > [22m[2mshould simulate a reaction
+[22m[39m--- Simulating Reaction ---
+
+[90mstderr[2m | tests/integration/psychologist-verification.test.ts[2m > [22m[2mPsychologist Agent V2[2m > [22m[2mshould simulate a reaction
+[22m[39m[Mastra Tracing] Invalid traceId: must be 1-32 hexadecimal characters, got "2ebdc0be-749e-4808-bc43-3260024b2a2c". Generating new trace ID.
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  eyes
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  wide
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  and
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  gl
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk: ist
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk: ening
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk: ,
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  fix
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk: ated
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  on
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  the
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  rust
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk: ling
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  leaves
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  dancing
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  in
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  the
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  breeze
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk:  outside
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mChunk: .
+
+[90mstdout[2m | tests/integration/streaming-verification.test.ts[2m > [22m[2mStoryteller Streaming Compatibility[2m > [22m[2mshould return a stream result from the agent
+[22m[39mFull text: The cat perched on the sun-warmed windowsill, its tail flicking like a metronome, eyes wide and glistening, fixated on the rustling leaves dancing in the breeze outside.
+
+ [32m✓[39m tests/integration/streaming-verification.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 17309[2mms[22m[39m
+     [33m[2m✓[22m[39m should return a stream result from the agent [33m 17308[2mms[22m[39m
+[90mstdout[2m | tests/integration/psychologist-verification.test.ts[2m > [22m[2mPsychologist Agent V2[2m > [22m[2mshould simulate a reaction
+[22m[39mResult: {
+  text: [32m"It seems there was an issue with the simulation. Let me try that again.It seems there's a technical issue with the simulation. Let me address this manually.\n"[39m +
+    [32m'\n'[39m +
+    [32m"### Jesse Pinkman's Likely Reaction:\n"[39m +
+    [32m'\n'[39m +
+    [32m'**Emotional Response:**\n'[39m +
+    [32m'- **Shock and Betrayal:** Jesse would likely feel an intense wave of shock and betrayal. Walter was a father figure, and this revelation would shatter any remaining trust.\n'[39m +
+    [32m'- **Anger and Grief:** The knowledge that Walter could have saved Jane but chose not to would ignite a deep anger and grief, as Jane was the love of his life.\n'[39m +
+    [32m'\n'[39m +
+    [32m'**Behavioral Response:**\n'[39m +
+    [32m'- **Physical Reaction:** Jesse might physically lash out, either by throwing objects or confronting Walter aggressively.\n'[39m +
+    [32m'- **Emotional Breakdown:** He could experience a breakdown, crying or screaming, overwhelmed by the betrayal and loss.\n'[39m +
+    [32m'- **Withdrawal:** Jesse might also withdraw, needing space to process the information, possibly turning to substances to numb the pain.\n'[39m +
+    [32m'\n'[39m +
+    [32m'**Psychological Impact:**\n'[39m +
+    [32m'- **Valence:** Decrease significantly due to betrayal and loss.\n'[39m +
+    [32m'- **Arousal:** Increase due to heightened emotional state.\n'[39m +
+    [32m'- **Autonomy:** Decrease as he feels manipulated and powerless.\n'[39m +
+    [32m'- **Cognitive Clarity:** Decrease as his trust in Walter and his understanding of past events are shattered.\n'[39m +
+    [32m'\n'[39m +
+    [32m"This reaction aligns with Jesse's history of seeking approval and struggling with self-worth, making the betrayal even more devastating."[39m,
+  thinking: []
+}
+
+ [32m✓[39m tests/integration/psychologist-verification.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 35159[2mms[22m[39m
+     [33m[2m✓[22m[39m should analyze a character profile [33m 16285[2mms[22m[39m
+     [33m[2m✓[22m[39m should simulate a reaction [33m 18872[2mms[22m[39m
+[90mstdout[2m | tests/integration/council-verification.test.ts[2m > [22m[2mCouncil Integration (V2)[2m > [22m[2mshould consult the Psychologist
+[22m[39mResponse: Arthur Dent's psychological profile reveals a complex character navigating the chaos of an indifferent universe. Here's a detailed analysis:
+
+### Psychological Traits
+- **Openness**: Moderate. Arthur is somewhat receptive to new experiences, though he often approaches them with reluctance, reflecting his ordinary background.
+- **Conscientiousness**: Moderate. He attempts to maintain a semblance of order in his life, but the unpredictable events he faces frequently challenge this stability.
+- **Extraversion**: Moderate. While sociable, Arthur often feels overwhelmed by the eccentric personalities he encounters, leading to moments of withdrawal.
+- **Agreeableness**: Moderate. He generally cooperates with others but can become resistant when pushed beyond his limits.
+- **Neuroticism**: Moderate. Arthur experiences anxiety and stress, particularly due to his displacement and the destruction of Earth.
+
+### Core Needs
+- **Primary Need**: To be understood. Arthur craves validation and comprehension from those around him, seeking connection in a chaotic world.
+- **Secondary Need**: Safety. The loss of his home amplifies his desire for security and stability in his life.
+
+### Deficiency and False Belief
+- **Deficiency**: Lack of self-worth. Arthur often feels insignificant in the grand scheme of the universe, struggling with feelings of inadequacy.
+- **False Belief**: "I am only valuable when I am useful." This belief drives him to seek purpose in his unexpected journey, often leading to humorous yet poignant moments of introspection.
+
+Arthur's journey is marked by his struggle to find meaning and security in a universe that seems indifferent to his existence. His reactions are shaped by his need for understanding and safety, creating a rich tapestry of humor and depth in his character.
+
+[90mstdout[2m | tests/integration/council-verification.test.ts[2m > [22m[2mCouncil Integration (V2)[2m > [22m[2mshould consult the Devil's Advocate
+[22m[39m--- Consulting Devil's Advocate ---
+
+[90mstdout[2m | tests/integration/council-verification.test.ts[2m > [22m[2mCouncil Integration (V2)[2m > [22m[2mshould consult the Devil's Advocate
+[22m[39mResponse: The scene idea "A dark and stormy night, the detective walks in and finds the body" is a textbook example of overused tropes in the mystery genre. The phrase "dark and stormy night" is a classic cliché, often employed to create a foreboding atmosphere, but it lacks originality and has been seen countless times. Similarly, the detective discovering a body is a standard plot point that doesn't offer anything new or surprising. 
+
+### Critique Summary:
+- **Cliché**: The use of a stormy night and the detective finding a body are both tired tropes.
+- **Emotional Depth**: The scene feels thin emotionally, lacking unique character motivations or stakes.
+- **Logic**: While there are no logical failures, the scene fails to provide a compelling reason for the storm or the discovery.
+
+### Alternative Suggestion:
+Instead of a stormy night, consider setting the scene in an unexpected location, like a bustling city street in broad daylight. This contrast can create tension by juxtaposing the safety of daylight with the horror of the discovery. Additionally, having the detective recognize the victim as someone they have a personal connection with could add emotional depth and complexity to the scene, making it more memorable and impactful.
+
+ [32m✓[39m tests/integration/council-verification.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 71097[2mms[22m[39m
+     [33m[2m✓[22m[39m should consult the Psychologist [33m 41024[2mms[22m[39m
+     [33m[2m✓[22m[39m should consult the Devil's Advocate [33m 30072[2mms[22m[39m
+[90mstdout[2m | tests/integration/game-design/game-design-agent.test.ts[2m > [22m[2mGameDesignAgent - Harvest-Craft-Sell Loop[2m > [22m[2mshould be able to define a Harvest -> Craft -> Sell loop
+[22m[39mAgent Response Type: FINISH
+Agent Thought: The project currently lacks existing game loops, so we need to design a core loop from scratch. The atomic system analysis provided us with basic verbs and nouns that can be used to create interaction...
+Agent Payload: {
+  "result": "<thinking>\nThe project currently lacks existing game loops, so we need to design a core loop from scratch. The atomic system analysis provided us with basic verbs and nouns that can be used to create interactions in the game. Here's a potential core loop for a medieval village economy-themed farming simulation:\n\n### Core Loop Proposal\n1. **Planting**: Players plant seeds (verb: \"grow\") in their fields.\n2. **Growing**: Crops grow over time, requiring water and care (verb: \"...
+
+[90mstdout[2m | tests/integration/game-design/game-design-agent.test.ts[2m > [22m[2mGameDesignAgent - Harvest-Craft-Sell Loop[2m > [22m[2mshould analyze a proposed loop structure
+[22m[39mAnalysis Response Type: FINISH
+Analysis Thought: It seems there was an issue with retrieving or analyzing the existing game loops. The tools require specific mechanics or loop data to function correctly, but it appears there are no pre-existing loops available for this project.
+
+Given the context and mechanics provided, I will manually analyze the...
+
+ [31m❯[39m tests/integration/game-design/game-design-agent.test.ts [2m([22m[2m7 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 140983[2mms[22m[39m
+       [32m✓[39m should create an agent instance[32m 1[2mms[22m[39m
+[31m       [31m×[31m should propose a game loop design for a farming sim[39m[33m 41141[2mms[22m[39m
+       [33m[2m✓[22m[39m should propose a game loop for a roguelike [33m 10856[2mms[22m[39m
+       [33m[2m✓[22m[39m should run with project context [33m 29498[2mms[22m[39m
+     [33m[2m✓[22m[39m should retrieve relevant patterns when designing [33m 8317[2mms[22m[39m
+     [33m[2m✓[22m[39m should be able to define a Harvest -> Craft -> Sell loop [33m 32066[2mms[22m[39m
+     [33m[2m✓[22m[39m should analyze a proposed loop structure [33m 18108[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Suites 5 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m e2e/scenarios/storyteller-smoke.test.ts[2m [ e2e/scenarios/storyteller-smoke.test.ts ][22m
+[31m[1mError[22m: No test suite found in file /Users/jaceksroga/tilemap/e2e/scenarios/storyteller-smoke.test.ts[39m
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/trigger/__tests__/generate-tile.test.ts[2m [ src/trigger/__tests__/generate-tile.test.ts ][22m
+[31m[1mError[22m: No test suite found in file /Users/jaceksroga/tilemap/src/trigger/__tests__/generate-tile.test.ts[39m
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/trigger/__tests__/tile-generation-service.test.ts[2m [ src/trigger/__tests__/tile-generation-service.test.ts ][22m
+[31m[1mError[22m: No test suite found in file /Users/jaceksroga/tilemap/src/trigger/__tests__/tile-generation-service.test.ts[39m
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/trigger/__tests__/upscale-tile.test.ts[2m [ src/trigger/__tests__/upscale-tile.test.ts ][22m
+[31m[1mError[22m: No test suite found in file /Users/jaceksroga/tilemap/src/trigger/__tests__/upscale-tile.test.ts[39m
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/domains/interior-designer/__tests__/unity-export.test.ts[2m [ src/domains/interior-designer/__tests__/unity-export.test.ts ][22m
+[31m[1mError[22m: No test suite found in file /Users/jaceksroga/tilemap/src/domains/interior-designer/__tests__/unity-export.test.ts[39m
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/13]⎯[22m[39m
+
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 8 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/integration/workflow-engine.test.ts[2m > [22mHumanLoopWorkflow Integration[2m > [22mshould initialize and run a workflow
+[31m[1mError[22m: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".[39m
+[36m [2m❯[22m tests/integration/workflow-engine.test.ts:[2m7:5[22m[39m
+    [90m  5| [39m
+    [90m  6| [39m[34mdescribe[39m([32m'HumanLoopWorkflow Integration'[39m[33m,[39m () [33m=>[39m {
+    [90m  7| [39m    [34mit[39m([32m'should initialize and run a workflow'[39m[33m,[39m [35masync[39m () [33m=>[39m {
+    [90m   | [39m    [31m^[39m
+    [90m  8| [39m        [35mconst[39m inputSchema [33m=[39m z[33m.[39m[34mobject[39m({
+    [90m  9| [39m            topic[33m:[39m z[33m.[39m[34mstring[39m()[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/integration/game-design/game-design-agent.test.ts[2m > [22mGameDesignAgent[2m > [22mdesignLoop[2m > [22mshould propose a game loop design for a farming sim
+[31m[1mAssertionError[22m: expected undefined to be defined[39m
+[36m [2m❯[22m tests/integration/game-design/game-design-agent.test.ts:[2m73:48[22m[39m
+    [90m 71| [39m            [90m// If FINISH, payload should have meaningful result[39m
+    [90m 72| [39m            [35mif[39m (result[33m.[39mtype [33m===[39m [32m'FINISH'[39m) {
+    [90m 73| [39m                [34mexpect[39m(result[33m.[39mpayload[33m?.[39mresult)[33m.[39m[34mtoBeDefined[39m()
+    [90m   | [39m                                               [31m^[39m
+    [90m 74| [39m                expect(result.payload.result.length).toBeGreaterThan(5…
+    [90m 75| [39m            }
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/integration/game-design/game-design-tools.test.ts[2m > [22mGame Design Logic Transformer Tools[2m > [22mcreateIdentifyCoreLoopTool[2m > [22mshould identify core loop from mechanics
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m tests/integration/game-design/game-design-tools.test.ts:[2m65:36[22m[39m
+    [90m 63| [39m                console[33m.[39m[34mlog[39m([32m'Identify core loop error:'[39m[33m,[39m result[33m.[39merror)
+    [90m 64| [39m            }
+    [90m 65| [39m            [34mexpect[39m(result[33m.[39msuccess)[33m.[39m[34mtoBe[39m([35mtrue[39m)
+    [90m   | [39m                                   [31m^[39m
+    [90m 66| [39m            [34mexpect[39m(result[33m.[39mcoreLoop)[33m.[39m[34mtoBeDefined[39m()
+    [90m 67| [39m            [34mexpect[39m(result[33m.[39mcoreLoop[33m.[39mname)[33m.[39m[34mtoBeDefined[39m()
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/integration/game-design/game-design-tools.test.ts[2m > [22mGame Design Logic Transformer Tools[2m > [22mcreateAnalyzeMechanicBalanceTool[2m > [22mshould analyze balance of mechanics
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m tests/integration/game-design/game-design-tools.test.ts:[2m110:36[22m[39m
+    [90m108| [39m            )) [35mas[39m any
+    [90m109| [39m
+    [90m110| [39m            [34mexpect[39m(result[33m.[39msuccess)[33m.[39m[34mtoBe[39m([35mtrue[39m)
+    [90m   | [39m                                   [31m^[39m
+    [90m111| [39m            [34mexpect[39m(result[33m.[39moverallScore)[33m.[39m[34mtoBeDefined[39m()
+    [90m112| [39m            [34mexpect[39m([35mtypeof[39m result[33m.[39moverallScore)[33m.[39m[34mtoBe[39m([32m'number'[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/integration/game-design/game-design-tools.test.ts[2m > [22mGame Design Logic Transformer Tools[2m > [22mcreateSuggestProgressionTool[2m > [22mshould suggest progression improvements
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m tests/integration/game-design/game-design-tools.test.ts:[2m151:36[22m[39m
+    [90m149| [39m            )) [35mas[39m any
+    [90m150| [39m
+    [90m151| [39m            [34mexpect[39m(result[33m.[39msuccess)[33m.[39m[34mtoBe[39m([35mtrue[39m)
+    [90m   | [39m                                   [31m^[39m
+    [90m152| [39m            [34mexpect[39m(result[33m.[39msuggestions)[33m.[39m[34mtoBeDefined[39m()
+    [90m153| [39m            [34mexpect[39m([33mArray[39m[33m.[39m[34misArray[39m(result[33m.[39msuggestions))[33m.[39m[34mtoBe[39m([35mtrue[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/integration/game-design/game-design-tools.test.ts[2m > [22mGame Design Logic Transformer Tools[2m > [22mcreateValidateLoopStructureTool[2m > [22mshould validate a well-formed loop structure
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m tests/integration/game-design/game-design-tools.test.ts:[2m200:36[22m[39m
+    [90m198| [39m            )) [35mas[39m any
+    [90m199| [39m
+    [90m200| [39m            [34mexpect[39m(result[33m.[39msuccess)[33m.[39m[34mtoBe[39m([35mtrue[39m)
+    [90m   | [39m                                   [31m^[39m
+    [90m201| [39m            [34mexpect[39m(result[33m.[39misValid)[33m.[39m[34mtoBe[39m([35mtrue[39m)
+    [90m202| [39m            [34mexpect[39m(result[33m.[39mmetrics[33m.[39mcycleDetected)[33m.[39m[34mtoBe[39m([35mtrue[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/integration/game-design/game-design-tools.test.ts[2m > [22mGame Design Logic Transformer Tools[2m > [22mcreateValidateLoopStructureTool[2m > [22mshould detect orphan nodes
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m tests/integration/game-design/game-design-tools.test.ts:[2m241:36[22m[39m
+    [90m239| [39m            )) [35mas[39m any
+    [90m240| [39m
+    [90m241| [39m            [34mexpect[39m(result[33m.[39msuccess)[33m.[39m[34mtoBe[39m([35mtrue[39m)
+    [90m   | [39m                                   [31m^[39m
+    [90m242| [39m            [34mexpect[39m(result[33m.[39missues[33m.[39mlength)[33m.[39m[34mtoBeGreaterThan[39m([34m0[39m)
+    [90m243| [39m            expect(result.issues.some((i: any) => i.type === 'orphan_n…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/domains/interior-designer/__tests__/terrain-cdt.test.ts[2m > [22mCDT Triangulation[2m > [22mpoint-in-polygon[2m > [22mshould handle point on edge as outside
+[31m[1mAssertionError[22m: expected true to be false // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+[36m [2m❯[22m src/domains/interior-designer/__tests__/terrain-cdt.test.ts:[2m39:46[22m[39m
+    [90m 37| [39m
+    [90m 38| [39m    [34mit[39m([32m'should handle point on edge as outside'[39m[33m,[39m () [33m=>[39m {
+    [90m 39| [39m      [34mexpect[39m([34misPointInPolygon[39m([34m0[39m[33m,[39m [34m2[39m[33m,[39m square))[33m.[39m[34mtoBe[39m([35mfalse[39m)
+    [90m   | [39m                                             [31m^[39m
+    [90m 40| [39m    })
+    [90m 41| [39m  })
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/13]⎯[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Unhandled Errors [49m[22m[31m⎯⎯⎯⎯⎯⎯[39m
+[31m[1m
+Vitest caught 5 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.[22m[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mError[22m: Expected to contain Assets/InteriorDesign/Scenes/design.json, got Assets/,Assets/InteriorDesign/,Assets/InteriorDesign/Models/,Assets/InteriorDesign/Textures/,Assets/InteriorDesign/Models/model_obj-1.glb,Assets/InteriorDesign/Models/model_obj-1.glb.meta,Assets/InteriorDesign/InteriorScene.unity,Assets/InteriorDesign/README.txt[39m
+[36m [2m❯[22m Object.toContain src/domains/interior-designer/__tests__/unity-export.test.ts:[2m51:40[22m[39m
+    [90m 49| [39m    }[33m,[39m
+    [90m 50| [39m    toContain[33m:[39m (val[33m:[39m string) [33m=>[39m {
+    [90m 51| [39m      if (!actual.includes(val)) throw new Error(`Expected to contain …
+    [90m   | [39m                                       [31m^[39m
+    [90m 52| [39m    }[33m,[39m
+    [90m 53| [39m  }
+[90m [2m❯[22m src/domains/interior-designer/__tests__/unity-export.test.ts:[2m96:23[22m[39m
+[90m [2m❯[22m processTicksAndRejections node:internal/process/task_queues:[2m95:5[22m[39m
+[90m [2m❯[22m it src/domains/interior-designer/__tests__/unity-export.test.ts:[2m22:5[22m[39m
+[90m [2m❯[22m src/domains/interior-designer/__tests__/unity-export.test.ts:[2m89:7[22m[39m
+
+[31mThis error originated in "[1msrc/domains/interior-designer/__tests__/unity-export.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mError[22m: Can't read the data of 'Assets/InteriorDesign/Models/model_obj-1.glb'. Is it in a supported JavaScript type (String, Blob, ArrayBuffer, etc) ?[39m
+[90m [2m❯[22m node_modules/jszip/lib/utils.js:[2m479:17[22m[39m
+[90m [2m❯[22m processTicksAndRejections node:internal/process/task_queues:[2m95:5[22m[39m
+
+[31mThis error originated in "[1msrc/domains/interior-designer/__tests__/unity-export.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mError[22m: process.exit unexpectedly called with "1"[39m
+[90m [2m❯[22m process.exit node_modules/vitest/dist/chunks/startModuleRunner.DEj0jb3e.js:[2m766:9[22m[39m
+[36m [2m❯[22m runTests src/trigger/__tests__/upscale-tile.test.ts:[2m140:13[22m[39m
+    [90m138| [39m  } [35mcatch[39m (error[33m:[39m unknown) {
+    [90m139| [39m    console[33m.[39m[34merror[39m([32m'\n❌ Test failed:'[39m[33m,[39m [34mgetErrorMessage[39m(error))
+    [90m140| [39m    process[33m.[39m[34mexit[39m([34m1[39m)
+    [90m   | [39m            [31m^[39m
+    [90m141| [39m  }
+    [90m142| [39m}
+[90m [2m❯[22m processTicksAndRejections node:internal/process/task_queues:[2m95:5[22m[39m
+
+[31mThis error originated in "[1msrc/trigger/__tests__/upscale-tile.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mError[22m: process.exit unexpectedly called with "1"[39m
+[90m [2m❯[22m process.exit node_modules/vitest/dist/chunks/startModuleRunner.DEj0jb3e.js:[2m766:9[22m[39m
+[36m [2m❯[22m runTests src/trigger/__tests__/generate-tile.test.ts:[2m182:13[22m[39m
+    [90m180| [39m  } [35mcatch[39m (error[33m:[39m unknown) {
+    [90m181| [39m    console[33m.[39m[34merror[39m([32m'\n❌ Test failed:'[39m[33m,[39m [34mgetErrorMessage[39m(error))
+    [90m182| [39m    process[33m.[39m[34mexit[39m([34m1[39m)
+    [90m   | [39m            [31m^[39m
+    [90m183| [39m  }
+    [90m184| [39m}
+[90m [2m❯[22m processTicksAndRejections node:internal/process/task_queues:[2m95:5[22m[39m
+
+[31mThis error originated in "[1msrc/trigger/__tests__/generate-tile.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mError[22m: process.exit unexpectedly called with "1"[39m
+[90m [2m❯[22m process.exit node_modules/vitest/dist/chunks/startModuleRunner.DEj0jb3e.js:[2m766:9[22m[39m
+[36m [2m❯[22m runTests src/trigger/__tests__/tile-generation-service.test.ts:[2m192:13[22m[39m
+    [90m190| [39m  } [35mcatch[39m (error[33m:[39m unknown) {
+    [90m191| [39m    console[33m.[39m[34merror[39m([32m'\n❌ Test failed:'[39m[33m,[39m [34mgetErrorMessage[39m(error))
+    [90m192| [39m    process[33m.[39m[34mexit[39m([34m1[39m)
+    [90m   | [39m            [31m^[39m
+    [90m193| [39m  }
+    [90m194| [39m}
+[90m [2m❯[22m processTicksAndRejections node:internal/process/task_queues:[2m95:5[22m[39m
+
+[31mThis error originated in "[1msrc/trigger/__tests__/tile-generation-service.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[31m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39m
+
+
+[2m Test Files [22m [1m[31m9 failed[39m[22m[2m | [22m[1m[32m42 passed[39m[22m[90m (51)[39m
+[2m      Tests [22m [1m[31m8 failed[39m[22m[2m | [22m[1m[32m438 passed[39m[22m[90m (446)[39m
+[2m     Errors [22m [1m[31m5 errors[39m[22m
+[2m   Start at [22m 16:56:12
+[2m   Duration [22m 142.18s[2m (transform 3.56s, setup 436ms, import 17.06s, tests 290.71s, environment 1.58s)[22m
+

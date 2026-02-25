@@ -32,7 +32,7 @@ describe('bibleToPrompt', () => {
 
         const prompt = bibleToPrompt(mockBible, cast)
 
-        expect(prompt).toContain('=== SERIES BIBLE: Test Series ===')
+        expect(prompt).toContain('=== STORY BIBLE: Test Series ===')
         expect(prompt).toContain('--- CAST ---')
         expect(prompt).toContain('- Alice (Protagonist): Hero of the story')
         expect(prompt).toContain('- Bob (Antagonist): Villain of the story')
