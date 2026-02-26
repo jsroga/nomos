@@ -301,7 +301,7 @@ jobs:
             3. Filter out any vulnerabilities where the sub-task reported a confidence less than 8.
 
             Your final reply must contain the markdown report and nothing else.
-          claude_args: "--max-turns 5 --model claude-sonnet-4-5-20250929"
+          claude_args: "--max-turns 5 --model claude-haiku-4-5-20251001"
 
   # ───────────────────────────────────────────────
   # Job 5: Self-Healing Docs
