@@ -20,7 +20,7 @@ export interface GameEntity {
   updatedAt: string
 }
 
-export interface EntityRelationship {
+interface EntityRelationship {
   id: string
   projectId: string
   fromEntityId: string

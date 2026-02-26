@@ -195,7 +195,7 @@ const ALLOWED_ORIGINS = [
 /**
  * Validate request origin for CSRF protection
  */
-export function validateOrigin(request: NextRequest): boolean {
+function validateOrigin(request: NextRequest): boolean {
   const origin = request.headers.get('origin')
   const referer = request.headers.get('referer')
 

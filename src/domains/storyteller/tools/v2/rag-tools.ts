@@ -398,7 +398,7 @@ export const getUserPreferencesTool = createTool({
   },
 })
 
-export const ragTools = [
+const ragTools = [
   searchKnowledgeBaseTool,
   storeKnowledgeTool,
   searchCharacterHistoryTool,
