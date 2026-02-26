@@ -88,6 +88,13 @@ const nextConfig = {
       }
     }
 
+    if (isServer) {
+      // Some browser-targeting packages (formdata-polyfill, web-streams-polyfill, etc.)
+      // reference 'self' as a browser global. Polyfill it for SSR.
+      const { DefinePlugin } = require('webpack')
+      config.plugins.push(new DefinePlugin({ self: 'globalThis' }))
+    }
+
     // Optimize build performance
     if (dev) {
       // Faster rebuilds in development
