@@ -59,17 +59,12 @@
       "Bash(git -C /Users/jaceksroga/tilemap stash pop)",
       "Bash(git -C /Users/jaceksroga/tilemap push)",
       "Bash(git -C /Users/jaceksroga/tilemap add .github/workflows/ci.yml)",
-      "Bash(git -C /Users/jaceksroga/tilemap commit -m \"ci: fix security job if condition with explicit expression syntax\")",
-      "Bash(git -C /Users/jaceksroga/tilemap commit -m \"ci: remove if condition from security job so it always runs\")",
-      "Bash(git -C /Users/jaceksroga/tilemap commit -m \"ci: restore if condition - claude-code-action does not support push events\")",
-      "Bash(git -C /Users/jaceksroga/tilemap commit -m \"ci: add id-token: write permission for claude-code-action OIDC\")",
       "Bash(git -C /Users/jaceksroga/tilemap checkout main)",
       "Bash(git -C /Users/jaceksroga/tilemap pull origin main)",
       "Bash(git -C /Users/jaceksroga/tilemap checkout dev -- .github/workflows/ci.yml)",
-      "Bash(git -C /Users/jaceksroga/tilemap commit -m \"ci: sync security review workflow from dev to main\")",
       "Bash(git -C /Users/jaceksroga/tilemap push origin main)",
-      "Bash(git -C /Users/jaceksroga/tilemap commit -m \"ci: sync security review workflow to main\")",
-      "Bash(git -C /Users/jaceksroga/tilemap checkout dev)"
+      "Bash(git -C /Users/jaceksroga/tilemap checkout dev)",
+      "Bash(git pull origin main)"
     ]
   }
 }
