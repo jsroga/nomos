@@ -4,8 +4,8 @@
  * Creates 5 sample scripts to verify the workspace is working correctly.
  */
 
-import { initializeWorkspace, getStorytellerWorkspace } from '../../src/agent-core/workspace'
-import { initializeSearch, getSearchEngine } from '../../src/agent-core/search'
+import { initializeWorkspace } from '../../src/agent-core/workspace'
+import { getSearchEngine } from '../../src/agent-core/search'
 import { loadSkill, listAvailableSkills } from '../../src/agent-core/skills'
 
 async function verifySampleScripts() {
@@ -210,7 +210,7 @@ MIDPOINT TWIST:
     console.log('\n📊 Workspace Stats:')
     const stats = await workspace.getStats()
     console.log(`   Total Scripts: ${stats.totalScripts}`)
-    console.log(`   By Type:`)
+    console.log('   By Type:')
     for (const [type, count] of Object.entries(stats.byType)) {
         console.log(`     - ${type}: ${count}`)
     }

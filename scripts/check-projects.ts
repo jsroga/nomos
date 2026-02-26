@@ -12,7 +12,7 @@ envContent.split('\n').forEach(line => {
     if (match) {
         let value = match[2].trim()
         if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1)
-        if (value.startsWith("'") && value.endsWith("'")) value = value.slice(1, -1)
+        if (value.startsWith('\'') && value.endsWith('\'')) value = value.slice(1, -1)
         env[match[1]] = value
     }
 })

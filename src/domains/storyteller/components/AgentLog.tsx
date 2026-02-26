@@ -68,7 +68,7 @@ const AGENT_DISPLAY_NAMES: Record<string, string> = {
   PlotArchitect: 'Plot Architect',
   CharacterPsychology: 'Character Expert',
   ConsequenceTracker: 'Logic Guardian',
-  DevilsAdvocate: "Devil's Advocate",
+  DevilsAdvocate: 'Devil\'s Advocate',
   VisualMoment: 'Visual Designer',
   Writer: 'Writer',
   User: 'You',

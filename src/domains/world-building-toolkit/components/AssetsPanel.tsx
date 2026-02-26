@@ -206,7 +206,7 @@ export const AssetsPanel: React.FC<AssetsPanelProps> = ({ showHelpText = true, o
                     </div>
                   )}
                 </div>
-              );
+              )
             })}
           </div>
         )}

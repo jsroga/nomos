@@ -9,15 +9,15 @@
 
 /** One-liner examples of creative risk/invention for random injection per request */
 export const CREATIVE_RISK_EXAMPLES = [
-    "Breaking Bad: A chemistry teacher's expertise becomes the core of a meth empire—his skill is the product and the trap.",
-    "Dark: Missing children and a cave that doesn't obey time; full commitment to deterministic tragedy with no loophole.",
-    "Death Note: A notebook that kills when you write a name; the protagonist becomes the 'villain' the world hunts.",
-    "Inception: The heist is to plant an idea in someone's head; the ending leaves the audience in the same doubt as the character.",
-    "House M.D.: Every case is wrong three times; the lead is deliberately unlikeable; the formula is the premise.",
-    "Claire's Knee: Desire focused on one small, concrete thing (a knee) that stands for everything that can't be said.",
-    "Game of Thrones: The most honorable character is executed in season one; the rules of the genre are the first casualty.",
-    "How I Met Your Mother: The whole series is a single long flashback—the title is the endpoint we wait years to reach.",
-    "Californication: A blocked novelist lives sex, drugs, and chaos; the mess isn't redeemed by a lesson.",
+    'Breaking Bad: A chemistry teacher\'s expertise becomes the core of a meth empire—his skill is the product and the trap.',
+    'Dark: Missing children and a cave that doesn\'t obey time; full commitment to deterministic tragedy with no loophole.',
+    'Death Note: A notebook that kills when you write a name; the protagonist becomes the \'villain\' the world hunts.',
+    'Inception: The heist is to plant an idea in someone\'s head; the ending leaves the audience in the same doubt as the character.',
+    'House M.D.: Every case is wrong three times; the lead is deliberately unlikeable; the formula is the premise.',
+    'Claire\'s Knee: Desire focused on one small, concrete thing (a knee) that stands for everything that can\'t be said.',
+    'Game of Thrones: The most honorable character is executed in season one; the rules of the genre are the first casualty.',
+    'How I Met Your Mother: The whole series is a single long flashback—the title is the endpoint we wait years to reach.',
+    'Californication: A blocked novelist lives sex, drugs, and chaos; the mess isn\'t redeemed by a lesson.',
 ] as const
 
 /** Return N random creative-risk one-liners for per-request injection (variety without bloating the prompt). */

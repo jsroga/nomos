@@ -1,7 +1,7 @@
 import React from 'react'
 import { TourStep } from '@/components/tour'
 import { TOUR_STEP_IDS } from '@/lib/tour-constants'
-import { Map, MousePointer2, Palette, Upload, Sparkles, ZoomIn } from 'lucide-react'
+import { Map, MousePointer2, Palette, Sparkles } from 'lucide-react'
 
 export const worldGenTourSteps: TourStep[] = [
   {

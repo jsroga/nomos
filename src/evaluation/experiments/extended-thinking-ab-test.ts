@@ -33,7 +33,7 @@ const STORYTELLING_TEST_PROMPTS = [
   {
     id: 'betrayal-poisoned-chalice',
     message:
-      "Create a beat where the King's Cupbearer, who has loved the King like a father, realizes the poison he just served was paid for by the Queen to protect her bastard son's inheritance.",
+      'Create a beat where the King\'s Cupbearer, who has loved the King like a father, realizes the poison he just served was paid for by the Queen to protect her bastard son\'s inheritance.',
     phase: 'breaking',
     category: 'plot',
   },
@@ -68,7 +68,7 @@ const STORYTELLING_TEST_PROMPTS = [
   {
     id: 'subtext-the-funeral',
     message:
-      "Two sisters who hate each other share a carriage on the way to their father's funeral. They only discuss the quality of the carriage's suspension and the late rain, but the subtext is the inheritance of the family vineyard.",
+      'Two sisters who hate each other share a carriage on the way to their father\'s funeral. They only discuss the quality of the carriage\'s suspension and the late rain, but the subtext is the inheritance of the family vineyard.',
     phase: 'writing',
     category: 'subtext',
   },

@@ -23,7 +23,7 @@ export function createPsychologistTool(): Tool {
   return {
     name: 'analyze_character_psyche',
     description:
-      "Performs deep psychological analysis of a character. Input: JSON with 'characterName' and 'context'. Returns personality profile, hidden motivations, and predicted behavior.",
+      'Performs deep psychological analysis of a character. Input: JSON with \'characterName\' and \'context\'. Returns personality profile, hidden motivations, and predicted behavior.',
     func: async (input: string) => {
       try {
         const { characterName, context } = JSON.parse(input)
@@ -74,7 +74,7 @@ export function createStoryEngineTool(): Tool {
   return {
     name: 'inject_conflict',
     description:
-      "Generates a dramatic conflict beat to inject into a scene. Input: JSON with 'currentScene', 'conflictType' (interpersonal|environmental|internal), and 'intensity' (1-10). Returns a conflict beat and suggested dialogue hook.",
+      'Generates a dramatic conflict beat to inject into a scene. Input: JSON with \'currentScene\', \'conflictType\' (interpersonal|environmental|internal), and \'intensity\' (1-10). Returns a conflict beat and suggested dialogue hook.',
     func: async (input: string) => {
       try {
         const { currentScene, conflictType, intensity } = JSON.parse(input)

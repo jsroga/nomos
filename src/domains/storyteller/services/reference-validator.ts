@@ -1,5 +1,5 @@
 import { entityRegistry } from './entity-registry'
-import { parseReferences, ParsedReference } from '../utils/reference-parser'
+import { parseReferences } from '../utils/reference-parser'
 
 export class ReferenceValidator {
     /**

@@ -1,7 +1,6 @@
 
 import { EvaluationRunner, EvaluationItem } from '../src/evaluation/engine/runner'
 import { RoutingJudge } from '../src/evaluation/judges/routing-judge'
-import { v4 as uuidv4 } from 'uuid'
 
 async function main() {
     console.log('Starting Phase 3 Evaluation Engine verification...')
@@ -54,7 +53,7 @@ async function main() {
     let allPassed = true
     for (const res of results) {
         console.log(`[${res.itemId}] Passed: ${res.passed}`)
-        console.log(` Scores:`, res.scores)
+        console.log(' Scores:', res.scores)
         if (!res.passed) {
             allPassed = false
         }

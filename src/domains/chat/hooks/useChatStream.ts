@@ -848,7 +848,7 @@ export function useChatStream({
                         '⏳ **Rate Limited**\n\nToo many requests. Please wait a moment and try again.'
                     } else if (errorMsg.includes('network') || errorMsg.includes('timeout')) {
                       displayMessage =
-                        "🌐 **Connection Error**\n\nCouldn't reach the AI service. Please check your internet connection and try again."
+                        '🌐 **Connection Error**\n\nCouldn\'t reach the AI service. Please check your internet connection and try again.'
                     }
 
                     setMessages(prev => [

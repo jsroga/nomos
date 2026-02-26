@@ -10,7 +10,7 @@ const HEROS_JOURNEY_TEMPLATE = {
     {
       id: 'ordinary_world',
       name: 'Ordinary World',
-      description: "Establish the hero's normal life before the adventure.",
+      description: 'Establish the hero\'s normal life before the adventure.',
     },
     {
       id: 'call_to_adventure',
@@ -65,7 +65,7 @@ const HEROS_JOURNEY_TEMPLATE = {
 export const getPlotPhaseTool = createTool({
   id: 'get_plot_phase',
   description:
-    "Get the current phase in the Hero's Journey framework based on story progress (chapter number).",
+    'Get the current phase in the Hero\'s Journey framework based on story progress (chapter number).',
   inputSchema: GetPlotPhaseInputSchema,
   execute: async (args: any) => {
     const context = args?.context || args
@@ -78,7 +78,7 @@ export const getPlotPhaseTool = createTool({
       phase: phase.name,
       chapter: currentChapter,
       description: phase.description,
-      framework: "Hero's Journey",
+      framework: 'Hero\'s Journey',
     })
   },
 })
@@ -147,7 +147,7 @@ export const validateConsistencyTool = createTool({
 export const updateStoryPhaseTool = createTool({
   id: 'update_story_phase',
   description:
-    "Update the current phase of the story episode (e.g., 'premise', 'breaking', 'writing', 'complete').",
+    'Update the current phase of the story episode (e.g., \'premise\', \'breaking\', \'writing\', \'complete\').',
   inputSchema: z.object({
     episodeId: z.string(),
     phase: z.enum(['premise', 'breaking', 'writing', 'complete']),

@@ -1,5 +1,5 @@
 
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, vi, beforeAll } from 'vitest'
 import { createStorytellerAgent } from '../storyteller-agent'
 
 // ============================================

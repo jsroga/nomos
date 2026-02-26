@@ -5,7 +5,6 @@ import React, { useState } from 'react'
 import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
 import { useThree, ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
-import { Box } from '@react-three/drei'
 
 export const ObjectTool: React.FC = () => {
   const mode = useInteriorStore(state => state.mode)

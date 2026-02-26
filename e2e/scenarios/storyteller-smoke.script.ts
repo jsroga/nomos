@@ -416,7 +416,7 @@ async function test_E2E_PlotTwists_GenerateAndPersist() {
 
   const executeResult = await executeResponse.json()
   if (!executeResult.success) {
-    throw new Error(`Action execution returned success=false`)
+    throw new Error('Action execution returned success=false')
   }
 
   console.log('  ✓ Action executed and persisted')

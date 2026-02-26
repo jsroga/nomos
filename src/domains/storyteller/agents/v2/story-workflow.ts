@@ -65,28 +65,24 @@ const psychologyStep = createStep({
   inputSchema: StoryInputSchema,
   outputSchema: z.object({ analysis: z.string(), thinking: z.string().optional() }),
   execute: async ({ inputData }) => {
-    try {
-      const traceId = inputData.traceId || getWorkflowTraceId()
-      const span = createStepSpan('psychological_analysis', 'Psychologist', {
-        goal: inputData.goal,
-      })
-      emitStepEvent('Psychological Analysis', 'start', { agent: 'Psychologist' })
-      const agent = await createPsychologistAgent(getAgentModelConfig('psychologist').model, {
-        traceId: traceId || undefined,
-        projectId: inputData.projectId,
-        episodeId: inputData.episodeId,
-      })
-      const result = await agent.analyzeProfile(
-        'Unknown',
-        `Context: ${inputData.narrativeContext}\nGoal: ${inputData.goal}`,
-        traceId || undefined
-      )
-      emitStepEvent('Psychological Analysis', 'complete', { output: result.text.slice(0, 200) })
-      span?.end({ output: { text: result.text.slice(0, 500) } })
-      return { analysis: result.text, thinking: result.thinking }
-    } catch (error: unknown) {
-      throw error
-    }
+    const traceId = inputData.traceId || getWorkflowTraceId()
+    const span = createStepSpan('psychological_analysis', 'Psychologist', {
+      goal: inputData.goal,
+    })
+    emitStepEvent('Psychological Analysis', 'start', { agent: 'Psychologist' })
+    const agent = await createPsychologistAgent(getAgentModelConfig('psychologist').model, {
+      traceId: traceId || undefined,
+      projectId: inputData.projectId,
+      episodeId: inputData.episodeId,
+    })
+    const result = await agent.analyzeProfile(
+      'Unknown',
+      `Context: ${inputData.narrativeContext}\nGoal: ${inputData.goal}`,
+      traceId || undefined
+    )
+    emitStepEvent('Psychological Analysis', 'complete', { output: result.text.slice(0, 200) })
+    span?.end({ output: { text: result.text.slice(0, 500) } })
+    return { analysis: result.text, thinking: result.thinking }
   },
 })
 
@@ -95,28 +91,24 @@ const consequenceStep = createStep({
   inputSchema: StoryInputSchema,
   outputSchema: z.object({ validation: z.string(), thinking: z.string().optional() }),
   execute: async ({ inputData }) => {
-    try {
-      const traceId = inputData.traceId || getWorkflowTraceId()
-      const span = createStepSpan('consequence_check', 'ConsequenceTracker', {
-        goal: inputData.goal,
-      })
-      emitStepEvent('Consequence Check', 'start', { agent: 'Consequence Tracker' })
-      const agent = await createConsequenceAgent(getAgentModelConfig('consequence').model, {
-        traceId: traceId || undefined,
-        projectId: inputData.projectId,
-        episodeId: inputData.episodeId,
-      })
-      const result = await agent.checkCausality(
-        inputData.goal,
-        inputData.narrativeContext,
-        traceId || undefined
-      )
-      emitStepEvent('Consequence Check', 'complete', { output: result.text.slice(0, 200) })
-      span?.end({ output: { text: result.text.slice(0, 500) } })
-      return { validation: result.text, thinking: result.thinking }
-    } catch (error: unknown) {
-      throw error
-    }
+    const traceId = inputData.traceId || getWorkflowTraceId()
+    const span = createStepSpan('consequence_check', 'ConsequenceTracker', {
+      goal: inputData.goal,
+    })
+    emitStepEvent('Consequence Check', 'start', { agent: 'Consequence Tracker' })
+    const agent = await createConsequenceAgent(getAgentModelConfig('consequence').model, {
+      traceId: traceId || undefined,
+      projectId: inputData.projectId,
+      episodeId: inputData.episodeId,
+    })
+    const result = await agent.checkCausality(
+      inputData.goal,
+      inputData.narrativeContext,
+      traceId || undefined
+    )
+    emitStepEvent('Consequence Check', 'complete', { output: result.text.slice(0, 200) })
+    span?.end({ output: { text: result.text.slice(0, 500) } })
+    return { validation: result.text, thinking: result.thinking }
   },
 })
 
@@ -125,33 +117,29 @@ const draftingStep = createStep({
   inputSchema: z.any(),
   outputSchema: z.object({ draft: z.string(), thinking: z.string().optional() }),
   execute: async (params: any) => {
-    try {
-      const { getInitData, getStepResult } = params
-      const input = getInitData()
+    const { getInitData, getStepResult } = params
+    const input = getInitData()
 
-      const traceId = input?.traceId || getWorkflowTraceId()
-      const span = createStepSpan('drafting', 'Gardener', { goal: input?.goal })
-      emitStepEvent('Drafting', 'start', { agent: 'The Gardener' })
+    const traceId = input?.traceId || getWorkflowTraceId()
+    const span = createStepSpan('drafting', 'Gardener', { goal: input?.goal })
+    emitStepEvent('Drafting', 'start', { agent: 'The Gardener' })
 
-      const agent = await createGardenerAgent(getAgentModelConfig('gardener-standard').model, {
-        traceId: traceId || undefined,
-        projectId: input?.projectId,
-        episodeId: input?.episodeId,
-      })
-      const psychologyRes = getStepResult('psychological_analysis')
-      const logicRes = getStepResult('consequence_check')
+    const agent = await createGardenerAgent(getAgentModelConfig('gardener-standard').model, {
+      traceId: traceId || undefined,
+      projectId: input?.projectId,
+      episodeId: input?.episodeId,
+    })
+    const psychologyRes = getStepResult('psychological_analysis')
+    const logicRes = getStepResult('consequence_check')
 
-      const psychology = psychologyRes?.analysis || 'No analysis'
-      const logic = logicRes?.validation || 'No validation'
+    const psychology = psychologyRes?.analysis || 'No analysis'
+    const logic = logicRes?.validation || 'No validation'
 
-      const augmentedContext = `Context: ${input?.narrativeContext}\nPsychology: ${psychology}\nLogic: ${logic}`
-      const result = await agent.writeScene(input?.goal, augmentedContext, traceId || undefined)
-      emitStepEvent('Drafting', 'complete', { output: result.text.slice(0, 200) })
-      span?.end({ output: { text: result.text.slice(0, 500) } })
-      return { draft: result.text, thinking: result.thinking }
-    } catch (error: unknown) {
-      throw error
-    }
+    const augmentedContext = `Context: ${input?.narrativeContext}\nPsychology: ${psychology}\nLogic: ${logic}`
+    const result = await agent.writeScene(input?.goal, augmentedContext, traceId || undefined)
+    emitStepEvent('Drafting', 'complete', { output: result.text.slice(0, 200) })
+    span?.end({ output: { text: result.text.slice(0, 500) } })
+    return { draft: result.text, thinking: result.thinking }
   },
 })
 
@@ -160,27 +148,23 @@ const critiqueStep = createStep({
   inputSchema: z.any(),
   outputSchema: z.object({ critique: z.string(), thinking: z.string().optional() }),
   execute: async (params: any) => {
-    try {
-      const { getInitData, getStepResult } = params
-      const input = getInitData()
-      const traceId = input?.traceId || getWorkflowTraceId()
-      const draftRes = getStepResult('drafting')
-      const draft = draftRes?.draft || ''
-      const span = createStepSpan('critique', 'DevilsAdvocate', {
-        draftPreview: draft.slice(0, 100),
-      })
-      emitStepEvent('Critique', 'start', { agent: "Devil's Advocate" })
-      const agent = await createDevilsAdvocateAgent(getAgentModelConfig('devils-advocate').model, {
-        traceId: traceId || undefined,
-        projectId: input?.projectId,
-      })
-      const result = await agent.critique(draft, input?.narrativeContext, traceId || undefined)
-      emitStepEvent('Critique', 'complete', { output: result.text.slice(0, 200) })
-      span?.end({ output: { text: result.text.slice(0, 500) } })
-      return { critique: result.text, thinking: result.thinking }
-    } catch (error: unknown) {
-      throw error
-    }
+    const { getInitData, getStepResult } = params
+    const input = getInitData()
+    const traceId = input?.traceId || getWorkflowTraceId()
+    const draftRes = getStepResult('drafting')
+    const draft = draftRes?.draft || ''
+    const span = createStepSpan('critique', 'DevilsAdvocate', {
+      draftPreview: draft.slice(0, 100),
+    })
+    emitStepEvent('Critique', 'start', { agent: 'Devil\'s Advocate' })
+    const agent = await createDevilsAdvocateAgent(getAgentModelConfig('devils-advocate').model, {
+      traceId: traceId || undefined,
+      projectId: input?.projectId,
+    })
+    const result = await agent.critique(draft, input?.narrativeContext, traceId || undefined)
+    emitStepEvent('Critique', 'complete', { output: result.text.slice(0, 200) })
+    span?.end({ output: { text: result.text.slice(0, 500) } })
+    return { critique: result.text, thinking: result.thinking }
   },
 })
 
@@ -257,22 +241,21 @@ const synthesisStep = createStep({
   inputSchema: z.any(),
   outputSchema: z.object({ finalOutput: z.string() }),
   execute: async (params: any) => {
-    try {
-      const { getInitData, getStepResult } = params
-      const input = getInitData()
-      const traceId = input?.traceId || getWorkflowTraceId()
-      const span = createStepSpan('synthesis', 'Storyteller', { goal: input?.goal })
-      emitStepEvent('Final Synthesis', 'start', { agent: 'Storyteller' })
+    const { getInitData, getStepResult } = params
+    const input = getInitData()
+    const traceId = input?.traceId || getWorkflowTraceId()
+    const span = createStepSpan('synthesis', 'Storyteller', { goal: input?.goal })
+    emitStepEvent('Final Synthesis', 'start', { agent: 'Storyteller' })
 
-      const agent = await createStorytellerAgent(getAgentModelConfig('storyteller').model)
-      const draftRes = getStepResult('drafting')
-      const critiqueRes = getStepResult('critique')
-      const decisionRes = getStepResult('creative_decision')
-      let draft = draftRes?.draft || ''
-      const critique = critiqueRes?.critique || ''
+    const agent = await createStorytellerAgent(getAgentModelConfig('storyteller').model)
+    const draftRes = getStepResult('drafting')
+    const critiqueRes = getStepResult('critique')
+    const decisionRes = getStepResult('creative_decision')
+    let draft = draftRes?.draft || ''
+    const critique = critiqueRes?.critique || ''
 
-      // === REFINEMENT LOOP (circuit breaker: MAX_REFINEMENT_PASSES) ===
-      if (decisionRes && !decisionRes.approved) {
+    // === REFINEMENT LOOP (circuit breaker: MAX_REFINEMENT_PASSES) ===
+    if (decisionRes && !decisionRes.approved) {
         const refinementFocus = decisionRes.refinementFocus || 'Address the critique feedback'
         emitStepEvent('Refinement', 'start', { pass: 1, focus: refinementFocus })
 
@@ -292,32 +275,32 @@ const synthesisStep = createStep({
           )
           draft = refined.text
           emitStepEvent('Refinement', 'complete', { pass: 1, improved: true })
-        } catch (error: unknown) {
+        } catch (err: unknown) {
           emitStepEvent('Refinement', 'complete', {
             pass: 1,
             improved: false,
-            error: getErrorMessage(error),
+            error: getErrorMessage(err),
           })
           // Use original draft if refinement fails
         }
+    }
+
+    const isStructural =
+      input?.goal?.toLowerCase().includes('rule') ||
+      input?.goal?.toLowerCase().includes('lore') ||
+      input?.goal?.toLowerCase().includes('bible')
+
+    if (isStructural) {
+      // Nuclear Option: Remove all other tools to prevent cinematic drift
+      // @ts-expect-error - access internal agent tools
+      const worldTool = agent.toolsMap['update_world_bible']
+      if (worldTool) {
+        // @ts-expect-error - mutating internal agent tools
+        agent.agent.tools = { update_world_bible: worldTool }
       }
+    }
 
-      const isStructural =
-        input?.goal?.toLowerCase().includes('rule') ||
-        input?.goal?.toLowerCase().includes('lore') ||
-        input?.goal?.toLowerCase().includes('bible')
-
-      if (isStructural) {
-        // Nuclear Option: Remove all other tools to prevent cinematic drift
-        // @ts-ignore - access internal agent tools
-        const worldTool = agent.toolsMap['update_world_bible']
-        if (worldTool) {
-          // @ts-ignore
-          agent.agent.tools = { update_world_bible: worldTool }
-        }
-      }
-
-      const prompt = `
+    const prompt = `
 ### SYNTHESIS STEP
 Combine the council inputs into final output. Apply your writing constraints: show don't tell, specific over generic, consequences for every action.
 
@@ -344,19 +327,16 @@ Critique: "${critique}"
 4. World Rules MUST be valid: { "category": "Physics|Magic|Technology|Society|Politics|Economics", "rule": "...", "consequence": "..." }
 5. Use projectId: ${input?.projectId}
             `
-      const toolChoice = isStructural ? { type: 'tool', toolName: 'update_world_bible' } : 'auto'
-      const response = await agent.run(
-        input?.goal,
-        prompt,
-        input?.traceId || undefined,
-        toolChoice as any
-      )
-      emitStepEvent('Final Synthesis', 'complete', { output: response.slice(0, 200) })
-      span?.end({ output: { text: response.slice(0, 500) } })
-      return { finalOutput: response }
-    } catch (error: unknown) {
-      throw error
-    }
+    const toolChoice = isStructural ? { type: 'tool', toolName: 'update_world_bible' } : 'auto'
+    const response = await agent.run(
+      input?.goal,
+      prompt,
+      input?.traceId || undefined,
+      toolChoice as any
+    )
+    emitStepEvent('Final Synthesis', 'complete', { output: response.slice(0, 200) })
+    span?.end({ output: { text: response.slice(0, 500) } })
+    return { finalOutput: response }
   },
 })
 

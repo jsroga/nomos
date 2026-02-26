@@ -476,7 +476,7 @@ const QUALITY_DIMENSIONS = {
   characterComplexity: 'No pure heroes/villains, moral ambiguity',
   characterDecisions: 'Decisions reveal character, not just plot',
   sceneStateChange: 'Clear before/after state change',
-  visualStorytelling: "Show don't tell, visual action",
+  visualStorytelling: 'Show don\'t tell, visual action',
   subtextQuality: 'Subtext > text in dialogue',
   noGenericEmotions: 'No cliché emotions like "tension was palpable"',
   noConvenientTiming: 'No coincidental saves',
@@ -539,7 +539,7 @@ function evaluateOutput(output: string, criteria: string[]): { score: number; re
     'tension was palpable',
     'heart pounding',
     'breath caught',
-    "couldn't help but",
+    'couldn\'t help but',
     'little did they know',
   ]
 
@@ -719,7 +719,7 @@ describe('Full Storyteller Flow E2E (43 Tests)', () => {
       async () => {
         const passed = await runTestCase(
           'Soundtracks',
-          "Recommend 5 YouTube tracks that capture this world's atmosphere.",
+          'Recommend 5 YouTube tracks that capture this world\'s atmosphere.',
           4,
           ['music', 'track', 'youtube', 'atmosphere']
         )
@@ -753,7 +753,7 @@ describe('Full Storyteller Flow E2E (43 Tests)', () => {
       async () => {
         const passed = await runTestCase(
           'Antagonist',
-          "Create antagonist: black market dealer who believes they're freeing people. Sympathetic motivation.",
+          'Create antagonist: black market dealer who believes they\'re freeing people. Sympathetic motivation.',
           6,
           ['antagonist', 'motivation', 'backstory', 'belief']
         )
@@ -829,7 +829,7 @@ describe('Full Storyteller Flow E2E (43 Tests)', () => {
       async () => {
         const passed = await runTestCase(
           'Protagonist Hook',
-          "Using Ozymandias framework, create Episode 1's protagonist hook.",
+          'Using Ozymandias framework, create Episode 1\'s protagonist hook.',
           6,
           ['hook', 'choice', 'tension', 'stakes']
         )

@@ -3,7 +3,7 @@
 
 import React, { Suspense, useState, useEffect, useMemo } from 'react'
 import { useInteriorStore, SceneObject } from '@/domains/interior-designer/store/useInteriorStore'
-import { Box, Sphere, useGLTF, Html } from '@react-three/drei'
+import { Box, useGLTF, Html } from '@react-three/drei'
 import { Loader2 } from 'lucide-react'
 import * as THREE from 'three'
 import { WindowMesh } from './meshes/WindowMesh'

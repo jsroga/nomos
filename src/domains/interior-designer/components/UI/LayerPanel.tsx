@@ -2,10 +2,10 @@
 
 import React from 'react'
 import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
-import { Layers, Square, Trash2, GitCommit, BrickWall, Box, Mountain, Droplets } from 'lucide-react'
+import { Square, Trash2, GitCommit, BrickWall, Box, Mountain, Droplets } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { SidebarHeader, SidebarSection, SidebarEmptyState } from '@/components/ui/domain-sidebar'
+import { SidebarSection, SidebarEmptyState } from '@/components/ui/domain-sidebar'
 
 interface LayerItemProps {
   id: string

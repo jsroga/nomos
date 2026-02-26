@@ -17,9 +17,12 @@ describe('Psychologist Agent V2', () => {
     const timeout = 60000
 
     it('should analyze a character profile', async () => {
+        if (!process.env.OPENAI_API_KEY) {
+            return // Skip when no API key
+        }
         const agent = await createPsychologistAgent()
 
-        const description = "Walter White is a chemistry teacher diagnosed with lung cancer who turns to cooking meth to secure his family's future. He is proud, repressed, and increasingly ruthless."
+        const description = 'Walter White is a chemistry teacher diagnosed with lung cancer who turns to cooking meth to secure his family\'s future. He is proud, repressed, and increasingly ruthless.'
 
         console.log('--- Analyzing Profile ---')
         const result = await agent.analyzeProfile('Walter White', description)
@@ -41,11 +44,14 @@ describe('Psychologist Agent V2', () => {
     }, timeout)
 
     it('should simulate a reaction', async () => {
+        if (!process.env.OPENAI_API_KEY) {
+            return // Skip when no API key
+        }
         const agent = await createPsychologistAgent()
 
-        const character = "Jesse Pinkman"
-        const event = "Walter tells Jesse he watched Jane die and did nothing."
-        const context = "Jesse looked up to Walter as a father figure but has been betrayed by him constantly. Jane was the love of his life."
+        const character = 'Jesse Pinkman'
+        const event = 'Walter tells Jesse he watched Jane die and did nothing.'
+        const context = 'Jesse looked up to Walter as a father figure but has been betrayed by him constantly. Jane was the love of his life.'
 
         console.log('--- Simulating Reaction ---')
         const result = await agent.simulateReaction(character, event, context)

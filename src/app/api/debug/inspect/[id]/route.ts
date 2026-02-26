@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { projects, seriesBibles } from '@/domains/storyteller/db/schema'
+import { projects } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'
 
 export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {

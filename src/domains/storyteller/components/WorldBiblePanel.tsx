@@ -7,7 +7,6 @@ import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 // Lazy load CharacterWeb since it's a heavy component
 const CharacterWeb = lazy(() => import('./CharacterWeb').then(m => ({ default: m.CharacterWeb })))
 import { LocalStorageKeys } from '@/constants/localStorage'
-import { TOUR_STEP_IDS } from '@/lib/tour-constants'
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
 import { isCentralUser, canEditBible } from '@/lib/bible-permissions'
 

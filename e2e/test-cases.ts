@@ -14,7 +14,7 @@ export const TEST_CASES: TestCase[] = [
   {
     id: 'del-01',
     description: 'Simple "Start" command',
-    input: "let's start working on this episode",
+    input: 'let\'s start working on this episode',
     expectedDelegation: ['PremiseArchitect', 'PlotArchitect', 'Delegating'],
     shouldNotHalt: true,
   },
@@ -81,7 +81,7 @@ export const TEST_CASES: TestCase[] = [
   {
     id: 'ph-01',
     description: 'Move to writing',
-    input: "let's move to the writing phase",
+    input: 'let\'s move to the writing phase',
     expectedDelegation: ['Writer', 'Advancing', 'Writing'],
     shouldNotHalt: true,
   },

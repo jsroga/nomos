@@ -1,5 +1,5 @@
 import { createStorytellerAgent } from '@/domains/storyteller/agents/v2'
-import { v4 as uuidv4 } from 'uuid'
+import { normalizeMastraTraceId } from '@/domains/storyteller/utils/workflow-context'
 import { db } from '@/lib/db'
 import { projects, storyPlans } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'
@@ -156,7 +156,7 @@ export async function POST(req: Request) {
       })
     }
 
-    const traceId = req.headers.get('x-trace-id') || bodyTraceId || uuidv4()
+    const traceId = normalizeMastraTraceId(req.headers.get('x-trace-id') || bodyTraceId)
 
     // Generate sessionId for Langfuse session tracking
     // Sessions group multiple traces together for multi-turn conversations

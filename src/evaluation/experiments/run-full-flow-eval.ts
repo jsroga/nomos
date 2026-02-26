@@ -47,7 +47,7 @@ const QUALITY_STANDARDS = {
   },
   visualStorytelling: {
     name: 'Visual Storytelling',
-    description: "Visual action carries emotional weight, show don't tell",
+    description: 'Visual action carries emotional weight, show don\'t tell',
     weight: 0.1,
   },
   subtextQuality: {
@@ -144,7 +144,7 @@ const TEST_CASES: TestCase[] = [
     name: 'Thematic Inspirations',
     category: 'bible',
     prompt:
-      "Identify 5 real books, films, or games that share thematic DNA with this world. For each, explain the specific element we're drawing from.",
+      'Identify 5 real books, films, or games that share thematic DNA with this world. For each, explain the specific element we\'re drawing from.',
     criteria:
       'References should be real works with specific thematic connections, not surface similarities',
     minScore: 6,
@@ -155,7 +155,7 @@ const TEST_CASES: TestCase[] = [
     name: 'Atmospheric Soundtracks',
     category: 'bible',
     prompt:
-      "Recommend 5 YouTube music tracks that capture this world's atmosphere. Provide artist, title, URL, and explain how it fits the tone.",
+      'Recommend 5 YouTube music tracks that capture this world\'s atmosphere. Provide artist, title, URL, and explain how it fits the tone.',
     criteria: 'Tracks should be real, URLs valid, and descriptions show understanding of tone',
     minScore: 5,
     dimensions: ['memorability'],
@@ -184,7 +184,7 @@ const TEST_CASES: TestCase[] = [
     name: 'Antagonist Design',
     category: 'cast',
     prompt:
-      "Create the antagonist: a black market emotion dealer who believes they're freeing people. Include: name, methodology, tragic backstory, valid worldview, voice sample.",
+      'Create the antagonist: a black market emotion dealer who believes they\'re freeing people. Include: name, methodology, tragic backstory, valid worldview, voice sample.',
     criteria: 'Antagonist must have sympathetic motivation, not be "evil for evil\'s sake"',
     minScore: 7,
     dimensions: ['characterComplexity', 'characterDecisions', 'noGenericEmotions'],
@@ -194,7 +194,7 @@ const TEST_CASES: TestCase[] = [
     name: 'Supporting Character Design',
     category: 'cast',
     prompt:
-      "Create a supporting character: reformed emotion addict who now helps others. Include: recovery arc, relationship to protagonist, secret they're keeping, distinctive speech pattern.",
+      'Create a supporting character: reformed emotion addict who now helps others. Include: recovery arc, relationship to protagonist, secret they\'re keeping, distinctive speech pattern.',
     criteria: 'Character should serve story function while having own agency and arc',
     minScore: 6,
     dimensions: ['characterComplexity', 'subtextQuality', 'narrativeCoherence'],
@@ -215,7 +215,7 @@ const TEST_CASES: TestCase[] = [
     category: 'cast',
     prompt:
       'Write 3 lines of dialogue for each character reacting to the same event: discovering a hidden emotional storm is approaching the city.',
-    criteria: "Each character's voice must be distinct without dialogue tags",
+    criteria: 'Each character\'s voice must be distinct without dialogue tags',
     minScore: 7,
     dimensions: ['characterDecisions', 'subtextQuality', 'noExposition', 'memorability'],
   },
@@ -238,7 +238,7 @@ const TEST_CASES: TestCase[] = [
     name: 'Episode 1 Protagonist Hook',
     category: 'episode',
     prompt:
-      "Using Ozymandias framework, create Episode 1's protagonist hook. What impossible choice does the protagonist face in the first 5 minutes?",
+      'Using Ozymandias framework, create Episode 1\'s protagonist hook. What impossible choice does the protagonist face in the first 5 minutes?',
     criteria: 'Hook must create immediate dramatic tension with character-specific stakes',
     minScore: 7,
     dimensions: ['characterDecisions', 'sceneStateChange', 'memorability'],
@@ -248,7 +248,7 @@ const TEST_CASES: TestCase[] = [
     name: 'Episode 1 Fatal Flaw Setup',
     category: 'episode',
     prompt:
-      "Define the fatal flaw that will drive Episode 1. How does it manifest in the protagonist's behavior? What scenes will reveal it without stating it?",
+      'Define the fatal flaw that will drive Episode 1. How does it manifest in the protagonist\'s behavior? What scenes will reveal it without stating it?',
     criteria: 'Flaw must be shown through action, not told through dialogue (Gilligan style)',
     minScore: 7,
     dimensions: ['characterComplexity', 'visualStorytelling', 'subtextQuality', 'noExposition'],

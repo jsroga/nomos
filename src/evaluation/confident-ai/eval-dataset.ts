@@ -29,7 +29,7 @@ export const EVAL_TEST_CASES: EvalTestCase[] = [
   {
     id: 'magic-01',
     input:
-      "Write a short scene (200 words): A father meets his estranged daughter after 15 years. She's now a successful lawyer. He's dying. Neither mentions his illness.",
+      'Write a short scene (200 words): A father meets his estranged daughter after 15 years. She\'s now a successful lawyer. He\'s dying. Neither mentions his illness.',
     context: [
       'Genre: Drama',
       'Style: Subtext-heavy, Gilligan method',
@@ -130,7 +130,7 @@ She found the Ambassador in the western garden, preparing to depart. "I know abo
     input:
       'Rewrite this as vivid sensory prose: "Sarah was nervous about the job interview. She was also hungover and hadn\'t slept."',
     context: [
-      "Gilligan method: Show don't tell",
+      'Gilligan method: Show don\'t tell',
       'EQ-Bench: Emotional truth through detail',
       'Avoid: Naming emotions directly',
     ],
@@ -143,7 +143,7 @@ She'd rehearsed her handshake in the mirror at 3 AM, unable to sleep, replaying 
 "Right this way, Ms. Chen."
 
 Her heels clicked against marble. Each step a small war against gravity.`,
-    description: "Show don't tell transformation",
+    description: 'Show don\'t tell transformation',
     targetMetrics: ['Anti-Slop Score', 'EQ-Bench Magic Score', 'Gilligan-Martin Quality'],
   },
 
@@ -153,7 +153,7 @@ Her heels clicked against marble. Each step a small war against gravity.`,
   {
     id: 'clean-01',
     input:
-      "Write a scene (150 words) of a surgeon delivering bad news to a patient's family. No clichés, no purple prose, no hedging.",
+      'Write a scene (150 words) of a surgeon delivering bad news to a patient\'s family. No clichés, no purple prose, no hedging.',
     context: [
       'Style: Clean, direct, professional',
       'Anti-slop criteria: No AI-typical patterns',
@@ -293,7 +293,7 @@ The pheasant grew cold between them.`,
   {
     id: 'world-01',
     input:
-      "In 200 words, establish a world where memory is currency. Show don't explain. One character perspective.",
+      'In 200 words, establish a world where memory is currency. Show don\'t explain. One character perspective.',
     context: [
       'World building through lived experience',
       'No exposition dumps',
@@ -334,7 +334,7 @@ The tram came. She got on. The port on her wrist itched.`,
   {
     id: 'twist-01',
     input:
-      "Write a scene (200 words) with a twist ending that's surprising but, in retrospect, was planted from the first line.",
+      'Write a scene (200 words) with a twist ending that\'s surprising but, in retrospect, was planted from the first line.',
     context: [
       'Gilligan method: Surprising but inevitable',
       'Plant and payoff within scene',

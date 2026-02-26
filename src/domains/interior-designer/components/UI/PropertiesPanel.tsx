@@ -1,7 +1,6 @@
 'use client'
 
 import React from 'react'
-import { cn } from '@/lib/utils'
 import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { SurfaceProperties } from './SurfaceProperties'

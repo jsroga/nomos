@@ -27,7 +27,7 @@ export class ReadTestTool extends StructuredTool {
     name = 'read_test'
     description = 'Read the content of a specific E2E test file.'
     schema = z.object({
-        filename: z.string().describe("Name of the file to read (e.g. 'auth.spec.ts')")
+        filename: z.string().describe('Name of the file to read (e.g. \'auth.spec.ts\')')
     })
 
     async _call(input: { filename: string }): Promise<string> {
@@ -44,13 +44,13 @@ export class SaveTestTool extends StructuredTool {
     name = 'save_test'
     description = 'Save a new or updated E2E test file.'
     schema = z.object({
-        filename: z.string().describe("Name of the file (must end in .spec.ts)"),
-        content: z.string().describe("Full Playwright test code")
+        filename: z.string().describe('Name of the file (must end in .spec.ts)'),
+        content: z.string().describe('Full Playwright test code')
     })
 
     async _call(input: { filename: string, content: string }): Promise<string> {
         if (!input.filename.endsWith('.spec.ts')) {
-            return "Error: Filename must end with .spec.ts"
+            return 'Error: Filename must end with .spec.ts'
         }
         try {
             await fs.writeFile(path.join(TESTS_DIR, input.filename), input.content)

@@ -5,14 +5,13 @@
  */
 
 import { Agent } from '@mastra/core/agent'
-import { v4 as uuidv4 } from 'uuid'
 import {
   createAgentTrace,
   recordAgentGeneration,
   recordAgentThinking,
   withSpan,
 } from '../../../../agent-core/observability'
-import { getWorkflowTraceId } from '../../utils/workflow-context'
+import { createMastraTraceId, getWorkflowTraceId } from '../../utils/workflow-context'
 import { DEVILS_ADVOCATE_PROMPT } from '../../prompts/agents/devils-advocate'
 import { getMastraInstance } from './mastra-instance'
 
@@ -34,7 +33,7 @@ export class DevilsAdvocateAgent {
 
   private constructor(config: DevilsAdvocateConfig, instructions: string) {
     this.config = config
-    this.traceId = config.traceId || getWorkflowTraceId() || uuidv4()
+    this.traceId = config.traceId || getWorkflowTraceId() || createMastraTraceId()
 
     const tools = [improveDialogueTool, shiftToneTool]
 
@@ -46,7 +45,7 @@ export class DevilsAdvocateAgent {
 
     this.agent = new Agent({
       id: 'devils-advocate',
-      name: "Devil's Advocate",
+      name: 'Devil\'s Advocate',
       instructions,
       model: modelString,
       tools: this.toolsMap,

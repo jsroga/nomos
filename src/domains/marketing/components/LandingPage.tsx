@@ -668,7 +668,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                 <div className="relative w-28 h-auto flex items-center justify-center group-hover:bg-primary/10 transition-colors rounded-lg p-1">
                   <img
                     src="/logo.svg"
-                    alt="KUR"
+                    alt="KURVITZA"
                     className="w-full h-full object-contain brightness-0 invert"
                   />
                 </div>
@@ -1367,7 +1367,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
               className="absolute inset-0 opacity-[0.4] mix-blend-overlay pointer-events-none"
               style={{
                 backgroundImage:
-                  "url(\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='1' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='1'/%3E%3Ccircle cx='13' cy='13' r='1'/%3E%3C/g%3E%3C/svg%3E\")",
+                  'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'1\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'1\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'1\'/%3E%3C/g%3E%3C/svg%3E")',
                 backgroundSize: '12px 12px',
               }}
             />

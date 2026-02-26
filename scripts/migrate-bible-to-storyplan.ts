@@ -1,10 +1,9 @@
 import { drizzle } from 'drizzle-orm/postgres-js'
-import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import postgres from 'postgres'
 import * as schema from '../src/domains/storyteller/db/schema'
 import * as dotenv from 'dotenv'
-import { eq } from 'drizzle-orm';
-import { deepMerge } from '@/domains/storyteller/config/action-config';
+import { eq } from 'drizzle-orm'
+import { deepMerge } from '@/domains/storyteller/config/action-config'
 
 // Load environment variables from .env.local
 dotenv.config({ path: '.env.local' })
@@ -19,52 +18,52 @@ const db = drizzle(client, { schema })
 
 // Rename function to avoid conflict
 async function runMigration() {
-    console.log('Starting migration from seriesBible to storyPlan...');
+    console.log('Starting migration from seriesBible to storyPlan...')
 
-    const allProjects = await db.select().from(schema.projects);
-    console.log(`Found ${allProjects.length} projects.`);
+    const allProjects = await db.select().from(schema.projects)
+    console.log(`Found ${allProjects.length} projects.`)
 
     for (const project of allProjects) {
-        console.log(`Processing project ${project.id}...`);
+        console.log(`Processing project ${project.id}...`)
 
-        const seriesBible = (project.seriesBible as Record<string, any>) || {};
-        const storyPlan = (project.storyPlan as Record<string, any>) || {};
+        const seriesBible = (project.seriesBible as Record<string, any>) || {}
+        const storyPlan = (project.storyPlan as Record<string, any>) || {}
 
         if (Object.keys(seriesBible).length === 0) {
-            console.log(`  - No seriesBible data. Skipping.`);
-            continue;
+            console.log('  - No seriesBible data. Skipping.')
+            continue
         }
 
-        const updates: Record<string, any> = {};
+        const updates: Record<string, any> = {}
 
         // Helper to flatten/move data
         const moveData = (key: string, value: any) => {
-            let targetKey = key;
+            let targetKey = key
             // Lowercase Lore
-            if (key === 'Lore') targetKey = 'lore';
+            if (key === 'Lore') targetKey = 'lore'
             // Flatten Setting
             if (key === 'Setting' && typeof value === 'object' && value !== null) {
-                Object.assign(updates, value);
-                return;
+                Object.assign(updates, value)
+                return
             }
             // Map aliases
-            if (key === 'episodes') targetKey = 'sequences';
+            if (key === 'episodes') targetKey = 'sequences'
 
             // Check if wrapped in updatedFields (the mess)
             if (key === 'updatedFields' && typeof value === 'object' && value !== null) {
-                Object.entries(value).forEach(([k, v]) => moveData(k, v));
-                return;
+                Object.entries(value).forEach(([k, v]) => moveData(k, v))
+                return
             }
 
-            updates[targetKey] = value;
-        };
+            updates[targetKey] = value
+        }
 
         // Iterate over seriesBible keys
         Object.entries(seriesBible).forEach(([key, value]) => {
-            moveData(key, value);
-        });
+            moveData(key, value)
+        })
 
-        const newStoryPlan = deepMerge(storyPlan, updates);
+        const newStoryPlan = deepMerge(storyPlan, updates)
 
         // Update DB
         // Use schema.projects here
@@ -77,13 +76,13 @@ async function runMigration() {
                 // Let's clear it to be safe and enforce new truth.
                 seriesBible: {}
             })
-            .where(eq(schema.projects.id, project.id));
+            .where(eq(schema.projects.id, project.id))
 
-        console.log(`  - Migrated ${Object.keys(updates).length} fields to storyPlan.`);
+        console.log(`  - Migrated ${Object.keys(updates).length} fields to storyPlan.`)
     }
 
-    console.log('Migration complete.');
-    process.exit(0);
+    console.log('Migration complete.')
+    process.exit(0)
 }
 
-runMigration().catch(console.error);
+runMigration().catch(console.error)

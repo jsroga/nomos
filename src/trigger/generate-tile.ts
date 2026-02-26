@@ -11,8 +11,6 @@ import {
   logLLMRequestStart,
   logLLMRequestComplete,
   logLLMRequestError,
-  extractImageUrls,
-  extractPrompt,
 } from './utils/llm-logger'
 
 export const generateTileTask = task({

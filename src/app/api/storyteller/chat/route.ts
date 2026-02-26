@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runStorytellerWorkflow } from '@/domains/storyteller/workflows/storyteller-workflow'
+import { normalizeMastraTraceId } from '@/domains/storyteller/utils/workflow-context'
 import { db } from '@/lib/db'
 import { beats } from '@/domains/storyteller/db/schema'
-import { v4 as uuidv4 } from 'uuid'
 import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
 
 // Persist approved beats to database
@@ -48,7 +48,7 @@ export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedReques
     } = body
 
     // Extract traceId from headers or body, or generate new
-    const traceId = req.headers.get('x-trace-id') || bodyTraceId || uuidv4()
+    const traceId = normalizeMastraTraceId(req.headers.get('x-trace-id') || bodyTraceId)
 
     // Map inputs to StorytellerWorkflowInput
     const input = {

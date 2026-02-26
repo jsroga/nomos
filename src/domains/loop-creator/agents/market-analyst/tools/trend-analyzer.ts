@@ -41,7 +41,7 @@ const TRENDS_DB: TrendData[] = [
     direction: 'rising',
     relevance: 0,
     description:
-      "Following Balatro's success, games combining traditional card games with roguelike elements are trending.",
+      'Following Balatro\'s success, games combining traditional card games with roguelike elements are trending.',
     timeframe: '2024-2025',
   },
   {

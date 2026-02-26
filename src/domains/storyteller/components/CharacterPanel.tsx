@@ -6,6 +6,7 @@ import {
   ChevronUp,
   ChevronDown,
   Trash2,
+  Loader2,
   Heart, // Valence
   Zap, // Arousal
   Compass, // Autonomy

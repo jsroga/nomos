@@ -43,10 +43,10 @@ export const LiquidGlass: React.FC<LiquidGlassProps> = ({
       {/* Glassmorphism Overlay (CSS Fallback/Overlay) */}
       <div
         className={cn(
-          "absolute inset-0 z-0 border border-white/10 transition-all duration-500",
+          'absolute inset-0 z-0 border border-white/10 transition-all duration-500',
           enableWebGL
-            ? "bg-background/40 backdrop-blur-md"
-            : "bg-background/60 backdrop-blur-xl" // Stronger blur/opacity when WebGL is off
+            ? 'bg-background/40 backdrop-blur-md'
+            : 'bg-background/60 backdrop-blur-xl' // Stronger blur/opacity when WebGL is off
         )}
       />
 
