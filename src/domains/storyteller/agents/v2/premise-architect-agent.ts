@@ -14,7 +14,6 @@
 
 import { z } from 'zod'
 import { Agent } from '@mastra/core/agent'
-import { v4 as uuidv4 } from 'uuid'
 import {
   createAgentTrace,
   recordAgentGeneration,
@@ -23,7 +22,7 @@ import {
   withSpan,
   langfuse,
 } from '../../../../agent-core/observability'
-import { getWorkflowTraceId } from '../../utils/workflow-context'
+import { createMastraTraceId, getWorkflowTraceId } from '../../utils/workflow-context'
 import { EPISODE_PREMISE_PROMPT, getRandomCreativeRiskExamples } from '../../prompts/agents/episode-premise'
 import { MODELS, IMPROVEMENT_LOOP } from '../../../../agent-core/models'
 import { getMastraInstance } from './mastra-instance'
@@ -107,7 +106,7 @@ export class PremiseArchitectAgent {
       qualityThreshold: IMPROVEMENT_LOOP.qualityThreshold,
       ...config,
     }
-    this.traceId = config.traceId || getWorkflowTraceId() || uuidv4()
+    this.traceId = config.traceId || getWorkflowTraceId() || createMastraTraceId()
 
     const m = getMastraInstance()
 
@@ -120,7 +119,6 @@ export class PremiseArchitectAgent {
       name: 'Premise Architect',
       instructions: EPISODE_PREMISE_PROMPT,
       model: modelString, // String model ID for Mastra AI SDK v5 compatibility
-      tools: {}, // Explicitly pass empty tools to avoid auto-attaching faulty workspace tools
       tools: {}, // Explicitly pass empty tools to avoid auto-attaching faulty workspace tools
       // mastra: m, // DONT pass mastra here - it auto-attaches broken workspace tools
     })

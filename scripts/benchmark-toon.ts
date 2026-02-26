@@ -130,7 +130,7 @@ for (const { name, data } of datasets) {
 }
 
 console.log('-'.repeat(70))
-console.log(`TOTAL:`)
+console.log('TOTAL:')
 console.log(`  Text: ${totalText} tokens`)
 console.log(`  JSON: ${totalJSON} tokens`)
 console.log(`  TOON: ${totalTOON} tokens`)

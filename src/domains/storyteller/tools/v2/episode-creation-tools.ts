@@ -21,7 +21,7 @@ const CreateEpisodeInputSchema = z.object({
       logline: z.string().describe('One-sentence episode summary'),
       protagonistHook: z.string().describe('What pulls the protagonist into this episode'),
       antagonistMove: z.string().describe('What the antagonist does to create conflict'),
-      fatalFlaw: z.string().describe("How protagonist's flaw creates problems"),
+      fatalFlaw: z.string().describe('How protagonist\'s flaw creates problems'),
       thematicQuestion: z.string().describe('The central question this episode explores'),
     })
     .optional()

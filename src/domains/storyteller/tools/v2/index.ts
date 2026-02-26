@@ -5,13 +5,12 @@
  */
 
 // Beat Management
-export { manageBeatTool, listBeatsTool, beatTools } from './beat-tools'
+export { manageBeatTool, listBeatsTool } from './beat-tools'
 
 // Character Relationships
 export {
   analyzeRelationshipsTool,
   suggestRelationshipTool,
-  characterTools,
 } from './character-tools'
 
 // Character Creation
@@ -31,7 +30,7 @@ export {
 } from './episode-creation-tools'
 
 // Continuity Checking
-export { checkContinuityTool, quickConsistencyCheckTool, continuityTools } from './continuity-tools'
+export { checkContinuityTool, quickConsistencyCheckTool } from './continuity-tools'
 
 // Script Editing
 export {
@@ -41,7 +40,6 @@ export {
   addVisualHookTool,
   shiftToneTool,
   regenerateTextTool,
-  scriptTools,
 } from './script-tools'
 
 // World Building
@@ -63,7 +61,6 @@ export {
   storeKnowledgeTool,
   searchCharacterHistoryTool,
   getUserPreferencesTool,
-  ragTools,
 } from './rag-tools'
 
 // Psychologist Tools

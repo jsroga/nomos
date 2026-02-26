@@ -215,7 +215,7 @@ export const consultConsequenceTrackerTool = createTool({
 export const consultDevilsAdvocateTool = createTool({
   id: 'consult_devils_advocate',
   description:
-    "Consult the Devil's Advocate to critique the story for clichés, plot holes, and mediocrity.",
+    'Consult the Devil\'s Advocate to critique the story for clichés, plot holes, and mediocrity.',
   inputSchema: z.object({
     content: z.string().describe('The story beat or scene to critique'),
     context: z.string().describe('Surrounding context'),
@@ -435,26 +435,26 @@ Valid sections for regenerate_section: ${PREMISE_SECTIONS.join(', ')}`,
           })
         }
         // Also include key story plan fields if missing from context
-        const plan = (planRows[0]?.content as any) || {}
+        const plan = (planRows[0]?.content as Record<string, unknown>) || {}
         if (plan.worldDescription && !enrichedContext.includes('WORLD DESCRIPTION')) {
           enrichedContext += `\n--- WORLD DESCRIPTION ---\n${plan.worldDescription}\n`
         }
         if (Array.isArray(plan.items) && plan.items.length > 0 && !enrichedContext.includes('--- ITEMS ---')) {
-          enrichedContext += `\n--- ITEMS ---\n${plan.items.map((i: any) => {
-            const itemId = 'item-' + (i.id?.slice(0, 8) || i.name.toLowerCase().replace(/\s+/g, '-'));
-            return '- [' + i.name + '][' + itemId + ']: ' + (i.description || 'No description');
+          enrichedContext += `\n--- ITEMS ---\n${(plan.items as Array<{ id?: string; name: string; description?: string }>).map((i) => {
+            const itemId = 'item-' + (i.id?.slice(0, 8) || i.name.toLowerCase().replace(/\s+/g, '-'))
+            return '- [' + i.name + '][' + itemId + ']: ' + (i.description || 'No description')
           }).join('\n')}\n`
         }
         if (Array.isArray(plan.events) && plan.events.length > 0 && !enrichedContext.includes('--- EVENTS ---')) {
-          enrichedContext += `\n--- EVENTS ---\n${plan.events.map((e: any) => {
-            const eventId = 'event-' + (e.id?.slice(0, 8) || e.name.toLowerCase().replace(/\s+/g, '-'));
-            return '- [' + e.name + '][' + eventId + ']: ' + (e.description || 'No description');
+          enrichedContext += `\n--- EVENTS ---\n${(plan.events as Array<{ id?: string; name: string; description?: string }>).map((e) => {
+            const eventId = 'event-' + (e.id?.slice(0, 8) || e.name.toLowerCase().replace(/\s+/g, '-'))
+            return '- [' + e.name + '][' + eventId + ']: ' + (e.description || 'No description')
           }).join('\n')}\n`
         }
         if (Array.isArray(plan.worldRules) && plan.worldRules.length > 0 && !enrichedContext.includes('--- WORLD RULES ---')) {
-          enrichedContext += `\n--- WORLD RULES ---\n${plan.worldRules.map((r: any) => {
-            const ruleId = 'rule-' + (r.id?.slice(0, 8) || r.name?.toLowerCase().replace(/\s+/g, '-') || 'unknown');
-            return '- [' + (r.name || r.category || 'Rule') + '][' + ruleId + ']: ' + (r.rule || 'No description');
+          enrichedContext += `\n--- WORLD RULES ---\n${(plan.worldRules as Array<{ id?: string; name?: string; category?: string; rule?: string }>).map((r) => {
+            const ruleId = 'rule-' + (r.id?.slice(0, 8) || r.name?.toLowerCase().replace(/\s+/g, '-') || 'unknown')
+            return '- [' + (r.name || r.category || 'Rule') + '][' + ruleId + ']: ' + (r.rule || 'No description')
           }).join('\n')}\n`
         }
       } catch (e) {

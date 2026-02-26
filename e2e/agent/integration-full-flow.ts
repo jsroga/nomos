@@ -17,7 +17,7 @@ dotenv.config({ path: '.env.local' })
 
 // Import all modules
 import { initializeWorkspace, getStorytellerWorkspace } from '../../src/agent-core/workspace'
-import { initializeSearch, getSearchEngine } from '../../src/agent-core/search'
+import { getSearchEngine } from '../../src/agent-core/search'
 import { loadSkills, buildSkillsPrompt } from '../../src/agent-core/skills'
 import { flushObservability, langfuse } from '../../src/agent-core/observability'
 import { workflowContext, WORKFLOW_EVENTS } from '../../src/domains/storyteller/utils/workflow-context'

@@ -7,7 +7,6 @@
 
 import * as dotenv from 'dotenv'
 import { v4 as uuidv4 } from 'uuid'
-import { AsyncLocalStorage } from 'node:async_hooks'
 import { EventEmitter } from 'node:events'
 
 dotenv.config({ path: '.env.local' })

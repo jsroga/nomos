@@ -13,6 +13,9 @@ describe('Council Integration (V2)', () => {
     const timeout = 120000
 
     it('should consult the Psychologist', async () => {
+        if (!process.env.OPENAI_API_KEY) {
+            return // Skip when no API key
+        }
         const agent = await createStorytellerAgent()
 
         const prompt = `Analyze the psychology of a character named "Arthur Dent". 
@@ -29,6 +32,9 @@ describe('Council Integration (V2)', () => {
     }, timeout)
 
     it('should consult the Devil\'s Advocate', async () => {
+        if (!process.env.OPENAI_API_KEY) {
+            return // Skip when no API key
+        }
         const agent = await createStorytellerAgent()
 
         const prompt = `Critique this scene idea: "A dark and stormy night, the detective walks in and finds the body."

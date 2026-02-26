@@ -37,7 +37,7 @@ const examples: StorytellerExample[] = [
   {
     id: 'del-01',
     input: {
-      message: "let's start working on this episode",
+      message: 'let\'s start working on this episode',
       phase: 'premise',
     },
     expected: {
@@ -181,7 +181,7 @@ const examples: StorytellerExample[] = [
   {
     id: 'ph-01',
     input: {
-      message: "let's move to the writing phase",
+      message: 'let\'s move to the writing phase',
       phase: 'structure',
     },
     expected: {
@@ -451,7 +451,7 @@ const examples: StorytellerExample[] = [
   {
     id: 'narrative-02',
     input: {
-      message: "Resolve the protagonist's arc in this scene",
+      message: 'Resolve the protagonist\'s arc in this scene',
       phase: 'writing',
     },
     expected: {
@@ -555,7 +555,7 @@ const examples: StorytellerExample[] = [
   {
     id: 'critique-01',
     input: {
-      message: "This beat feels too convenient - what's wrong with it?",
+      message: 'This beat feels too convenient - what\'s wrong with it?',
       phase: 'breaking',
     },
     expected: {
@@ -590,7 +590,7 @@ const examples: StorytellerExample[] = [
   {
     id: 'setup-01',
     input: {
-      message: "Plant a Chekhov's Gun for the climax",
+      message: 'Plant a Chekhov\'s Gun for the climax',
       phase: 'breaking',
     },
     expected: {

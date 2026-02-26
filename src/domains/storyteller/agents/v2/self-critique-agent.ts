@@ -6,13 +6,12 @@
  */
 
 import { Agent } from '@mastra/core/agent'
-import { v4 as uuidv4 } from 'uuid'
 import {
   createAgentTrace,
   recordAgentGeneration,
   withSpan,
 } from '../../../../agent-core/observability'
-import { getWorkflowTraceId } from '../../utils/workflow-context'
+import { createMastraTraceId, getWorkflowTraceId } from '../../utils/workflow-context'
 import {
   SELF_CRITIQUE_PROMPT,
   GRRM_GILLIGAN_STANDARDS,
@@ -34,7 +33,7 @@ export class SelfCritiqueAgent {
 
   private constructor(config: SelfCritiqueConfig, instructions: string) {
     this.config = config
-    this.traceId = config.traceId || getWorkflowTraceId() || uuidv4()
+    this.traceId = config.traceId || getWorkflowTraceId() || createMastraTraceId()
 
     const m = getMastraInstance()
     const modelString = config.modelName.replace(':', '/')

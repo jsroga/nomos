@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { requireAuth } from '@/lib/auth'
-import { db } from '@/lib/db'
-import { projects } from '@/domains/storyteller/db/schema'
-import { eq } from 'drizzle-orm'
 
 import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
 

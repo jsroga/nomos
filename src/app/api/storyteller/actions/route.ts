@@ -253,11 +253,11 @@ export async function POST(req: NextRequest) {
       }
 
       case 'UPDATE_CAST': {
-        console.log(`[API] UPDATE_CAST Payload keys:`, Object.keys(action.payload || {}))
+        console.log('[API] UPDATE_CAST Payload keys:', Object.keys(action.payload || {}))
         if (action.payload.cast && Array.isArray(action.payload.cast))
-          console.log(`[API] UPDATE_CAST cast length:`, action.payload.cast.length)
+          console.log('[API] UPDATE_CAST cast length:', action.payload.cast.length)
         if (action.payload.keyCharacters && Array.isArray(action.payload.keyCharacters))
-          console.log(`[API] UPDATE_CAST keyCharacters length:`, action.payload.keyCharacters.length)
+          console.log('[API] UPDATE_CAST keyCharacters length:', action.payload.keyCharacters.length)
 
         // cast is the project-level list of characters (Story Plan)
         const castData = action.payload.cast || action.payload.keyCharacters || action.payload.characters

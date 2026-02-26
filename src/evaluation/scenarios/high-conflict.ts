@@ -41,7 +41,7 @@ The scene must end with a clear emotional shift in Elena.
       },
     },
     nuanceChecklist: [
-      "Marcus uses a 'fake empathy' tactic",
+      'Marcus uses a \'fake empathy\' tactic',
       'Elena shows physical signs of anxiety (stuttering, shivering)',
       'The bribe is implied, not stated outright',
       'Elena almost gives in but pulls back',

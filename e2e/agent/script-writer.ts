@@ -1,6 +1,6 @@
 
 import { ExecutiveAgent, ExecutiveConfig } from '../../src/agent-core/executive'
-import { PlannerTool, PlanPersistence, PlannerTool as CorePlannerTool } from '../../src/agent-core/planner'
+import { PlanPersistence, PlannerTool as CorePlannerTool } from '../../src/agent-core/planner'
 import { ListTestsTool, ReadTestTool, SaveTestTool } from './tools'
 import { Plan } from '../../src/agent-core/schemas'
 import * as fs from 'fs/promises'
@@ -64,22 +64,22 @@ export async function createScriptWriterAgent() {
 if (require.main === module) {
     (async () => {
         const agent = await createScriptWriterAgent()
-        console.log("🤖 E2E Script Writer Agent Initialized.")
+        console.log('🤖 E2E Script Writer Agent Initialized.')
 
         // Interactive Loop Simulation (Mock)
         // In reality this would be connected to a CLI or UI
         const interaction = await agent.runLoop(
-            "Create a login test",
-            "User wants to test the login flow. Happy path + invalid credentials."
+            'Create a login test',
+            'User wants to test the login flow. Happy path + invalid credentials.'
         )
 
         if (interaction.thought) {
-            console.log("\n🧠 AGENT THOUGHT:")
-            console.log("─".repeat(50))
+            console.log('\n🧠 AGENT THOUGHT:')
+            console.log('─'.repeat(50))
             console.log(interaction.thought)
-            console.log("─".repeat(50) + "\n")
+            console.log('─'.repeat(50) + '\n')
         }
 
-        console.log("👉 Agent Decision:", interaction)
+        console.log('👉 Agent Decision:', interaction)
     })()
 }

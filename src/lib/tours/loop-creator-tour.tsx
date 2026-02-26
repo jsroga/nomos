@@ -1,7 +1,7 @@
 import React from 'react'
 import { TourStep } from '@/components/tour'
 import { TOUR_STEP_IDS } from '@/lib/tour-constants'
-import { MessageSquare, GitMerge, Layers, CheckCircle2, Zap } from 'lucide-react'
+import { MessageSquare, GitMerge, Layers, Zap } from 'lucide-react'
 
 export const loopCreatorTourSteps: TourStep[] = [
   {

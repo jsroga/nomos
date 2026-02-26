@@ -208,7 +208,7 @@ export async function verifyGameLoopAccess(loopId: string, userId: string): Prom
  * Get all projects accessible by a user
  * Returns list of project IDs
  */
-export async function getUserProjects(userId: string): Promise<string[]> {
+async function getUserProjects(userId: string): Promise<string[]> {
   const result = await db
     .select({ id: projects.id })
     .from(projects)

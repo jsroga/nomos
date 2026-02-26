@@ -22,7 +22,7 @@ export const MazurElementsSchema = z.object({
   action: z
     .string()
     .nullable()
-    .describe("ACTIVE VERB - not 'decides' but 'rips', 'slams', 'whispers'"),
+    .describe('ACTIVE VERB - not \'decides\' but \'rips\', \'slams\', \'whispers\''),
   method: z.string().nullable().describe('The HOW reveals WHO - how they do it'),
   setting: z
     .string()

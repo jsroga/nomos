@@ -123,7 +123,7 @@ export const gameDatabaseTool = new DynamicStructuredTool({
           rating: 8.7,
           summary:
             'Combines roguelike dungeon crawling with cult management simulation. Build and maintain your flock.',
-          similarGames: ['Hades', "Don't Starve", 'Darkest Dungeon'],
+          similarGames: ['Hades', 'Don\'t Starve', 'Darkest Dungeon'],
         },
         {
           id: 'enter-the-gungeon',

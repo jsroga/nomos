@@ -292,4 +292,4 @@ export const quickConsistencyCheckTool = createTool({
   },
 })
 
-export const continuityTools = [checkContinuityTool, quickConsistencyCheckTool]
+const continuityTools = [checkContinuityTool, quickConsistencyCheckTool]

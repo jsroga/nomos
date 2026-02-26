@@ -23,12 +23,18 @@
     ".next/**",
     "dist/**",
     "scripts/deepeval/venv/**",
-    "public/scripts/**"
+    "public/scripts/**",
+    "src/evaluation/experiments/eval-architecture.ts",
+    "src/evaluation/experiments/extended-thinking-ab-test.ts",
+    "src/evaluation/experiments/loop-creator.ts",
+    "e2e/parallel-runner.ts"
   ],
   "ignoreDependencies": [
     "@types/*",
     "server-only",
-    "eslint-*"
+    "eslint-*",
+    "@anthropic-ai/sdk",
+    "@mastra/observability"
   ],
   "ignoreBinaries": [
     "tsx",

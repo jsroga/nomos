@@ -6,7 +6,6 @@ import { selectModeService } from '@/domains/world-building-toolkit/services/Sel
 import { Sparkles, X, ArrowRight } from 'lucide-react'
 import { getErrorMessage } from '@/lib/error-utils'
 import { useTour } from '@/components/tour'
-import { TOUR_STEP_IDS } from '@/lib/tour-constants'
 
 const TILE_SIZE = 512
 

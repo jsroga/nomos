@@ -36,8 +36,8 @@ function mapToVariantReport(run: any): VariantReport {
 
 // Global "Database" to simulate persistent storage
 const FACTS_DB = {
-  fact_1: "Character 'Zoltar' has a red robotic eye.",
-  fact_2: "The secret password is 'Blueberry'.",
+  fact_1: 'Character \'Zoltar\' has a red robotic eye.',
+  fact_2: 'The secret password is \'Blueberry\'.',
 }
 
 // 1. Amnesiac (Baseline) - No history
@@ -96,7 +96,7 @@ export async function runContinuityBenchmark() {
   const examples = [
     {
       id: 'recall-1',
-      input: { message: "Describe Zoltar's face." },
+      input: { message: 'Describe Zoltar\'s face.' },
       expected: { contains: 'red robotic eye' },
       metadata: { scenario: 'continuity' },
     },

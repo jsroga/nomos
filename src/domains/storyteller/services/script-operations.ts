@@ -105,7 +105,7 @@ export async function addVisualHook(
 ): Promise<string> {
   return regenerateText(
     selection,
-    "Add a strong visual hook to open this scene. What's the first, most striking image we see? Make it iconic and meaningful.",
+    'Add a strong visual hook to open this scene. What\'s the first, most striking image we see? Make it iconic and meaningful.',
     context
   )
 }

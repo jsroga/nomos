@@ -11,7 +11,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 import { X, ArrowLeft, ArrowRight, Play, SkipForward, XCircle } from 'lucide-react'
@@ -379,8 +378,8 @@ export function TourProvider({
                         onClick={previousStep}
                         disabled={currentStep === 0}
                         className={cn(
-                          "text-xs font-medium text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors bg-secondary/50 hover:bg-secondary px-3 py-1.5 rounded-md",
-                          currentStep === steps.length - 1 && "mr-auto" // Push finish button to right if it's the only other button
+                          'text-xs font-medium text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors bg-secondary/50 hover:bg-secondary px-3 py-1.5 rounded-md',
+                          currentStep === steps.length - 1 && 'mr-auto' // Push finish button to right if it's the only other button
                         )}
                       >
                         <ArrowLeft size={12} />

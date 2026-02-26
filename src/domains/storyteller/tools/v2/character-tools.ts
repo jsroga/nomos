@@ -479,4 +479,4 @@ export const suggestRelationshipTool = createTool({
   },
 })
 
-export const characterTools = [analyzeRelationshipsTool, suggestRelationshipTool]
+const characterTools = [analyzeRelationshipsTool, suggestRelationshipTool]

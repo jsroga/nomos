@@ -7,7 +7,7 @@ import * as dotenv from 'dotenv'
 dotenv.config({ path: '.env.local' })
 
 async function verifyToolExecution() {
-    console.log("🧪 Starting Integration Test: Executive Tool Execution")
+    console.log('🧪 Starting Integration Test: Executive Tool Execution')
 
     // 1. Init
     const agent = await createScriptWriterAgent()
@@ -29,13 +29,13 @@ test('dummy', async ({ page }) => {
     // Actually, update_task_status might fail if task doesn't exist.
     // Let's create a plan first.
 
-    console.log("... Creating Plan")
+    console.log('... Creating Plan')
     await agent['planner'].invoke({
         action: 'create_plan',
         goal: 'Integration Test Plan'
     })
 
-    console.log("... Adding Task")
+    console.log('... Adding Task')
     await agent['planner'].invoke({
         action: 'add_task',
         title: 'Save dummy file'
@@ -43,13 +43,13 @@ test('dummy', async ({ page }) => {
 
     // By default first task is ID "1"
 
-    console.log("... Triggering Execution")
-    const result = await agent.executeStep("1", "save_test", {
+    console.log('... Triggering Execution')
+    const result = await agent.executeStep('1', 'save_test', {
         filename: TEST_FILENAME,
         content: TEST_CONTENT
     })
 
-    console.log("👉 Execution Result:", result)
+    console.log('👉 Execution Result:', result)
 
     // 3. Verify File
     const filePath = path.join(process.cwd(), 'e2e', 'scenarios', TEST_FILENAME)
@@ -59,9 +59,9 @@ test('dummy', async ({ page }) => {
 
         // Cleanup
         await fs.unlink(filePath)
-        console.log("🧹 Cleanup done.")
+        console.log('🧹 Cleanup done.')
     } catch (e) {
-        console.error("❌ File NOT created.")
+        console.error('❌ File NOT created.')
         process.exit(1)
     }
 }

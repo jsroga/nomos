@@ -6,13 +6,12 @@
  */
 
 import { Agent } from '@mastra/core/agent'
-import { v4 as uuidv4 } from 'uuid'
 import {
   createAgentTrace,
   recordAgentGeneration,
   withSpan,
 } from '../../../../agent-core/observability'
-import { getWorkflowTraceId } from '../../utils/workflow-context'
+import { createMastraTraceId, getWorkflowTraceId } from '../../utils/workflow-context'
 import { getMastraInstance } from './mastra-instance'
 
 export type CreativeDirectorType = 'grrm' | 'gilligan' | 'custom'
@@ -89,7 +88,7 @@ export class CreativeDirectorAgent {
 
   private constructor(config: CreativeDirectorConfig, instructions: string) {
     this.config = config
-    this.traceId = config.traceId || getWorkflowTraceId() || uuidv4()
+    this.traceId = config.traceId || getWorkflowTraceId() || createMastraTraceId()
 
     const m = getMastraInstance()
     // Use string model identifier for Mastra AI SDK v5 compatibility

@@ -108,7 +108,7 @@ describe('Agent Flow E2E', () => {
             nextAgent: 'END',
             nextPhase: 'mechanics_design',
             message:
-              "Done! I've created innovative game loop nodes. Check the suggestion panel to approve them.",
+              'Done! I\'ve created innovative game loop nodes. Check the suggestion panel to approve them.',
           }),
         }
       }

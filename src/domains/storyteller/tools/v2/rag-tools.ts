@@ -266,8 +266,8 @@ Returns: Relevant passages WITH citation markers (e.g., [1], [2]) for grounding.
         success: false,
         message: `No information found for "${query}" in the knowledge base.`,
         suggestions: [
-          "This information hasn't been established yet",
-          "The search terms don't match existing content",
+          'This information hasn\'t been established yet',
+          'The search terms don\'t match existing content',
           'You may need to create this information',
         ],
       })
@@ -322,7 +322,7 @@ Use this to record:
 
 export const searchCharacterHistoryTool = createTool({
   id: 'search_character_history',
-  description: "Search for a specific character's development history and arc progression.",
+  description: 'Search for a specific character\'s development history and arc progression.',
   inputSchema: CharacterHistoryInputSchema,
   execute: async (args: any) => {
     const context = args?.context || args
@@ -398,7 +398,7 @@ export const getUserPreferencesTool = createTool({
   },
 })
 
-export const ragTools = [
+const ragTools = [
   searchKnowledgeBaseTool,
   storeKnowledgeTool,
   searchCharacterHistoryTool,

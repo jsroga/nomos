@@ -719,9 +719,7 @@ function extractChanges(action: AgentAction): ActionChange[] {
     script: 'Script',
     beatBoard: 'Story Beats',
     premise: 'Episode Premise',
-    protagonistHook: 'Protagonist Hook',
     antagonistMove: 'Antagonist Move',
-    fatalFlaw: 'Fatal Flaw',
     thematicQuestion: 'Thematic Question',
     updatedFields: 'Updated Fields',
     // New section fields

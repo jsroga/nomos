@@ -1,5 +1,19 @@
+import { randomBytes } from 'node:crypto'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { EventEmitter } from 'node:events'
+
+/** Mastra expects traceId to be 1-32 hexadecimal characters (no UUIDs). */
+export function createMastraTraceId(): string {
+  return randomBytes(16).toString('hex')
+}
+
+/** Return a Mastra-compatible trace ID (1–32 hex chars). UUIDs are converted to 32 hex; invalid values get a new id. */
+export function normalizeMastraTraceId(id: string | null | undefined): string {
+  if (!id) return createMastraTraceId()
+  const hex = id.replace(/-/g, '').slice(0, 32)
+  if (/^[0-9a-fA-F]+$/.test(hex) && hex.length >= 1) return hex
+  return createMastraTraceId()
+}
 
 export interface WorkflowContextState {
   traceId: string

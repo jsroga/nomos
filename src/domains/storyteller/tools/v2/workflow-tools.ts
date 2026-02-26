@@ -21,12 +21,12 @@ import { getErrorMessage } from '@/lib/error-utils'
 export const runStoryCreationWorkflowTool = createTool({
   id: 'run_story_creation_workflow',
   description:
-    "Generates high-quality story content, world-building, or lore using a multi-agent workflow (Psychologist, Consequence, Gardener, Devil's Advocate). Use this for drafting scenes, defining world rules, or checking detailed consistency.",
+    'Generates high-quality story content, world-building, or lore using a multi-agent workflow (Psychologist, Consequence, Gardener, Devil\'s Advocate). Use this for drafting scenes, defining world rules, or checking detailed consistency.',
   inputSchema: z.object({
     goal: z
       .string()
       .describe(
-        'The specific goal for the workflow (e.g. "Write a scene where X confronts Y about Z")'
+        'The specific goal for the workflow (e.g. \'Write a scene where X confronts Y about Z\')'
       ),
     narrativeContext: z
       .string()

@@ -7,7 +7,6 @@ import {
   logLLMRequestStart,
   logLLMRequestComplete,
   logLLMRequestError,
-  extractImageUrls,
 } from './utils/llm-logger'
 
 interface GenerateMoodboardPayload {

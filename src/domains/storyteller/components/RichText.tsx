@@ -55,6 +55,14 @@ export const RichText: React.FC<RichTextProps> = ({
   showPlaceholder = false,
   placeholder = 'No content',
 }) => {
+  // Call all hooks unconditionally (before any early returns)
+  const containsReferences = hasReferences(text ?? '')
+  const safeBible = useSafeBible()
+  const initialEntities = useMemo(() => {
+    if (!containsReferences || !safeBible.storyPlan || !projectId) return undefined
+    return extractEntitiesFromPlan(safeBible.storyPlan, projectId)
+  }, [containsReferences, safeBible.storyPlan, projectId])
+
   // Handle empty/null text
   if (!text || text.trim() === '') {
     if (fallback) return <>{fallback}</>
@@ -63,18 +71,6 @@ export const RichText: React.FC<RichTextProps> = ({
     }
     return null
   }
-
-  // Check if text contains any references
-  const containsReferences = hasReferences(text)
-
-  // Local resolution logic using BibleContext (if available)
-  // This allows tooltips to work even if entities aren't in the DB yet
-  const safeBible = useSafeBible()
-
-  const initialEntities = useMemo(() => {
-    if (!containsReferences || !safeBible.storyPlan || !projectId) return undefined
-    return extractEntitiesFromPlan(safeBible.storyPlan, projectId)
-  }, [containsReferences, safeBible.storyPlan, projectId])
 
   // If no references, render plain text
   if (!containsReferences) {

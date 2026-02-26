@@ -139,6 +139,7 @@
     "prompts:push:prod": "npx tsx src/domains/storyteller/prompts/push-to-hub.ts --production",
     "langgraph:dev": "npx @langchain/langgraph-cli dev",
     "lint": "next lint",
+    "lint:fix": "eslint src --fix",
     "mcp:start": "npx tsx src/mcp/stdio.ts",
     "start": "next start",
     "test:playwright:install": "playwright install --with-deps",

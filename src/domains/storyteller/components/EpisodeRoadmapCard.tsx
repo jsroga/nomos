@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/static-components -- inline episode title component by design */
 import React, { useState } from 'react'
 import {
   ChevronRight,

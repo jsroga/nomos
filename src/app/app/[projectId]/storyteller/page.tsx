@@ -154,7 +154,7 @@ const CharacterWeb = dynamic<CharacterWebProps>(
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
 import { posterGenerationService } from '@/domains/storyteller/services/PosterGenerationService'
-import { FileText, Users, BookOpen, AlertCircle, Scroll, Film, Check, FilePlus } from 'lucide-react'
+import { FileText, Users, BookOpen, AlertCircle, Scroll, Film, FilePlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DomainSidebar,
@@ -2581,7 +2581,7 @@ export default function StorytellerPage() {
         setTimeout(() => {
           handleSendMessage(
             undefined,
-            "Let's draft the first episode. Start by generating a compelling premise for 'Episode 1: The Beginning'."
+            'Let\'s draft the first episode. Start by generating a compelling premise for \'Episode 1: The Beginning\'.'
           )
         }, 100)
       }
@@ -2600,7 +2600,7 @@ export default function StorytellerPage() {
     setTimeout(() => {
       handleSendMessage(
         undefined,
-        "Let's build the series foundation. Help me define the genre, tone, and core rules for this world."
+        'Let\'s build the series foundation. Help me define the genre, tone, and core rules for this world.'
       )
     }, 100)
   }, [searchParams, router, handleSendMessage])
@@ -3512,14 +3512,14 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                       ? hasEpisodes
                         ? 'Select First Episode'
                         : 'Ready to Create Your First Episode?'
-                      : "Let's Build Your Storybible First"}
+                      : 'Let\'s Build Your Storybible First'}
                   </h2>
                   <p className="text-muted-foreground text-lg leading-relaxed">
                     {hasBible
                       ? hasEpisodes
                         ? 'Select an episode from the sidebar to continue writing, or create a new one.'
                         : 'Use the AI to draft your first episode, or manually create one in the sidebar.'
-                      : "Before we dive into episodes, let's establish the foundation of your world—the rules, themes, and characters that make it unique."}
+                      : 'Before we dive into episodes, let\'s establish the foundation of your world—the rules, themes, and characters that make it unique.'}
                   </p>
                 </div>
 

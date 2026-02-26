@@ -111,7 +111,7 @@ const STEAM_TOP_GAMES: SteamGameData[] = [
     isIndie: false,
   },
   {
-    name: "Baldur's Gate 3",
+    name: 'Baldur\'s Gate 3',
     appId: 1086940,
     currentPlayers: 72000,
     peakPlayers24h: 98000,
@@ -294,11 +294,11 @@ const GENRE_MARKET_DATA: GenreMarketData[] = [
   {
     genre: 'Narrative RPG/CRPG',
     totalPlayers: 180000,
-    topGames: ["Baldur's Gate 3", 'Disco Elysium', 'Pathfinder', 'Pillars of Eternity'],
+    topGames: ['Baldur\'s Gate 3', 'Disco Elysium', 'Pathfinder', 'Pillars of Eternity'],
     growthRate: '+15% YoY',
     marketShare: 3.2,
     trending: true,
-    recentReleases: ["Baldur's Gate 3 Mods", 'Solasta Updates'],
+    recentReleases: ['Baldur\'s Gate 3 Mods', 'Solasta Updates'],
   },
   {
     genre: 'Survivors-like',

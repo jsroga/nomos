@@ -5,7 +5,7 @@ import { AssetExporterSidebar } from '@/domains/3d-asset-exporter/components/Ass
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { AssetEditor } from '@/domains/3d-asset-exporter/components/AssetEditor'
 import { ThreeDPanel } from '@/domains/3d-asset-exporter/components/ThreeDPanel'
-import { Image as ImageIcon } from 'lucide-react'
+import { Image as ImageIcon, Box } from 'lucide-react'
 import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
 import { TOUR_STEP_IDS } from '@/lib/tour-constants'
 
@@ -60,7 +60,7 @@ export default function AssetExporterPage() {
                   <div
                     className="absolute inset-0 opacity-[0.03] pointer-events-none"
                     style={{
-                      backgroundImage: `linear-gradient(45deg, #808080 25%, transparent 25%), linear-gradient(-45deg, #808080 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #808080 75%), linear-gradient(-45deg, transparent 75%, #808080 75%)`,
+                      backgroundImage: 'linear-gradient(45deg, #808080 25%, transparent 25%), linear-gradient(-45deg, #808080 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #808080 75%), linear-gradient(-45deg, transparent 75%, #808080 75%)',
                       backgroundSize: '20px 20px',
                       backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
                     }}

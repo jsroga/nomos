@@ -132,6 +132,11 @@ module.exports = [
             'emissiveIntensity',
             'toneMapped',
             'object',
+            // Three.js shader/material props
+            'fragmentShader',
+            'vertexShader',
+            'uniforms',
+            'blending',
             // styled-jsx props
             'jsx',
             'global',

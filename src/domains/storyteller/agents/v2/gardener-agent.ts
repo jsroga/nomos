@@ -1,12 +1,11 @@
 import { Agent } from '@mastra/core/agent'
-import { v4 as uuidv4 } from 'uuid'
 import {
   createAgentTrace,
   recordAgentGeneration,
   recordAgentThinking,
   withSpan,
 } from '../../../../agent-core/observability'
-import { getWorkflowTraceId } from '../../utils/workflow-context'
+import { createMastraTraceId, getWorkflowTraceId } from '../../utils/workflow-context'
 import { WRITER_STRUCTURED_PROMPT } from '../../prompts/agents/writer'
 import {
   improveDialogueTool,
@@ -32,7 +31,7 @@ export class GardenerAgent {
 
   private constructor(config: GardenerConfig, instructions: string) {
     this.config = config
-    this.traceId = config.traceId || getWorkflowTraceId() || uuidv4()
+    this.traceId = config.traceId || getWorkflowTraceId() || createMastraTraceId()
 
     const tools = [
       selfCritiqueTool,

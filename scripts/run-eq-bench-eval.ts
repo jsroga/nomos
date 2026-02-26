@@ -17,7 +17,7 @@
  */
 
 import { langfuse } from '../src/agent-core/observability'
-import { EQBenchEvaluator, getEQBenchEvaluator, runLangfuseExperiment } from '../src/evaluation/langfuse/eq-bench-evaluator'
+import { getEQBenchEvaluator, runLangfuseExperiment } from '../src/evaluation/langfuse/eq-bench-evaluator'
 import { pushPromptsToLangfuse } from '../src/prompts/langfuse-sync'
 import { STORYTELLER_PROMPTS } from '../src/prompts/storyteller-prompts'
 import { readFileSync, writeFileSync, mkdirSync } from 'fs'
@@ -379,7 +379,7 @@ async function main() {
   console.log(`Items Evaluated: ${validResults.length}/${dataset.length}`)
   console.log(`Duration: ${(totalDuration / 1000).toFixed(1)}s`)
   console.log()
-  console.log(`Average Scores:`)
+  console.log('Average Scores:')
   console.log(`  Emotion:     ${(summary.avgEmotion * 100).toFixed(1)}%`)
   console.log(`  Magic:       ${(summary.avgMagic * 100).toFixed(1)}%`)
   if (summary.avgConsistency !== undefined) {

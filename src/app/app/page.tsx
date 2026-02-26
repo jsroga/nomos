@@ -14,22 +14,21 @@ import dynamic from 'next/dynamic'
 
 // New Imports for Liquid UI
 import { TurbulentBackground } from '@/domains/marketing/components/TurbulentBackground'
-import { GlowEffect } from '@/components/ui/glow-effect'
 import { TURBULENT_BG_PROPS } from '@/lib/constants/visuals'
 import { BleedingText } from '@/components/ui/BleedingText'
 import { motion } from 'framer-motion'
 
 const SUBTITLES = [
-  "Play god. It’s cheaper than therapy.",
-  "Your reality is boring. Make a new one.",
-  "Build a world before this one ends.",
-  "No one will miss the old timeline.",
-  "Architect your own escape.",
-  "Simulation theory is real. You are the admin.",
-  "Reality is a suggestion. Ignore it.",
-  "The void is waiting for your input.",
-  "Create something that outlives you.",
-  "Sanity is optional here."
+  'Play god. It\'s cheaper than therapy.',
+  'Your reality is boring. Make a new one.',
+  'Build a world before this one ends.',
+  'No one will miss the old timeline.',
+  'Architect your own escape.',
+  'Simulation theory is real. You are the admin.',
+  'Reality is a suggestion. Ignore it.',
+  'The void is waiting for your input.',
+  'Create something that outlives you.',
+  'Sanity is optional here.'
 ]
 
 // Lazy load 3D icon for performance

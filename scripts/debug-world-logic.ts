@@ -10,7 +10,7 @@ async function main() {
         const agent = await StorytellerAgent.create('openai:gpt-4o')
         console.log('✅ Agent created.')
 
-        const prompt = "Create a rule for this world: 'Gravity fluctuates every hour'. Make sure to save it to the world bible."
+        const prompt = 'Create a rule for this world: \'Gravity fluctuates every hour\'. Make sure to save it to the world bible.'
         console.log('📤 Streaming with prompt:', prompt)
 
         const stream = await agent.stream(prompt, {

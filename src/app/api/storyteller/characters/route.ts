@@ -359,7 +359,7 @@ export async function POST(req: NextRequest) {
         id: `char-to-home-${newCharacter.id}`,
         type: 'cross_domain',
         title: `Build ${name}'s home`,
-        description: "Design the character's living space in 3D",
+        description: 'Design the character\'s living space in 3D',
         targetDomain: 'interior-designer',
         targetRoute: `/app/${projectId}/interior-design`,
         priority: 3,

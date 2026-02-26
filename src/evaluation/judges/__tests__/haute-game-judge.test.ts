@@ -399,7 +399,7 @@ describe('HauteGameJudge', () => {
         wouldPlayersTellStories: true,
         storyPotentialExamples: [
           'That time I burned the forest to escape the wolves',
-          "When I found another player's grave and it saved my life",
+          'When I found another player\'s grave and it saved my life',
         ],
       }
 

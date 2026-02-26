@@ -14,7 +14,7 @@ export const PlanItemStatusSchema = z.enum([
 export type PlanItemStatus = z.infer<typeof PlanItemStatusSchema>
 
 export const PlanItemSchema = z.object({
-  id: z.string().describe("Unique identifier (e.g., '1', '1.2')"),
+  id: z.string().describe('Unique identifier (e.g., \'1\', \'1.2\')'),
   title: z.string().describe('Concise task title'),
   description: z.string().optional().describe('More detailed instructions'),
   status: PlanItemStatusSchema.default('pending'),
@@ -54,4 +54,4 @@ export const ExecutiveStateSchema = z.object({
   variables: z.record(z.unknown()).describe('Scratchpad memory'),
 })
 
-type ExecutiveState = z.infer<typeof ExecutiveStateSchema>
+type _ExecutiveState = z.infer<typeof ExecutiveStateSchema>

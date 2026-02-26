@@ -1,5 +1,5 @@
 import React from 'react'
-import { MapPin, Plus, RefreshCw, Trash2, Loader2, CalendarHeart } from 'lucide-react'
+import { Plus, RefreshCw, Trash2, Loader2, CalendarHeart } from 'lucide-react'
 import { useBible } from './BibleContext'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
 import { RichText } from '../RichText'

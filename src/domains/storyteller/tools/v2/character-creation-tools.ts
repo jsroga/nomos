@@ -51,7 +51,7 @@ const AskCharacterQuestionsInputSchema = z.object({
 export const askCharacterQuestionsTool = createTool({
   id: 'ask_character_questions',
   description:
-    "Ask the user a series of questions to gather information for character creation. Use this when the user wants to create a character but hasn't provided all details.",
+    'Ask the user a series of questions to gather information for character creation. Use this when the user wants to create a character but hasn\'t provided all details.',
   inputSchema: AskCharacterQuestionsInputSchema,
   execute: async (args: any) => {
     const context = args?.context || args

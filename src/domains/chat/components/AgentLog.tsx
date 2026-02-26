@@ -41,7 +41,7 @@ const AGENT_DISPLAY_NAMES: Record<string, string> = {
   PlotArchitect: 'Plot Architect',
   CharacterPsychology: 'Character Expert',
   ConsequenceTracker: 'Story Tracker',
-  DevilsAdvocate: "Devil's Advocate",
+  DevilsAdvocate: 'Devil\'s Advocate',
   VisualMoment: 'Visual Designer',
   Writer: 'Writer',
   User: 'You',
@@ -739,8 +739,7 @@ export const AgentLog: React.FC<AgentLogProps> = React.memo(({
           >
             {/* Agent Header - Minimalist */}
             {/* Always show agent header as requested */}
-            {(true) && (
-              <div
+            <div
                 className={cn(
                   'flex items-center gap-2 mb-1.5',
                   isHuman ? 'justify-end text-primary' : config.color
@@ -774,7 +773,6 @@ export const AgentLog: React.FC<AgentLogProps> = React.memo(({
                   </span>
                 )}
               </div>
-            )}
 
             {/* Thinking (if enabled and Activity is ON) */}
             {showThinking && msg.thinking && isActivityPanelOpen && (

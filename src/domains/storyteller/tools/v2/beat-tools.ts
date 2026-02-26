@@ -479,4 +479,4 @@ export const listBeatsTool = createTool({
   },
 })
 
-export const beatTools = [manageBeatTool, listBeatsTool]
+const beatTools = [manageBeatTool, listBeatsTool]

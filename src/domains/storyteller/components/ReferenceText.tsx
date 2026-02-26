@@ -1,5 +1,6 @@
 'use client'
 
+/* eslint-disable react-hooks/refs -- tooltip content reads ref in useMemo by design */
 /**
  * ReferenceText Component
  *

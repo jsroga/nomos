@@ -1,5 +1,5 @@
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { ExecutiveAgent } from '../../src/agent-core/executive'
 import { createPlannerTool, PlanPersistence } from '../../src/agent-core/planner'
 import { Plan } from '../../src/agent-core/schemas'
@@ -42,8 +42,8 @@ describe('ExecutiveAgent Integration', () => {
             }
 
             const result = await agent.runLoop(
-                "Create a plan to verify tests.",
-                "System is ready."
+                'Create a plan to verify tests.',
+                'System is ready.'
             )
 
             expect(result).toBeDefined()
