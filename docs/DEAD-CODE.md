@@ -7,8 +7,15 @@
 
 | Category | Count |
 |----------|-------|
+| Unlisted dependencies | 1 |
 | Unused exports | 1 |
-| **Total** | **1** |
+| **Total** | **2** |
+
+## Unlisted Dependencies
+
+Imported but missing from package.json.
+
+- `webpack` in `next.config.js:94`
 
 ## Unused Exports
 
