@@ -1,6 +1,6 @@
 # Dead Code Report
 
-> Auto-generated on 2026-02-25 by [Knip](https://knip.dev). Do not edit manually.
+> Auto-generated on 2026-02-26 by [Knip](https://knip.dev). Do not edit manually.
 > Updates automatically via CI on every push to main and on PRs.
 
 ## Summary
