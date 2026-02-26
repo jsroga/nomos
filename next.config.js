@@ -37,7 +37,6 @@ const nextConfig = {
   // Optimize specific package imports (Next.js 15 feature)
   experimental: {
     reactCompiler: true,
-    instrumentationHook: true,
     optimizePackageImports: [
       'lucide-react',
       'lodash',
@@ -72,11 +71,8 @@ const nextConfig = {
     '@langchain/openai',
     '@langchain/langgraph-checkpoint-postgres',
   ],
-  // Hide default dev indicators - we have our own error tracking
   devIndicators: {
-    appIsrStatus: false,
-    buildActivity: false,
-    buildActivityPosition: 'bottom-right',
+    position: 'bottom-right',
   },
   // Optimize webpack configuration for faster builds
   webpack: (config, { isServer, dev }) => {
@@ -151,8 +147,6 @@ const nextConfig = {
 
     return config
   },
-  // Enable SWC minification (faster than Terser)
-  swcMinify: true,
   // Compiler options for better performance
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? {
