@@ -100,8 +100,8 @@ const nextConfig = {
         removeEmptyChunks: false,
         splitChunks: false,
       }
-    } else {
-      // Production optimizations
+    } else if (!isServer) {
+      // Production optimizations (Client only)
       config.optimization = {
         ...config.optimization,
         moduleIds: 'deterministic',
