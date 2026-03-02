@@ -15,7 +15,7 @@
 
 Imported but missing from package.json.
 
-- `webpack` in `next.config.js:94`
+- `webpack` in `next.config.js:90`
 
 ## Unused Exports
 
