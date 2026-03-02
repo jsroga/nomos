@@ -1,12 +1,12 @@
 import { Mastra } from '@mastra/core/mastra'
 import { LangfuseExporter } from '@mastra/langfuse'
-import { LibSQLStore } from '@mastra/libsql'
+import { PostgresStore } from '@mastra/pg'
 import { PinoLogger } from '@mastra/loggers'
 import { Observability } from '@mastra/observability'
 import { Workspace, LocalFilesystem } from '@mastra/core/workspace'
 
 let mastraInstance: Mastra | null = null
-let storageInstance: LibSQLStore | null = null
+let storageInstance: PostgresStore | null = null
 let serializationConfigured = false
 
 /**
@@ -29,20 +29,23 @@ function configureSerializationLimits() {
 }
 
 /**
- * Get or create LibSQL storage instance for memory persistence
+ * Get or create Postgres storage instance for memory persistence
  * See: https://mastra.ai/docs/agents/agent-memory
  */
-export function getStorageInstance(): LibSQLStore {
+export function getStorageInstance(): PostgresStore {
   if (!storageInstance) {
-    // Use file-based storage in development, URL from env in production
-    const dbUrl = process.env.MASTRA_LIBSQL_URL || 'file:./mastra-memory.db'
+    const dbUrl = process.env.DATABASE_URL
 
-    storageInstance = new LibSQLStore({
+    if (!dbUrl) {
+      console.warn('⚠️ [Mastra] DATABASE_URL is not set. Memory persistence might fail if storage is required.')
+    }
+
+    storageInstance = new PostgresStore({
       id: 'storyteller-storage',
-      url: dbUrl,
+      connectionString: dbUrl || 'postgresql://postgres:postgres@localhost:5432/postgres',
     })
 
-    console.log('💾 [Mastra] Storage initialized:', dbUrl)
+    console.log('💾 [Mastra] Storage initialized with Postgres')
   }
   return storageInstance
 }
