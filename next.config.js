@@ -37,7 +37,6 @@ const nextConfig = {
   // Optimize specific package imports (Next.js 15 feature)
   experimental: {
     reactCompiler: true,
-    instrumentationHook: true,
     optimizePackageImports: [
       'lucide-react',
       'lodash',
@@ -72,11 +71,8 @@ const nextConfig = {
     '@langchain/openai',
     '@langchain/langgraph-checkpoint-postgres',
   ],
-  // Hide default dev indicators - we have our own error tracking
   devIndicators: {
-    appIsrStatus: false,
-    buildActivity: false,
-    buildActivityPosition: 'bottom-right',
+    position: 'bottom-right',
   },
   // Optimize webpack configuration for faster builds
   webpack: (config, { isServer, dev }) => {
@@ -104,8 +100,8 @@ const nextConfig = {
         removeEmptyChunks: false,
         splitChunks: false,
       }
-    } else {
-      // Production optimizations
+    } else if (!isServer) {
+      // Production optimizations (Client only)
       config.optimization = {
         ...config.optimization,
         moduleIds: 'deterministic',
@@ -151,8 +147,6 @@ const nextConfig = {
 
     return config
   },
-  // Enable SWC minification (faster than Terser)
-  swcMinify: true,
   // Compiler options for better performance
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? {
@@ -162,3 +156,45 @@ const nextConfig = {
 }
 
 module.exports = nextConfig
+
+
+// Injected content via Sentry wizard below
+
+const { withSentryConfig } = require("@sentry/nextjs");
+
+module.exports = withSentryConfig(module.exports, {
+  // For all available options, see:
+  // https://www.npmjs.com/package/@sentry/webpack-plugin#options
+
+  org: "kurvitza",
+  project: "sentry-coquelicot-basket",
+
+  // Only print logs for uploading source maps in CI
+  silent: !process.env.CI,
+
+  // For all available options, see:
+  // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
+
+  // Upload a larger set of source maps for prettier stack traces (increases build time)
+  widenClientFileUpload: true,
+
+  // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
+  // This can increase your server load as well as your hosting bill.
+  // Note: Check that the configured route will not match with your Next.js middleware, otherwise reporting of client-
+  // side errors will fail.
+  tunnelRoute: "/monitoring",
+
+  webpack: {
+    // Enables automatic instrumentation of Vercel Cron Monitors. (Does not yet work with App Router route handlers.)
+    // See the following for more information:
+    // https://docs.sentry.io/product/crons/
+    // https://vercel.com/docs/cron-jobs
+    automaticVercelMonitors: true,
+
+    // Tree-shaking options for reducing bundle size
+    treeshake: {
+      // Automatically tree-shake Sentry logger statements to reduce bundle size
+      removeDebugLogging: true,
+    },
+  },
+});
