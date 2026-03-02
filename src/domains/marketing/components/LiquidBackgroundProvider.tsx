@@ -1,8 +1,13 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { TurbulentBackground } from '@/domains/marketing/components/TurbulentBackground'
+import dynamic from 'next/dynamic'
 import { LiquidProvider } from '@/domains/marketing/context/LiquidContext'
+
+const TurbulentBackground = dynamic(
+  () => import('@/domains/marketing/components/TurbulentBackground').then(mod => mod.TurbulentBackground),
+  { ssr: false }
+)
 
 interface LiquidBackgroundProviderProps {
   children: React.ReactNode

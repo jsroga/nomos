@@ -70,6 +70,14 @@ const nextConfig = {
     '@langchain/anthropic',
     '@langchain/openai',
     '@langchain/langgraph-checkpoint-postgres',
+    // Mastra packages are server-only
+    '@mastra/core',
+    '@mastra/langfuse',
+    '@mastra/libsql',
+    '@mastra/loggers',
+    '@mastra/mcp',
+    '@mastra/memory',
+    '@mastra/pg',
   ],
   devIndicators: {
     position: 'bottom-right',
