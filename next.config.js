@@ -108,49 +108,6 @@ const nextConfig = {
         removeEmptyChunks: false,
         splitChunks: false,
       }
-    } else if (!isServer) {
-      // Production optimizations (Client only)
-      config.optimization = {
-        ...config.optimization,
-        moduleIds: 'deterministic',
-        runtimeChunk: 'single',
-        splitChunks: {
-          chunks: 'all',
-          cacheGroups: {
-            // Separate vendor chunks for better caching
-            default: false,
-            vendors: false,
-            // Three.js and related packages
-            three: {
-              name: 'three',
-              test: /[\\/]node_modules[\\/](three|@react-three)[\\/]/,
-              priority: 20,
-              reuseExistingChunk: true,
-            },
-            // LangChain packages (if used client-side)
-            langchain: {
-              name: 'langchain',
-              test: /[\\/]node_modules[\\/]@langchain[\\/]/,
-              priority: 15,
-              reuseExistingChunk: true,
-            },
-            // Radix UI components
-            radix: {
-              name: 'radix',
-              test: /[\\/]node_modules[\\/]@radix-ui[\\/]/,
-              priority: 10,
-              reuseExistingChunk: true,
-            },
-            // Common vendor libraries
-            vendor: {
-              name: 'vendor',
-              test: /[\\/]node_modules[\\/]/,
-              priority: 5,
-              reuseExistingChunk: true,
-            },
-          },
-        },
-      }
     }
 
     return config
