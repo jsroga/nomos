@@ -64,7 +64,22 @@ export class TileGenerationService {
     const aiProvider = aiService.getActiveModelId()
     let aiConfig = aiService.getConfig(aiProvider)
 
+    // For Midjourney, also check legnextConfig as fallback
+    if (aiProvider === 'midjourney' && !aiConfig?.apiKey && typeof window !== 'undefined') {
+      const savedLegNext = localStorage.getItem(LocalStorageKeys.AI_CONFIG_LEGNEXT)
+      if (savedLegNext) {
+        const legnextConfig = JSON.parse(savedLegNext)
+        if (legnextConfig.apiKey) {
+          aiConfig = { ...aiConfig, apiKey: legnextConfig.apiKey }
+        }
+      }
+    }
 
+    if (!aiConfig?.apiKey) {
+      throw new Error(
+        `API key not found for provider: ${aiProvider}. Please configure it in Settings.`
+      )
+    }
 
     // Track generating status
     useWorldStore.getState().addGeneratingTile(x, y)
@@ -119,7 +134,11 @@ export class TileGenerationService {
       if (!isFirstTile && aiProvider !== 'gemini') {
         effectiveProvider = 'gemini'
         effectiveConfig = aiService.getConfig('gemini')
-
+        if (!effectiveConfig?.apiKey) {
+          throw new Error(
+            'Gemini API key is required for follow-up tile generation. Please configure it in Settings.'
+          )
+        }
         console.log(`Follow-up tile - switching provider from ${aiProvider} to gemini`)
       }
 

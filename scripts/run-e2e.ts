@@ -3,9 +3,9 @@ import { spawnSync } from 'child_process'
 // ONE TEST THAT ACTUALLY WORKS
 // Fashion: Minimal. Elegant. Verified.
 const E2E_MAP: Record<string, string> = {
-  smoke: 'npx tsx e2e/scenarios/storyteller-smoke.test.ts',
-  api: 'npx tsx e2e/scenarios/storyteller-smoke.test.ts',
-  all: 'npx tsx e2e/scenarios/storyteller-smoke.test.ts',
+  smoke: 'npx tsx e2e/scenarios/storyteller-smoke.script.ts',
+  api: 'npx tsx e2e/scenarios/storyteller-smoke.script.ts',
+  all: 'npx tsx e2e/scenarios/storyteller-smoke.script.ts',
 }
 
 const args = process.argv.slice(2)

@@ -35,9 +35,18 @@ import {
   agentTools,
   worldBuildingTools,
   updateStoryPhaseTool,
+  getPlotPhaseTool,
+  validateConsistencyTool,
   characterCreationTools,
   episodeCreationTools,
   selfCritiqueTool,
+  searchKnowledgeBaseTool,
+  storeKnowledgeTool,
+  searchCharacterHistoryTool,
+  getUserPreferencesTool,
+  researchTool,
+  factCheckTool,
+  referenceLookupTool,
 } from '../../tools/v2'
 import { runStoryCreationWorkflowTool } from '../../tools/v2/workflow-tools'
 import { getEntityLinkRequirements } from '../../config/storyteller-config'
@@ -73,6 +82,15 @@ export class StorytellerAgent {
       ...characterCreationTools,
       ...episodeCreationTools,
       updateStoryPhaseTool,
+      getPlotPhaseTool,
+      validateConsistencyTool,
+      searchKnowledgeBaseTool,
+      storeKnowledgeTool,
+      searchCharacterHistoryTool,
+      getUserPreferencesTool,
+      researchTool,
+      factCheckTool,
+      referenceLookupTool,
     ]
 
     if (config.enableWorkflowTool !== false) {

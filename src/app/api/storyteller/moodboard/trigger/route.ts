@@ -138,9 +138,6 @@ Output ONLY the single prompt string.`
       replaceIndex: typeof promptIndex === 'number' ? promptIndex : undefined,
       providerConfig: {
         ...providerConfig,
-        apiKey: providerConfig?.apiKey || (
-          providerConfig?.provider === 'gemini' || providerConfig?.provider === 'nanobanana' ? process.env.GOOGLE_API_KEY : process.env.LEGNEXT_API_KEY
-        ),
         styleReferenceUrls,
       },
     })

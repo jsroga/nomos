@@ -25,6 +25,7 @@ import {
   Users,
   Sparkles,
   Menu,
+  Github,
 } from 'lucide-react'
 import { BleedingText } from '@/components/ui/BleedingText'
 import { TurbulentBackground } from './TurbulentBackground'
@@ -693,6 +694,18 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
               </div>
 
               <div className="flex items-center gap-4">
+                {/* GitHub button - desktop */}
+                <a
+                  href="https://github.com/jsroga/world-building-kit"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden sm:inline-flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:text-white transition-colors rounded-lg border border-white/10 hover:border-white/30 hover:bg-white/5"
+                  aria-label="View on GitHub"
+                >
+                  <Github className="w-4 h-4" />
+                  <span>GitHub</span>
+                </a>
+
                 {/* Mobile menu button */}
                 <button
                   onClick={() => setMobileMenuOpen(true)}
@@ -748,7 +761,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                   </div>
 
                   {/* Top CTA */}
-                  <div className="p-6 border-b border-white/5">
+                  <div className="p-6 border-b border-white/5 space-y-3">
                     <Link
                       href={isLoggedIn ? '/app' : '/login'}
                       onClick={() => setMobileMenuOpen(false)}
@@ -757,6 +770,16 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                       {isLoggedIn ? 'Dashboard' : 'Get Started'}
                       <ArrowRight className="w-4 h-4" />
                     </Link>
+                    <a
+                      href="https://github.com/jsroga/world-building-kit"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center justify-center gap-2 w-full px-5 py-3 text-sm text-white/70 rounded-lg border border-white/10 hover:border-white/30 hover:bg-white/5 transition-colors"
+                    >
+                      <Github className="w-4 h-4" />
+                      GitHub
+                    </a>
                   </div>
 
                   {/* Links */}
@@ -892,8 +915,6 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                 <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] group-hover:opacity-[0.08] transition-opacity">
                   <Map size={280} strokeWidth={1} />
                 </div>
-
-                <img src="https://placehold.co/600x400/101010/FFF?text=Bento+Grid" alt="Bento Grid" className="rounded-lg border border-white/10" />
 
                 {/* Content footer */}
                 <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/80 to-transparent">

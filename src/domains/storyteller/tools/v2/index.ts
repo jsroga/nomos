@@ -77,6 +77,8 @@ export {
   consultDevilsAdvocateTool,
   consultGardenerTool,
   consultPremiseArchitectTool,
+  consultConsistencyTool,
+  consultCreativeDirectorTool,
   agentTools,
 } from './agent-tools'
 

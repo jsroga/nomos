@@ -14,6 +14,8 @@ import { createConsequenceAgent } from '../../agents/v2/consequence-agent'
 import { createDevilsAdvocateAgent } from '../../agents/v2/devils-advocate-agent'
 import { createGardenerAgent } from '../../agents/v2/gardener-agent'
 import { createPremiseArchitectAgent } from '../../agents/v2/premise-architect-agent'
+import { runConsistencyCheck } from '../../agents/v2/consistency-agent'
+import { CreativeDirectorAgent } from '../../agents/v2/creative-director-agent'
 import { getWorkflowTraceId, getWorkflowEventBus } from '../../utils/workflow-context'
 import { langfuse } from '../../../../agent-core/observability'
 import { db } from '@/lib/db'
@@ -564,6 +566,158 @@ Valid sections for regenerate_section: ${PREMISE_SECTIONS.join(', ')}`,
   },
 })
 
+/**
+ * Consult Consistency Tool
+ */
+export const consultConsistencyTool = createTool({
+  id: 'consult_consistency',
+  description:
+    'Run a full consistency check on the story. Detects character contradictions, timeline issues, world rule violations, plot logic gaps, and tone inconsistencies. Returns detected issues with proposed fixes.',
+  inputSchema: z.object({
+    projectId: z.string().describe('Project ID'),
+    episodeId: z.string().nullish().describe('Episode ID'),
+    context: z.string().describe('Summary of recent story context or the content to check'),
+  }),
+  execute: async (args: any) => {
+    const toolArgs = args
+    const traceId = getWorkflowTraceId()
+
+    const span = langfuse.span({
+      traceId: traceId || undefined,
+      name: 'consult_consistency',
+      input: { projectId: toolArgs.projectId },
+      metadata: { agentType: 'ConsistencyAgent' },
+    })
+
+    emitConsultEvent('ConsistencyAgent', 'start')
+
+    try {
+      const [castRows, planRows] = await Promise.all([
+        db.select().from(characters).where(eq(characters.projectId, toolArgs.projectId)),
+        db.select({ content: storyPlans.content })
+          .from(storyPlans).where(eq(storyPlans.projectId, toolArgs.projectId)).limit(1),
+      ])
+
+      const plan = (planRows[0]?.content as Record<string, unknown>) || {}
+
+      const storyContext = {
+        projectId: toolArgs.projectId,
+        episodeId: toolArgs.episodeId || undefined,
+        characters: castRows || [],
+        beats: Array.isArray(plan.beats) ? plan.beats : [],
+        worldRules: Array.isArray(plan.worldRules) ? plan.worldRules : [],
+        seriesBible: plan,
+      }
+
+      const result = await runConsistencyCheck(storyContext)
+
+      emitConsultEvent('ConsistencyAgent', 'complete', {
+        inconsistencies: result.inconsistencies.length,
+        fixes: result.fixes.length,
+      })
+
+      span.end({
+        output: {
+          summary: result.summary,
+          inconsistencies: result.inconsistencies.length,
+          fixes: result.fixes.length,
+        },
+      })
+
+      return JSON.stringify(result, null, 2)
+    } catch (error: unknown) {
+      span.end({ level: 'ERROR', statusMessage: getErrorMessage(error) })
+      throw error
+    }
+  },
+})
+
+/**
+ * Consult Creative Director Tool
+ */
+export const consultCreativeDirectorTool = createTool({
+  id: 'consult_creative_director',
+  description:
+    'Consult a Creative Director (GRRM or Gilligan style) for creative guidance, content review, or scene direction.',
+  inputSchema: z.object({
+    task: z.enum(['review_content', 'direct_scene', 'challenge_decision']),
+    directorType: z.enum(['grrm', 'gilligan']).default('grrm').describe('Creative Director style'),
+    content: z.string().describe('The content/scene/decision to evaluate'),
+    context: z.string().optional().describe('Additional story context'),
+    projectId: z.string().nullish(),
+    episodeId: z.string().nullish(),
+  }),
+  execute: async (args: any) => {
+    const toolArgs = args
+    const traceId = getWorkflowTraceId()
+
+    const span = langfuse.span({
+      traceId: traceId || undefined,
+      name: 'consult_creative_director',
+      input: { task: toolArgs.task, directorType: toolArgs.directorType },
+      metadata: { agentType: 'CreativeDirector' },
+    })
+
+    emitConsultEvent('CreativeDirector', 'start', { task: toolArgs.task, type: toolArgs.directorType })
+
+    try {
+      const director = await CreativeDirectorAgent.create(
+        toolArgs.directorType || 'grrm',
+        'openai:gpt-4o',
+        {
+          traceId: traceId || undefined,
+          projectId: toolArgs.projectId,
+          episodeId: toolArgs.episodeId,
+        }
+      )
+
+      let resultText: string
+
+      switch (toolArgs.task) {
+        case 'review_content': {
+          const result = await director.reviewContent(
+            toolArgs.content,
+            toolArgs.context || '',
+            'Storyteller',
+            traceId || undefined
+          )
+          resultText = JSON.stringify(result, null, 2)
+          break
+        }
+        case 'direct_scene': {
+          const result = await director.directScene(
+            toolArgs.content,
+            toolArgs.context || '',
+            traceId || undefined
+          )
+          resultText = JSON.stringify(result, null, 2)
+          break
+        }
+        case 'challenge_decision': {
+          const result = await director.challengeDecision(
+            toolArgs.content,
+            toolArgs.context || 'No rationale provided',
+            [],
+            traceId || undefined
+          )
+          resultText = JSON.stringify(result, null, 2)
+          break
+        }
+        default:
+          resultText = 'Unknown task'
+      }
+
+      emitConsultEvent('CreativeDirector', 'complete', { task: toolArgs.task })
+      span.end({ output: { preview: resultText.slice(0, 500) } })
+
+      return resultText
+    } catch (error: unknown) {
+      span.end({ level: 'ERROR', statusMessage: getErrorMessage(error) })
+      throw error
+    }
+  },
+})
+
 export const agentTools = [
   consultPsychologistTool,
   consultConsequenceTrackerTool,
@@ -571,4 +725,6 @@ export const agentTools = [
   consultGardenerTool,
   consultPremiseArchitectTool,
   validateReferencesTool,
+  consultConsistencyTool,
+  consultCreativeDirectorTool,
 ]

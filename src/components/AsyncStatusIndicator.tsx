@@ -6,7 +6,7 @@ import { useGlobalStatusStore, OperationType } from '@/store/useGlobalStatusStor
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-
+import { LiquidGlass } from '@/components/LiquidGlass'
 
 export const AsyncStatusIndicator: React.FC = () => {
   const operations = useGlobalStatusStore(state => state.operations)
@@ -290,7 +290,7 @@ export const AsyncStatusIndicator: React.FC = () => {
           align="end"
           className="p-0 border-none bg-transparent min-w-[300px] max-w-[400px] overflow-hidden rounded-xl shadow-2xl z-[200]"
         >
-          <div className="w-full rounded-xl border border-white/20 backdrop-blur-md bg-white/5">
+          <LiquidGlass className="w-full rounded-xl border border-white/20">
             <div className="bg-background/40 backdrop-blur-xl p-4">
               {isLoading ? (
                 <div className="space-y-3">
@@ -374,7 +374,7 @@ export const AsyncStatusIndicator: React.FC = () => {
                 </div>
               )}
             </div>
-          </div>
+          </LiquidGlass>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

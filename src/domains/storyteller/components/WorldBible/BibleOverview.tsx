@@ -276,7 +276,12 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
                             if (isGenerating) return // Prevent multiple concurrent generations for now to stay safe
                             if (!projectId) return
                             const config = getProviderConfig()
-
+                            if (!config.apiKey) {
+                              toast.error(
+                                `Missing API key for ${config.provider}. Please configure in Settings.`
+                              )
+                              return
+                            }
                             try {
                               await moodboardGenerationService.generate(
                                 projectId,
@@ -371,7 +376,12 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
                   if (isGenerating) return
                   if (!projectId) return
                   const config = getProviderConfig()
-
+                  if (!config.apiKey) {
+                    toast.error(
+                      `Missing API key for ${config.provider}. Please configure in Settings.`
+                    )
+                    return
+                  }
                   try {
                     // Generate a new image at the next index
                     const nextIndex = displayMoodImages.length || 0
@@ -432,7 +442,12 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
                   }
                   if (!projectId) return
                   const config = getProviderConfig()
-
+                  if (!config.apiKey) {
+                    toast.error(
+                      `Missing API key for ${config.provider}. Please configure in Settings.`
+                    )
+                    return
+                  }
                   try {
                     await moodboardGenerationService.generate(
                       projectId,

@@ -268,7 +268,7 @@ export const BibleProvider: React.FC<{
       index: number,
       field: K,
       value: WorldRule[K]
-    ) => {
+    ) {
       setLocalPlan(prev => {
         const rules = [...(prev.worldRules || [])]
         if (!rules[index]) return prev
@@ -325,7 +325,7 @@ export const BibleProvider: React.FC<{
       index: number,
       field: K,
       value: KeyCharacter[K]
-    ) => {
+    ) {
       setLocalPlan(prev => {
         const characters = [...(prev.keyCharacters || [])]
         if (!characters[index]) return prev
@@ -357,7 +357,7 @@ export const BibleProvider: React.FC<{
       index: number,
       field: K,
       value: StorySequence[K]
-    ) => {
+    ) {
       setLocalPlan(prev => {
         const sequences = [...(prev.sequences || [])]
         if (!sequences[index]) return prev

@@ -9,7 +9,7 @@ import { LocalStorageKeys } from '@/constants/localStorage'
 
 class AIService {
   private models: Record<string, AIModel> = {}
-  private activeModelId: string = 'midjourney'
+  private activeModelId: string = 'mock'
   private configs: Record<string, AIModelConfig> = {}
 
   constructor() {
