@@ -211,23 +211,36 @@ async function generateWithGemini(
   let payload: any
   let finalPrompt: string
 
+  // Fetch style reference images to pass as actual inline_data parts
+  const styleImageParts: any[] = []
+  if (styleReferenceUrls?.length) {
+    for (const url of styleReferenceUrls) {
+      try {
+        const resp = await fetch(url)
+        if (resp.ok) {
+          const arrayBuffer = await resp.arrayBuffer()
+          const base64 = Buffer.from(arrayBuffer).toString('base64')
+          const contentType = resp.headers.get('content-type') || 'image/png'
+          styleImageParts.push({ inline_data: { mime_type: contentType, data: base64 } })
+        }
+      } catch {
+        // skip unreachable URLs
+      }
+    }
+  }
+
   if (isFirstTile || !contextImageBase64) {
-    // FIRST TILE: Text-only generation with style references
+    // FIRST TILE: Generation with style reference images
     logger.info('Generating first tile with style references')
 
-    const styleRefHint = styleReferenceUrls?.length
-      ? ` Use these style references for visual guidance: ${styleReferenceUrls.join(', ')}.`
-      : ''
-
-    finalPrompt = GENERATION_PROMPTS.FIRST_TILE.GEMINI(prompt) + styleRefHint
+    finalPrompt = GENERATION_PROMPTS.FIRST_TILE.GEMINI(prompt)
 
     payload = {
       contents: [
         {
           parts: [
-            {
-              text: finalPrompt,
-            },
+            { text: finalPrompt },
+            ...styleImageParts,
           ],
         },
       ],
@@ -239,7 +252,7 @@ async function generateWithGemini(
       },
     }
   } else {
-    // FOLLOW-UP TILE: Use context image with inpainting prompt
+    // FOLLOW-UP TILE: Use context image with inpainting prompt + style refs
     logger.info('Generating follow-up tile with context image for edge matching')
 
     // The context image has the target area in gray (center 512x512 of 1024x1024)
@@ -257,6 +270,7 @@ async function generateWithGemini(
                 data: contextImageBase64,
               },
             },
+            ...styleImageParts,
           ],
         },
       ],

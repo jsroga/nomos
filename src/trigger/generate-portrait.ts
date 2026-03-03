@@ -30,13 +30,15 @@ export const generatePortrait = task({
       throw new Error('projectId and characterId are required')
     }
 
-    // Build --sref parameter from URLs if present
+    // Build image prompt (first URL) + --sref (all URLs)
+    let imagePromptPart = ''
     let srefParam = ''
     if (styleReferenceUrls && styleReferenceUrls.length > 0) {
-      srefParam = `--sref ${styleReferenceUrls.join(' ')}`
+      imagePromptPart = `${styleReferenceUrls[0]} `
+      srefParam = ` --sref ${styleReferenceUrls.join(' ')}`
     }
 
-    const fullPrompt = `portrait of ${prompt}, professional headshot, high quality, detailed --ar 1:1 ${srefParam}`
+    const fullPrompt = `${imagePromptPart}portrait of ${prompt}, professional headshot, high quality, detailed --ar 1:1${srefParam}`
 
     // 1. Submit Imagine Task to LegNext API
     console.log('Submitting imagine task to LegNext API...')

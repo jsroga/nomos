@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev, preview/**]
   pull_request:
-    branches: [main]
+    branches: [main, dev, preview/**]
   workflow_dispatch:
 
 concurrency:
@@ -79,7 +79,14 @@ jobs:
     name: AI Security Review
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    if: >-
+      github.event_name == 'pull_request' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && (
+        github.ref == 'refs/heads/main' ||
+        github.ref == 'refs/heads/dev' ||
+        startsWith(github.ref, 'refs/heads/preview/')
+      ))
     permissions:
       contents: read
       pull-requests: write
@@ -91,6 +98,7 @@ jobs:
           fetch-depth: 0
 
       - uses: anthropics/claude-code-action@v1
+        id: security-review
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
@@ -196,7 +204,7 @@ jobs:
 
             FALSE POSITIVE FILTERING:
 
-            > You do not need to run commands to reproduce the vulnerability, just read the code to determine if it is a real vulnerability. Do not use the bash tool or write to any files.
+            > You do not need to run commands to reproduce the vulnerability, just read the code to determine if it is a real vulnerability. Do not use the bash tool to run commands.
             >
             > HARD EXCLUSIONS - Automatically exclude findings matching these patterns:
             > 1. Denial of Service (DOS) vulnerabilities or resource exhaustion attacks.
@@ -251,6 +259,56 @@ jobs:
             2. Then for each vulnerability identified by the above sub-task, create a new sub-task to filter out false-positives. Launch these sub-tasks as parallel sub-tasks. In the prompt for these sub-tasks, include everything in the "FALSE POSITIVE FILTERING" instructions.
             3. Filter out any vulnerabilities where the sub-task reported a confidence less than 8.
 
-            Your final reply must contain the markdown report and nothing else.
+            Write the complete final report to /tmp/security-report.md using the Write tool.
+            Your final reply must also contain the markdown report.
           claude_args: "--max-turns 5 --model claude-haiku-4-5-20251001"
 
+      - name: Fail on HIGH severity findings
+        if: always()
+        run: |
+          if [ ! -f /tmp/security-report.md ]; then
+            echo "::warning::Security report file not found - review may have failed to write output"
+            exit 0
+          fi
+          if grep -qiE "^\* Severity: High|^- Severity: High" /tmp/security-report.md; then
+            echo "::error::HIGH severity security vulnerabilities found. Deployment blocked."
+            echo ""
+            cat /tmp/security-report.md
+            exit 1
+          fi
+          echo "Security review passed - no HIGH severity findings."
+
+  # ───────────────────────────────────────────────
+  # Job 5: Deploy to Vercel
+  # Runs only on push to protected branches, after ALL checks pass
+  # ───────────────────────────────────────────────
+  deploy:
+    name: Deploy to Vercel
+    runs-on: ubuntu-latest
+    needs: [lint, test, dead-code, security]
+    if: github.event_name == 'push'
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy Production (main)
+        id: deploy
+        if: github.ref == 'refs/heads/main'
+        run: |
+          url=$(npx vercel --prod --yes --token ${{ secrets.VERCEL_TOKEN }})
+          echo "url=$url" >> $GITHUB_OUTPUT
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Deploy Preview (dev / preview/*)
+        id: deploy-preview
+        if: github.ref != 'refs/heads/main'
+        run: |
+          url=$(npx vercel --yes --token ${{ secrets.VERCEL_TOKEN }})
+          echo "url=$url" >> $GITHUB_OUTPUT
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

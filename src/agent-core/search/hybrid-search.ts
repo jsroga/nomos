@@ -312,7 +312,7 @@ export function getSearchEngine(): HybridSearchEngine {
   return searchEngineInstance
 }
 
-export async function initializeSearch(): Promise<HybridSearchEngine> {
+async function initializeSearch(): Promise<HybridSearchEngine> {
   const engine = getSearchEngine()
   await engine.initialize()
   return engine

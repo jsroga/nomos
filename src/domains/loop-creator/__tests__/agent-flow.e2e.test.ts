@@ -24,6 +24,11 @@ vi.mock('@langchain/openai', () => {
   }
 })
 
+// Mock cross-domain context to avoid fetch to localhost:3000 during tests
+vi.mock('@/lib/agent-context/cross-domain-context', () => ({
+  buildCrossDomainContext: vi.fn().mockResolvedValue(''),
+}))
+
 // Mock the PostgresSaver to avoid DB connection
 vi.mock('@langchain/langgraph-checkpoint-postgres', () => ({
   PostgresSaver: {
@@ -204,8 +209,8 @@ describe('Agent Flow E2E', () => {
       const genericTerms = ['basic', 'standard', 'normal', 'default', 'generic', 'simple']
 
       for (const action of actionEvents) {
-        if (action.payload?.name) {
-          const nameLower = action.payload.name.toLowerCase()
+        if (action.action?.payload?.name) {
+          const nameLower = action.action.payload.name.toLowerCase()
           for (const term of genericTerms) {
             expect(nameLower).not.toContain(term)
           }

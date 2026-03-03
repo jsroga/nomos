@@ -32,9 +32,9 @@ export const POST = withRateLimit(
       )
     }
 
-    if (!payload.aiProvider || !payload.aiConfig) {
+    if (!payload.aiProvider) {
       return NextResponse.json(
-        { error: 'Missing required fields: aiProvider, aiConfig' },
+        { error: 'Missing required fields: aiProvider' },
         { status: 400 }
       )
     }
@@ -74,7 +74,15 @@ export const POST = withRateLimit(
         y: payload.y,
         prompt: payload.prompt,
         aiProvider: payload.aiProvider,
-        aiConfig: payload.aiConfig,
+        aiConfig: {
+          ...(payload.aiConfig || {}),
+          apiKey: payload.aiConfig?.apiKey || (
+            payload.aiProvider === 'gemini' || payload.aiProvider === 'nano-banana' ? process.env.GOOGLE_API_KEY :
+              payload.aiProvider === 'midjourney' || payload.aiProvider === 'legnext' ? process.env.LEGNEXT_API_KEY :
+                payload.aiProvider === 'openai' ? process.env.OPENAI_API_KEY :
+                  payload.aiProvider === 'stability' ? process.env.STABILITY_API_KEY : undefined
+          )
+        },
         isFirstTile,
         // Only pass style refs for first tile
         ...(styleReferenceUrls ? { styleReferenceUrls } : {}),

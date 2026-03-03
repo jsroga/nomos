@@ -311,68 +311,84 @@ export const Sidebar: React.FC = () => {
         ? effectiveTilePrompt
         : `${tilePrompt}, ${masterPrompt}`.replace(/^, /, '')
 
-      // Optional: Show debug info for context assembly (still works locally)
-      // Load neighbor images as data URLs for debug display
-      const [
-        upTile,
-        downTile,
-        leftTile,
-        rightTile,
-        topLeftTile,
-        topRightTile,
-        bottomLeftTile,
-        bottomRightTile,
-      ] = await Promise.all([
-        loadImageAsDataUrl(tiles[`${x},${y - 1}`]),
-        loadImageAsDataUrl(tiles[`${x},${y + 1}`]),
-        loadImageAsDataUrl(tiles[`${x - 1},${y}`]),
-        loadImageAsDataUrl(tiles[`${x + 1},${y}`]),
-        loadImageAsDataUrl(tiles[`${x - 1},${y - 1}`]),
-        loadImageAsDataUrl(tiles[`${x + 1},${y - 1}`]),
-        loadImageAsDataUrl(tiles[`${x - 1},${y + 1}`]),
-        loadImageAsDataUrl(tiles[`${x + 1},${y + 1}`]),
-      ])
+      // Keep context assembly always on (critical), but move it off the click critical path.
+      // We schedule heavy canvas assembly for idle time and do not block generation start.
+      const contextAssemblyTask = (async () => {
+        const [
+          upTile,
+          downTile,
+          leftTile,
+          rightTile,
+          topLeftTile,
+          topRightTile,
+          bottomLeftTile,
+          bottomRightTile,
+        ] = await Promise.all([
+          loadImageAsDataUrl(tiles[`${x},${y - 1}`]),
+          loadImageAsDataUrl(tiles[`${x},${y + 1}`]),
+          loadImageAsDataUrl(tiles[`${x - 1},${y}`]),
+          loadImageAsDataUrl(tiles[`${x + 1},${y}`]),
+          loadImageAsDataUrl(tiles[`${x - 1},${y - 1}`]),
+          loadImageAsDataUrl(tiles[`${x + 1},${y - 1}`]),
+          loadImageAsDataUrl(tiles[`${x - 1},${y + 1}`]),
+          loadImageAsDataUrl(tiles[`${x + 1},${y + 1}`]),
+        ])
 
-      const neighbors = {
-        up: upTile,
-        down: downTile,
-        left: leftTile,
-        right: rightTile,
-        topLeft: topLeftTile,
-        topRight: topRightTile,
-        bottomLeft: bottomLeftTile,
-        bottomRight: bottomRightTile,
-      }
+        const neighbors = {
+          up: upTile,
+          down: downTile,
+          left: leftTile,
+          right: rightTile,
+          topLeft: topLeftTile,
+          topRight: topRightTile,
+          bottomLeft: bottomLeftTile,
+          bottomRight: bottomRightTile,
+        }
 
-      // Debug: Assemble context image to show in UI
-      const { imageBlob } = await assembleContextImage(
-        {
-          targetX: x,
-          targetY: y,
-          neighbors,
-          allTiles: tiles,
-        },
-        1024
-      )
-      const assembledContext = await blobToDataUrl(imageBlob)
-      const getImageUrl = (tile: (Tile & { imageUrl?: string }) | undefined) => tile?.imageUrl
-      setGenerationDebugInfo({
-        neighbors: {
-          up: getImageUrl(neighbors.up),
-          down: getImageUrl(neighbors.down),
-          left: getImageUrl(neighbors.left),
-          right: getImageUrl(neighbors.right),
-          topLeft: getImageUrl(neighbors.topLeft),
-          topRight: getImageUrl(neighbors.topRight),
-          bottomLeft: getImageUrl(neighbors.bottomLeft),
-          bottomRight: getImageUrl(neighbors.bottomRight),
-        },
-        assembledContext,
-      })
+        await new Promise<void>(resolve => {
+          const requestIdle = (window as any).requestIdleCallback as
+            | ((cb: () => void, opts?: { timeout: number }) => number)
+            | undefined
+          if (typeof requestIdle === 'function') {
+            requestIdle(() => resolve(), { timeout: 400 })
+          } else {
+            setTimeout(resolve, 0)
+          }
+        })
 
-      // Trigger generation via Trigger.dev background task
-      // The service handles status tracking and polling
+        const { imageBlob } = await assembleContextImage(
+          {
+            targetX: x,
+            targetY: y,
+            neighbors,
+            allTiles: tiles,
+          },
+          1024
+        )
+        const assembledContext = await blobToDataUrl(imageBlob)
+        const getImageUrl = (tile: (Tile & { imageUrl?: string }) | undefined) => tile?.imageUrl
+        setGenerationDebugInfo({
+          neighbors: {
+            up: getImageUrl(neighbors.up),
+            down: getImageUrl(neighbors.down),
+            left: getImageUrl(neighbors.left),
+            right: getImageUrl(neighbors.right),
+            topLeft: getImageUrl(neighbors.topLeft),
+            topRight: getImageUrl(neighbors.topRight),
+            bottomLeft: getImageUrl(neighbors.bottomLeft),
+            bottomRight: getImageUrl(neighbors.bottomRight),
+          },
+          assembledContext,
+        })
+      })()
+
+      // Trigger generation immediately via Trigger.dev background task.
       await tileGenerationService.generate(currentProject.id, x, y, fullPrompt, styleReferenceUrls)
+
+      // Do not block UX on context debug completion.
+      void contextAssemblyTask.catch(err => {
+        console.error('[Sidebar] Context assembly failed:', err)
+      })
 
       toast.success(`Tile (${x},${y}) generation started!`)
     } catch (err: unknown) {

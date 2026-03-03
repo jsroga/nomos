@@ -541,6 +541,12 @@ interface AgentLogProps {
   projectId?: string
 }
 
+type GroupedMessage = {
+  type: 'message' | 'delegation'
+  messages: Message[]
+  originalIndices: number[]
+}
+
 export const AgentLog: React.FC<AgentLogProps> = React.memo(({
   messages,
   agentConfig,
@@ -568,6 +574,7 @@ export const AgentLog: React.FC<AgentLogProps> = React.memo(({
   const lastIsSending = useRef(isSending)
   const containerRef = useRef<HTMLDivElement>(null)
   const isNearBottomRef = useRef(true)
+  const groupingCacheRef = useRef<{ messages: Message[]; groups: GroupedMessage[] } | null>(null)
 
   const [thinkingTime, setThinkingTime] = useState(0)
 
@@ -586,8 +593,13 @@ export const AgentLog: React.FC<AgentLogProps> = React.memo(({
     }
 
     // Fallback: get from last AI message
-    const lastAIMessage = [...messages].reverse().find(m => m.type === 'ai' && m.sender)
-    return lastAIMessage?.sender || null
+    for (let idx = messages.length - 1; idx >= 0; idx--) {
+      const msg = messages[idx]
+      if (msg.type === 'ai' && msg.sender) {
+        return msg.sender
+      }
+    }
+    return null
   }, [isSending, thinkingAgent, activeAgents, messages])
 
   // Track when processing finishes to show the "Done" marker
@@ -645,15 +657,35 @@ export const AgentLog: React.FC<AgentLogProps> = React.memo(({
   // Group messages: collect consecutive delegation messages into chains
   // Track original indices for action approval
   const groupedMessages = useMemo(() => {
-    const groups: Array<{
-      type: 'message' | 'delegation'
-      messages: Message[]
-      originalIndices: number[]
-    }> = []
+    const cached = groupingCacheRef.current
+    if (cached?.messages === messages) {
+      return cached.groups
+    }
+
+    const groups: GroupedMessage[] = []
     let currentDelegationChain: Message[] = []
     let currentDelegationIndices: number[] = []
 
-    messages.forEach((msg, originalIndex) => {
+    let startIndex = 0
+
+    if (cached && messages.length >= cached.messages.length) {
+      const isPrefixMatch = cached.messages.every((msg, idx) => msg === messages[idx])
+      if (isPrefixMatch) {
+        groups.push(...cached.groups)
+        startIndex = cached.messages.length
+
+        if (groups.length > 0 && groups[groups.length - 1]?.type === 'delegation') {
+          const lastDelegationGroup = groups.pop()
+          if (lastDelegationGroup) {
+            currentDelegationChain = [...lastDelegationGroup.messages]
+            currentDelegationIndices = [...lastDelegationGroup.originalIndices]
+          }
+        }
+      }
+    }
+
+    messages.slice(startIndex).forEach((msg, offset) => {
+      const originalIndex = startIndex + offset
       if (isDelegationMessage(msg)) {
         currentDelegationChain.push(msg)
         currentDelegationIndices.push(originalIndex)
@@ -681,6 +713,7 @@ export const AgentLog: React.FC<AgentLogProps> = React.memo(({
         originalIndices: currentDelegationIndices,
       })
     }
+    groupingCacheRef.current = { messages, groups }
     return groups
   }, [messages])
 
@@ -1152,7 +1185,7 @@ function parseMessageContent(content: string, projectId?: string) {
   // Pre-process: convert entity refs [Name][id] to markdown links [Name](#entity/id)
   // so ReactMarkdown doesn't mangle them as broken reference-style links
   const processedContent = contentHasRefs
-    ? content.replace(/\[([^\]]+)\]\[([a-zA-Z0-9_-]+)\]/g, '[$1](#entity/$2)')
+    ? content.replace(/\[([^\]]+)\]\[([^\]\s]+)\]/g, '[$1](#entity/$2)')
     : content
 
   // Use react-markdown for proper markdown rendering

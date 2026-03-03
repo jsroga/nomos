@@ -13,7 +13,7 @@
  * - Hover for relationship details
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ReactFlow,
   Controls,
@@ -45,6 +45,8 @@ const nodeTypes = {
   characterNode: CharacterNode,
 }
 
+const PERF_DEBUG = process.env.NEXT_PUBLIC_PERF_DEBUG === '1'
+
 export interface CharacterWebProps {
   /** Project ID to fetch relationships for */
   projectId: string
@@ -72,6 +74,7 @@ export interface CharacterWebProps {
 function applyForceLayout(
   nodes: CharacterWebNode[],
   edges: CharacterWebEdge[],
+  iterations: number,
   width: number = 2000,
   height: number = 1600
 ): CharacterWebNode[] {
@@ -93,13 +96,11 @@ function applyForceLayout(
   }
   const typeOrder = Array.from(new Set(['faction', 'character', 'place', 'event', 'rule', 'item', ...grouped.keys()]))
 
-  let globalIdx = 0
   const baseRadius = Math.min(width, height) * 0.3
 
-  for (const type of typeOrder) {
+  for (const [typeIdx, type] of typeOrder.entries()) {
     const group = grouped.get(type) || []
     // Each type gets a sector of the circle
-    const typeIdx = typeOrder.indexOf(type)
     const sectorAngle = (2 * Math.PI * typeIdx) / Math.max(typeOrder.length, 1)
 
     group.forEach((node, i) => {
@@ -113,19 +114,10 @@ function applyForceLayout(
         vx: 0,
         vy: 0,
       })
-      globalIdx++
     })
   }
 
-  // Build edge lookup for fast access
-  const edgeMap = new Map<string, number>() // "a|b" -> weight
-  for (const edge of edges) {
-    const key = [edge.source, edge.target].sort().join('|')
-    edgeMap.set(key, edge.data?.strength || 0.5)
-  }
-
   // Force simulation parameters
-  const iterations = 120
   const repulsion = 50000 // Strong repulsion to keep nodes apart
   const springStrength = 0.008 // Gentle attraction along edges
   const damping = 0.92 // Velocity damping
@@ -222,6 +214,33 @@ function applyForceLayout(
   }))
 }
 
+const getAdaptiveIterationCount = (nodeCount: number): number => {
+  if (nodeCount <= 25) return 120
+  if (nodeCount <= 50) return 90
+  if (nodeCount <= 90) return 60
+  return 40
+}
+
+const buildLayoutCacheKey = (data: RelationshipMatrixResponse): string => {
+  const nodePart = data.nodes
+    .map(n => `${n.id}:${n.type}:${n.name}`)
+    .sort()
+    .join('|')
+  const edgePart = data.edges
+    .map(e => `${e.source}->${e.target}:${e.type}:${e.weight ?? 0}`)
+    .sort()
+    .join('|')
+  return `${nodePart}::${edgePart}`
+}
+
+const cloneNodes = (nodes: CharacterWebNode[]): CharacterWebNode[] =>
+  nodes.map(node => ({
+    ...node,
+    position: { ...node.position },
+    data: { ...node.data },
+    style: node.style ? { ...node.style } : node.style,
+  }))
+
 /**
  * Convert API response to React Flow nodes and edges
  */
@@ -301,6 +320,26 @@ export function CharacterWeb({
   const [error, setError] = useState<string | null>(null)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const reactFlowRef = React.useRef<any>(null)
+  const layoutCacheRef = useRef<Map<string, CharacterWebNode[]>>(new Map())
+
+  const adjacencyByNodeId = useMemo(() => {
+    const adjacency = new Map<string, Set<string>>()
+    for (const edge of edges) {
+      if (!adjacency.has(edge.source)) adjacency.set(edge.source, new Set())
+      if (!adjacency.has(edge.target)) adjacency.set(edge.target, new Set())
+      adjacency.get(edge.source)!.add(edge.target)
+      adjacency.get(edge.target)!.add(edge.source)
+    }
+    return adjacency
+  }, [edges])
+
+  const nodeById = useMemo(() => {
+    const map = new Map<string, CharacterWebNode>()
+    for (const node of nodes) {
+      map.set(node.id, node)
+    }
+    return map
+  }, [nodes])
 
   // Persist selected node in URL
   const updateUrlWithNode = useCallback((nodeId: string | null) => {
@@ -323,80 +362,9 @@ export function CharacterWeb({
       const targetNode = nodes.find(n => n.id === nodeParam)
       if (targetNode) {
         setSelectedNodeId(nodeParam)
-        highlightConnections(nodeParam)
       }
     }
-  }, [nodes.length])
-
-  // Highlight connected nodes and dim the rest
-  const highlightConnections = useCallback(
-    (nodeId: string) => {
-      const connectedNodeIds = new Set<string>([nodeId])
-      const connectedEdgeIds = new Set<string>()
-
-      for (const edge of edges) {
-        if (edge.source === nodeId || edge.target === nodeId) {
-          connectedNodeIds.add(edge.source)
-          connectedNodeIds.add(edge.target)
-          connectedEdgeIds.add(edge.id)
-        }
-      }
-
-      setNodes(nds =>
-        nds.map(n => ({
-          ...n,
-          data: {
-            ...n.data,
-            isHighlighted: connectedNodeIds.has(n.id) && n.id !== nodeId,
-            isSelected: n.id === nodeId,
-          },
-          style: {
-            ...n.style,
-            opacity: connectedNodeIds.has(n.id) ? 1 : 0.15,
-            transition: 'opacity 0.3s ease',
-          },
-        }))
-      )
-
-      setEdges(eds =>
-        eds.map(e => ({
-          ...e,
-          style: {
-            ...e.style,
-            opacity: connectedEdgeIds.has(e.id) ? 1 : 0.08,
-            transition: 'opacity 0.3s ease',
-          },
-          labelStyle: {
-            ...((e.labelStyle as any) || {}),
-            opacity: connectedEdgeIds.has(e.id) ? 1 : 0,
-          },
-        }))
-      )
-    },
-    [edges, setNodes, setEdges]
-  )
-
-  // Clear all highlighting
-  const clearHighlighting = useCallback(() => {
-    setNodes(nds =>
-      nds.map(n => ({
-        ...n,
-        data: { ...n.data, isHighlighted: false, isSelected: false },
-        style: { ...n.style, opacity: 1, transition: 'opacity 0.3s ease' },
-      }))
-    )
-    setEdges(eds =>
-      eds.map(e => ({
-        ...e,
-        style: {
-          ...e.style,
-          opacity: Math.max(0.3, e.data?.strength || 0.5),
-          transition: 'opacity 0.3s ease',
-        },
-        labelStyle: { ...((e.labelStyle as any) || {}), opacity: 1 },
-      }))
-    )
-  }, [setNodes, setEdges])
+  }, [nodes, selectedNodeId])
 
   // Focus on entity when focusEntityId changes
   useEffect(() => {
@@ -414,15 +382,15 @@ export function CharacterWeb({
     if (targetNode) {
       setSelectedNodeId(targetNode.id)
       updateUrlWithNode(targetNode.id)
-      highlightConnections(targetNode.id)
       console.log(`[CharacterWeb] Focused on entity: ${targetNode.data.name} (${targetNode.id})`)
     }
-  }, [focusEntityId, nodes.length])
+  }, [focusEntityId, nodes, updateUrlWithNode])
 
   // Fetch relationship data
   const fetchRelationships = useCallback(async () => {
     setIsLoading(true)
     setError(null)
+    const startedAt = typeof performance !== 'undefined' ? performance.now() : 0
 
     try {
       const response = await fetch(`/api/storyteller/relationships?projectId=${projectId}`)
@@ -436,8 +404,17 @@ export function CharacterWeb({
       // Convert to React Flow format
       const { nodes: flowNodes, edges: flowEdges } = convertToFlowData(data)
 
-      // Apply layout
-      const layoutedNodes = applyForceLayout(flowNodes, flowEdges)
+      const layoutKey = buildLayoutCacheKey(data)
+      const cachedLayout = layoutCacheRef.current.get(layoutKey)
+      let layoutedNodes: CharacterWebNode[]
+
+      if (cachedLayout) {
+        layoutedNodes = cloneNodes(cachedLayout)
+      } else {
+        const iterations = getAdaptiveIterationCount(flowNodes.length)
+        layoutedNodes = applyForceLayout(flowNodes, flowEdges, iterations)
+        layoutCacheRef.current.set(layoutKey, cloneNodes(layoutedNodes))
+      }
 
       setNodes(layoutedNodes)
       setEdges(flowEdges)
@@ -445,6 +422,10 @@ export function CharacterWeb({
       console.error('[CharacterWeb] Failed to fetch:', err)
       setError('Failed to load relationships')
     } finally {
+      if (PERF_DEBUG && typeof performance !== 'undefined') {
+        const duration = Math.round(performance.now() - startedAt)
+        console.debug(`[CharacterWeb][perf] fetch+layout completed in ${duration}ms`)
+      }
       setIsLoading(false)
     }
   }, [projectId, setNodes, setEdges])
@@ -453,6 +434,64 @@ export function CharacterWeb({
   useEffect(() => {
     fetchRelationships()
   }, [fetchRelationships])
+
+  const decoratedNodes = useMemo(() => {
+    if (!selectedNodeId) return nodes
+    const connectedNodeIds = adjacencyByNodeId.get(selectedNodeId) ?? new Set<string>()
+
+    return nodes.map(node => {
+      const isSelected = node.id === selectedNodeId
+      const isConnected = isSelected || connectedNodeIds.has(node.id)
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          isHighlighted: !isSelected && connectedNodeIds.has(node.id),
+          isSelected,
+        },
+        style: {
+          ...node.style,
+          opacity: isConnected ? 1 : 0.15,
+          transition: 'opacity 0.3s ease',
+        },
+      }
+    })
+  }, [adjacencyByNodeId, nodes, selectedNodeId])
+
+  const decoratedEdges = useMemo(() => {
+    if (!selectedNodeId) {
+      return edges.map(edge => ({
+        ...edge,
+        style: {
+          ...edge.style,
+          opacity: Math.max(0.3, edge.data?.strength || 0.5),
+          transition: 'opacity 0.3s ease',
+        },
+        labelStyle: { ...((edge.labelStyle as any) || {}), opacity: 1 },
+      }))
+    }
+
+    return edges.map(edge => {
+      const isConnected = edge.source === selectedNodeId || edge.target === selectedNodeId
+      return {
+        ...edge,
+        style: {
+          ...edge.style,
+          opacity: isConnected ? 1 : 0.08,
+          transition: 'opacity 0.3s ease',
+        },
+        labelStyle: {
+          ...((edge.labelStyle as any) || {}),
+          opacity: isConnected ? 1 : 0,
+        },
+      }
+    })
+  }, [edges, selectedNodeId])
+
+  const selectedNode = useMemo(
+    () => (selectedNodeId ? nodeById.get(selectedNodeId) ?? null : null),
+    [nodeById, selectedNodeId]
+  )
 
   // Handle node click - toggle selection, highlight connections, persist in URL
   const handleNodeClick = useCallback(
@@ -463,22 +502,15 @@ export function CharacterWeb({
       setSelectedNodeId(newSelectedId)
       updateUrlWithNode(newSelectedId)
       onNodeClick?.(node.id, node.data)
-
-      if (newSelectedId) {
-        highlightConnections(newSelectedId)
-      } else {
-        clearHighlighting()
-      }
     },
-    [selectedNodeId, onNodeClick, highlightConnections, clearHighlighting, updateUrlWithNode]
+    [selectedNodeId, onNodeClick, updateUrlWithNode]
   )
 
   // Clear selection when clicking background
   const handlePaneClick = useCallback(() => {
     setSelectedNodeId(null)
     updateUrlWithNode(null)
-    clearHighlighting()
-  }, [clearHighlighting, updateUrlWithNode])
+  }, [updateUrlWithNode])
 
   // Legend items
   const legendItems = useMemo(
@@ -535,8 +567,8 @@ export function CharacterWeb({
   return (
     <div className={cn('h-full w-full', className)}>
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
+        nodes={decoratedNodes}
+        edges={decoratedEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeClick={handleNodeClick}
@@ -587,14 +619,13 @@ export function CharacterWeb({
       </ReactFlow>
 
       {/* Node Details Panel */}
-      {selectedNodeId && nodes.find(n => n.id === selectedNodeId) && (
+      {selectedNode && (
         <NodeDetailsPanel
           projectId={projectId}
-          node={nodes.find(n => n.id === selectedNodeId)!}
+          node={selectedNode}
           onClose={() => {
             setSelectedNodeId(null)
             updateUrlWithNode(null)
-            clearHighlighting()
           }}
         />
       )}

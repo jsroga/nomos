@@ -195,7 +195,7 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
 
     // Find ranges of existing entity references to avoid re-linking inside them
     const existingRefRanges: Array<{ start: number; end: number }> = []
-    const existingRefPattern = /\[([^\]]+)\]\[([a-zA-Z0-9_-]+)\]/g
+    const existingRefPattern = /\[([^\]]+)\]\[([^\]\s]+)\]/g
     let existingMatch
     while ((existingMatch = existingRefPattern.exec(text)) !== null) {
       existingRefRanges.push({

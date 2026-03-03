@@ -129,8 +129,9 @@ export const generateMoodboard = task({
           // MIDJOURNEY via LegNext diffusion API
           logger.info('Generating with Midjourney (LegNext diffusion)', { promptIndex: i })
 
-          // Build prompt with MJ parameters
-          let fullPrompt = `${enhancedPrompt} --v 7 --ar 16:9`
+          // Build image prompt (first URL) + core prompt + --sref (all URLs)
+          const imagePromptPart = allStyleRefs.length > 0 ? `${allStyleRefs[0]} ` : ''
+          let fullPrompt = `${imagePromptPart}${enhancedPrompt} --v 7 --ar 16:9`
 
           // Append Style References (--sref url1 url2)
           if (allStyleRefs.length > 0) {

@@ -48,7 +48,7 @@ async function pollForCompletion(
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
     const body = await request.json()
-    const { imageUrl, imageBase64, prompt, apiKey } = body
+    const { imageUrl, imageBase64, prompt, apiKey, styleReferenceUrls } = body
 
     if ((!imageUrl && !imageBase64) || !apiKey) {
       return NextResponse.json(
@@ -59,8 +59,13 @@ export const POST = withRateLimit(
 
     console.log('Starting Midjourney upscale. Has Base64:', !!imageBase64, 'Has URL:', !!imageUrl)
 
+    const srefParam =
+      Array.isArray(styleReferenceUrls) && styleReferenceUrls.length > 0
+        ? ` --sref ${styleReferenceUrls.join(' ')}`
+        : ''
+
     const promptText =
-      `${imageUrl ? imageUrl + ' ' : ''}${prompt || ''} --v 6.1 --q 2 --s 250`.trim()
+      `${imageUrl ? imageUrl + ' ' : ''}${prompt || ''} --v 6.1 --q 2 --s 250${srefParam}`.trim()
 
     const payload: any = {
       botType: 'MID_JOURNEY',

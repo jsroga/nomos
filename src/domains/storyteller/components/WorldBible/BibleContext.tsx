@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { toast } from 'sonner'
 import {
@@ -219,21 +219,21 @@ export const BibleProvider: React.FC<{
       fetchUser()
     }, [])
 
-    const savePlan = async () => {
+    const savePlan = useCallback(async () => {
       if (!onUpdate) return
       const toSave = localPlan as StoryPlan
       lastSavedPlan.current = JSON.stringify(toSave)
       await onUpdate(toSave)
       setIsEditing(false)
       toast.success('World Bible updated')
-    }
+    }, [localPlan, onUpdate])
 
-    const cancelEdit = () => {
+    const cancelEdit = useCallback(() => {
       setLocalPlan(storyPlan)
       setIsEditing(false)
-    }
+    }, [storyPlan])
 
-    const toggleLock = async () => {
+    const toggleLock = useCallback(async () => {
       if (!projectId || !userEmail) return
       setIsLockLoading(true)
       try {
@@ -257,196 +257,227 @@ export const BibleProvider: React.FC<{
       } finally {
         setIsLockLoading(false)
       }
-    }
+    }, [isLocked, projectId, userEmail])
 
-    const updateLocalPlan = (updates: Partial<StoryPlan>) => {
+    const updateLocalPlan = useCallback((updates: Partial<StoryPlan>) => {
       setLocalPlan(prev => ({ ...prev, ...updates }))
-    }
+    }, [])
 
     // World Rules helpers
-    const updateWorldRule = <K extends keyof WorldRule>(
+    const updateWorldRule = useCallback(function updateWorldRule<K extends keyof WorldRule>(
       index: number,
       field: K,
       value: WorldRule[K]
     ) => {
-      const rules = [...(localPlan.worldRules || [])]
-      if (rules[index]) {
+      setLocalPlan(prev => {
+        const rules = [...(prev.worldRules || [])]
+        if (!rules[index]) return prev
         rules[index] = { ...rules[index], [field]: value }
-        updateLocalPlan({ worldRules: rules })
-      }
-    }
+        return { ...prev, worldRules: rules }
+      })
+    }, [])
 
-    const addWorldRule = () => {
-      const rules = [...(localPlan.worldRules || [])]
-      rules.push({ rule: '', consequence: '', category: 'Society' })
-      updateLocalPlan({ worldRules: rules })
-    }
+    const addWorldRule = useCallback(() => {
+      setLocalPlan(prev => ({
+        ...prev,
+        worldRules: [...(prev.worldRules || []), { rule: '', consequence: '', category: 'Society' }],
+      }))
+    }, [])
 
-    const removeWorldRule = (index: number) => {
-      const rules = [...(localPlan.worldRules || [])]
-      rules.splice(index, 1)
-      updateLocalPlan({ worldRules: rules })
-    }
+    const removeWorldRule = useCallback((index: number) => {
+      setLocalPlan(prev => {
+        const rules = [...(prev.worldRules || [])]
+        rules.splice(index, 1)
+        return { ...prev, worldRules: rules }
+      })
+    }, [])
 
     // Factions helpers
-    const updateFaction = <K extends keyof Faction>(index: number, field: K, value: Faction[K]) => {
-      const factions = [...(localPlan.factions || [])]
-      if (factions[index]) {
+    const updateFaction = useCallback(function updateFaction<K extends keyof Faction>(index: number, field: K, value: Faction[K]) {
+      setLocalPlan(prev => {
+        const factions = [...(prev.factions || [])]
+        if (!factions[index]) return prev
         factions[index] = { ...factions[index], [field]: value }
-        updateLocalPlan({ factions: factions })
-      }
-    }
+        return { ...prev, factions }
+      })
+    }, [])
 
-    const addFaction = () => {
-      const factions = [...(localPlan.factions || [])]
-      factions.push({ name: '', ideology: '', goals: [], resources: '', description: '' })
-      updateLocalPlan({ factions: factions })
-    }
+    const addFaction = useCallback(() => {
+      setLocalPlan(prev => ({
+        ...prev,
+        factions: [
+          ...(prev.factions || []),
+          { name: '', ideology: '', goals: [], resources: '', description: '' },
+        ],
+      }))
+    }, [])
 
-    const removeFaction = (index: number) => {
-      const factions = [...(localPlan.factions || [])]
-      factions.splice(index, 1)
-      updateLocalPlan({ factions: factions })
-    }
+    const removeFaction = useCallback((index: number) => {
+      setLocalPlan(prev => {
+        const factions = [...(prev.factions || [])]
+        factions.splice(index, 1)
+        return { ...prev, factions }
+      })
+    }, [])
 
     // Key Characters helpers
-    const updateKeyCharacter = <K extends keyof KeyCharacter>(
+    const updateKeyCharacter = useCallback(function updateKeyCharacter<K extends keyof KeyCharacter>(
       index: number,
       field: K,
       value: KeyCharacter[K]
     ) => {
-      const characters = [...(localPlan.keyCharacters || [])]
-      if (characters[index]) {
+      setLocalPlan(prev => {
+        const characters = [...(prev.keyCharacters || [])]
+        if (!characters[index]) return prev
         characters[index] = { ...characters[index], [field]: value }
-        updateLocalPlan({ keyCharacters: characters })
-      }
-    }
+        return { ...prev, keyCharacters: characters }
+      })
+    }, [])
 
-    const addKeyCharacter = () => {
-      const characters = [...(localPlan.keyCharacters || [])]
-      characters.push({ name: '', role: '', archetype: '', motivation: '', factionId: null })
-      updateLocalPlan({ keyCharacters: characters })
-    }
+    const addKeyCharacter = useCallback(() => {
+      setLocalPlan(prev => ({
+        ...prev,
+        keyCharacters: [
+          ...(prev.keyCharacters || []),
+          { name: '', role: '', archetype: '', motivation: '', factionId: null },
+        ],
+      }))
+    }, [])
 
-    const removeKeyCharacter = (index: number) => {
-      const characters = [...(localPlan.keyCharacters || [])]
-      characters.splice(index, 1)
-      updateLocalPlan({ keyCharacters: characters })
-    }
+    const removeKeyCharacter = useCallback((index: number) => {
+      setLocalPlan(prev => {
+        const characters = [...(prev.keyCharacters || [])]
+        characters.splice(index, 1)
+        return { ...prev, keyCharacters: characters }
+      })
+    }, [])
 
     // Roadmap helpers
-    const updateSequence = <K extends keyof StorySequence>(
+    const updateSequence = useCallback(function updateSequence<K extends keyof StorySequence>(
       index: number,
       field: K,
       value: StorySequence[K]
     ) => {
-      const sequences = [...(localPlan.sequences || [])]
-      if (sequences[index]) {
+      setLocalPlan(prev => {
+        const sequences = [...(prev.sequences || [])]
+        if (!sequences[index]) return prev
         sequences[index] = { ...sequences[index], [field]: value }
-        updateLocalPlan({ sequences })
-      }
-    }
-
-    const addSequence = () => {
-      const sequences = [...(localPlan.sequences || [])]
-      sequences.push({
-        id: Date.now(),
-        name: '',
-        description: '',
-        keyFactionsInvolved: [],
-        worldConsequence: '',
+        return { ...prev, sequences }
       })
-      updateLocalPlan({ sequences })
-    }
+    }, [])
 
-    const removeSequence = (index: number) => {
-      const sequences = [...(localPlan.sequences || [])]
-      sequences.splice(index, 1)
-      updateLocalPlan({ sequences })
-    }
+    const addSequence = useCallback(() => {
+      setLocalPlan(prev => ({
+        ...prev,
+        sequences: [
+          ...(prev.sequences || []),
+          {
+            id: Date.now(),
+            name: '',
+            description: '',
+            keyFactionsInvolved: [],
+            worldConsequence: '',
+          },
+        ],
+      }))
+    }, [])
+
+    const removeSequence = useCallback((index: number) => {
+      setLocalPlan(prev => {
+        const sequences = [...(prev.sequences || [])]
+        sequences.splice(index, 1)
+        return { ...prev, sequences }
+      })
+    }, [])
 
     // Plot Twist helpers
-    const updatePlotTwist = (index: number, value: string) => {
-      const twists = [...(localPlan.plotTwists || [])]
-      twists[index] = value
-      updateLocalPlan({ plotTwists: twists })
-    }
+    const updatePlotTwist = useCallback((index: number, value: string) => {
+      setLocalPlan(prev => {
+        const twists = [...(prev.plotTwists || [])]
+        twists[index] = value
+        return { ...prev, plotTwists: twists }
+      })
+    }, [])
 
-    const addPlotTwist = () => {
-      const twists = [...(localPlan.plotTwists || [])]
-      twists.push('')
-      updateLocalPlan({ plotTwists: twists })
-    }
+    const addPlotTwist = useCallback(() => {
+      setLocalPlan(prev => ({ ...prev, plotTwists: [...(prev.plotTwists || []), ''] }))
+    }, [])
 
-    const removePlotTwist = (index: number) => {
-      const twists = [...(localPlan.plotTwists || [])]
-      twists.splice(index, 1)
-      updateLocalPlan({ plotTwists: twists })
-    }
+    const removePlotTwist = useCallback((index: number) => {
+      setLocalPlan(prev => {
+        const twists = [...(prev.plotTwists || [])]
+        twists.splice(index, 1)
+        return { ...prev, plotTwists: twists }
+      })
+    }, [])
 
-    const updateInspiration = (category: 'books' | 'movies' | 'games', value: string) => {
-      const currentInspirations = localPlan.inspirations || { books: [], movies: [], games: [] }
+    const updateInspiration = useCallback((category: 'books' | 'movies' | 'games', value: string) => {
       const titles = value
         .split(',')
         .map(s => s.trim())
         .filter(Boolean)
 
-      const newItems = titles.map(title => {
-        const existing = (currentInspirations[category] || []).find(item => item.title === title)
-        return existing || { title, description: '' }
+      setLocalPlan(prev => {
+        const currentInspirations = prev.inspirations || { books: [], movies: [], games: [] }
+        const newItems = titles.map(title => {
+          const existing = (currentInspirations[category] || []).find(item => item.title === title)
+          return existing || { title, description: '' }
+        })
+        return {
+          ...prev,
+          inspirations: {
+            ...currentInspirations,
+            [category]: newItems,
+          },
+        }
       })
-
-      updateLocalPlan({
-        inspirations: {
-          ...currentInspirations,
-          [category]: newItems,
-        },
-      })
-    }
+    }, [])
 
     // Items helpers
-    const updateItem = <K extends keyof Item>(index: number, field: K, value: Item[K]) => {
-      const items = [...(localPlan.items || [])]
-      if (items[index]) {
+    const updateItem = useCallback(function updateItem<K extends keyof Item>(index: number, field: K, value: Item[K]) {
+      setLocalPlan(prev => {
+        const items = [...(prev.items || [])]
+        if (!items[index]) return prev
         items[index] = { ...items[index], [field]: value }
-        updateLocalPlan({ items })
-      }
-    }
+        return { ...prev, items }
+      })
+    }, [])
 
-    const addItem = () => {
-      const items = [...(localPlan.items || [])]
-      items.push({ name: '', description: '' })
-      updateLocalPlan({ items })
-    }
+    const addItem = useCallback(() => {
+      setLocalPlan(prev => ({ ...prev, items: [...(prev.items || []), { name: '', description: '' }] }))
+    }, [])
 
-    const removeItem = (index: number) => {
-      const items = [...(localPlan.items || [])]
-      items.splice(index, 1)
-      updateLocalPlan({ items })
-    }
+    const removeItem = useCallback((index: number) => {
+      setLocalPlan(prev => {
+        const items = [...(prev.items || [])]
+        items.splice(index, 1)
+        return { ...prev, items }
+      })
+    }, [])
 
     // Events helpers
-    const updateEvent = <K extends keyof StoryEvent>(index: number, field: K, value: StoryEvent[K]) => {
-      const events = [...(localPlan.events || [])]
-      if (events[index]) {
+    const updateEvent = useCallback(function updateEvent<K extends keyof StoryEvent>(index: number, field: K, value: StoryEvent[K]) {
+      setLocalPlan(prev => {
+        const events = [...(prev.events || [])]
+        if (!events[index]) return prev
         events[index] = { ...events[index], [field]: value }
-        updateLocalPlan({ events })
-      }
-    }
+        return { ...prev, events }
+      })
+    }, [])
 
-    const addEvent = () => {
-      const events = [...(localPlan.events || [])]
-      events.push({ name: '', description: '' })
-      updateLocalPlan({ events })
-    }
+    const addEvent = useCallback(() => {
+      setLocalPlan(prev => ({ ...prev, events: [...(prev.events || []), { name: '', description: '' }] }))
+    }, [])
 
-    const removeEvent = (index: number) => {
-      const events = [...(localPlan.events || [])]
-      events.splice(index, 1)
-      updateLocalPlan({ events })
-    }
+    const removeEvent = useCallback((index: number) => {
+      setLocalPlan(prev => {
+        const events = [...(prev.events || [])]
+        events.splice(index, 1)
+        return { ...prev, events }
+      })
+    }, [])
 
-    const value: BibleContextType = {
+    const value: BibleContextType = useMemo(() => ({
       storyPlan,
       localPlan,
       isEditing,
@@ -489,7 +520,49 @@ export const BibleProvider: React.FC<{
       updateEvent,
       addEvent,
       removeEvent,
-    }
+    }), [
+      storyPlan,
+      localPlan,
+      isEditing,
+      effectiveReadOnly,
+      isLocked,
+      lockedBy,
+      lockedAt,
+      userEmail,
+      isLockLoading,
+      projectId,
+      onSendMessage,
+      getProviderConfig,
+      loadingSections,
+      pendingActions,
+      setPendingAction,
+      updateLocalPlan,
+      savePlan,
+      cancelEdit,
+      toggleLock,
+      updateWorldRule,
+      addWorldRule,
+      removeWorldRule,
+      updateFaction,
+      addFaction,
+      removeFaction,
+      updateKeyCharacter,
+      addKeyCharacter,
+      removeKeyCharacter,
+      updateSequence,
+      addSequence,
+      removeSequence,
+      updatePlotTwist,
+      addPlotTwist,
+      removePlotTwist,
+      updateInspiration,
+      updateItem,
+      addItem,
+      removeItem,
+      updateEvent,
+      addEvent,
+      removeEvent,
+    ])
 
     return <BibleContext.Provider value={value}>{children}</BibleContext.Provider>
   }

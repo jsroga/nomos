@@ -60,11 +60,9 @@ export type TextSegment =
  *
  * Pattern breakdown:
  * - \[([^\]]+)\] = Display name in brackets (any text except ])
- * - \[([a-zA-Z0-9_-]+)\] = Entity ID in brackets (alphanumeric, underscores, hyphens)
- *
- * Note: Hyphen must be at the end of character class or escaped to be literal
+ * - \[([^\]\s]+)\] = Entity ID in brackets (any non-whitespace, non-bracket chars)
  */
-const REFERENCE_REGEX = /\[([^\]]+)\]\[([a-zA-Z0-9_-]+)\]/g
+const REFERENCE_REGEX = /\[([^\]]+)\]\[([^\]\s]+)\]/g
 
 /**
  * Parse all references from text

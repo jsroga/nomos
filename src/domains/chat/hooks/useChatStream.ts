@@ -31,6 +31,8 @@ import {
 import { generateSessionId } from '@/lib/langfuse-session'
 import { getErrorMessage, toError } from '@/lib/error-utils'
 
+const CHAT_DEBUG = process.env.NEXT_PUBLIC_CHAT_DEBUG === '1'
+
 interface UseChatStreamProps {
   initialMessages?: Message[]
   onAction?: (action: AgentAction) => Promise<void>
@@ -52,6 +54,8 @@ interface UseChatStreamProps {
   episodeId?: string
   /** User ID for session context */
   userId?: string
+  /** Enables high-frequency streaming UI updates (tokens/activity/sections). */
+  verboseUiEnabled?: boolean
 }
 
 interface StreamState {
@@ -96,6 +100,7 @@ export function useChatStream({
   projectId,
   episodeId,
   userId,
+  verboseUiEnabled = true,
 }: UseChatStreamProps = {}) {
   // Generate or use provided session ID for Langfuse tracing
   const sessionId = propSessionId || generateSessionId(projectId, episodeId, userId)
@@ -125,8 +130,10 @@ export function useChatStream({
   const setMessages = useCallback((updater: Message[] | ((prev: Message[]) => Message[])) => {
     setMessagesInternal(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater
-      console.log(`📝 [useChatStream] setMessages: ${prev.length} -> ${next.length} messages`)
-      if (next.length < prev.length && prev.length > 1) {
+      if (CHAT_DEBUG) {
+        console.log(`📝 [useChatStream] setMessages: ${prev.length} -> ${next.length} messages`)
+      }
+      if (CHAT_DEBUG && next.length < prev.length && prev.length > 1) {
         console.warn('⚠️ [useChatStream] Message count DECREASED!')
         console.trace('Stack trace')
       }
@@ -137,30 +144,61 @@ export function useChatStream({
   const [thinkingAgent, setThinkingAgent] = useState<string | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  // Streaming state — tokens are buffered via rAF to reduce re-renders
+  // Streaming state — tokens are buffered + throttled to reduce re-renders
   const [streamingTokens, setStreamingTokens] = useState<string>('')
   const streamingTokensRef = useRef<string>('')
-  const rafIdRef = useRef<number | null>(null)
+  const tokenFlushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastTokenFlushAtRef = useRef(0)
+  const TOKEN_FLUSH_INTERVAL_MS = 120
 
   const flushStreamingTokens = useCallback(() => {
+    lastTokenFlushAtRef.current = typeof performance !== 'undefined' ? performance.now() : Date.now()
     setStreamingTokens(streamingTokensRef.current)
-    rafIdRef.current = null
+    if (tokenFlushTimeoutRef.current) {
+      clearTimeout(tokenFlushTimeoutRef.current)
+      tokenFlushTimeoutRef.current = null
+    }
   }, [])
 
   const scheduleTokenFlush = useCallback(() => {
-    if (rafIdRef.current === null) {
-      rafIdRef.current = requestAnimationFrame(flushStreamingTokens)
-    }
-  }, [flushStreamingTokens])
+    if (!verboseUiEnabled) return
 
-  // Cancel pending rAF on unmount
-  useEffect(() => {
-    return () => {
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current)
-      }
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now()
+    const elapsed = now - lastTokenFlushAtRef.current
+    if (elapsed >= TOKEN_FLUSH_INTERVAL_MS) {
+      flushStreamingTokens()
+      return
+    }
+
+    if (tokenFlushTimeoutRef.current !== null) return
+    const wait = Math.max(0, TOKEN_FLUSH_INTERVAL_MS - elapsed)
+    tokenFlushTimeoutRef.current = setTimeout(flushStreamingTokens, wait)
+  }, [flushStreamingTokens, verboseUiEnabled])
+
+  const cancelTokenFlush = useCallback(() => {
+    if (tokenFlushTimeoutRef.current) {
+      clearTimeout(tokenFlushTimeoutRef.current)
+      tokenFlushTimeoutRef.current = null
     }
   }, [])
+
+  // Cancel pending token flush on unmount
+  useEffect(() => {
+    return cancelTokenFlush
+  }, [cancelTokenFlush])
+
+  useEffect(() => {
+    if (verboseUiEnabled) {
+      if (streamingTokensRef.current) {
+        setStreamingTokens(streamingTokensRef.current)
+      }
+      return
+    }
+    cancelTokenFlush()
+    setStreamingTokens('')
+    setStreamingSections([])
+    setActiveAgents([])
+  }, [cancelTokenFlush, verboseUiEnabled])
   const [streamingSections, setStreamingSections] = useState<ProgressSection[]>([])
   const [isTokenStreaming, setIsTokenStreaming] = useState(false)
   const [isAwaitingInput, setIsAwaitingInput] = useState(false)
@@ -223,29 +261,35 @@ export function useChatStream({
     }
   }, [persistKey])
 
-  // Persist full chat state to sessionStorage (debounced to avoid thrashing during streaming)
+  // Persist chat state to sessionStorage — heavily debounced during streaming
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastPersistedMsgCountRef = useRef(0)
   useEffect(() => {
     if (!persistKey || typeof window === 'undefined') return
 
+    // Skip persistence entirely during active streaming unless message count changed
+    if (isSending && messages.length === lastPersistedMsgCountRef.current) return
+
     if (persistTimerRef.current) clearTimeout(persistTimerRef.current)
+    const delay = isSending ? 3000 : 500
     persistTimerRef.current = setTimeout(() => {
       try {
+        lastPersistedMsgCountRef.current = messages.length
         saveChatState(persistKey, {
           messages,
           isSending,
           thinkingAgent,
-          streamingTokens,
+          streamingTokens: '',
         })
       } catch (e) {
-        console.error('[useChatStream] Failed to persist state:', e)
+        // quota or serialization error - silently ignore
       }
-    }, 500)
+    }, delay)
 
     return () => {
       if (persistTimerRef.current) clearTimeout(persistTimerRef.current)
     }
-  }, [messages, isSending, thinkingAgent, streamingTokens, persistKey])
+  }, [messages, isSending, thinkingAgent, persistKey])
 
   // Save interrupted stream state on page unload
   useEffect(() => {
@@ -293,13 +337,14 @@ export function useChatStream({
         type: 'ai',
       },
     ])
-  }, [])
+  }, [cancelTokenFlush])
 
   /**
    * Update agent status
    */
   // Helper to append activity log entries to the current/last AI message
   const appendActivityLog = useCallback((entry: ActivityLogEntry) => {
+    if (!verboseUiEnabled) return
     setMessages(prev => {
       // Find the last AI message (even if it's not the absolute last item, though it should be)
       const lastAiMsgIndex = [...prev].reverse().findIndex(m => m && m.type === 'ai')
@@ -327,10 +372,11 @@ export function useChatStream({
         },
       ]
     })
-  }, [])
+  }, [verboseUiEnabled])
 
   const updateAgentStatus = useCallback(
     (agent: string, status: AgentStatus, message?: string, details?: string) => {
+      if (!verboseUiEnabled) return
       setActiveAgents(prev => {
         const existing = prev.find(a => a.agent === agent)
 
@@ -355,7 +401,7 @@ export function useChatStream({
         ]
       })
     },
-    []
+    [verboseUiEnabled]
   )
 
   /**
@@ -392,7 +438,7 @@ export function useChatStream({
    */
   const updateActionStatusById = useCallback(
     (actionId: string, newStatus: ActionStatus) => {
-      console.log(`🔄 [updateActionStatusById] Setting action ${actionId} status = ${newStatus}`)
+      if (CHAT_DEBUG) console.log(`🔄 [updateActionStatusById] Setting action ${actionId} status = ${newStatus}`)
       setMessagesInternal(prev => {
         return prev.map(msg => {
           if (!msg.actions) return msg
@@ -416,6 +462,7 @@ export function useChatStream({
    * Process section progress events
    */
   const processSectionEvent = useCallback((data: any) => {
+    if (!verboseUiEnabled) return
     if (data.type === 'section_start') {
       setStreamingSections(prev => {
         const existing = prev.find(s => s.id === data.section)
@@ -463,7 +510,7 @@ export function useChatStream({
         )
       )
     }
-  }, [])
+  }, [verboseUiEnabled])
 
   /**
    * Process citation events
@@ -538,7 +585,7 @@ export function useChatStream({
                   setStreamingTokens('')
                   streamingTokensRef.current = ''
                   setStreamingSections([])
-                  setIsTokenStreaming(data.streamMode === 'events')
+                  setIsTokenStreaming(verboseUiEnabled && data.streamMode === 'events')
                   setCitations([])
                   setGroundingScore(null)
 
@@ -546,11 +593,7 @@ export function useChatStream({
                   setMessages(prev => {
                     const lastMsg = prev[prev.length - 1]
 
-                    console.log('[useChatStream] Stream Start - Last Msg:', {
-                      sender: lastMsg?.sender,
-                      type: lastMsg?.type,
-                      content: lastMsg?.content?.slice(0, 20),
-                    })
+                    if (CHAT_DEBUG) console.log('[useChatStream] Stream Start - Last Msg:', lastMsg?.sender)
 
                     // If last message is already AI and empty, reuse it
                     if (
@@ -614,6 +657,7 @@ export function useChatStream({
                   }
                   appendActivityLog(entry)
                 } else if (data.type === 'thinking') {
+                  if (!verboseUiEnabled) continue
                   // Extended thinking/reasoning from agent - attach to current message and activity log
                   const thinking = data.thinking || ''
                   const agentName = data.agent || thinkingAgent || 'Agent'
@@ -784,7 +828,7 @@ export function useChatStream({
                 } else if (data.type === 'section_loading') {
                   // Section-specific loading state (soundtracks, factions, etc.)
                   const { section, loading, message } = data
-                  console.log(`[useChatStream] Section loading: ${section} = ${loading}`)
+                  if (CHAT_DEBUG) console.log(`[useChatStream] Section loading: ${section} = ${loading}`)
 
                   setLoadingSections(prev => ({
                     ...prev,
@@ -803,6 +847,7 @@ export function useChatStream({
                   setIsTokenStreaming(false)
                   setStreamingTokens('')
                   streamingTokensRef.current = ''
+                  cancelTokenFlush()
                   setStreamingSections([])
                   setIsSending(false)
                   setActiveAgents([])
@@ -865,6 +910,7 @@ export function useChatStream({
                   setIsTokenStreaming(false)
                   setStreamingTokens('')
                   streamingTokensRef.current = ''
+                  cancelTokenFlush()
                   setStreamingSections([])
                   setIsSending(false)
                   setActiveAgents([])
@@ -941,6 +987,7 @@ export function useChatStream({
         setIsTokenStreaming(false)
         setStreamingTokens('')
         streamingTokensRef.current = ''
+        cancelTokenFlush()
         setStreamingSections([])
         setIsSending(false)
         setActiveAgents([])
@@ -958,6 +1005,8 @@ export function useChatStream({
       processSectionEvent,
       processCitationEvent,
       scheduleTokenFlush,
+      cancelTokenFlush,
+      verboseUiEnabled,
     ]
   )
 
