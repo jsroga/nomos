@@ -58,24 +58,24 @@ export const POST = withRateLimit(
       aiConfig = { apiKey: process.env.GOOGLE_API_KEY, model: 'gemini-3-pro-image-preview' }
     }
 
-    // Fetch style references and style context (preset or custom) for first tile
-    let styleReferenceUrls: string[] | undefined
-    let styleContext: string | undefined
-    if (isFirstTile) {
-      const { data } = await supabase
-        .from('projects')
-        .select('style_reference_urls, style_preset')
-        .eq('id', payload.projectId)
-        .single() as { data: { style_reference_urls: string[]; style_preset: string | null } | null }
+    // Fetch style references and style context from project
+    const { data: projectData } = await supabase
+      .from('projects')
+      .select('style_reference_urls, style_preset')
+      .eq('id', payload.projectId)
+      .single() as { data: { style_reference_urls: string[]; style_preset: string | null } | null }
 
+    const styleContext = resolveStyleContext({ stylePreset: projectData?.style_preset })
+
+    let styleReferenceUrls: string[] | undefined
+    if (isFirstTile) {
       styleReferenceUrls =
         payload.styleReferenceUrls && payload.styleReferenceUrls.length > 0
           ? payload.styleReferenceUrls
           : resolveStyleReferenceUrls({
-              stylePreset: data?.style_preset,
-              styleReferenceUrls: data?.style_reference_urls,
+              stylePreset: projectData?.style_preset,
+              styleReferenceUrls: projectData?.style_reference_urls,
             })
-      styleContext = resolveStyleContext({ stylePreset: data?.style_preset })
     }
 
     // Trigger the tile generation task
@@ -89,9 +89,8 @@ export const POST = withRateLimit(
         aiProvider,
         aiConfig,
         isFirstTile,
-        // Only pass style refs and context for first tile
         ...(styleReferenceUrls ? { styleReferenceUrls } : {}),
-        ...(styleContext !== undefined ? { styleContext } : {}),
+        ...(styleContext ? { styleContext } : {}),
         // Pass context image for follow-up tiles
         ...(payload.contextImageBase64 ? { contextImageBase64: payload.contextImageBase64 } : {}),
         // Pass neighbors for server-side context assembly

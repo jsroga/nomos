@@ -90,7 +90,8 @@ export const generateTileTask = task({
           aiConfig as any,
           isFirstTile,
           styleReferenceUrls,
-          contextImageBase64
+          contextImageBase64,
+          styleContext
         )
         break
       }
@@ -205,7 +206,8 @@ async function generateWithGemini(
   config: { apiKey: string; model?: string; params?: { modelId?: string } },
   isFirstTile: boolean,
   styleReferenceUrls?: string[],
-  contextImageBase64?: string
+  contextImageBase64?: string,
+  styleContext?: string
 ): Promise<string> {
   // Model comes from settings (params.modelId) or fallback to config.model or default
   const model = config.params?.modelId || config.model || 'gemini-3-pro-image-preview'
@@ -248,19 +250,17 @@ async function generateWithGemini(
         },
       ],
       generationConfig: {
+        responseModalities: ['IMAGE', 'TEXT'],
         temperature: 0.4,
         topK: 32,
         topP: 1,
-        maxOutputTokens: 2048,
       },
     }
   } else {
-    // FOLLOW-UP TILE: Use context image with inpainting prompt + style refs
+    // FOLLOW-UP TILE: Use context image with editing prompt + style refs
     logger.info('Generating follow-up tile with context image for edge matching')
 
-    // The context image has the target area in gray (center 512x512 of 1024x1024)
-    // with neighbor edges around it
-    finalPrompt = GENERATION_PROMPTS.FOLLOW_UP.GEMINI(prompt)
+    finalPrompt = GENERATION_PROMPTS.FOLLOW_UP.GEMINI(prompt, styleContext)
 
     payload = {
       contents: [
@@ -278,10 +278,10 @@ async function generateWithGemini(
         },
       ],
       generationConfig: {
-        temperature: 0.4,
+        responseModalities: ['IMAGE', 'TEXT'],
+        temperature: 0.3,
         topK: 32,
         topP: 1,
-        maxOutputTokens: 2048,
       },
     }
   }
@@ -364,15 +364,22 @@ async function generateWithGemini(
       const inlineData = imagePart.inline_data || imagePart.inlineData
       let imageData = inlineData.data
 
-      // For follow-up tiles, we need to crop the center 512x512 from the 1024x1024 result
+      // For follow-up tiles, extract the center 512x512 tile from the result
       if (!isFirstTile && contextImageBase64) {
-        const buffer = await imageService.crop(Buffer.from(imageData, 'base64'), {
-          x: 256,
-          y: 256,
-          width: 512,
-          height: 512,
-        })
-        imageData = buffer.toString('base64')
+        let imgBuffer = Buffer.from(imageData, 'base64')
+        const meta = await sharp(imgBuffer).metadata()
+        const w = meta.width || 0
+        const h = meta.height || 0
+        logger.info('Gemini output dimensions', { width: w, height: h })
+
+        // If Gemini returned a different size, resize to 1024x1024 first
+        if (w !== 1024 || h !== 1024) {
+          logger.warn('Gemini output is not 1024x1024, resizing before crop', { width: w, height: h })
+          imgBuffer = await sharp(imgBuffer).resize(1024, 1024, { fit: 'fill' }).png().toBuffer()
+        }
+
+        imgBuffer = await imageService.crop(imgBuffer, { x: 256, y: 256, width: 512, height: 512 })
+        imageData = imgBuffer.toString('base64')
       }
 
       // Log successful completion
