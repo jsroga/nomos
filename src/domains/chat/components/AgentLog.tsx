@@ -762,6 +762,10 @@ export const AgentLog: React.FC<AgentLogProps> = React.memo(({
           return null
         }
 
+        if (!isHuman && !msg.content?.trim() && !(msg.actions?.length) && !(msg.questions?.length) && msg.type !== 'consistency_check') {
+          return null
+        }
+
         return (
           <div
             key={groupIdx}
