@@ -2,6 +2,8 @@ import { Tile, useWorldStore } from '@/domains/world-building-toolkit/store/useW
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
 import { DynamicLocalStorageKeys } from '@/constants/localStorage'
 import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/constants/polling'
+import { assembleContextImage } from '@/infrastructure/ai/contextAssembler'
+import type { TileContext } from '@/infrastructure/ai/types'
 
 interface TileGenRunState {
   runId: string
@@ -26,7 +28,7 @@ export class TileGenerationService {
   }
 
   /**
-   * Helper to get a tile's image URL
+   * Helper to get a tile with its image URL resolved
    */
   private getTileImageUrl(
     tile: Tile | undefined,
@@ -34,7 +36,6 @@ export class TileGenerationService {
   ): (Tile & { imageUrl?: string }) | undefined {
     if (!tile?.image_filename) return undefined
 
-    // Handle both local paths and full URLs (Vercel Blob)
     const imageUrl = tile.image_filename.startsWith('http')
       ? tile.image_filename
       : `${window.location.origin}/projects/${projectId}/${tile.image_filename}`
@@ -45,7 +46,28 @@ export class TileGenerationService {
     }
   }
 
-  // Removed blobToBase64 - now handled on server
+  /**
+   * Convert Blob to raw base64 string (no data URI prefix)
+   */
+  private blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      if (!blob || blob.size === 0) {
+        reject(new Error('Invalid blob'))
+        return
+      }
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string
+        if (!dataUrl || !dataUrl.includes(',')) {
+          reject(new Error('Invalid data URL from FileReader'))
+          return
+        }
+        resolve(dataUrl.split(',')[1])
+      }
+      reader.onerror = () => reject(new Error('FileReader error'))
+      reader.readAsDataURL(blob)
+    })
+  }
 
   /**
    * Generate a tile using Trigger.dev background task
@@ -92,6 +114,20 @@ export class TileGenerationService {
       )
 
       const isFirstTile = !hasNeighbors
+      let contextImageBase64: string | undefined
+
+      if (hasNeighbors) {
+        console.log('Assembling context image client-side for follow-up tile generation')
+        const context: TileContext = {
+          targetX: x,
+          targetY: y,
+          neighbors,
+          allTiles: tiles,
+        }
+        const { imageBlob } = await assembleContextImage(context, 1024)
+        contextImageBase64 = await this.blobToBase64(imageBlob)
+        console.log('Context image assembled, size:', contextImageBase64.length)
+      }
 
       console.log(
         `Triggering generate-tile task: isFirstTile=${isFirstTile}, provider resolved server-side`
@@ -106,7 +142,7 @@ export class TileGenerationService {
           y,
           prompt,
           isFirstTile,
-          neighbors,
+          ...(contextImageBase64 ? { contextImageBase64 } : {}),
           ...(styleReferenceUrls?.length ? { styleReferenceUrls } : {}),
         }),
       })
