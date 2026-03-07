@@ -191,8 +191,13 @@ export const WorldGenToolbar: React.FC = () => {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div id={TOUR_STEP_IDS.WORLDGEN_TOOLBAR} className="flex flex-col items-center gap-2 p-2 pt-4">
-        <span className="text-[9px] font-bold font-mono uppercase tracking-[0.25em] text-indigo-300/80 mb-1.5 select-none drop-shadow-[0_0_6px_rgba(129,140,248,0.3)]">
+      <div
+        id={TOUR_STEP_IDS.WORLDGEN_TOOLBAR}
+        className="flex flex-col items-center gap-2 p-2.5 pt-4 pb-4 m-2 rounded-2xl bg-zinc-900/70 backdrop-blur-xl border border-indigo-500/20 shadow-[0_0_20px_rgba(79,70,229,0.15),inset_0_1px_0_rgba(255,255,255,0.05)] relative overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/[0.07] to-transparent pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-full bg-indigo-400/50 shadow-[0_0_8px_rgba(129,140,248,0.5)]" />
+        <span className="text-[9px] font-bold font-mono uppercase tracking-[0.25em] text-indigo-300/80 mb-1.5 select-none drop-shadow-[0_0_6px_rgba(129,140,248,0.3)] relative z-10">
           Tools
         </span>
 
@@ -219,7 +224,7 @@ export const WorldGenToolbar: React.FC = () => {
           onClick={handleRepaintMode}
         />
 
-        <div className="w-10 border-t border-indigo-400/30 my-2.5" />
+        <div className="w-8 border-t border-indigo-400/20 my-2 shadow-[0_0_4px_rgba(129,140,248,0.2)]" />
 
         <Tooltip>
           <TooltipTrigger asChild>
