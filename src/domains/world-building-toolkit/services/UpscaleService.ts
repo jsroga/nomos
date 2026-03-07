@@ -34,87 +34,21 @@ export class UpscaleService {
   async upscale(
     tile: Tile,
     creativity: number,
-    styleReferenceUrls?: string[]
+    styleReferenceUrls?: string[],
+    provider?: UpscaleProvider
   ): Promise<string | null> {
     console.log('Starting upscale via Trigger.dev for tile', tile.id, 'creativity', creativity, {
       styleReferenceUrls,
     })
 
-    // Get configs from localStorage
-    const geminiConfig = { apiKey: '', model: 'gemini-3-pro-image-preview' }
-    let replicateConfig = { apiKey: '', model: '' }
-    let stabilityConfig: { apiKey: string; upscaleMode?: 'conservative' | 'creative' } = {
-      apiKey: '',
-    }
-    let legnextConfig = { apiKey: '' }
-    let activeUpscaler: UpscaleProvider = 'stability'
+    const activeUpscaler: UpscaleProvider = provider ||
+      (typeof window !== 'undefined'
+        ? (localStorage.getItem(LocalStorageKeys.AI_ACTIVE_UPSCALER) as UpscaleProvider) || 'stability'
+        : 'stability')
 
-    let skipGeminiPreUpscale = false
-
-    if (typeof window !== 'undefined') {
-      // Get Gemini config (optional for Step 1)
-      const savedGemini = localStorage.getItem(LocalStorageKeys.AI_CONFIGS)
-      if (savedGemini) {
-        const configs = JSON.parse(savedGemini)
-        if (configs.gemini?.apiKey) {
-          geminiConfig.apiKey = configs.gemini.apiKey
-        }
-      }
-
-      const savedReplicate = localStorage.getItem(LocalStorageKeys.AI_CONFIG_REPLICATE)
-      if (savedReplicate) replicateConfig = JSON.parse(savedReplicate)
-
-      const savedStability = localStorage.getItem(LocalStorageKeys.AI_CONFIG_STABILITY)
-      if (savedStability) stabilityConfig = JSON.parse(savedStability)
-
-      const savedLegNext = localStorage.getItem(LocalStorageKeys.AI_CONFIG_LEGNEXT)
-      if (savedLegNext) legnextConfig = JSON.parse(savedLegNext)
-
-      activeUpscaler =
-        (localStorage.getItem(LocalStorageKeys.AI_ACTIVE_UPSCALER) as UpscaleProvider) ||
-        'stability'
-
-      // Check if Gemini pre-upscale should be skipped
-      skipGeminiPreUpscale =
-        localStorage.getItem(LocalStorageKeys.SKIP_GEMINI_PRE_UPSCALE) === 'true'
-    }
-
-    // Gemini is required for Step 1 unless skipped
-    if (!skipGeminiPreUpscale && !geminiConfig.apiKey) {
-      throw new Error(
-        'Gemini API key is required for pre-upscaling. Configure it in Settings or disable Gemini pre-upscale.'
-      )
-    }
-
-    // Get the provider config based on selection
-    let providerConfig: { apiKey: string; model?: string; upscaleMode?: string; parameters?: any }
-
-    switch (activeUpscaler) {
-      case 'midjourney':
-        if (!legnextConfig.apiKey) throw new Error('LegNext API key not found for Midjourney')
-        providerConfig = {
-          apiKey: legnextConfig.apiKey,
-          parameters: (legnextConfig as any).parameters, // Pass specific MJ parameters
-        }
-        break
-      case 'replicate':
-        if (!replicateConfig.apiKey) throw new Error('Replicate API key not found')
-        // Default to recraft-ai/recraft-creative-upscale if model not specified
-        providerConfig = {
-          apiKey: replicateConfig.apiKey,
-          model: replicateConfig.model || 'recraft-ai/recraft-creative-upscale',
-        }
-        break
-      case 'stability':
-        if (!stabilityConfig.apiKey) throw new Error('Stability API key not found')
-        providerConfig = {
-          apiKey: stabilityConfig.apiKey,
-          upscaleMode: stabilityConfig.upscaleMode || 'conservative',
-        }
-        break
-      default:
-        throw new Error(`Unknown upscaler: ${activeUpscaler}`)
-    }
+    const skipGeminiPreUpscale = typeof window !== 'undefined'
+      ? localStorage.getItem(LocalStorageKeys.SKIP_GEMINI_PRE_UPSCALE) === 'true'
+      : false
 
     // Track upscaling status
     useWorldStore.getState().addUpscalingTile(tile.x, tile.y)
@@ -128,7 +62,6 @@ export class UpscaleService {
     })
 
     try {
-      // 1. Fetch the tile image and convert to base64
       const imageUrl = tile.image_filename.startsWith('http') ? tile.image_filename : `/projects/${tile.project_id}/${tile.image_filename}`
       const response = await fetch(imageUrl)
       if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`)
@@ -140,7 +73,6 @@ export class UpscaleService {
         reader.readAsDataURL(blob)
       })
 
-      // 2. Trigger the upscale task
       console.log(`Triggering upscale-tile task with provider: ${activeUpscaler}`)
 
       const triggerResponse = await fetch('/api/trigger-upscale', {
@@ -153,10 +85,7 @@ export class UpscaleService {
           prompt: tile.tile_prompt,
           creativity,
           provider: activeUpscaler,
-          providerConfig,
-          geminiConfig: skipGeminiPreUpscale ? undefined : geminiConfig,
           skipGeminiPreUpscale,
-          // Pass style references if provided, otherwise API will fetch from project
           ...(styleReferenceUrls?.length ? { styleReferenceUrls } : {}),
         }),
       })

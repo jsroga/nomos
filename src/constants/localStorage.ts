@@ -2,6 +2,7 @@ export enum LocalStorageKeys {
   // Developer Testing
   FORCE_ONBOARDING = 'forceOnboarding',
   FORCE_STORYTELLER_STATE = 'forceStorytellerState',
+  DEBUG_MODE = 'kurvitza-debug',
 
   // AI Configuration
   AI_CONFIG_GEMINI = 'ai-config-gemini',

@@ -1,13 +1,13 @@
 /**
  * Test for generate-tile Trigger.dev task
- * Run with: npx tsx src/trigger/__tests__/generate-tile.test.ts
+ * Run with: npx tsx scripts/trigger-tests/generate-tile.script.ts
  */
 
 import { config } from 'dotenv'
 import path from 'path'
 config({ path: path.resolve(process.cwd(), '.env.local') })
 
-import { generateTileTask } from '../generate-tile'
+import { generateTileTask } from '@/trigger/generate-tile'
 import { getErrorMessage } from '@/lib/error-utils'
 
 // Test configuration validation

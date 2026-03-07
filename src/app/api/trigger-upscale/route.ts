@@ -20,24 +20,47 @@ export const POST = withRateLimit(
     const payload = await request.json()
 
     // Validate required fields
-    if (!payload.tileId || !payload.projectId || !payload.imageBase64 || !payload.provider) {
+    if (!payload.tileId || !payload.projectId || !payload.imageBase64) {
       return NextResponse.json(
-        { error: 'Missing required fields: tileId, projectId, imageBase64, provider' },
+        { error: 'Missing required fields: tileId, projectId, imageBase64' },
         { status: 400 }
       )
     }
 
-    if (!payload.providerConfig?.apiKey) {
-      return NextResponse.json({ error: 'Missing providerConfig.apiKey' }, { status: 400 })
-    }
+    const provider = payload.provider || 'stability'
 
-    // Gemini config is optional - only required if not skipping pre-upscale
-    if (!payload.skipGeminiPreUpscale && !payload.geminiConfig?.apiKey) {
+    // Server-side key resolution
+    const providerKeyMap: Record<string, string | undefined> = {
+      stability: process.env.STABILITY_API_KEY,
+      midjourney: process.env.LEGNEXT_API_KEY,
+      replicate: process.env.REPLICATE_API_TOKEN,
+    }
+    const providerApiKey = providerKeyMap[provider]
+    if (!providerApiKey) {
       return NextResponse.json(
-        { error: 'Missing geminiConfig.apiKey - required unless skipGeminiPreUpscale is true' },
-        { status: 400 }
+        { error: `API key not configured on server for upscale provider: ${provider}` },
+        { status: 500 }
       )
     }
+
+    const skipGeminiPreUpscale = payload.skipGeminiPreUpscale ?? false
+    const geminiApiKey = process.env.GOOGLE_API_KEY
+    if (!skipGeminiPreUpscale && !geminiApiKey) {
+      return NextResponse.json(
+        { error: 'GOOGLE_API_KEY not configured on server (required for Gemini pre-upscale)' },
+        { status: 500 }
+      )
+    }
+
+    const providerConfig = {
+      apiKey: providerApiKey,
+      ...(payload.providerConfig?.model ? { model: payload.providerConfig.model } : {}),
+      ...(payload.providerConfig?.upscaleMode ? { upscaleMode: payload.providerConfig.upscaleMode } : {}),
+      ...(payload.providerConfig?.parameters ? { parameters: payload.providerConfig.parameters } : {}),
+    }
+    const geminiConfig = skipGeminiPreUpscale
+      ? undefined
+      : { apiKey: geminiApiKey!, model: 'gemini-3-pro-image-preview' }
 
     // Verify project access via RLS
     const hasAccess = await verifyProjectAccess(supabase, payload.projectId)
@@ -64,7 +87,15 @@ export const POST = withRateLimit(
     const handle = await tasks.trigger<typeof upscaleTileTask>(
       'upscale-tile',
       {
-        ...payload,
+        tileId: payload.tileId,
+        projectId: payload.projectId,
+        imageBase64: payload.imageBase64,
+        prompt: payload.prompt,
+        creativity: payload.creativity,
+        provider,
+        providerConfig,
+        geminiConfig,
+        skipGeminiPreUpscale,
         styleReferenceUrls,
       },
       {

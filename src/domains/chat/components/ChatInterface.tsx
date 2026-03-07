@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Activity, FlaskConical, Loader2 } from 'lucide-react'
 import { MentionProvider, ProjectContext } from '../mentions/types'
 
-// Magic key for enabling eval mode
 const EVAL_MODE_KEY = 'STORYTELLER_EVAL_MODE'
+const DEBUG_MODE_KEY = 'kurvitza-debug'
 
 interface ChatInterfaceProps {
   title?: string
@@ -110,8 +110,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const checkEvalMode = () => {
       if (typeof window !== 'undefined') {
         const evalKey = localStorage.getItem(EVAL_MODE_KEY)
-        // Admin always has eval enabled, or check localStorage
-        setIsEvalEnabled(isAdmin || evalKey === 'true' || evalKey === '1')
+        const debugKey = localStorage.getItem(DEBUG_MODE_KEY)
+        setIsEvalEnabled(
+          isAdmin || evalKey === 'true' || evalKey === '1' || debugKey === '2137'
+        )
       }
     }
     checkEvalMode()

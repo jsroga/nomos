@@ -1,7 +1,6 @@
 import { Tile, useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
-import { aiService } from '@/infrastructure/ai/service'
-import { LocalStorageKeys, DynamicLocalStorageKeys } from '@/constants/localStorage'
+import { DynamicLocalStorageKeys } from '@/constants/localStorage'
 import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/constants/polling'
 
 interface TileGenRunState {
@@ -60,27 +59,6 @@ export class TileGenerationService {
   ): Promise<string | null> {
     console.log(`Starting tile generation via Trigger.dev for (${x}, ${y})`, { styleReferenceUrls })
 
-    // Get AI config from localStorage
-    const aiProvider = aiService.getActiveModelId()
-    let aiConfig = aiService.getConfig(aiProvider)
-
-    // For Midjourney, also check legnextConfig as fallback
-    if (aiProvider === 'midjourney' && !aiConfig?.apiKey && typeof window !== 'undefined') {
-      const savedLegNext = localStorage.getItem(LocalStorageKeys.AI_CONFIG_LEGNEXT)
-      if (savedLegNext) {
-        const legnextConfig = JSON.parse(savedLegNext)
-        if (legnextConfig.apiKey) {
-          aiConfig = { ...aiConfig, apiKey: legnextConfig.apiKey }
-        }
-      }
-    }
-
-    if (!aiConfig?.apiKey) {
-      throw new Error(
-        `API key not found for provider: ${aiProvider}. Please configure it in Settings.`
-      )
-    }
-
     // Track generating status
     useWorldStore.getState().addGeneratingTile(x, y)
     const opId = `gen-${x}-${y}`
@@ -93,19 +71,8 @@ export class TileGenerationService {
     })
 
     try {
-      // Get tiles from store to check for neighbors
       const tiles = useWorldStore.getState().tiles
 
-      // Debug: log which tiles exist around the target
-      console.log(`[TileGen] Target: (${x}, ${y})`)
-      console.log('[TileGen] Checking neighbors:', {
-        up: tiles[`${x},${y - 1}`]?.image_filename,
-        down: tiles[`${x},${y + 1}`]?.image_filename,
-        left: tiles[`${x - 1},${y}`]?.image_filename,
-        right: tiles[`${x + 1},${y}`]?.image_filename,
-      })
-
-      // Build neighbor context metadata (URLs only)
       const neighbors = {
         up: this.getTileImageUrl(tiles[`${x},${y - 1}`], projectId),
         down: this.getTileImageUrl(tiles[`${x},${y + 1}`], projectId),
@@ -117,7 +84,6 @@ export class TileGenerationService {
         bottomRight: this.getTileImageUrl(tiles[`${x + 1},${y + 1}`], projectId),
       }
 
-      // Check if we have any neighbors with images
       const hasNeighbors = !!(
         neighbors.up?.imageUrl ||
         neighbors.down?.imageUrl ||
@@ -127,30 +93,8 @@ export class TileGenerationService {
 
       const isFirstTile = !hasNeighbors
 
-      // First tile (0,0) uses the selected provider (typically Midjourney),
-      // follow-up tiles automatically switch to Gemini for context-aware inpainting
-      let effectiveProvider = aiProvider
-      let effectiveConfig = aiConfig
-      if (!isFirstTile && aiProvider !== 'gemini') {
-        effectiveProvider = 'gemini'
-        effectiveConfig = aiService.getConfig('gemini')
-        if (!effectiveConfig?.apiKey) {
-          throw new Error(
-            'Gemini API key is required for follow-up tile generation. Please configure it in Settings.'
-          )
-        }
-        console.log(`Follow-up tile - switching provider from ${aiProvider} to gemini`)
-      }
-
-      if (!isFirstTile) {
-        console.log('Follow-up tile generation - neighbor URLs passing to server for assembly')
-      } else {
-        console.log('First tile generation - no neighbors, using style references')
-      }
-
-      // Trigger the tile generation task
       console.log(
-        `Triggering generate-tile task with provider: ${effectiveProvider}, isFirstTile: ${isFirstTile}`
+        `Triggering generate-tile task: isFirstTile=${isFirstTile}, provider resolved server-side`
       )
 
       const triggerResponse = await fetch('/api/trigger-tile', {
@@ -161,12 +105,8 @@ export class TileGenerationService {
           x,
           y,
           prompt,
-          aiProvider: effectiveProvider,
-          aiConfig: effectiveConfig,
           isFirstTile,
-          // Pass neighbors for server-side assembly
           neighbors,
-          // Pass style references for first tile, otherwise API will fetch from project
           ...(styleReferenceUrls?.length ? { styleReferenceUrls } : {}),
         }),
       })

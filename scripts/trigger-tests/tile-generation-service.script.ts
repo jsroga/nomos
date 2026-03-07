@@ -1,10 +1,10 @@
 /**
  * Test for TileGenerationService
- * Run with: npx tsx src/trigger/__tests__/tile-generation-service.test.ts
+ * Run with: npx tsx scripts/trigger-tests/tile-generation-service.script.ts
  */
 
 import 'dotenv/config'
-import { generateTileTask } from '../generate-tile'
+import { generateTileTask } from '@/trigger/generate-tile'
 import { getErrorMessage } from '@/lib/error-utils'
 
 // Test task configuration

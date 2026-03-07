@@ -32,13 +32,6 @@ export const POST = withRateLimit(
       )
     }
 
-    if (!payload.aiProvider || !payload.aiConfig) {
-      return NextResponse.json(
-        { error: 'Missing required fields: aiProvider, aiConfig' },
-        { status: 400 }
-      )
-    }
-
     // Verify project access via RLS
     const hasAccess = await verifyProjectAccess(supabase, payload.projectId)
     if (!hasAccess) {
@@ -47,6 +40,23 @@ export const POST = withRateLimit(
 
     // Determine if this is a first tile (no neighbors) or follow-up tile
     const isFirstTile = payload.isFirstTile ?? true
+
+    // Server-side provider resolution: first tile = midjourney, follow-up = nano-banana
+    let aiProvider: string
+    let aiConfig: Record<string, unknown>
+    if (isFirstTile) {
+      if (!process.env.LEGNEXT_API_KEY) {
+        return NextResponse.json({ error: 'LEGNEXT_API_KEY not configured on server' }, { status: 500 })
+      }
+      aiProvider = 'midjourney'
+      aiConfig = { apiKey: process.env.LEGNEXT_API_KEY }
+    } else {
+      if (!process.env.GOOGLE_API_KEY) {
+        return NextResponse.json({ error: 'GOOGLE_API_KEY not configured on server' }, { status: 500 })
+      }
+      aiProvider = 'nano-banana'
+      aiConfig = { apiKey: process.env.GOOGLE_API_KEY, model: 'gemini-3-pro-image-preview' }
+    }
 
     // Fetch style references and style context (preset or custom) for first tile
     let styleReferenceUrls: string[] | undefined
@@ -76,8 +86,8 @@ export const POST = withRateLimit(
         x: payload.x,
         y: payload.y,
         prompt: payload.prompt,
-        aiProvider: payload.aiProvider,
-        aiConfig: payload.aiConfig,
+        aiProvider,
+        aiConfig,
         isFirstTile,
         // Only pass style refs and context for first tile
         ...(styleReferenceUrls ? { styleReferenceUrls } : {}),

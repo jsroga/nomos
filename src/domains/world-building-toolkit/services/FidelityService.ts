@@ -1,6 +1,6 @@
 import { Tile, useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
-import { LocalStorageKeys, DynamicLocalStorageKeys } from '@/constants/localStorage'
+import { DynamicLocalStorageKeys } from '@/constants/localStorage'
 import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/constants/polling'
 
 interface FidelityRunState {
@@ -39,25 +39,6 @@ export class FidelityService {
       styleReferenceUrls,
     })
 
-    // Get Gemini config from localStorage
-    const geminiConfig = { apiKey: '', model: 'gemini-3-pro-image-preview' }
-
-    if (typeof window !== 'undefined') {
-      const savedGemini = localStorage.getItem(LocalStorageKeys.AI_CONFIGS)
-      if (savedGemini) {
-        const configs = JSON.parse(savedGemini)
-        if (configs.gemini?.apiKey) {
-          geminiConfig.apiKey = configs.gemini.apiKey
-        }
-      }
-    }
-
-    if (!geminiConfig.apiKey) {
-      throw new Error(
-        'Gemini API key is required for fidelity enhancement. Configure it in Settings.'
-      )
-    }
-
     // Track enhancing status
     useWorldStore.getState().addEnhancingTile(tile.x, tile.y)
     const opId = `fidelity-${tile.x}-${tile.y}`
@@ -70,13 +51,11 @@ export class FidelityService {
     })
 
     try {
-      // 1. Fetch the tile image and convert to base64
       let imageUrl = tile.image_filename
       if (!imageUrl.startsWith('http')) {
         imageUrl = `/projects/${tile.project_id}/${tile.image_filename}`
       }
 
-      console.log('Fetching image for fidelity enhancement:', imageUrl)
       const response = await fetch(imageUrl)
       if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`)
       const blob = await response.blob()
@@ -87,7 +66,6 @@ export class FidelityService {
         reader.readAsDataURL(blob)
       })
 
-      // 2. Trigger the fidelity enhancement task
       console.log('Triggering enhance-fidelity task')
 
       const triggerResponse = await fetch('/api/trigger-fidelity', {
@@ -99,8 +77,6 @@ export class FidelityService {
           imageBase64: base64,
           stylePrompt,
           creativity,
-          geminiConfig,
-          // Pass style references if provided, otherwise API will fetch from project
           ...(styleReferenceUrls?.length ? { styleReferenceUrls } : {}),
         }),
       })

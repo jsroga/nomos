@@ -145,6 +145,6 @@
     "start": "next start",
     "test:playwright:install": "playwright install --with-deps",
     "trigger:dev": "npx trigger.dev@latest dev",
-    "trigger:deploy": "OTEL_TRACES_EXPORTER=none npx trigger.dev@latest deploy"
+    "trigger:deploy": "OTEL_TRACES_EXPORTER=none npx trigger.dev@latest deploy --env prod"
   }
 }

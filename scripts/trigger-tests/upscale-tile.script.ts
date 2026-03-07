@@ -1,8 +1,13 @@
+/**
+ * Test for upscale-tile Trigger.dev task
+ * Run with: npx tsx scripts/trigger-tests/upscale-tile.script.ts
+ */
+
 import { config } from 'dotenv'
 import path from 'path'
 config({ path: path.resolve(process.cwd(), '.env.local') })
 
-import { upscaleTileTask } from '../upscale-tile'
+import { upscaleTileTask } from '@/trigger/upscale-tile'
 import { getErrorMessage } from '@/lib/error-utils'
 
 // Test configuration validation

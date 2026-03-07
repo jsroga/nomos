@@ -726,6 +726,7 @@ Use SDK (`@trigger.dev/sdk`), check `result.ok` before accessing `result.output`
   - `npx trigger.dev@latest deploy --env prod` (deploys and by default promotes as current).
   - If you used `--skip-promotion`, promote from dashboard or CLI: `npx trigger.dev@latest promote <version>`.
 - **Cause**: Prod has no active task version, or the app sends a `TRIGGER_VERSION` that doesn’t exist in prod yet.
+- **"cannot merge resource due to conflicting Schema URL"** on deploy: OpenTelemetry version conflict during build. Use `npm run trigger:deploy` (sets `OTEL_TRACES_EXPORTER=none`) or run `OTEL_TRACES_EXPORTER=none npx trigger.dev@latest deploy` manually.
 
 ---
 *Note: Legacy documentation moved to `docs/archived/`*

@@ -1,20 +1,17 @@
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { aiService } from '@/infrastructure/ai/service'
 import {
   X,
   Settings,
   Image as ImageIcon,
   Key,
   Info,
-  Sparkles,
   Check,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { LocalStorageKeys } from '@/constants/localStorage'
 import { getErrorMessage } from '@/lib/error-utils'
 import { STYLE_PRESETS } from '@/config/style-presets'
 
@@ -80,8 +77,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
   const [activeTab, setActiveTab] = useState<Tab>('general')
 
   // General tab state
-  const [activeModelId, setActiveModelId] = useState(aiService.getActiveModelId())
-  const [activeUpscaler, setActiveUpscaler] = useState<string>('stability')
   const [providers, setProviders] = useState<ProviderStatus | null>(null)
   const [loadingProviders, setLoadingProviders] = useState(false)
 
@@ -121,15 +116,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null)
   const [isCreatingKey, setIsCreatingKey] = useState(false)
 
-  const models = aiService.getAvailableModels()
-
   useEffect(() => {
     if (isOpen) {
-      setActiveModelId(aiService.getActiveModelId())
-
-      const savedUpscaler = localStorage.getItem(LocalStorageKeys.AI_ACTIVE_UPSCALER)
-      if (savedUpscaler) setActiveUpscaler(savedUpscaler)
-
       // Fetch provider status
       setLoadingProviders(true)
       fetch('/api/settings/providers')
@@ -167,8 +155,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
   }, [isOpen, projectId])
 
   const handleSave = () => {
-    aiService.setActiveModel(activeModelId)
-    localStorage.setItem(LocalStorageKeys.AI_ACTIVE_UPSCALER, activeUpscaler)
     onClose()
   }
 
@@ -217,8 +203,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
   }
 
   if (!isOpen || !mounted) return null
-
-  const selectedModel = models.find(m => m.id === activeModelId)
 
   return createPortal(
     <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/80 backdrop-blur-sm">
@@ -340,51 +324,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                     </div>
                   </div>
 
-                  {/* Generation Preferences */}
+                  {/* Generation Info */}
                   <div>
-                    <h3 className="text-lg font-medium mb-4">Generation Preferences</h3>
-                    <div className="p-4 rounded-lg bg-zinc-900/20 border border-zinc-900 space-y-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Sparkles className="w-4 h-4 text-primary" />
-                        <h4 className="font-semibold text-sm">Tile Generator</h4>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">
-                          Primary Model
-                        </label>
-                        <select
-                          value={activeModelId}
-                          onChange={e => {
-                            setActiveModelId(e.target.value)
-                          }}
-                          className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md py-2 px-3 text-xs text-zinc-300 font-mono focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-all"
-                        >
-                          {models.map(m => (
-                            <option key={m.id} value={m.id}>
-                              {m.name}
-                            </option>
-                          ))}
-                        </select>
-                        <p className="text-xs text-muted-foreground mt-1.5">
-                          {selectedModel?.description}
-                        </p>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-medium font-mono uppercase tracking-wider text-zinc-500 mb-2">
-                          Upscaler Provider
-                        </label>
-                        <select
-                          value={activeUpscaler}
-                          onChange={e => setActiveUpscaler(e.target.value)}
-                          className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md py-2 px-3 text-xs text-zinc-300 font-mono focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-all"
-                        >
-                          <option value="stability">Stability AI (4k)</option>
-                          <option value="replicate">Replicate (Creative/Painterly)</option>
-                          <option value="midjourney">Midjourney (LegNext AI)</option>
-                        </select>
-                      </div>
+                    <h3 className="text-lg font-medium mb-4">Generation</h3>
+                    <div className="p-4 rounded-lg bg-zinc-900/20 border border-zinc-900 space-y-2">
+                      <p className="text-xs text-muted-foreground">
+                        First tile uses <span className="text-zinc-300 font-mono">Midjourney</span>, follow-up tiles use <span className="text-zinc-300 font-mono">Nano Banana</span>. Providers and API keys are managed via environment variables on the server.
+                      </p>
                     </div>
                   </div>
                 </div>

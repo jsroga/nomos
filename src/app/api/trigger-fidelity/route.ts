@@ -26,11 +26,17 @@ export const POST = withRateLimit(
       )
     }
 
-    if (!payload.geminiConfig?.apiKey) {
+    // Server-side key resolution
+    if (!process.env.GOOGLE_API_KEY) {
       return NextResponse.json(
-        { error: 'Missing geminiConfig.apiKey - Gemini is required for fidelity enhancement' },
-        { status: 400 }
+        { error: 'GOOGLE_API_KEY not configured on server (required for fidelity enhancement)' },
+        { status: 500 }
       )
+    }
+
+    const geminiConfig = {
+      apiKey: process.env.GOOGLE_API_KEY,
+      model: 'gemini-3-pro-image-preview',
     }
 
     // Verify project access via RLS
@@ -57,8 +63,12 @@ export const POST = withRateLimit(
     const handle = await tasks.trigger<typeof enhanceFidelityTask>(
       'enhance-fidelity',
       {
-        ...payload,
+        tileId: payload.tileId,
+        projectId: payload.projectId,
+        imageBase64: payload.imageBase64,
+        stylePrompt: payload.stylePrompt,
         creativity: payload.creativity || 0.3,
+        geminiConfig,
         styleReferenceUrls,
       },
       {

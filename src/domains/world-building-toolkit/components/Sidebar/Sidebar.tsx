@@ -53,6 +53,18 @@ export const Sidebar: React.FC = () => {
   const [upscaleCreativity, setUpscaleCreativity] = useState(0.3)
   const [showDebug, setShowDebug] = useState(false)
 
+  const [isDebugMode] = useState(() =>
+    typeof window !== 'undefined'
+      ? localStorage.getItem(LocalStorageKeys.DEBUG_MODE) === '2137'
+      : false
+  )
+  const [upscaleProvider, setUpscaleProvider] = useState<'stability' | 'replicate' | 'midjourney'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem(LocalStorageKeys.AI_ACTIVE_UPSCALER) as 'stability' | 'replicate' | 'midjourney') || 'stability'
+    }
+    return 'stability'
+  })
+
   // Load master prompt from localStorage when project changes
   useEffect(() => {
     if (typeof window !== 'undefined' && currentProject?.id) {
@@ -392,8 +404,8 @@ export const Sidebar: React.FC = () => {
 
       toast.success(`Tile (${x},${y}) generation started!`)
     } catch (err: unknown) {
-      console.error(err)
       const msg = err instanceof Error ? err.message : String(err)
+      console.error(err)
       toast.error(`Generation failed: ${msg}`)
       setError(`Generation failed: ${msg}`)
     }
@@ -790,6 +802,24 @@ export const Sidebar: React.FC = () => {
           {/* Upscale Group */}
           <SidebarSection separator title="Upscale" icon={<ZoomIn size={12} />}>
             <div className="space-y-3">
+              {isDebugMode && (
+                <div className="space-y-1">
+                  <SidebarLabel>Provider</SidebarLabel>
+                  <select
+                    value={upscaleProvider}
+                    onChange={e => {
+                      const v = e.target.value as typeof upscaleProvider
+                      setUpscaleProvider(v)
+                      localStorage.setItem(LocalStorageKeys.AI_ACTIVE_UPSCALER, v)
+                    }}
+                    className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md py-1.5 px-2 text-[11px] text-zinc-300 font-mono focus:border-indigo-500/50 focus:outline-none"
+                  >
+                    <option value="stability">Stability AI (4k)</option>
+                    <option value="replicate">Replicate (Creative)</option>
+                    <option value="midjourney">Midjourney (LegNext)</option>
+                  </select>
+                </div>
+              )}
               <SidebarSliderRow
                 label="Creativity"
                 value={upscaleCreativity}
@@ -807,7 +837,7 @@ export const Sidebar: React.FC = () => {
                       const fullTile = tiles[`${selectedTile.x},${selectedTile.y}`]
                       if (fullTile) {
                         toast.promise(
-                          upscaleService.upscale(fullTile, upscaleCreativity, styleReferenceUrls),
+                          upscaleService.upscale(fullTile, upscaleCreativity, styleReferenceUrls, upscaleProvider),
                           {
                             loading: 'Upscaling...',
                             success: 'Tile queued for upscaling!',
@@ -832,6 +862,14 @@ export const Sidebar: React.FC = () => {
           {/* Enhance Fidelity Group */}
           <SidebarSection separator title="Enhance Fidelity" icon={<Sparkles size={12} />}>
             <div className="space-y-3">
+              {isDebugMode && (
+                <div className="space-y-1">
+                  <SidebarLabel>Provider</SidebarLabel>
+                  <div className="text-[11px] text-zinc-400 font-mono px-2 py-1.5 bg-zinc-900/50 border border-zinc-800 rounded-md">
+                    Gemini (gemini-3-pro-image-preview)
+                  </div>
+                </div>
+              )}
               <SidebarSliderRow
                 label="Creativity"
                 value={fidelityCreativity}
