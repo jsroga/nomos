@@ -47,6 +47,35 @@ export class TileGenerationService {
   }
 
   /**
+   * Load a tile image as a data URL (for client-side context assembly)
+   */
+  private async loadTileAsDataUrl(
+    tile: Tile | undefined,
+    projectId: string
+  ): Promise<(Tile & { imageUrl?: string }) | undefined> {
+    if (!tile?.image_filename) return undefined
+
+    const imageUrl = tile.image_filename.startsWith('http')
+      ? tile.image_filename
+      : `${window.location.origin}/projects/${projectId}/${tile.image_filename}`
+
+    try {
+      const response = await fetch(imageUrl)
+      const blob = await response.blob()
+      return new Promise(resolve => {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          resolve({ ...tile, imageUrl: reader.result as string })
+        }
+        reader.onerror = () => resolve(undefined)
+        reader.readAsDataURL(blob)
+      })
+    } catch {
+      return undefined
+    }
+  }
+
+  /**
    * Convert Blob to raw base64 string (no data URI prefix)
    */
   private blobToBase64(blob: Blob): Promise<string> {
@@ -95,15 +124,27 @@ export class TileGenerationService {
     try {
       const tiles = useWorldStore.getState().tiles
 
+      const [upTile, downTile, leftTile, rightTile, topLeftTile, topRightTile, bottomLeftTile, bottomRightTile] =
+        await Promise.all([
+          this.loadTileAsDataUrl(tiles[`${x},${y - 1}`], projectId),
+          this.loadTileAsDataUrl(tiles[`${x},${y + 1}`], projectId),
+          this.loadTileAsDataUrl(tiles[`${x - 1},${y}`], projectId),
+          this.loadTileAsDataUrl(tiles[`${x + 1},${y}`], projectId),
+          this.loadTileAsDataUrl(tiles[`${x - 1},${y - 1}`], projectId),
+          this.loadTileAsDataUrl(tiles[`${x + 1},${y - 1}`], projectId),
+          this.loadTileAsDataUrl(tiles[`${x - 1},${y + 1}`], projectId),
+          this.loadTileAsDataUrl(tiles[`${x + 1},${y + 1}`], projectId),
+        ])
+
       const neighbors = {
-        up: this.getTileImageUrl(tiles[`${x},${y - 1}`], projectId),
-        down: this.getTileImageUrl(tiles[`${x},${y + 1}`], projectId),
-        left: this.getTileImageUrl(tiles[`${x - 1},${y}`], projectId),
-        right: this.getTileImageUrl(tiles[`${x + 1},${y}`], projectId),
-        topLeft: this.getTileImageUrl(tiles[`${x - 1},${y - 1}`], projectId),
-        topRight: this.getTileImageUrl(tiles[`${x + 1},${y - 1}`], projectId),
-        bottomLeft: this.getTileImageUrl(tiles[`${x - 1},${y + 1}`], projectId),
-        bottomRight: this.getTileImageUrl(tiles[`${x + 1},${y + 1}`], projectId),
+        up: upTile,
+        down: downTile,
+        left: leftTile,
+        right: rightTile,
+        topLeft: topLeftTile,
+        topRight: topRightTile,
+        bottomLeft: bottomLeftTile,
+        bottomRight: bottomRightTile,
       }
 
       const hasNeighbors = !!(
@@ -117,7 +158,7 @@ export class TileGenerationService {
       let contextImageBase64: string | undefined
 
       if (hasNeighbors) {
-        console.log('Assembling context image client-side for follow-up tile generation')
+        console.log('Assembling context image client-side for follow-up tile (blending)')
         const context: TileContext = {
           targetX: x,
           targetY: y,
@@ -130,7 +171,7 @@ export class TileGenerationService {
       }
 
       console.log(
-        `Triggering generate-tile task: isFirstTile=${isFirstTile}, provider resolved server-side`
+        `Triggering generate-tile task: isFirstTile=${isFirstTile}, contextImageBase64=${!!contextImageBase64}`
       )
 
       const triggerResponse = await fetch('/api/trigger-tile', {

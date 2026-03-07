@@ -25,10 +25,10 @@ function getFirstTileStylePhrase(styleContext?: string | null): string {
 }
 
 export const GENERATION_PROMPTS = {
-  /** First tile - no neighbors, full creative generation. styleContext from project settings (preset or default). */
+  /** First tile - no neighbors, full creative generation (prompt text matches 34158c5). */
   FIRST_TILE: {
-    GEMINI: (prompt: string, styleContext?: string | null) =>
-      `Generate an isometric tile image: ${prompt}. ${getFirstTileStylePhrase(styleContext)} The image should be 512x512 pixels, isometric perspective, suitable for a tile-based game world. Detailed, vibrant colors.`,
+    GEMINI: (prompt: string, _styleContext?: string | null) =>
+      `Generate an isometric tile image: ${prompt}. The image should be 512x512 pixels, isometric perspective, suitable for a tile-based game world. Style: painterly, detailed, vibrant colors.`,
 
     MIDJOURNEY: (prompt: string, styleContext?: string | null) =>
       `Isometric tile for a game world: ${prompt}. ${getFirstTileStylePhrase(styleContext)} 512x512, detailed, vibrant colors, seamless edges --v 6.1 --ar 1:1`,
@@ -48,6 +48,12 @@ export const GENERATION_PROMPTS = {
 
     GEMINI: (prompt: string, styleInfo: string = 'consistent art style') =>
       `Inpaint the central gray square to seamlessly connect with the surrounding edge context. Fill the gray area with: ${prompt}. Ensure continuous lines, consistent perspective (Isometric), and matching lighting. Do not generate borders or frames.`,
+
+    GEMINI_EDGE_GUIDED: (prompt: string, edgeLabels: string[], styleContext?: string) => {
+      const styleHint = styleContext ? ` ${styleContext}.` : ''
+      const edgeList = edgeLabels.join(', ')
+      return `Generate a 512x512 isometric game tile: ${prompt}.${styleHint} The tile MUST seamlessly blend with its neighboring tiles. I am providing the edge strips of adjacent tiles (${edgeList}). Your generated tile's edges must visually continue from these neighbor edges with matching colors, lines, shapes, and lighting. Do not add borders or frames.`
+    },
 
     MIDJOURNEY: (prompt: string, styleInfo: string) =>
       `Inpaint the central gray square to seamlessly connect with the surrounding edge context. Fill the gray area with: ${prompt}. Maintain ${styleInfo}, consistent art style. Ensure continuous lines, consistent isometric perspective, and matching lighting. Do not generate borders or frames. --stylize 0 --q 2`,

@@ -91,7 +91,8 @@ export const generateTileTask = task({
           isFirstTile,
           styleReferenceUrls,
           contextImageBase64,
-          styleContext
+          styleContext,
+          neighbors
         )
         break
       }
@@ -207,7 +208,8 @@ async function generateWithGemini(
   isFirstTile: boolean,
   styleReferenceUrls?: string[],
   contextImageBase64?: string,
-  styleContext?: string
+  styleContext?: string,
+  neighbors?: any
 ): Promise<string> {
   // Model comes from settings (params.modelId) or fallback to config.model or default
   const model = config.params?.modelId || config.model || 'gemini-3-pro-image-preview'
@@ -257,22 +259,18 @@ async function generateWithGemini(
       },
     }
   } else {
-    // FOLLOW-UP TILE: Use context image with inpainting prompt
+    // FOLLOW-UP TILE: Single context image + inpainting prompt (working approach from 34158c5)
     logger.info('Generating follow-up tile with context image for edge matching')
 
-    finalPrompt = GENERATION_PROMPTS.FOLLOW_UP.GEMINI(prompt)
+    finalPrompt = GENERATION_PROMPTS.FOLLOW_UP.GEMINI(prompt, styleContext ?? 'consistent art style')
 
     payload = {
       contents: [
         {
           parts: [
             { text: finalPrompt },
-            {
-              inline_data: {
-                mime_type: 'image/png',
-                data: contextImageBase64,
-              },
-            },
+            { inline_data: { mime_type: 'image/png', data: contextImageBase64 } },
+            ...styleImageParts,
           ],
         },
       ],
@@ -363,7 +361,7 @@ async function generateWithGemini(
       const inlineData = imagePart.inline_data || imagePart.inlineData
       let imageData = inlineData.data
 
-      // For follow-up tiles, extract the center 512x512 tile from the result
+      // Follow-up tile: context image was 1024x1024, crop center 512x512 (same as 34158c5)
       if (!isFirstTile && contextImageBase64) {
         let imgBuffer = Buffer.from(imageData, 'base64')
         const meta = await sharp(imgBuffer).metadata()
@@ -371,14 +369,24 @@ async function generateWithGemini(
         const h = meta.height || 0
         logger.info('Gemini output dimensions', { width: w, height: h })
 
-        // If Gemini returned a different size, resize to 1024x1024 first
         if (w !== 1024 || h !== 1024) {
           logger.warn('Gemini output is not 1024x1024, resizing before crop', { width: w, height: h })
           imgBuffer = await sharp(imgBuffer).resize(1024, 1024, { fit: 'fill' }).png().toBuffer()
         }
-
         imgBuffer = await imageService.crop(imgBuffer, { x: 256, y: 256, width: 512, height: 512 })
         imageData = imgBuffer.toString('base64')
+      } else {
+        // First tile or non-context path: ensure 512x512
+        const imgBuffer = Buffer.from(imageData, 'base64')
+        const meta = await sharp(imgBuffer).metadata()
+        const w = meta.width || 0
+        const h = meta.height || 0
+        logger.info('Gemini output dimensions', { width: w, height: h })
+        if (w !== 512 || h !== 512) {
+          logger.info('Resizing Gemini output to 512x512', { from: `${w}x${h}` })
+          const resized = await sharp(imgBuffer).resize(512, 512, { fit: 'cover' }).png().toBuffer()
+          imageData = resized.toString('base64')
+        }
       }
 
       // Log successful completion
