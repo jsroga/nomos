@@ -288,9 +288,11 @@ export const AsyncStatusIndicator: React.FC = () => {
         <TooltipContent
           side="bottom"
           align="end"
-          className="p-0 border-none bg-transparent min-w-[300px] max-w-[400px] overflow-hidden rounded-xl shadow-2xl z-[200]"
+          className="p-0 border-none bg-transparent min-w-[300px] max-w-[400px] rounded-xl shadow-2xl z-[200]"
         >
-          <LiquidGlass className="w-full rounded-xl border border-white/20">
+          <div className="rounded-xl border border-white/20">
+            <div className="overflow-hidden rounded-xl">
+            <LiquidGlass className="w-full rounded-xl">
             <div className="bg-background/40 backdrop-blur-xl p-4">
               {isLoading ? (
                 <div className="space-y-3">
@@ -375,6 +377,8 @@ export const AsyncStatusIndicator: React.FC = () => {
               )}
             </div>
           </LiquidGlass>
+            </div>
+          </div>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

@@ -118,7 +118,7 @@ export function ProjectSelectorDropdown() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="min-w-[200px] justify-between gap-2">
+          <Button variant="outline" className="h-8 min-w-[200px] justify-between gap-2 px-3 py-1.5">
             <div className="flex items-center gap-2">
               <FolderOpen size={16} />
               <span className="truncate">{currentProject?.name || 'Select Project'}</span>

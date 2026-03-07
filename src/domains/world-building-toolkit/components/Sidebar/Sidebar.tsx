@@ -491,6 +491,11 @@ export const Sidebar: React.FC = () => {
         />
       ) : (
         <div className="space-y-6">
+          {error && (
+            <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md border border-destructive/20">
+              {error}
+            </div>
+          )}
           {/* Master Prompt */}
           <div id={TOUR_STEP_IDS.WORLDGEN_STYLE_PROMPT}>
             <SidebarSection
@@ -901,12 +906,6 @@ export const Sidebar: React.FC = () => {
           >
             <AssetsPanel />
           </SidebarSection>
-
-          {error && (
-            <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md border border-destructive/20">
-              {error}
-            </div>
-          )}
         </div>
       )}
 

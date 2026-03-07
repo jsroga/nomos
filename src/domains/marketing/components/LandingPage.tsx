@@ -664,20 +664,22 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
         {/* Navigation */}
         <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-black/40 backdrop-blur-xl">
           <div className="mx-auto max-w-7xl px-6">
-            <div className="flex h-16 items-center justify-between">
-              <Link href="/" className="flex items-center group">
-                <div className="relative w-28 h-auto flex items-center justify-center group-hover:bg-primary/10 transition-colors rounded-lg p-1">
-                  <img
-                    src="/logo.svg"
-                    alt="KURVITZA"
-                    className="w-full h-full object-contain brightness-0 invert"
-                  />
-                </div>
-              </Link>
+            <div className="grid grid-cols-3 h-16 items-center gap-4 w-full">
+              <div className="flex items-center justify-start min-w-0">
+                <Link href="/" className="flex items-center group">
+                  <div className="relative w-28 h-auto flex items-center justify-center group-hover:bg-primary/10 transition-colors rounded-lg p-1">
+                    <img
+                      src="/logo.svg"
+                      alt="KURVITZA"
+                      className="w-full h-full object-contain brightness-0 invert"
+                    />
+                  </div>
+                </Link>
+              </div>
 
-              <div className="hidden md:flex items-center gap-2">
+              <div className="hidden md:flex items-center justify-center min-w-0">
                 <MotionHighlight
-                  items={['SYSTEMS', 'DOCS', 'API', 'CHANGELOG']}
+                  items={['SYSTEMS', 'DOCS', 'API']}
                   onSelect={item => {
                     if (item === 'DOCS') {
                       window.location.href = '/docs/getting-started'
@@ -693,7 +695,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                 />
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center justify-end gap-4 min-w-0">
                 {/* GitHub button - desktop */}
                 <a
                   href="https://github.com/jsroga/world-building-kit"
@@ -784,7 +786,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
 
                   {/* Links */}
                   <div className="flex-1 p-6 space-y-2">
-                    {['SYSTEMS', 'DOCS', 'API', 'CHANGELOG'].map((item, i) => (
+                    {['SYSTEMS', 'DOCS', 'API'].map((item, i) => (
                       <motion.button
                         key={item}
                         initial={{ opacity: 0, x: 20 }}

@@ -128,15 +128,19 @@ export class MoodboardGenerationService {
 
         // Extract detailed progress from metadata if available
         let statusDetail = `Status: ${statusData.status}`
+        const progressVal =
+          typeof statusData.metadata?.progress === 'number' ? statusData.metadata.progress : 0
         if (statusData.metadata) {
-          const { stage, progress, provider } = statusData.metadata
+          const { stage } = statusData.metadata
           if (stage) {
             // Format stage (e.g. waiting_diffusion -> Waiting Diffusion)
             const formattedStage = stage
               .split('_')
               .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
               .join(' ')
-            statusDetail = `${formattedStage} (${progress}%)`
+            statusDetail = `${formattedStage} (${progressVal}%)`
+          } else {
+            statusDetail = `${statusDetail} (${progressVal}%)`
           }
         }
 
@@ -144,11 +148,10 @@ export class MoodboardGenerationService {
           details: statusDetail,
         })
 
-        // Update polling interval based on stage
-        // If waiting for diffusion (long poll), we can slow down a bit to save requests
-        let nextInterval = statusChanged ? 2000 : POLLING_INTERVALS.SLOW
+        // Poll frequently enough so user sees progress (every 3s when running)
+        let nextInterval = statusChanged ? 2000 : POLLING_INTERVALS.FAST
         if (statusData.metadata?.stage === 'waiting_diffusion') {
-          nextInterval = 5000 // MJ generation takes time, poll slower
+          nextInterval = 4000 // MJ diffusion poll; still show progress regularly
         }
 
         if (statusData.status === 'COMPLETED') {

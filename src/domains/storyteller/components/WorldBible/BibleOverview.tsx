@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Globe, RefreshCw, Zap, Palette, Sparkles, Star, Loader2, Trash2, Plus } from 'lucide-react'
 import { IconButton } from '@/components/ui/icon-button'
 import { StorytellerImage } from '../StorytellerImage'
@@ -76,6 +76,18 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
   const isWorldDescLoading = loadingSections?.worldDescription?.loading ?? false
   const pendingAction = pendingActions?.worldDescription
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
+
+  // LegNext/Midjourney can be configured via env on server; avoid "Missing API key" when set there
+  const [legnextFromServer, setLegnextFromServer] = useState(false)
+  useEffect(() => {
+    fetch('/api/settings/providers')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => data?.providers?.legnext === true && setLegnextFromServer(true))
+      .catch(() => {})
+  }, [])
+
+  const hasMoodboardApiKey = (config: { provider: string; apiKey?: string }) =>
+    config.apiKey || (config.provider === 'midjourney' && legnextFromServer)
 
   return (
     <div className="space-y-8">
@@ -206,24 +218,33 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
 
       {/* MOODBOARD SECTION */}
       <section>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Palette className="w-5 h-5 text-pink-400/80" />
             <h3 className="font-syne font-bold text-lg">Moodboard</h3>
           </div>
-          {!isReadOnly && (
-            <div className="flex flex-col items-end gap-1">
-              {/* Status Display: Only show if general generating or unexpected index */}
-              {isGenerating && (
-                <div className="text-[10px] text-pink-400/80 font-mono flex items-center gap-2">
-                  <span className="animate-pulse">
-                    {progressDetails || 'Processing visuals...'}
-                  </span>
-                </div>
-              )}
+          {!isReadOnly && isGenerating && (
+            <div className="flex items-center gap-2 text-sm text-pink-500 font-medium">
+              <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+              <span>{progressDetails || 'Processing visuals...'}</span>
             </div>
           )}
         </div>
+        {!isReadOnly && isGenerating && (
+          <div className="mb-4 space-y-1">
+            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-pink-500/80 transition-all duration-500 ease-out"
+                style={{ width: `${progressPercent ? Math.min(100, Math.max(0, Number(progressPercent))) : 5}%` }}
+              />
+            </div>
+            {progressDetails && (
+              <p className="text-xs text-muted-foreground truncate" title={progressDetails}>
+                {progressDetails}
+              </p>
+            )}
+          </div>
+        )}
 
         {displayMoodImages && displayMoodImages.length > 0 ? (
           <div className="grid grid-cols-3 gap-2 mb-4">
@@ -276,7 +297,7 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
                             if (isGenerating) return // Prevent multiple concurrent generations for now to stay safe
                             if (!projectId) return
                             const config = getProviderConfig()
-                            if (!config.apiKey) {
+                            if (!hasMoodboardApiKey(config)) {
                               toast.error(
                                 `Missing API key for ${config.provider}. Please configure in Settings.`
                               )
@@ -376,7 +397,7 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
                   if (isGenerating) return
                   if (!projectId) return
                   const config = getProviderConfig()
-                  if (!config.apiKey) {
+                  if (!hasMoodboardApiKey(config)) {
                     toast.error(
                       `Missing API key for ${config.provider}. Please configure in Settings.`
                     )
@@ -442,7 +463,7 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
                   }
                   if (!projectId) return
                   const config = getProviderConfig()
-                  if (!config.apiKey) {
+                  if (!hasMoodboardApiKey(config)) {
                     toast.error(
                       `Missing API key for ${config.provider}. Please configure in Settings.`
                     )

@@ -131,15 +131,25 @@ Output ONLY the single prompt string.`
       }
     }
 
+    // Use env LEGNEXT_API_KEY when client didn't send one (e.g. key configured only on server)
+    const resolvedProviderConfig = {
+      ...providerConfig,
+      styleReferenceUrls,
+    }
+    if (
+      resolvedProviderConfig.provider === 'midjourney' &&
+      !resolvedProviderConfig.apiKey &&
+      process.env.LEGNEXT_API_KEY
+    ) {
+      resolvedProviderConfig.apiKey = process.env.LEGNEXT_API_KEY
+    }
+
     const handle = await tasks.trigger('generate-moodboard', {
       projectId,
       prompts,
       styleReference: undefined,
       replaceIndex: typeof promptIndex === 'number' ? promptIndex : undefined,
-      providerConfig: {
-        ...providerConfig,
-        styleReferenceUrls,
-      },
+      providerConfig: resolvedProviderConfig,
     })
 
     return NextResponse.json({
