@@ -300,13 +300,37 @@ const SCORING_DIMENSIONS: ScoringDimension[] = [
  */
 const REFERENCE_SCORES = {
   'Vampire Survivors': { score: 95, notes: 'Genre-defining, perfect score' },
-  Brotato: { score: 88, notes: 'Strong VS-like with added depth' },
+  Balatro: { score: 88, notes: 'Roguelike deckbuilder breakout hit, run-based structure' },
   'Risk of Rain 2': { score: 75, notes: 'Co-op power fantasy, longer sessions' },
   Hades: { score: 58, notes: 'More complex input, narrative focus' },
   'Slay the Spire': { score: 45, notes: 'Strategic, not action-focused' },
   'Disco Elysium': { score: 5, notes: 'No action elements' },
   'Counter-Strike': { score: 25, notes: 'Skill-focused, no power fantasy' },
 }
+
+/** Input schema for Vampire Survivors scorer (extracted to avoid deep type instantiation). */
+const vampireSurvivorsScorerSchema = z.object({
+  mechanics: z
+    .array(
+      z.object({
+        name: z.string(),
+        type: z.string(),
+        description: z.string().optional(),
+      })
+    )
+    .describe('Game mechanics to analyze'),
+  loops: z
+    .array(
+      z.object({
+        name: z.string(),
+        type: z.string(),
+        description: z.string().optional(),
+      })
+    )
+    .optional()
+    .describe('Game loops if defined'),
+  gameDescription: z.string().optional().describe('Overall game description'),
+})
 
 /**
  * Vampire Survivors scorer tool
@@ -322,28 +346,7 @@ Evaluates:
 - Content Revelation (15%): Unlocks, meta-progression, "one more run"
 
 Returns 0-100 score with detailed breakdown. High scores indicate strong VS-like appeal.`,
-  schema: z.object({
-    mechanics: z
-      .array(
-        z.object({
-          name: z.string(),
-          type: z.string(),
-          description: z.string().optional(),
-        })
-      )
-      .describe('Game mechanics to analyze'),
-    loops: z
-      .array(
-        z.object({
-          name: z.string(),
-          type: z.string(),
-          description: z.string().optional(),
-        })
-      )
-      .optional()
-      .describe('Game loops if defined'),
-    gameDescription: z.string().optional().describe('Overall game description'),
-  }),
+  schema: vampireSurvivorsScorerSchema,
   func: async ({ mechanics, loops, gameDescription }): Promise<string> => {
     try {
       // Build analysis context

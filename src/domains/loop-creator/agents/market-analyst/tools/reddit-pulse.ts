@@ -254,13 +254,13 @@ const HOT_POSTS_BY_TOPIC: Record<string, RedditPost[]> = {
       url: 'https://reddit.com/r/IndieGaming/...',
       flair: 'Discussion',
       topComments: [
-        'Brotato and Halls of Torment proved differentiation works',
+        'Balatro and Halls of Torment proved differentiation works',
         'Pure clones are dying, innovation survives',
         'Deep Rock Survivor shows IP + genre mashup is the way',
       ],
       mentionedGames: [
         'Vampire Survivors',
-        'Brotato',
+        'Balatro',
         'Halls of Torment',
         'Deep Rock Galactic: Survivor',
       ],

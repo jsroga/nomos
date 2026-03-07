@@ -35,7 +35,7 @@ export const gameDatabaseTool = new DynamicStructuredTool({
           rating: 9.2,
           summary:
             'Minimalist roguelike where you fight endless hordes with auto-attacking weapons. Simple inputs, complex build decisions.',
-          similarGames: ['Brotato', '20 Minutes Till Dawn', 'Halls of Torment'],
+          similarGames: ['Balatro', '20 Minutes Till Dawn', 'Halls of Torment'],
         },
         {
           id: 'hades',

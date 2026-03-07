@@ -271,7 +271,7 @@ const GENRE_MARKET_DATA: GenreMarketData[] = [
     growthRate: '+23% YoY',
     marketShare: 4.5,
     trending: true,
-    recentReleases: ['Balatro', 'Halls of Torment', 'Brotato DLC'],
+    recentReleases: ['Balatro', 'Halls of Torment', 'Balatro DLC'],
   },
   {
     genre: 'Competitive FPS',
@@ -303,7 +303,7 @@ const GENRE_MARKET_DATA: GenreMarketData[] = [
   {
     genre: 'Survivors-like',
     totalPlayers: 95000,
-    topGames: ['Vampire Survivors', 'Brotato', 'Halls of Torment', '20 Minutes Till Dawn'],
+    topGames: ['Vampire Survivors', 'Balatro', 'Halls of Torment', '20 Minutes Till Dawn'],
     growthRate: '+35% YoY',
     marketShare: 1.5,
     trending: true,

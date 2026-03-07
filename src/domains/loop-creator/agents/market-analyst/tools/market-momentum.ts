@@ -128,7 +128,7 @@ const GENRE_MOMENTUM_DATA: GenreMomentum[] = [
       steam: {
         playerGrowth: 15,
         newReleases: 120,
-        topPerformers: ['Vampire Survivors', 'Brotato', 'Halls of Torment'],
+        topPerformers: ['Vampire Survivors', 'Balatro', 'Halls of Torment'],
       },
       reddit: {
         engagement: 25000,

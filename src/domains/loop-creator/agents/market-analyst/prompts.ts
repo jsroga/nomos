@@ -177,7 +177,7 @@ Key strengths detected:
 
 **Market Timing**: Survivors-like genre shows +35% momentum but HIGH competitor density. Differentiation is critical.
 
-**Recommendation**: Study Brotato's success - they differentiated through character variety and tower defense elements while keeping VS's core dopamine loop intact."`
+**Recommendation**: Study Balatro's success - they differentiated through deckbuilding and poker mechanics while keeping a tight roguelike run-based loop."`
 
 /**
  * Build loop context string

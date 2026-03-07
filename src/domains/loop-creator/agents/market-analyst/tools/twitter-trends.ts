@@ -152,11 +152,11 @@ const GAMING_TRENDS_DATABASE: Record<string, TwitterTrendResult[]> = {
       sentimentScore: 0.78,
       sampleTweets: [
         'Every survivors-like scratch a different itch but VS is still king',
-        'Brotato is the evolution the genre needed',
+        'Balatro is the evolution the genre needed',
         'Auto-attack games are peak casual gaming',
       ],
       relevanceToGaming: 1.0,
-      relatedGames: ['Vampire Survivors', 'Brotato', 'Halls of Torment', '20 Minutes Till Dawn'],
+      relatedGames: ['Vampire Survivors', 'Balatro', 'Halls of Torment', '20 Minutes Till Dawn'],
       isRising: false,
       timeframe: 'last 7 days',
     },
