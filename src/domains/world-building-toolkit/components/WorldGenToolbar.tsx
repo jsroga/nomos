@@ -26,10 +26,10 @@ const ToolButton: React.FC<ToolButtonProps & { id?: string }> = ({ icon, label, 
         size="icon"
         onClick={onClick}
         className={cn(
-          'transition-all duration-200 relative',
+          'transition-all duration-200 relative rounded-xl',
           isActive
-            ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-[0_0_20px_rgba(79,70,229,0.5)] ring-1 ring-indigo-400/30'
-            : 'text-zinc-400 hover:text-indigo-300 hover:bg-indigo-500/10 hover:shadow-[0_0_10px_rgba(79,70,229,0.15)]'
+            ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-[0_0_24px_rgba(79,70,229,0.6),0_0_8px_rgba(129,140,248,0.3)] ring-2 ring-indigo-400/40'
+            : 'text-zinc-400 hover:text-indigo-200 hover:bg-indigo-500/15 hover:shadow-[0_0_14px_rgba(79,70,229,0.2)] border border-transparent hover:border-indigo-500/20'
         )}
       >
         {icon}
@@ -191,8 +191,8 @@ export const WorldGenToolbar: React.FC = () => {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div id={TOUR_STEP_IDS.WORLDGEN_TOOLBAR} className="flex flex-col items-center gap-1.5 p-2 pt-3">
-        <span className="text-[8px] font-mono uppercase tracking-[0.2em] text-indigo-400/60 mb-1 select-none">
+      <div id={TOUR_STEP_IDS.WORLDGEN_TOOLBAR} className="flex flex-col items-center gap-2 p-2 pt-4">
+        <span className="text-[9px] font-bold font-mono uppercase tracking-[0.25em] text-indigo-300/80 mb-1.5 select-none drop-shadow-[0_0_6px_rgba(129,140,248,0.3)]">
           Tools
         </span>
 
@@ -219,7 +219,7 @@ export const WorldGenToolbar: React.FC = () => {
           onClick={handleRepaintMode}
         />
 
-        <div className="w-8 border-t border-indigo-500/20 my-2" />
+        <div className="w-10 border-t border-indigo-400/30 my-2.5" />
 
         <Tooltip>
           <TooltipTrigger asChild>

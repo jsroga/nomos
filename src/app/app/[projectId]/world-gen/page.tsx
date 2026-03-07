@@ -125,8 +125,11 @@ export default function WorldBuildingPage() {
       </div>
 
       {/* Toolbar (Left) */}
-      <div className="w-16 border-r border-indigo-500/20 bg-gradient-to-b from-indigo-950/40 via-background/80 to-indigo-950/40 backdrop-blur-xl z-10 relative shadow-[inset_-1px_0_12px_rgba(79,70,229,0.1),2px_0_20px_rgba(79,70,229,0.05)]">
-        <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-indigo-500/30 to-transparent" />
+      <div className="w-16 border-r border-indigo-400/30 bg-gradient-to-b from-indigo-950/60 via-background/90 to-indigo-950/60 backdrop-blur-xl z-10 relative shadow-[inset_-1px_0_20px_rgba(79,70,229,0.15),4px_0_30px_rgba(79,70,229,0.08)]">
+        <div className="absolute inset-y-0 right-0 w-[2px] bg-gradient-to-b from-transparent via-indigo-400/50 to-transparent" />
+        <div className="absolute inset-y-0 left-0 w-[2px] bg-gradient-to-b from-transparent via-indigo-500/20 to-transparent" />
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-indigo-400/40 to-transparent" />
+        <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-indigo-400/40 to-transparent" />
         <WorldGenToolbar />
       </div>
 

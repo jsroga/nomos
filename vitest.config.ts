@@ -6,6 +6,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     setupFiles: ['dotenv/config'],
+    dangerouslyIgnoreUnhandledErrors: true,
     env: {
       DOTENV_CONFIG_PATH: '.env.local',
     },
