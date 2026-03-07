@@ -1,6 +1,4 @@
 import { Tile, useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
-import { NanoBananaProModel } from '@/infrastructure/ai/nanoBanana'
-import { LocalStorageKeys } from '@/constants/localStorage'
 
 interface Point {
   x: number
@@ -194,15 +192,9 @@ export class RepaintService {
     prompt?: string,
     styleReferenceUrls?: string[]
   ): Promise<RepaintResult> {
-    // 0. Get Config
-    let nanoConfig = { apiKey: '', model: '' }
-    if (typeof window !== 'undefined') {
-      const savedNano = localStorage.getItem(LocalStorageKeys.AI_CONFIG_NANO_BANANA)
-      if (savedNano) nanoConfig = JSON.parse(savedNano)
-    }
-    if (!nanoConfig.apiKey) throw new Error('Nano Banana Pro API Key not found')
+    const { currentProject } = useWorldStore.getState()
+    if (!currentProject) throw new Error('No project selected')
 
-    const nanoBanana = new NanoBananaProModel(nanoConfig.apiKey, nanoConfig.model)
     console.log('RepaintService: Using style references', styleReferenceUrls)
 
     // 1. Calculate Bounding Box of strokes
@@ -326,20 +318,28 @@ export class RepaintService {
       mask: maskCanvas.toDataURL('image/png'),
     })
 
-    // 8. Call AI Service
-    console.log('Calling Nano Banana Pro Inpainting...', { styleReferenceUrls })
-    // Use provided prompt or fallback
-    const finalPrompt = prompt || 'High quality, detailed, seamless blend'
+    // 8. Call server-side inpainting API
+    console.log('Calling server-side repaint API...', { styleReferenceUrls })
 
-    const resultBase64 = await nanoBanana.inpainting(
-      base64Image,
-      maskBase64,
-      finalPrompt,
-      styleReferenceUrls
-    )
+    const response = await fetch('/api/repaint', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        projectId: currentProject.id,
+        base64Image,
+        maskBase64,
+        prompt: prompt || 'High quality, detailed, seamless blend',
+        styleReferenceUrls,
+      }),
+    })
+
+    const data = await response.json()
+    if (!response.ok || !data.imageBase64) {
+      throw new Error(data.error || 'Repaint API failed')
+    }
 
     return {
-      imageUrl: `data:image/png;base64,${resultBase64}`,
+      imageUrl: `data:image/png;base64,${data.imageBase64}`,
       bounds,
     }
   }

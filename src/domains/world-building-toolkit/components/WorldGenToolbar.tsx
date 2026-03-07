@@ -26,9 +26,10 @@ const ToolButton: React.FC<ToolButtonProps & { id?: string }> = ({ icon, label, 
         size="icon"
         onClick={onClick}
         className={cn(
-          'transition-all',
-          isActive &&
-          'bg-indigo-600 hover:bg-indigo-700 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)]'
+          'transition-all duration-200 relative',
+          isActive
+            ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-[0_0_20px_rgba(79,70,229,0.5)] ring-1 ring-indigo-400/30'
+            : 'text-zinc-400 hover:text-indigo-300 hover:bg-indigo-500/10 hover:shadow-[0_0_10px_rgba(79,70,229,0.15)]'
         )}
       >
         {icon}
@@ -190,7 +191,11 @@ export const WorldGenToolbar: React.FC = () => {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div id={TOUR_STEP_IDS.WORLDGEN_TOOLBAR} className="flex flex-col items-center gap-2 p-2">
+      <div id={TOUR_STEP_IDS.WORLDGEN_TOOLBAR} className="flex flex-col items-center gap-1.5 p-2 pt-3">
+        <span className="text-[8px] font-mono uppercase tracking-[0.2em] text-indigo-400/60 mb-1 select-none">
+          Tools
+        </span>
+
         <ToolButton
           icon={<Hand size={20} />}
           label="Grab Tool (G)"
@@ -214,7 +219,7 @@ export const WorldGenToolbar: React.FC = () => {
           onClick={handleRepaintMode}
         />
 
-        <div className="w-full border-t border-zinc-900 my-2" />
+        <div className="w-8 border-t border-indigo-500/20 my-2" />
 
         <Tooltip>
           <TooltipTrigger asChild>
