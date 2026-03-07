@@ -79,13 +79,6 @@ export const generateTileTask = task({
     await metadata.set('stage', 'generating_image')
     await metadata.set('progress', 30)
 
-    const neighborDirections = neighbors
-      ? Object.entries(neighbors)
-          .filter(([, n]: [string, any]) => n?.imageUrl)
-          .map(([dir]) => dir)
-          .join(', ')
-      : undefined
-
     let generatedImageBase64: string
 
     // Call AI provider directly (server-side compatible)
@@ -98,8 +91,7 @@ export const generateTileTask = task({
           isFirstTile,
           styleReferenceUrls,
           contextImageBase64,
-          styleContext,
-          neighborDirections || undefined
+          styleContext
         )
         break
       }
@@ -215,8 +207,7 @@ async function generateWithGemini(
   isFirstTile: boolean,
   styleReferenceUrls?: string[],
   contextImageBase64?: string,
-  styleContext?: string,
-  neighborDirections?: string
+  styleContext?: string
 ): Promise<string> {
   // Model comes from settings (params.modelId) or fallback to config.model or default
   const model = config.params?.modelId || config.model || 'gemini-3-pro-image-preview'
@@ -266,10 +257,10 @@ async function generateWithGemini(
       },
     }
   } else {
-    // FOLLOW-UP TILE: Use context image with editing prompt + style refs
+    // FOLLOW-UP TILE: Use context image with inpainting prompt
     logger.info('Generating follow-up tile with context image for edge matching')
 
-    finalPrompt = GENERATION_PROMPTS.FOLLOW_UP.GEMINI(prompt, styleContext, neighborDirections)
+    finalPrompt = GENERATION_PROMPTS.FOLLOW_UP.GEMINI(prompt)
 
     payload = {
       contents: [
@@ -282,15 +273,14 @@ async function generateWithGemini(
                 data: contextImageBase64,
               },
             },
-            ...styleImageParts,
           ],
         },
       ],
       generationConfig: {
-        responseModalities: ['IMAGE', 'TEXT'],
-        temperature: 0.3,
+        temperature: 0.4,
         topK: 32,
         topP: 1,
+        maxOutputTokens: 2048,
       },
     }
   }
