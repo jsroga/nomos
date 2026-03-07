@@ -79,6 +79,13 @@ export const generateTileTask = task({
     await metadata.set('stage', 'generating_image')
     await metadata.set('progress', 30)
 
+    const neighborDirections = neighbors
+      ? Object.entries(neighbors)
+          .filter(([, n]: [string, any]) => n?.imageUrl)
+          .map(([dir]) => dir)
+          .join(', ')
+      : undefined
+
     let generatedImageBase64: string
 
     // Call AI provider directly (server-side compatible)
@@ -91,7 +98,8 @@ export const generateTileTask = task({
           isFirstTile,
           styleReferenceUrls,
           contextImageBase64,
-          styleContext
+          styleContext,
+          neighborDirections || undefined
         )
         break
       }
@@ -207,7 +215,8 @@ async function generateWithGemini(
   isFirstTile: boolean,
   styleReferenceUrls?: string[],
   contextImageBase64?: string,
-  styleContext?: string
+  styleContext?: string,
+  neighborDirections?: string
 ): Promise<string> {
   // Model comes from settings (params.modelId) or fallback to config.model or default
   const model = config.params?.modelId || config.model || 'gemini-3-pro-image-preview'
@@ -260,7 +269,7 @@ async function generateWithGemini(
     // FOLLOW-UP TILE: Use context image with editing prompt + style refs
     logger.info('Generating follow-up tile with context image for edge matching')
 
-    finalPrompt = GENERATION_PROMPTS.FOLLOW_UP.GEMINI(prompt, styleContext)
+    finalPrompt = GENERATION_PROMPTS.FOLLOW_UP.GEMINI(prompt, styleContext, neighborDirections)
 
     payload = {
       contents: [

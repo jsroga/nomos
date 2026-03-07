@@ -192,20 +192,21 @@ export class ImageService {
       }
     }
 
-    // Explicitly re-draw the center gray square to ensure it's clean for inpainting (optional, but good for safety)
-    const centerGray = await sharp({
+    // Re-draw the center as bright magenta so Gemini can unambiguously identify the "fill this" area
+    // (gray edges without neighbors stay gray -- distinct from magenta center)
+    const centerFill = await sharp({
       create: {
         width: TILE_SIZE,
         height: TILE_SIZE,
         channels: 4,
-        background: { r: 128, g: 128, b: 128, alpha: 1 },
+        background: { r: 255, g: 0, b: 255, alpha: 1 },
       },
     })
       .png()
       .toBuffer()
 
     compositionLayers.push({
-      input: centerGray,
+      input: centerFill,
       top: TARGET_Y,
       left: TARGET_X,
     })

@@ -55,8 +55,8 @@ export const GENERATION_PROMPTS = {
     MASTER: (prompt: string, styleInfo: string) =>
       `Inpaint the central gray square to seamlessly connect with the surrounding edge context. Fill the gray area with: ${prompt}. Maintain ${styleInfo}, consistent art style. Ensure continuous lines, consistent isometric perspective, and matching lighting. Do not generate borders or frames.`,
 
-    GEMINI: (prompt: string, styleContext?: string | null) =>
-      `Edit this image: the center area (shown in uniform gray) must be replaced with new content that seamlessly continues from the surrounding edges. Fill it with: ${prompt}. The surrounding border pixels are neighboring tiles — match their exact colors, lines, and lighting at every edge so there is no visible seam. Isometric perspective.${styleContext ? ` Style: ${styleContext}.` : ''} Do not alter the surrounding edge areas. Do not add borders or frames. Output the full 1024x1024 image.`,
+    GEMINI: (prompt: string, styleContext?: string | null, neighborDirections?: string) =>
+      `Edit this image: the bright magenta/pink area in the center must be completely replaced with new content. Fill it with: ${prompt}. ${neighborDirections ? `The following edges contain neighboring tiles whose colors, lines, and lighting must be seamlessly matched at the boundary: ${neighborDirections}. Gray border areas without tile content are unconstrained — generate freely there.` : 'Match the surrounding edges seamlessly.'} Isometric perspective.${styleContext ? ` Style: ${styleContext}.` : ''} Do not alter any non-magenta areas. Do not add borders or frames. Output the full 1024x1024 image.`,
 
     MIDJOURNEY: (prompt: string, styleInfo: string) =>
       `Inpaint the central gray square to seamlessly connect with the surrounding edge context. Fill the gray area with: ${prompt}. Maintain ${styleInfo}, consistent art style. Ensure continuous lines, consistent isometric perspective, and matching lighting. Do not generate borders or frames. --stylize 0 --q 2`,

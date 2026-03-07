@@ -102,6 +102,7 @@ export const ToolsIntegration = () => {
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
               className="text-4xl md:text-5xl font-black font-syne uppercase leading-tight mb-4"
             >
               Keep Your Tools.
@@ -111,6 +112,7 @@ export const ToolsIntegration = () => {
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
               transition={{ delay: 0.1 }}
               className="text-white/50 font-mono max-w-md text-sm leading-relaxed"
             >
