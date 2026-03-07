@@ -125,6 +125,7 @@ export const ToolsIntegration = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
             transition={{ delay: 0.2 }}
             className="hidden md:block w-[800px] h-[800px] absolute -right-[200px] -top-[200px] pointer-events-none"
           >

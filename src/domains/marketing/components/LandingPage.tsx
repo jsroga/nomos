@@ -868,6 +868,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
             <motion.div
               initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
               className="flex items-center justify-center lg:justify-start gap-4 mb-8"
             >
               <div className="w-8 h-px bg-primary" />
@@ -879,6 +880,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
             <motion.h2
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
               className="text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter font-mono"
             >
               <span className="text-white">AI</span>
@@ -887,6 +889,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
               transition={{ delay: 0.1 }}
               className="text-sm md:text-base font-mono text-white/40 mt-4 tracking-widest"
             >
@@ -901,6 +904,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
                 onClick={() =>
                   setSelectedFeature({
@@ -939,6 +943,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
                 transition={{ delay: 0.1 }}
                 onClick={() =>
                   setSelectedFeature({
@@ -973,6 +978,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
                 transition={{ delay: 0.15 }}
                 onClick={() =>
                   setSelectedFeature({
@@ -1005,6 +1011,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
                 onClick={() =>
                   setSelectedFeature({
@@ -1271,7 +1278,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
         <section className="py-32 lg:py-48 px-6 relative overflow-hidden">
           {/* Section header - centered */}
           <div className="max-w-7xl mx-auto mb-20 text-center">
-            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}>
+            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <span className="text-[10px] font-mono text-primary tracking-[0.3em] uppercase mb-6 block">
                 SHIPS FASTER. STAYS CREATIVE.
               </span>
@@ -1288,6 +1295,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
             <motion.div
               initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
               transition={{ duration: 0.8 }}
               className="hidden lg:block lg:w-1/2 relative h-[800px] -ml-20"
             >
@@ -1314,6 +1322,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
             <motion.div
               initial={{ opacity: 0, x: 50 }}
               whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
               transition={{ duration: 0.8 }}
               className="lg:w-1/2"
             >
