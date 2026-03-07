@@ -641,10 +641,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
       if (savedConfig) {
         apiKey = JSON.parse(savedConfig).apiKey
       }
-
-      if (!apiKey) {
-        throw new Error(`No API Key found for ${provider}. Please set it in Settings.`)
-      }
+      // Server may use MESHY_API_KEY / HYPER3D_API_KEY from env when apiKey is empty
 
       toast.loading('Starting 3D generation... This may take up to 15 minutes.')
 
@@ -763,11 +760,11 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
           ? LocalStorageKeys.AI_CONFIG_MESHY
           : LocalStorageKeys.AI_CONFIG_HYPER3D
       const savedConfig = localStorage.getItem(configKey)
-
-      if (!savedConfig) {
-        throw new Error('No Meshy API key found. Set it in Settings.')
+      let apiKey = ''
+      if (savedConfig) {
+        apiKey = JSON.parse(savedConfig).apiKey ?? ''
       }
-      const apiKey = JSON.parse(savedConfig).apiKey
+      // Server may use MESHY_API_KEY from env when apiKey is empty
 
       toast.loading('Starting remesh... This may take a few minutes.')
 
