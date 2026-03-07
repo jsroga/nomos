@@ -7,7 +7,7 @@ import {
   verifyProjectAccess,
   type AuthenticatedRequest,
 } from '@/lib/api-utils'
-import { resolveStyleReferenceUrls } from '@/config/style-presets'
+import { resolveStyleReferenceUrls, resolveStyleContext } from '@/config/style-presets'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,21 +48,24 @@ export const POST = withRateLimit(
     // Determine if this is a first tile (no neighbors) or follow-up tile
     const isFirstTile = payload.isFirstTile ?? true
 
-    // Fetch style references using authenticated client (preset or custom URLs)
+    // Fetch style references and style context (preset or custom) for first tile
     let styleReferenceUrls: string[] | undefined
-    if (isFirstTile && !payload.styleReferenceUrls) {
+    let styleContext: string | undefined
+    if (isFirstTile) {
       const { data } = await supabase
         .from('projects')
         .select('style_reference_urls, style_preset')
         .eq('id', payload.projectId)
         .single() as { data: { style_reference_urls: string[]; style_preset: string | null } | null }
 
-      styleReferenceUrls = resolveStyleReferenceUrls({
-        stylePreset: data?.style_preset,
-        styleReferenceUrls: data?.style_reference_urls,
-      })
-    } else {
-      styleReferenceUrls = isFirstTile ? payload.styleReferenceUrls : undefined
+      styleReferenceUrls =
+        payload.styleReferenceUrls && payload.styleReferenceUrls.length > 0
+          ? payload.styleReferenceUrls
+          : resolveStyleReferenceUrls({
+              stylePreset: data?.style_preset,
+              styleReferenceUrls: data?.style_reference_urls,
+            })
+      styleContext = resolveStyleContext({ stylePreset: data?.style_preset })
     }
 
     // Trigger the tile generation task
@@ -76,8 +79,9 @@ export const POST = withRateLimit(
         aiProvider: payload.aiProvider,
         aiConfig: payload.aiConfig,
         isFirstTile,
-        // Only pass style refs for first tile
+        // Only pass style refs and context for first tile
         ...(styleReferenceUrls ? { styleReferenceUrls } : {}),
+        ...(styleContext !== undefined ? { styleContext } : {}),
         // Pass context image for follow-up tiles
         ...(payload.contextImageBase64 ? { contextImageBase64: payload.contextImageBase64 } : {}),
         // Pass neighbors for server-side context assembly

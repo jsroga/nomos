@@ -5,6 +5,8 @@ export interface StylePreset {
   emoji: string
   color: string // hex accent color for card UI
   urls: string[] // Midjourney --sref URLs
+  /** Replaces the default "painterly art style..." phrase in first-tile generation prompts. */
+  styleContext: string
 }
 
 /**
@@ -23,6 +25,8 @@ export const STYLE_PRESETS: StylePreset[] = [
     description: 'Your GPU called. It wants a raise.',
     emoji: '\u{1F30C}', // milky way
     color: '#7B2FBE',
+    styleContext:
+      'pure isometric 3D game style like Disco Elysium or Fallout; neon noir aesthetic, high contrast, cinematic lighting, cyberpunk atmosphere, dark moody tones, vibrant neon accents.',
     urls: [
       'https://cdn.midjourney.com/e677f442-5617-4c88-9ada-567f8b3b15f0/0_1.png',
       'https://cdn.midjourney.com/d914b7f9-35a0-44e6-bdba-c9938bb33a63/0_3.png',
@@ -38,6 +42,8 @@ export const STYLE_PRESETS: StylePreset[] = [
     description: 'If a troll went to art school and peaked.',
     emoji: '\u{1F47A}', // goblin
     color: '#8B6914',
+    styleContext:
+      'pure isometric 3D game style like Disco Elysium or Fallout; goblin baroque style, ornate and grotesque, rich earthy tones, dramatic chiaroscuro, fantasy oil painting aesthetic.',
     urls: [
       'https://cdn.midjourney.com/2d3169f0-a89d-4cb4-b1dd-e876753c5b1e/0_1.png',
       'https://cdn.midjourney.com/2a40bc28-aaec-4e2b-90d7-58d6ccd114e4/0_0.png',
@@ -52,6 +58,8 @@ export const STYLE_PRESETS: StylePreset[] = [
     description: 'Nature won. Humanity left the chat.',
     emoji: '\u{1FAB4}', // potted plant
     color: '#2D6B4F',
+    styleContext:
+      'pure isometric 3D game style like Disco Elysium or Fallout; moss and ruin, overgrown post-nature, muted greens and stone, atmospheric decay, soft organic detail, hand-painted environmental art.',
     urls: [
       'https://cdn.midjourney.com/e677f442-5617-4c88-9ada-567f8b3b15f0/0_1.png',
       'https://cdn.midjourney.com/55f281a1-d4ee-4e37-bda0-198c6753f41c/0_2.png',
@@ -67,6 +75,8 @@ export const STYLE_PRESETS: StylePreset[] = [
     description: 'Ancient monks with telescopes. Enough said.',
     emoji: '\u{2728}', // sparkles
     color: '#1B3A5C',
+    styleContext:
+      'pure isometric 3D game style like Disco Elysium or Fallout; celestial ink style, ancient manuscript meets astronomy, deep blues and gold, delicate linework, ethereal atmospheric detail.',
     urls: [
       'https://cdn.midjourney.com/2ea02ad2-5a9d-4ebd-aaf7-2882d9534429/0_2.png',
       'https://cdn.midjourney.com/017d010e-d4e0-4fc2-8a75-87ac6fbaee7d/0_2.png',
@@ -81,6 +91,8 @@ export const STYLE_PRESETS: StylePreset[] = [
     description: 'Soviet architecture had a cotton candy fever dream.',
     emoji: '\u{1F36C}', // candy
     color: '#D94F8E',
+    styleContext:
+      'pure isometric 3D game style like Disco Elysium or Fallout; bubblegum brutalism, pastel pinks and concrete grey, bold geometric shapes, playful yet stark, candy-colored harsh lighting.',
     urls: [
       'https://cdn.midjourney.com/d113211a-446f-4897-b6e9-f38fb83b33fb/0_3.png',
       'https://cdn.midjourney.com/cdc10981-6491-405f-8ec2-cbbfa3bfd8a1/0_1.png',
@@ -95,6 +107,8 @@ export const STYLE_PRESETS: StylePreset[] = [
     description: 'Grandma\'s attic if grandma worshipped something unspeakable.',
     emoji: '\u{1F480}', // skull
     color: '#4A1A2E',
+    styleContext:
+      'pure isometric 3D game style like Disco Elysium or Fallout; elder rot aesthetic, gothic decay, deep burgundy and black, organic corruption, unsettling atmosphere, hand-painted horror detail.',
     urls: [
       'https://cdn.midjourney.com/d10ebf7a-3e68-4a44-91d7-45dbfc67f1ff/0_0.png',
       'https://cdn.midjourney.com/7e7b0520-db67-4ba1-b2ed-15f572a0ef20/0_1.png',
@@ -108,6 +122,24 @@ export const STYLE_PRESETS: StylePreset[] = [
 export const STYLE_PRESETS_MAP = Object.fromEntries(
   STYLE_PRESETS.map(p => [p.id, p])
 ) as Record<string, StylePreset>
+
+/** Default style phrase when no preset is selected (custom URLs or legacy). */
+export const DEFAULT_STYLE_CONTEXT =
+  'in the style of Disco Elysium, painterly art style with expressive brushwork, rich atmospheric detail, hand-painted aesthetic.'
+
+/**
+ * Resolves the style context phrase for first-tile prompts from project settings.
+ * Used to replace the default "painterly art style..." with the selected preset's phrase.
+ */
+export function resolveStyleContext(project: {
+  stylePreset?: string | null
+}): string {
+  if (project.stylePreset) {
+    const preset = STYLE_PRESETS_MAP[project.stylePreset]
+    if (preset?.styleContext) return preset.styleContext
+  }
+  return DEFAULT_STYLE_CONTEXT
+}
 
 /**
  * Resolves the effective style reference URLs for a project.

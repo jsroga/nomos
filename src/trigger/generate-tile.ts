@@ -1,7 +1,7 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import { put } from '@vercel/blob'
-import { GENERATION_PROMPTS, MASK_CONFIG } from '@/lib/server/prompts'
+import { GENERATION_PROMPTS, MASK_CONFIG, FIRST_TILE_IMAGE_PROMPT_URL } from '@/lib/server/prompts'
 import { imageService, StyleInfo } from '@/lib/server/image-service'
 import sharp from 'sharp'
 import { v4 as uuidv4 } from 'uuid'
@@ -28,6 +28,7 @@ export const generateTileTask = task({
     aiConfig: Record<string, unknown>
     isFirstTile?: boolean
     styleReferenceUrls?: string[]
+    styleContext?: string
     contextImageBase64?: string
     neighbors?: any // Adding neighbors for server-side assembly
   }) => {
@@ -40,6 +41,7 @@ export const generateTileTask = task({
       aiConfig,
       isFirstTile = true,
       styleReferenceUrls,
+      styleContext,
       neighbors,
     } = payload
 
@@ -118,7 +120,8 @@ export const generateTileTask = task({
           aiConfig as any,
           isFirstTile,
           styleReferenceUrls,
-          contextImageBase64
+          contextImageBase64,
+          styleContext
         )
         break
       }
@@ -233,7 +236,7 @@ async function generateWithGemini(
     // FIRST TILE: Generation with style reference images
     logger.info('Generating first tile with style references')
 
-    finalPrompt = GENERATION_PROMPTS.FIRST_TILE.GEMINI(prompt)
+    finalPrompt = GENERATION_PROMPTS.FIRST_TILE.GEMINI(prompt, styleContext)
 
     payload = {
       contents: [
@@ -982,7 +985,8 @@ async function generateWithLegNext(
   config: { apiKey: string },
   isFirstTile: boolean,
   styleReferenceUrls?: string[],
-  contextImageBase64?: string
+  contextImageBase64?: string,
+  styleContext?: string
 ): Promise<string> {
   logger.info('Starting Midjourney generation via LegNext API', { isFirstTile, styleReferenceUrls })
 
@@ -1003,38 +1007,22 @@ async function generateWithLegNext(
 
     logger.info('Context image uploaded', { publicImageUrl })
   } else {
-    // First tile: create a blank canvas or use imagine endpoint
-    // For now, we'll use a simple text-based generation approach
-    // by creating a minimal white canvas to upload
-    logger.info('First tile generation - creating blank canvas')
-    await metadata.set('stage', 'creating_blank_canvas')
-
-    const blankCanvas = await sharp({
-      create: {
-        width: 1024,
-        height: 1024,
-        channels: 4,
-        background: { r: 240, g: 240, b: 240, alpha: 1 },
-      },
+    // First tile: use configured image as visual base (image prompt); text prompt + style refs guide generation
+    logger.info('First tile generation - using image prompt URL', {
+      url: FIRST_TILE_IMAGE_PROMPT_URL,
     })
-      .png()
-      .toBuffer()
+    await metadata.set('stage', 'using_image_prompt')
 
-    const blankBase64 = blankCanvas.toString('base64')
-    const tempFilename = `generate_temp_${uuidv4()}.png`
-    publicImageUrl = await storageService.uploadPublicImage(tempFilename, blankBase64)
-
-    if (!publicImageUrl) {
-      throw new Error('Failed to upload blank canvas')
-    }
+    // Use the first-tile image prompt URL directly (LegNext can fetch public URLs)
+    publicImageUrl = FIRST_TILE_IMAGE_PROMPT_URL
   }
 
   // Step 2: Build remix prompt based on tile type
   let remixPrompt: string
 
   if (isFirstTile) {
-    // First tile - full creative generation
-    remixPrompt = GENERATION_PROMPTS.FIRST_TILE.MIDJOURNEY(prompt)
+    // First tile - full creative generation (styleContext from project preset or default)
+    remixPrompt = GENERATION_PROMPTS.FIRST_TILE.MIDJOURNEY(prompt, styleContext)
   } else {
     // Follow-up tile - analyze context style and match surrounding edges
     let styleInfo = 'medium neutral palette'

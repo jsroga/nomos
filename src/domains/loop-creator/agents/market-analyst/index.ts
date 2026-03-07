@@ -11,7 +11,7 @@ import { ChatOpenAI } from '@langchain/openai'
 import { createReactAgent } from '@langchain/langgraph/prebuilt'
 import { HumanMessage, SystemMessage, AIMessage } from '@langchain/core/messages'
 import { LoopAnalysisInput, MarketAnalystState, MarketAnalysisReport } from './types'
-import { MARKET_ANALYST_SYSTEM_PROMPT, buildLoopContext } from './prompts'
+import { MARKET_ANALYST_SYSTEM_PROMPT, buildLoopContext, SCORING_CRITERIA_PLACEHOLDER } from './prompts'
 
 // Import all tools
 import { webSearchTool } from './tools/web-search'
@@ -124,8 +124,11 @@ export async function runMarketAnalysis(
       gameDescription: input.gameDescription,
     })
 
-    // Create the system prompt with context
-    const systemPrompt = MARKET_ANALYST_SYSTEM_PROMPT.replace('{{LOOP_CONTEXT}}', loopContext)
+    // Create the system prompt with context and scoring criteria
+    const systemPrompt = MARKET_ANALYST_SYSTEM_PROMPT.replace(
+      '{{SCORING_CRITERIA}}',
+      SCORING_CRITERIA_PLACEHOLDER
+    ).replace('{{LOOP_CONTEXT}}', loopContext)
 
     // Create the agent
     const agent = createMarketAnalystAgent()
@@ -221,7 +224,10 @@ export async function* streamMarketAnalysis(input: LoopAnalysisInput): AsyncGene
       gameDescription: input.gameDescription,
     })
 
-    const systemPrompt = MARKET_ANALYST_SYSTEM_PROMPT.replace('{{LOOP_CONTEXT}}', loopContext)
+    const systemPrompt = MARKET_ANALYST_SYSTEM_PROMPT.replace(
+      '{{SCORING_CRITERIA}}',
+      SCORING_CRITERIA_PLACEHOLDER
+    ).replace('{{LOOP_CONTEXT}}', loopContext)
 
     // Create agent
     const agent = createMarketAnalystAgent()

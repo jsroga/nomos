@@ -231,18 +231,13 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
           )}
         </div>
         {!isReadOnly && isGenerating && (
-          <div className="mb-4 space-y-1">
+          <div className="mb-4">
             <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
               <div
                 className="h-full rounded-full bg-pink-500/80 transition-all duration-500 ease-out"
                 style={{ width: `${progressPercent ? Math.min(100, Math.max(0, Number(progressPercent))) : 5}%` }}
               />
             </div>
-            {progressDetails && (
-              <p className="text-xs text-muted-foreground truncate" title={progressDetails}>
-                {progressDetails}
-              </p>
-            )}
           </div>
         )}
 

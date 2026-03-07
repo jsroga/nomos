@@ -140,6 +140,7 @@
     "langgraph:dev": "npx @langchain/langgraph-cli dev",
     "lint": "next lint",
     "lint:fix": "eslint src --fix",
+    "typecheck": "tsc --noEmit",
     "mcp:start": "npx tsx src/mcp/stdio.ts",
     "start": "next start",
     "test:playwright:install": "playwright install --with-deps",

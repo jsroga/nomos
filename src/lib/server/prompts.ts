@@ -17,24 +17,36 @@
 // GENERATION PROMPTS
 // ============================================================================
 
-/** Default art direction context for the initial tile — injected behind the scenes */
-const FIRST_TILE_STYLE_CONTEXT =
-  'Isometric painted world in the style of Disco Elysium, painterly art style with expressive brushwork, rich atmospheric detail, hand-painted aesthetic.'
+import { DEFAULT_STYLE_CONTEXT } from '@/config/style-presets'
+
+/** Full style phrase for first tile: "Isometric painted world, " + (project style or default). */
+function getFirstTileStylePhrase(styleContext?: string | null): string {
+  return `Isometric painted world, ${styleContext ?? DEFAULT_STYLE_CONTEXT}`
+}
+
+/**
+ * Image used as the visual base (image prompt) for first tile (0,0) when using Midjourney/LegNext.
+ * LegNext upload_paint uses this as imgUrl; the text prompt (tile + style) guides the generation.
+ * Override via env FIRST_TILE_IMAGE_PROMPT_URL if needed.
+ */
+export const FIRST_TILE_IMAGE_PROMPT_URL =
+  process.env.FIRST_TILE_IMAGE_PROMPT_URL ||
+  'https://cdn.midjourney.com/4a08dad8-1540-4f4e-b9d6-9860c241a5d0/0_0.png'
 
 export const GENERATION_PROMPTS = {
-  /** First tile - no neighbors, full creative generation */
+  /** First tile - no neighbors, full creative generation. styleContext from project settings (preset or default). */
   FIRST_TILE: {
-    GEMINI: (prompt: string) =>
-      `Generate an isometric tile image: ${prompt}. ${FIRST_TILE_STYLE_CONTEXT} The image should be 512x512 pixels, isometric perspective, suitable for a tile-based game world. Detailed, vibrant colors.`,
+    GEMINI: (prompt: string, styleContext?: string | null) =>
+      `Generate an isometric tile image: ${prompt}. ${getFirstTileStylePhrase(styleContext)} The image should be 512x512 pixels, isometric perspective, suitable for a tile-based game world. Detailed, vibrant colors.`,
 
-    MIDJOURNEY: (prompt: string) =>
-      `Isometric tile for a game world: ${prompt}. ${FIRST_TILE_STYLE_CONTEXT} 512x512, detailed, vibrant colors, seamless edges --v 6.1 --ar 1:1`,
+    MIDJOURNEY: (prompt: string, styleContext?: string | null) =>
+      `Isometric tile for a game world: ${prompt}. ${getFirstTileStylePhrase(styleContext)} 512x512, detailed, vibrant colors, seamless edges --v 6.1 --ar 1:1`,
 
-    OPENAI: (prompt: string) =>
-      `Isometric tile for a game world: ${prompt}. ${FIRST_TILE_STYLE_CONTEXT} 512x512, detailed.`,
+    OPENAI: (prompt: string, styleContext?: string | null) =>
+      `Isometric tile for a game world: ${prompt}. ${getFirstTileStylePhrase(styleContext)} 512x512, detailed.`,
 
-    STABILITY: (prompt: string) =>
-      `Isometric tile for a game world: ${prompt}. ${FIRST_TILE_STYLE_CONTEXT} Detailed, vibrant colors.`,
+    STABILITY: (prompt: string, styleContext?: string | null) =>
+      `Isometric tile for a game world: ${prompt}. ${getFirstTileStylePhrase(styleContext)} Detailed, vibrant colors.`,
   },
 
   /** Follow-up tile - has neighbors, must match edges */

@@ -706,7 +706,8 @@ Use SDK (`@trigger.dev/sdk`), check `result.ok` before accessing `result.output`
 - **Build**: `npm run build`
 - **Dev**: `npm run dev`
 - **Lint**: `npm run lint`
-- **Type Check**: `npx tsc --noEmit`
+- **Type Check**: `npm run typecheck` (runs in CI; catches type errors)
+- **Dead code**: CI runs ESLint (unused vars = warn), Knip (unused exports/files/deps). To fail CI on unused vars, set `unused-imports/no-unused-vars` to `'error'` in `eslint.config.js` after fixing existing warnings.
 
 ## Testing
 - **Unit Tests**: `npm run test:unit` (runs all vitest tests)
@@ -719,6 +720,12 @@ Use SDK (`@trigger.dev/sdk`), check `result.ok` before accessing `result.output`
 ## MCP
 - **MCP Dev**: `npm run mcp:dev`
 - **MCP Build**: `npm run mcp:build`
+
+## Trigger.dev (prod)
+- **"Pending version" on prod**: Runs show PENDING_VERSION when the prod environment has no **current** version (no promoted deployment). Fix: deploy to prod and promote:
+  - `npx trigger.dev@latest deploy --env prod` (deploys and by default promotes as current).
+  - If you used `--skip-promotion`, promote from dashboard or CLI: `npx trigger.dev@latest promote <version>`.
+- **Cause**: Prod has no active task version, or the app sends a `TRIGGER_VERSION` that doesn’t exist in prod yet.
 
 ---
 *Note: Legacy documentation moved to `docs/archived/`*

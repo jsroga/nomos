@@ -152,6 +152,9 @@ You MUST call generate_report when:
 - Metrics plan generated with benchmarks
 - Market size and audience fit analyzed
 
+## Reference scoring criteria (what each archetype measures)
+{{SCORING_CRITERIA}}
+
 ## Current Loop Context
 {{LOOP_CONTEXT}}
 
@@ -218,7 +221,7 @@ export function buildLoopContext(input: {
 
 /**
  * Reference game scoring criteria - SECRET SAUCE
- * These detailed criteria help the scorer tools understand what makes each archetype successful
+ * Injected into the system prompt so the agent knows what each archetype measures.
  */
 const SCORING_CRITERIA = {
   discoElysium: {
@@ -300,3 +303,19 @@ const SCORING_CRITERIA = {
     },
   },
 }
+
+function formatScoringCriteriaForPrompt(): string {
+  return Object.entries(SCORING_CRITERIA)
+    .map(([_key, game]) => {
+      const g = game as (typeof SCORING_CRITERIA)[keyof typeof SCORING_CRITERIA]
+      const aspects = g.aspects.join('; ')
+      const sauce = g.secretSauce.whatMadeItWork.join('; ')
+      const benchmarks = Object.entries(g.secretSauce.benchmarks)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('; ')
+      return `- **${g.name}**: ${g.description}. Aspects: ${aspects}. What made it work: ${sauce}. Benchmarks: ${benchmarks}`
+    })
+    .join('\n')
+}
+
+export const SCORING_CRITERIA_PLACEHOLDER = formatScoringCriteriaForPrompt()
