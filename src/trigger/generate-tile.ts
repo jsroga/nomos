@@ -1,7 +1,7 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import { put } from '@vercel/blob'
-import { GENERATION_PROMPTS, MASK_CONFIG, FIRST_TILE_IMAGE_PROMPT_URL } from '@/lib/server/prompts'
+import { GENERATION_PROMPTS, MASK_CONFIG } from '@/lib/server/prompts'
 import { imageService, StyleInfo } from '@/lib/server/image-service'
 import sharp from 'sharp'
 import { v4 as uuidv4 } from 'uuid'
@@ -1007,14 +1007,27 @@ async function generateWithLegNext(
 
     logger.info('Context image uploaded', { publicImageUrl })
   } else {
-    // First tile: use configured image as visual base (image prompt); text prompt + style refs guide generation
-    logger.info('First tile generation - using image prompt URL', {
-      url: FIRST_TILE_IMAGE_PROMPT_URL,
-    })
-    await metadata.set('stage', 'using_image_prompt')
+    // First tile: generate a neutral 1024x1024 canvas and upload it
+    // (MJ CDN URLs are blocked by Cloudflare; text prompt + style refs drive the actual generation)
+    logger.info('First tile generation - creating blank canvas for upload_paint')
+    await metadata.set('stage', 'uploading_blank_canvas')
+    await metadata.set('progress', 30)
 
-    // Use the first-tile image prompt URL directly (LegNext can fetch public URLs)
-    publicImageUrl = FIRST_TILE_IMAGE_PROMPT_URL
+    const blankPng = await sharp({
+      create: { width: 1024, height: 1024, channels: 3, background: { r: 180, g: 180, b: 180 } },
+    })
+      .png()
+      .toBuffer()
+
+    const blankBase64 = `data:image/png;base64,${blankPng.toString('base64')}`
+    const tempFilename = `first_tile_canvas_${uuidv4()}.png`
+    publicImageUrl = await storageService.uploadPublicImage(tempFilename, blankBase64)
+
+    if (!publicImageUrl) {
+      throw new Error('Failed to upload blank canvas for first tile generation')
+    }
+
+    logger.info('Blank canvas uploaded for first tile', { publicImageUrl })
   }
 
   // Step 2: Build remix prompt based on tile type
