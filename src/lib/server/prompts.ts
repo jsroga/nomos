@@ -24,15 +24,6 @@ function getFirstTileStylePhrase(styleContext?: string | null): string {
   return `Isometric painted world, ${styleContext ?? DEFAULT_STYLE_CONTEXT}`
 }
 
-/**
- * Image used as the visual base (image prompt) for first tile (0,0) when using Midjourney/LegNext.
- * LegNext upload_paint uses this as imgUrl; the text prompt (tile + style) guides the generation.
- * Override via env FIRST_TILE_IMAGE_PROMPT_URL if needed.
- */
-export const FIRST_TILE_IMAGE_PROMPT_URL =
-  process.env.FIRST_TILE_IMAGE_PROMPT_URL ||
-  'https://cdn.midjourney.com/4a08dad8-1540-4f4e-b9d6-9860c241a5d0/0_0.png'
-
 export const GENERATION_PROMPTS = {
   /** First tile - no neighbors, full creative generation. styleContext from project settings (preset or default). */
   FIRST_TILE: {
