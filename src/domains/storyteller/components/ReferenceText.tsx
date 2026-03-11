@@ -21,7 +21,7 @@ import React, { useMemo, useState, useEffect } from 'react'
 import { useEntities } from '../hooks/useEntity'
 import { cn } from '@/lib/utils'
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
-import { splitIntoSegments, ParsedReference, TextSegment } from '../utils/reference-parser'
+import { splitIntoSegments, ParsedReference, TextSegment, stripReferences } from '../utils/reference-parser'
 import { User, MapPin, Calendar, Users, Scroll, Film, BookOpen, Loader2 } from 'lucide-react'
 
 // Entity types (duplicated to avoid server-only imports)
@@ -466,7 +466,7 @@ const EntityChip: React.FC<EntityChipProps> = ({ ref, entity, isLoading, onClick
                           title={rel.description || `View ${rel.targetName}`}
                         >
                           <RelIcon size={10} />
-                          <span className="text-[10px]">{rel.targetName}</span>
+                          <span className="text-[10px]">{stripReferences(rel.targetName)}</span>
                           {rel.strength > 0.8 && <span className="text-[8px] opacity-50">★</span>}
                         </span>
                       )
@@ -480,9 +480,9 @@ const EntityChip: React.FC<EntityChipProps> = ({ ref, entity, isLoading, onClick
           </div>
           {entity.relationshipSummary && (
             <div className="mt-2 text-[10px] opacity-60 italic">
-              {entity.relationshipSummary.length > 100
-                ? entity.relationshipSummary.slice(0, 100) + '...'
-                : entity.relationshipSummary}
+              {stripReferences(entity.relationshipSummary).length > 100
+                ? stripReferences(entity.relationshipSummary).slice(0, 100) + '...'
+                : stripReferences(entity.relationshipSummary)}
             </div>
           )}
         </div>
@@ -497,14 +497,16 @@ const EntityChip: React.FC<EntityChipProps> = ({ ref, entity, isLoading, onClick
         </div>
         <div className="text-xs opacity-70 capitalize mt-0.5">{entity.type}</div>
 
-        {/* AI-Generated Contextual Summary - shows relevance to surrounding text */}
+        {/* AI-Generated Summary behavior depends on if we have a base description */}
         {entity.contextualSummary && (
-          <div className="mt-2 p-2 bg-zinc-800/50 rounded border border-zinc-700/50">
-            <div className="text-[10px] opacity-50 uppercase tracking-wide mb-1 flex items-center gap-1">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-              In this context
-            </div>
-            <div className="text-xs opacity-90 leading-relaxed italic">
+          <div className={cn("mt-2", description ? "p-2 bg-zinc-800/50 rounded border border-zinc-700/50" : "opacity-90 leading-relaxed")}>
+            {description && (
+              <div className="text-[10px] opacity-50 uppercase tracking-wide mb-1 flex items-center gap-1">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                In this context
+              </div>
+            )}
+            <div className={cn("text-xs opacity-90 leading-relaxed", description && "italic")}>
               {entity.contextualSummary}
             </div>
           </div>
@@ -609,7 +611,7 @@ export const ReferenceText: React.FC<ReferenceTextProps> = ({
     if (projectId) {
       fetch(`/api/entities/mark-referenced?projectId=${projectId}&id=${refId}`, {
         method: 'POST',
-      }).catch(() => {})
+      }).catch(() => { })
     }
     onEntityClick?.(refId, entity)
   }
@@ -665,8 +667,8 @@ function useEntityReferences(
   // Use React Query to fetch all entities
   // Note: We use the hook that maps ids to useQueries
   // This triggers the EntityLoader which batches them into one API call
-  // if they happen in the same tick.
-  const queryResults = useEntities(refIds, projectId)
+  // if they happen in the same tick. We pass the full text as context.
+  const queryResults = useEntities(refIds, projectId, text)
 
   const entities = useMemo(() => {
     const map = new Map<string, EntityReference>()

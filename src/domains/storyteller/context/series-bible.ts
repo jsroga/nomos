@@ -275,34 +275,41 @@ When evaluating this character's actions, ask:
 `
 }
 
-// Extract visual prompts for world generation
+/** Returns a prompt focused on isometric/2D game tiles that match the Storyteller theme. */
 export function bibleToVisualPrompt(bible: SeriesBible, cast?: Array<{ name: string; role?: string; description?: string }>): string {
-  // Helper to remove markdown style links [Name][id] or [Name](url)
   const stripLinks = (text: string) => {
     return text
       .replace(/\[([^\]]+)\]\[[^\]]+\]/g, '$1')
       .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
   }
 
-  // Priority 1: Use worldDescription if available
+  const gameTileFrame = (theme: string) =>
+    `Isometric game tile: ${theme}. Tileable 2D game environment.`
+
+  // Priority 1: Use worldDescription (first sentence), reframed for game tiles
   if (bible.worldDescription) {
-    // Clean text first
     const cleanedDesc = stripLinks(bible.worldDescription)
-    // Extract first 1 sentence to make it much shorter
     const sentences = cleanedDesc.split(/(?<=[.!?])\s+/).filter(s => s.trim())
-    return sentences.slice(0, 1).join(' ')
+    const first = sentences.slice(0, 1).join(' ').replace(/\.$/, '')
+    if (first) {
+      const motifHint =
+        bible.visualMotifs?.length > 0
+          ? ', ' + bible.visualMotifs.slice(0, 2).join(', ')
+          : ''
+      return gameTileFrame(first + motifHint)
+    }
   }
 
-  // Fallback: Build from setting info
+  // Fallback: Build from setting info, game-tile framed
   const parts: string[] = []
   if (bible.setting?.place) parts.push(stripLinks(bible.setting.place))
-  if (bible.setting?.time) parts.push(`Set in ${stripLinks(bible.setting.time)}.`)
+  if (bible.setting?.time) parts.push(stripLinks(bible.setting.time))
   if (bible.setting?.socialContext) parts.push(stripLinks(bible.setting.socialContext))
+  const settingPrompt = parts.join('. ').trim()
+  if (settingPrompt) return gameTileFrame(settingPrompt)
 
-  const settingPrompt = parts.join(' ')
-  if (settingPrompt) return settingPrompt
+  // Title fallback
+  if (bible.title) return gameTileFrame(stripLinks(bible.title))
 
-  // Final fallback if nothing exists
-  if (bible.title) return `A visual representation of ${stripLinks(bible.title)}`
-  return 'A detailed fantasy world landscape with unique terrain features.'
+  return gameTileFrame('detailed fantasy world landscape with unique terrain')
 }

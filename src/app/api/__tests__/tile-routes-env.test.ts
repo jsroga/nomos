@@ -104,6 +104,7 @@ describe('POST /api/trigger-tile', () => {
   it('uses GOOGLE_API_KEY for follow-up tile (nano-banana)', async () => {
     process.env.LEGNEXT_API_KEY = 'leg-key-123'
     process.env.GOOGLE_API_KEY = 'goog-key-456'
+    process.env.FOLLOW_UP_IMAGE_PROVIDER = 'nano-banana'
     POST = await importRoute()
 
     const req = jsonRequest({
@@ -122,6 +123,54 @@ describe('POST /api/trigger-tile', () => {
     expect(payload.aiProvider).toBe('nano-banana')
     expect(payload.aiConfig.apiKey).toBe('goog-key-456')
     expect(payload.aiConfig.model).toBe('gemini-3-pro-image-preview')
+  })
+
+  it('uses LEGNEXT_API_KEY for follow-up tile when FOLLOW_UP_IMAGE_PROVIDER is legnext-upload-paint', async () => {
+    process.env.LEGNEXT_API_KEY = 'leg-key-123'
+    process.env.GOOGLE_API_KEY = 'goog-key-456'
+    process.env.FOLLOW_UP_IMAGE_PROVIDER = 'legnext-upload-paint'
+    POST = await importRoute()
+
+    const req = jsonRequest({
+      projectId: 'proj_1',
+      x: 1,
+      y: 0,
+      prompt: 'river',
+      isFirstTile: false,
+    })
+
+    const res = await POST(req)
+    const body = await responseJson(res)
+
+    expect(body.success).toBe(true)
+    const [, payload] = mockTrigger.mock.calls[0]
+    expect(payload.aiProvider).toBe('legnext-upload-paint')
+    expect(payload.aiConfig.apiKey).toBe('leg-key-123')
+  })
+
+  it('falls back to legacy env flags when FOLLOW_UP_IMAGE_PROVIDER is unset', async () => {
+    process.env.LEGNEXT_API_KEY = 'leg-key-123'
+    process.env.GOOGLE_API_KEY = 'goog-key-456'
+    delete process.env.FOLLOW_UP_IMAGE_PROVIDER
+    process.env.USE_LEGNEXT_FOR_FOLLOWUP = 'true'
+    delete process.env.USE_NANO_BANANA_FOR_FOLLOWUP
+    POST = await importRoute()
+
+    const req = jsonRequest({
+      projectId: 'proj_1',
+      x: 1,
+      y: 0,
+      prompt: 'river',
+      isFirstTile: false,
+    })
+
+    const res = await POST(req)
+    const body = await responseJson(res)
+
+    expect(body.success).toBe(true)
+    const [, payload] = mockTrigger.mock.calls[0]
+    expect(payload.aiProvider).toBe('legnext-upload-paint')
+    expect(payload.aiConfig.apiKey).toBe('leg-key-123')
   })
 
   it('returns 500 when LEGNEXT_API_KEY is missing for first tile', async () => {
@@ -146,6 +195,7 @@ describe('POST /api/trigger-tile', () => {
   it('returns 500 when GOOGLE_API_KEY is missing for follow-up tile', async () => {
     process.env.LEGNEXT_API_KEY = 'leg'
     delete process.env.GOOGLE_API_KEY
+    process.env.FOLLOW_UP_IMAGE_PROVIDER = 'nano-banana'
     POST = await importRoute()
 
     const req = jsonRequest({
@@ -160,6 +210,26 @@ describe('POST /api/trigger-tile', () => {
     expect(res.status).toBe(500)
     const body = await responseJson(res)
     expect(body.error).toContain('GOOGLE_API_KEY')
+  })
+
+  it('returns 500 when LEGNEXT_API_KEY is missing for legnext follow-up tile', async () => {
+    delete process.env.LEGNEXT_API_KEY
+    process.env.GOOGLE_API_KEY = 'goog'
+    process.env.FOLLOW_UP_IMAGE_PROVIDER = 'legnext-upload-paint'
+    POST = await importRoute()
+
+    const req = jsonRequest({
+      projectId: 'proj_1',
+      x: 1,
+      y: 0,
+      prompt: 'river',
+      isFirstTile: false,
+    })
+
+    const res = await POST(req)
+    expect(res.status).toBe(500)
+    const body = await responseJson(res)
+    expect(body.error).toContain('LEGNEXT_API_KEY')
   })
 
   it('returns 400 when required fields are missing', async () => {

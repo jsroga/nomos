@@ -17,8 +17,10 @@ interface ReviewQueueItem {
   tileX: number
   tileY: number
   newUrl: string
+  variantUrls?: string[]
   originalUrl?: string
   type: TileReviewType
+  tokenId?: string
 }
 
 import { TOUR_STEP_IDS } from '@/lib/tour-constants'
@@ -26,11 +28,17 @@ import { TOUR_STEP_IDS } from '@/lib/tour-constants'
 export default function WorldBuildingPage() {
   // ...
   // Load project from URL
-  useProjectFromUrl()
+  const { projectId } = useProjectFromUrl()
 
   // Review queue - items are added to the END, processed from the START (FIFO)
   const [reviewQueue, setReviewQueue] = useState<ReviewQueueItem[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+  // Clear review queue when project changes so stale modals don't bleed into a new project
+  useEffect(() => {
+    setReviewQueue([])
+    setIsDialogOpen(false)
+  }, [projectId])
 
   // Get the current item (first in queue)
   const currentReview = reviewQueue[0] || null
@@ -43,16 +51,18 @@ export default function WorldBuildingPage() {
     // Add cache-busting to URLs
     const newUrl = item.newUrl ? `${item.newUrl}${cacheBust}` : item.newUrl
     const originalUrl = item.originalUrl ? `${item.originalUrl}${cacheBust}` : item.originalUrl
+    const variantUrls = item.variantUrls?.map(url => `${url}${cacheBust}`)
 
     console.log('[ReviewQueue] Adding item:', {
       type: item.type,
       tileX: item.tileX,
       tileY: item.tileY,
       newUrl,
+      variantUrls,
       originalUrl,
     })
 
-    setReviewQueue(prev => [...prev, { ...item, id, newUrl, originalUrl }])
+    setReviewQueue(prev => [...prev, { ...item, id, newUrl, variantUrls, originalUrl }])
     setIsDialogOpen(true)
   }, [])
 
@@ -87,11 +97,12 @@ export default function WorldBuildingPage() {
   // Listen for generation review events
   useEffect(() => {
     const handleGenerationReview = (event: any) => {
-      const { tileX, tileY, newUrl, originalUrl } = event.detail
+      const { tileX, tileY, newUrl, variantUrls, originalUrl } = event.detail
       addToQueue({
         tileX,
         tileY,
         newUrl,
+        variantUrls,
         originalUrl,
         type: 'generation',
       })
@@ -118,6 +129,22 @@ export default function WorldBuildingPage() {
     return () => window.removeEventListener('fidelity-review-ready', handleFidelityReview)
   }, [addToQueue])
 
+  useEffect(() => {
+    const handleVariantSelection = (event: any) => {
+      const { tileX, tileY, variantUrls, tokenId } = event.detail
+      addToQueue({
+        tileX,
+        tileY,
+        newUrl: variantUrls[0] ?? '',
+        variantUrls,
+        tokenId,
+        type: 'generation',
+      })
+    }
+    window.addEventListener('generation-variant-selection-ready', handleVariantSelection)
+    return () => window.removeEventListener('generation-variant-selection-ready', handleVariantSelection)
+  }, [addToQueue])
+
   return (
     <div className="flex h-full w-full overflow-hidden bg-black text-zinc-200 font-sans selection:bg-indigo-500/30">
       <div id={TOUR_STEP_IDS.WORLD_GEN_NAV}>
@@ -125,11 +152,7 @@ export default function WorldBuildingPage() {
       </div>
 
       {/* Toolbar (Left) */}
-      <div className="w-16 border-r border-indigo-400/30 bg-gradient-to-b from-indigo-950/60 via-background/90 to-indigo-950/60 backdrop-blur-xl z-10 relative shadow-[inset_-1px_0_20px_rgba(79,70,229,0.15),4px_0_30px_rgba(79,70,229,0.08)]">
-        <div className="absolute inset-y-0 right-0 w-[2px] bg-gradient-to-b from-transparent via-indigo-400/50 to-transparent" />
-        <div className="absolute inset-y-0 left-0 w-[2px] bg-gradient-to-b from-transparent via-indigo-500/20 to-transparent" />
-        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-indigo-400/40 to-transparent" />
-        <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-indigo-400/40 to-transparent" />
+      <div className="w-16 border-r border-border/70 bg-background z-10">
         <WorldGenToolbar />
       </div>
 
@@ -153,8 +176,10 @@ export default function WorldBuildingPage() {
           tileX={currentReview.tileX}
           tileY={currentReview.tileY}
           newUrl={currentReview.newUrl}
+          variantUrls={currentReview.variantUrls}
           originalUrl={currentReview.originalUrl}
           type={currentReview.type}
+          tokenId={currentReview.tokenId}
           queueLength={reviewQueue.length - 1}
         />
       )}

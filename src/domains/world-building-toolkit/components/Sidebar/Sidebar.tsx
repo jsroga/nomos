@@ -1,15 +1,18 @@
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useRef, useEffect, useState, useMemo } from 'react'
 import { TOUR_STEP_IDS } from '@/lib/tour-constants'
 import { useWorldStore, Tile } from '@/domains/world-building-toolkit/store/useWorldStore'
-import { assembleContextImage } from '@/infrastructure/ai/contextAssembler'
+import { assembleContextImage, type ContextImageVariant } from '@/infrastructure/ai/contextAssembler'
 import { upscaleService } from '@/domains/world-building-toolkit/services/UpscaleService'
-import { tileGenerationService } from '@/domains/world-building-toolkit/services/TileGenerationService'
+import {
+  tileGenerationService,
+  type FollowUpContextPayload,
+} from '@/domains/world-building-toolkit/services/TileGenerationService'
 import { fidelityService } from '@/domains/world-building-toolkit/services/FidelityService'
 import { LocalStorageKeys } from '@/constants/localStorage'
+import { STYLE_PRESETS_MAP } from '@/config/style-presets'
 import { Button } from '@/components/ui/button'
 import { AssetsPanel } from '@/domains/world-building-toolkit/components/AssetsPanel'
 import { MjVariantPicker } from '@/domains/world-building-toolkit/components/MjVariantPicker'
-import { TileReviewDialog } from '@/domains/world-building-toolkit/components/TileReviewDialog'
 import {
   DomainSidebar,
   SidebarSection,
@@ -35,6 +38,8 @@ import {
   Package,
   Info,
   Trash2,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import toast from 'react-hot-toast'
@@ -52,6 +57,7 @@ export const Sidebar: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [upscaleCreativity, setUpscaleCreativity] = useState(0.3)
   const [showDebug, setShowDebug] = useState(false)
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false)
 
   const [isDebugMode] = useState(() =>
     typeof window !== 'undefined'
@@ -83,7 +89,6 @@ export const Sidebar: React.FC = () => {
     }
   }
 
-  const [isGenerating, setIsGenerating] = useState(false)
   const selectedTiles = useWorldStore(state => state.selectedTiles)
   const selectedTile = useWorldStore(state => state.selectedTile)
   const addTile = useWorldStore(state => state.addTile)
@@ -114,6 +119,43 @@ export const Sidebar: React.FC = () => {
   const [styleReferenceUrls, setStyleReferenceUrls] = useState<string[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [isFetchingSummary, setIsFetchingSummary] = useState(false)
+
+  // Which single style-reference image to send to MJ (persisted per project+preset)
+  const styleUrlLocalStorageKey = currentProject?.id
+    ? `worldgen-style-url-idx-${currentProject.id}-${currentProject.stylePreset || 'custom'}`
+    : null
+
+  const [selectedStyleUrlIndex, setSelectedStyleUrlIndex] = useState<number>(0)
+
+  // Load saved index when project or preset changes
+  useEffect(() => {
+    if (!styleUrlLocalStorageKey) return
+    const saved = localStorage.getItem(styleUrlLocalStorageKey)
+    setSelectedStyleUrlIndex(saved !== null ? parseInt(saved, 10) : 0)
+  }, [styleUrlLocalStorageKey])
+
+  const handleSelectStyleUrl = (index: number) => {
+    setSelectedStyleUrlIndex(index)
+    if (styleUrlLocalStorageKey) {
+      localStorage.setItem(styleUrlLocalStorageKey, String(index))
+    }
+  }
+
+  // The full list of available style URLs (preset takes priority over custom)
+  const activeStyleUrls = useMemo(() => {
+    if (currentProject?.stylePreset) {
+      const preset = STYLE_PRESETS_MAP[currentProject.stylePreset]
+      if (preset && preset.urls.length > 0) return preset.urls
+    }
+    return styleReferenceUrls
+  }, [currentProject?.stylePreset, styleReferenceUrls])
+
+  // Single URL sent to MJ – always just one image
+  const effectiveStyleUrls = useMemo(() => {
+    if (activeStyleUrls.length === 0) return []
+    const idx = Math.min(selectedStyleUrlIndex, activeStyleUrls.length - 1)
+    return [activeStyleUrls[idx]]
+  }, [activeStyleUrls, selectedStyleUrlIndex])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Fidelity enhancement state
@@ -126,34 +168,7 @@ export const Sidebar: React.FC = () => {
     }
     return 'Enhance with fine artistic details, crisp textures, and vibrant colors while maintaining the original composition.'
   })
-  const [showFidelityPrompt, setShowFidelityPrompt] = useState(false)
   const [fidelityCreativity, setFidelityCreativity] = useState(0.3)
-
-  // Auto-approve state (persisted in localStorage)
-  const [autoApprove, setAutoApprove] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('world-gen-auto-approve') === 'true'
-    }
-    return false
-  })
-
-  const handleAutoApproveChange = (checked: boolean) => {
-    setAutoApprove(checked)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('world-gen-auto-approve', String(checked))
-    }
-  }
-
-  // Pending review state
-  const pendingGenerations = useWorldStore(state => state.pendingGenerations)
-  const pendingFidelity = useWorldStore(state => state.pendingFidelity)
-  const [reviewDialog, setReviewDialog] = useState<{
-    type: 'generation' | 'fidelity'
-    x: number
-    y: number
-    newUrl: string
-    originalUrl?: string
-  } | null>(null)
 
   // Save fidelity prompt to localStorage
   const handleFidelityPromptChange = (value: string) => {
@@ -207,6 +222,18 @@ export const Sidebar: React.FC = () => {
   }, [])
 
   // Helper to convert local image to base64 data URL
+  const blobToRawBase64 = (blob: Blob): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string
+        if (!dataUrl || !dataUrl.includes(',')) reject(new Error('Invalid data URL'))
+        else resolve(dataUrl.split(',')[1])
+      }
+      reader.onerror = () => reject(new Error('FileReader error'))
+      reader.readAsDataURL(blob)
+    })
+
   const blobToDataUrl = (blob: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
       if (!blob || blob.size === 0) {
@@ -240,25 +267,12 @@ export const Sidebar: React.FC = () => {
   ): Promise<(Tile & { imageUrl?: string }) | undefined> => {
     if (!tile || !currentProject) return tile
 
-    // If the filename is already a full URL, use it directly; otherwise build a local path
     const imageUrl = tile.image_filename.startsWith('http')
       ? tile.image_filename
-      : `/projects/${currentProject.id}/${tile.image_filename}`
+      : `${window.location.origin}/projects/${currentProject.id}/${tile.image_filename}`
 
     try {
-      // Fetch the image and convert to base64
       const response = await fetch(imageUrl)
-      if (!response.ok) {
-        console.error(`Failed to fetch neighbor image (${response.status}):`, imageUrl)
-        return tile
-      }
-
-      const contentType = response.headers.get('content-type') || ''
-      if (!contentType.startsWith('image/')) {
-        console.error(`Neighbor image returned non-image content-type (${contentType}):`, imageUrl)
-        return tile
-      }
-
       const blob = await response.blob()
 
       return new Promise(resolve => {
@@ -266,14 +280,15 @@ export const Sidebar: React.FC = () => {
         reader.onloadend = () => {
           resolve({
             ...tile,
-            imageUrl: reader.result as string, // This is now a data URL
+            imageUrl: reader.result as string,
           })
         }
+        reader.onerror = () => resolve(undefined)
         reader.readAsDataURL(blob)
       })
     } catch (e) {
       console.error('Failed to load neighbor image:', e)
-      return tile
+      return undefined
     }
   }
 
@@ -323,28 +338,20 @@ export const Sidebar: React.FC = () => {
         ? effectiveTilePrompt
         : `${tilePrompt}, ${masterPrompt}`.replace(/^, /, '')
 
-      // Keep context assembly always on (critical), but move it off the click critical path.
-      // We schedule heavy canvas assembly for idle time and do not block generation start.
-      const contextAssemblyTask = (async () => {
-        const [
-          upTile,
-          downTile,
-          leftTile,
-          rightTile,
-          topLeftTile,
-          topRightTile,
-          bottomLeftTile,
-          bottomRightTile,
-        ] = await Promise.all([
-          loadImageAsDataUrl(tiles[`${x},${y - 1}`]),
-          loadImageAsDataUrl(tiles[`${x},${y + 1}`]),
-          loadImageAsDataUrl(tiles[`${x - 1},${y}`]),
-          loadImageAsDataUrl(tiles[`${x + 1},${y}`]),
-          loadImageAsDataUrl(tiles[`${x - 1},${y - 1}`]),
-          loadImageAsDataUrl(tiles[`${x + 1},${y - 1}`]),
-          loadImageAsDataUrl(tiles[`${x - 1},${y + 1}`]),
-          loadImageAsDataUrl(tiles[`${x + 1},${y + 1}`]),
-        ])
+      let followUpContext: FollowUpContextPayload | undefined
+
+      if (hasNeighbors) {
+        const [upTile, downTile, leftTile, rightTile, topLeftTile, topRightTile, bottomLeftTile, bottomRightTile] =
+          await Promise.all([
+            loadImageAsDataUrl(tiles[`${x},${y - 1}`]),
+            loadImageAsDataUrl(tiles[`${x},${y + 1}`]),
+            loadImageAsDataUrl(tiles[`${x - 1},${y}`]),
+            loadImageAsDataUrl(tiles[`${x + 1},${y}`]),
+            loadImageAsDataUrl(tiles[`${x - 1},${y - 1}`]),
+            loadImageAsDataUrl(tiles[`${x + 1},${y - 1}`]),
+            loadImageAsDataUrl(tiles[`${x - 1},${y + 1}`]),
+            loadImageAsDataUrl(tiles[`${x + 1},${y + 1}`]),
+          ])
 
         const neighbors = {
           up: upTile,
@@ -357,50 +364,61 @@ export const Sidebar: React.FC = () => {
           bottomRight: bottomRightTile,
         }
 
-        await new Promise<void>(resolve => {
-          const requestIdle = (window as any).requestIdleCallback as
-            | ((cb: () => void, opts?: { timeout: number }) => number)
-            | undefined
-          if (typeof requestIdle === 'function') {
-            requestIdle(() => resolve(), { timeout: 400 })
-          } else {
-            setTimeout(resolve, 0)
-          }
-        })
-
-        const { imageBlob } = await assembleContextImage(
-          {
-            targetX: x,
-            targetY: y,
-            neighbors,
-            allTiles: tiles,
-          },
-          1024
+        const contextInput = { targetX: x, targetY: y, neighbors, allTiles: tiles }
+        const preferredVariant: ContextImageVariant = 'canonicalFullContext'
+        const canonicalContext = await assembleContextImage(
+          contextInput,
+          1024,
+          'canonicalFullContext'
         )
-        const assembledContext = await blobToDataUrl(imageBlob)
-        const getImageUrl = (tile: (Tile & { imageUrl?: string }) | undefined) => tile?.imageUrl
-        setGenerationDebugInfo({
-          neighbors: {
-            up: getImageUrl(neighbors.up),
-            down: getImageUrl(neighbors.down),
-            left: getImageUrl(neighbors.left),
-            right: getImageUrl(neighbors.right),
-            topLeft: getImageUrl(neighbors.topLeft),
-            topRight: getImageUrl(neighbors.topRight),
-            bottomLeft: getImageUrl(neighbors.bottomLeft),
-            bottomRight: getImageUrl(neighbors.bottomRight),
+
+        if (canonicalContext.directNeighborCount === 0) {
+          throw new Error('Failed to load direct neighbor context for follow-up tile generation')
+        }
+
+        const [canonicalBase64, maskBase64] = await Promise.all([
+          blobToRawBase64(canonicalContext.imageBlob),
+          blobToRawBase64(canonicalContext.maskBlob),
+        ])
+        followUpContext = {
+          images: {
+            canonicalFullContext: canonicalBase64,
           },
-          assembledContext,
-        })
-      })()
+          maskBase64,
+          preferredVariant,
+        }
 
-      // Trigger generation immediately via Trigger.dev background task.
-      await tileGenerationService.generate(currentProject.id, x, y, fullPrompt, styleReferenceUrls)
+        const getImageUrl = (tile: (Tile & { imageUrl?: string }) | undefined) => tile?.imageUrl
+        blobToDataUrl(canonicalContext.imageBlob).then(assembledContext =>
+          setGenerationDebugInfo({
+            neighbors: {
+              up: getImageUrl(neighbors.up),
+              down: getImageUrl(neighbors.down),
+              left: getImageUrl(neighbors.left),
+              right: getImageUrl(neighbors.right),
+              topLeft: getImageUrl(neighbors.topLeft),
+              topRight: getImageUrl(neighbors.topRight),
+              bottomLeft: getImageUrl(neighbors.bottomLeft),
+              bottomRight: getImageUrl(neighbors.bottomRight),
+            },
+            prompt: fullPrompt,
+            assembledContext,
+            contextVariant: preferredVariant,
+            contextStrategy: canonicalContext.strategy.mode,
+            weightedNeighbors: canonicalContext.strategy.weightedNeighbors,
+            provider: 'nano-banana',
+          })
+        ).catch(() => { })
+      }
 
-      // Do not block UX on context debug completion.
-      void contextAssemblyTask.catch(err => {
-        console.error('[Sidebar] Context assembly failed:', err)
-      })
+      await tileGenerationService.generate(
+        currentProject.id,
+        x,
+        y,
+        fullPrompt,
+        effectiveStyleUrls,
+        followUpContext
+      )
 
       toast.success(`Tile (${x},${y}) generation started!`)
     } catch (err: unknown) {
@@ -414,14 +432,10 @@ export const Sidebar: React.FC = () => {
   const handleGenerate = async () => {
     if (selectedTiles.length === 0 || !currentProject) return
 
-    const tile = selectedTiles[0] // Only one tile selected at a time
-
-    // Check if this tile is already generating
+    const tile = selectedTiles[0]
     if (generatingTiles[`${tile.x},${tile.y}`]) return
 
     setError(null)
-
-    // Generate the single selected tile via Trigger.dev
     await generateSingleTile(tile.x, tile.y)
   }
 
@@ -436,7 +450,6 @@ export const Sidebar: React.FC = () => {
     setError(null)
 
     try {
-      // Read file as base64
       const reader = new FileReader()
       const imageBase64 = await new Promise<string>((resolve, reject) => {
         reader.onload = () => resolve(reader.result as string)
@@ -444,7 +457,6 @@ export const Sidebar: React.FC = () => {
         reader.readAsDataURL(file)
       })
 
-      // Upload via API
       const response = await fetch('/api/upload-tile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -458,12 +470,10 @@ export const Sidebar: React.FC = () => {
       })
 
       const data = await response.json()
-
       if (!response.ok) {
         throw new Error(data.error || 'Upload failed')
       }
 
-      // Update local store with new tile
       useWorldStore.setState(state => ({
         tiles: {
           ...state.tiles,
@@ -487,12 +497,12 @@ export const Sidebar: React.FC = () => {
       setError(`Upload failed: ${msg}`)
     } finally {
       setIsUploading(false)
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
     }
   }
+
 
   const sidebarContent = (
     <TooltipProvider>
@@ -508,60 +518,9 @@ export const Sidebar: React.FC = () => {
               {error}
             </div>
           )}
-          {/* Master Prompt */}
-          <div id={TOUR_STEP_IDS.WORLDGEN_STYLE_PROMPT}>
-            <SidebarSection
-              icon={<Palette size={12} />}
-              title="Style Prompt"
-              rightContent={
-                <div className="flex items-center gap-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info size={12} className="text-muted-foreground/60 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      <p className="max-w-[200px]">
-                        Define the overall art style that will be applied to all generated tiles
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-6 text-[10px] gap-1 font-mono"
-                        onClick={fetchWorldSummary}
-                        disabled={isFetchingSummary || !currentProject}
-                      >
-                        {isFetchingSummary ? (
-                          <Loader2 size={10} className="animate-spin" />
-                        ) : (
-                          <BookOpen size={10} />
-                        )}
-                        Fetch
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Import style from Storyteller World Bible</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              }
-            >
-              <SidebarTextarea
-                value={masterPrompt}
-                onChange={e => handleMasterPromptChange(e.target.value)}
-                placeholder="Define the overall art style and aesthetic..."
-                className="h-24"
-              />
-            </SidebarSection>
-          </div>
-
-          {/* Generation Group */}
           <SidebarSection separator title="Generation" icon={<ImagePlus size={12} />}>
-            {generationDebugInfo && (
+            {isDebugMode && generationDebugInfo && (
               <div className="flex items-center gap-2 mb-3">
                 <Button
                   variant="outline"
@@ -603,14 +562,10 @@ export const Sidebar: React.FC = () => {
               />
             </div>
 
-            {/* Selection Status */}
             {selectedTiles.length > 0 && (
               <div className="text-xs font-mono text-muted-foreground flex items-center gap-1 mb-3">
                 <MousePointer2 size={10} />
                 Selected: {selectedTiles[0].x}, {selectedTiles[0].y}
-                {generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] && (
-                  <span className="ml-2 text-yellow-500">(generating)</span>
-                )}
               </div>
             )}
 
@@ -622,25 +577,36 @@ export const Sidebar: React.FC = () => {
                   disabled={
                     selectedTiles.length === 0 ||
                     (selectedTiles.length > 0 &&
-                      !!generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`]) ||
+                      generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`]) ||
                     isUploading
                   }
                   className="group w-full gap-2 text-purple-400 border border-purple-500/40 hover:bg-purple-500 hover:text-white hover:border-purple-500 font-mono disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                 >
                   {selectedTiles.length > 0 &&
-                    generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] ? (
+                  generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] ? (
                     <>
-                      <Loader2 className="animate-spin text-purple-400 group-hover:text-white transition-colors duration-200" size={14} />
-                      <span className="text-purple-400 group-hover:text-white transition-colors duration-200">Generating...</span>
+                      <Loader2
+                        className="animate-spin text-purple-400 group-hover:text-white transition-colors duration-200"
+                        size={14}
+                      />
+                      <span className="text-purple-400 group-hover:text-white transition-colors duration-200">
+                        Generate
+                      </span>
                     </>
                   ) : (
                     <>
-                      <Sparkles className="text-purple-400 group-hover:text-white transition-colors duration-200" size={14} />
-                      <span className="text-purple-400 group-hover:text-white transition-colors duration-200">Generate</span>
+                      <Sparkles
+                        className="text-purple-400 group-hover:text-white transition-colors duration-200"
+                        size={14}
+                      />
+                      <span className="text-purple-400 group-hover:text-white transition-colors duration-200">
+                        Generate
+                      </span>
                     </>
                   )}
                 </Button>
               </div>
+
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -649,56 +615,50 @@ export const Sidebar: React.FC = () => {
                     disabled={
                       selectedTiles.length === 0 ||
                       (selectedTiles.length > 0 &&
-                        !!generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`]) ||
+                        generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`]) ||
                       isUploading
                     }
                     size="icon"
                     className="disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isUploading ? (
-                      <Loader2 className="animate-spin" size={16} />
-                    ) : (
-                      <Upload size={16} />
-                    )}
+                    {isUploading ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Upload image</p>
                 </TooltipContent>
               </Tooltip>
-              {/* Delete tile button - only show if tile exists */}
-              {selectedTiles.length > 0 &&
-                tiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        onClick={async () => {
-                          const tile = selectedTiles[0]
-                          if (confirm(`Delete tile at (${tile.x}, ${tile.y})?`)) {
-                            try {
-                              await useWorldStore.getState().removeTile(tile.x, tile.y)
-                              toast.success(`Tile (${tile.x}, ${tile.y}) deleted`)
-                            } catch (err) {
-                              toast.error('Failed to delete tile')
-                            }
+
+              {selectedTiles.length > 0 && tiles[`${selectedTiles[0].x},${selectedTiles[0].y}`] && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        const tile = selectedTiles[0]
+                        if (confirm(`Delete tile at (${tile.x}, ${tile.y})?`)) {
+                          try {
+                            await useWorldStore.getState().removeTile(tile.x, tile.y)
+                            toast.success(`Tile (${tile.x}, ${tile.y}) deleted`)
+                          } catch {
+                            toast.error('Failed to delete tile')
                           }
-                        }}
-                        disabled={
-                          !!generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`]
                         }
-                        size="icon"
-                        className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                      >
-                        <Trash2 size={16} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Delete tile</p>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
+                      }}
+                      disabled={generatingTiles[`${selectedTiles[0].x},${selectedTiles[0].y}`]}
+                      size="icon"
+                      className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Delete tile</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
+
             <input
               ref={fileInputRef}
               type="file"
@@ -713,16 +673,22 @@ export const Sidebar: React.FC = () => {
               </div>
             )}
 
-            {/* Generation Debug View */}
-            {generationDebugInfo && showDebug && (
+            {isDebugMode && generationDebugInfo && showDebug && (
               <div className="mt-3 bg-zinc-900/30 p-3 rounded-lg border border-zinc-800/50">
                 <h4 className="text-xs font-semibold mb-2">Debug Context</h4>
-
+                <div className="text-[10px] text-zinc-500 bg-zinc-950 p-2 rounded border border-zinc-800 mb-2">
+                  Provider: {generationDebugInfo.provider || 'unknown'} | Variant:{' '}
+                  {generationDebugInfo.contextVariant || 'canonicalFullContext'}
+                </div>
+                {generationDebugInfo.contextStrategy && (
+                  <div className="text-[10px] text-zinc-500 bg-zinc-950 p-2 rounded border border-zinc-800 mb-2">
+                    Strategy: {generationDebugInfo.contextStrategy} | Weighted:{' '}
+                    {generationDebugInfo.weightedNeighbors?.join(', ') || 'none'}
+                  </div>
+                )}
                 {generationDebugInfo.assembledContext && (
                   <div className="mb-2">
-                    <p className="text-[10px] text-muted-foreground mb-1">
-                      Inline Data (Assembled)
-                    </p>
+                    <p className="text-[10px] text-muted-foreground mb-1">Provider Input Context</p>
                     <img
                       src={generationDebugInfo.assembledContext}
                       className="w-full h-auto border border-border rounded"
@@ -730,7 +696,16 @@ export const Sidebar: React.FC = () => {
                     />
                   </div>
                 )}
-
+                {generationDebugInfo.canonicalContext && (
+                  <div className="mb-2">
+                    <p className="text-[10px] text-muted-foreground mb-1">Canonical Full Context</p>
+                    <img
+                      src={generationDebugInfo.canonicalContext}
+                      className="w-full h-auto border border-border rounded"
+                      alt="Canonical Context"
+                    />
+                  </div>
+                )}
                 <div className="grid grid-cols-3 gap-1 mb-2">
                   <div className="col-start-2 text-center text-[10px]">Up</div>
                   <div className="col-start-1 row-start-2 text-center text-[10px]">Left</div>
@@ -739,58 +714,14 @@ export const Sidebar: React.FC = () => {
                   </div>
                   <div className="col-start-3 row-start-2 text-center text-[10px]">Right</div>
                   <div className="col-start-2 row-start-3 text-center text-[10px]">Down</div>
-
-                  {/* Images */}
-                  {generationDebugInfo.neighbors.topLeft && (
-                    <img
-                      src={generationDebugInfo.neighbors.topLeft}
-                      className="col-start-1 row-start-1 w-full h-full object-cover border border-border"
-                    />
-                  )}
-                  {generationDebugInfo.neighbors.up && (
-                    <img
-                      src={generationDebugInfo.neighbors.up}
-                      className="col-start-2 row-start-1 w-full h-full object-cover border border-border"
-                    />
-                  )}
-                  {generationDebugInfo.neighbors.topRight && (
-                    <img
-                      src={generationDebugInfo.neighbors.topRight}
-                      className="col-start-3 row-start-1 w-full h-full object-cover border border-border"
-                    />
-                  )}
-
-                  {generationDebugInfo.neighbors.left && (
-                    <img
-                      src={generationDebugInfo.neighbors.left}
-                      className="col-start-1 row-start-2 w-full h-full object-cover border border-border"
-                    />
-                  )}
-                  {generationDebugInfo.neighbors.right && (
-                    <img
-                      src={generationDebugInfo.neighbors.right}
-                      className="col-start-3 row-start-2 w-full h-full object-cover border border-border"
-                    />
-                  )}
-
-                  {generationDebugInfo.neighbors.bottomLeft && (
-                    <img
-                      src={generationDebugInfo.neighbors.bottomLeft}
-                      className="col-start-1 row-start-3 w-full h-full object-cover border border-border"
-                    />
-                  )}
-                  {generationDebugInfo.neighbors.down && (
-                    <img
-                      src={generationDebugInfo.neighbors.down}
-                      className="col-start-2 row-start-3 w-full h-full object-cover border border-border"
-                    />
-                  )}
-                  {generationDebugInfo.neighbors.bottomRight && (
-                    <img
-                      src={generationDebugInfo.neighbors.bottomRight}
-                      className="col-start-3 row-start-3 w-full h-full object-cover border border-border"
-                    />
-                  )}
+                  {generationDebugInfo.neighbors.topLeft && <img src={generationDebugInfo.neighbors.topLeft} className="col-start-1 row-start-1 w-full h-full object-cover border border-border" />}
+                  {generationDebugInfo.neighbors.up && <img src={generationDebugInfo.neighbors.up} className="col-start-2 row-start-1 w-full h-full object-cover border border-border" />}
+                  {generationDebugInfo.neighbors.topRight && <img src={generationDebugInfo.neighbors.topRight} className="col-start-3 row-start-1 w-full h-full object-cover border border-border" />}
+                  {generationDebugInfo.neighbors.left && <img src={generationDebugInfo.neighbors.left} className="col-start-1 row-start-2 w-full h-full object-cover border border-border" />}
+                  {generationDebugInfo.neighbors.right && <img src={generationDebugInfo.neighbors.right} className="col-start-3 row-start-2 w-full h-full object-cover border border-border" />}
+                  {generationDebugInfo.neighbors.bottomLeft && <img src={generationDebugInfo.neighbors.bottomLeft} className="col-start-1 row-start-3 w-full h-full object-cover border border-border" />}
+                  {generationDebugInfo.neighbors.down && <img src={generationDebugInfo.neighbors.down} className="col-start-2 row-start-3 w-full h-full object-cover border border-border" />}
+                  {generationDebugInfo.neighbors.bottomRight && <img src={generationDebugInfo.neighbors.bottomRight} className="col-start-3 row-start-3 w-full h-full object-cover border border-border" />}
                 </div>
                 <div className="text-[10px] text-zinc-500 bg-zinc-950 p-2 rounded border border-zinc-800">
                   Prompt: {generationDebugInfo.prompt}
@@ -799,7 +730,6 @@ export const Sidebar: React.FC = () => {
             )}
           </SidebarSection>
 
-          {/* Upscale Group */}
           <SidebarSection separator title="Upscale" icon={<ZoomIn size={12} />}>
             <div className="space-y-3">
               {isDebugMode && (
@@ -837,7 +767,7 @@ export const Sidebar: React.FC = () => {
                       const fullTile = tiles[`${selectedTile.x},${selectedTile.y}`]
                       if (fullTile) {
                         toast.promise(
-                          upscaleService.upscale(fullTile, upscaleCreativity, styleReferenceUrls, upscaleProvider),
+                          upscaleService.upscale(fullTile, upscaleCreativity, effectiveStyleUrls, upscaleProvider),
                           {
                             loading: 'Upscaling...',
                             success: 'Tile queued for upscaling!',
@@ -847,10 +777,7 @@ export const Sidebar: React.FC = () => {
                       }
                     }
                   }}
-                  disabled={
-                    !selectedTile ||
-                    (selectedTile && !!upscalingTiles[`${selectedTile.x},${selectedTile.y}`])
-                  }
+                  disabled={!selectedTile || (selectedTile && !!upscalingTiles[`${selectedTile.x},${selectedTile.y}`])}
                 >
                   <ZoomIn size={14} />
                   Upscale (4x)
@@ -859,7 +786,6 @@ export const Sidebar: React.FC = () => {
             </div>
           </SidebarSection>
 
-          {/* Enhance Fidelity Group */}
           <SidebarSection separator title="Enhance Fidelity" icon={<Sparkles size={12} />}>
             <div className="space-y-3">
               {isDebugMode && (
@@ -878,19 +804,13 @@ export const Sidebar: React.FC = () => {
                 step={0.1}
                 onChange={setFidelityCreativity}
               />
-
               <Button
                 onClick={async () => {
                   if (selectedTile) {
                     const fullTile = tiles[`${selectedTile.x},${selectedTile.y}`]
                     if (fullTile) {
                       toast.promise(
-                        fidelityService.enhance(
-                          fullTile,
-                          fidelityPrompt,
-                          fidelityCreativity,
-                          styleReferenceUrls
-                        ),
+                        fidelityService.enhance(fullTile, fidelityPrompt, fidelityCreativity, effectiveStyleUrls),
                         {
                           loading: 'Enhancing fidelity...',
                           success: 'Tile queued for fidelity enhancement!',
@@ -902,10 +822,7 @@ export const Sidebar: React.FC = () => {
                 }}
                 variant="ghost"
                 className="w-full gap-2 hover:bg-accent hover:text-accent-foreground text-primary border border-primary/40 hover:border-primary/60 font-mono"
-                disabled={
-                  !selectedTile ||
-                  (selectedTile && !!enhancingTiles[`${selectedTile.x},${selectedTile.y}`])
-                }
+                disabled={!selectedTile || (selectedTile && !!enhancingTiles[`${selectedTile.x},${selectedTile.y}`])}
               >
                 {selectedTile && enhancingTiles[`${selectedTile.x},${selectedTile.y}`] ? (
                   <>
@@ -922,7 +839,6 @@ export const Sidebar: React.FC = () => {
             </div>
           </SidebarSection>
 
-          {/* Assets Group */}
           <SidebarSection
             separator
             title="Assets"
@@ -944,10 +860,104 @@ export const Sidebar: React.FC = () => {
           >
             <AssetsPanel />
           </SidebarSection>
+
+          <div id={TOUR_STEP_IDS.WORLDGEN_STYLE_PROMPT}>
+            <SidebarSection
+              separator
+              icon={<Palette size={12} />}
+              title="Advanced Settings"
+              rightContent={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAdvancedSettings(prev => !prev)}
+                  className="h-7 gap-1 px-2 text-[10px] font-mono uppercase tracking-wide"
+                >
+                  {showAdvancedSettings ? 'Hide' : 'Show'}
+                  {showAdvancedSettings ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                </Button>
+              }
+            >
+              {showAdvancedSettings ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1">
+                      <SidebarLabel>Style Prompt</SidebarLabel>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info size={12} className="text-muted-foreground/60 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          <p className="max-w-[200px]">Define the overall art style that will be applied to all generated tiles</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-[10px] gap-1 font-mono"
+                          onClick={fetchWorldSummary}
+                          disabled={isFetchingSummary || !currentProject}
+                        >
+                          {isFetchingSummary ? <Loader2 size={10} className="animate-spin" /> : <BookOpen size={10} />}
+                          Fetch
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Import style from Storyteller World Bible</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <SidebarTextarea
+                    value={masterPrompt}
+                    onChange={e => handleMasterPromptChange(e.target.value)}
+                    placeholder="Define the overall art style and aesthetic..."
+                    className="h-24"
+                  />
+                  {activeStyleUrls.length > 0 && (
+                    <div className="space-y-1.5">
+                      <SidebarLabel>Style Reference Image</SidebarLabel>
+                      <div className="flex flex-wrap gap-1.5">
+                        {activeStyleUrls.map((url, idx) => {
+                          const isSelected = idx === Math.min(selectedStyleUrlIndex, activeStyleUrls.length - 1)
+                          return (
+                            <button
+                              key={url}
+                              onClick={() => handleSelectStyleUrl(idx)}
+                              className={[
+                                'relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all duration-150',
+                                isSelected
+                                  ? 'border-primary shadow-[0_0_0_2px_hsl(var(--primary)/0.3)] scale-105'
+                                  : 'border-border/50 hover:border-primary/60 hover:scale-105 opacity-60 hover:opacity-100',
+                              ].join(' ')}
+                              title={`Style reference ${idx + 1}`}
+                            >
+                              <img
+                                src={url}
+                                alt={`Style reference ${idx + 1}`}
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                              />
+                              {isSelected && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-primary/20">
+                                  <div className="h-2 w-2 rounded-full bg-primary shadow" />
+                                </div>
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </SidebarSection>
+          </div>
         </div>
       )}
 
-      {/* MJ Variant Picker Modal */}
       {mjGridData && (
         <MjVariantPicker
           tileId={mjGridData.tileId}
@@ -964,30 +974,15 @@ export const Sidebar: React.FC = () => {
   )
 
   return (
-    <>
-      <DomainSidebar
-        header={
-          <div className="flex items-center justify-between w-full pl-2">
-            <SidebarHeader>World Gen</SidebarHeader>
-          </div>
-        }
-        storageKey="world-gen"
-      >
-        {sidebarContent}
-      </DomainSidebar>
-
-      {/* Tile Review Dialog */}
-      {reviewDialog && (
-        <TileReviewDialog
-          open={true}
-          onClose={() => setReviewDialog(null)}
-          tileX={reviewDialog.x}
-          tileY={reviewDialog.y}
-          newUrl={reviewDialog.newUrl}
-          originalUrl={reviewDialog.originalUrl}
-          type={reviewDialog.type}
-        />
-      )}
-    </>
+    <DomainSidebar
+      header={
+        <div className="flex items-center justify-between w-full pl-2">
+          <SidebarHeader>World Gen</SidebarHeader>
+        </div>
+      }
+      storageKey="world-gen"
+    >
+      {sidebarContent}
+    </DomainSidebar>
   )
 }

@@ -7,6 +7,7 @@ import { Check, X, Loader2, GripVertical } from 'lucide-react'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import toast from 'react-hot-toast'
 import { getErrorMessage } from '@/lib/error-utils'
+import { tileGenerationService } from '@/domains/world-building-toolkit/services/TileGenerationService'
 
 export type TileReviewType = 'generation' | 'fidelity' | 'upscale'
 
@@ -16,9 +17,11 @@ interface TileReviewDialogProps {
   tileX: number
   tileY: number
   newUrl: string
+  variantUrls?: string[]
   originalUrl?: string // Optional for first tile generation
   type: TileReviewType
   queueLength?: number // How many items in queue after this one
+  tokenId?: string
 }
 
 // Comparison slider component
@@ -185,18 +188,74 @@ const ComparisonSlider: React.FC<{
   )
 }
 
+const VariantPicker: React.FC<{
+  variantUrls: string[]
+  selectedVariantUrl: string | null
+  onSelect: (variantUrl: string) => void
+}> = ({ variantUrls, selectedVariantUrl, onSelect }) => {
+  return (
+    <div className="space-y-3">
+      <div className="text-center space-y-1">
+        <p className="text-sm font-medium text-primary">Choose 1 of 4 variants</p>
+        <p className="text-xs text-muted-foreground">
+          Select a Midjourney option, then confirm with Accept or Reject.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        {variantUrls.map((variantUrl, index) => {
+          const isSelected = selectedVariantUrl === variantUrl
+
+          return (
+            <button
+              key={variantUrl}
+              type="button"
+              onClick={() => onSelect(variantUrl)}
+              className={`group rounded-xl border p-2 text-left transition ${
+                isSelected
+                  ? 'border-primary bg-primary/10 shadow-[0_0_0_1px_rgba(255,255,255,0.08)]'
+                  : 'border-border/60 bg-muted/20 hover:border-primary/50 hover:bg-muted/40'
+              }`}
+            >
+              <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
+                <img
+                  src={variantUrl}
+                  alt={`Variant ${index + 1}`}
+                  className="h-full w-full object-contain"
+                />
+                <div className="absolute left-2 top-2 rounded-md bg-black/70 px-2 py-1 text-[10px] font-mono text-white">
+                  Variant {index + 1}
+                </div>
+                {isSelected && (
+                  <div className="absolute right-2 top-2 rounded-full bg-primary p-1 text-primary-foreground">
+                    <Check size={12} />
+                  </div>
+                )}
+              </div>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export const TileReviewDialog: React.FC<TileReviewDialogProps> = ({
   open,
   onClose,
   tileX,
   tileY,
   newUrl,
+  variantUrls,
   originalUrl,
   type,
   queueLength = 0,
+  tokenId,
 }) => {
   const [isAccepting, setIsAccepting] = useState(false)
   const [isRejecting, setIsRejecting] = useState(false)
+  const [selectedVariantUrl, setSelectedVariantUrl] = useState<string | null>(null)
+  const [isUpscaling, setIsUpscaling] = useState(false)
 
   const acceptGeneration = useWorldStore(state => state.acceptGeneration)
   const rejectGeneration = useWorldStore(state => state.rejectGeneration)
@@ -213,25 +272,63 @@ export const TileReviewDialog: React.FC<TileReviewDialogProps> = ({
 
   const labels = typeLabels[type]
   const title = `Review ${labels.title} Tile (${tileX}, ${tileY})`
+  const requiresVariantSelection = type === 'generation' && !!variantUrls?.length
+
+  useEffect(() => {
+    if (!open) return
+    setSelectedVariantUrl(null)
+  }, [open, tileX, tileY, variantUrls])
 
   const handleAccept = async () => {
+    if (requiresVariantSelection && !selectedVariantUrl) {
+      toast.error('Select a variant before accepting.')
+      return
+    }
+
     setIsAccepting(true)
     try {
-      if (type === 'generation') {
-        await acceptGeneration(tileX, tileY)
+      if (tokenId && requiresVariantSelection) {
+        // MJ variant selection: complete token with chosen action
+        const variantIndex = variantUrls!.findIndex(url => url === selectedVariantUrl || url.split('?')[0] === selectedVariantUrl!.split('?')[0])
+        await tileGenerationService.completeVariantSelection(tokenId, 'accept', variantIndex === -1 ? 0 : variantIndex)
+        toast.success('Using selected variant...')
+        onClose()
+      } else if (type === 'generation') {
+        await acceptGeneration(tileX, tileY, selectedVariantUrl || undefined)
         toast.success('Generation accepted!')
+        onClose()
       } else if (type === 'fidelity') {
         await acceptFidelity(tileX, tileY)
         toast.success('Enhancement accepted!')
+        onClose()
       } else {
         await acceptUpscale(tileX, tileY)
         toast.success('Upscale accepted!')
+        onClose()
       }
-      onClose()
     } catch (error: unknown) {
       toast.error(`Failed to accept: ${getErrorMessage(error)}`)
     } finally {
       setIsAccepting(false)
+    }
+  }
+
+  const handleUpscale = async () => {
+    if (!tokenId || !selectedVariantUrl || !variantUrls) return
+    const variantIndex = variantUrls.findIndex(url => url === selectedVariantUrl || url.split('?')[0] === selectedVariantUrl.split('?')[0])
+    if (variantIndex === -1) {
+      toast.error('Could not determine variant index')
+      return
+    }
+    setIsUpscaling(true)
+    try {
+      await tileGenerationService.completeVariantSelection(tokenId, 'upscale', variantIndex)
+      toast.success('Upscaling variant...')
+      onClose()
+    } catch (error: unknown) {
+      toast.error(`Failed to upscale: ${getErrorMessage(error)}`)
+    } finally {
+      setIsUpscaling(false)
     }
   }
 
@@ -261,6 +358,7 @@ export const TileReviewDialog: React.FC<TileReviewDialogProps> = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
         e.preventDefault()
+        if (requiresVariantSelection && !selectedVariantUrl) return
         handleAccept()
       } else if (e.key === 'Escape') {
         e.preventDefault()
@@ -270,9 +368,9 @@ export const TileReviewDialog: React.FC<TileReviewDialogProps> = ({
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [open])
+  }, [open, requiresVariantSelection, selectedVariantUrl])
 
-  const hasOriginal = !!originalUrl
+  const hasOriginal = !!originalUrl && !requiresVariantSelection
 
   return (
     <Dialog open={open} onOpenChange={isOpen => !isOpen && onClose()}>
@@ -289,8 +387,13 @@ export const TileReviewDialog: React.FC<TileReviewDialogProps> = ({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Comparison slider or single image */}
-          {hasOriginal ? (
+          {requiresVariantSelection ? (
+            <VariantPicker
+              variantUrls={variantUrls!}
+              selectedVariantUrl={selectedVariantUrl}
+              onSelect={setSelectedVariantUrl}
+            />
+          ) : hasOriginal ? (
             <ComparisonSlider originalUrl={originalUrl!} newUrl={newUrl} newLabel={labels.new} />
           ) : (
             /* Single image for first tile */
@@ -307,27 +410,54 @@ export const TileReviewDialog: React.FC<TileReviewDialogProps> = ({
             <div className="text-xs text-muted-foreground">
               <kbd className="px-2 py-1 bg-muted rounded border border-border">Enter</kbd> to accept
               • <kbd className="px-2 py-1 bg-muted rounded border border-border">Esc</kbd> to reject
+              {requiresVariantSelection && !selectedVariantUrl && (
+                <span className="ml-2 text-amber-500">Select a variant first</span>
+              )}
             </div>
 
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 onClick={handleReject}
-                disabled={isAccepting || isRejecting}
+                disabled={isAccepting || isRejecting || isUpscaling}
                 className="gap-2"
               >
                 {isRejecting ? <Loader2 size={16} className="animate-spin" /> : <X size={16} />}
                 Reject
               </Button>
 
-              <Button
-                onClick={handleAccept}
-                disabled={isAccepting || isRejecting}
-                className="gap-2"
-              >
-                {isAccepting ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-                {labels.accept}
-              </Button>
+              {tokenId && requiresVariantSelection ? (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={handleAccept}
+                    disabled={isAccepting || isRejecting || isUpscaling || !selectedVariantUrl}
+                    className="gap-2"
+                  >
+                    {isAccepting ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                    Use this
+                  </Button>
+                  <Button
+                    onClick={handleUpscale}
+                    disabled={isAccepting || isRejecting || isUpscaling || !selectedVariantUrl}
+                    className="gap-2"
+                  >
+                    {isUpscaling ? <Loader2 size={16} className="animate-spin" /> : null}
+                    Upscale this
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={handleAccept}
+                  disabled={
+                    isAccepting || isRejecting || (requiresVariantSelection && !selectedVariantUrl)
+                  }
+                  className="gap-2"
+                >
+                  {isAccepting ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                  {labels.accept}
+                </Button>
+              )}
             </div>
           </div>
         </div>

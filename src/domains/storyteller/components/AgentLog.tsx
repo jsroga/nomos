@@ -367,10 +367,10 @@ export const AgentLog: React.FC<AgentLogProps> = ({
               // Get thinking entries from additional_kwargs for multi-agent attribution
               const thinkingEntries = msg.additional_kwargs?.thinkingEntries as
                 | Array<{
-                    agent: string
-                    content: string
-                    timestamp: number
-                  }>
+                  agent: string
+                  content: string
+                  timestamp: number
+                }>
                 | undefined
               const thinkingContent = msg.thinking || msg.additional_kwargs?.thinking
               const hasExtendedThinking =

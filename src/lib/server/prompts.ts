@@ -47,7 +47,10 @@ export const GENERATION_PROMPTS = {
       `Inpaint the central gray square to seamlessly connect with the surrounding edge context. Fill the gray area with: ${prompt}. Maintain ${styleInfo}, consistent art style. Ensure continuous lines, consistent isometric perspective, and matching lighting. Do not generate borders or frames.`,
 
     GEMINI: (prompt: string, styleInfo: string = 'consistent art style') =>
-      `Inpaint the central gray square to seamlessly connect with the surrounding edge context. Fill the gray area with: ${prompt}. Ensure continuous lines, consistent perspective (Isometric), and matching lighting. Do not generate borders or frames.`,
+      `Inpaint the bright magenta/pink square in the center of this image. The magenta marks exactly where new content must go — replace ONLY the magenta pixels with: ${prompt}. The gray areas outside the magenta are unconstrained empty borders with no adjacent tiles — do not fill or alter them. The non-gray, non-magenta areas are neighboring tiles — seamlessly continue their colors, lines, and lighting at every edge where they touch the magenta area. Ensure continuous lines, consistent isometric perspective, and matching lighting. Do not alter any non-magenta pixels. Do not add borders or frames.`,
+
+    GEMINI_MASKED: (_prompt?: string, _styleInfo: string = 'consistent art style') =>
+      'Edit only the masked center tile so it becomes a seamless continuation of the surrounding neighbor context.',
 
     GEMINI_EDGE_GUIDED: (prompt: string, edgeLabels: string[], styleContext?: string) => {
       const styleHint = styleContext ? ` ${styleContext}.` : ''
@@ -56,7 +59,7 @@ export const GENERATION_PROMPTS = {
     },
 
     MIDJOURNEY: (prompt: string, styleInfo: string) =>
-      `Inpaint the central gray square to seamlessly connect with the surrounding edge context. Fill the gray area with: ${prompt}. Maintain ${styleInfo}, consistent art style. Ensure continuous lines, consistent isometric perspective, and matching lighting. Do not generate borders or frames. --stylize 0 --q 2`,
+      `Fill grey space seamlessly to match surrounding edges --q 2`,
 
     OPENAI: (prompt: string) =>
       `Fill seamlessly to match surrounding edges: ${prompt}. Maintain isometric perspective and consistent style.`,

@@ -78,11 +78,11 @@ export const STYLE_PRESETS: StylePreset[] = [
     styleContext:
       'pure isometric 3D game style like Disco Elysium or Fallout; celestial ink style, ancient manuscript meets astronomy, deep blues and gold, delicate linework, ethereal atmospheric detail.',
     urls: [
-      'https://cdn.midjourney.com/2ea02ad2-5a9d-4ebd-aaf7-2882d9534429/0_2.png',
-      'https://cdn.midjourney.com/017d010e-d4e0-4fc2-8a75-87ac6fbaee7d/0_2.png',
+      // 'https://cdn.midjourney.com/2ea02ad2-5a9d-4ebd-aaf7-2882d9534429/0_2.png',
+      // 'https://cdn.midjourney.com/017d010e-d4e0-4fc2-8a75-87ac6fbaee7d/0_2.png',
       'https://cdn.midjourney.com/86498229-6f97-416c-976f-7855b493a5be/0_1.png',
-      'https://cdn.midjourney.com/0145a5a2-a3eb-439a-b223-3e356c1abc08/0_2.png',
-      'https://cdn.midjourney.com/b5913823-6a33-4346-b973-80eff7f7173c/0_1.png',
+      // 'https://cdn.midjourney.com/0145a5a2-a3eb-439a-b223-3e356c1abc08/0_2.png',
+      // 'https://cdn.midjourney.com/b5913823-6a33-4346-b973-80eff7f7173c/0_1.png',
     ],
   },
   {

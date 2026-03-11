@@ -184,7 +184,7 @@ class EntityGraphService {
           id: seed.id,
           name: seed.name,
           type: seed.type as EntityType,
-          description: seed.description || '',
+          description: seed.description?.startsWith('Auto-registered') ? '' : (seed.description || ''),
           metadata: (seed.metadata as Record<string, unknown>) || {},
           projectId: seed.projectId,
           sourceEntityId: seed.sourceEntityId || undefined,
@@ -251,7 +251,7 @@ class EntityGraphService {
                 id: entity.id,
                 name: entity.name,
                 type: entity.type as EntityType,
-                description: entity.description || '',
+                description: entity.description?.startsWith('Auto-registered') ? '' : (entity.description || ''),
                 metadata: (entity.metadata as Record<string, unknown>) || {},
                 projectId: entity.projectId,
                 sourceEntityId: entity.sourceEntityId || undefined,
@@ -320,17 +320,31 @@ class EntityGraphService {
     const seedEntities = entities.filter(e => seedIds.has(e.id))
     if (seedEntities.length === 0) return
 
-    // Start from a random seed
-    let current = seedEntities[Math.floor(Math.random() * seedEntities.length)]
+    // Start from a deterministically-seeded entity (stable layout across renders)
+    // Hash the sorted seed IDs to pick a consistent starting point
+    const seedSorted = [...seedIds].sort()
+    const seedHash = seedSorted.reduce((h, id) => {
+      let v = h
+      for (let i = 0; i < id.length; i++) v = (Math.imul(31, v) + id.charCodeAt(i)) | 0
+      return v >>> 0
+    }, 0)
+    let current = seedEntities[seedHash % seedEntities.length]
+
+    // Deterministic pseudo-random walk (LCG seeded by project hash)
+    let lcgState = seedHash || 1
+    const lcgNext = () => {
+      lcgState = (Math.imul(1664525, lcgState) + 1013904223) >>> 0
+      return lcgState / 0x100000000
+    }
 
     for (let step = 0; step < steps; step++) {
       // Increment visit count
       visitCounts.set(current.id, (visitCounts.get(current.id) || 0) + 1)
 
       // Decide: restart or follow edge
-      if (Math.random() < restartProb) {
-        // Restart from a random seed
-        current = seedEntities[Math.floor(Math.random() * seedEntities.length)]
+      if (lcgNext() < restartProb) {
+        // Restart from a deterministic seed position
+        current = seedEntities[Math.floor(lcgNext() * seedEntities.length)]
       } else {
         // Follow edge to a connected entity
         // Connected = discovered via this entity OR same discoveredVia
@@ -343,13 +357,13 @@ class EntityGraphService {
         )
 
         if (connected.length > 0) {
-          // Weighted random selection based on relevance
+          // Weighted deterministic selection based on relevance
           const totalRelevance = connected.reduce((sum, e) => sum + e.relevance, 0)
-          let random = Math.random() * totalRelevance
+          let rand = lcgNext() * totalRelevance
 
           for (const e of connected) {
-            random -= e.relevance
-            if (random <= 0) {
+            rand -= e.relevance
+            if (rand <= 0) {
               current = e
               break
             }
@@ -472,7 +486,7 @@ class EntityGraphService {
           id: r.id,
           name: r.name,
           type: r.type as EntityType,
-          description: r.description || '',
+          description: r.description?.startsWith('Auto-registered') ? '' : (r.description || ''),
           metadata: (r.metadata as Record<string, unknown>) || {},
           projectId: r.projectId,
           sourceEntityId: r.sourceEntityId || undefined,
@@ -573,7 +587,7 @@ class EntityGraphService {
           id: entity.id,
           name: entity.name,
           type: entity.type as EntityType,
-          description: entity.description || '',
+          description: entity.description?.startsWith('Auto-registered') ? '' : (entity.description || ''),
           metadata: (entity.metadata as Record<string, unknown>) || {},
           projectId: entity.projectId,
           sourceEntityId: entity.sourceEntityId || undefined,
@@ -822,4 +836,5 @@ class EntityGraphService {
 export const entityGraphService = new EntityGraphService()
 
 // Export class and types for testing
-export { EntityGraphService, GraphRAGOptions }
+export { EntityGraphService }
+export type { GraphRAGOptions }

@@ -16,6 +16,7 @@ export interface PendingUpscale {
 
 export interface PendingGeneration {
   newUrl: string
+  variantUrls?: string[]
   newBase64?: string // Deprecated: use newUrl instead, kept for backwards compatibility
   originalUrl?: string // undefined for first tile
   isFirstTile: boolean
@@ -73,6 +74,9 @@ interface WorldState {
   enhancingTiles: Record<string, boolean>
   failedTiles: Record<string, string> // Key: "x,y", Value: error message
 
+  // Per-tile generation progress (shown as overlay on the tile)
+  tileProgress: Record<string, { progress: number; stage: string }> // Key: "x,y"
+
   // Repaint State
   isRepaintMode: boolean
   brushSize: number
@@ -96,6 +100,11 @@ interface WorldState {
     }
     prompt: string
     assembledContext?: string
+    canonicalContext?: string
+    contextVariant?: 'canonicalFullContext' | 'smartSeamContext'
+    contextStrategy?: 'balanced' | 'horizontal_priority' | 'vertical_priority'
+    weightedNeighbors?: Array<'up' | 'down' | 'left' | 'right'>
+    provider?: string
   } | null
 
   // Select Mode State
@@ -151,6 +160,8 @@ interface WorldState {
   removeEnhancingTile: (x: number, y: number) => void
   setTileError: (x: number, y: number, message: string) => void
   clearTileError: (x: number, y: number) => void
+  setTileProgress: (x: number, y: number, progress: number, stage: string) => void
+  clearTileProgress: (x: number, y: number) => void
 
   getTile: (x: number, y: number) => Tile | undefined
 
@@ -197,7 +208,7 @@ interface WorldState {
 
   // Pending Generation Actions
   setPendingGeneration: (x: number, y: number, data: Omit<PendingGeneration, 'timestamp'>) => void
-  acceptGeneration: (x: number, y: number) => Promise<void>
+  acceptGeneration: (x: number, y: number, acceptedUrl?: string) => Promise<void>
   rejectGeneration: (x: number, y: number) => void
   getPendingGeneration: (x: number, y: number) => PendingGeneration | undefined
 
@@ -224,6 +235,7 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   upscalingTiles: {},
   repaintingTiles: {},
   enhancingTiles: {},
+  tileProgress: {},
   failedTiles: {},
   isRepaintMode: false,
   brushSize: 50,
@@ -591,6 +603,20 @@ export const useWorldStore = create<WorldState>((set, get) => ({
     })
   },
 
+  setTileProgress: (x, y, progress, stage) => {
+    set(state => ({
+      tileProgress: { ...state.tileProgress, [`${x},${y}`]: { progress, stage } },
+    }))
+  },
+
+  clearTileProgress: (x, y) => {
+    set(state => {
+      const tileProgress = { ...state.tileProgress }
+      delete tileProgress[`${x},${y}`]
+      return { tileProgress }
+    })
+  },
+
   getTile: (x, y) => get().tiles[`${x},${y}`],
 
   setRepaintMode: isRepaintMode => set({ isRepaintMode }),
@@ -716,7 +742,7 @@ export const useWorldStore = create<WorldState>((set, get) => ({
       },
     })),
 
-  acceptGeneration: async (x, y) => {
+  acceptGeneration: async (x, y, acceptedUrl) => {
     const { currentProject, pendingGenerations } = get()
     if (!currentProject) return
 
@@ -727,7 +753,7 @@ export const useWorldStore = create<WorldState>((set, get) => ({
     try {
       // Use the Vercel Blob URL directly instead of re-saving base64
       // The image is already stored in Vercel Blob (pending.newUrl)
-      const imageUrl = pending.newUrl
+      const imageUrl = acceptedUrl || pending.newUrl
 
       // Upsert tile in database with the Blob URL
       const supabase = (await import('@/infrastructure/storage/supabaseClient')).getSupabaseClient()

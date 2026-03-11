@@ -3028,10 +3028,19 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
               {/* Smart Quick Actions & Propose Next Step */}
               {!isSending && !isTokenStreaming && (
                 <div className="mt-2 border-t border-border/10 pt-2 px-2 pb-1">
-                  <div className="flex items-center gap-2 mb-1.5 px-1">
+                  <div className="flex items-center justify-between mb-1.5 px-1">
                     <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">
                       Suggested
                     </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-5 px-2 text-[10px] text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 transition-colors"
+                      onClick={() => handleSendMessage(undefined, "I'd like to expand our cast of characters. Considering the setting and story so far, who would be an interesting new character to introduce next?")}
+                    >
+                      <Users className="w-3 h-3 mr-1" />
+                      Add Cast
+                    </Button>
                   </div>
                   <SmartQuickActions
                     currentPhase={currentPhase as any}

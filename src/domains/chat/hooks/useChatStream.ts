@@ -102,6 +102,10 @@ export function useChatStream({
   userId,
   verboseUiEnabled = true,
 }: UseChatStreamProps = {}) {
+  // Always-current ref so running streams pick up live toggle state (fixes stale closure)
+  const verboseUiRef = useRef(verboseUiEnabled)
+  verboseUiRef.current = verboseUiEnabled
+
   // Generate or use provided session ID for Langfuse tracing
   const sessionId = propSessionId || generateSessionId(projectId, episodeId, userId)
   // Get initial messages from sessionStorage if persistKey is provided
@@ -161,7 +165,7 @@ export function useChatStream({
   }, [])
 
   const scheduleTokenFlush = useCallback(() => {
-    if (!verboseUiEnabled) return
+    if (!verboseUiRef.current) return
 
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now()
     const elapsed = now - lastTokenFlushAtRef.current
@@ -173,7 +177,7 @@ export function useChatStream({
     if (tokenFlushTimeoutRef.current !== null) return
     const wait = Math.max(0, TOKEN_FLUSH_INTERVAL_MS - elapsed)
     tokenFlushTimeoutRef.current = setTimeout(flushStreamingTokens, wait)
-  }, [flushStreamingTokens, verboseUiEnabled])
+  }, [flushStreamingTokens])
 
   const cancelTokenFlush = useCallback(() => {
     if (tokenFlushTimeoutRef.current) {
@@ -344,7 +348,7 @@ export function useChatStream({
    */
   // Helper to append activity log entries to the current/last AI message
   const appendActivityLog = useCallback((entry: ActivityLogEntry) => {
-    if (!verboseUiEnabled) return
+    if (!verboseUiRef.current) return
     setMessages(prev => {
       // Find the last AI message (even if it's not the absolute last item, though it should be)
       const lastAiMsgIndex = [...prev].reverse().findIndex(m => m && m.type === 'ai')
@@ -372,11 +376,11 @@ export function useChatStream({
         },
       ]
     })
-  }, [verboseUiEnabled])
+  }, [])
 
   const updateAgentStatus = useCallback(
     (agent: string, status: AgentStatus, message?: string, details?: string) => {
-      if (!verboseUiEnabled) return
+      if (!verboseUiRef.current) return
       setActiveAgents(prev => {
         const existing = prev.find(a => a.agent === agent)
 
@@ -401,7 +405,7 @@ export function useChatStream({
         ]
       })
     },
-    [verboseUiEnabled]
+    []
   )
 
   /**
@@ -462,7 +466,7 @@ export function useChatStream({
    * Process section progress events
    */
   const processSectionEvent = useCallback((data: any) => {
-    if (!verboseUiEnabled) return
+    if (!verboseUiRef.current) return
     if (data.type === 'section_start') {
       setStreamingSections(prev => {
         const existing = prev.find(s => s.id === data.section)
@@ -510,7 +514,7 @@ export function useChatStream({
         )
       )
     }
-  }, [verboseUiEnabled])
+  }, [])
 
   /**
    * Process citation events
@@ -585,7 +589,7 @@ export function useChatStream({
                   setStreamingTokens('')
                   streamingTokensRef.current = ''
                   setStreamingSections([])
-                  setIsTokenStreaming(verboseUiEnabled && data.streamMode === 'events')
+                  setIsTokenStreaming(verboseUiRef.current && data.streamMode === 'events')
                   setCitations([])
                   setGroundingScore(null)
 
@@ -657,7 +661,7 @@ export function useChatStream({
                   }
                   appendActivityLog(entry)
                 } else if (data.type === 'thinking') {
-                  if (!verboseUiEnabled) continue
+                  if (!verboseUiRef.current) continue
                   // Extended thinking/reasoning from agent - attach to current message and activity log
                   const thinking = data.thinking || ''
                   const agentName = data.agent || thinkingAgent || 'Agent'
@@ -722,6 +726,25 @@ export function useChatStream({
                     const messageWithCitations = {
                       ...data.message,
                       citations: data.citations || data.message.citations,
+                    }
+
+                    // If the last message is an empty AI placeholder (created by 'start' event),
+                    // fill it in with the real content so the activityLog is preserved on the visible message
+                    const lastMsg = prev[prev.length - 1]
+                    if (
+                      lastMsg &&
+                      lastMsg.type === 'ai' &&
+                      !lastMsg.content &&
+                      data.message.type === 'ai'
+                    ) {
+                      return [
+                        ...prev.slice(0, -1),
+                        {
+                          ...lastMsg,
+                          ...messageWithCitations,
+                          activityLog: lastMsg.activityLog,
+                        },
+                      ]
                     }
 
                     return [...prev, messageWithCitations]
@@ -1002,11 +1025,11 @@ export function useChatStream({
       onStreamingUpdate,
       onComplete,
       updateAgentStatus,
+      appendActivityLog,
       processSectionEvent,
       processCitationEvent,
       scheduleTokenFlush,
       cancelTokenFlush,
-      verboseUiEnabled,
     ]
   )
 

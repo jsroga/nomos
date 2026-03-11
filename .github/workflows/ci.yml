@@ -278,7 +278,127 @@ jobs:
           echo "Security review passed - no HIGH severity findings."
 
   # ───────────────────────────────────────────────
-  # Job 5: Deploy to Vercel
+  # Job 5: AI Code Review (Copilot-style)
+  # ───────────────────────────────────────────────
+  pr-review:
+    name: AI Code Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are a senior engineer doing a focused code review on this PR.
+
+            Run: git diff origin/${{ github.base_ref }}...HEAD
+
+            Review for:
+            - Logic bugs and edge cases
+            - Performance issues (N+1 queries, unnecessary re-renders, missing memoization)
+            - API design consistency with the rest of the codebase
+            - Missing error handling at system boundaries (user input, external APIs)
+            - Anything likely to break in production
+
+            Do NOT comment on:
+            - Code style or formatting (handled by ESLint)
+            - Missing tests
+            - Security (handled by the dedicated security job)
+
+            Post a single PR comment via the GitHub API:
+            POST https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments
+            Header: Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}
+            Header: Content-Type: application/json
+
+            Format the comment body as:
+            ## AI Code Review
+
+            ### Summary
+            (1-2 sentences on what the PR does)
+
+            ### Issues
+            (Only real issues. Group by severity: **High** / **Medium** / **Low**)
+            Format each: `file:line` — description — suggested fix
+
+            ### Looks Good
+            (Briefly note anything notably well-done)
+
+            If there are no issues, say so clearly. Be concise — no padding.
+          claude_args: "--max-turns 5 --model claude-sonnet-4-6"
+
+  # ───────────────────────────────────────────────
+  # Job 6: Self-Healing Docs
+  # ───────────────────────────────────────────────
+  heal-docs:
+    name: Self-Healing Docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: |
+      github.event_name == 'pull_request' &&
+      !contains(github.event.pull_request.title, '[skip docs]')
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are a documentation maintainer. Keep docs/ in sync with code changes.
+
+            Step 1 — Get the diff:
+            git diff origin/${{ github.base_ref }}...HEAD -- src/
+
+            Step 2 — Determine which docs are affected based on changed paths:
+            - src/domains/world-building-toolkit/ → docs/internal/world-building-toolkit.md
+            - src/domains/storyteller/            → docs/internal/storyteller.md
+            - src/trigger/                        → docs/internal/agents/ (if agent logic changed)
+            - src/infrastructure/ or src/lib/     → docs/ARCHITECTURE.md
+            - src/app/api/                        → docs/MCP_API.md (only if API surface changed)
+            - Public-facing behavior changes      → README.md
+
+            Step 3 — Read only the affected doc files.
+
+            Step 4 — Update ONLY sections that are factually wrong or missing due to
+            this PR's changes. Do not rewrite unrelated sections, add padding, or
+            change the existing tone and style.
+
+            Step 5 — If you changed any files, commit them:
+            git config user.name "docs-bot"
+            git config user.email "docs-bot@users.noreply.github.com"
+            git add docs/ README.md
+            git diff --cached --quiet || git commit -m "docs: auto-update for PR #${{ github.event.pull_request.number }} [skip ci]"
+            git push
+
+            Step 6 — Post a PR comment summarizing the result:
+            POST https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments
+            Header: Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}
+            Header: Content-Type: application/json
+
+            Comment format:
+            ## Docs Update
+            (List each file changed with a one-line reason, or "No doc updates needed.")
+          claude_args: "--max-turns 8 --model claude-sonnet-4-6"
+
+  # ───────────────────────────────────────────────
+  # Job 7: Deploy to Vercel
   # Runs only on push to protected branches, after ALL checks pass
   # ───────────────────────────────────────────────
   deploy:

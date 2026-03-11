@@ -257,38 +257,66 @@ const ActivityEntryItem: React.FC<{ entry: ActivityLogEntry }> = ({ entry }) => 
   })
 
   if (entry.type === 'tool') {
-    let resultDisplay = entry.toolResult
-    let isJson = false
-
-    // Try to parse JSON result string for better displaying
-    if (
-      typeof entry.toolResult === 'string' &&
-      (entry.toolResult.startsWith('{') || entry.toolResult.startsWith('['))
-    ) {
-      try {
-        const parsed = JSON.parse(entry.toolResult)
-        resultDisplay = parsed
-        isJson = true
-      } catch (e) {
-        // keep as string
-      }
+    // Normalise result to an object if it's a JSON string
+    let resultObj: Record<string, unknown> | null = null
+    if (typeof entry.toolResult === 'string') {
+      try { resultObj = JSON.parse(entry.toolResult) } catch { /* keep null */ }
+    } else if (entry.toolResult && typeof entry.toolResult === 'object') {
+      resultObj = entry.toolResult as Record<string, unknown>
     }
 
+    const isRejected = resultObj?.success === false
+    const rejectionError = isRejected ? String(resultObj?.error || '') : ''
+    const isSuccess = resultObj?.success === true
+
     return (
-      <div className="flex gap-3 text-xs font-mono border-l-2 border-purple-500/30 pl-3 py-2 ml-1 relative group hover:bg-white/5 transition-colors rounded-r">
-        <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-purple-500/50" />
+      <div className={cn(
+        'flex gap-3 text-xs font-mono border-l-2 pl-3 py-2 ml-1 relative group hover:bg-white/5 transition-colors rounded-r',
+        isRejected ? 'border-red-500/50' : 'border-purple-500/30'
+      )}>
+        <div className={cn(
+          'absolute -left-[5px] top-2 w-2 h-2 rounded-full',
+          isRejected ? 'bg-red-500/70' : 'bg-purple-500/50'
+        )} />
         <span className="text-muted-foreground/50 w-16 shrink-0 pt-0.5">{time}</span>
         <div className="flex-1 space-y-2">
           {/* Header */}
           <div className="flex items-center gap-2">
-            <span className="text-purple-400 font-bold uppercase tracking-wider bg-purple-500/10 px-1.5 py-0.5 rounded text-[10px]">
+            <span className={cn(
+              'font-bold uppercase tracking-wider px-1.5 py-0.5 rounded text-[10px]',
+              isRejected
+                ? 'text-red-400 bg-red-500/10'
+                : 'text-purple-400 bg-purple-500/10'
+            )}>
               TOOL
             </span>
             <span className="text-foreground/90 font-semibold">{entry.toolName}</span>
+            {isRejected && (
+              <span className="ml-auto text-[10px] font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/30 uppercase tracking-wider">
+                ✗ Rejected
+              </span>
+            )}
+            {isSuccess && (
+              <span className="ml-auto text-[10px] font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded border border-green-500/30 uppercase tracking-wider">
+                ✓ OK
+              </span>
+            )}
           </div>
 
-          {/* Inputs */}
-          {entry.toolInput && (
+          {/* Rejection error — prominently displayed */}
+          {isRejected && rejectionError && (
+            <div className="bg-red-950/40 border border-red-500/30 rounded p-2.5 space-y-1">
+              <span className="uppercase text-[9px] text-red-400/70 font-bold tracking-wider block">
+                Rejection Reason
+              </span>
+              <p className="text-red-300/90 leading-relaxed whitespace-pre-wrap text-[11px]">
+                {rejectionError}
+              </p>
+            </div>
+          )}
+
+          {/* Inputs — collapsed by default on rejection to keep focus on the error */}
+          {entry.toolInput && !isRejected && (
             <div className="text-xs text-muted-foreground/70 bg-muted/10 p-2 rounded border border-white/5">
               <span className="uppercase text-[9px] opacity-70 block mb-1 tracking-wider">
                 Input
@@ -301,23 +329,17 @@ const ActivityEntryItem: React.FC<{ entry: ActivityLogEntry }> = ({ entry }) => 
             </div>
           )}
 
-          {/* Result */}
-          {resultDisplay && (
-            <div className="text-xs bg-black/40 p-2 rounded text-muted-foreground/80 border border-white/5 ml-[-80px]">
+          {/* Result — only show full JSON when not a rejection (rejection already surfaced above) */}
+          {!isRejected && entry.toolResult && (
+            <div className="text-xs bg-black/40 p-2 rounded text-muted-foreground/80 border border-white/5">
               <span className="uppercase text-[9px] opacity-50 block mb-1 tracking-wider">
                 Result
               </span>
-              {isJson ? (
-                <pre className="whitespace-pre-wrap text-green-400/80 font-mono text-[10px]">
-                  {JSON.stringify(resultDisplay, null, 2)}
-                </pre>
-              ) : (
-                <div className="whitespace-pre-wrap max-h-48 overflow-y-auto scrollbar-thin text-green-400/80">
-                  {typeof resultDisplay === 'string'
-                    ? resultDisplay.slice(0, 500) + (resultDisplay.length > 500 ? '...' : '')
-                    : JSON.stringify(resultDisplay)}
-                </div>
-              )}
+              <pre className="whitespace-pre-wrap text-green-400/80 font-mono text-[10px] max-h-48 overflow-y-auto scrollbar-thin">
+                {resultObj
+                  ? JSON.stringify(resultObj, null, 2)
+                  : String(entry.toolResult).slice(0, 500)}
+              </pre>
             </div>
           )}
         </div>
@@ -369,6 +391,8 @@ const ActivityEntryItem: React.FC<{ entry: ActivityLogEntry }> = ({ entry }) => 
     const isThinking =
       entry.content?.toLowerCase().includes('thinking') ||
       entry.content?.toLowerCase().includes('processing')
+    // Detect "Using <tool>..." status messages
+    const toolMatch = entry.content?.match(/^Using (.+?)\.\.\.$/)
     return (
       <div
         className={cn(
@@ -379,16 +403,24 @@ const ActivityEntryItem: React.FC<{ entry: ActivityLogEntry }> = ({ entry }) => 
         )}
       >
         <span className="opacity-50 w-16 shrink-0">{time}</span>
-        <div className="flex-1">
+        <div className="flex-1 flex items-center gap-2">
           <span
             className={cn(
-              'font-bold mr-2 uppercase text-[10px]',
+              'font-bold mr-1 uppercase text-[10px]',
               isThinking ? 'text-amber-500' : 'text-foreground/60'
             )}
           >
             {entry.agent || 'System'}:
           </span>
-          {entry.content}
+          {toolMatch ? (
+            <>
+              <span className="opacity-70">Using</span>
+              <span className="text-purple-300/90 font-semibold">{toolMatch[1]}</span>
+              <Loader2 className="w-3 h-3 animate-spin opacity-50" />
+            </>
+          ) : (
+            entry.content
+          )}
         </div>
       </div>
     )
@@ -399,6 +431,7 @@ const ActivityEntryItem: React.FC<{ entry: ActivityLogEntry }> = ({ entry }) => 
 
 const ActivityLogViewer: React.FC<{ logs: ActivityLogEntry[] }> = ({ logs }) => {
   if (!logs || logs.length === 0) return null
+  const sorted = [...logs].sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0))
 
   return (
     <div className="mt-4 mb-2 pt-2 border-t border-dashed border-border/30">
@@ -406,7 +439,7 @@ const ActivityLogViewer: React.FC<{ logs: ActivityLogEntry[] }> = ({ logs }) => 
         Activity Log
       </div>
       <div className="space-y-2">
-        {logs.map((entry, idx) => (
+        {sorted.map((entry, idx) => (
           <ActivityEntryItem key={idx} entry={entry} />
         ))}
       </div>
@@ -654,8 +687,8 @@ export const AgentLog: React.FC<AgentLogProps> = React.memo(({
     }
   }
 
-  // Group messages: collect consecutive delegation messages into chains
-  // Track original indices for action approval
+  // Build chronological feed: groups follow messages array order (no reordering).
+  // Each group is either a delegation chain or a single message; activity log is rendered at the bottom of each message block.
   const groupedMessages = useMemo(() => {
     const cached = groupingCacheRef.current
     if (cached?.messages === messages) {
@@ -723,11 +756,7 @@ export const AgentLog: React.FC<AgentLogProps> = React.memo(({
       onScroll={handleScroll}
       className="flex-1 overflow-y-auto space-y-6 pr-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent pb-4"
     >
-      {/* Active Agents Panel - JSON/Debug View only */}
-      {showActiveAgents && isActivityPanelOpen && activeAgents.length > 0 && (
-        <ActiveAgentsPanel activeAgents={activeAgents} agentConfig={agentConfig} />
-      )}
-
+      {/* Chronological message feed: messages then per-message activity (activity log at bottom of each block) */}
       {groupedMessages.map((group, groupIdx) => {
         // Strict Activity Filtering: Skip technical delegation if Activity is OFF
         if (group.type === 'delegation' && !isActivityPanelOpen) {
@@ -762,7 +791,7 @@ export const AgentLog: React.FC<AgentLogProps> = React.memo(({
           return null
         }
 
-        if (!isHuman && !msg.content?.trim() && !(msg.actions?.length) && !(msg.questions?.length) && msg.type !== 'consistency_check') {
+        if (!isHuman && !msg.content?.trim() && !(msg.actions?.length) && !(msg.questions?.length) && !(msg.activityLog?.length) && msg.type !== 'consistency_check') {
           return null
         }
 
@@ -777,39 +806,39 @@ export const AgentLog: React.FC<AgentLogProps> = React.memo(({
             {/* Agent Header - Minimalist */}
             {/* Always show agent header as requested */}
             <div
-                className={cn(
-                  'flex items-center gap-2 mb-1.5',
-                  isHuman ? 'justify-end text-primary' : config.color
-                )}
-              >
-                {!isHuman && (
-                  <div
-                    className={cn(
-                      'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full transition-all duration-300',
-                      config.bgColor || 'bg-muted/30 border border-border/20'
-                    )}
-                  >
-                    <div className="p-0.5 opacity-90">{config.icon}</div>
-                    <span className="font-bold text-[10px] uppercase tracking-[0.15em]">
-                      {displayName}
-                    </span>
-                  </div>
-                )}
-                {isHuman && (
-                  <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20">
-                    <span className="font-bold text-[10px] uppercase tracking-[0.15em]">You</span>
-                    <div className="p-0.5 opacity-90">
-                      <User className="w-3.5 h-3.5" />
-                    </div>
-                  </div>
-                )}
-
-                {!isHuman && msg.confidence !== undefined && isActivityPanelOpen && (
-                  <span className="text-[10px] text-muted-foreground/60 ml-auto font-mono">
-                    {Math.round(msg.confidence * 100)}%
+              className={cn(
+                'flex items-center gap-2 mb-1.5',
+                isHuman ? 'justify-end text-primary' : config.color
+              )}
+            >
+              {!isHuman && (
+                <div
+                  className={cn(
+                    'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full transition-all duration-300',
+                    config.bgColor || 'bg-muted/30 border border-border/20'
+                  )}
+                >
+                  <div className="p-0.5 opacity-90">{config.icon}</div>
+                  <span className="font-bold text-[10px] uppercase tracking-[0.15em]">
+                    {displayName}
                   </span>
-                )}
-              </div>
+                </div>
+              )}
+              {isHuman && (
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20">
+                  <span className="font-bold text-[10px] uppercase tracking-[0.15em]">You</span>
+                  <div className="p-0.5 opacity-90">
+                    <User className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+              )}
+
+              {!isHuman && msg.confidence !== undefined && isActivityPanelOpen && (
+                <span className="text-[10px] text-muted-foreground/60 ml-auto font-mono">
+                  {Math.round(msg.confidence * 100)}%
+                </span>
+              )}
+            </div>
 
             {/* Thinking (if enabled and Activity is ON) */}
             {showThinking && msg.thinking && isActivityPanelOpen && (
@@ -906,6 +935,11 @@ export const AgentLog: React.FC<AgentLogProps> = React.memo(({
           </div>
         )
       })}
+
+      {/* Activity panel at bottom: live agents + status (chronological feed ends above, activity always at bottom) */}
+      {showActiveAgents && isActivityPanelOpen && activeAgents.length > 0 && (
+        <ActiveAgentsPanel activeAgents={activeAgents} agentConfig={agentConfig} />
+      )}
 
       {/* Status Indicators - Enhanced */}
       <div className="mt-4 border-t border-border/10 pt-3 px-2">

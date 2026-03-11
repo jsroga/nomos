@@ -164,11 +164,12 @@ export async function generateContextualSummary(
     return { ...cached.result, cacheHit: true }
   }
 
-  // If surrounding text is too short, just return base description
-  if (safeRequest.surroundingText.length < 20) {
+  // If surrounding text is too short AND we already have a description, just return base description.
+  // BUT if we don't have a description (like auto-registered stubs), we should ALWAYS try to generate one.
+  const hasDescription = safeRequest.entityDescription && safeRequest.entityDescription.trim() !== ''
+  if (safeRequest.surroundingText.length < 20 && hasDescription) {
     return {
-      contextualSummary:
-        safeRequest.entityDescription || `${safeRequest.entityName} (${safeRequest.entityType})`,
+      contextualSummary: safeRequest.entityDescription,
       generatedAt: new Date(),
       cacheHit: false,
     }
@@ -215,21 +216,24 @@ export async function generateContextualSummary(
       system: `You are a story assistant that provides brief, contextual descriptions of story elements.
 Given an entity, its relationships, and the sentence where it appears, explain the entity's relevance in that specific context.
 
+If the surrounding sentence is very short or doesn't provide enough information, you MUST infer a high-quality baseline description of what this entity likely is, based on its name, type, and relationships.
+
 Rules:
 - Maximum 2 sentences
 - Focus on WHY this entity matters in this context
-- Reference the action/plot point happening in the sentence
+- Reference the action/plot point happening in the sentence if available
 - Incorporate relationship information if relevant to the context
-- Be concise and story-focused
-- Don't repeat obvious information already in the sentence`,
+- Be concise, atmospheric, and story-focused
+- Don't repeat obvious information already in the sentence
+- DO NOT say "There isn't enough information" or similar phrases. Always provide a thematic, immersive description based on the name.`,
       prompt: `Entity: ${safeRequest.entityName} (${safeRequest.entityType})
 Base description: ${safeRequest.entityDescription || 'No description available'}
 ${relationshipContext ? `\n${relationshipContext}` : ''}
 
-Sentence containing this entity:
+Sentence containing this entity (might be very short):
 "${safeRequest.surroundingText.slice(0, 500)}"
 
-Write a 1-2 sentence contextual description explaining ${safeRequest.entityName}'s relevance here:`,
+Write a 1-2 sentence contextual description explaining ${safeRequest.entityName}'s relevance or baseline identity:`,
       maxRetries: 1,
       temperature: 0.3,
     })

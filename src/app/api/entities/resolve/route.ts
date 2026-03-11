@@ -116,7 +116,7 @@ async function tryAutoRegisterEntity(
         // If context is available, use it as description, otherwise generic
         const stubDescription = context
           ? context.slice(0, 300) // Use context relative to this entity
-          : `A faction identified as ${normalizedName}`
+          : '' // Removed "A faction identified as ${normalizedName}"
 
         await entityRegistry.registerWithId(refId, {
           name: normalizedName,
@@ -193,7 +193,6 @@ async function tryAutoRegisterEntity(
         const psychology = (matchedChar.psychology as any) || {}
         const description =
           matchedChar.description ||
-          matchedChar.shortDescription ||
           matchedChar.role ||
           matchedChar.name
 
@@ -258,7 +257,7 @@ async function tryAutoRegisterEntity(
 
       await entityRegistry.registerWithId(refId, {
         name: normalizedName,
-        description: placeDescription || 'A location in the story',
+        description: placeDescription || '', // Removed "A location in the story"
         metadata: { inferredFromText: true },
         projectId,
       })
@@ -270,7 +269,7 @@ async function tryAutoRegisterEntity(
     if (type === 'event') {
       await entityRegistry.registerWithId(refId, {
         name: normalizedName,
-        description: context?.slice(0, 300) || 'An event in the story',
+        description: context?.slice(0, 300) || '', // Removed "An event in the story"
         metadata: { inferredFromText: true },
         projectId,
       })
@@ -321,8 +320,8 @@ export async function GET(request: NextRequest) {
       .filter(id => id.trim())
       .slice(0, 50) // Max 50 entities per request
 
-    // Security: Validate ID format (alphanumeric, hyphens only)
-    const validIdPattern = /^[a-z0-9-]+$/i
+    // Security: Validate ID format (allow alphanumeric, hyphens, underscores, dots, and apostrophes)
+    const validIdPattern = /^[a-z0-9-_.'’]+$/i
     const invalidIds = ids.filter(id => !validIdPattern.test(id))
     if (invalidIds.length > 0) {
       return NextResponse.json({ error: 'Invalid entity ID format', invalidIds }, { status: 400 })
@@ -376,14 +375,22 @@ export async function GET(request: NextRequest) {
       entities = enrichedEntities
     }
 
-    // Generate AI contextual summaries if context is provided
+    // Generate AI contextual summaries
     // Security: Limit context length to prevent abuse (max 1000 chars)
-    const safeContext = context ? context.slice(0, 1000) : null
+    const safeContext = context ? context.slice(0, 1000) : ''
 
-    if (safeContext && safeContext.length > 10) {
+    const hasValidContext = safeContext.length > 10
+    const needsBaselineSummary = entities.some(e => !e.description || e.description.trim() === '')
+
+    if (hasValidContext || needsBaselineSummary) {
+      // Prioritize entities without descriptions, then fill remaining slots up to 10
+      const entitiesWithoutDesc = entities.filter(e => !e.description || e.description.trim() === '')
+      const entitiesWithDesc = entities.filter(e => e.description && e.description.trim() !== '')
+
       // Security: Limit to 10 entities for contextual summaries to prevent excessive LLM calls
-      const entitiesToEnrich = entities.slice(0, 10)
-      const otherEntities = entities.slice(10)
+      const entitiesToEnrich = [...entitiesWithoutDesc, ...entitiesWithDesc].slice(0, 10)
+      const enrichedIds = new Set(entitiesToEnrich.map(e => e.id))
+      const remainingEntities = entities.filter(e => !enrichedIds.has(e.id))
 
       const contextualEntities = await Promise.all(
         entitiesToEnrich.map(async entity => {
@@ -408,7 +415,7 @@ export async function GET(request: NextRequest) {
           }
         })
       )
-      entities = [...contextualEntities, ...otherEntities]
+      entities = [...contextualEntities, ...remainingEntities]
     }
 
     return NextResponse.json({ entities })

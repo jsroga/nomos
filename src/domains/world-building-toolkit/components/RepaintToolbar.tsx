@@ -74,106 +74,91 @@ export const RepaintToolbar: React.FC = () => {
   }
 
   return (
-    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
-      <div className="relative">
-        {/* Outer glow */}
-        <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-indigo-500/30 via-violet-500/20 to-indigo-500/30 blur-sm" />
+    <div className="fixed bottom-8 left-1/2 z-50 flex -translate-x-1/2 animate-in slide-in-from-bottom-4 fade-in duration-300">
+      <div className="flex items-center gap-4 rounded-2xl border border-border bg-background/95 px-4 py-3 shadow-2xl">
 
-        <div className="relative bg-zinc-950/80 backdrop-blur-2xl border border-indigo-500/25 rounded-2xl shadow-[0_12px_48px_rgba(0,0,0,0.5),0_0_32px_rgba(79,70,229,0.15)] p-4 flex items-center gap-4">
-          {/* Top accent line */}
-          <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-indigo-400/40 to-transparent" />
+        {/* Icon */}
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/30 bg-primary/10">
+          <Paintbrush className="h-4 w-4 text-primary" />
+        </div>
 
-          {repaintResult ? (
-            <>
-              <span className="text-sm font-medium">Review Changes</span>
-              <div className="h-6 w-px bg-indigo-500/20" />
+        <div className="h-8 w-px bg-border/70" />
+
+        {repaintResult ? (
+          <>
+            <span className="text-xs font-mono text-foreground/80 min-w-[100px]">Review changes</span>
+            <div className="h-8 w-px bg-border/70" />
+            <div className="flex items-center gap-2">
               <button
                 onClick={handleApprove}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600/90 text-white rounded-xl text-sm font-medium hover:bg-green-600 shadow-lg shadow-green-900/20 transition-all active:scale-95"
+                className="flex items-center gap-1.5 h-8 px-4 rounded-xl bg-green-600 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-green-500 shadow-lg shadow-green-900/20 transition-all active:scale-95"
               >
-                <Check size={16} /> Approve
+                <Check size={14} /> Approve
               </button>
               <button
                 onClick={handleReject}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600/90 text-white rounded-xl text-sm font-medium hover:bg-red-600 shadow-lg shadow-red-900/20 transition-all active:scale-95"
+                className="flex items-center gap-1.5 h-8 px-4 rounded-xl border border-border text-[10px] font-bold uppercase tracking-widest text-foreground/80 hover:bg-accent transition-all active:scale-95"
               >
-                <X size={16} /> Reject
+                <X size={14} /> Reject
               </button>
-            </>
-          ) : (
-            <>
-              <div className="flex items-center gap-2 px-2">
-                <div className="p-1.5 rounded-lg bg-indigo-500/15 ring-1 ring-indigo-400/20">
-                  <Paintbrush size={14} className="text-indigo-400" />
-                </div>
-                <span className="text-sm font-bold font-syne uppercase tracking-wider text-indigo-100/90">
-                  Repaint
-                </span>
-              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Brush size */}
+            <div className="flex items-center gap-2.5">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Brush</span>
+              <Slider
+                min={10}
+                max={200}
+                value={[brushSize]}
+                onValueChange={vals => setBrushSize(vals[0])}
+                className="w-28"
+              />
+              <span className="text-xs font-mono text-muted-foreground w-9 text-right tabular-nums">{brushSize}px</span>
+            </div>
 
-              <div className="h-6 w-px bg-indigo-500/20" />
+            <div className="h-8 w-px bg-border/70" />
 
-              <div className="flex items-center gap-3 px-1">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-indigo-300/60">
-                  Brush
-                </span>
-                <Slider
-                  min={10}
-                  max={200}
-                  value={[brushSize]}
-                  onValueChange={vals => setBrushSize(vals[0])}
-                  className="w-32"
-                />
-                <span className="text-xs font-mono text-indigo-300/50 w-10 text-right tabular-nums">
-                  {brushSize}px
-                </span>
-              </div>
+            {/* Prompt */}
+            <input
+              type="text"
+              value={repaintPrompt}
+              onChange={e => setRepaintPrompt(e.target.value)}
+              placeholder="Describe what to paint..."
+              className="w-56 rounded-lg border border-input bg-background px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
+            />
 
-              <div className="h-6 w-px bg-indigo-500/20" />
+            <div className="h-8 w-px bg-border/70" />
 
-              <div className="flex items-center gap-2 px-1">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-indigo-300/60">
-                  Prompt
-                </span>
-                <input
-                  type="text"
-                  value={repaintPrompt}
-                  onChange={e => setRepaintPrompt(e.target.value)}
-                  placeholder="Describe what to paint..."
-                  className="w-64 bg-white/[0.03] border border-indigo-500/15 rounded-lg px-3 py-1.5 text-sm text-zinc-100 hover:border-indigo-500/25 transition-all focus:border-indigo-400/40 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none placeholder:text-zinc-600 shadow-inner shadow-black/20"
-                />
-              </div>
-
-              <div className="h-6 w-px bg-indigo-500/20" />
-
+            {/* Actions */}
+            <div className="flex items-center gap-2">
               <button
                 onClick={clearRepaintStrokes}
-                className="p-2 hover:bg-indigo-500/10 rounded-lg text-zinc-500 hover:text-indigo-300 transition-colors"
-                title="Clear Mask"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-muted-foreground hover:border-border hover:bg-accent hover:text-foreground transition-colors"
+                title="Clear mask"
               >
-                <Eraser size={18} />
+                <Eraser size={16} />
               </button>
-
-              <div className="h-6 w-px bg-indigo-500/20" />
 
               <button
                 onClick={() => setRepaintMode(false)}
-                className="px-4 py-2 bg-white/[0.04] border border-zinc-700/50 text-zinc-400 rounded-xl text-sm font-medium hover:bg-white/[0.08] hover:text-zinc-200 transition-all"
+                className="h-8 border border-border px-4 rounded-xl text-[10px] font-bold uppercase tracking-widest text-foreground/80 hover:bg-accent transition-colors"
               >
-                Cancel
+                Exit
               </button>
 
               <button
                 onClick={handleGenerate}
                 disabled={repaintStrokes.length === 0 || isGenerating}
-                className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold uppercase tracking-widest hover:bg-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.5),0_4px_12px_rgba(79,70,229,0.3)] disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed transition-all active:scale-95"
+                className="flex items-center gap-1.5 h-8 px-5 rounded-xl bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-widest hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg transition-all active:scale-95"
               >
-                {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                 Generate
               </button>
-            </>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

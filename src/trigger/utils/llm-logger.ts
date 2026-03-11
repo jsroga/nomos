@@ -8,7 +8,7 @@
 import { logger } from '@trigger.dev/sdk/v3'
 
 export interface LLMRequestLog {
-  provider: 'openai' | 'gemini' | 'anthropic' | 'stability' | 'midjourney' | 'meshy' | 'other'
+  provider: 'openai' | 'gemini' | 'nano-banana' | 'anthropic' | 'stability' | 'midjourney' | 'meshy' | 'other'
   model?: string
   prompt?: string
   messages?: Array<{ role: string; content: string | any }>

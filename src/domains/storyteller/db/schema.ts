@@ -6,7 +6,9 @@ import {
   jsonb,
   boolean,
   integer,
+  real,
   vector,
+  unique,
 } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 
@@ -163,7 +165,9 @@ export const relationshipSnapshots = pgTable('relationship_snapshots', {
   beatId: uuid('beat_id'), // Which beat caused this snapshot
   sourceCharacterId: text('source_character_id').notNull(), // Character ID or name
   targetCharacterId: text('target_character_id').notNull(), // Character ID or name
-  relationshipType: text('relationship_type').notNull(), // ally, enemy, rival, mentor, etc.
+  relationshipType: text('relationship_type'), // Deprecated: ally, enemy, rival, mentor, etc.
+  dynamicSummary: text('dynamic_summary'), // LLM-generated core dynamic of the relationship
+  tensionPoints: jsonb('tension_points').default([]), // Active unresolved issues/tensions between the pair
   trust: integer('trust').default(50), // 0-100
   conflict: integer('conflict').default(0), // 0-100
   tension: integer('tension').default(0), // 0-100
@@ -172,7 +176,36 @@ export const relationshipSnapshots = pgTable('relationship_snapshots', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
-// Relations for Drizzle Queries
+// Relationship Edges Table - Pre-computed LLM-extracted graph edges for CharacterWeb
+// Distinct from relationship_snapshots (per-beat evolution) — this is the authoritative
+// current graph that the relationships API reads first before falling back to live extraction.
+export const relationshipEdges = pgTable(
+  'relationship_edges',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    projectId: uuid('project_id')
+      .references(() => projects.id, { onDelete: 'cascade' })
+      .notNull(),
+    // Source and target use canonical entity IDs
+    sourceId: text('source_id').notNull(),
+    targetId: text('target_id').notNull(),
+    // Relationship semantics
+    relationshipType: text('relationship_type').notNull(),
+    weight: real('weight').notNull().default(0.5),
+    label: text('label'),
+    // LLM extraction provenance
+    evidence: text('evidence'),
+    llmGrounded: boolean('llm_grounded').notNull().default(false),
+    confidence: real('confidence'),
+    // Temporal awareness
+    sinceBeatId: uuid('since_beat_id').references(() => beats.id, { onDelete: 'set null' }),
+    untilBeatId: uuid('until_beat_id').references(() => beats.id, { onDelete: 'set null' }),
+    extractedAt: timestamp('extracted_at').defaultNow().notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  table => [unique().on(table.projectId, table.sourceId, table.targetId, table.relationshipType)]
+)
+
 // New tables for migration
 export const seriesBibles = pgTable('series_bibles', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -201,6 +234,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   characters: many(characters),
   episodes: many(episodes),
   embeddings: many(documentEmbeddings),
+  relationshipEdges: many(relationshipEdges),
   seriesBibleTable: one(seriesBibles, {
     fields: [projects.id],
     references: [seriesBibles.projectId],

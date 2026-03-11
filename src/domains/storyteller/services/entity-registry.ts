@@ -425,6 +425,13 @@ class EntityRegistryService {
       entity.lastReferencedAt = new Date()
     }
 
+    // Only attempt DB update if refId is a valid UUID
+    // Some components pass short IDs (e.g., 'rule-afc7dfc0') which crash PostgreSQL
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(refId)
+    if (!isUuid) {
+      return
+    }
+
     try {
       await db
         .update(entityReferences)
@@ -460,7 +467,7 @@ class EntityRegistryService {
   async syncFromSource(
     projectId: string,
     type: EntityType,
-    entities: Array<{ id: string; name: string; description?: string; [key: string]: any }>
+    entities: Array<{ id: string; name: string; description?: string;[key: string]: any }>
   ): Promise<void> {
     for (const entity of entities) {
       const existing = await this.findByNameAndType(projectId, entity.name, type)
@@ -468,7 +475,7 @@ class EntityRegistryService {
         await this.register({
           type,
           name: entity.name,
-          description: entity.description || `${type}: ${entity.name}`,
+          description: entity.description || '',
           metadata: entity,
           projectId,
           sourceEntityId: entity.id,
@@ -533,12 +540,12 @@ class EntityRegistryService {
       const metaParts: string[] = []
       const meta = entity.metadata || {}
 
-      if (meta.role) metaParts.push(`Role: ${meta.role}`)
-      if (meta.archetype) metaParts.push(`Archetype: ${meta.archetype}`)
-      if (meta.motivation) metaParts.push(`Motivation: ${meta.motivation}`)
-      if (meta.ideology) metaParts.push(`Ideology: ${meta.ideology}`)
-      if (meta.description) metaParts.push(meta.description)
-      if (meta.powerStructure) metaParts.push(meta.powerStructure)
+      if (typeof meta.role === 'string') metaParts.push(`Role: ${meta.role}`)
+      if (typeof meta.archetype === 'string') metaParts.push(`Archetype: ${meta.archetype}`)
+      if (typeof meta.motivation === 'string') metaParts.push(`Motivation: ${meta.motivation}`)
+      if (typeof meta.ideology === 'string') metaParts.push(`Ideology: ${meta.ideology}`)
+      if (typeof meta.description === 'string') metaParts.push(meta.description)
+      if (typeof meta.powerStructure === 'string') metaParts.push(meta.powerStructure)
       if (meta.goals && Array.isArray(meta.goals)) metaParts.push(`Goals: ${meta.goals.join(', ')}`)
 
       const embeddingContent = [
@@ -560,11 +567,16 @@ class EntityRegistryService {
   }
 
   private dbToEntity(dbEntity: any): EntityReference {
+    let description = dbEntity.description || ''
+    if (description.startsWith('Auto-registered')) {
+      description = ''
+    }
+
     return {
       id: dbEntity.id,
       type: dbEntity.type as EntityType,
       name: dbEntity.name,
-      description: dbEntity.description || '',
+      description,
       metadata: (dbEntity.metadata as Record<string, unknown>) || {},
       projectId: dbEntity.projectId,
       sourceEntityId: dbEntity.sourceEntityId,

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { projects, characters } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'
+import { createOpenAI } from '@ai-sdk/openai'
+import { createGoogleGenerativeAI } from '@ai-sdk/google'
+import { generateText } from 'ai'
 import {
   bibleToPrompt,
   bibleToVisualPrompt,
@@ -99,7 +102,7 @@ export async function GET(req: NextRequest) {
     }))
 
     let summary = bibleToPrompt(bible, formattedCast)
-    const worldGenPrompt = bibleToVisualPrompt(bible, formattedCast)
+    const fallbackPrompt = bibleToVisualPrompt(bible, formattedCast)
 
     try {
       const ragResults = await ragService.retrieveByType(
@@ -119,9 +122,63 @@ export async function GET(req: NextRequest) {
       console.warn('Failed to fetch RAG context:', e)
     }
 
+    // Build a compact context snippet for the style-prompt agent
+    const contextSnippet = [
+      bible.worldDescription,
+      bible.setting?.place,
+      bible.setting?.time,
+      bible.setting?.socialContext,
+      ...(bible.worldRules?.slice(0, 3).map(r =>
+        typeof r === 'string' ? r : (r.description || r.name || '')
+      ) ?? []),
+      ...(bible.visualMotifs?.slice(0, 4) ?? []),
+      ...(bible.colorPalette?.slice(0, 4) ?? []),
+      bible.tone?.join(', '),
+    ]
+      .filter(Boolean)
+      .join('. ')
+
+    let worldGenPrompt = fallbackPrompt
+
+    if (contextSnippet.trim()) {
+      try {
+        const googleKey = process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY
+        const model = googleKey
+          ? createGoogleGenerativeAI({ apiKey: googleKey })('gemini-2.0-flash')
+          : createOpenAI({ apiKey: process.env.OPENAI_API_KEY })('gpt-4o-mini')
+
+        const { text } = await generateText({
+          model,
+          system: `You are a visual art director writing style descriptions for isometric tilemap generation.
+Your output is used as a Midjourney/Stable Diffusion style prompt suffix.
+
+Rules:
+- Write EXACTLY 1-2 sentences, no more.
+- Focus on small physical details: surface textures, lighting quality, material wear, ambient atmosphere, colour temperature.
+- Do NOT mention any game titles, franchise names, or IP names.
+- Do NOT repeat the world's title or setting name.
+- Do NOT use "isometric", "tilemap", "game", "2D", "tile" — those are added elsewhere.
+- Output ONLY the style sentences, nothing else.`,
+          prompt: `World context:
+${contextSnippet}
+
+Write 1-2 sentences describing the small visual details and atmosphere that should define this world's art style.`,
+          maxOutputTokens: 120,
+          temperature: 0.7,
+        })
+
+        const cleaned = text.trim().replace(/^["']|["']$/g, '')
+        if (cleaned.length > 10) {
+          worldGenPrompt = cleaned
+        }
+      } catch (e) {
+        console.warn('[WorldSummary] AI prompt generation failed, using fallback:', e)
+      }
+    }
+
     return NextResponse.json({
       summarize: summary,
-      worldGenPrompt: worldGenPrompt,
+      worldGenPrompt,
     })
   } catch (error) {
     console.error('Error serving world summary:', error)

@@ -8,6 +8,10 @@ import {
   type AuthenticatedRequest,
 } from '@/lib/api-utils'
 import { resolveStyleReferenceUrls, resolveStyleContext } from '@/config/style-presets'
+import {
+  resolveFollowUpImageProviderFromEnv,
+  type TileAIProvider,
+} from '@/trigger/providers/follow-up-provider'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,21 +45,37 @@ export const POST = withRateLimit(
     // Determine if this is a first tile (no neighbors) or follow-up tile
     const isFirstTile = payload.isFirstTile ?? true
 
-    // Server-side provider resolution: first tile = midjourney, follow-up = nano-banana
-    let aiProvider: string
+    const followUpProvider = resolveFollowUpImageProviderFromEnv()
+    let aiProvider: TileAIProvider
     let aiConfig: Record<string, unknown>
+    const hasLegNext = !!process.env.LEGNEXT_API_KEY
+    const hasGoogle = !!process.env.GOOGLE_API_KEY
+
+    if (!hasLegNext && !hasGoogle) {
+      return NextResponse.json({ error: 'No AI provider configured (LEGNEXT_API_KEY or GOOGLE_API_KEY required)' }, { status: 500 })
+    }
+
     if (isFirstTile) {
-      if (!process.env.LEGNEXT_API_KEY) {
-        return NextResponse.json({ error: 'LEGNEXT_API_KEY not configured on server' }, { status: 500 })
+      if (hasLegNext) {
+        aiProvider = 'midjourney'
+        aiConfig = { apiKey: process.env.LEGNEXT_API_KEY }
+      } else {
+        // Fallback to Gemini
+        aiProvider = 'gemini'
+        aiConfig = { apiKey: process.env.GOOGLE_API_KEY, model: 'gemini-3-pro-image-preview' }
       }
-      aiProvider = 'midjourney'
-      aiConfig = { apiKey: process.env.LEGNEXT_API_KEY }
     } else {
-      if (!process.env.GOOGLE_API_KEY) {
-        return NextResponse.json({ error: 'GOOGLE_API_KEY not configured on server' }, { status: 500 })
+      if (followUpProvider === 'legnext-upload-paint' && hasLegNext) {
+        aiProvider = 'legnext-upload-paint'
+        aiConfig = { apiKey: process.env.LEGNEXT_API_KEY }
+      } else {
+        // Default follow-up provider: nano-banana (Gemini)
+        if (!hasGoogle) {
+          return NextResponse.json({ error: 'GOOGLE_API_KEY not configured on server' }, { status: 500 })
+        }
+        aiProvider = 'nano-banana'
+        aiConfig = { apiKey: process.env.GOOGLE_API_KEY, model: 'gemini-3-pro-image-preview' }
       }
-      aiProvider = 'nano-banana'
-      aiConfig = { apiKey: process.env.GOOGLE_API_KEY, model: 'gemini-3-pro-image-preview' }
     }
 
     // Fetch style references and style context from project
@@ -67,16 +87,13 @@ export const POST = withRateLimit(
 
     const styleContext = resolveStyleContext({ stylePreset: projectData?.style_preset })
 
-    let styleReferenceUrls: string[] | undefined
-    if (isFirstTile) {
-      styleReferenceUrls =
-        payload.styleReferenceUrls && payload.styleReferenceUrls.length > 0
-          ? payload.styleReferenceUrls
-          : resolveStyleReferenceUrls({
-              stylePreset: projectData?.style_preset,
-              styleReferenceUrls: projectData?.style_reference_urls,
-            })
-    }
+    const styleReferenceUrls: string[] | undefined =
+      payload.styleReferenceUrls && payload.styleReferenceUrls.length > 0
+        ? payload.styleReferenceUrls
+        : resolveStyleReferenceUrls({
+            stylePreset: projectData?.style_preset,
+            styleReferenceUrls: projectData?.style_reference_urls,
+          })
 
     // Trigger the tile generation task
     const handle = await tasks.trigger<typeof generateTileTask>(
@@ -91,10 +108,8 @@ export const POST = withRateLimit(
         isFirstTile,
         ...(styleReferenceUrls ? { styleReferenceUrls } : {}),
         ...(styleContext ? { styleContext } : {}),
-        // Pass context image for follow-up tiles
+        ...(payload.contextPayload ? { contextPayload: payload.contextPayload } : {}),
         ...(payload.contextImageBase64 ? { contextImageBase64: payload.contextImageBase64 } : {}),
-        // Pass neighbors for server-side context assembly
-        ...(!isFirstTile && payload.neighbors ? { neighbors: payload.neighbors } : {}),
       },
       {
         ttl: '10m', // Match maxDuration

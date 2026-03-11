@@ -2,8 +2,7 @@ import { Tile, useWorldStore } from '@/domains/world-building-toolkit/store/useW
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
 import { DynamicLocalStorageKeys } from '@/constants/localStorage'
 import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/constants/polling'
-import { assembleContextImage } from '@/infrastructure/ai/contextAssembler'
-import type { TileContext } from '@/infrastructure/ai/types'
+import type { ContextImageVariant } from '@/infrastructure/ai/contextAssembler'
 
 interface TileGenRunState {
   runId: string
@@ -12,6 +11,12 @@ interface TileGenRunState {
   y: number
   prompt: string
   startedAt: string
+}
+
+export interface FollowUpContextPayload {
+  images: Partial<Record<ContextImageVariant, string>>
+  maskBase64?: string
+  preferredVariant: ContextImageVariant
 }
 
 export class TileGenerationService {
@@ -47,68 +52,31 @@ export class TileGenerationService {
   }
 
   /**
-   * Load a tile image as a data URL (for client-side context assembly)
-   */
-  private async loadTileAsDataUrl(
-    tile: Tile | undefined,
-    projectId: string
-  ): Promise<(Tile & { imageUrl?: string }) | undefined> {
-    if (!tile?.image_filename) return undefined
-
-    const imageUrl = tile.image_filename.startsWith('http')
-      ? tile.image_filename
-      : `${window.location.origin}/projects/${projectId}/${tile.image_filename}`
-
-    try {
-      const response = await fetch(imageUrl)
-      const blob = await response.blob()
-      return new Promise(resolve => {
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          resolve({ ...tile, imageUrl: reader.result as string })
-        }
-        reader.onerror = () => resolve(undefined)
-        reader.readAsDataURL(blob)
-      })
-    } catch {
-      return undefined
-    }
-  }
-
-  /**
-   * Convert Blob to raw base64 string (no data URI prefix)
-   */
-  private blobToBase64(blob: Blob): Promise<string> {
-    return new Promise((resolve, reject) => {
-      if (!blob || blob.size === 0) {
-        reject(new Error('Invalid blob'))
-        return
-      }
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const dataUrl = reader.result as string
-        if (!dataUrl || !dataUrl.includes(',')) {
-          reject(new Error('Invalid data URL from FileReader'))
-          return
-        }
-        resolve(dataUrl.split(',')[1])
-      }
-      reader.onerror = () => reject(new Error('FileReader error'))
-      reader.readAsDataURL(blob)
-    })
-  }
-
-  /**
-   * Generate a tile using Trigger.dev background task
+   * Generate a tile using Trigger.dev background task.
+   * Follow-up tiles must provide a browser-assembled context image. We fail fast if
+   * neighbor context exists in the grid but the caller could not assemble it.
    */
   async generate(
     projectId: string,
     x: number,
     y: number,
     prompt: string,
-    styleReferenceUrls?: string[]
+    styleReferenceUrls?: string[],
+    contextFromCaller?: FollowUpContextPayload | string
   ): Promise<string | null> {
-    console.log(`Starting tile generation via Trigger.dev for (${x}, ${y})`, { styleReferenceUrls })
+    const normalizedContext =
+      typeof contextFromCaller === 'string'
+        ? {
+            images: { canonicalFullContext: contextFromCaller },
+            preferredVariant: 'canonicalFullContext' as const,
+          }
+        : contextFromCaller
+
+    console.log(`Starting tile generation via Trigger.dev for (${x}, ${y})`, {
+      styleReferenceUrls,
+      hasContextFromCaller: !!normalizedContext,
+      contextVariants: normalizedContext ? Object.keys(normalizedContext.images) : [],
+    })
 
     // Track generating status
     useWorldStore.getState().addGeneratingTile(x, y)
@@ -123,55 +91,47 @@ export class TileGenerationService {
 
     try {
       const tiles = useWorldStore.getState().tiles
-
-      const [upTile, downTile, leftTile, rightTile, topLeftTile, topRightTile, bottomLeftTile, bottomRightTile] =
-        await Promise.all([
-          this.loadTileAsDataUrl(tiles[`${x},${y - 1}`], projectId),
-          this.loadTileAsDataUrl(tiles[`${x},${y + 1}`], projectId),
-          this.loadTileAsDataUrl(tiles[`${x - 1},${y}`], projectId),
-          this.loadTileAsDataUrl(tiles[`${x + 1},${y}`], projectId),
-          this.loadTileAsDataUrl(tiles[`${x - 1},${y - 1}`], projectId),
-          this.loadTileAsDataUrl(tiles[`${x + 1},${y - 1}`], projectId),
-          this.loadTileAsDataUrl(tiles[`${x - 1},${y + 1}`], projectId),
-          this.loadTileAsDataUrl(tiles[`${x + 1},${y + 1}`], projectId),
-        ])
-
-      const neighbors = {
-        up: upTile,
-        down: downTile,
-        left: leftTile,
-        right: rightTile,
-        topLeft: topLeftTile,
-        topRight: topRightTile,
-        bottomLeft: bottomLeftTile,
-        bottomRight: bottomRightTile,
+      const origin =
+        typeof window !== 'undefined' ? window.location.origin : ''
+      const toAbsoluteUrl = (tile: Tile | undefined) => {
+        if (!tile?.image_filename) return undefined
+        return tile.image_filename.startsWith('http')
+          ? tile.image_filename
+          : `${origin}/projects/${projectId}/${tile.image_filename}`
       }
-
+      const neighborUrls = {
+        up: toAbsoluteUrl(tiles[`${x},${y - 1}`]),
+        down: toAbsoluteUrl(tiles[`${x},${y + 1}`]),
+        left: toAbsoluteUrl(tiles[`${x - 1},${y}`]),
+        right: toAbsoluteUrl(tiles[`${x + 1},${y}`]),
+        topLeft: toAbsoluteUrl(tiles[`${x - 1},${y - 1}`]),
+        topRight: toAbsoluteUrl(tiles[`${x + 1},${y - 1}`]),
+        bottomLeft: toAbsoluteUrl(tiles[`${x - 1},${y + 1}`]),
+        bottomRight: toAbsoluteUrl(tiles[`${x + 1},${y + 1}`]),
+      }
       const hasNeighbors = !!(
-        neighbors.up?.imageUrl ||
-        neighbors.down?.imageUrl ||
-        neighbors.left?.imageUrl ||
-        neighbors.right?.imageUrl
+        neighborUrls.up ||
+        neighborUrls.down ||
+        neighborUrls.left ||
+        neighborUrls.right
       )
 
-      const isFirstTile = !hasNeighbors
-      let contextImageBase64: string | undefined
-
-      if (hasNeighbors) {
-        console.log('Assembling context image client-side for follow-up tile (blending)')
-        const context: TileContext = {
-          targetX: x,
-          targetY: y,
-          neighbors,
-          allTiles: tiles,
-        }
-        const { imageBlob } = await assembleContextImage(context, 1024)
-        contextImageBase64 = await this.blobToBase64(imageBlob)
-        console.log('Context image assembled, size:', contextImageBase64.length)
+      if (normalizedContext) {
+        // Use pre-assembled context (worker-assembled in Sidebar; CORS-safe).
+        console.log('Using pre-assembled context images', {
+          variants: Object.keys(normalizedContext.images),
+          preferredVariant: normalizedContext.preferredVariant,
+          hasMask: !!normalizedContext.maskBase64,
+        })
+      } else if (hasNeighbors) {
+        throw new Error('Follow-up tile generation requires a client-assembled context image')
       }
 
+      // Use presence of neighbors (from grid), not context image, so we never treat a follow-up as first tile when client assembly failed
+      const isFirstTile = !hasNeighbors
+
       console.log(
-        `Triggering generate-tile task: isFirstTile=${isFirstTile}, contextImageBase64=${!!contextImageBase64}`
+        `Triggering generate-tile task: isFirstTile=${isFirstTile}, hasContext=${!!normalizedContext}`
       )
 
       const triggerResponse = await fetch('/api/trigger-tile', {
@@ -183,7 +143,7 @@ export class TileGenerationService {
           y,
           prompt,
           isFirstTile,
-          ...(contextImageBase64 ? { contextImageBase64 } : {}),
+          ...(normalizedContext ? { contextPayload: normalizedContext } : {}),
           ...(styleReferenceUrls?.length ? { styleReferenceUrls } : {}),
         }),
       })
@@ -233,6 +193,7 @@ export class TileGenerationService {
     let consecutiveErrors = 0
     let lastProgress = 0
     let stableProgressCount = 0
+    let variantSelectionDispatched = false
 
     const poll = async () => {
       try {
@@ -268,6 +229,31 @@ export class TileGenerationService {
         useGlobalStatusStore.getState().updateOperation(opId, {
           details: `(${runState.x}, ${runState.y}) ${stage} ${progress}%`,
         })
+
+        // Update per-tile progress overlay
+        useWorldStore.getState().setTileProgress(runState.x, runState.y, progress, stage)
+
+        // Detect variant selection waiting state
+        if (
+          !variantSelectionDispatched &&
+          stage === 'waiting_variant_selection' &&
+          statusData.metadata?.variantUrls?.length &&
+          statusData.metadata?.waitTokenId
+        ) {
+          variantSelectionDispatched = true
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('generation-variant-selection-ready', {
+                detail: {
+                  tileX: runState.x,
+                  tileY: runState.y,
+                  variantUrls: statusData.metadata.variantUrls,
+                  tokenId: statusData.metadata.waitTokenId,
+                },
+              })
+            )
+          }
+        }
 
         // Check if completed
         if (statusData.status === 'COMPLETED') {
@@ -336,7 +322,8 @@ export class TileGenerationService {
       success: boolean
       filename: string
       newUrl: string
-      newBase64: string
+      newBase64?: string
+      variantUrls?: string[]
       originalUrl?: string
       isFirstTile: boolean
       pendingReview?: boolean
@@ -370,6 +357,7 @@ export class TileGenerationService {
         useWorldStore.getState().setPendingGeneration(runState.x, runState.y, {
           newUrl,
           newBase64: output.newBase64, // Still keep for acceptGeneration
+          variantUrls: output.variantUrls,
           originalUrl,
           isFirstTile: !existingTile,
         })
@@ -388,6 +376,7 @@ export class TileGenerationService {
                 tileX: runState.x,
                 tileY: runState.y,
                 newUrl,
+                variantUrls: output.variantUrls,
                 originalUrl,
                 isFirstTile: !existingTile,
               },
@@ -446,6 +435,7 @@ export class TileGenerationService {
 
     // Clear UI status
     useWorldStore.getState().removeGeneratingTile(runState.x, runState.y)
+    useWorldStore.getState().clearTileProgress(runState.x, runState.y)
     useGlobalStatusStore.getState().removeOperation(opId)
   }
 
@@ -512,6 +502,18 @@ export class TileGenerationService {
   isGenerating(x: number, y: number): boolean {
     if (typeof window === 'undefined') return false
     return !!localStorage.getItem(DynamicLocalStorageKeys.tileGen(x, y))
+  }
+
+  async completeVariantSelection(tokenId: string, action: 'accept' | 'upscale', variantIndex: number): Promise<void> {
+    const response = await fetch('/api/complete-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tokenId, action, variantIndex }),
+    })
+    if (!response.ok) {
+      const data = await response.json()
+      throw new Error(data.error || 'Failed to complete variant selection')
+    }
   }
 }
 

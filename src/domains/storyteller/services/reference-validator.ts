@@ -44,7 +44,7 @@ export class ReferenceValidator {
                 newRefId = await entityRegistry.register({
                     type: ref.type,
                     name: ref.displayName,
-                    description: `Auto-registered ${ref.type} from generated text.`,
+                    description: '',
                     projectId,
                 })
             }

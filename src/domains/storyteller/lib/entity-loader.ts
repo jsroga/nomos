@@ -13,6 +13,7 @@ export class EntityLoader {
       resolve: (value: EntityReference | null) => void
       reject: (reason?: any) => void
       projectId: string
+      context?: string
     }
   > = new Map()
   private timeout: NodeJS.Timeout | null = null
@@ -25,19 +26,12 @@ export class EntityLoader {
   /**
    * Load an entity by ID
    */
-  load(id: string, projectId: string): Promise<EntityReference | null> {
+  load(id: string, projectId: string, context?: string): Promise<EntityReference | null> {
     return new Promise((resolve, reject) => {
       const key = `${projectId}:${id}`
 
-      // If already queued, we just overwrite the handler (last one wins? or should we support multiple?)
-      // For simplicity/safety, we can just append to a list if needed, but given React Query dedupes
-      // requests for the same key, we likely won't get simultaneous calls for the SAME id from React Query
-      // unless different components trigger it simultaneously before RQ cache is hit.
-      //
-      // Actually, React Query's queryFn is called once per key. So we shouldn't see duplicates for same ID here
-      // if React Query is doing its job.
-
-      this.queue.set(key, { resolve, reject, projectId })
+      // Store context if provided (last one wins for the batch)
+      this.queue.set(key, { resolve, reject, projectId, context })
 
       if (!this.timeout) {
         this.timeout = setTimeout(() => this.flush(), this.delay)
@@ -53,32 +47,43 @@ export class EntityLoader {
     if (currentQueue.size === 0) return
 
     // Group by projectId
-    const byProject: Record<string, string[]> = {}
+    const byProject: Record<string, { ids: string[]; contexts: Map<string, string> }> = {}
 
-    for (const [key, { projectId }] of currentQueue.entries()) {
-      // key is projectId:originalId
-      // we need originalId
-      // But we can just store originalId in value to be safe, or split key.
+    for (const [key, { projectId, context }] of currentQueue.entries()) {
       const originalId = key.split(':')[1]
-      // Wait, split might be dangerous if ID has colons.
-      // Better to extract from key if we built it that way.
-      // Let's refine the key structure or stored data.
 
       if (!byProject[projectId]) {
-        byProject[projectId] = []
+        byProject[projectId] = { ids: [], contexts: new Map() }
       }
-      byProject[projectId].push(originalId)
+      byProject[projectId].ids.push(originalId)
+      if (context) {
+        byProject[projectId].contexts.set(originalId, context)
+      }
     }
 
     // Fire requests per project
-    // Note: We could optimize this to parallelize
     await Promise.all(
-      Object.entries(byProject).map(async ([projectId, ids]) => {
+      Object.entries(byProject).map(async ([projectId, { ids, contexts }]) => {
         try {
           const uniqueIds = Array.from(new Set(ids))
-          const res = await fetch(
-            `/api/entities/resolve?projectId=${projectId}&ids=${uniqueIds.join(',')}&enrichRelationships=true`
-          )
+
+          // We'll pass the first available context for the batch, 
+          // or we could pass no context and let the API decide.
+          // For now, take the longest context string from this batch to ensure 
+          // generation gets enough data.
+          let bestContext = ''
+          for (const ctx of contexts.values()) {
+            if (ctx && ctx.length > bestContext.length) {
+              bestContext = ctx
+            }
+          }
+
+          let url = `/api/entities/resolve?projectId=${projectId}&ids=${uniqueIds.join(',')}&enrichRelationships=true`
+          if (bestContext) {
+            url += `&context=${encodeURIComponent(bestContext)}`
+          }
+
+          const res = await fetch(url)
 
           if (!res.ok) throw new Error('Failed to fetch')
 

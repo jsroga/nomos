@@ -3,10 +3,61 @@ import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldSt
 import { cn } from '@/lib/utils'
 import { AlertCircle, Loader2 } from 'lucide-react'
 
+const STAGE_LABELS: Record<string, string> = {
+  initializing: 'Init',
+  assembling_context: 'Context',
+  generating_image: 'Generating',
+  uploading_variants: 'Uploading',
+  uploading: 'Uploading',
+  preparing_variants: 'Variants',
+  submitting_upload_paint: 'Submitting',
+  waiting_upload_paint: 'MJ…',
+  submitting_upscale: 'Upscaling',
+  waiting_upscale: 'MJ upscale…',
+  checking_original: 'Finishing',
+  completed: 'Done',
+  unknown: 'Starting',
+}
+
 interface TileProps {
   x: number
   y: number
   size: number
+}
+
+interface TileProgressOverlayProps {
+  tileProgressData?: { progress: number; stage: string }
+}
+
+const TileProgressOverlay: React.FC<TileProgressOverlayProps> = ({ tileProgressData, empty }) => {
+  const progress = tileProgressData?.progress ?? 0
+  const stage = tileProgressData?.stage ?? ''
+  const label = STAGE_LABELS[stage] ?? (stage ? stage.replace(/_/g, ' ') : 'Starting')
+  const barWidth = Math.max(progress, progress > 0 ? 4 : 0)
+
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 gap-2">
+      <Loader2 className="animate-spin text-white" size={empty ? 28 : 32} />
+
+      {label && (
+        <span className="text-[11px] font-mono font-semibold text-white uppercase tracking-widest leading-none drop-shadow">
+          {label}
+        </span>
+      )}
+
+      <div className="w-3/4 flex flex-col items-center gap-1">
+        <div className="w-full h-2 rounded-full bg-white/20 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-primary transition-all duration-500 ease-out shadow-[0_0_6px_hsl(var(--primary))]"
+            style={{ width: `${barWidth}%` }}
+          />
+        </div>
+        {progress > 0 && (
+          <span className="text-[10px] font-mono text-white/70 tabular-nums">{progress}%</span>
+        )}
+      </div>
+    </div>
+  )
 }
 
 export const Tile: React.FC<TileProps> = ({ x, y, size }) => {
@@ -28,6 +79,7 @@ export const Tile: React.FC<TileProps> = ({ x, y, size }) => {
   const isEnhancing = !!enhancingTiles[`${x},${y}`]
 
   const isSelectMode = useWorldStore(state => state.isSelectMode)
+  const tileProgressData = useWorldStore(state => state.tileProgress[`${x},${y}`])
 
   const handleClick = (e: React.MouseEvent) => {
     if (isSelectMode) {
@@ -110,14 +162,16 @@ export const Tile: React.FC<TileProps> = ({ x, y, size }) => {
             onError={handleImageError}
           />
           {(isGenerating || isUpscaling || isRepainting || isEnhancing) && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-              <Loader2 className="animate-spin text-white" size={32} />
-            </div>
+            <TileProgressOverlay tileProgressData={tileProgressData} />
           )}
         </>
       ) : (
         <div className="w-full h-full bg-[#282828] flex items-center justify-center text-muted-foreground/40 text-4xl select-none hover:bg-[#333333] transition-colors cursor-pointer">
-          {isGenerating ? <Loader2 className="animate-spin text-primary" size={32} /> : '+'}
+          {isGenerating ? (
+            <TileProgressOverlay tileProgressData={tileProgressData} />
+          ) : (
+            '+'
+          )}
         </div>
       )}
 

@@ -26,10 +26,10 @@ const ToolButton: React.FC<ToolButtonProps & { id?: string }> = ({ icon, label, 
         size="icon"
         onClick={onClick}
         className={cn(
-          'transition-all duration-200 relative rounded-xl',
+          'relative rounded-xl border transition-colors',
           isActive
-            ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-[0_0_24px_rgba(79,70,229,0.6),0_0_8px_rgba(129,140,248,0.3)] ring-2 ring-indigo-400/40'
-            : 'text-zinc-400 hover:text-indigo-200 hover:bg-indigo-500/15 hover:shadow-[0_0_14px_rgba(79,70,229,0.2)] border border-transparent hover:border-indigo-500/20'
+            ? 'border-primary bg-primary text-primary-foreground hover:bg-primary/90'
+            : 'border-transparent text-muted-foreground hover:border-border hover:bg-accent hover:text-foreground'
         )}
       >
         {icon}
@@ -192,7 +192,7 @@ export const WorldGenToolbar: React.FC = () => {
   return (
     <TooltipProvider delayDuration={200}>
       <div id={TOUR_STEP_IDS.WORLDGEN_TOOLBAR} className="flex flex-col items-center gap-2 p-2 pt-4">
-        <span className="text-[9px] font-bold font-mono uppercase tracking-[0.25em] text-indigo-300/80 mb-1.5 select-none drop-shadow-[0_0_6px_rgba(129,140,248,0.3)]">
+        <span className="mb-1.5 select-none text-[9px] font-bold font-mono uppercase tracking-[0.25em] text-muted-foreground">
           Tools
         </span>
 
@@ -219,11 +219,17 @@ export const WorldGenToolbar: React.FC = () => {
           onClick={handleRepaintMode}
         />
 
-        <div className="w-10 border-t border-indigo-400/30 my-2.5" />
+        <div className="my-2.5 w-10 border-t border-border/70" />
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" onClick={handleUploadClick} disabled={isUploading}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleUploadClick}
+              disabled={isUploading}
+              className="rounded-xl border border-transparent text-muted-foreground hover:border-border hover:bg-accent hover:text-foreground"
+            >
               {isUploading ? <Loader2 size={20} className="animate-spin" /> : <Upload size={20} />}
             </Button>
           </TooltipTrigger>

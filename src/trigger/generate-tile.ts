@@ -1,4 +1,4 @@
-import { task, logger, metadata } from '@trigger.dev/sdk/v3'
+import { task, logger, metadata, wait } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import { put } from '@vercel/blob'
 import { GENERATION_PROMPTS, MASK_CONFIG } from '@/lib/server/prompts'
@@ -30,6 +30,7 @@ export const generateTileTask = task({
     styleReferenceUrls?: string[]
     styleContext?: string
     contextImageBase64?: string
+    contextPayload?: { images: Partial<Record<string, string>>; preferredVariant?: string }
     neighbors?: any // Adding neighbors for server-side assembly
   }) => {
     const {
@@ -45,7 +46,11 @@ export const generateTileTask = task({
       neighbors,
     } = payload
 
-    let contextImageBase64 = payload.contextImageBase64
+    // contextPayload is the structured form sent from the client; extract the image from it
+    let contextImageBase64 =
+      payload.contextImageBase64 ??
+      (payload.contextPayload?.images[payload.contextPayload.preferredVariant ?? 'canonicalFullContext'] ||
+        Object.values(payload.contextPayload?.images ?? {})[0])
 
     logger.info(`Generating tile at ${x},${y} for project ${projectId}`, {
       isFirstTile,
@@ -116,7 +121,8 @@ export const generateTileTask = task({
         )
         break
       }
-      case 'midjourney': {
+      case 'midjourney':
+      case 'legnext-upload-paint': {
         generatedImageBase64 = await generateWithLegNext(
           prompt,
           aiConfig as any,
@@ -371,9 +377,9 @@ async function generateWithGemini(
 
         if (w !== 1024 || h !== 1024) {
           logger.warn('Gemini output is not 1024x1024, resizing before crop', { width: w, height: h })
-          imgBuffer = await sharp(imgBuffer).resize(1024, 1024, { fit: 'fill' }).png().toBuffer()
+          imgBuffer = Buffer.from(await sharp(imgBuffer).resize(1024, 1024, { fit: 'fill' }).png().toBuffer())
         }
-        imgBuffer = await imageService.crop(imgBuffer, { x: 256, y: 256, width: 512, height: 512 })
+        imgBuffer = Buffer.from(await imageService.crop(imgBuffer, { x: 256, y: 256, width: 512, height: 512 }))
         imageData = imgBuffer.toString('base64')
       } else {
         // First tile or non-context path: ensure 512x512
@@ -1073,31 +1079,35 @@ async function generateWithLegNext(
   await metadata.set('stage', 'submitting_upload_paint')
   await metadata.set('progress', 35)
 
-  // For follow-up tiles, mask only the center 512x512 area
-  // For first tiles, mask the entire canvas
-  const maskConfig = isFirstTile ? MASK_CONFIG.FULL_CANVAS : MASK_CONFIG.CENTER_512
+  // Build mask:
+  //   Follow-up: mask.url — 1024×1024 PNG, white center 512×512 at (256,256), black edges.
+  //              LegNext convention: white = fill (MJ paints here), black = keep (preserve neighbors).
+  //   First tile: mask.areas FULL_CANVAS — paint the entire canvas.
+  let maskField: object
+  if (!isFirstTile) {
+    logger.info('Building follow-up mask: white center 512×512 at (256,256) on black 1024×1024')
+    const whiteSquare = await sharp({
+      create: { width: 512, height: 512, channels: 3, background: { r: 255, g: 255, b: 255 } },
+    }).png().toBuffer()
+    const maskPng = await sharp({
+      create: { width: 1024, height: 1024, channels: 3, background: { r: 0, g: 0, b: 0 } },
+    }).composite([{ input: whiteSquare, left: 256, top: 256 }]).png().toBuffer()
+    const maskBase64 = `data:image/png;base64,${maskPng.toString('base64')}`
+    const maskFilename = `masks/followup_${uuidv4()}.png`
+    const maskUrl = await storageService.uploadPublicImage(maskFilename, maskBase64)
+    if (!maskUrl) throw new Error('Failed to upload follow-up mask')
+    logger.info('Follow-up mask uploaded', { maskUrl })
+    maskField = { url: maskUrl }
+  } else {
+    const fc = MASK_CONFIG.FULL_CANVAS
+    maskField = { areas: [{ width: fc.width, height: fc.height, points: fc.points }] }
+  }
 
   const uploadPaintPayload = {
     imgUrl: publicImageUrl,
-    canvas: {
-      width: 1024,
-      height: 1024,
-    },
-    imgPos: {
-      width: 1024,
-      height: 1024,
-      x: 0,
-      y: 0,
-    },
-    mask: {
-      areas: [
-        {
-          width: maskConfig.width,
-          height: maskConfig.height,
-          points: maskConfig.points,
-        },
-      ],
-    },
+    canvas: { width: 1024, height: 1024 },
+    imgPos: { width: 1024, height: 1024, x: 0, y: 0 },
+    mask: maskField,
     remixPrompt,
   }
 
@@ -1176,28 +1186,116 @@ async function generateWithLegNext(
 
   logger.info('Upload_paint completed, submitting upscale', { jobId })
 
-  // Step 5: Submit upscale for first variant (index 0)
-  await metadata.set('stage', 'submitting_upscale')
+  // Step 5: Split 2×2 grid into 4 variant tiles and let user pick
+  await metadata.set('stage', 'processing_variants')
+  await metadata.set('progress', 65)
+
+  const gridImageUrl = uploadPaintResult.output?.image_url || uploadPaintResult.output?.image_urls?.[0]
+  if (!gridImageUrl) throw new Error('upload_paint result missing image_url')
+
+  const gridResponse = await fetch(gridImageUrl)
+  if (!gridResponse.ok) throw new Error(`Failed to fetch grid image: ${gridResponse.status}`)
+  const gridBuffer = Buffer.from(await gridResponse.arrayBuffer())
+
+  const gridMeta = await sharp(gridBuffer).metadata()
+  const gW = gridMeta.width ?? 2048
+  const gH = gridMeta.height ?? 2048
+  const varW = Math.round(gW / 2)
+  const varH = Math.round(gH / 2)
+  logger.info('Grid dimensions', { gW, gH, varW, varH })
+
+  // Extract center tile from each quadrant of the 2×2 grid
+  // For follow-up: center tile is the middle 50% of the variant canvas
+  // For first tile: the whole variant IS the tile
+  const quadrants = [
+    { col: 0, row: 0 },
+    { col: 1, row: 0 },
+    { col: 0, row: 1 },
+    { col: 1, row: 1 },
+  ]
+
+  const variantUrls: string[] = []
+  for (const { col, row } of quadrants) {
+    let cropLeft: number, cropTop: number, cropWidth: number, cropHeight: number
+    if (!isFirstTile) {
+      // Center tile crop: 50% of variant, offset by 25%
+      cropLeft = Math.round(col * varW + varW * 0.25)
+      cropTop = Math.round(row * varH + varH * 0.25)
+      cropWidth = Math.round(varW * 0.5)
+      cropHeight = Math.round(varH * 0.5)
+    } else {
+      // Whole quadrant is the tile
+      cropLeft = col * varW
+      cropTop = row * varH
+      cropWidth = varW
+      cropHeight = varH
+    }
+
+    const tileBuf = await sharp(gridBuffer)
+      .extract({ left: cropLeft, top: cropTop, width: cropWidth, height: cropHeight })
+      .resize(512, 512, { fit: 'fill' })
+      .png()
+      .toBuffer()
+
+    const tileBase64 = `data:image/png;base64,${tileBuf.toString('base64')}`
+    const variantFilename = `variants/${uuidv4()}.png`
+    const variantUrl = await storageService.uploadPublicImage(variantFilename, tileBase64)
+    if (!variantUrl) throw new Error(`Failed to upload variant ${col}_${row}`)
+    variantUrls.push(variantUrl)
+  }
+
+  logger.info('Variant tiles uploaded', { count: variantUrls.length })
+
+  // Create wait token for user variant selection
+  const waitToken = await wait.createToken({ timeout: '30m' })
+  await metadata.set('stage', 'waiting_variant_selection')
+  await metadata.set('variantUrls', variantUrls)
+  await metadata.set('gridJobId', jobId)
+  await metadata.set('waitTokenId', waitToken.id)
   await metadata.set('progress', 70)
+
+  logger.info('Waiting for user variant selection', { tokenId: waitToken.id })
+
+  // Pause until user picks a variant and action
+  const selection = await wait.forToken<{ action: 'accept' | 'upscale'; variantIndex: number }>(waitToken.id)
+
+  if (!selection.ok) {
+    throw new Error('Variant selection timed out or was cancelled')
+  }
+
+  const { action, variantIndex } = selection.output
+  logger.info('User made variant selection', { action, variantIndex })
+
+  if (action === 'accept') {
+    // User accepted as-is: download the pre-uploaded variant tile and return base64
+    await metadata.set('stage', 'finalizing_accepted_variant')
+    await metadata.set('progress', 90)
+    const acceptedUrl = variantUrls[variantIndex]
+    const acceptResp = await fetch(acceptedUrl)
+    if (!acceptResp.ok) throw new Error(`Failed to fetch accepted variant: ${acceptResp.status}`)
+    const acceptBuf = Buffer.from(await acceptResp.arrayBuffer())
+    return acceptBuf.toString('base64')
+  }
+
+  // action === 'upscale': upscale the chosen variant
+  await metadata.set('stage', 'submitting_upscale')
+  await metadata.set('progress', 75)
 
   const upscalePayload = {
     jobId: jobId,
-    imageNo: 0,
+    imageNo: variantIndex,
     type: 0,
   }
 
   logger.info('Submitting upscale with payload', { upscalePayload })
 
-  // Log upscale request start
   logLLMRequestStart({
     provider: 'midjourney',
     model: 'legnext-upscale',
     prompt: remixPrompt,
-    inputImageUrls: uploadPaintImageUrl ? [uploadPaintImageUrl] : undefined,
+    inputImageUrls: gridImageUrl ? [gridImageUrl] : undefined,
     input: upscalePayload,
-    metadata: {
-      endpoint: 'upscale',
-    },
+    metadata: { endpoint: 'upscale', variantIndex },
   })
 
   const upscaleResponse = await fetch('https://api.legnext.ai/api/v1/upscale', {
@@ -1223,42 +1321,20 @@ async function generateWithLegNext(
 
   const upscaleData = await upscaleResponse.json()
   const upscaleJobId = upscaleData.job_id
-
   if (!upscaleJobId) {
-    logLLMRequestError({
-      provider: 'midjourney',
-      model: 'legnext-upscale',
-      prompt: remixPrompt,
-      error: 'No job_id returned',
-      input: upscalePayload,
-      output: upscaleData,
-    })
     throw new Error('LegNext upscale failed: No job_id returned')
   }
 
   await metadata.set('upscale_task_id', upscaleJobId)
   await metadata.set('stage', 'waiting_upscale')
-  await metadata.set('progress', 75)
+  await metadata.set('progress', 80)
 
-  // Step 6: Poll for upscale completion
   logger.info('Waiting for upscale task', { upscaleJobId })
-  const upscaleResult = await pollLegNextTask(upscaleJobId, config.apiKey, 300, 75)
+  const upscaleResult = await pollLegNextTask(upscaleJobId, config.apiKey, 300, 80)
 
   const imageUrl = upscaleResult.output?.image_url || upscaleResult.output?.image_urls?.[0]
+  if (!imageUrl) throw new Error('LegNext upscale result missing image_url')
 
-  if (!imageUrl) {
-    logLLMRequestError({
-      provider: 'midjourney',
-      model: 'legnext-upscale',
-      prompt: remixPrompt,
-      error: 'LegNext upscale result missing image_url',
-      input: upscalePayload,
-      output: upscaleResult,
-    })
-    throw new Error('LegNext upscale result missing image_url')
-  }
-
-  // Log upscale completion
   logLLMRequestComplete({
     provider: 'midjourney',
     model: 'legnext-upscale',
@@ -1267,28 +1343,33 @@ async function generateWithLegNext(
     output: upscaleResult.output,
   })
 
-  logger.info('Midjourney generation via LegNext completed', { imageUrl })
+  logger.info('Upscale completed', { imageUrl })
 
-  // Step 7: Download image and convert to base64
-  const response = await fetch(imageUrl)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch generated image: ${response.status}`)
-  }
+  await metadata.set('stage', 'downloading_upscaled')
+  await metadata.set('progress', 92)
 
-  const arrayBuffer = await response.arrayBuffer()
-  const buffer = Buffer.from(arrayBuffer)
+  const imgResponse = await fetch(imageUrl)
+  if (!imgResponse.ok) throw new Error(`Failed to fetch upscaled image: ${imgResponse.status}`)
+  const buffer = Buffer.from(await imgResponse.arrayBuffer())
 
-  // For follow-up tiles, crop the center 512x512 from the 1024x1024 context canvas
-  // (matches behavior of Gemini, OpenAI, and Stability providers)
-  if (!isFirstTile && contextImageBase64) {
-    const croppedBuffer = await imageService.crop(buffer, {
-      x: 256,
-      y: 256,
-      width: 512,
-      height: 512,
-    })
+  if (!isFirstTile) {
+    const meta = await sharp(buffer).metadata()
+    const W = meta.width ?? 1024
+    const H = meta.height ?? 1024
+    logger.info('Upscaled canvas dimensions', { width: W, height: H })
+    const cropX = Math.round(W * 0.25)
+    const cropY = Math.round(H * 0.25)
+    const cropW = Math.round(W * 0.5)
+    const cropH = Math.round(H * 0.5)
+    logger.info('Cropping center tile', { cropX, cropY, cropW, cropH })
+    const croppedBuffer = await sharp(buffer)
+      .extract({ left: cropX, top: cropY, width: cropW, height: cropH })
+      .resize(512, 512, { fit: 'fill' })
+      .png()
+      .toBuffer()
     return croppedBuffer.toString('base64')
   }
 
-  return buffer.toString('base64')
+  const resizedBuffer = await sharp(buffer).resize(512, 512, { fit: 'fill' }).png().toBuffer()
+  return resizedBuffer.toString('base64')
 }

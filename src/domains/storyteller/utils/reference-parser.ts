@@ -143,7 +143,7 @@ export function splitIntoSegments(text: string): TextSegment[] {
 /**
  * Replace references with just display names (for plain text output)
  */
-function stripReferences(text: string): string {
+export function stripReferences(text: string): string {
   return text.replace(REFERENCE_REGEX, '$1')
 }
 

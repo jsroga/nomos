@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { getErrorMessage } from '@/lib/error-utils'
 import { STYLE_PRESETS } from '@/config/style-presets'
+import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 
 interface SettingsDialogProps {
   isOpen: boolean
@@ -71,6 +72,7 @@ const ConnectionDot = ({ connected, label }: { connected: boolean; label: string
 )
 
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose, projectId }) => {
+  const loadProject = useWorldStore(state => state.loadProject)
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
@@ -103,6 +105,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
+      // Refresh store so Sidebar picks up the new stylePreset immediately
+      await loadProject(projectId)
     } catch (error) {
       console.error('Failed to save project settings:', error)
       toast.error('Failed to save project settings')
@@ -154,7 +158,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
     }
   }, [isOpen, projectId])
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    // If user is on Custom mode, persist the current URL list (including empty) on explicit Save
+    if (styleMode === 'custom') {
+      await saveStyleSettings('custom', null, styleReferenceUrls)
+    }
     onClose()
   }
 
