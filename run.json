@@ -1034,7 +1034,7 @@
     "kind": "running"
   },
   "status_updated_at": "2026-07-01T10:35:09.623606Z",
-  "last_event_at": "2026-07-01T10:36:49.450587Z",
+  "last_event_at": "2026-07-01T10:38:07.818470Z",
   "pending_control": null,
   "checkpoints": [
     {
@@ -1146,9 +1146,9 @@
       }
     },
     {
-      "seq": 0,
+      "seq": 129,
       "checkpoint": {
-        "timestamp": "2026-07-01T10:36:49.520129Z",
+        "timestamp": "2026-07-01T10:36:52.843963Z",
         "current_node": "assess",
         "completed_nodes": [
           "start",
@@ -1157,31 +1157,31 @@
         ],
         "node_retries": {},
         "context_values": {
-          "current_node": "assess",
-          "outcome": "succeeded",
-          "last_stage": "assess",
-          "internal.fidelity": "summary:medium",
-          "graph.goal": "Clean up and align the storyteller module (src/domains/storyteller) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
-          "internal.thread_id": "review",
-          "internal.retry_count.start": 0,
-          "graph.stall_timeout": "1800000ms",
-          "failure_class": "",
           "thread.review.current_node": "assess",
-          "internal.retry_count.scope": 0,
-          "last_response": "Assessment written to `findings/assess.md`.\n\nShort summary:\n- Storyteller has an `index.ts`, but it currently exposes too much: DB schema, services, and agent internals leak through the public barrel.",
-          "internal.retry_count.assess": 0,
-          "internal.node_visit_count": 1,
+          "thread.start.current_node": "scope",
+          "current_node": "assess",
           "graph.default_fidelity": "summary:medium",
+          "graph.default_max_retries": "1",
+          "internal.fidelity": "summary:medium",
+          "response.assess": "Assessment written to `findings/assess.md`.\n\nShort summary:\n- Storyteller has an `index.ts`, but it currently exposes too much: DB schema, services, and agent internals leak through the public barrel.\n- The module shape is still legacy (`components/hooks/tools/lib/db`) rather than the target `ui/state/io/core/services/agents/tasks/prompts` blueprint.\n- Highest-risk divergences are in client/server boundaries: raw client `fetch`, ad-hoc caching, localStorage/window-event job recovery, and parallel hand-rolled AI orchestration beside Mastra.\n\nTop 3 gaps first:\n1. Reshape the module toward the target blueprint.\n2. Narrow `src/domains/storyteller/index.ts` to a real public API.\n3. Move client-side server state into `io/` + TanStack Query `state/queries/` and retire bespoke fetch/caching patterns.\n\nNo code was modified beyond the findings file.",
+          "graph.stall_timeout": "1800000ms",
           "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
-          "internal.run_id": "01KWEKXTNN02DJ5H0RA9W7X74R",
-          "internal.work_dir": "/workspace/kurvitza",
+          "outcome": "succeeded",
           "graph.rankdir": "LR",
           "failure_signature": "",
-          "response.assess": "Assessment written to `findings/assess.md`.\n\nShort summary:\n- Storyteller has an `index.ts`, but it currently exposes too much: DB schema, services, and agent internals leak through the public barrel.\n- The module shape is still legacy (`components/hooks/tools/lib/db`) rather than the target `ui/state/io/core/services/agents/tasks/prompts` blueprint.\n- Highest-risk divergences are in client/server boundaries: raw client `fetch`, ad-hoc caching, localStorage/window-event job recovery, and parallel hand-rolled AI orchestration beside Mastra.\n\nTop 3 gaps first:\n1. Reshape the module toward the target blueprint.\n2. Narrow `src/domains/storyteller/index.ts` to a real public API.\n3. Move client-side server state into `io/` + TanStack Query `state/queries/` and retire bespoke fetch/caching patterns.\n\nNo code was modified beyond the findings file.",
-          "graph.default_max_retries": "1",
-          "thread.start.current_node": "scope",
+          "internal.run_id": "01KWEKXTNN02DJ5H0RA9W7X74R",
+          "internal.retry_count.scope": 0,
+          "internal.retry_count.assess": 0,
           "graph.label": "Optional Build",
-          "command.output": "blob://sha256/a1b56f3b2501b9dc928b6a840239aee6fac0d5486456f07515b7594f6055fc50"
+          "internal.thread_id": "review",
+          "internal.retry_count.start": 0,
+          "command.output": "blob://sha256/a1b56f3b2501b9dc928b6a840239aee6fac0d5486456f07515b7594f6055fc50",
+          "internal.node_visit_count": 1,
+          "internal.work_dir": "/workspace/kurvitza",
+          "graph.goal": "Clean up and align the storyteller module (src/domains/storyteller) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
+          "last_response": "Assessment written to `findings/assess.md`.\n\nShort summary:\n- Storyteller has an `index.ts`, but it currently exposes too much: DB schema, services, and agent internals leak through the public barrel.",
+          "failure_class": "",
+          "last_stage": "assess"
         },
         "node_outcomes": {
           "scope": {
@@ -1243,10 +1243,164 @@
           }
         },
         "next_node_id": "clarify_prep",
+        "git_commit_sha": "1de196b4170e76bc88a4a50b3554a9a303ef5538",
         "node_visits": {
+          "scope": 1,
+          "assess": 1,
+          "start": 1
+        }
+      },
+      "diff": {
+        "patch": "diff --git a/findings/assess.md b/findings/assess.md\nindex 7c73a74..96245bc 100644\n--- a/findings/assess.md\n+++ b/findings/assess.md\n@@ -1,61 +1,68 @@\n-### [Critical] No single public module API; other modules import storyteller internals directly\n-- Location: module root; external imports in `src/domains/chat/components/AgentLog.tsx`, `src/domains/chat/types.ts`, many `src/app/api/storyteller/*`\n-- Divergence: Breaks the module blueprint and invariant #6/#10 (`index.ts` as the only legal import target).\n-- Cost: Storyteller internals are now de facto public, making any cleanup risky; app/chat code is coupled to component/core file paths instead of a stable contract.\n-- Target: Add `src/domains/storyteller/index.ts` as the only public surface, then migrate app/chat/cross-module consumers to that barrel and block deep imports with lint.\n-\n-### [Critical] Layer blueprint is still legacy-shaped, not target-shaped\n-- Location: `src/domains/storyteller/` top level (`components/`, `hooks/`, `lib/`, `db/`, `tools/`, `mentions/`, `config/`), with no `ui/`, `state/`, `io/`, or `tasks/`\n-- Divergence: Breaks the canonical module blueprint (§4) and naming/layering contract.\n-- Cost: Responsibilities are spread across ad-hoc folders, so state, client edge logic, server logic, and agent code are hard to separate and migrate incrementally.\n-- Target: Converge on `ui/`, `state/`, `io/`, `core/`, `services/`, `agents/`, `tasks/`, `prompts/`, `<module>.config.ts`, with folder-per-unit naming and local barrels.\n-\n-### [High] “Core” is not pure; it imports UI and prompt-layer types and uses runtime time directly\n-- Location: `src/domains/storyteller/core/EntityExtractor/EntityExtractor.ts`\n-- Divergence: Breaks the dependency rule (`core/` may not import React/UI/other layers) and invariant #8 (pure core testable offline).\n-- Cost: Core logic now depends on `components/ReferenceText` and `prompts/schemas/agent-schemas`, and also stamps `new Date()`, which makes the supposedly pure layer impure and harder to reuse/test.\n-- Target: Move shared entity/reference DTOs into `core/` or `io/`, keep `core/` free of UI/prompt imports, and inject clocks/metadata instead of calling `Date` directly.\n-\n-### [High] “Services” contains client-side orchestration, polling, localStorage, and window events\n-- Location: `src/domains/storyteller/services/MoodboardGenerationService.ts`, `src/domains/storyteller/services/PosterGenerationService.ts`, plus UI helpers in `components/WorldBiblePanel/WorldBiblePanel.tsx`\n-- Divergence: Breaks the service contract (`services/` must be server-only) and invariant #4 (long work must use Trigger Realtime + shared `useJob`, no bespoke polling/localStorage/window events).\n-- Cost: Server/client responsibilities are inverted: browser concerns live in `services/`, long-running job UX is bespoke, and recovery/status behavior is scattered across polling loops and custom events.\n-- Target: Move browser behavior into `state/` + shared jobs hooks, keep `services/` server-only (`import 'server-only'`), and represent Trigger jobs via module `tasks/` plus shared `useJob` rather than local polling.\n-\n-### [High] Client state and server state are mixed in custom hooks/context instead of TanStack Query\n-- Location: `src/domains/storyteller/components/WorldBible/BibleContext.tsx`, `src/domains/storyteller/hooks/useBibleState.ts`\n-- Divergence: Breaks invariant #1 (server state in TanStack Query, never in Zustand/custom stores) and the `state/ -> io/` contract.\n-- Cost: Fetching lock state and user/session state is handled via `useEffect`, `cachedFetch`, manual invalidation, and URL/window event wiring; this bypasses cache consistency and makes the World Bible UI hard to reason about.\n-- Target: Move remote reads/writes into `state/queries/*` hooks backed by typed `io/` fetchers and query keys; leave only ephemeral panel/editing state in client state.\n-\n-### [High] Storyteller keeps a parallel hand-rolled orchestration stack beside Mastra\n-- Location: `src/domains/storyteller/agents/StoryWorkflow/StoryWorkflow.ts`, `src/domains/storyteller/agents/StorytellerAgent/StorytellerAgent.ts`, `src/domains/storyteller/agents/MastraInstance/MastraInstance.ts`\n-- Divergence: Breaks invariant #7/#11 (“use the framework once”): manual Langfuse spans, ad-hoc workflow event bus, step `z.any()`, direct tool mutation, prompt-time skill injection despite Workspace already configured.\n-- Cost: The AI layer pays double complexity for tracing/skills/workflow behavior; correctness depends on manual glue instead of Mastra primitives, which raises migration and debugging cost.\n-- Target: Let Mastra own tracing, workflow typing, skills access, and agent/tool composition end-to-end; remove manual parallel machinery and replace `z.any()` workflow boundaries with explicit schemas.\n-\n-### [High] Module-local DB schema is still the effective source of truth and is imported broadly\n-- Location: `src/domains/storyteller/db/schema.ts`, imported by `src/app/api/storyteller/*`, `src/lib/db.ts`, storyteller tools/services\n-- Divergence: Breaks repository topology and invariant #3 (single schema source in `src/db/schema.ts`).\n-- Cost: The schema boundary remains storyteller-owned rather than repo-owned, so the module cannot be cleanly encapsulated and other layers continue to reach through storyteller to touch persistence details.\n-- Target: Make `src/db/schema.ts` the true source of truth, keep Drizzle access in server services, and stop importing module-local schema files from app routes/tools.\n-\n-### [Medium] Typed boundaries are still weak, especially in tools and workflow steps\n-- Location: `src/domains/storyteller/tools/*.ts`, `src/domains/storyteller/agents/StoryWorkflow/StoryWorkflow.ts`, `src/domains/storyteller/core/StoryTypes/StoryTypes.ts`\n-- Divergence: Breaks invariant #5 (Zod at edges, ban `any` at boundaries).\n-- Cost: Tool inputs/outputs and workflow step contracts are loosely typed (`execute(args: any)`, `z.any()`, `Record<string, any>`), which increases runtime drift and makes refactors unsafe.\n-- Target: Replace boundary `any` with strict Zod DTOs and inferred types, especially for Mastra tools, workflow steps, and story-plan payloads.\n-\n-### [Medium] Several files are already past the architecture size guardrails\n-- Location: `components/WorldBible/BibleContext.tsx` (575 LOC), `agents/StorytellerAgent/StorytellerAgent.ts` (639 LOC), `tools/agent-tools.ts` (730 LOC)\n-- Divergence: Breaks invariant #8 (components < ~400 LOC; split god files).\n-- Cost: The largest files now concentrate multiple responsibilities, which will make the migration to the target layers slower and riskier.\n-- Target: Split by responsibility while moving to the new folders: query hooks/DTOs out of Bible context, prompt-building out of `StorytellerAgent`, and tool families into smaller typed units under `agents/tools` or `services`.\n+### [Critical] Module blueprint is still legacy-shaped, not converged on the target slice contract\n+- Location: `src/domains/storyteller/` top level\n+- Divergence: Breaks the module blueprint in `ARCHITECTURE.md` §4. The module is organized around `components/`, `hooks/`, `config/`, `db/`, `lib/`, `mentions/`, `tools/` instead of `ui/`, `state/`, `io/`, `core/`, `services/`, `agents/`, `tasks/`, plus `<module>.config.ts`.\n+- Cost: Keeps responsibilities blurred, makes lintable dependency rules hard to enforce, and increases migration cost because new code has no canonical home.\n+- Target: Reshape toward `ui/state/io/core/services/agents/tasks/prompts`, with legacy folders retired or mapped cleanly into those layers.\n+\n+### [Critical] Public barrel leaks internals and server-only surfaces\n+- Location: `src/domains/storyteller/index.ts`\n+- Divergence: Breaks the “one barrel” invariant and §4 public API rule. The barrel re-exports `./db/schema`, `./lib/access-verification`, and multiple concrete services/agent internals instead of a curated external contract.\n+- Cost: External callers can couple directly to persistence and server implementation details, which blocks internal refactors and violates the dependency boundary the architecture depends on.\n+- Target: `index.ts` should export only approved public UI/hooks/types/task handles; DB schema, private services, and agent internals stay inside the module.\n+\n+### [High] Client layer is acting as state/io and bypassing TanStack Query\n+- Location: `hooks/useEpisodeData.ts`, `hooks/useStorytellerActions.ts`, `hooks/useBibleState.ts`, multiple `components/*`\n+- Divergence: Breaks the dependency rule (`ui → state → io → core`) and invariant #1. Client hooks/components issue raw `fetch('/api/storyteller/...')`, keep remote server data in local React state, and implement ad-hoc caching with `cachedFetch` instead of `state/queries` + typed `io/`.\n+- Cost: Duplicate fetching logic, manual invalidation, inconsistent cache behavior, harder optimistic updates, and no standard server-state ownership.\n+- Target: Move browser/server interaction into `io/*.api.ts` + `*.dto.ts`, then expose TanStack hooks in `state/queries/` for episodes, bible lock, actions/mutations, etc. Keep local component state only for ephemeral UI.\n+\n+### [High] Long-running work still uses bespoke client recovery/event patterns\n+- Location: `hooks/useBibleState.ts`, `services/PosterGenerationService.ts`, `services/MoodboardGenerationService.ts`\n+- Divergence: Breaks invariant #4. The module still uses `localStorage`, `window` events / `CustomEvent`, and service-level “resume pending tasks” patterns instead of Trigger.dev task ownership + shared `useJob`/Realtime.\n+- Cost: Fragile recovery semantics, duplicated job orchestration logic, browser-only coupling, and inconsistent UX across async workflows.\n+- Target: Long-running poster/moodboard/AI operations should be owned by `tasks/*.task.ts`, observed through shared job primitives, with no custom localStorage/event bus recovery path.\n+\n+### [High] AI orchestration still runs Mastra and hand-rolled parallel infrastructure side by side\n+- Location: `agents/StoryWorkflow/StoryWorkflow.ts`, `agents/StorytellerAgent/StorytellerAgent.ts`, `agents/MastraInstance/MastraInstance.ts`, `core/WorkflowContext/*`\n+- Divergence: Breaks invariant #7 / “use the framework once.” The module uses Mastra workflows/memory/observability, but also manual Langfuse spans, custom workflow event bus/context plumbing, broad prompt-enforced guardrails, and mutable tool wiring.\n+- Cost: Two tracing/context models to maintain, more failure modes, weaker type guarantees, and a harder path to standardizing agents through the shared kernel.\n+- Target: Mastra primitives should be the only implementation for tracing/workflows/memory/context where available; storyteller-specific orchestration should thin down into adapters around those primitives.\n+\n+### [High] Typed boundaries are still porous (`any`, `z.any`, ad-hoc result shapes)\n+- Location: `agents/StoryWorkflow/StoryWorkflow.ts`, `agents/StorytellerAgent/StorytellerAgent.ts`, `hooks/useStorytellerActions.ts`, `services/ContextAssemblyService.ts`, `core/ConsistencyTypes/*`\n+- Divergence: Breaks invariant #5 and §4 typed-boundary rules. Representative examples include workflow steps with `inputSchema: z.any()`, `execute(params: any)`, `Record<string, any>` tool maps, and `any`-heavy payload mapping across hooks/services.\n+- Cost: Weak compile-time guarantees at exactly the boundaries that most need stability, plus brittle runtime assumptions during migration.\n+- Target: Introduce explicit DTO/schema types for workflow step IO, action payloads, API responses, and service return shapes; remove `any` from edges first.\n+\n+### [Medium] Server-only boundaries are not marked or consistently enforced\n+- Location: `src/domains/storyteller/services/*`, `src/domains/storyteller/agents/*`\n+- Divergence: Breaks §4 server-only rule. Representative services and agents do not include `import 'server-only'`, even when they import DB access or server SDKs.\n+- Cost: Easier accidental client-bundle imports, weaker architectural signaling, and less protection against boundary regressions.\n+- Target: All `services/`, `agents/`, and future `tasks/` entry files should be bundler-guarded with `import 'server-only'` where applicable.\n+\n+### [Medium] Browser auth/session access still reaches Supabase directly\n+- Location: `hooks/useBibleState.ts`, `components/WorldBible/BibleContext.tsx`\n+- Divergence: While not a write-path violation, it works against the target’s typed edge/server-gate model and keeps auth retrieval logic duplicated in the client layer.\n+- Cost: Repeated client auth plumbing, more coupling to Supabase in feature code, and weaker encapsulation around authenticated flows.\n+- Target: Prefer a shared auth/session abstraction (or server-fed session data) so module UI/state does not directly depend on Supabase helpers.\n+\n+### [Medium] Some storyteller UI/components are still god files beyond the size limit\n+- Location: `components/ActionApprovalModal/ActionApprovalModal.tsx` (~978 LOC), `components/CharacterWeb/CharacterWeb.tsx` (~922), `components/CharacterCreationDialog/CharacterCreationDialog.tsx` (~889), `components/EpisodePremisePanel/EpisodePremisePanel.tsx` (~765), `components/AgentLog/AgentLog.tsx` (~696)\n+- Divergence: Breaks invariant #8 size guidance and makes the target folder-per-unit structure less meaningful.\n+- Cost: Harder reviewability, more mixed concerns per component, and greater refactor risk during architecture migration.\n+- Target: Split these into smaller feature units under `ui/` with colocated local barrels/tests and clearer separation between presentation, state hooks, and side effects.\n+\n+### [Medium] Cross-module internal coupling already exists in storyteller UI\n+- Location: `mentions/MentionsProvider/MentionsProvider.tsx`\n+- Divergence: Breaks the cross-module dependency rule. Storyteller reaches into chat internals (`@/domains/chat/components/ChatInterface`, `@/domains/chat/mentions/*`) rather than importing a public `chat` contract or moving shared mention primitives to `shared/`.\n+- Cost: Tight coupling between modules, harder independent migration, and likely future barrel/lint violations once the rules are enforced.\n+- Target: Either consume `src/domains/chat/index.ts` only, or extract mention/chat integration primitives used by multiple modules into `shared/`.\n \n ## Open questions for Clarify\n-- Should storyteller’s existing `components/` and `hooks/` be renamed/moved in one structural pass first, or can the migration proceed incrementally behind a new `index.ts` contract?\n-- Is the World Bible lock/session UX allowed to change to fit TanStack Query + typed API boundaries, or must current URL/custom-event behaviors be preserved exactly during migration?\n-- Should long-running image generation in storyteller be fully moved onto shared `useJob`/Trigger Realtime in this cleanup scope, or only prepared structurally for a later migration?\n+1. Should this pass include moving storyteller-local `db/` artifacts to the global `src/db` contract now, or should that be deferred behind the “interim server-side compatibility” seam already noted in `index.ts`?\n+2. Is `mentions/` intended to remain storyteller-owned, or should cross-module mention infrastructure be explicitly moved to `shared/` as part of this cleanup?\n+3. For long-running poster/moodboard flows, should migration to `tasks/` be in scope for this alignment pass, or treated as a follow-on after the `ui/state/io` reshape?\n+4. Should `tools/` be folded under `agents/tools/` in this pass to match the blueprint, or left temporarily in place with public imports narrowed first?\n \n-Verdict: storyteller is pointed at the right architecture concepts, but its current public boundaries and client/server layering are still too legacy-shaped to plan implementation safely without first enforcing the module contract.\n-Top 3 gaps: missing public `index.ts` contract, legacy folder/layer shape (`components/hooks/db/tools` instead of `ui/state/io/tasks`), and bespoke client/job orchestration living outside TanStack Query + shared Trigger/Mastra primitives.\n+Verdict: storyteller is moving toward the target in places, but its public surface and client/server boundaries are still fundamentally legacy.\n+Top 3 gaps to fix first: blueprint reshaping, barrel/internal boundary cleanup, and TanStack/io migration for client-side server state.\n\\ No newline at end of file\n",
+        "summary": {
+          "files_changed": 1,
+          "additions": 65,
+          "deletions": 58
+        }
+      }
+    },
+    {
+      "seq": 0,
+      "checkpoint": {
+        "timestamp": "2026-07-01T10:38:07.893393Z",
+        "current_node": "clarify_prep",
+        "completed_nodes": [
+          "start",
+          "scope",
+          "assess",
+          "clarify_prep"
+        ],
+        "node_retries": {},
+        "context_values": {
+          "current_node": "clarify_prep",
+          "outcome": "succeeded",
+          "internal.retry_count.start": 0,
+          "failure_class": "",
+          "internal.retry_count.clarify_prep": 0,
+          "graph.stall_timeout": "1800000ms",
+          "internal.retry_count.assess": 0,
+          "graph.default_fidelity": "summary:medium",
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
+          "internal.run_id": "01KWEKXTNN02DJ5H0RA9W7X74R",
+          "internal.work_dir": "/workspace/kurvitza",
+          "graph.rankdir": "LR",
+          "failure_signature": "",
+          "response.clarify_prep": "## Assessment summary\n`src/domains/storyteller` is still materially off the target module blueprint: its folder layout is legacy, its public barrel leaks internals, and client/server responsibilities are blurred. Planning can start now, but the architect needs one scope decision first because the biggest gaps affect import safety, TanStack/typed-io migration, job orchestration, and Mastra cleanup.\n\n## Key gaps (max 5)\n- The module shape is still legacy (`components/`, `hooks/`, `db/`, `tools/`, `mentions/`) instead of `ui/state/io/core/services/agents/tasks/prompts`.\n- `src/domains/storyteller/index.ts` exposes private DB/server-only internals, breaking the “one barrel” rule.\n- Client hooks/components fetch directly, hold server data locally, and bypass TanStack Query + typed `io/`.\n- Long-running storyteller flows still use bespoke recovery patterns (`localStorage`, `window` events) instead of Trigger.dev tasks + shared job primitives.\n- The AI layer mixes Mastra-native primitives with parallel hand-rolled orchestration/tracing and still has porous typed boundaries (`any`, `z.any`).\n\n## Pick one scope for the architect\n\n| Option | What the plan will assume |\n| --- | --- |\n| **[A] Staged migration** | Boundary-first roadmap: tighten `storyteller/index.ts`, map legacy roots to `ui/state/io/core/services/agents/tasks/prompts`, migrate the highest-value server-state flows to TanStack + typed `io/` first, then stage Trigger job migration, schema convergence, and Mastra cleanup after the boundaries are safe. |\n| **[B] Minimal first step** | Smallest safe slice only: lock down exports, add missing server-only guards, type the worst boundaries, and define seams for future `state/io/tasks` work; explicitly defer most folder moves, most TanStack migration, Trigger job replacement, and deeper Mastra consolidation. |\n| **[C] Full blueprint** | Comprehensive end-state reshape: fully reorganize storyteller into the blueprint, clean all cross-module/internal imports, migrate major client/server flows to TanStack + `io/`, move long-running work to `tasks/`, and make Mastra the only orchestration path planned for this effort. |\n| **[F] Custom** | Type your own constraints in freeform |\n| **[R] Re-assess** | Only if findings are wrong or code changed since assessment |\n\n**Recommendation: [A]** — storyteller’s biggest risks are boundary and data-flow problems, so a staged migration gives the architect enough scope to fix the real issues without forcing a brittle big-bang rewrite.\n\nThe buttons below match this table. Pick the option that fits.",
+          "graph.default_max_retries": "1",
+          "graph.label": "Optional Build",
+          "last_stage": "clarify_prep",
+          "internal.fidelity": "summary:medium",
+          "internal.thread_id": "review",
+          "graph.goal": "Clean up and align the storyteller module (src/domains/storyteller) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
+          "thread.review.current_node": "clarify_prep",
+          "internal.retry_count.scope": 0,
+          "last_response": "## Assessment summary\n`src/domains/storyteller` is still materially off the target module blueprint: its folder layout is legacy, its public barrel leaks internals, and client/server responsibilities ",
+          "internal.node_visit_count": 1,
+          "response.assess": "Assessment written to `findings/assess.md`.\n\nShort summary:\n- Storyteller has an `index.ts`, but it currently exposes too much: DB schema, services, and agent internals leak through the public barrel.\n- The module shape is still legacy (`components/hooks/tools/lib/db`) rather than the target `ui/state/io/core/services/agents/tasks/prompts` blueprint.\n- Highest-risk divergences are in client/server boundaries: raw client `fetch`, ad-hoc caching, localStorage/window-event job recovery, and parallel hand-rolled AI orchestration beside Mastra.\n\nTop 3 gaps first:\n1. Reshape the module toward the target blueprint.\n2. Narrow `src/domains/storyteller/index.ts` to a real public API.\n3. Move client-side server state into `io/` + TanStack Query `state/queries/` and retire bespoke fetch/caching patterns.\n\nNo code was modified beyond the findings file.",
+          "thread.start.current_node": "scope",
+          "command.output": "blob://sha256/a1b56f3b2501b9dc928b6a840239aee6fac0d5486456f07515b7594f6055fc50"
+        },
+        "node_outcomes": {
+          "scope": {
+            "status": "succeeded",
+            "context_updates": {
+              "command.output": "blob://sha256/a1b56f3b2501b9dc928b6a840239aee6fac0d5486456f07515b7594f6055fc50"
+            },
+            "notes": "Script completed: M=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1",
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 140,
+              "active_time_ms": 140
+            }
+          },
+          "assess": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_stage": "assess",
+              "response.assess": "Assessment written to `findings/assess.md`.\n\nShort summary:\n- Storyteller has an `index.ts`, but it currently exposes too much: DB schema, services, and agent internals leak through the public barrel.\n- The module shape is still legacy (`components/hooks/tools/lib/db`) rather than the target `ui/state/io/core/services/agents/tasks/prompts` blueprint.\n- Highest-risk divergences are in client/server boundaries: raw client `fetch`, ad-hoc caching, localStorage/window-event job recovery, and parallel hand-rolled AI orchestration beside Mastra.\n\nTop 3 gaps first:\n1. Reshape the module toward the target blueprint.\n2. Narrow `src/domains/storyteller/index.ts` to a real public API.\n3. Move client-side server state into `io/` + TanStack Query `state/queries/` and retire bespoke fetch/caching patterns.\n\nNo code was modified beyond the findings file.",
+              "last_response": "Assessment written to `findings/assess.md`.\n\nShort summary:\n- Storyteller has an `index.ts`, but it currently exposes too much: DB schema, services, and agent internals leak through the public barrel."
+            },
+            "notes": "Stage completed: assess",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 102407,
+                    "output_tokens": 6017,
+                    "reasoning_tokens": 327,
+                    "cache_read_tokens": 365056,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 442441
+            },
+            "files_touched": [
+              "/workspace/kurvitza/findings/assess.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 62146,
+              "tool_time_ms": 1003,
+              "active_time_ms": 63149
+            }
+          },
+          "clarify_prep": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_stage": "clarify_prep",
+              "last_response": "## Assessment summary\n`src/domains/storyteller` is still materially off the target module blueprint: its folder layout is legacy, its public barrel leaks internals, and client/server responsibilities ",
+              "response.clarify_prep": "## Assessment summary\n`src/domains/storyteller` is still materially off the target module blueprint: its folder layout is legacy, its public barrel leaks internals, and client/server responsibilities are blurred. Planning can start now, but the architect needs one scope decision first because the biggest gaps affect import safety, TanStack/typed-io migration, job orchestration, and Mastra cleanup.\n\n## Key gaps (max 5)\n- The module shape is still legacy (`components/`, `hooks/`, `db/`, `tools/`, `mentions/`) instead of `ui/state/io/core/services/agents/tasks/prompts`.\n- `src/domains/storyteller/index.ts` exposes private DB/server-only internals, breaking the “one barrel” rule.\n- Client hooks/components fetch directly, hold server data locally, and bypass TanStack Query + typed `io/`.\n- Long-running storyteller flows still use bespoke recovery patterns (`localStorage`, `window` events) instead of Trigger.dev tasks + shared job primitives.\n- The AI layer mixes Mastra-native primitives with parallel hand-rolled orchestration/tracing and still has porous typed boundaries (`any`, `z.any`).\n\n## Pick one scope for the architect\n\n| Option | What the plan will assume |\n| --- | --- |\n| **[A] Staged migration** | Boundary-first roadmap: tighten `storyteller/index.ts`, map legacy roots to `ui/state/io/core/services/agents/tasks/prompts`, migrate the highest-value server-state flows to TanStack + typed `io/` first, then stage Trigger job migration, schema convergence, and Mastra cleanup after the boundaries are safe. |\n| **[B] Minimal first step** | Smallest safe slice only: lock down exports, add missing server-only guards, type the worst boundaries, and define seams for future `state/io/tasks` work; explicitly defer most folder moves, most TanStack migration, Trigger job replacement, and deeper Mastra consolidation. |\n| **[C] Full blueprint** | Comprehensive end-state reshape: fully reorganize storyteller into the blueprint, clean all cross-module/internal imports, migrate major client/server flows to TanStack + `io/`, move long-running work to `tasks/`, and make Mastra the only orchestration path planned for this effort. |\n| **[F] Custom** | Type your own constraints in freeform |\n| **[R] Re-assess** | Only if findings are wrong or code changed since assessment |\n\n**Recommendation: [A]** — storyteller’s biggest risks are boundary and data-flow problems, so a staged migration gives the architect enough scope to fix the real issues without forcing a brittle big-bang rewrite.\n\nThe buttons below match this table. Pick the option that fits."
+            },
+            "notes": "Stage completed: clarify_prep",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 37687,
+                    "output_tokens": 5951,
+                    "reasoning_tokens": 180,
+                    "cache_read_tokens": 84480,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 207302
+            },
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 43768,
+              "tool_time_ms": 489,
+              "active_time_ms": 44257
+            }
+          },
+          "start": {
+            "status": "succeeded",
+            "usage": null
+          }
+        },
+        "next_node_id": "Clarify",
+        "node_visits": {
+          "assess": 1,
           "start": 1,
           "scope": 1,
-          "assess": 1
+          "clarify_prep": 1
         }
       },
       "diff": {}
@@ -1283,7 +1437,12 @@
       "first_event_seq": 31,
       "prompt": null,
       "response": null,
-      "completion": null,
+      "completion": {
+        "outcome": "succeeded",
+        "notes": "Stage completed: assess",
+        "failure_reason": null,
+        "timestamp": "2026-07-01T10:36:49.519506Z"
+      },
       "provider_used": {
         "mode": "agent",
         "provider": "openai",
@@ -1297,6 +1456,12 @@
       "output": null,
       "started_at": "2026-07-01T10:35:15.622301Z",
       "handler": "agent",
+      "timing": {
+        "wall_time_ms": 93839,
+        "inference_time_ms": 62146,
+        "tool_time_ms": 1003,
+        "active_time_ms": 63149
+      },
       "usage": {
         "input_tokens": 102407,
         "output_tokens": 6017,
@@ -1485,6 +1650,248 @@
             "category": "other",
             "tokens": 7,
             "usage_percent": 0.002573529411764706
+          }
+        ],
+        "warnings": []
+      },
+      "state": "succeeded"
+    },
+    "clarify_prep@1": {
+      "first_event_seq": 132,
+      "prompt": null,
+      "response": null,
+      "completion": null,
+      "provider_used": {
+        "mode": "agent",
+        "provider": "openai",
+        "model": "gpt-5.4",
+        "reasoning_effort": "low"
+      },
+      "diff": null,
+      "script_invocation": null,
+      "script_timing": null,
+      "parallel_results": null,
+      "output": null,
+      "started_at": "2026-07-01T10:36:52.845001Z",
+      "handler": "agent",
+      "usage": {
+        "input_tokens": 37687,
+        "output_tokens": 5951,
+        "total_tokens": 128298,
+        "reasoning_tokens": 180,
+        "cache_read_tokens": 84480,
+        "cache_write_tokens": 0,
+        "total_usd_micros": 207302
+      },
+      "model": {
+        "provider": "openai",
+        "model_id": "gpt-5.4"
+      },
+      "todos": {
+        "kind": "openai_plan",
+        "list_id": "openai_plan:aad3b331-b6cb-48a1-936c-73f5f1053f4d",
+        "items": [
+          {
+            "id": "9146de5cbc627b26",
+            "status": "completed",
+            "order": 0,
+            "subject": "Review assessment findings and architecture contract for storyteller"
+          },
+          {
+            "id": "b5a805ee011127f3",
+            "status": "completed",
+            "order": 1,
+            "subject": "Draft CLARIFY.md with summary, gaps, scope trade-offs, and risks"
+          },
+          {
+            "id": "fdbf71e36eee0db6",
+            "status": "completed",
+            "order": 2,
+            "subject": "Create DECISIONS.md stub for pending clarify gate"
+          },
+          {
+            "id": "2e2936c78cc3f5a0",
+            "status": "in_progress",
+            "order": 3,
+            "subject": "Present one scoped decision to the human"
+          }
+        ]
+      },
+      "permission_level": "full",
+      "agent_tools": [
+        {
+          "name": "apply_patch",
+          "description": "Use the `apply_patch` tool to edit files. This is a FREEFORM tool, so do not wrap the patch in JSON.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "write",
+          "invoked": true
+        },
+        {
+          "name": "close_agent",
+          "description": "Close a running subagent that is no longer needed.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "glob",
+          "description": "Find files by file names using a glob pattern. Use path to choose the search root. Prefer this over shell find or ls when locating repository files.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": true
+        },
+        {
+          "name": "grep",
+          "description": "Search file contents with a regex pattern. Use path to choose the search root, glob_filter to limit matching files, case_insensitive for case folding, and max_results to cap output.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": true
+        },
+        {
+          "name": "read_file",
+          "description": "Read files before editing them. Returns line-numbered text and supports offset/limit for large files. Use this instead of shell cat, head, tail, or sed when inspecting repository files.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": true
+        },
+        {
+          "name": "request_user_input",
+          "description": "Ask the human one or more questions and wait for their answers before continuing this stage.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "send_input",
+          "description": "Send a follow-up message to a running subagent when new information or corrected instructions are needed.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "shell",
+          "description": "Execute shell commands for terminal operations, package managers, tests and builds. Use dedicated tools for file reads, file edits, filename searches, and content searches. Provide timeout_ms for long-running commands.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "shell",
+          "invoked": false
+        },
+        {
+          "name": "spawn_agent",
+          "description": "Spawn a subagent for independent work or context isolation. Use it for tasks that can proceed separately, and avoid duplicating the same work in the parent session.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "update_plan",
+          "description": "Update the multi-step plan for the current task. Submit the entire plan; existing steps are reconciled by exact step text.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": true
+        },
+        {
+          "name": "wait",
+          "description": "Wait for a subagent to complete, then use the result to synthesize the outcome for the user.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "web_fetch",
+          "description": "Fetch content from a URL that starts with http:// or https://. Pass a prompt to extract specific information or summarize the page; omit prompt to return the page content.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "web_search",
+          "description": "Search the web using Brave Search when current external information is needed. Returns result titles, URLs, and descriptions; use web_fetch for a specific URL.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "write_file",
+          "description": "Create new files, or overwrite an existing file only when replacement is explicitly intended. Prefer edit_file for targeted changes to existing files because write_file overwrites the full file content.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "write",
+          "invoked": true
+        }
+      ],
+      "mcp_servers": [
+        {
+          "server_name": "playwright",
+          "tool_count": 0,
+          "status": {
+            "kind": "failed",
+            "error": "MCP server did not start listening on port 3100 within 30s. stderr:\nsh: 1: npx: not found\n"
+          },
+          "invoked": false
+        }
+      ],
+      "context_window": {
+        "provider": "openai",
+        "model": "gpt-5.4",
+        "context_window_tokens": 272000,
+        "input_tokens": 21772,
+        "usage_percent": 8.004411764705882,
+        "count_method": "response_usage_scaled_breakdown",
+        "staleness": "live",
+        "generated_at": "2026-07-01T10:38:07.818304Z",
+        "event_seq": 176,
+        "breakdown": [
+          {
+            "category": "system_prompt",
+            "tokens": 828,
+            "usage_percent": 0.3044117647058823
+          },
+          {
+            "category": "tools",
+            "tokens": 1209,
+            "usage_percent": 0.44448529411764703
+          },
+          {
+            "category": "memory",
+            "tokens": 1074,
+            "usage_percent": 0.3948529411764706
+          },
+          {
+            "category": "conversation",
+            "tokens": 18655,
+            "usage_percent": 6.858455882352941
+          },
+          {
+            "category": "other",
+            "tokens": 6,
+            "usage_percent": 0.0022058823529411764
           }
         ],
         "warnings": []
