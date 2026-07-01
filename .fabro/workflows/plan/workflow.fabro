@@ -2,13 +2,6 @@ digraph Plan {
     graph [
         goal="Assess a module, clarify ambiguities with the human, produce a reviewable improvement plan aligned to the target architecture, gate it at Verification, then OPTIONALLY build it (UX → implement → verify → test → e2e) and finish with Retro"
 
-        // Model routing — https://docs.fabro.sh/workflows/stylesheets
-        //   .review    Assess + Clarify prep     codex @ low      (< 2 min each)
-        //   .planning  Plan (Architect)           claude-opus-4-8 @ high
-        //   .design    UX Designer                gpt-5.4 @ medium
-        //   .build     Implement                  codex @ high
-        //   .testing   Tester                     gpt-5.4 @ medium
-        //   .retro     Retro                      gpt-5.4 @ medium
         model_stylesheet="
             *          { model: gpt-5.4;         reasoning_effort: medium; }
             .review    { model: codex;           reasoning_effort: low;    }
@@ -22,9 +15,6 @@ digraph Plan {
 
         default_max_retries=1
         default_fidelity="summary:medium"
-
-        // Plan phase budget: Scope+Assess+Clarify prep aim < 10 min to Clarify gate.
-        // Build path (npm ci + Playwright + e2e) may need up to ~30 min.
         stall_timeout="1800s"
     ]
     rankdir=LR
@@ -32,22 +22,12 @@ digraph Plan {
     start [shape=Mdiamond, label="Start"]
     exit  [shape=Msquare, label="Exit"]
 
-    // ── Scope ───────────────────────────────────────────────────────────
-    // NOTE: `script` attributes do NOT render {{ inputs.module }} (Fabro only
-    // templates `goal` and `prompt`). So we read the module from FABRO_INPUT_MODULE
-    // (exported by the run) and fall back to storyteller. The Assess agent also
-    // gets {{ inputs.module }} via its prompt, so targeting stays correct even if
-    // this default is used.
     scope [
         label="Scope\n[shell · no agent]"
         shape=parallelogram
         script="M=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1"
     ]
 
-    // ── Assess: fast architecture alignment review (< 2 min) ──────────────
-    // retry_policy=patient + fallback chain (workflow.toml) so a transient
-    // provider error / usage limit retries and switches provider instead of
-    // silently failing through to the human gate.
     assess [
         label="Assess\nagent: Architecture Assessor\nmodel: codex"
         class="review"
@@ -57,7 +37,6 @@ digraph Plan {
         max_visits=2
     ]
 
-    // ── Clarify prep: surface conflicts / open questions BEFORE the architect ─
     clarify_prep [
         label="Clarify Prep\nagent: Clarify Facilitator\nmodel: codex"
         class="review"
@@ -67,11 +46,6 @@ digraph Plan {
         max_visits=2
     ]
 
-    // ── HUMAN GATE: Clarify — one scope decision for the architect ─────────
-    // clarify_prep puts the full brief in its stage summary (what the dock shows).
-    // CLARIFY.md is architect reference only — not shown in the Fabro UI.
-    // Answers land in run context as human.gate.* and DECISIONS.md via Plan.
-    // https://docs.fabro.sh/workflows/human-in-the-loop
     Clarify [
         shape=hexagon
         label="How much should the cleanup plan take on?"
@@ -79,10 +53,10 @@ digraph Plan {
         timeout="86400s"
     ]
 
-    // ── Plan (Architect): writes PLAN.md ──────────────────────────────────
-    // fidelity=summary:high so the architect sees your Clarify answer (incl.
-    // freeform text via human.gate.text) in detail, not a compressed summary.
-    // https://docs.fabro.sh/execution/context
+    // goal_gate + retry_target=clarify_prep: on plan failure, loops to clarify_prep
+    // (max_visits=2). clarify_prep skips re-prompting if human.gate.Clarify.* is set.
+    // Human is NOT re-asked at Clarify unless clarify_prep exhausts visits and the
+    // graph re-enters Clarify from a different path — plan max_visits=5 caps total.
     plan [
         label="Plan (Architect)\nagent: Plan Author\nmodel: claude-opus-4-8"
         class="planning"
@@ -93,8 +67,6 @@ digraph Plan {
         max_visits=5
     ]
 
-    // ── HUMAN GATE: Verification — plan approval; build is OPTIONAL ─────────
-    // NO default_choice — fails closed until you answer (no auto-skip to Retro).
     Verification [
         shape=hexagon
         label="Plan is ready. Approve and build, save plan only, request changes, or abort?"
@@ -102,14 +74,20 @@ digraph Plan {
         timeout="86400s"
     ]
 
-    // ── OPTIONAL BUILD (only when you pick [B] Approve & build) ───────────
-    // Docker sandbox clones origin fresh — no node_modules. Bootstrap runs once
-    // at the start of the build path so hooks, verify, e2e, and screenshot work.
     setup [
         label="Bootstrap\n[shell · npm ci + Playwright]"
         shape=parallelogram
-        script="set -euo pipefail; echo '=== sandbox bootstrap ==='; npm ci; npm run test:playwright:install; echo '=== bootstrap complete ==='"
-        max_visits=2
+        script="set -euo pipefail; echo '=== sandbox bootstrap ==='; if ! command -v npm >/dev/null; then echo 'npm missing — installing nodejs'; apt-get update && apt-get install -y nodejs npm git; fi; command -v npm >/dev/null || { echo 'ERROR: npm still missing — image must be node:22-bookworm-slim'; exit 1; }; npm ci; npm run test:playwright:install; echo '=== bootstrap complete ==='"
+        max_visits=1
+    ]
+
+    setup_gate [shape=diamond, label="Bootstrap OK?"]
+
+    setup_fail [
+        label="Bootstrap failed\n[shell · notify]"
+        shape=parallelogram
+        script="echo '=== BOOTSTRAP FAILED ===' >&2; echo 'Node.js/npm not available. Expected Docker image: node:22-bookworm-slim.' >&2; echo 'Check workflow.toml [environments.plan-docker.image] and ../../docker/plan-sandbox.Dockerfile.' >&2; exit 1"
+        max_visits=1
     ]
 
     subgraph cluster_build {
@@ -127,6 +105,7 @@ digraph Plan {
             label="Implement\nagent: Developer\nmodel: codex"
             class="build"
             prompt="@prompts/implement.md"
+            permissions="full"
             max_visits=4
         ]
 
@@ -137,11 +116,8 @@ digraph Plan {
             max_visits=3
         ]
 
-        // Browser capture via Playwright MCP (configured in workflow.toml).
-        // Best-effort visual evidence → screenshots/ (auto-collected artifacts).
-        // Vision-capable model; never blocks the run (single edge onward to Retro).
         screenshot [
-            label="UI Screenshot\nagent: UI Screenshotter\nmodel: gpt-5.4 (vision) + Playwright MCP"
+            label="UI Screenshot\nagent: UI Screenshotter\nmodel: gpt-5.4"
             class="visual"
             prompt="@prompts/screenshot.md"
             retry_policy="patient"
@@ -174,7 +150,6 @@ digraph Plan {
     ]
     e2e_gate [shape=diamond, label="E2E pass?"]
 
-    // ── Retro ─────────────────────────────────────────────────────────────
     Retro [
         label="Retro\nagent: Retro Author\nmodel: gpt-5.4"
         class="retro"
@@ -185,6 +160,7 @@ digraph Plan {
     // ── Wiring ───────────────────────────────────────────────────────────
     start -> scope -> assess -> clarify_prep -> Clarify
 
+    // Primary choices first (dock order); advanced last
     Clarify -> plan [label="[A] Staged migration — boundaries first, bigger moves sequenced"]
     Clarify -> plan [label="[B] Minimal first step — public API and import boundaries only"]
     Clarify -> plan [label="[C] Full blueprint — comprehensive end-state migration plan"]
@@ -193,16 +169,16 @@ digraph Plan {
 
     plan -> Verification
 
-    // IMPORTANT: no `condition` on human-gate edges. Fabro evaluates condition
-    // edges BEFORE the human's preferred_label, so a condition like
-    // "outcome=succeeded" (always true after answering) would hijack every
-    // choice and jump to that edge. Human-gate routing must rely on
-    // preferred_label matching only.
     Verification -> setup      [label="[B] Approve & build"]
-    setup -> ux_designer
     Verification -> Retro       [label="[P] Approve, plan only"]
     Verification -> plan        [label="[I] Iterate with notes", freeform=true]
     Verification -> exit        [label="[X] Abort"]
+
+    setup -> setup_gate
+    setup_gate -> ux_designer [label="UI increment", condition="outcome=succeeded && plan.has_ui_surface=yes"]
+    setup_gate -> developer   [label="Backend increment", condition="outcome=succeeded"]
+    setup_gate -> setup_fail
+    setup_fail -> exit
 
     ux_designer -> developer -> verify -> verify_gate
 
@@ -218,9 +194,6 @@ digraph Plan {
     e2e_gate -> screenshot [label="Pass", condition="outcome=succeeded"]
     e2e_gate -> developer  [label="Fix"]
 
-    // Screenshot is best-effort: single unconditional edge → proceeds to Retro
-    // even if capture fails, so it never blocks shipping.
     screenshot -> Retro
-
     Retro -> exit
 }

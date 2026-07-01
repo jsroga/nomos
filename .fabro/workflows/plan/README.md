@@ -39,15 +39,37 @@ No `human.default_choice` — gates fail closed until you answer ([human-in-the-
 | `screenshots/**`, `SCREENSHOTS.md` | UI Screenshot (build path only) |
 | `RETRO.md` | Retro |
 
-## Browser / screenshots ([MCP](https://docs.fabro.sh/agents/mcp))
+## Developer skills
 
-Build path only: after unit + e2e pass, the **UI Screenshot** stage uses the
-**Playwright MCP** (`[run.agent.mcps.playwright]` in `workflow.toml`) to navigate
-the running app and capture the changed `{{ inputs.module }}` screens into
-`screenshots/`. It's **best-effort** — a single unconditional edge to Retro means
-a browser/dev-server failure records the gap in `SCREENSHOTS.md` but never blocks
-shipping. Works best on Docker/Daytona sandboxes (current env is Docker). The
-agent calls `browser_install` on a fresh sandbox before capturing.
+Skills in `.fabro/skills/` are auto-discovered. The **Implement** stage has
+`permissions="full"` and its prompt instructs the agent to call `use_skill` for
+`refactor`, `write-tests`, `services-audit`, `trigger-dev`, etc. You should see
+skill activations in the stage's **skills** projection in the Fabro UI.
+
+## Build path routing
+
+- **`plan.has_ui_surface=yes`** (set by Plan Author `context_updates`) → Bootstrap →
+  **UX Designer** → Implement.
+- **`plan.has_ui_surface=no`** (typical backend cleanup) → Bootstrap → **Implement**
+  (skips UX Designer).
+- **Bootstrap failure** → `setup_fail` shell stage with a clear error → Exit (does
+  not continue to Implement).
+
+## Browser / screenshots
+
+Build path only, after e2e: **UI Screenshot** uses Playwright **CLI** (`npx playwright
+screenshot`) post-bootstrap — run-level Playwright MCP is disabled to avoid ~30s
+startup delay on plan-path agents before `npm ci`.
+
+## Docker image
+
+`[environments.plan-docker.image]` uses **`docker = "node:22-bookworm-slim"`** (cache
+key includes Node) plus `../../docker/plan-sandbox.Dockerfile` for git. Do not rely
+on the default `buildpack-deps:noble` snapshot — it has no npm.
+
+## Local sandbox vs Files Changed
+
+**Local** provider runs in your working tree. **Files Changed** shows git checkpoints from the run; untracked files (`?? PLAN.md`) may show as **0 files changed**. Open artifacts from disk or the stage Thread view. For diff UI, use **Docker** or **Daytona** sandbox.
 
 ## Reusable across modules ([variables](https://docs.fabro.sh/workflows/variables))
 
@@ -58,29 +80,16 @@ fabro run .fabro/workflows/plan/workflow.toml               # storyteller (defau
 fabro run .fabro/workflows/plan/workflow.toml -I module=chat
 ```
 
-The `scope` shell script cannot template (Fabro only templates `goal`/`prompt`), so it reads `FABRO_INPUT_MODULE` with a `storyteller` default; the Assess agent still gets the correct module via its prompt.
+The `scope` shell script reads `FABRO_INPUT_MODULE` (default `storyteller`).
 
 ## Model resilience ([fallbacks](https://docs.fabro.sh/execution/failures))
 
-`codex` + `gpt-5.4` share one usage-limited OpenAI account. `[run.model].fallbacks = ["anthropic", "openai"]` makes Fabro switch to Anthropic (credited) on `usage_limit_reached`, auto-picking the closest model per node. Agent stages use `retry_policy="patient"` so a transient limit retries + fails over instead of slipping through.
+`codex` + `gpt-5.4` share one usage-limited OpenAI account. `[run.model].fallbacks = ["anthropic", "openai"]` makes Fabro switch to Anthropic on `usage_limit_reached`.
 
-## Child runs ([docs](https://docs.fabro.sh/execution/child-runs)) — deliberate non-goal
+## Child runs — deliberate non-goal
 
-Not used. This is a single linear pipeline for one module; child runs are for orchestrating *independent* runs. A future `plan-fleet` parent could spawn one `plan` child per domain in parallel (surfaced in the **Children** tab) — build only when planning all of `src/domains/*` at once.
-
-## Local sandbox vs Files Changed
-
-**Local** provider runs in your working tree. **Files Changed** shows git checkpoints from the run; untracked files (`?? PLAN.md`) may show as **0 files changed**. Open artifacts from disk or the stage Thread view. For diff UI, use **Docker** or **Daytona** sandbox.
+Not used. Single linear pipeline for one module.
 
 ## Docker bootstrap (build path only)
 
-The Docker sandbox clones `origin/<branch>` with no `node_modules`. When you pick
-**[B] Approve & build**, the **Bootstrap** shell stage runs first:
-
-```bash
-npm ci && npm run test:playwright:install
-```
-
-That installs deps and Playwright browsers before UX → Implement → verify →
-unit/e2e hooks → screenshot. Commit and push your branch before starting a Docker
-run so the sandbox sees your latest code. Plan-only path (`[P]`) skips bootstrap.
+Clone-based Docker has no `node_modules`. **[B] Approve & build** runs **Bootstrap** first (`npm ci` + Playwright install). Commit and push before running. **[P] Plan only** skips bootstrap.

@@ -13,8 +13,10 @@ you do **not** modify code.
 
 ## How to work (stay under ~2 minutes)
 
-- The `Scope` stage already printed the module's file tree and git status — use it.
-  Do **not** re-list the tree.
+- The **`Scope` stage output already contains the full module file tree and git
+  status** — use that tree directly. Do **NOT** re-glob the module root
+  (`glob("src/domains/*")`, `glob("**/index.ts")`, etc.) — it wastes tool calls
+  and returns empty when the sandbox cwd differs.
 - Read **only** what you need to judge alignment: the module's `index.ts` (if any),
   its top-level folders, and a *small* representative sample (2-4 files) per concern
   below. Skim, don't deep-read every file.
@@ -50,7 +52,22 @@ summary. For each finding use:
 Severity: **Critical / High / Medium / Low**. Keep it to the ~6-10 findings that
 matter most — this feeds Clarify prep and Plan, which need signal, not a catalog.
 
-End with:
+**End `findings/assess.md` with this required metadata block** (downstream agents
+and the graph condition on it):
+
+```markdown
+## Metadata
+- has_ui_surface: yes|no
+- has_p0_security_issue: yes|no
+- top_violation_layer: barrel|state|schema|ai|jobs|other
+```
+
+- `has_ui_surface: no` when the work is internal structure (imports, schema, layers,
+  Mastra wiring) with no meaningful user-visible UI change in this increment.
+- `has_p0_security_issue: yes` only for active security/correctness holes (client
+  writes, auth bypass, data loss).
+
+Then:
 
 ## Open questions for Clarify
 List 0–5 items where a human decision is needed before planning (scope, trade-offs,

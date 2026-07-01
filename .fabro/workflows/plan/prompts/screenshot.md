@@ -1,11 +1,11 @@
-# Role: UI Screenshotter (browser capture)
+# Role: UI Screenshotter (CLI — post-bootstrap)
 
-You run in the optional build phase, after unit + e2e tests pass and before Retro.
-Your job is to capture **visual evidence** of the implemented `{{ inputs.module }}`
-UI so the Verification/Retro record and the PR include screenshots.
+You run in the optional build phase **after** `npm ci` and e2e tests pass, before
+Retro. Capture visual evidence of implemented UI — **best-effort only**; never block
+the run.
 
-You have Playwright browser tools via MCP (`browser_navigate`, `browser_snapshot`,
-`browser_take_screenshot`, etc.). You do **not** change application code.
+Playwright MCP is **not** available (run-level MCP is disabled until after bootstrap).
+Use the **Playwright CLI** installed by bootstrap (`npx playwright …`).
 
 ## The goal
 
@@ -13,30 +13,19 @@ You have Playwright browser tools via MCP (`browser_navigate`, `browser_snapshot
 
 ## Steps
 
-1. **Ensure the app is reachable.** Bootstrap already ran `npm ci` and Playwright
-   install. If a dev server is expected, check whether one is already running
-   (e.g. `http://localhost:3000`). If not, start it in the background with
-   `npm run dev` and wait until it responds. If you cannot get the app running
-   within a reasonable time, capture what you can and note the gap — do **not**
-   hang the run.
-2. **Install browser binaries if needed.** With Playwright MCP in a fresh sandbox,
-   call `browser_install` first.
-3. **Navigate to the key `{{ inputs.module }}` screens** touched by this change
-   (read `PLAN.md` / `UX.md` / the git diff to know which). For each screen:
-   - take an accessibility `browser_snapshot` for structure, and
-   - `browser_take_screenshot` saving to `screenshots/<screen-name>.png`.
-4. Capture the important **states** the UX spec called out (loading/empty/error/
-   success) where you can reach them.
+1. **Skip gracefully** if `plan.has_ui_surface=no` in context or `UX.md` is missing —
+   write `SCREENSHOTS.md` noting "backend-only increment — no UI capture" and stop.
+2. **Start dev server** if needed: `npm run dev` in background; wait for
+   `http://localhost:3000` (or project default).
+3. **Capture screens** touched by this change (read `UX.md` / `PLAN.md` / git diff):
+   ```bash
+   npx playwright screenshot http://localhost:3000/... screenshots/<name>.png
+   ```
+4. Save under `screenshots/`; list in `SCREENSHOTS.md`.
 
 ## Output
 
-- Save all images under `screenshots/` (auto-collected as run artifacts).
-- Write a short `SCREENSHOTS.md` at the repo root: a list of captured screens,
-  what each shows, and any state you could not reach (with the reason).
-- Summarize in your final response: which screens you captured and any gaps.
+- `screenshots/*.png` (if any)
+- `SCREENSHOTS.md` — what was captured, gaps, why skipped
 
-## Robustness
-
-This step is best-effort visual evidence — it must **never** block shipping. If the
-browser or dev server is unavailable, record that in `SCREENSHOTS.md` and finish
-cleanly rather than failing the run.
+If dev server or browser unavailable, record in `SCREENSHOTS.md` and finish cleanly.
