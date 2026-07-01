@@ -77,8 +77,8 @@ digraph Plan {
     setup [
         label="Bootstrap\n[shell · npm ci + Playwright]"
         shape=parallelogram
-        script="set -euo pipefail; echo '=== sandbox bootstrap ==='; if ! command -v git >/dev/null; then apt-get update && apt-get install -y git ca-certificates; fi; if ! command -v npm >/dev/null; then apt-get update && apt-get install -y nodejs npm; fi; command -v npm >/dev/null || { echo 'ERROR: npm still missing — expected image node:22-bookworm-slim'; exit 1; }; npm ci; npm run test:playwright:install; echo '=== bootstrap complete ==='"
-        max_visits=1
+        script="set -euo pipefail; echo '=== sandbox bootstrap ==='; if ! command -v git >/dev/null; then apt-get update && apt-get install -y git ca-certificates; fi; if ! command -v npm >/dev/null; then apt-get update && apt-get install -y nodejs npm; fi; command -v npm >/dev/null || { echo 'ERROR: npm still missing — expected image node:22-bookworm'; exit 1; }; npm ci; npm run test:playwright:install; echo '=== bootstrap complete ==='"
+        max_visits=2
     ]
 
     setup_gate [shape=diamond, label="Bootstrap OK?"]
@@ -86,8 +86,8 @@ digraph Plan {
     setup_fail [
         label="Bootstrap failed\n[shell · notify]"
         shape=parallelogram
-        script="echo '=== BOOTSTRAP FAILED ===' >&2; echo 'Node.js/npm not available. Expected Docker image: node:22-bookworm-slim.' >&2; echo 'Check workflow.toml [environments.plan-docker.image] and ../../docker/plan-sandbox.Dockerfile.' >&2; exit 1"
-        max_visits=1
+        script="echo '=== BOOTSTRAP FAILED ===' >&2; echo 'Node.js/npm not available. Expected Docker image: node:22-bookworm.' >&2; echo 'Check workflow.toml [environments.plan-docker.image] and ../../docker/plan-sandbox.Dockerfile.' >&2; exit 1"
+        max_visits=2
     ]
 
     subgraph cluster_build {
