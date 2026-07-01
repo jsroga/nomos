@@ -1093,7 +1093,7 @@
     "kind": "running"
   },
   "status_updated_at": "2026-07-01T11:39:53.379340Z",
-  "last_event_at": "2026-07-01T11:41:06.779960Z",
+  "last_event_at": "2026-07-01T11:41:34.576694Z",
   "pending_control": null,
   "checkpoints": [
     {
@@ -1205,9 +1205,9 @@
       }
     },
     {
-      "seq": 0,
+      "seq": 149,
       "checkpoint": {
-        "timestamp": "2026-07-01T11:41:06.844089Z",
+        "timestamp": "2026-07-01T11:41:10.239580Z",
         "current_node": "assess",
         "completed_nodes": [
           "start",
@@ -1217,26 +1217,143 @@
         "node_retries": {},
         "context_values": {
           "outcome": "succeeded",
-          "internal.retry_count.assess": 0,
-          "failure_class": "",
-          "thread.review.current_node": "assess",
-          "internal.fidelity": "summary:medium",
-          "graph.goal": "Clean up and align the interior-designer module (src/domains/interior-designer) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
-          "graph.rankdir": "LR",
           "internal.node_visit_count": 1,
-          "command.output": "blob://sha256/f6842068a7ab6789bf7093dcc8e8120fc65176be29cc11df640793deca15a3a6",
-          "last_stage": "assess",
-          "internal.retry_count.scope": 0,
-          "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: `interior-designer` is significantly off the target architecture. The top 3 gaps to fix first are:\n1. Split the 1661-line Zustand god store and move server state/writes out of it.\n2. Remove client-side Supabase writes and bespoke polling/localStorage job flows.\n3. Add a proper module `index.ts` and migrate toward the canonical `ui/state/io/core/services/tasks` structure.",
+          "graph.default_fidelity": "summary:medium",
+          "graph.goal": "Clean up and align the interior-designer module (src/domains/interior-designer) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
+          "internal.retry_count.assess": 0,
+          "graph.rankdir": "LR",
+          "internal.run_id": "01KWEQMG546XCJ1TPHT2K7YJXT",
+          "internal.thread_id": "review",
           "internal.work_dir": "/workspace/kurvitza",
+          "internal.retry_count.start": 0,
           "last_response": "Assessment written to `findings/assess.md`.\n\nVerdict: `interior-designer` is significantly off the target architecture. The top 3 gaps to fix first are:\n1. Split the 1661-line Zustand god store and mo",
-          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
-          "current_node": "assess",
-          "failure_signature": "",
           "thread.start.current_node": "scope",
           "graph.stall_timeout": "1800000ms",
-          "graph.default_fidelity": "summary:medium",
+          "failure_class": "",
+          "current_node": "assess",
+          "command.output": "blob://sha256/f6842068a7ab6789bf7093dcc8e8120fc65176be29cc11df640793deca15a3a6",
+          "failure_signature": "",
+          "graph.label": "Optional Build",
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
+          "last_stage": "assess",
+          "internal.fidelity": "summary:medium",
+          "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: `interior-designer` is significantly off the target architecture. The top 3 gaps to fix first are:\n1. Split the 1661-line Zustand god store and move server state/writes out of it.\n2. Remove client-side Supabase writes and bespoke polling/localStorage job flows.\n3. Add a proper module `index.ts` and migrate toward the canonical `ui/state/io/core/services/tasks` structure.",
+          "internal.retry_count.scope": 0,
+          "thread.review.current_node": "assess",
+          "graph.default_max_retries": "1"
+        },
+        "node_outcomes": {
+          "assess": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_response": "Assessment written to `findings/assess.md`.\n\nVerdict: `interior-designer` is significantly off the target architecture. The top 3 gaps to fix first are:\n1. Split the 1661-line Zustand god store and mo",
+              "last_stage": "assess",
+              "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: `interior-designer` is significantly off the target architecture. The top 3 gaps to fix first are:\n1. Split the 1661-line Zustand god store and move server state/writes out of it.\n2. Remove client-side Supabase writes and bespoke polling/localStorage job flows.\n3. Add a proper module `index.ts` and migrate toward the canonical `ui/state/io/core/services/tasks` structure."
+            },
+            "notes": "Stage completed: assess",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 98741,
+                    "output_tokens": 5996,
+                    "reasoning_tokens": 495,
+                    "cache_read_tokens": 405504,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 445593
+            },
+            "files_touched": [
+              "/workspace/kurvitza/findings/assess.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 66191,
+              "tool_time_ms": 1004,
+              "active_time_ms": 67195
+            }
+          },
+          "start": {
+            "status": "succeeded",
+            "usage": null
+          },
+          "scope": {
+            "status": "succeeded",
+            "context_updates": {
+              "command.output": "blob://sha256/f6842068a7ab6789bf7093dcc8e8120fc65176be29cc11df640793deca15a3a6"
+            },
+            "notes": "Script completed: M=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1",
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 154,
+              "active_time_ms": 154
+            }
+          }
+        },
+        "next_node_id": "clarify_prep",
+        "git_commit_sha": "751792a6319d482a7dc78f50b66b9ccfb797ae75",
+        "node_visits": {
+          "start": 1,
+          "scope": 1,
+          "assess": 1
+        }
+      },
+      "diff": {
+        "patch": "diff --git a/findings/assess.md b/findings/assess.md\nindex 7c73a74..0fa577c 100644\n--- a/findings/assess.md\n+++ b/findings/assess.md\n@@ -1,61 +1,66 @@\n-### [Critical] No single public module API; other modules import storyteller internals directly\n-- Location: module root; external imports in `src/domains/chat/components/AgentLog.tsx`, `src/domains/chat/types.ts`, many `src/app/api/storyteller/*`\n-- Divergence: Breaks the module blueprint and invariant #6/#10 (`index.ts` as the only legal import target).\n-- Cost: Storyteller internals are now de facto public, making any cleanup risky; app/chat code is coupled to component/core file paths instead of a stable contract.\n-- Target: Add `src/domains/storyteller/index.ts` as the only public surface, then migrate app/chat/cross-module consumers to that barrel and block deep imports with lint.\n-\n-### [Critical] Layer blueprint is still legacy-shaped, not target-shaped\n-- Location: `src/domains/storyteller/` top level (`components/`, `hooks/`, `lib/`, `db/`, `tools/`, `mentions/`, `config/`), with no `ui/`, `state/`, `io/`, or `tasks/`\n-- Divergence: Breaks the canonical module blueprint (§4) and naming/layering contract.\n-- Cost: Responsibilities are spread across ad-hoc folders, so state, client edge logic, server logic, and agent code are hard to separate and migrate incrementally.\n-- Target: Converge on `ui/`, `state/`, `io/`, `core/`, `services/`, `agents/`, `tasks/`, `prompts/`, `<module>.config.ts`, with folder-per-unit naming and local barrels.\n-\n-### [High] “Core” is not pure; it imports UI and prompt-layer types and uses runtime time directly\n-- Location: `src/domains/storyteller/core/EntityExtractor/EntityExtractor.ts`\n-- Divergence: Breaks the dependency rule (`core/` may not import React/UI/other layers) and invariant #8 (pure core testable offline).\n-- Cost: Core logic now depends on `components/ReferenceText` and `prompts/schemas/agent-schemas`, and also stamps `new Date()`, which makes the supposedly pure layer impure and harder to reuse/test.\n-- Target: Move shared entity/reference DTOs into `core/` or `io/`, keep `core/` free of UI/prompt imports, and inject clocks/metadata instead of calling `Date` directly.\n-\n-### [High] “Services” contains client-side orchestration, polling, localStorage, and window events\n-- Location: `src/domains/storyteller/services/MoodboardGenerationService.ts`, `src/domains/storyteller/services/PosterGenerationService.ts`, plus UI helpers in `components/WorldBiblePanel/WorldBiblePanel.tsx`\n-- Divergence: Breaks the service contract (`services/` must be server-only) and invariant #4 (long work must use Trigger Realtime + shared `useJob`, no bespoke polling/localStorage/window events).\n-- Cost: Server/client responsibilities are inverted: browser concerns live in `services/`, long-running job UX is bespoke, and recovery/status behavior is scattered across polling loops and custom events.\n-- Target: Move browser behavior into `state/` + shared jobs hooks, keep `services/` server-only (`import 'server-only'`), and represent Trigger jobs via module `tasks/` plus shared `useJob` rather than local polling.\n-\n-### [High] Client state and server state are mixed in custom hooks/context instead of TanStack Query\n-- Location: `src/domains/storyteller/components/WorldBible/BibleContext.tsx`, `src/domains/storyteller/hooks/useBibleState.ts`\n-- Divergence: Breaks invariant #1 (server state in TanStack Query, never in Zustand/custom stores) and the `state/ -> io/` contract.\n-- Cost: Fetching lock state and user/session state is handled via `useEffect`, `cachedFetch`, manual invalidation, and URL/window event wiring; this bypasses cache consistency and makes the World Bible UI hard to reason about.\n-- Target: Move remote reads/writes into `state/queries/*` hooks backed by typed `io/` fetchers and query keys; leave only ephemeral panel/editing state in client state.\n-\n-### [High] Storyteller keeps a parallel hand-rolled orchestration stack beside Mastra\n-- Location: `src/domains/storyteller/agents/StoryWorkflow/StoryWorkflow.ts`, `src/domains/storyteller/agents/StorytellerAgent/StorytellerAgent.ts`, `src/domains/storyteller/agents/MastraInstance/MastraInstance.ts`\n-- Divergence: Breaks invariant #7/#11 (“use the framework once”): manual Langfuse spans, ad-hoc workflow event bus, step `z.any()`, direct tool mutation, prompt-time skill injection despite Workspace already configured.\n-- Cost: The AI layer pays double complexity for tracing/skills/workflow behavior; correctness depends on manual glue instead of Mastra primitives, which raises migration and debugging cost.\n-- Target: Let Mastra own tracing, workflow typing, skills access, and agent/tool composition end-to-end; remove manual parallel machinery and replace `z.any()` workflow boundaries with explicit schemas.\n-\n-### [High] Module-local DB schema is still the effective source of truth and is imported broadly\n-- Location: `src/domains/storyteller/db/schema.ts`, imported by `src/app/api/storyteller/*`, `src/lib/db.ts`, storyteller tools/services\n-- Divergence: Breaks repository topology and invariant #3 (single schema source in `src/db/schema.ts`).\n-- Cost: The schema boundary remains storyteller-owned rather than repo-owned, so the module cannot be cleanly encapsulated and other layers continue to reach through storyteller to touch persistence details.\n-- Target: Make `src/db/schema.ts` the true source of truth, keep Drizzle access in server services, and stop importing module-local schema files from app routes/tools.\n-\n-### [Medium] Typed boundaries are still weak, especially in tools and workflow steps\n-- Location: `src/domains/storyteller/tools/*.ts`, `src/domains/storyteller/agents/StoryWorkflow/StoryWorkflow.ts`, `src/domains/storyteller/core/StoryTypes/StoryTypes.ts`\n-- Divergence: Breaks invariant #5 (Zod at edges, ban `any` at boundaries).\n-- Cost: Tool inputs/outputs and workflow step contracts are loosely typed (`execute(args: any)`, `z.any()`, `Record<string, any>`), which increases runtime drift and makes refactors unsafe.\n-- Target: Replace boundary `any` with strict Zod DTOs and inferred types, especially for Mastra tools, workflow steps, and story-plan payloads.\n-\n-### [Medium] Several files are already past the architecture size guardrails\n-- Location: `components/WorldBible/BibleContext.tsx` (575 LOC), `agents/StorytellerAgent/StorytellerAgent.ts` (639 LOC), `tools/agent-tools.ts` (730 LOC)\n-- Divergence: Breaks invariant #8 (components < ~400 LOC; split god files).\n-- Cost: The largest files now concentrate multiple responsibilities, which will make the migration to the target layers slower and riskier.\n-- Target: Split by responsibility while moving to the new folders: query hooks/DTOs out of Bible context, prompt-building out of `StorytellerAgent`, and tool families into smaller typed units under `agents/tools` or `services`.\n+### [Critical] Browser-side Supabase write in rename flow\n+- Location: `src/domains/interior-designer/store/useInteriorStore.ts:1579`\n+- Divergence: Breaks invariant #2 (`No browser→Supabase writes`) and the module layering rule (`state/` may not import storage/DB clients).\n+- Cost: Privileged persistence logic lives in the client, bypasses the intended API→auth→service path, and makes future auth/audit/schema changes brittle.\n+- Target: `state/queries` mutation → `io/interior-designer.api.ts` → `/api/interior-designer/*` → `services/InteriorDesignService.ts` with `requireAuth()` and typed DTOs.\n+\n+### [High] Module does not match the blueprint and has no public barrel\n+- Location: module root (`src/domains/interior-designer/`)\n+- Divergence: Missing canonical `index.ts`, `ui/state/io/core/services/tasks` shape; current structure is `components/`, `store/`, `utils/`, `ai/`, `prompts/`.\n+- Cost: External code imports internals directly from `app/` and other files, making migration, lint enforcement, and ownership boundaries hard.\n+- Target: Reshape to the target skeleton with `index.ts` as the only public entry point; move current store/components/utilities into `ui/`, `state/`, `io/`, `core/`, `services/`, `tasks/` as appropriate.\n+\n+### [High] Monolithic Zustand store mixes UI state, server state, persistence, and domain logic\n+- Location: `src/domains/interior-designer/store/useInteriorStore.ts` (1661 LOC)\n+- Divergence: Breaks invariant #1 (`Server state in TanStack Query, never in Zustand`) and the dependency rule (`state/` should not own fetch/persistence orchestration).\n+- Cost: One god store owns scene entities, async saves/loads, geometry logic, undo state, and UI flags; this blocks testing and makes invalidation/data consistency fragile.\n+- Target: Keep only ephemeral editor UI in `state/useInteriorDesignerUiStore.ts`; move remote reads/writes into TanStack hooks under `state/queries/`; move pure geometry/terrain transforms into `core/`; move server persistence behind `io/` + `services/`.\n+\n+### [High] Hand-rolled job polling and browser secret storage bypass the job architecture\n+- Location: `src/domains/interior-designer/components/UI/PropertiesPanel.tsx`, `src/domains/interior-designer/components/UI/SurfaceProperties.tsx`\n+- Divergence: Breaks invariants #4 and #6 (`Long work is a Job`, no bespoke polling/localStorage recovery/window events).\n+- Cost: Repeated `setInterval` polling, localStorage-held API keys/prompts, and UI-managed job bookkeeping create flaky async UX, duplicate logic, and weak operational visibility.\n+- Target: Long-running texture/retexture/text-to-3d flows should be owned by module `tasks/` and observed through shared job primitives (`shared/jobs/useJob` / Trigger Realtime), with secrets and provider calls server-side only.\n+\n+### [High] Cross-module internal imports violate encapsulation and dependency boundaries\n+- Location: `components/DesignManager.tsx`, `components/UI/AssetLibrary.tsx`, `components/UI/PropertiesPanel.tsx`, `components/UI/SurfaceProperties.tsx`\n+- Divergence: Breaks invariant #6 (`One barrel`) and the rule against importing another module's internals.\n+- Cost: `interior-designer` directly reaches into `world-building-toolkit/store`, `world-building-toolkit/components`, and `3d-asset-exporter/components`, coupling migrations across slices.\n+- Target: Consume other modules only through their `index.ts`, or extract shared asset/project primitives into `src/shared/*` when used by 2+ modules.\n+\n+### [Medium] Oversized UI files are acting as orchestration layers\n+- Location: `components/UI/PropertiesPanel.tsx` (1323 LOC), `components/UI/SurfaceProperties.tsx` (981 LOC), `components/UI/Toolbar.tsx` (284 LOC)\n+- Divergence: Violates invariant #8 (size limits) and pushes business/process logic into `ui/`.\n+- Cost: Panels own request lifecycles, polling, local persistence, operation metadata, and mutation logic, making them difficult to reason about and expensive to split later.\n+- Target: Break into folder-per-unit UI components backed by hooks in `state/queries` and `io/`, with orchestration moved out of render components.\n+\n+### [Medium] Asset module carries ad-hoc AI/service code in the wrong place\n+- Location: `src/domains/interior-designer/ai/TextureService.ts`, `src/domains/interior-designer/prompts/index.ts`\n+- Divergence: Asset modules should lean on `tasks/`, not ad-hoc `ai/`; current code also bypasses the locked framework stack by calling OpenAI directly from a local class.\n+- Cost: The module grows a parallel AI path outside the task/service architecture, and the current `TextureService` is visibly incomplete/placeholder-like.\n+- Target: Move texture generation into typed server services and Trigger tasks; keep prompt/constants only where still needed by that server pipeline.\n+\n+### [Medium] Typed boundaries are weak at the edges\n+- Location: `components/UI/PropertiesPanel.tsx:705`, `components/UI/Toolbar.tsx:42`, module-wide lack of `*.dto.ts`\n+- Divergence: Breaks invariant #5 (`Typed boundaries`) and the blueprint requirement for Zod DTOs in `io/`.\n+- Cost: `any`-shaped operation metadata, untyped mode setter inputs, and raw `fetch(...).json()` flows make edge contracts easy to break silently.\n+- Target: Introduce `io/interior-designer.dto.ts` Zod schemas for API/task payloads and responses; replace edge `any` with inferred types.\n+\n+### [Medium] App layer and module internals are tightly coupled\n+- Location: `src/app/app/[projectId]/interior-design/page.tsx`\n+- Divergence: Breaks the topology rule that `app/` should import a module only through its public `index.ts` and contain thin glue.\n+- Cost: Route code currently imports interior-designer components, store, and utils directly, so any internal reorganization becomes a route refactor too.\n+- Target: Expose the page-facing surface from `src/domains/interior-designer/index.ts` and keep `app/` as composition-only glue.\n+\n+## Metadata\n+- has_ui_surface: yes\n+- has_p0_security_issue: yes\n+- top_violation_layer: state\n \n ## Open questions for Clarify\n-- Should storyteller’s existing `components/` and `hooks/` be renamed/moved in one structural pass first, or can the migration proceed incrementally behind a new `index.ts` contract?\n-- Is the World Bible lock/session UX allowed to change to fit TanStack Query + typed API boundaries, or must current URL/custom-event behaviors be preserved exactly during migration?\n-- Should long-running image generation in storyteller be fully moved onto shared `useJob`/Trigger Realtime in this cleanup scope, or only prepared structurally for a later migration?\n+- Should `interior-designer` own project/asset selection UI long-term, or should those capabilities move to a shared asset/project surface consumed by multiple modules?\n+- For texture/retexture/text-to-3d, is the intended migration target Trigger.dev tasks in this module, or shared generation tasks reused with module-specific DTOs?\n+- Is preserving the current persisted scene JSON shape a hard compatibility requirement, or can the migration normalize it behind new DTOs/services?\n \n-Verdict: storyteller is pointed at the right architecture concepts, but its current public boundaries and client/server layering are still too legacy-shaped to plan implementation safely without first enforcing the module contract.\n-Top 3 gaps: missing public `index.ts` contract, legacy folder/layer shape (`components/hooks/db/tools` instead of `ui/state/io/tasks`), and bespoke client/job orchestration living outside TanStack Query + shared Trigger/Mastra primitives.\n+Verdict: The module is materially off-architecture; plan should start with state/write-path boundaries before any UI reshuffle.\n+Top 3 gaps: split the god store, remove client-side Supabase/job polling, add the module barrel + canonical slice structure.\n",
+        "summary": {
+          "files_changed": 1,
+          "additions": 63,
+          "deletions": 58
+        }
+      }
+    },
+    {
+      "seq": 0,
+      "checkpoint": {
+        "timestamp": "2026-07-01T11:41:34.640201Z",
+        "current_node": "clarify_prep",
+        "completed_nodes": [
+          "start",
+          "scope",
+          "assess",
+          "clarify_prep"
+        ],
+        "node_retries": {},
+        "context_values": {
+          "failure_class": "",
+          "internal.fidelity": "summary:medium",
+          "internal.retry_count.clarify_prep": 0,
+          "graph.goal": "Clean up and align the interior-designer module (src/domains/interior-designer) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
+          "command.output": "blob://sha256/f6842068a7ab6789bf7093dcc8e8120fc65176be29cc11df640793deca15a3a6",
+          "internal.node_visit_count": 1,
+          "last_stage": "clarify_prep",
+          "internal.retry_count.scope": 0,
+          "last_response": "## Assessment summary\n`src/domains/interior-designer` is materially off the target module blueprint. The biggest issues are at the architecture boundaries: browser-side writes, a monolithic Zustand st",
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
+          "current_node": "clarify_prep",
+          "failure_signature": "",
+          "internal.retry_count.assess": 0,
+          "thread.start.current_node": "scope",
           "internal.thread_id": "review",
+          "outcome": "succeeded",
+          "thread.review.current_node": "clarify_prep",
+          "response.clarify_prep": "## Assessment summary\n`src/domains/interior-designer` is materially off the target module blueprint. The biggest issues are at the architecture boundaries: browser-side writes, a monolithic Zustand store holding server state and persistence logic, and long-running flows managed in UI code instead of the required API/service/task layers.\n\nThe module should be cleaned up in dependency order. The safest plan starts by fixing the write path and public API boundary, then splitting state and orchestration, and only then doing the broader folder/module reshape.\n\n## Key gaps (max 5)\n- Browser-side Supabase writes in `useInteriorStore` violate the required server write path.\n- A 1661-line Zustand store mixes UI state, server state, persistence, and domain logic.\n- Texture/retexture/text-to-3d flows use bespoke polling, localStorage secrets, and UI-managed jobs instead of Trigger.dev + shared job primitives.\n- The module lacks the target `index.ts` public barrel and canonical `ui/state/io/core/services/tasks` shape.\n- App code and sibling modules import module internals directly, including cross-module internals that likely belong in `shared/`.\n\n## Pick one scope (most teams pick A, B, or C)\n\n| Option | What the plan will assume |\n| --- | --- |\n| **[A] Staged migration** | Fix the unsafe boundaries first: move browser writes behind API → auth → service, introduce a public `index.ts`, add typed DTO seams, and then phase the module toward `ui/state/io/core/services/tasks` while preserving current editor behavior. |\n| **[B] Minimal first step** | Limit the plan to the highest-risk leaks only: eliminate browser-side writes, define DTOs/API seams, add the module barrel, and clean up direct route/internal imports; defer the big store split and major UI/task migration. |\n| **[C] Full blueprint** | Plan a coordinated end-state migration now: split the god store, move long-running generation flows to Trigger tasks, reorganize the module to the canonical blueprint, and remove cross-module internal imports in one larger pass. |\n\n**Advanced:** [F] type custom constraints in freeform · [R] re-assess only if findings are wrong\n\n**Recommendation: [A]** — it addresses the security and boundary violations first without forcing a risky one-pass rewrite of the whole editor.",
+          "graph.rankdir": "LR",
+          "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: `interior-designer` is significantly off the target architecture. The top 3 gaps to fix first are:\n1. Split the 1661-line Zustand god store and move server state/writes out of it.\n2. Remove client-side Supabase writes and bespoke polling/localStorage job flows.\n3. Add a proper module `index.ts` and migrate toward the canonical `ui/state/io/core/services/tasks` structure.",
+          "internal.work_dir": "/workspace/kurvitza",
+          "graph.stall_timeout": "1800000ms",
+          "graph.default_fidelity": "summary:medium",
           "internal.retry_count.start": 0,
           "graph.default_max_retries": "1",
           "graph.label": "Optional Build",
@@ -1255,6 +1372,47 @@
               "inference_time_ms": 0,
               "tool_time_ms": 154,
               "active_time_ms": 154
+            }
+          },
+          "clarify_prep": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_stage": "clarify_prep",
+              "last_response": "## Assessment summary\n`src/domains/interior-designer` is materially off the target module blueprint. The biggest issues are at the architecture boundaries: browser-side writes, a monolithic Zustand st",
+              "response.clarify_prep": "## Assessment summary\n`src/domains/interior-designer` is materially off the target module blueprint. The biggest issues are at the architecture boundaries: browser-side writes, a monolithic Zustand store holding server state and persistence logic, and long-running flows managed in UI code instead of the required API/service/task layers.\n\nThe module should be cleaned up in dependency order. The safest plan starts by fixing the write path and public API boundary, then splitting state and orchestration, and only then doing the broader folder/module reshape.\n\n## Key gaps (max 5)\n- Browser-side Supabase writes in `useInteriorStore` violate the required server write path.\n- A 1661-line Zustand store mixes UI state, server state, persistence, and domain logic.\n- Texture/retexture/text-to-3d flows use bespoke polling, localStorage secrets, and UI-managed jobs instead of Trigger.dev + shared job primitives.\n- The module lacks the target `index.ts` public barrel and canonical `ui/state/io/core/services/tasks` shape.\n- App code and sibling modules import module internals directly, including cross-module internals that likely belong in `shared/`.\n\n## Pick one scope (most teams pick A, B, or C)\n\n| Option | What the plan will assume |\n| --- | --- |\n| **[A] Staged migration** | Fix the unsafe boundaries first: move browser writes behind API → auth → service, introduce a public `index.ts`, add typed DTO seams, and then phase the module toward `ui/state/io/core/services/tasks` while preserving current editor behavior. |\n| **[B] Minimal first step** | Limit the plan to the highest-risk leaks only: eliminate browser-side writes, define DTOs/API seams, add the module barrel, and clean up direct route/internal imports; defer the big store split and major UI/task migration. |\n| **[C] Full blueprint** | Plan a coordinated end-state migration now: split the god store, move long-running generation flows to Trigger tasks, reorganize the module to the canonical blueprint, and remove cross-module internal imports in one larger pass. |\n\n**Advanced:** [F] type custom constraints in freeform · [R] re-assess only if findings are wrong\n\n**Recommendation: [A]** — it addresses the security and boundary violations first without forcing a risky one-pass rewrite of the whole editor."
+            },
+            "notes": "Stage completed: clarify_prep",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 16317,
+                    "output_tokens": 1662,
+                    "reasoning_tokens": 255,
+                    "cache_read_tokens": 38400,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 79147
+            },
+            "files_touched": [
+              "/workspace/kurvitza/CLARIFY.md",
+              "/workspace/kurvitza/DECISIONS.md",
+              "/workspace/kurvitza/PLAN.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 23766,
+              "tool_time_ms": 309,
+              "active_time_ms": 24075
             }
           },
           "start": {
@@ -1301,11 +1459,12 @@
             }
           }
         },
-        "next_node_id": "clarify_prep",
+        "next_node_id": "Clarify",
         "node_visits": {
           "start": 1,
+          "assess": 1,
           "scope": 1,
-          "assess": 1
+          "clarify_prep": 1
         }
       },
       "diff": {}
@@ -1338,59 +1497,16 @@
   "superseded_by": null,
   "pending_interviews": {},
   "stages": {
-    "scope@1": {
-      "first_event_seq": 21,
-      "prompt": null,
-      "response": null,
-      "completion": {
-        "outcome": "succeeded",
-        "notes": "Script completed: M=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1",
-        "failure_reason": null,
-        "timestamp": "2026-07-01T11:39:56.004701Z"
-      },
-      "provider_used": null,
-      "diff": null,
-      "script_invocation": {
-        "script": "M=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1",
-        "command": "exec 2>&1\nM=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1",
-        "language": "shell"
-      },
-      "script_timing": {
-        "output": "blob://sha256/f6842068a7ab6789bf7093dcc8e8120fc65176be29cc11df640793deca15a3a6",
-        "exit_code": 0,
-        "duration_ms": 154,
-        "termination": "exited",
-        "output_bytes": 7869,
-        "live_streaming": true
-      },
-      "parallel_results": null,
-      "output": null,
-      "output_bytes": 7869,
-      "live_streaming": true,
-      "termination": "exited",
-      "started_at": "2026-07-01T11:39:55.782551Z",
-      "handler": "command",
-      "timing": {
-        "wall_time_ms": 158,
-        "inference_time_ms": 0,
-        "tool_time_ms": 154,
-        "active_time_ms": 154
-      },
-      "usage": {
-        "input_tokens": 0,
-        "output_tokens": 0,
-        "total_tokens": 0,
-        "reasoning_tokens": 0,
-        "cache_read_tokens": 0,
-        "cache_write_tokens": 0
-      },
-      "state": "succeeded"
-    },
     "assess@1": {
       "first_event_seq": 31,
       "prompt": null,
       "response": null,
-      "completion": null,
+      "completion": {
+        "outcome": "succeeded",
+        "notes": "Stage completed: assess",
+        "failure_reason": null,
+        "timestamp": "2026-07-01T11:41:06.843511Z"
+      },
       "provider_used": {
         "mode": "agent",
         "provider": "openai",
@@ -1404,6 +1520,12 @@
       "output": null,
       "started_at": "2026-07-01T11:39:59.284070Z",
       "handler": "agent",
+      "timing": {
+        "wall_time_ms": 67509,
+        "inference_time_ms": 66191,
+        "tool_time_ms": 1004,
+        "active_time_ms": 67195
+      },
       "usage": {
         "input_tokens": 98741,
         "output_tokens": 5996,
@@ -1585,7 +1707,7 @@
         ],
         "warnings": []
       },
-      "state": "running"
+      "state": "succeeded"
     },
     "start@1": {
       "first_event_seq": 17,
@@ -1610,6 +1732,255 @@
         "inference_time_ms": 0,
         "tool_time_ms": 0,
         "active_time_ms": 0
+      },
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "reasoning_tokens": 0,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0
+      },
+      "state": "succeeded"
+    },
+    "clarify_prep@1": {
+      "first_event_seq": 152,
+      "prompt": null,
+      "response": null,
+      "completion": null,
+      "provider_used": {
+        "mode": "agent",
+        "provider": "openai",
+        "model": "gpt-5.4",
+        "reasoning_effort": "low"
+      },
+      "diff": null,
+      "script_invocation": null,
+      "script_timing": null,
+      "parallel_results": null,
+      "output": null,
+      "started_at": "2026-07-01T11:41:10.240675Z",
+      "handler": "agent",
+      "usage": {
+        "input_tokens": 16317,
+        "output_tokens": 1662,
+        "total_tokens": 56634,
+        "reasoning_tokens": 255,
+        "cache_read_tokens": 38400,
+        "cache_write_tokens": 0,
+        "total_usd_micros": 79147
+      },
+      "model": {
+        "provider": "openai",
+        "model_id": "gpt-5.4"
+      },
+      "permission_level": "full",
+      "agent_tools": [
+        {
+          "name": "apply_patch",
+          "description": "Use the `apply_patch` tool to edit files. This is a FREEFORM tool, so do not wrap the patch in JSON.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "write",
+          "invoked": false
+        },
+        {
+          "name": "close_agent",
+          "description": "Close a running subagent that is no longer needed.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "glob",
+          "description": "Find files by file names using a glob pattern. Use path to choose the search root. Prefer this over shell find or ls when locating repository files.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": true
+        },
+        {
+          "name": "grep",
+          "description": "Search file contents with a regex pattern. Use path to choose the search root, glob_filter to limit matching files, case_insensitive for case folding, and max_results to cap output.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": false
+        },
+        {
+          "name": "read_file",
+          "description": "Read files before editing them. Returns line-numbered text and supports offset/limit for large files. Use this instead of shell cat, head, tail, or sed when inspecting repository files.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": true
+        },
+        {
+          "name": "request_user_input",
+          "description": "Ask the human one or more questions and wait for their answers before continuing this stage.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "send_input",
+          "description": "Send a follow-up message to a running subagent when new information or corrected instructions are needed.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "shell",
+          "description": "Execute shell commands for terminal operations, package managers, tests and builds. Use dedicated tools for file reads, file edits, filename searches, and content searches. Provide timeout_ms for long-running commands.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "shell",
+          "invoked": false
+        },
+        {
+          "name": "spawn_agent",
+          "description": "Spawn a subagent for independent work or context isolation. Use it for tasks that can proceed separately, and avoid duplicating the same work in the parent session.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "update_plan",
+          "description": "Update the multi-step plan for the current task. Submit the entire plan; existing steps are reconciled by exact step text.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "wait",
+          "description": "Wait for a subagent to complete, then use the result to synthesize the outcome for the user.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "web_fetch",
+          "description": "Fetch content from a URL that starts with http:// or https://. Pass a prompt to extract specific information or summarize the page; omit prompt to return the page content.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "web_search",
+          "description": "Search the web using Brave Search when current external information is needed. Returns result titles, URLs, and descriptions; use web_fetch for a specific URL.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "write_file",
+          "description": "Create new files, or overwrite an existing file only when replacement is explicitly intended. Prefer edit_file for targeted changes to existing files because write_file overwrites the full file content.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "write",
+          "invoked": true
+        }
+      ],
+      "context_window": {
+        "provider": "openai",
+        "model": "gpt-5.4",
+        "context_window_tokens": 272000,
+        "input_tokens": 14891,
+        "usage_percent": 5.4746323529411764,
+        "count_method": "response_usage_scaled_breakdown",
+        "staleness": "live",
+        "generated_at": "2026-07-01T11:41:34.576522Z",
+        "event_seq": 197,
+        "breakdown": [
+          {
+            "category": "system_prompt",
+            "tokens": 1009,
+            "usage_percent": 0.3709558823529412
+          },
+          {
+            "category": "tools",
+            "tokens": 1445,
+            "usage_percent": 0.53125
+          },
+          {
+            "category": "memory",
+            "tokens": 1284,
+            "usage_percent": 0.47205882352941175
+          },
+          {
+            "category": "conversation",
+            "tokens": 11146,
+            "usage_percent": 4.097794117647059
+          },
+          {
+            "category": "other",
+            "tokens": 7,
+            "usage_percent": 0.002573529411764706
+          }
+        ],
+        "warnings": []
+      },
+      "state": "running"
+    },
+    "scope@1": {
+      "first_event_seq": 21,
+      "prompt": null,
+      "response": null,
+      "completion": {
+        "outcome": "succeeded",
+        "notes": "Script completed: M=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1",
+        "failure_reason": null,
+        "timestamp": "2026-07-01T11:39:56.004701Z"
+      },
+      "provider_used": null,
+      "diff": null,
+      "script_invocation": {
+        "script": "M=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1",
+        "command": "exec 2>&1\nM=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1",
+        "language": "shell"
+      },
+      "script_timing": {
+        "output": "blob://sha256/f6842068a7ab6789bf7093dcc8e8120fc65176be29cc11df640793deca15a3a6",
+        "exit_code": 0,
+        "duration_ms": 154,
+        "termination": "exited",
+        "output_bytes": 7869,
+        "live_streaming": true
+      },
+      "parallel_results": null,
+      "output": null,
+      "output_bytes": 7869,
+      "live_streaming": true,
+      "termination": "exited",
+      "started_at": "2026-07-01T11:39:55.782551Z",
+      "handler": "command",
+      "timing": {
+        "wall_time_ms": 158,
+        "inference_time_ms": 0,
+        "tool_time_ms": 154,
+        "active_time_ms": 154
       },
       "usage": {
         "input_tokens": 0,
