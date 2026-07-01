@@ -1,0 +1,5 @@
+{
+  "script": "npm run typecheck && npm run lint",
+  "command": "exec 2>&1\nnpm run typecheck && npm run lint",
+  "language": "shell"
+}

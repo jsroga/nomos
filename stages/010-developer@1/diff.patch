@@ -1,0 +1,48 @@
+diff --git a/src/domains/interior-designer/store/useInteriorStore.ts b/src/domains/interior-designer/store/useInteriorStore.ts
+index 5cd7b2f..b2c71fa 100644
+--- a/src/domains/interior-designer/store/useInteriorStore.ts
++++ b/src/domains/interior-designer/store/useInteriorStore.ts
+@@ -1,5 +1,4 @@
+ import { create } from 'zustand'
+-import { useShallow } from 'zustand/shallow'
+ import { persist } from 'zustand/middleware'
+ import { v4 as uuidv4 } from 'uuid'
+ import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
+@@ -1577,22 +1576,27 @@ export const useInteriorStore = create<InteriorState>()(
+         },
+ 
+         renameDesign: async (designId: string, newName: string) => {
+-          const supabase = (
+-            await import('@/infrastructure/storage/supabaseClient')
+-          ).getSupabaseClient()
+-          const { error } = await supabase
+-            .from('interior_designs')
+-            .update({ name: newName })
+-            .eq('id', designId)
+-
+-          if (error) {
++          const res = await fetch('/api/interior-designer/designs', {
++            method: 'PATCH',
++            headers: { 'Content-Type': 'application/json' },
++            body: JSON.stringify({
++              id: designId,
++              name: newName,
++            }),
++          })
++
++          if (!res.ok) {
++            const errorBody = (await res.json().catch(() => null)) as { error?: string } | null
++            const error = new Error(errorBody?.error || 'Failed to rename design')
+             console.error('Failed to rename design:', error)
+             throw error
+           }
+ 
++          const updatedDesign = (await res.json()) as { name: string }
++
+           // If we are currently editing this design, update local name
+           if (get().currentDesignId === designId) {
+-            set({ currentDesignName: newName })
++            set({ currentDesignName: updatedDesign.name })
+           }
+         },
+ 
