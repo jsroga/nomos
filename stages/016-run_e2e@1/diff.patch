@@ -1,0 +1,12 @@
+diff --git a/playwright-report/index.html b/playwright-report/index.html
+index 4b7ca52..0bf5e8e 100644
+--- a/playwright-report/index.html
++++ b/playwright-report/index.html
+@@ -82,4 +82,4 @@ Error generating stack: `+n.message+`
+     <div id='root'></div>
+   </body>
+ </html>
+-<script id="playwrightReportBase64" type="application/zip">data:application/zip;base64,UEsDBBQAAAgIALOQUlysw/B9AAEAAHgBAAALAAAAcmVwb3J0Lmpzb25VUMtqw0AQ+5Vh6KksJq4DTvfeY3PqpdQ5TO1JsrX30Z1ZSAj+92KTUqqTpIOEdEPPSgMpob3NBkUp65vzjLZu23rbbJun57bdGhxKJnUxoN3t6qZqm93mjtrg0U0saD8OBlOOX9zrnvyvI0oqaG+oUWlCuzHIl8S98rCKEv7J40TjdWUyupTubhzRai48G+ScY16y8WVhFvYRlEUFjrGEoerCK40MUjKDnkmB8ql4DipAmSHzqUyUgS8ps4iLQcCT9mcXTmsOrGuqLrzHAp6uEJgH0AgsPSUGufrPOAlMbmTo8KFDiBk6fOwQKAzwXaIuzfxXXOHBYEzLf8sT8/wDUEsBAj8DFAAACAgAs5BSXKzD8H0AAQAAeAEAAAsAAAAAAAAAAAAAALSBAAAAAHJlcG9ydC5qc29uUEsFBgAAAAABAAEAOQAAACkBAAAAAA==</script>
+\ No newline at end of file
++<script id="playwrightReportBase64" type="application/zip">data:application/zip;base64,UEsDBBQAAAgIADth4VwVugm9vAAAAP8AAAALAAAAcmVwb3J0Lmpzb25Vj7FOxDAQRH/F2tqKnCjgO/e0NNChK5ZkczKJs9Z6w4Gi/DvyCQq6N1OM3uyQSHFERQj7YaEoir7GRBBaf+rOzj/63jtvYdwENfIKoe1cfzo3fftgYYoLFQhvFwtZ+IMGfcb01xRFLRB2UFZcIDgL9JVpUBrvYVv/xWnB+ftOZY45/7Y8Q1DZ6LBAIix1G54qBVNFR8ObmhtGjevVtJ1zzqViJuFkBl6neG1u9P5C8knSwMUC53qjeh3HD1BLAQI/AxQAAAgIADth4VwVugm9vAAAAP8AAAALAAAAAAAAAAAAAAC0gQAAAAByZXBvcnQuanNvblBLBQYAAAAAAQABADkAAADlAAAAAAA=</script>
+\ No newline at end of file
