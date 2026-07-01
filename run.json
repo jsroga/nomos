@@ -1093,7 +1093,7 @@
     "kind": "running"
   },
   "status_updated_at": "2026-07-01T11:46:44.175132Z",
-  "last_event_at": "2026-07-01T12:09:58.926661Z",
+  "last_event_at": "2026-07-01T12:13:12.656182Z",
   "pending_control": null,
   "checkpoints": [
     {
@@ -5434,9 +5434,9 @@
       }
     },
     {
-      "seq": 0,
+      "seq": 979,
       "checkpoint": {
-        "timestamp": "2026-07-01T12:09:58.982619Z",
+        "timestamp": "2026-07-01T12:10:02.740322Z",
         "current_node": "e2e_gate",
         "completed_nodes": [
           "start",
@@ -5459,81 +5459,108 @@
         ],
         "node_retries": {},
         "context_values": {
-          "failure_class": "",
-          "internal.retry_count.run_e2e": 0,
-          "internal.retry_count.Clarify": 0,
-          "internal.fidelity": "summary:medium",
-          "internal.retry_count.clarify_prep": 0,
-          "graph.goal": "Clean up and align the interior-designer module (src/domains/interior-designer) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
-          "last_stage": "tester",
-          "internal.node_visit_count": 1,
-          "response.plan": "Plan and decisions written. Stopping for Verification.\n\n**1. P0 declaration** — `P0 exists`: `store/useInteriorStore.ts:1579-1597` `renameDesign` writes `interior_designs.name` via a browser Supabase client, bypassing `requireAuth()` (invariant #2).\n\n**2. Your Clarify decision: [A] Staged migration.** In scope: fix unsafe boundaries first (authed rename, public `index.ts`, `io/` DTOs, cross-module import cleanup), then sequence the store split + job-observation moves. Explicitly deferred: full folder-per-unit reorg (C), building `src/shared/`+`useJob`, and scene-JSON normalization.\n\n**3. First shippable increment: Items P0-1, P1-2, P1-3, P1-4 only** — authed rename, module barrel, Zod DTOs at the `io/` edge, and de-coupled cross-module imports. No user-visible flow change; small blast radius.\n\n**4. Item count / effort** — 8 items (P0-1, P1-2/3/4, P2-5/6/7, P3-8). Increment 1 ≈ 1–2 dev days (mostly S/M re-routing and layering).\n\n**5. Plan summary**\n- **P0-1 (S):** Replace the dynamic `supabaseClient` write in `renameDesign` with `PATCH /api/interior-designer/designs` — the route already accepts `name` (`designs/route.ts:116-144`).\n- **P1-2 (M):** Add `src/domains/interior-designer/index.ts`; repoint `app/app/[projectId]/interior-design/page.tsx` off deep imports.\n- **P1-3 (M):** Add `io/interior-designer.{dto,keys,api}.ts` (Zod) and validate request bodies in the existing routes.\n- **P1-4 (M):** Remove deep imports of `world-building-toolkit/store`, `.../components/AssetsPanel`, `3d-asset-exporter/components/AssetUploadZone` (DesignManager, AssetLibrary, SurfaceProperties, PropertiesPanel, page).\n- **P2-5 (L):** Split the 1661-LOC store → `state/` UI store + `state/queries/` TanStack + pure `core/`.\n- **P2-6 (L):** Kill `setInterval` polling + `localStorage` API keys in the panels; move secrets server-side; observe jobs via Realtime (`useJob` once P2-7 exists).\n- **P2-7:** Flag repo-wide `shared/jobs`/`shared/data` seams (not built here).\n- **P3-8 (M):** Retire `ai/TextureService.ts`; split the >400-LOC panels.\n\nCorrections logged in DECISIONS.md: browser-write is a single spot (save/load/delete already authed); Trigger tasks + routes already exist (gap is UI polling/secrets); `src/shared/`+`useJob` don't exist yet; no `z.any()`, no schema inversion.\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"yes\"\n  }\n}\n```",
-          "human.gate.Verification.question": "Plan is ready. Approve and build, save plan only, request changes, or abort?",
-          "thread.verify.current_node": "verify_gate",
-          "human.gate.Clarify.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
-          "internal.retry_count.verify_gate": 0,
-          "internal.retry_count.plan": 0,
-          "last_response": "Added focused coverage for the shipped **P0-1 rename flow**, but I’m **not handing back a fully green repo-wide test run** because `npm run test:unit` is blocked by **pre-existing, unrelated failure",
-          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
-          "failure_signature": "",
-          "thread.build.current_node": "tester",
-          "thread.plan.current_node": "Verification",
-          "thread.review.current_node": "clarify_prep",
-          "internal.retry_count.developer": 0,
-          "internal.retry_count.run_tests": 0,
-          "graph.rankdir": "LR",
-          "human.gate.Verification.label": "[B] Approve & build",
-          "internal.retry_count.setup_gate": 0,
           "response.tester": "Added focused coverage for the shipped **P0-1 rename flow**, but I’m **not handing back a fully green repo-wide test run** because `npm run test:unit` is blocked by **pre-existing, unrelated failures outside this increment**.\n\n### Test files added\n- `src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts`\n  - Pins down the client/store contract for rename:\n    - sends `PATCH /api/interior-designer/designs` with `{ id, name }`\n    - updates `currentDesignName` from the API response when the renamed design is open\n    - leaves `currentDesignName` unchanged when renaming a different design\n    - preserves local state and throws on API failure\n    - falls back to a generic error when the failed response body is not JSON\n\n- `src/app/api/__tests__/interior-designs-route.test.ts`\n  - Pins down the route/auth contract for rename:\n    - returns `400` when `id` is missing\n    - returns `401` when unauthenticated\n    - returns `403` when the user lacks design access\n    - accepts a **name-only PATCH** and persists `updatedAt`\n\n### UX / state coverage\nFor what was actually built, the tests cover the meaningful states:\n- **Success:** rename request succeeds and the open design name updates\n- **No-op local state case:** renaming another design does not clobber the open design label\n- **Error:** server rejection surfaces as a thrown error and local state is preserved\n- **Edge/error body case:** malformed/non-JSON error response still yields a stable fallback error\n- **Auth boundary:** missing auth and unauthorized access are rejected at the route\n\nI intentionally did **not** add UI tests for `DesignManager` because this increment changed the **store/API seam**, not the UI behavior or rendering states.\n\n### What I ran\nPassed:\n- `npx vitest run src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts src/app/api/__tests__/interior-designs-route.test.ts`\n- `npx eslint src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts src/app/api/__tests__/interior-designs-route.test.ts`\n\nBlocked by unrelated existing repo issues:\n- `npm run test:unit`\n- focused `tsc` run for the new tests/import graph\n\n### Product bugs found in the shipped rename flow\n- None. The shipped rename behavior passed the targeted store + route tests without requiring source changes.\n\n### Why the full suite is still red\nThese are existing repo-level blockers unrelated to the rename-flow tests I added:\n\n```text\nBug: Storyteller test imports fail because React is not defined in a TSX config module\nWhere: src/domains/storyteller/config/storyteller-agents.tsx:8\nRepro: npm run test:unit\nExpected: Storyteller-related test suites import successfully\nActual: ReferenceError: React is not defined\nSuspected cause: JSX in the TSX config file relies on React being in scope under the current Vitest transform/runtime setup\n```\n\n```text\nBug: Chat/storyteller test path uses an incomplete lucide-react mock\nWhere: surfaced at src/domains/storyteller/components/CharacterPanel/CharacterPanel.tsx:80 during src/domains/chat/components/__tests__/AgentLog.e2e.test.tsx\nRepro: npm run test:unit\nExpected: mocked lucide-react exports cover icons used by imported components\nActual: Error: No \"Heart\" export is defined on the \"lucide-react\" mock\nSuspected cause: the partial lucide-react mock used by that suite is missing Heart\n```\n\n```text\nBug: interior store still has pre-existing strict-null TypeScript errors\nWhere: src/domains/interior-designer/store/useInteriorStore.ts:1336-1338\nRepro: NODE_OPTIONS=--max-old-space-size=8192 node ./node_modules/typescript/lib/tsc.js -p /tmp/tsconfig.interior-rename-tests.json --pretty false\nExpected: interior store typechecks cleanly\nActual: TS18048: 'currentSeg' is possibly 'undefined'\nSuspected cause: combineWalls dereferences currentSeg before the nullability risk is fully eliminated\n```\n\n### Intentionally left untested\n- `DesignManager` UI interaction flow itself  \n  Reason: this increment did not change component rendering or user interaction logic; the highest-risk regression was the **write-path/auth boundary**, which is better covered at the store and route seams.\n\nIf you want, the next loop should go to the Developer to clear the unrelated suite/typecheck blockers above before a full green gate is possible.",
-          "internal.retry_count.e2e_gate": 0,
-          "thread.tester.current_node": "run_tests",
-          "thread.setup.current_node": "setup_gate",
-          "thread.test_gate.current_node": "run_e2e",
-          "thread.developer.current_node": "verify",
           "response.developer": "Implemented **Visit 1 / Item P0-1 only**.\n\n### Files modified\n- `src/domains/interior-designer/store/useInteriorStore.ts`\n\n### What changed\n- `renameDesign` no longer does a browser-side Supabase write.\n- It now calls the existing authed API:\n  - `PATCH /api/interior-designer/designs`\n  - body: `{ id, name }`\n- Added response error handling for failed rename requests.\n- Kept local state behavior: if the renamed design is currently open, `currentDesignName` updates from the API response.\n- Removed an unused `useShallow` import in the same file while touching it.\n\n### Files created\n- None\n\n### Files deleted\n- None\n\n### Scope check\n- Stayed within the approved minimum increment’s **first item only (P0-1)**.\n- Did **not** implement:\n  - P1-2 public barrel\n  - P1-3 DTO/io layer\n  - P1-4 cross-module import cleanup\n\n### Verification\n- Confirmed via grep that there are now **zero `supabase` / `getSupabaseClient` references** under `src/domains/interior-designer`.\n\n### Static checks\n- `npm run typecheck`  \n  - attempted twice\n  - full run hit environment/resource limits (`tsc` OOM / killed)\n  - focused typecheck on the changed file surfaced **pre-existing** TS errors unrelated to P0-1:\n    - `src/domains/interior-designer/store/useInteriorStore.ts:1336-1338`\n    - `TS18048: 'currentSeg' is possibly 'undefined'`\n\n- `npm run lint`\n  - full repo lint is currently blocked by an **unrelated existing** error outside this increment:\n    - `src/domains/loop-creator/agents/concept-evaluator.ts:10`\n    - unused import: `LoopAgentAction`\n  - targeted ESLint on the changed file reports warnings only, no errors after the import cleanup.\n\n### Deviations from plan\n- None for implementation scope.\n- Only incidental cleanup was removing one unused import in the edited file.\n\n### Deferred work\n- Everything after P0-1 remains deferred to the next visit, starting with **P1-2**.",
           "graph.stall_timeout": "1800000ms",
-          "human.gate.Verification.answer": "B",
-          "graph.default_max_retries": "1",
-          "preferred_label": "[B] Approve & build",
-          "internal.run_id": "01KWEQMG546XCJ1TPHT2K7YJXT",
-          "plan.has_ui_surface": "no",
-          "thread.run_tests.current_node": "test_gate",
-          "command.output": "blob://sha256/618d4674aebe37046e3ec0fb1757aafe7c3e17e8c3601ba14d4c4053d46e3007",
-          "thread.planning.current_node": "plan",
-          "plan.has_p0_security_issue": "yes",
-          "human.gate.label": "[B] Approve & build",
-          "human.gate.Clarify.question": "How much should the cleanup plan take on?",
-          "internal.retry_count.Verification": 0,
-          "internal.retry_count.scope": 0,
-          "human.gate.selected": "B",
-          "current_node": "e2e_gate",
-          "thread.start.current_node": "scope",
-          "internal.retry_count.assess": 0,
+          "internal.retry_count.run_e2e": 0,
+          "human.gate.Verification.label": "[B] Approve & build",
+          "human.gate.Clarify.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
+          "last_response": "Added focused coverage for the shipped **P0-1 rename flow**, but I’m **not handing back a fully green repo-wide test run** because `npm run test:unit` is blocked by **pre-existing, unrelated failure",
           "internal.thread_id": "run_e2e",
-          "internal.retry_count.setup": 0,
-          "outcome": "succeeded",
-          "internal.retry_count.test_gate": 0,
-          "response.clarify_prep": "## Assessment summary\n`src/domains/interior-designer` is materially off the target module blueprint. The biggest issues are at the architecture boundaries: browser-side writes, a monolithic Zustand store holding server state and persistence logic, and long-running flows managed in UI code instead of the required API/service/task layers.\n\nThe module should be cleaned up in dependency order. The safest plan starts by fixing the write path and public API boundary, then splitting state and orchestration, and only then doing the broader folder/module reshape.\n\n## Key gaps (max 5)\n- Browser-side Supabase writes in `useInteriorStore` violate the required server write path.\n- A 1661-line Zustand store mixes UI state, server state, persistence, and domain logic.\n- Texture/retexture/text-to-3d flows use bespoke polling, localStorage secrets, and UI-managed jobs instead of Trigger.dev + shared job primitives.\n- The module lacks the target `index.ts` public barrel and canonical `ui/state/io/core/services/tasks` shape.\n- App code and sibling modules import module internals directly, including cross-module internals that likely belong in `shared/`.\n\n## Pick one scope (most teams pick A, B, or C)\n\n| Option | What the plan will assume |\n| --- | --- |\n| **[A] Staged migration** | Fix the unsafe boundaries first: move browser writes behind API → auth → service, introduce a public `index.ts`, add typed DTO seams, and then phase the module toward `ui/state/io/core/services/tasks` while preserving current editor behavior. |\n| **[B] Minimal first step** | Limit the plan to the highest-risk leaks only: eliminate browser-side writes, define DTOs/API seams, add the module barrel, and clean up direct route/internal imports; defer the big store split and major UI/task migration. |\n| **[C] Full blueprint** | Plan a coordinated end-state migration now: split the god store, move long-running generation flows to Trigger tasks, reorganize the module to the canonical blueprint, and remove cross-module internal imports in one larger pass. |\n\n**Advanced:** [F] type custom constraints in freeform · [R] re-assess only if findings are wrong\n\n**Recommendation: [A]** — it addresses the security and boundary violations first without forcing a risky one-pass rewrite of the whole editor.",
+          "internal.retry_count.verify_gate": 0,
+          "last_stage": "tester",
+          "thread.tester.current_node": "run_tests",
+          "current_node": "e2e_gate",
           "internal.retry_count.verify": 0,
-          "thread.Verification.current_node": "setup",
-          "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: `interior-designer` is significantly off the target architecture. The top 3 gaps to fix first are:\n1. Split the 1661-line Zustand god store and move server state/writes out of it.\n2. Remove client-side Supabase writes and bespoke polling/localStorage job flows.\n3. Add a proper module `index.ts` and migrate toward the canonical `ui/state/io/core/services/tasks` structure.",
-          "internal.work_dir": "/workspace/kurvitza",
-          "human.gate.Clarify.answer": "A",
-          "thread.run_e2e.current_node": "e2e_gate",
-          "graph.default_fidelity": "summary:medium",
-          "internal.retry_count.start": 0,
           "internal.retry_count.tester": 0,
+          "internal.work_dir": "/workspace/kurvitza",
+          "thread.build.current_node": "tester",
+          "command.output": "blob://sha256/618d4674aebe37046e3ec0fb1757aafe7c3e17e8c3601ba14d4c4053d46e3007",
+          "internal.retry_count.run_tests": 0,
+          "human.gate.Clarify.answer": "A",
+          "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: `interior-designer` is significantly off the target architecture. The top 3 gaps to fix first are:\n1. Split the 1661-line Zustand god store and move server state/writes out of it.\n2. Remove client-side Supabase writes and bespoke polling/localStorage job flows.\n3. Add a proper module `index.ts` and migrate toward the canonical `ui/state/io/core/services/tasks` structure.",
+          "internal.retry_count.test_gate": 0,
+          "graph.default_max_retries": "1",
+          "graph.rankdir": "LR",
+          "outcome": "succeeded",
+          "internal.retry_count.scope": 0,
+          "plan.has_p0_security_issue": "yes",
+          "thread.run_tests.current_node": "test_gate",
+          "thread.run_e2e.current_node": "e2e_gate",
+          "thread.setup.current_node": "setup_gate",
+          "preferred_label": "[B] Approve & build",
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
+          "human.gate.selected": "B",
+          "failure_class": "",
+          "internal.retry_count.start": 0,
+          "graph.label": "Optional Build",
+          "graph.default_fidelity": "summary:medium",
+          "internal.retry_count.developer": 0,
+          "internal.fidelity": "summary:medium",
           "thread.clarify_prep.current_node": "Clarify",
-          "graph.label": "Optional Build"
+          "thread.start.current_node": "scope",
+          "internal.run_id": "01KWEQMG546XCJ1TPHT2K7YJXT",
+          "human.gate.Verification.answer": "B",
+          "internal.node_visit_count": 1,
+          "plan.has_ui_surface": "no",
+          "internal.retry_count.clarify_prep": 0,
+          "thread.review.current_node": "clarify_prep",
+          "response.clarify_prep": "## Assessment summary\n`src/domains/interior-designer` is materially off the target module blueprint. The biggest issues are at the architecture boundaries: browser-side writes, a monolithic Zustand store holding server state and persistence logic, and long-running flows managed in UI code instead of the required API/service/task layers.\n\nThe module should be cleaned up in dependency order. The safest plan starts by fixing the write path and public API boundary, then splitting state and orchestration, and only then doing the broader folder/module reshape.\n\n## Key gaps (max 5)\n- Browser-side Supabase writes in `useInteriorStore` violate the required server write path.\n- A 1661-line Zustand store mixes UI state, server state, persistence, and domain logic.\n- Texture/retexture/text-to-3d flows use bespoke polling, localStorage secrets, and UI-managed jobs instead of Trigger.dev + shared job primitives.\n- The module lacks the target `index.ts` public barrel and canonical `ui/state/io/core/services/tasks` shape.\n- App code and sibling modules import module internals directly, including cross-module internals that likely belong in `shared/`.\n\n## Pick one scope (most teams pick A, B, or C)\n\n| Option | What the plan will assume |\n| --- | --- |\n| **[A] Staged migration** | Fix the unsafe boundaries first: move browser writes behind API → auth → service, introduce a public `index.ts`, add typed DTO seams, and then phase the module toward `ui/state/io/core/services/tasks` while preserving current editor behavior. |\n| **[B] Minimal first step** | Limit the plan to the highest-risk leaks only: eliminate browser-side writes, define DTOs/API seams, add the module barrel, and clean up direct route/internal imports; defer the big store split and major UI/task migration. |\n| **[C] Full blueprint** | Plan a coordinated end-state migration now: split the god store, move long-running generation flows to Trigger tasks, reorganize the module to the canonical blueprint, and remove cross-module internal imports in one larger pass. |\n\n**Advanced:** [F] type custom constraints in freeform · [R] re-assess only if findings are wrong\n\n**Recommendation: [A]** — it addresses the security and boundary violations first without forcing a risky one-pass rewrite of the whole editor.",
+          "human.gate.Verification.question": "Plan is ready. Approve and build, save plan only, request changes, or abort?",
+          "thread.verify.current_node": "verify_gate",
+          "internal.retry_count.assess": 0,
+          "thread.Verification.current_node": "setup",
+          "thread.planning.current_node": "plan",
+          "internal.retry_count.e2e_gate": 0,
+          "graph.goal": "Clean up and align the interior-designer module (src/domains/interior-designer) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
+          "internal.retry_count.plan": 0,
+          "thread.test_gate.current_node": "run_e2e",
+          "human.gate.label": "[B] Approve & build",
+          "thread.developer.current_node": "verify",
+          "internal.retry_count.setup_gate": 0,
+          "internal.retry_count.Clarify": 0,
+          "response.plan": "Plan and decisions written. Stopping for Verification.\n\n**1. P0 declaration** — `P0 exists`: `store/useInteriorStore.ts:1579-1597` `renameDesign` writes `interior_designs.name` via a browser Supabase client, bypassing `requireAuth()` (invariant #2).\n\n**2. Your Clarify decision: [A] Staged migration.** In scope: fix unsafe boundaries first (authed rename, public `index.ts`, `io/` DTOs, cross-module import cleanup), then sequence the store split + job-observation moves. Explicitly deferred: full folder-per-unit reorg (C), building `src/shared/`+`useJob`, and scene-JSON normalization.\n\n**3. First shippable increment: Items P0-1, P1-2, P1-3, P1-4 only** — authed rename, module barrel, Zod DTOs at the `io/` edge, and de-coupled cross-module imports. No user-visible flow change; small blast radius.\n\n**4. Item count / effort** — 8 items (P0-1, P1-2/3/4, P2-5/6/7, P3-8). Increment 1 ≈ 1–2 dev days (mostly S/M re-routing and layering).\n\n**5. Plan summary**\n- **P0-1 (S):** Replace the dynamic `supabaseClient` write in `renameDesign` with `PATCH /api/interior-designer/designs` — the route already accepts `name` (`designs/route.ts:116-144`).\n- **P1-2 (M):** Add `src/domains/interior-designer/index.ts`; repoint `app/app/[projectId]/interior-design/page.tsx` off deep imports.\n- **P1-3 (M):** Add `io/interior-designer.{dto,keys,api}.ts` (Zod) and validate request bodies in the existing routes.\n- **P1-4 (M):** Remove deep imports of `world-building-toolkit/store`, `.../components/AssetsPanel`, `3d-asset-exporter/components/AssetUploadZone` (DesignManager, AssetLibrary, SurfaceProperties, PropertiesPanel, page).\n- **P2-5 (L):** Split the 1661-LOC store → `state/` UI store + `state/queries/` TanStack + pure `core/`.\n- **P2-6 (L):** Kill `setInterval` polling + `localStorage` API keys in the panels; move secrets server-side; observe jobs via Realtime (`useJob` once P2-7 exists).\n- **P2-7:** Flag repo-wide `shared/jobs`/`shared/data` seams (not built here).\n- **P3-8 (M):** Retire `ai/TextureService.ts`; split the >400-LOC panels.\n\nCorrections logged in DECISIONS.md: browser-write is a single spot (save/load/delete already authed); Trigger tasks + routes already exist (gap is UI polling/secrets); `src/shared/`+`useJob` don't exist yet; no `z.any()`, no schema inversion.\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"yes\"\n  }\n}\n```",
+          "thread.plan.current_node": "Verification",
+          "failure_signature": "",
+          "internal.retry_count.setup": 0,
+          "human.gate.Clarify.question": "How much should the cleanup plan take on?",
+          "internal.retry_count.Verification": 0
         },
         "node_outcomes": {
-          "verify_gate": {
-            "status": "succeeded",
-            "notes": "Conditional node evaluated: verify_gate",
-            "usage": null
+          "verify": {
+            "status": "failed",
+            "context_updates": {
+              "command.output": "blob://sha256/6051ee42bb836c1cbe678e4d46f2db316d867a2fb231adc7264f8b926f96fb03"
+            },
+            "failure": {
+              "message": "Script failed with exit code: 134\n\n## output\n\n> typecheck\n> tsc --noEmit\n\n\n<--- Last few GCs --->\n\n[8595:0xffffbba30000]    50130 ms: Scavenge 2042.7 (2084.4) -> 2040.9 (2088.4) MB, pooled: 0 MB, 2.67 / 0.00 ms  (average mu = 0.395, current mu = 0.393) allocation failure; \n[8595:0xffffbba30000]    50573 ms: Mark-Compact (reduce) 2044.8 (2088.6) -> 2043.6 (2083.9) MB, pooled: 0 MB, 429.29 / 0.00 ms  (+ 1.5 ms in 0 steps since start of marking, biggest step 0.0 ms, walltime since start of marking 443 ms) (average mu = 0.323, \n\n<--- JS stacktrace --->\n\nFATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory\n----- Native stack trace -----\n\n 1: 0xe19178 node::OOMErrorHandler(char const*, v8::OOMDetails const&) [node]\n 2: 0x11cad4c v8::Utils::ReportOOMFailure(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [node]\n 3: 0x11caefc v8::internal::V8::FatalProcessOutOfMemory(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [node]\n 4: 0x13f098c  [node]\n 5: 0x13f09bc  [node]\n 6: 0x1408370  [node]\n 7: 0x140af5c  [node]\n 8: 0x1bf2714  [node]\nAborted\n",
+              "category": "deterministic"
+            },
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 50918,
+              "active_time_ms": 50918
+            }
           },
-          "start": {
+          "scope": {
             "status": "succeeded",
+            "context_updates": {
+              "command.output": "blob://sha256/f6842068a7ab6789bf7093dcc8e8120fc65176be29cc11df640793deca15a3a6"
+            },
+            "notes": "Script completed: M=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1",
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 154,
+              "active_time_ms": 154
+            }
+          },
+          "setup_gate": {
+            "status": "succeeded",
+            "notes": "Conditional node evaluated: setup_gate",
             "usage": null
           },
           "developer": {
@@ -5570,37 +5597,6 @@
               "inference_time_ms": 103002,
               "tool_time_ms": 576335,
               "active_time_ms": 679337
-            }
-          },
-          "scope": {
-            "status": "succeeded",
-            "context_updates": {
-              "command.output": "blob://sha256/f6842068a7ab6789bf7093dcc8e8120fc65176be29cc11df640793deca15a3a6"
-            },
-            "notes": "Script completed: M=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1",
-            "usage": null,
-            "timing": {
-              "wall_time_ms": 0,
-              "inference_time_ms": 0,
-              "tool_time_ms": 154,
-              "active_time_ms": 154
-            }
-          },
-          "verify": {
-            "status": "failed",
-            "context_updates": {
-              "command.output": "blob://sha256/6051ee42bb836c1cbe678e4d46f2db316d867a2fb231adc7264f8b926f96fb03"
-            },
-            "failure": {
-              "message": "Script failed with exit code: 134\n\n## output\n\n> typecheck\n> tsc --noEmit\n\n\n<--- Last few GCs --->\n\n[8595:0xffffbba30000]    50130 ms: Scavenge 2042.7 (2084.4) -> 2040.9 (2088.4) MB, pooled: 0 MB, 2.67 / 0.00 ms  (average mu = 0.395, current mu = 0.393) allocation failure; \n[8595:0xffffbba30000]    50573 ms: Mark-Compact (reduce) 2044.8 (2088.6) -> 2043.6 (2083.9) MB, pooled: 0 MB, 429.29 / 0.00 ms  (+ 1.5 ms in 0 steps since start of marking, biggest step 0.0 ms, walltime since start of marking 443 ms) (average mu = 0.323, \n\n<--- JS stacktrace --->\n\nFATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory\n----- Native stack trace -----\n\n 1: 0xe19178 node::OOMErrorHandler(char const*, v8::OOMDetails const&) [node]\n 2: 0x11cad4c v8::Utils::ReportOOMFailure(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [node]\n 3: 0x11caefc v8::internal::V8::FatalProcessOutOfMemory(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [node]\n 4: 0x13f098c  [node]\n 5: 0x13f09bc  [node]\n 6: 0x1408370  [node]\n 7: 0x140af5c  [node]\n 8: 0x1bf2714  [node]\nAborted\n",
-              "category": "deterministic"
-            },
-            "usage": null,
-            "timing": {
-              "wall_time_ms": 0,
-              "inference_time_ms": 0,
-              "tool_time_ms": 50918,
-              "active_time_ms": 50918
             }
           },
           "assess": {
@@ -5642,116 +5638,25 @@
               "active_time_ms": 67195
             }
           },
-          "setup_gate": {
+          "verify_gate": {
             "status": "succeeded",
-            "notes": "Conditional node evaluated: setup_gate",
+            "notes": "Conditional node evaluated: verify_gate",
             "usage": null
           },
-          "Clarify": {
+          "Verification": {
             "status": "succeeded",
-            "preferred_label": "[A] Staged migration — boundaries first, bigger moves sequenced",
+            "preferred_label": "[B] Approve & build",
             "suggested_next_ids": [
-              "plan"
+              "setup"
             ],
             "context_updates": {
-              "human.gate.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
-              "human.gate.Clarify.question": "How much should the cleanup plan take on?",
-              "human.gate.Clarify.answer": "A",
-              "human.gate.Clarify.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
-              "human.gate.selected": "A"
+              "human.gate.Verification.label": "[B] Approve & build",
+              "human.gate.Verification.question": "Plan is ready. Approve and build, save plan only, request changes, or abort?",
+              "human.gate.label": "[B] Approve & build",
+              "human.gate.Verification.answer": "B",
+              "human.gate.selected": "B"
             },
             "usage": null
-          },
-          "clarify_prep": {
-            "status": "succeeded",
-            "context_updates": {
-              "last_stage": "clarify_prep",
-              "last_response": "## Assessment summary\n`src/domains/interior-designer` is materially off the target module blueprint. The biggest issues are at the architecture boundaries: browser-side writes, a monolithic Zustand st",
-              "response.clarify_prep": "## Assessment summary\n`src/domains/interior-designer` is materially off the target module blueprint. The biggest issues are at the architecture boundaries: browser-side writes, a monolithic Zustand store holding server state and persistence logic, and long-running flows managed in UI code instead of the required API/service/task layers.\n\nThe module should be cleaned up in dependency order. The safest plan starts by fixing the write path and public API boundary, then splitting state and orchestration, and only then doing the broader folder/module reshape.\n\n## Key gaps (max 5)\n- Browser-side Supabase writes in `useInteriorStore` violate the required server write path.\n- A 1661-line Zustand store mixes UI state, server state, persistence, and domain logic.\n- Texture/retexture/text-to-3d flows use bespoke polling, localStorage secrets, and UI-managed jobs instead of Trigger.dev + shared job primitives.\n- The module lacks the target `index.ts` public barrel and canonical `ui/state/io/core/services/tasks` shape.\n- App code and sibling modules import module internals directly, including cross-module internals that likely belong in `shared/`.\n\n## Pick one scope (most teams pick A, B, or C)\n\n| Option | What the plan will assume |\n| --- | --- |\n| **[A] Staged migration** | Fix the unsafe boundaries first: move browser writes behind API → auth → service, introduce a public `index.ts`, add typed DTO seams, and then phase the module toward `ui/state/io/core/services/tasks` while preserving current editor behavior. |\n| **[B] Minimal first step** | Limit the plan to the highest-risk leaks only: eliminate browser-side writes, define DTOs/API seams, add the module barrel, and clean up direct route/internal imports; defer the big store split and major UI/task migration. |\n| **[C] Full blueprint** | Plan a coordinated end-state migration now: split the god store, move long-running generation flows to Trigger tasks, reorganize the module to the canonical blueprint, and remove cross-module internal imports in one larger pass. |\n\n**Advanced:** [F] type custom constraints in freeform · [R] re-assess only if findings are wrong\n\n**Recommendation: [A]** — it addresses the security and boundary violations first without forcing a risky one-pass rewrite of the whole editor."
-            },
-            "notes": "Stage completed: clarify_prep",
-            "usage": {
-              "input": {
-                "usage": {
-                  "model": {
-                    "provider": "openai",
-                    "model_id": "gpt-5.4"
-                  },
-                  "tokens": {
-                    "input_tokens": 16317,
-                    "output_tokens": 1662,
-                    "reasoning_tokens": 255,
-                    "cache_read_tokens": 38400,
-                    "cache_write_tokens": 0
-                  }
-                },
-                "facts": {
-                  "algorithm": "openai"
-                }
-              },
-              "total_usd_micros": 79147
-            },
-            "files_touched": [
-              "/workspace/kurvitza/CLARIFY.md",
-              "/workspace/kurvitza/DECISIONS.md",
-              "/workspace/kurvitza/PLAN.md"
-            ],
-            "timing": {
-              "wall_time_ms": 0,
-              "inference_time_ms": 23766,
-              "tool_time_ms": 309,
-              "active_time_ms": 24075
-            }
-          },
-          "setup": {
-            "status": "succeeded",
-            "context_updates": {
-              "command.output": "blob://sha256/c91761445f2f5f562e2a48ae02ad03f203a485e53953115ea6fc8ad920132643"
-            },
-            "notes": "Script completed: set -euo pipefail; echo '=== sandbox bootstrap ==='; if ! command -v git >/dev/null; then apt-get update && apt-get install -y git ca-certificates; fi; if ! command -v npm >/dev/null; then apt-get update && apt-get install -y nodejs npm; fi; command -v npm >/dev/null || { echo 'ERROR: npm still missing — expected image node:22-bookworm'; exit 1; }; npm ci; npm run test:playwright:install; echo '=== bootstrap complete ==='",
-            "usage": null,
-            "timing": {
-              "wall_time_ms": 0,
-              "inference_time_ms": 0,
-              "tool_time_ms": 144013,
-              "active_time_ms": 144013
-            }
-          },
-          "tester": {
-            "status": "succeeded",
-            "context_updates": {
-              "last_stage": "tester",
-              "last_response": "Added focused coverage for the shipped **P0-1 rename flow**, but I’m **not handing back a fully green repo-wide test run** because `npm run test:unit` is blocked by **pre-existing, unrelated failure",
-              "response.tester": "Added focused coverage for the shipped **P0-1 rename flow**, but I’m **not handing back a fully green repo-wide test run** because `npm run test:unit` is blocked by **pre-existing, unrelated failures outside this increment**.\n\n### Test files added\n- `src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts`\n  - Pins down the client/store contract for rename:\n    - sends `PATCH /api/interior-designer/designs` with `{ id, name }`\n    - updates `currentDesignName` from the API response when the renamed design is open\n    - leaves `currentDesignName` unchanged when renaming a different design\n    - preserves local state and throws on API failure\n    - falls back to a generic error when the failed response body is not JSON\n\n- `src/app/api/__tests__/interior-designs-route.test.ts`\n  - Pins down the route/auth contract for rename:\n    - returns `400` when `id` is missing\n    - returns `401` when unauthenticated\n    - returns `403` when the user lacks design access\n    - accepts a **name-only PATCH** and persists `updatedAt`\n\n### UX / state coverage\nFor what was actually built, the tests cover the meaningful states:\n- **Success:** rename request succeeds and the open design name updates\n- **No-op local state case:** renaming another design does not clobber the open design label\n- **Error:** server rejection surfaces as a thrown error and local state is preserved\n- **Edge/error body case:** malformed/non-JSON error response still yields a stable fallback error\n- **Auth boundary:** missing auth and unauthorized access are rejected at the route\n\nI intentionally did **not** add UI tests for `DesignManager` because this increment changed the **store/API seam**, not the UI behavior or rendering states.\n\n### What I ran\nPassed:\n- `npx vitest run src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts src/app/api/__tests__/interior-designs-route.test.ts`\n- `npx eslint src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts src/app/api/__tests__/interior-designs-route.test.ts`\n\nBlocked by unrelated existing repo issues:\n- `npm run test:unit`\n- focused `tsc` run for the new tests/import graph\n\n### Product bugs found in the shipped rename flow\n- None. The shipped rename behavior passed the targeted store + route tests without requiring source changes.\n\n### Why the full suite is still red\nThese are existing repo-level blockers unrelated to the rename-flow tests I added:\n\n```text\nBug: Storyteller test imports fail because React is not defined in a TSX config module\nWhere: src/domains/storyteller/config/storyteller-agents.tsx:8\nRepro: npm run test:unit\nExpected: Storyteller-related test suites import successfully\nActual: ReferenceError: React is not defined\nSuspected cause: JSX in the TSX config file relies on React being in scope under the current Vitest transform/runtime setup\n```\n\n```text\nBug: Chat/storyteller test path uses an incomplete lucide-react mock\nWhere: surfaced at src/domains/storyteller/components/CharacterPanel/CharacterPanel.tsx:80 during src/domains/chat/components/__tests__/AgentLog.e2e.test.tsx\nRepro: npm run test:unit\nExpected: mocked lucide-react exports cover icons used by imported components\nActual: Error: No \"Heart\" export is defined on the \"lucide-react\" mock\nSuspected cause: the partial lucide-react mock used by that suite is missing Heart\n```\n\n```text\nBug: interior store still has pre-existing strict-null TypeScript errors\nWhere: src/domains/interior-designer/store/useInteriorStore.ts:1336-1338\nRepro: NODE_OPTIONS=--max-old-space-size=8192 node ./node_modules/typescript/lib/tsc.js -p /tmp/tsconfig.interior-rename-tests.json --pretty false\nExpected: interior store typechecks cleanly\nActual: TS18048: 'currentSeg' is possibly 'undefined'\nSuspected cause: combineWalls dereferences currentSeg before the nullability risk is fully eliminated\n```\n\n### Intentionally left untested\n- `DesignManager` UI interaction flow itself  \n  Reason: this increment did not change component rendering or user interaction logic; the highest-risk regression was the **write-path/auth boundary**, which is better covered at the store and route seams.\n\nIf you want, the next loop should go to the Developer to clear the unrelated suite/typecheck blockers above before a full green gate is possible."
-            },
-            "notes": "Stage completed: tester",
-            "usage": {
-              "input": {
-                "usage": {
-                  "model": {
-                    "provider": "openai",
-                    "model_id": "gpt-5.4"
-                  },
-                  "tokens": {
-                    "input_tokens": 106830,
-                    "output_tokens": 6915,
-                    "reasoning_tokens": 7630,
-                    "cache_read_tokens": 1747968,
-                    "cache_write_tokens": 0
-                  }
-                },
-                "facts": {
-                  "algorithm": "openai"
-                }
-              },
-              "total_usd_micros": 922242
-            },
-            "timing": {
-              "wall_time_ms": 0,
-              "inference_time_ms": 152402,
-              "tool_time_ms": 186691,
-              "active_time_ms": 339093
-            }
           },
           "plan": {
             "status": "succeeded",
@@ -5797,10 +5702,101 @@
               "active_time_ms": 178888
             }
           },
-          "e2e_gate": {
+          "tester": {
             "status": "succeeded",
-            "notes": "Conditional node evaluated: e2e_gate",
+            "context_updates": {
+              "last_stage": "tester",
+              "last_response": "Added focused coverage for the shipped **P0-1 rename flow**, but I’m **not handing back a fully green repo-wide test run** because `npm run test:unit` is blocked by **pre-existing, unrelated failure",
+              "response.tester": "Added focused coverage for the shipped **P0-1 rename flow**, but I’m **not handing back a fully green repo-wide test run** because `npm run test:unit` is blocked by **pre-existing, unrelated failures outside this increment**.\n\n### Test files added\n- `src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts`\n  - Pins down the client/store contract for rename:\n    - sends `PATCH /api/interior-designer/designs` with `{ id, name }`\n    - updates `currentDesignName` from the API response when the renamed design is open\n    - leaves `currentDesignName` unchanged when renaming a different design\n    - preserves local state and throws on API failure\n    - falls back to a generic error when the failed response body is not JSON\n\n- `src/app/api/__tests__/interior-designs-route.test.ts`\n  - Pins down the route/auth contract for rename:\n    - returns `400` when `id` is missing\n    - returns `401` when unauthenticated\n    - returns `403` when the user lacks design access\n    - accepts a **name-only PATCH** and persists `updatedAt`\n\n### UX / state coverage\nFor what was actually built, the tests cover the meaningful states:\n- **Success:** rename request succeeds and the open design name updates\n- **No-op local state case:** renaming another design does not clobber the open design label\n- **Error:** server rejection surfaces as a thrown error and local state is preserved\n- **Edge/error body case:** malformed/non-JSON error response still yields a stable fallback error\n- **Auth boundary:** missing auth and unauthorized access are rejected at the route\n\nI intentionally did **not** add UI tests for `DesignManager` because this increment changed the **store/API seam**, not the UI behavior or rendering states.\n\n### What I ran\nPassed:\n- `npx vitest run src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts src/app/api/__tests__/interior-designs-route.test.ts`\n- `npx eslint src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts src/app/api/__tests__/interior-designs-route.test.ts`\n\nBlocked by unrelated existing repo issues:\n- `npm run test:unit`\n- focused `tsc` run for the new tests/import graph\n\n### Product bugs found in the shipped rename flow\n- None. The shipped rename behavior passed the targeted store + route tests without requiring source changes.\n\n### Why the full suite is still red\nThese are existing repo-level blockers unrelated to the rename-flow tests I added:\n\n```text\nBug: Storyteller test imports fail because React is not defined in a TSX config module\nWhere: src/domains/storyteller/config/storyteller-agents.tsx:8\nRepro: npm run test:unit\nExpected: Storyteller-related test suites import successfully\nActual: ReferenceError: React is not defined\nSuspected cause: JSX in the TSX config file relies on React being in scope under the current Vitest transform/runtime setup\n```\n\n```text\nBug: Chat/storyteller test path uses an incomplete lucide-react mock\nWhere: surfaced at src/domains/storyteller/components/CharacterPanel/CharacterPanel.tsx:80 during src/domains/chat/components/__tests__/AgentLog.e2e.test.tsx\nRepro: npm run test:unit\nExpected: mocked lucide-react exports cover icons used by imported components\nActual: Error: No \"Heart\" export is defined on the \"lucide-react\" mock\nSuspected cause: the partial lucide-react mock used by that suite is missing Heart\n```\n\n```text\nBug: interior store still has pre-existing strict-null TypeScript errors\nWhere: src/domains/interior-designer/store/useInteriorStore.ts:1336-1338\nRepro: NODE_OPTIONS=--max-old-space-size=8192 node ./node_modules/typescript/lib/tsc.js -p /tmp/tsconfig.interior-rename-tests.json --pretty false\nExpected: interior store typechecks cleanly\nActual: TS18048: 'currentSeg' is possibly 'undefined'\nSuspected cause: combineWalls dereferences currentSeg before the nullability risk is fully eliminated\n```\n\n### Intentionally left untested\n- `DesignManager` UI interaction flow itself  \n  Reason: this increment did not change component rendering or user interaction logic; the highest-risk regression was the **write-path/auth boundary**, which is better covered at the store and route seams.\n\nIf you want, the next loop should go to the Developer to clear the unrelated suite/typecheck blockers above before a full green gate is possible."
+            },
+            "notes": "Stage completed: tester",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 106830,
+                    "output_tokens": 6915,
+                    "reasoning_tokens": 7630,
+                    "cache_read_tokens": 1747968,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 922242
+            },
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 152402,
+              "tool_time_ms": 186691,
+              "active_time_ms": 339093
+            }
+          },
+          "setup": {
+            "status": "succeeded",
+            "context_updates": {
+              "command.output": "blob://sha256/c91761445f2f5f562e2a48ae02ad03f203a485e53953115ea6fc8ad920132643"
+            },
+            "notes": "Script completed: set -euo pipefail; echo '=== sandbox bootstrap ==='; if ! command -v git >/dev/null; then apt-get update && apt-get install -y git ca-certificates; fi; if ! command -v npm >/dev/null; then apt-get update && apt-get install -y nodejs npm; fi; command -v npm >/dev/null || { echo 'ERROR: npm still missing — expected image node:22-bookworm'; exit 1; }; npm ci; npm run test:playwright:install; echo '=== bootstrap complete ==='",
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 144013,
+              "active_time_ms": 144013
+            }
+          },
+          "test_gate": {
+            "status": "succeeded",
+            "notes": "Conditional node evaluated: test_gate",
             "usage": null
+          },
+          "clarify_prep": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_stage": "clarify_prep",
+              "last_response": "## Assessment summary\n`src/domains/interior-designer` is materially off the target module blueprint. The biggest issues are at the architecture boundaries: browser-side writes, a monolithic Zustand st",
+              "response.clarify_prep": "## Assessment summary\n`src/domains/interior-designer` is materially off the target module blueprint. The biggest issues are at the architecture boundaries: browser-side writes, a monolithic Zustand store holding server state and persistence logic, and long-running flows managed in UI code instead of the required API/service/task layers.\n\nThe module should be cleaned up in dependency order. The safest plan starts by fixing the write path and public API boundary, then splitting state and orchestration, and only then doing the broader folder/module reshape.\n\n## Key gaps (max 5)\n- Browser-side Supabase writes in `useInteriorStore` violate the required server write path.\n- A 1661-line Zustand store mixes UI state, server state, persistence, and domain logic.\n- Texture/retexture/text-to-3d flows use bespoke polling, localStorage secrets, and UI-managed jobs instead of Trigger.dev + shared job primitives.\n- The module lacks the target `index.ts` public barrel and canonical `ui/state/io/core/services/tasks` shape.\n- App code and sibling modules import module internals directly, including cross-module internals that likely belong in `shared/`.\n\n## Pick one scope (most teams pick A, B, or C)\n\n| Option | What the plan will assume |\n| --- | --- |\n| **[A] Staged migration** | Fix the unsafe boundaries first: move browser writes behind API → auth → service, introduce a public `index.ts`, add typed DTO seams, and then phase the module toward `ui/state/io/core/services/tasks` while preserving current editor behavior. |\n| **[B] Minimal first step** | Limit the plan to the highest-risk leaks only: eliminate browser-side writes, define DTOs/API seams, add the module barrel, and clean up direct route/internal imports; defer the big store split and major UI/task migration. |\n| **[C] Full blueprint** | Plan a coordinated end-state migration now: split the god store, move long-running generation flows to Trigger tasks, reorganize the module to the canonical blueprint, and remove cross-module internal imports in one larger pass. |\n\n**Advanced:** [F] type custom constraints in freeform · [R] re-assess only if findings are wrong\n\n**Recommendation: [A]** — it addresses the security and boundary violations first without forcing a risky one-pass rewrite of the whole editor."
+            },
+            "notes": "Stage completed: clarify_prep",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 16317,
+                    "output_tokens": 1662,
+                    "reasoning_tokens": 255,
+                    "cache_read_tokens": 38400,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 79147
+            },
+            "files_touched": [
+              "/workspace/kurvitza/CLARIFY.md",
+              "/workspace/kurvitza/DECISIONS.md",
+              "/workspace/kurvitza/PLAN.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 23766,
+              "tool_time_ms": 309,
+              "active_time_ms": 24075
+            }
           },
           "run_e2e": {
             "status": "failed",
@@ -5819,6 +5815,15 @@
               "active_time_ms": 125518
             }
           },
+          "start": {
+            "status": "succeeded",
+            "usage": null
+          },
+          "e2e_gate": {
+            "status": "succeeded",
+            "notes": "Conditional node evaluated: e2e_gate",
+            "usage": null
+          },
           "run_tests": {
             "status": "failed",
             "context_updates": {
@@ -5836,52 +5841,280 @@
               "active_time_ms": 8684
             }
           },
-          "Verification": {
+          "Clarify": {
             "status": "succeeded",
-            "preferred_label": "[B] Approve & build",
+            "preferred_label": "[A] Staged migration — boundaries first, bigger moves sequenced",
             "suggested_next_ids": [
-              "setup"
+              "plan"
             ],
             "context_updates": {
-              "human.gate.Verification.label": "[B] Approve & build",
-              "human.gate.Verification.question": "Plan is ready. Approve and build, save plan only, request changes, or abort?",
-              "human.gate.label": "[B] Approve & build",
-              "human.gate.Verification.answer": "B",
-              "human.gate.selected": "B"
+              "human.gate.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
+              "human.gate.Clarify.question": "How much should the cleanup plan take on?",
+              "human.gate.Clarify.answer": "A",
+              "human.gate.Clarify.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
+              "human.gate.selected": "A"
             },
-            "usage": null
-          },
-          "test_gate": {
-            "status": "succeeded",
-            "notes": "Conditional node evaluated: test_gate",
             "usage": null
           }
         },
         "next_node_id": "screenshot",
+        "git_commit_sha": "134474f2ed9a0f803bc410834237fb7b2985515f",
+        "loop_failure_signatures": {
+          "verify|deterministic|script failed with exit code: <n> ## output > typecheck > tsc --noemit <--- last few gcs ---> [<n>:0xffffbba30000] <n> ms: scavenge <n>.<n> (<n>.<n>) -> <n>.<n> (<n>.<n>) mb,pooled: <n> mb,<n>.<n> / <n>.<n> ms (average mu = <n>.<n>,current ": 1,
+          "run_tests|deterministic|script failed with exit code: <n> ## output domains/storyteller/agents/__tests__/full-flow.e2e.test.ts ]\u001b[22m \u001b[41m\u001b[1m fail \u001b[22m\u001b[49m src/domains/storyteller/agents/__tests__/multiple-intents.e2e.test.ts\u001b[2m [ src/domains/storyteller/agen": 1
+        },
         "node_visits": {
-          "setup_gate": 1,
+          "developer": 1,
           "tester": 1,
+          "run_tests": 1,
+          "assess": 1,
+          "verify_gate": 1,
+          "e2e_gate": 1,
+          "start": 1,
+          "plan": 1,
+          "Clarify": 1,
           "run_e2e": 1,
           "clarify_prep": 1,
-          "developer": 1,
-          "Verification": 1,
-          "Clarify": 1,
-          "plan": 1,
-          "verify_gate": 1,
-          "assess": 1,
-          "setup": 1,
           "test_gate": 1,
-          "run_tests": 1,
+          "setup_gate": 1,
           "scope": 1,
-          "e2e_gate": 1,
           "verify": 1,
-          "start": 1
+          "Verification": 1,
+          "setup": 1
         }
       },
-      "diff": {}
+      "diff": {
+        "summary": {
+          "files_changed": 8,
+          "additions": 543,
+          "deletions": 438
+        }
+      }
     }
   ],
-  "conclusion": null,
+  "conclusion": {
+    "timestamp": "2026-07-01T12:13:12.671035Z",
+    "status": "failed",
+    "timing": {
+      "wall_time_ms": 1999354,
+      "inference_time_ms": 523212,
+      "tool_time_ms": 1094663,
+      "active_time_ms": 1617875
+    },
+    "failure": {
+      "reason": "cancelled",
+      "detail": {
+        "message": "Pipeline cancelled",
+        "category": "canceled"
+      }
+    },
+    "final_git_commit_sha": "134474f2ed9a0f803bc410834237fb7b2985515f",
+    "stages": [
+      {
+        "stage_id": "start",
+        "stage_label": "start",
+        "timing": {
+          "wall_time_ms": 0,
+          "inference_time_ms": 0,
+          "tool_time_ms": 0,
+          "active_time_ms": 0
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "scope",
+        "stage_label": "scope",
+        "timing": {
+          "wall_time_ms": 158,
+          "inference_time_ms": 0,
+          "tool_time_ms": 154,
+          "active_time_ms": 154
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "assess",
+        "stage_label": "assess",
+        "timing": {
+          "wall_time_ms": 67509,
+          "inference_time_ms": 66191,
+          "tool_time_ms": 1004,
+          "active_time_ms": 67195
+        },
+        "billing_usd_micros": 445593,
+        "retries": 0
+      },
+      {
+        "stage_id": "clarify_prep",
+        "stage_label": "clarify_prep",
+        "timing": {
+          "wall_time_ms": 24366,
+          "inference_time_ms": 23766,
+          "tool_time_ms": 309,
+          "active_time_ms": 24075
+        },
+        "billing_usd_micros": 79147,
+        "retries": 0
+      },
+      {
+        "stage_id": "Clarify",
+        "stage_label": "Clarify",
+        "timing": {
+          "wall_time_ms": 2470,
+          "inference_time_ms": 0,
+          "tool_time_ms": 0,
+          "active_time_ms": 0
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "plan",
+        "stage_label": "plan",
+        "timing": {
+          "wall_time_ms": 179203,
+          "inference_time_ms": 177851,
+          "tool_time_ms": 1037,
+          "active_time_ms": 178888
+        },
+        "billing_usd_micros": 1270073,
+        "retries": 0
+      },
+      {
+        "stage_id": "Verification",
+        "stage_label": "Verification",
+        "timing": {
+          "wall_time_ms": 117576,
+          "inference_time_ms": 0,
+          "tool_time_ms": 0,
+          "active_time_ms": 0
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "setup",
+        "stage_label": "setup",
+        "timing": {
+          "wall_time_ms": 144022,
+          "inference_time_ms": 0,
+          "tool_time_ms": 144013,
+          "active_time_ms": 144013
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "setup_gate",
+        "stage_label": "setup_gate",
+        "timing": {
+          "wall_time_ms": 0,
+          "inference_time_ms": 0,
+          "tool_time_ms": 0,
+          "active_time_ms": 0
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "developer",
+        "stage_label": "developer",
+        "timing": {
+          "wall_time_ms": 679718,
+          "inference_time_ms": 103002,
+          "tool_time_ms": 576335,
+          "active_time_ms": 679337
+        },
+        "billing_usd_micros": 477238,
+        "retries": 0
+      },
+      {
+        "stage_id": "verify",
+        "stage_label": "verify",
+        "timing": {
+          "wall_time_ms": 50929,
+          "inference_time_ms": 0,
+          "tool_time_ms": 50918,
+          "active_time_ms": 50918
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "verify_gate",
+        "stage_label": "verify_gate",
+        "timing": {
+          "wall_time_ms": 0,
+          "inference_time_ms": 0,
+          "tool_time_ms": 0,
+          "active_time_ms": 0
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "tester",
+        "stage_label": "tester",
+        "timing": {
+          "wall_time_ms": 339140,
+          "inference_time_ms": 152402,
+          "tool_time_ms": 186691,
+          "active_time_ms": 339093
+        },
+        "billing_usd_micros": 922242,
+        "retries": 0
+      },
+      {
+        "stage_id": "run_tests",
+        "stage_label": "run_tests",
+        "timing": {
+          "wall_time_ms": 8692,
+          "inference_time_ms": 0,
+          "tool_time_ms": 8684,
+          "active_time_ms": 8684
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "test_gate",
+        "stage_label": "test_gate",
+        "timing": {
+          "wall_time_ms": 0,
+          "inference_time_ms": 0,
+          "tool_time_ms": 0,
+          "active_time_ms": 0
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "run_e2e",
+        "stage_label": "run_e2e",
+        "timing": {
+          "wall_time_ms": 125530,
+          "inference_time_ms": 0,
+          "tool_time_ms": 125518,
+          "active_time_ms": 125518
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "e2e_gate",
+        "stage_label": "e2e_gate",
+        "timing": {
+          "wall_time_ms": 0,
+          "inference_time_ms": 0,
+          "tool_time_ms": 0,
+          "active_time_ms": 0
+        },
+        "retries": 0
+      }
+    ],
+    "billing": {
+      "input_tokens": 655987,
+      "output_tokens": 42200,
+      "total_tokens": 9167384,
+      "reasoning_tokens": 26511,
+      "cache_read_tokens": 8354960,
+      "cache_write_tokens": 87726,
+      "total_usd_micros": 3194293
+    },
+    "total_retries": 0,
+    "diff": {}
+  },
   "sandbox": {
     "kind": "ready",
     "plan": {
@@ -5912,7 +6145,12 @@
       "first_event_seq": 974,
       "prompt": null,
       "response": null,
-      "completion": null,
+      "completion": {
+        "outcome": "succeeded",
+        "notes": "Conditional node evaluated: e2e_gate",
+        "failure_reason": null,
+        "timestamp": "2026-07-01T12:09:58.979849Z"
+      },
       "provider_used": null,
       "diff": null,
       "script_invocation": null,
@@ -5921,6 +6159,12 @@
       "output": null,
       "started_at": "2026-07-01T12:09:58.926661Z",
       "handler": "conditional",
+      "timing": {
+        "wall_time_ms": 0,
+        "inference_time_ms": 0,
+        "tool_time_ms": 0,
+        "active_time_ms": 0
+      },
       "usage": {
         "input_tokens": 0,
         "output_tokens": 0,
@@ -5929,7 +6173,7 @@
         "cache_read_tokens": 0,
         "cache_write_tokens": 0
       },
-      "state": "running"
+      "state": "succeeded"
     },
     "assess@1": {
       "first_event_seq": 31,
@@ -6932,11 +7176,11 @@
         "active_time_ms": 679337
       },
       "usage": {
-        "input_tokens": 165501,
-        "output_tokens": 10678,
-        "total_tokens": 2749053,
-        "reasoning_tokens": 12362,
-        "cache_read_tokens": 2560512,
+        "input_tokens": 242853,
+        "output_tokens": 12073,
+        "total_tokens": 3883931,
+        "reasoning_tokens": 14285,
+        "cache_read_tokens": 3614720,
         "cache_write_tokens": 0,
         "total_usd_micros": 477238
       },
@@ -6949,34 +7193,28 @@
         "list_id": "openai_plan:13f7ae4e-2031-46d4-b6c9-a49ebf43b35d",
         "items": [
           {
-            "id": "7ed7c14e62354426",
-            "status": "completed",
-            "order": 0,
-            "subject": "Read PLAN.md test guidance, UX.md, and inspect the shipped diff for P0-1"
-          },
-          {
-            "id": "e920d569aad419e1",
-            "status": "completed",
-            "order": 1,
-            "subject": "Inspect existing unit test patterns and test setup near the changed module and API routes"
-          },
-          {
-            "id": "5b541cfebc890880",
-            "status": "completed",
-            "order": 2,
-            "subject": "Add focused deterministic tests for the shipped renameDesign behavior"
-          },
-          {
-            "id": "15d951664c3eb9d5",
-            "status": "completed",
-            "order": 3,
-            "subject": "Run targeted tests, then broader unit tests as feasible, fixing in-scope issues if needed"
-          },
-          {
-            "id": "2dff4570abd7f20e",
+            "id": "8b545fd5e0f0f564",
             "status": "in_progress",
-            "order": 4,
-            "subject": "Summarize coverage, results, and any remaining product bugs or constraints"
+            "order": 0,
+            "subject": "Read PLAN.md, UX.md, and route files to identify any UI surface affected by the shipped change"
+          },
+          {
+            "id": "4add4b32dd807dac",
+            "status": "pending",
+            "order": 1,
+            "subject": "Attempt to start or detect the local dev server and confirm localhost is reachable"
+          },
+          {
+            "id": "7463cc12d8235b92",
+            "status": "pending",
+            "order": 2,
+            "subject": "Capture best-effort screenshots for the affected interior-designer surface if accessible"
+          },
+          {
+            "id": "7f7533f875a40f68",
+            "status": "pending",
+            "order": 3,
+            "subject": "Write SCREENSHOTS.md documenting captures or why capture was skipped/limited"
           }
         ]
       },
@@ -7113,32 +7351,32 @@
         "provider": "openai",
         "model": "gpt-5.4",
         "context_window_tokens": 272000,
-        "input_tokens": 103435,
-        "usage_percent": 38.02757352941177,
+        "input_tokens": 122607,
+        "usage_percent": 45.07610294117647,
         "count_method": "response_usage_scaled_breakdown",
         "staleness": "live",
-        "generated_at": "2026-07-01T12:07:30.565766Z",
-        "event_seq": 937,
+        "generated_at": "2026-07-01T12:13:01.273634Z",
+        "event_seq": 1156,
         "breakdown": [
           {
             "category": "system_prompt",
-            "tokens": 944,
-            "usage_percent": 0.34705882352941175
+            "tokens": 895,
+            "usage_percent": 0.3290441176470588
           },
           {
             "category": "tools",
-            "tokens": 1356,
-            "usage_percent": 0.4985294117647059
+            "tokens": 1286,
+            "usage_percent": 0.4727941176470588
           },
           {
             "category": "memory",
-            "tokens": 1205,
-            "usage_percent": 0.4430147058823529
+            "tokens": 1143,
+            "usage_percent": 0.4202205882352941
           },
           {
             "category": "conversation",
-            "tokens": 99924,
-            "usage_percent": 36.73676470588235
+            "tokens": 119277,
+            "usage_percent": 43.85183823529412
           },
           {
             "category": "other",
@@ -7180,51 +7418,45 @@
         "active_time_ms": 339093
       },
       "usage": {
-        "input_tokens": 106830,
-        "output_tokens": 6915,
-        "total_tokens": 1869343,
-        "reasoning_tokens": 7630,
-        "cache_read_tokens": 1747968,
+        "input_tokens": 184182,
+        "output_tokens": 8310,
+        "total_tokens": 3004221,
+        "reasoning_tokens": 9553,
+        "cache_read_tokens": 2802176,
         "cache_write_tokens": 0,
         "total_usd_micros": 922242
       },
       "model": {
         "provider": "openai",
-        "model_id": "gpt-5.4"
+        "model_id": "gpt-5.4-2026-03-05"
       },
       "todos": {
         "kind": "openai_plan",
         "list_id": "openai_plan:13f7ae4e-2031-46d4-b6c9-a49ebf43b35d",
         "items": [
           {
-            "id": "7ed7c14e62354426",
-            "status": "completed",
-            "order": 0,
-            "subject": "Read PLAN.md test guidance, UX.md, and inspect the shipped diff for P0-1"
-          },
-          {
-            "id": "e920d569aad419e1",
-            "status": "completed",
-            "order": 1,
-            "subject": "Inspect existing unit test patterns and test setup near the changed module and API routes"
-          },
-          {
-            "id": "5b541cfebc890880",
-            "status": "completed",
-            "order": 2,
-            "subject": "Add focused deterministic tests for the shipped renameDesign behavior"
-          },
-          {
-            "id": "15d951664c3eb9d5",
-            "status": "completed",
-            "order": 3,
-            "subject": "Run targeted tests, then broader unit tests as feasible, fixing in-scope issues if needed"
-          },
-          {
-            "id": "2dff4570abd7f20e",
+            "id": "8b545fd5e0f0f564",
             "status": "in_progress",
-            "order": 4,
-            "subject": "Summarize coverage, results, and any remaining product bugs or constraints"
+            "order": 0,
+            "subject": "Read PLAN.md, UX.md, and route files to identify any UI surface affected by the shipped change"
+          },
+          {
+            "id": "4add4b32dd807dac",
+            "status": "pending",
+            "order": 1,
+            "subject": "Attempt to start or detect the local dev server and confirm localhost is reachable"
+          },
+          {
+            "id": "7463cc12d8235b92",
+            "status": "pending",
+            "order": 2,
+            "subject": "Capture best-effort screenshots for the affected interior-designer surface if accessible"
+          },
+          {
+            "id": "7f7533f875a40f68",
+            "status": "pending",
+            "order": 3,
+            "subject": "Write SCREENSHOTS.md documenting captures or why capture was skipped/limited"
           }
         ]
       },
@@ -7233,32 +7465,32 @@
         "provider": "openai",
         "model": "gpt-5.4",
         "context_window_tokens": 272000,
-        "input_tokens": 103435,
-        "usage_percent": 38.02757352941177,
+        "input_tokens": 122607,
+        "usage_percent": 45.07610294117647,
         "count_method": "response_usage_scaled_breakdown",
         "staleness": "live",
-        "generated_at": "2026-07-01T12:07:30.565766Z",
-        "event_seq": 936,
+        "generated_at": "2026-07-01T12:13:01.273634Z",
+        "event_seq": 1158,
         "breakdown": [
           {
             "category": "system_prompt",
-            "tokens": 944,
-            "usage_percent": 0.34705882352941175
+            "tokens": 895,
+            "usage_percent": 0.3290441176470588
           },
           {
             "category": "tools",
-            "tokens": 1356,
-            "usage_percent": 0.4985294117647059
+            "tokens": 1286,
+            "usage_percent": 0.4727941176470588
           },
           {
             "category": "memory",
-            "tokens": 1205,
-            "usage_percent": 0.4430147058823529
+            "tokens": 1143,
+            "usage_percent": 0.4202205882352941
           },
           {
             "category": "conversation",
-            "tokens": 99924,
-            "usage_percent": 36.73676470588235
+            "tokens": 119277,
+            "usage_percent": 43.85183823529412
           },
           {
             "category": "other",
@@ -7371,6 +7603,108 @@
         "cache_write_tokens": 0
       },
       "state": "succeeded"
+    },
+    "screenshot@1": {
+      "first_event_seq": 982,
+      "prompt": null,
+      "response": null,
+      "completion": null,
+      "provider_used": {
+        "mode": "agent",
+        "provider": "openai",
+        "model": "gpt-5.4",
+        "reasoning_effort": "high"
+      },
+      "diff": null,
+      "script_invocation": null,
+      "script_timing": null,
+      "parallel_results": null,
+      "output": null,
+      "started_at": "2026-07-01T12:10:02.747280Z",
+      "handler": "agent",
+      "usage": {
+        "input_tokens": 77352,
+        "output_tokens": 1395,
+        "total_tokens": 1134878,
+        "reasoning_tokens": 1923,
+        "cache_read_tokens": 1054208,
+        "cache_write_tokens": 0
+      },
+      "model": {
+        "provider": "openai",
+        "model_id": "gpt-5.4-2026-03-05"
+      },
+      "todos": {
+        "kind": "openai_plan",
+        "list_id": "openai_plan:13f7ae4e-2031-46d4-b6c9-a49ebf43b35d",
+        "items": [
+          {
+            "id": "8b545fd5e0f0f564",
+            "status": "in_progress",
+            "order": 0,
+            "subject": "Read PLAN.md, UX.md, and route files to identify any UI surface affected by the shipped change"
+          },
+          {
+            "id": "4add4b32dd807dac",
+            "status": "pending",
+            "order": 1,
+            "subject": "Attempt to start or detect the local dev server and confirm localhost is reachable"
+          },
+          {
+            "id": "7463cc12d8235b92",
+            "status": "pending",
+            "order": 2,
+            "subject": "Capture best-effort screenshots for the affected interior-designer surface if accessible"
+          },
+          {
+            "id": "7f7533f875a40f68",
+            "status": "pending",
+            "order": 3,
+            "subject": "Write SCREENSHOTS.md documenting captures or why capture was skipped/limited"
+          }
+        ]
+      },
+      "permission_level": "full",
+      "context_window": {
+        "provider": "openai",
+        "model": "gpt-5.4",
+        "context_window_tokens": 272000,
+        "input_tokens": 122607,
+        "usage_percent": 45.07610294117647,
+        "count_method": "response_usage_scaled_breakdown",
+        "staleness": "live",
+        "generated_at": "2026-07-01T12:13:01.273634Z",
+        "event_seq": 1159,
+        "breakdown": [
+          {
+            "category": "system_prompt",
+            "tokens": 895,
+            "usage_percent": 0.3290441176470588
+          },
+          {
+            "category": "tools",
+            "tokens": 1286,
+            "usage_percent": 0.4727941176470588
+          },
+          {
+            "category": "memory",
+            "tokens": 1143,
+            "usage_percent": 0.4202205882352941
+          },
+          {
+            "category": "conversation",
+            "tokens": 119277,
+            "usage_percent": 43.85183823529412
+          },
+          {
+            "category": "other",
+            "tokens": 6,
+            "usage_percent": 0.0022058823529411764
+          }
+        ],
+        "warnings": []
+      },
+      "state": "running"
     },
     "Clarify@1": {
       "first_event_seq": 207,
