@@ -1300,7 +1300,7 @@
     "kind": "running"
   },
   "status_updated_at": "2026-07-01T12:34:14.225878Z",
-  "last_event_at": "2026-07-01T13:31:29.708160Z",
+  "last_event_at": "2026-07-01T13:31:33.360472Z",
   "pending_control": null,
   "checkpoints": [
     {
@@ -5709,9 +5709,9 @@
       }
     },
     {
-      "seq": 0,
+      "seq": 1009,
       "checkpoint": {
-        "timestamp": "2026-07-01T13:31:29.797080Z",
+        "timestamp": "2026-07-01T13:31:33.356184Z",
         "current_node": "verify",
         "completed_nodes": [
           "start",
@@ -5734,14 +5734,400 @@
         ],
         "node_retries": {},
         "context_values": {
+          "human.gate.Clarify.answer": "A",
+          "thread.planning.current_node": "plan",
+          "last_stage": "developer",
+          "thread.verify.current_node": "verify_gate",
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
+          "human.gate.Verification.label": "[B] Approve & build",
+          "graph.label": "Optional Build",
+          "human.gate.label": "[B] Approve & build",
+          "internal.retry_count.setup_gate": 0,
+          "internal.retry_count.start": 0,
+          "internal.thread_id": "developer",
+          "response.scope": "=== module: interior-designer ===\nsrc/domains/interior-designer/__tests__/terrain-cdt.test.ts\nsrc/domains/interior-designer/__tests__/terrain-quality.test.ts\nsrc/domains/interior-designer/__tests__/unity-export.script.ts\nsrc/domains/interior-designer/__tests__/windows-doors.e2e.test.ts\nsrc/domains/interior-designer/ai/TextureService.ts\nsrc/domains/interior-designer/components/CameraController.tsx\nsrc/domains/interior-designer/components/DesignManager.tsx\nsrc/domains/interior-designer/components/Exporter.tsx\nsrc/domains/interior-designer/components/FloorManager.tsx\nsrc/domains/interior-designer/components/InteriorCanvas.tsx\nsrc/domains/interior-designer/components/KeybindingManager.tsx\nsrc/domains/interior-designer/components/ObjectManager.tsx\nsrc/domains/interior-designer/components/RetextureExporter.tsx\nsrc/domains/interior-designer/components/SculptableSurface.tsx\nsrc/domains/interior-designer/components/SurfaceManager.tsx\nsrc/domains/interior-designer/components/TransformManager.tsx\nsrc/domains/interior-designer/components/UI/AssetLibrary.tsx\nsrc/domains/interior-designer/components/UI/InteriorRightSidebar.tsx\nsrc/domains/interior-designer/components/UI/LayerPanel.tsx\nsrc/domains/interior-designer/components/UI/PropertiesPanel.tsx\nsrc/domains/interior-designer/components/UI/SurfaceProperties.tsx\nsrc/domains/interior-designer/components/UI/TerrainEditorPanel.tsx\nsrc/domains/interior-designer/components/UI/Toolbar.tsx\nsrc/domains/interior-designer/components/VoxelTerrainMesh.tsx\nsrc/domains/interior-designer/components/WallManager.tsx\nsrc/domains/interior-designer/components/meshes/DoorMesh.tsx\nsrc/domains/interior-designer/components/meshes/RoadMesh.tsx\nsrc/domains/interior-designer/components/meshes/WindowMesh.tsx\nsrc/domains/interior-designer/components/terrain/GlobalWaterPlane.tsx\nsrc/domains/interior-designer/components/terrain/TerrainBrushPreview.tsx\nsrc/domains/interior-designer/components/terrain/index.ts\nsrc/domains/interior-designer/components/tools/ObjectTool.tsx\nsrc/domains/interior-designer/components/tools/ScatterTool.tsx\nsrc/domains/interior-designer/components/tools/SurfaceTool.tsx\nsrc/domains/interior-designer/components/tools/TerrainTool.tsx\nsrc/domains/interior-designer/components/tools/WallTool.tsx\nsrc/domains/interior-designer/prompts/index.ts\nsrc/domains/interior-designer/store/useInteriorStore.ts\nsrc/domains/interior-designer/utils/UnityExporter.ts\nsrc/domains/interior-designer/utils/UnityYAML.ts\nsrc/domains/interior-designer/utils/polygonUtils.ts\nsrc/domains/interior-designer/utils/textureCache.ts\n\n=== git status ===\n\n=== architecture contract ===\n-rw-r--r-- 1 root root 38694 Jul  1 12:26 docs/unified/ARCHITECTURE.md\n-rw-r--r-- 1 root root 26993 Jul  1 12:26 docs/unified/SPEC.md",
+          "thread.Verification.current_node": "setup",
+          "internal.retry_count.verify": 0,
+          "human.gate.Verification.question": "Plan is ready. Approve and build, save plan only, request changes, or abort?",
+          "thread.clarify_prep.current_node": "Clarify",
+          "thread.developer.current_node": "verify",
+          "thread.plan.current_node": "Verification",
+          "thread.setup.current_node": "setup_gate",
+          "graph.stall_timeout": "1800000ms",
+          "graph.rankdir": "LR",
+          "human.gate.Verification.answer": "B",
+          "thread.build.current_node": "developer",
+          "response.clarify_prep": "## Assessment summary\n`interior-designer` is still in a pre-blueprint legacy shape and currently violates the highest-risk architecture rules called out in `ARCHITECTURE.md`. The biggest problems are a direct browser→Supabase write path, a monolithic Zustand store that mixes every concern, and UI components that own fetch/polling/job orchestration instead of going through typed `io/`, TanStack Query, and Trigger tasks.\n\n## Key gaps (max 5)\n- Direct client-side Supabase writes from `store/useInteriorStore.ts`, which is a P0 security/correctness issue.\n- A 1661-line Zustand store that mixes ephemeral UI state, server state, persistence, jobs, and pure logic.\n- UI components (`DesignManager`, `PropertiesPanel`, `Toolbar`) bypass the intended state/io boundary with raw fetches, polling loops, and job status handling.\n- The module does not match the canonical blueprint yet: no `index.ts`, no `ui/state/io/core/services/tasks` layering, legacy `components/store/utils/ai` layout.\n- Cross-module deep imports and weak typed boundaries (`any`, untyped JSON edges) will make cleanup fragile unless addressed in the plan.\n\n## Pick one scope (buttons are A / B / C — meanings are module-specific below)\n\nThe Fabro dock shows generic **[A] [B] [C]** buttons. Your table defines what each means **for this module**:\n\n| Button | What the plan will assume for **this** module |\n| --- | --- |\n| **[A]** | **Foundation-first alignment.** Plan the P0 write-path fix **and** the minimum structural migration needed to establish the target seams: public `index.ts`, split `state/io/services/tasks`, TanStack Query for server state, and shared job-based async boundaries. This tackles the unsafe persistence path and the architectural hotspots without committing to a full module rewrite in one pass. |\n| **[B]** | **Safety-only containment.** Plan only the direct Supabase-write removal, typed API/service path, and the smallest possible store/query adjustments needed to stop unsafe persistence. Most folder reshaping, job-system standardization, component breakup, and deep-import cleanup are deferred. |\n| **[C]** | **Full blueprint migration.** Plan a broad end-state reshape of `interior-designer` into the canonical architecture: replace legacy folders with `ui/state/io/core/services/tasks`, move server state fully into TanStack Query, convert long work to module-owned Trigger tasks, extract pure core logic, split oversized components/stores, and clean up cross-module contracts in one coordinated effort. |\n\n**Advanced:** type custom constraints in freeform (routes to [F]) · pick [R] only if assess findings are wrong\n\n**Recommendation: [A]** — it addresses the P0 browser-write issue and the root-cause boundary problems together, without taking on the delivery risk of a full one-pass module rewrite.",
+          "internal.retry_count.assess": 0,
+          "internal.node_visit_count": 3,
+          "thread.review.current_node": "clarify_prep",
+          "internal.retry_count.Clarify": 0,
+          "internal.retry_count.setup": 0,
+          "internal.retry_count.clarify_prep": 0,
+          "internal.run_id": "01KWETASMAX880FRFWSNRZTC5N",
+          "graph.default_max_retries": "1",
+          "response.plan": "`PLAN.md` and `DECISIONS.md` are updated. Stopping for Verification.\n\n---\n\n**1. P0 declaration** — `P0 exists`: `store/useInteriorStore.ts:1579` writes directly via `getSupabaseClient()` (`interior_designs.update({ name })`) from the browser, breaking invariant #2. It's the *only* remaining direct client write — save/create/delete already use the authenticated API.\n\n**2. Your Clarify decision: [A] Staged migration.**\n- In scope: P0 write-path fix + minimum canonical seams (`index.ts` barrel, typed `io/`, split store into UI-only Zustand + TanStack `state/queries/`, `services/`+`tasks/` scaffolding via shared `useJob`).\n- Explicitly deferred: full component breakup, migrating every async flow off polling, complete `ai/`→services consolidation, cross-module barrel additions in other modules.\n\n**3. First shippable increment: Items 1–3** — remove the Supabase write (route through the existing `PATCH /api/interior-designer/designs`, which already accepts `name`), add the module `index.ts` barrel, and define the typed `io/` edge (`.dto.ts`/`.keys.ts`/`.api.ts`). Plumbing only, no user-visible flow change; unblocks the store split.\n\n**4. Item count / effort** — 8 items. Increment 1 (Items 1–3): ~1–1.5 dev days (Item 1 is ~15 LOC). Full plan through Item 5: ~4–6 days.\n\n**5. Plan summary**\n- **Item 1 (P0/S)** — swap direct Supabase write for `fetch PATCH .../designs`; drop `supabaseClient` import.\n- **Item 2 (P1/S)** — minimal `index.ts` (no store/UI leak).\n- **Item 3 (P1/M)** — Zod DTOs + query keys + fetchers in `io/`, shared with routes.\n- **Item 4 (P1/L)** — split 1661-LOC store: `useInteriorDesignerUiStore` (ephemeral) + `state/queries/` (server via TanStack).\n- **Item 5 (P1/L)** — one long flow (retexture/text-to-3d) → `tasks/` schemaTask + server `services/` + `shared/jobs/useJob`; kills that flow's `setInterval`/`CustomEvent`/`localStorage`-key path.\n- **Item 6 (P2/M)** — extract pure geometry/export to `core/`.\n- **Item 7 (P2/M)** — folder-per-unit rename to `ui/`.\n- **Item 8 (P3)** — route cross-module imports (`world-building-toolkit`, `3d-asset-exporter`) via barrels.\n\nCorrections logged in DECISIONS.md: P0 is narrower than assess implied; `SurfaceProperties.tsx` (981 LOC) is a co-equal polling offender; client-held Meshy/Stability keys in `localStorage`; no schema inversion or `z.any()`.\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"yes\"\n  }\n}\n```\n\nAwaiting Verification approval — I will not implement until then.",
+          "graph.goal": "Clean up and align the interior-designer module (src/domains/interior-designer) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
+          "human.gate.Clarify.label": "[A] Staged migration",
+          "internal.retry_count.verify_gate": 0,
+          "command.output": "blob://sha256/44b615ab804fbf85ad816815696b5b9cd2afc753df1496f6f68210ed2eda92b5",
+          "current_node": "verify",
+          "failure_class": "deterministic",
+          "last_response": "Status: the approved minimum-first increment for `interior-designer` is already present on this branch, so I did not apply any new code changes in this pass.\n\nWhat’s already implemented\n- P0 rename ",
+          "outcome": "failed",
+          "plan.has_p0_security_issue": "yes",
+          "internal.retry_count.developer": 0,
+          "plan.has_ui_surface": "no",
+          "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: `interior-designer` is still materially off the target architecture. The first three gaps to fix are:\n1. direct client-side Supabase write in `useInteriorStore`\n2. monolithic Zustand store mixing UI/server/persistence/job logic\n3. UI-owned fetch/polling/job orchestration instead of `io/` + `tasks/` + shared job hooks",
+          "internal.retry_count.plan": 0,
+          "graph.default_fidelity": "summary:medium",
+          "internal.work_dir": "/workspace/kurvitza",
+          "internal.retry_count.scope": 0,
+          "internal.fidelity": "summary:medium",
+          "human.gate.selected": "B",
+          "preferred_label": "[B] Approve & build",
+          "failure_signature": "verify|deterministic|script failed with exit code: <n> ## output > typecheck > tsc --noemit <--- last few gcs ---> [<n>:0xffff85b60000] <n> ms: mark-compact <n>.<n> (<n>.<n>) -> <n>.<n> (<n>.<n>) mb,pooled: <n> mb,<n>.<n> / <n>.<n> ms (average mu = <n>.<n>,curr",
+          "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)",
+          "internal.retry_count.Verification": 0,
+          "response.developer": "Status: the approved minimum-first increment for `interior-designer` is already present on this branch, so I did not apply any new code changes in this pass.\n\nWhat’s already implemented\n- P0 rename fix\n  - `src/domains/interior-designer/store/useInteriorStore.ts`\n  - `renameDesign` now calls `interiorDesignerApi.updateDesign({ id, name })`\n  - no direct browser Supabase client usage remains in `src/domains/interior-designer`\n- Public module barrel\n  - `src/domains/interior-designer/index.ts`\n  - exports the minimal public surface (`InteriorDesignerWorkspace` + DTO types)\n- Typed `io/` edge\n  - `src/domains/interior-designer/io/interior-designer.api.ts`\n  - `src/domains/interior-designer/io/interior-designer.keys.ts`\n  - `src/domains/interior-designer/io/interior-designer.dto.ts`\n  - shared DTOs are wired into the designs route:\n    - `src/app/api/interior-designer/designs/route.ts`\n  - and follow-on route validation was also aligned for:\n    - `src/app/api/interior-designer/texture/route.ts`\n    - `src/app/api/interior-designer/material/route.ts`\n    - `src/app/api/interior-designer/material/[taskId]/route.ts`\n    - `src/app/api/interior-designer/retexture/route.ts`\n    - `src/app/api/interior-designer/retexture/[runId]/route.ts`\n    - `src/app/api/interior-designer/text-to-3d/route.ts`\n    - `src/app/api/interior-designer/text-to-3d/[taskId]/route.ts`\n\nVerification\n- Passed:\n  - `grep -RIn \"supabaseClient|getSupabaseClient\" src/domains/interior-designer` → no matches\n  - `grep -RIn \"@/domains/interior-designer/\" src --exclude-dir=interior-designer` → no external deep imports\n  - scoped `eslint` on the minimum-increment files → no errors, only pre-existing warnings in `useInteriorStore.ts`\n- Blocked:\n  - scoped TypeScript checks still hit the same 4GB OOM as the verify stage, even with a temp tsconfig narrowed to the interior-designer files\n  - that matches the existing repo-level typecheck memory blocker; I did not change repo-wide TS config because it’s outside the approved Items 1–3 increment\n\nFiles created/modified/deleted in the implemented increment\n- Created\n  - `src/domains/interior-designer/index.ts`\n  - `src/domains/interior-designer/io/interior-designer.api.ts`\n  - `src/domains/interior-designer/io/interior-designer.keys.ts`\n- Modified\n  - `src/domains/interior-designer/store/useInteriorStore.ts`\n  - `src/domains/interior-designer/io/interior-designer.dto.ts`\n  - `src/app/api/interior-designer/designs/route.ts`\n  - `src/app/api/interior-designer/texture/route.ts`\n  - `src/app/api/interior-designer/material/route.ts`\n  - `src/app/api/interior-designer/material/[taskId]/route.ts`\n  - `src/app/api/interior-designer/retexture/route.ts`\n  - `src/app/api/interior-designer/retexture/[runId]/route.ts`\n  - `src/app/api/interior-designer/text-to-3d/route.ts`\n  - `src/app/api/interior-designer/text-to-3d/[taskId]/route.ts`\n- Deleted\n  - none\n\nDeviations from plan\n- None in scope for the minimum increment.\n- No P2/P3 work was implemented.\n\nDeferred work\n- Item 4: split `useInteriorStore` into `state/` UI store + `state/queries/` server state\n- Item 5: introduce `services/` + `tasks/` and move one async flow to `useJob`\n- Items 6–8 remain deferred as planned\n\nIf you want, I can next tackle the verify blocker separately as a repo-wide TypeScript memory issue, but I left that untouched here because it is outside the approved `interior-designer` minimum increment."
+        },
+        "node_outcomes": {
+          "assess": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_response": "Assessment written to `findings/assess.md`.\n\nVerdict: `interior-designer` is still materially off the target architecture. The first three gaps to fix are:\n1. direct client-side Supabase write in `use",
+              "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: `interior-designer` is still materially off the target architecture. The first three gaps to fix are:\n1. direct client-side Supabase write in `useInteriorStore`\n2. monolithic Zustand store mixing UI/server/persistence/job logic\n3. UI-owned fetch/polling/job orchestration instead of `io/` + `tasks/` + shared job hooks",
+              "last_stage": "assess"
+            },
+            "notes": "Stage completed: assess",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 35974,
+                    "output_tokens": 2831,
+                    "reasoning_tokens": 379,
+                    "cache_read_tokens": 139264,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 172901
+            },
+            "files_touched": [
+              "/workspace/kurvitza/findings/assess.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 36510,
+              "tool_time_ms": 720,
+              "active_time_ms": 37230
+            }
+          },
+          "Clarify": {
+            "status": "succeeded",
+            "preferred_label": "[A] Staged migration",
+            "suggested_next_ids": [
+              "plan"
+            ],
+            "context_updates": {
+              "human.gate.label": "[A] Staged migration",
+              "human.gate.selected": "A",
+              "human.gate.Clarify.answer": "A",
+              "human.gate.Clarify.label": "[A] Staged migration",
+              "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)"
+            },
+            "usage": null
+          },
+          "clarify_prep": {
+            "status": "succeeded",
+            "context_updates": {
+              "response.clarify_prep": "## Assessment summary\n`interior-designer` is still in a pre-blueprint legacy shape and currently violates the highest-risk architecture rules called out in `ARCHITECTURE.md`. The biggest problems are a direct browser→Supabase write path, a monolithic Zustand store that mixes every concern, and UI components that own fetch/polling/job orchestration instead of going through typed `io/`, TanStack Query, and Trigger tasks.\n\n## Key gaps (max 5)\n- Direct client-side Supabase writes from `store/useInteriorStore.ts`, which is a P0 security/correctness issue.\n- A 1661-line Zustand store that mixes ephemeral UI state, server state, persistence, jobs, and pure logic.\n- UI components (`DesignManager`, `PropertiesPanel`, `Toolbar`) bypass the intended state/io boundary with raw fetches, polling loops, and job status handling.\n- The module does not match the canonical blueprint yet: no `index.ts`, no `ui/state/io/core/services/tasks` layering, legacy `components/store/utils/ai` layout.\n- Cross-module deep imports and weak typed boundaries (`any`, untyped JSON edges) will make cleanup fragile unless addressed in the plan.\n\n## Pick one scope (buttons are A / B / C — meanings are module-specific below)\n\nThe Fabro dock shows generic **[A] [B] [C]** buttons. Your table defines what each means **for this module**:\n\n| Button | What the plan will assume for **this** module |\n| --- | --- |\n| **[A]** | **Foundation-first alignment.** Plan the P0 write-path fix **and** the minimum structural migration needed to establish the target seams: public `index.ts`, split `state/io/services/tasks`, TanStack Query for server state, and shared job-based async boundaries. This tackles the unsafe persistence path and the architectural hotspots without committing to a full module rewrite in one pass. |\n| **[B]** | **Safety-only containment.** Plan only the direct Supabase-write removal, typed API/service path, and the smallest possible store/query adjustments needed to stop unsafe persistence. Most folder reshaping, job-system standardization, component breakup, and deep-import cleanup are deferred. |\n| **[C]** | **Full blueprint migration.** Plan a broad end-state reshape of `interior-designer` into the canonical architecture: replace legacy folders with `ui/state/io/core/services/tasks`, move server state fully into TanStack Query, convert long work to module-owned Trigger tasks, extract pure core logic, split oversized components/stores, and clean up cross-module contracts in one coordinated effort. |\n\n**Advanced:** type custom constraints in freeform (routes to [F]) · pick [R] only if assess findings are wrong\n\n**Recommendation: [A]** — it addresses the P0 browser-write issue and the root-cause boundary problems together, without taking on the delivery risk of a full one-pass module rewrite.",
+              "last_stage": "clarify_prep",
+              "last_response": "## Assessment summary\n`interior-designer` is still in a pre-blueprint legacy shape and currently violates the highest-risk architecture rules called out in `ARCHITECTURE.md`. The biggest problems are "
+            },
+            "notes": "Stage completed: clarify_prep",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 16892,
+                    "output_tokens": 1453,
+                    "reasoning_tokens": 313,
+                    "cache_read_tokens": 48640,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 80880
+            },
+            "files_touched": [
+              "/workspace/kurvitza/CLARIFY.md",
+              "/workspace/kurvitza/DECISIONS.md",
+              "/workspace/kurvitza/PLAN.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 23892,
+              "tool_time_ms": 385,
+              "active_time_ms": 24277
+            }
+          },
+          "developer": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_response": "Status: the approved minimum-first increment for `interior-designer` is already present on this branch, so I did not apply any new code changes in this pass.\n\nWhat’s already implemented\n- P0 rename ",
+              "last_stage": "developer",
+              "response.developer": "Status: the approved minimum-first increment for `interior-designer` is already present on this branch, so I did not apply any new code changes in this pass.\n\nWhat’s already implemented\n- P0 rename fix\n  - `src/domains/interior-designer/store/useInteriorStore.ts`\n  - `renameDesign` now calls `interiorDesignerApi.updateDesign({ id, name })`\n  - no direct browser Supabase client usage remains in `src/domains/interior-designer`\n- Public module barrel\n  - `src/domains/interior-designer/index.ts`\n  - exports the minimal public surface (`InteriorDesignerWorkspace` + DTO types)\n- Typed `io/` edge\n  - `src/domains/interior-designer/io/interior-designer.api.ts`\n  - `src/domains/interior-designer/io/interior-designer.keys.ts`\n  - `src/domains/interior-designer/io/interior-designer.dto.ts`\n  - shared DTOs are wired into the designs route:\n    - `src/app/api/interior-designer/designs/route.ts`\n  - and follow-on route validation was also aligned for:\n    - `src/app/api/interior-designer/texture/route.ts`\n    - `src/app/api/interior-designer/material/route.ts`\n    - `src/app/api/interior-designer/material/[taskId]/route.ts`\n    - `src/app/api/interior-designer/retexture/route.ts`\n    - `src/app/api/interior-designer/retexture/[runId]/route.ts`\n    - `src/app/api/interior-designer/text-to-3d/route.ts`\n    - `src/app/api/interior-designer/text-to-3d/[taskId]/route.ts`\n\nVerification\n- Passed:\n  - `grep -RIn \"supabaseClient|getSupabaseClient\" src/domains/interior-designer` → no matches\n  - `grep -RIn \"@/domains/interior-designer/\" src --exclude-dir=interior-designer` → no external deep imports\n  - scoped `eslint` on the minimum-increment files → no errors, only pre-existing warnings in `useInteriorStore.ts`\n- Blocked:\n  - scoped TypeScript checks still hit the same 4GB OOM as the verify stage, even with a temp tsconfig narrowed to the interior-designer files\n  - that matches the existing repo-level typecheck memory blocker; I did not change repo-wide TS config because it’s outside the approved Items 1–3 increment\n\nFiles created/modified/deleted in the implemented increment\n- Created\n  - `src/domains/interior-designer/index.ts`\n  - `src/domains/interior-designer/io/interior-designer.api.ts`\n  - `src/domains/interior-designer/io/interior-designer.keys.ts`\n- Modified\n  - `src/domains/interior-designer/store/useInteriorStore.ts`\n  - `src/domains/interior-designer/io/interior-designer.dto.ts`\n  - `src/app/api/interior-designer/designs/route.ts`\n  - `src/app/api/interior-designer/texture/route.ts`\n  - `src/app/api/interior-designer/material/route.ts`\n  - `src/app/api/interior-designer/material/[taskId]/route.ts`\n  - `src/app/api/interior-designer/retexture/route.ts`\n  - `src/app/api/interior-designer/retexture/[runId]/route.ts`\n  - `src/app/api/interior-designer/text-to-3d/route.ts`\n  - `src/app/api/interior-designer/text-to-3d/[taskId]/route.ts`\n- Deleted\n  - none\n\nDeviations from plan\n- None in scope for the minimum increment.\n- No P2/P3 work was implemented.\n\nDeferred work\n- Item 4: split `useInteriorStore` into `state/` UI store + `state/queries/` server state\n- Item 5: introduce `services/` + `tasks/` and move one async flow to `useJob`\n- Items 6–8 remain deferred as planned\n\nIf you want, I can next tackle the verify blocker separately as a repo-wide TypeScript memory issue, but I left that untouched here because it is outside the approved `interior-designer` minimum increment."
+            },
+            "notes": "Stage completed: developer",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 60493,
+                    "output_tokens": 5381,
+                    "reasoning_tokens": 4401,
+                    "cache_read_tokens": 832000,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 505962
+            },
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 109618,
+              "tool_time_ms": 335259,
+              "active_time_ms": 444877
+            }
+          },
+          "plan": {
+            "status": "succeeded",
+            "context_updates": {
+              "plan.has_ui_surface": "no",
+              "last_stage": "plan",
+              "last_response": "`PLAN.md` and `DECISIONS.md` are updated. Stopping for Verification.\n\n---\n\n**1. P0 declaration** — `P0 exists`: `store/useInteriorStore.ts:1579` writes directly via `getSupabaseClient()` (`interior_",
+              "response.plan": "`PLAN.md` and `DECISIONS.md` are updated. Stopping for Verification.\n\n---\n\n**1. P0 declaration** — `P0 exists`: `store/useInteriorStore.ts:1579` writes directly via `getSupabaseClient()` (`interior_designs.update({ name })`) from the browser, breaking invariant #2. It's the *only* remaining direct client write — save/create/delete already use the authenticated API.\n\n**2. Your Clarify decision: [A] Staged migration.**\n- In scope: P0 write-path fix + minimum canonical seams (`index.ts` barrel, typed `io/`, split store into UI-only Zustand + TanStack `state/queries/`, `services/`+`tasks/` scaffolding via shared `useJob`).\n- Explicitly deferred: full component breakup, migrating every async flow off polling, complete `ai/`→services consolidation, cross-module barrel additions in other modules.\n\n**3. First shippable increment: Items 1–3** — remove the Supabase write (route through the existing `PATCH /api/interior-designer/designs`, which already accepts `name`), add the module `index.ts` barrel, and define the typed `io/` edge (`.dto.ts`/`.keys.ts`/`.api.ts`). Plumbing only, no user-visible flow change; unblocks the store split.\n\n**4. Item count / effort** — 8 items. Increment 1 (Items 1–3): ~1–1.5 dev days (Item 1 is ~15 LOC). Full plan through Item 5: ~4–6 days.\n\n**5. Plan summary**\n- **Item 1 (P0/S)** — swap direct Supabase write for `fetch PATCH .../designs`; drop `supabaseClient` import.\n- **Item 2 (P1/S)** — minimal `index.ts` (no store/UI leak).\n- **Item 3 (P1/M)** — Zod DTOs + query keys + fetchers in `io/`, shared with routes.\n- **Item 4 (P1/L)** — split 1661-LOC store: `useInteriorDesignerUiStore` (ephemeral) + `state/queries/` (server via TanStack).\n- **Item 5 (P1/L)** — one long flow (retexture/text-to-3d) → `tasks/` schemaTask + server `services/` + `shared/jobs/useJob`; kills that flow's `setInterval`/`CustomEvent`/`localStorage`-key path.\n- **Item 6 (P2/M)** — extract pure geometry/export to `core/`.\n- **Item 7 (P2/M)** — folder-per-unit rename to `ui/`.\n- **Item 8 (P3)** — route cross-module imports (`world-building-toolkit`, `3d-asset-exporter`) via barrels.\n\nCorrections logged in DECISIONS.md: P0 is narrower than assess implied; `SurfaceProperties.tsx` (981 LOC) is a co-equal polling offender; client-held Meshy/Stability keys in `localStorage`; no schema inversion or `z.any()`.\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"yes\"\n  }\n}\n```\n\nAwaiting Verification approval — I will not implement until then.",
+              "plan.has_p0_security_issue": "yes"
+            },
+            "notes": "Stage completed: plan",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "anthropic",
+                    "model_id": "claude-opus-4-8"
+                  },
+                  "tokens": {
+                    "input_tokens": 28636,
+                    "output_tokens": 11203,
+                    "reasoning_tokens": 0,
+                    "cache_read_tokens": 260108,
+                    "cache_write_tokens": 75822
+                  }
+                },
+                "facts": {
+                  "algorithm": "anthropic",
+                  "cache_write_5m_tokens": 75822,
+                  "cache_write_1h_tokens": 0
+                }
+              },
+              "total_usd_micros": 1027196
+            },
+            "files_touched": [
+              "/workspace/kurvitza/DECISIONS.md",
+              "/workspace/kurvitza/PLAN.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 161030,
+              "tool_time_ms": 806,
+              "active_time_ms": 161836
+            }
+          },
+          "scope": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_stage": "scope",
+              "last_response": "=== module: interior-designer ===\nsrc/domains/interior-designer/__tests__/terrain-cdt.test.ts\nsrc/domains/interior-designer/__tests__/terrain-quality.test.ts\nsrc/domains/interior-designer/__tests__/un",
+              "response.scope": "=== module: interior-designer ===\nsrc/domains/interior-designer/__tests__/terrain-cdt.test.ts\nsrc/domains/interior-designer/__tests__/terrain-quality.test.ts\nsrc/domains/interior-designer/__tests__/unity-export.script.ts\nsrc/domains/interior-designer/__tests__/windows-doors.e2e.test.ts\nsrc/domains/interior-designer/ai/TextureService.ts\nsrc/domains/interior-designer/components/CameraController.tsx\nsrc/domains/interior-designer/components/DesignManager.tsx\nsrc/domains/interior-designer/components/Exporter.tsx\nsrc/domains/interior-designer/components/FloorManager.tsx\nsrc/domains/interior-designer/components/InteriorCanvas.tsx\nsrc/domains/interior-designer/components/KeybindingManager.tsx\nsrc/domains/interior-designer/components/ObjectManager.tsx\nsrc/domains/interior-designer/components/RetextureExporter.tsx\nsrc/domains/interior-designer/components/SculptableSurface.tsx\nsrc/domains/interior-designer/components/SurfaceManager.tsx\nsrc/domains/interior-designer/components/TransformManager.tsx\nsrc/domains/interior-designer/components/UI/AssetLibrary.tsx\nsrc/domains/interior-designer/components/UI/InteriorRightSidebar.tsx\nsrc/domains/interior-designer/components/UI/LayerPanel.tsx\nsrc/domains/interior-designer/components/UI/PropertiesPanel.tsx\nsrc/domains/interior-designer/components/UI/SurfaceProperties.tsx\nsrc/domains/interior-designer/components/UI/TerrainEditorPanel.tsx\nsrc/domains/interior-designer/components/UI/Toolbar.tsx\nsrc/domains/interior-designer/components/VoxelTerrainMesh.tsx\nsrc/domains/interior-designer/components/WallManager.tsx\nsrc/domains/interior-designer/components/meshes/DoorMesh.tsx\nsrc/domains/interior-designer/components/meshes/RoadMesh.tsx\nsrc/domains/interior-designer/components/meshes/WindowMesh.tsx\nsrc/domains/interior-designer/components/terrain/GlobalWaterPlane.tsx\nsrc/domains/interior-designer/components/terrain/TerrainBrushPreview.tsx\nsrc/domains/interior-designer/components/terrain/index.ts\nsrc/domains/interior-designer/components/tools/ObjectTool.tsx\nsrc/domains/interior-designer/components/tools/ScatterTool.tsx\nsrc/domains/interior-designer/components/tools/SurfaceTool.tsx\nsrc/domains/interior-designer/components/tools/TerrainTool.tsx\nsrc/domains/interior-designer/components/tools/WallTool.tsx\nsrc/domains/interior-designer/prompts/index.ts\nsrc/domains/interior-designer/store/useInteriorStore.ts\nsrc/domains/interior-designer/utils/UnityExporter.ts\nsrc/domains/interior-designer/utils/UnityYAML.ts\nsrc/domains/interior-designer/utils/polygonUtils.ts\nsrc/domains/interior-designer/utils/textureCache.ts\n\n=== git status ===\n\n=== architecture contract ===\n-rw-r--r-- 1 root root 38694 Jul  1 12:26 docs/unified/ARCHITECTURE.md\n-rw-r--r-- 1 root root 26993 Jul  1 12:26 docs/unified/SPEC.md"
+            },
+            "notes": "Stage completed: scope",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 5249,
+                    "output_tokens": 823,
+                    "reasoning_tokens": 13,
+                    "cache_read_tokens": 4096,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 26686
+            },
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 6425,
+              "tool_time_ms": 78,
+              "active_time_ms": 6503
+            }
+          },
+          "Verification": {
+            "status": "succeeded",
+            "preferred_label": "[B] Approve & build",
+            "suggested_next_ids": [
+              "setup"
+            ],
+            "context_updates": {
+              "human.gate.selected": "B",
+              "human.gate.Verification.question": "Plan is ready. Approve and build, save plan only, request changes, or abort?",
+              "human.gate.Verification.label": "[B] Approve & build",
+              "human.gate.Verification.answer": "B",
+              "human.gate.label": "[B] Approve & build"
+            },
+            "usage": null
+          },
+          "setup": {
+            "status": "succeeded",
+            "context_updates": {
+              "command.output": "blob://sha256/77809b6aaa24612544da0b83f9cc3425174ba198b58fe3039b187111b0ecc2d0"
+            },
+            "notes": "Script completed: set -euo pipefail; echo '=== sandbox bootstrap ==='; if ! command -v git >/dev/null; then apt-get update && apt-get install -y git ca-certificates; fi; if ! command -v npm >/dev/null; then apt-get update && apt-get install -y nodejs npm; fi; command -v npm >/dev/null || { echo 'ERROR: npm still missing — expected image node:22-bookworm'; exit 1; }; npm ci --prefer-offline --no-audit --no-fund; npm run test:playwright:install; echo '=== bootstrap complete ==='",
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 136114,
+              "active_time_ms": 136114
+            }
+          },
+          "setup_gate": {
+            "status": "succeeded",
+            "notes": "Conditional node evaluated: setup_gate",
+            "usage": null
+          },
+          "verify_gate": {
+            "status": "succeeded",
+            "notes": "Conditional node evaluated: verify_gate",
+            "usage": null
+          },
+          "start": {
+            "status": "succeeded",
+            "usage": null
+          },
+          "verify": {
+            "status": "failed",
+            "context_updates": {
+              "command.output": "blob://sha256/44b615ab804fbf85ad816815696b5b9cd2afc753df1496f6f68210ed2eda92b5"
+            },
+            "failure": {
+              "message": "Script failed with exit code: 134\n\n## output\n\n> typecheck\n> tsc --noEmit\n\n\n<--- Last few GCs --->\n\n[15375:0xffff85b60000]   174838 ms: Mark-Compact 4034.0 (4129.1) -> 4018.5 (4129.6) MB, pooled: 2 MB, 1903.48 / 0.00 ms  (average mu = 0.105, current mu = 0.017) allocation failure; scavenge might not succeed\n[15375:0xffff85b60000]   176590 ms: Mark-Compact 4034.6 (4129.6) -> 4019.1 (4130.1) MB, pooled: 2 MB, 1719.57 / 0.00 ms  (average mu = 0.069, current mu = 0.018) allocation failure; scavenge might not succeed\n\n\n<--- JS stacktrace --->\n\nFATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory\n----- Native stack trace -----\n\n 1: 0xe19178 node::OOMErrorHandler(char const*, v8::OOMDetails const&) [node]\n 2: 0x11cad4c v8::Utils::ReportOOMFailure(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [node]\n 3: 0x11caefc v8::internal::V8::FatalProcessOutOfMemory(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [node]\n 4: 0x13f098c  [node]\n 5: 0x13f09bc  [node]\n 6: 0x1408370  [node]\n 7: 0x140af5c  [node]\n 8: 0x1bf2714  [node]\nAborted\n",
+              "category": "deterministic"
+            },
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 177185,
+              "active_time_ms": 177185
+            }
+          }
+        },
+        "next_node_id": "verify_gate",
+        "git_commit_sha": "8b93746e8ec43f361f68be72bf8f7977d7793ed2",
+        "loop_failure_signatures": {
+          "verify|deterministic|script failed with exit code: <n> ## output > typecheck > tsc --noemit <--- last few gcs ---> [<n>:0xffff85b60000] <n> ms: mark-compact <n>.<n> (<n>.<n>) -> <n>.<n> (<n>.<n>) mb,pooled: <n> mb,<n>.<n> / <n>.<n> ms (average mu = <n>.<n>,curr": 1,
+          "verify|deterministic|script failed with exit code: <n> ## output > typecheck > tsc --noemit <--- last few gcs ---> [<n>:0xffffb9960000] <n> ms: mark-compact <n>.<n> (<n>.<n>) -> <n>.<n> (<n>.<n>) mb,pooled: <n> mb,<n>.<n> / <n>.<n> ms (average mu = <n>.<n>,curr": 1
+        },
+        "node_visits": {
+          "Clarify": 1,
+          "setup": 1,
+          "scope": 1,
+          "assess": 1,
+          "setup_gate": 1,
+          "start": 1,
+          "verify": 3,
+          "clarify_prep": 1,
+          "developer": 3,
+          "plan": 1,
+          "verify_gate": 2,
+          "Verification": 1
+        }
+      },
+      "diff": {
+        "summary": {
+          "files_changed": 22,
+          "additions": 895,
+          "deletions": 390
+        }
+      }
+    },
+    {
+      "seq": 0,
+      "checkpoint": {
+        "timestamp": "2026-07-01T13:31:33.418723Z",
+        "current_node": "verify_gate",
+        "completed_nodes": [
+          "start",
+          "scope",
+          "assess",
+          "clarify_prep",
+          "Clarify",
+          "plan",
+          "Verification",
+          "setup",
+          "setup_gate",
+          "developer",
+          "verify",
+          "verify_gate",
+          "developer",
+          "verify",
+          "verify_gate",
+          "developer",
+          "verify",
+          "verify_gate"
+        ],
+        "node_retries": {},
+        "context_values": {
           "internal.retry_count.setup_gate": 0,
           "response.scope": "=== module: interior-designer ===\nsrc/domains/interior-designer/__tests__/terrain-cdt.test.ts\nsrc/domains/interior-designer/__tests__/terrain-quality.test.ts\nsrc/domains/interior-designer/__tests__/unity-export.script.ts\nsrc/domains/interior-designer/__tests__/windows-doors.e2e.test.ts\nsrc/domains/interior-designer/ai/TextureService.ts\nsrc/domains/interior-designer/components/CameraController.tsx\nsrc/domains/interior-designer/components/DesignManager.tsx\nsrc/domains/interior-designer/components/Exporter.tsx\nsrc/domains/interior-designer/components/FloorManager.tsx\nsrc/domains/interior-designer/components/InteriorCanvas.tsx\nsrc/domains/interior-designer/components/KeybindingManager.tsx\nsrc/domains/interior-designer/components/ObjectManager.tsx\nsrc/domains/interior-designer/components/RetextureExporter.tsx\nsrc/domains/interior-designer/components/SculptableSurface.tsx\nsrc/domains/interior-designer/components/SurfaceManager.tsx\nsrc/domains/interior-designer/components/TransformManager.tsx\nsrc/domains/interior-designer/components/UI/AssetLibrary.tsx\nsrc/domains/interior-designer/components/UI/InteriorRightSidebar.tsx\nsrc/domains/interior-designer/components/UI/LayerPanel.tsx\nsrc/domains/interior-designer/components/UI/PropertiesPanel.tsx\nsrc/domains/interior-designer/components/UI/SurfaceProperties.tsx\nsrc/domains/interior-designer/components/UI/TerrainEditorPanel.tsx\nsrc/domains/interior-designer/components/UI/Toolbar.tsx\nsrc/domains/interior-designer/components/VoxelTerrainMesh.tsx\nsrc/domains/interior-designer/components/WallManager.tsx\nsrc/domains/interior-designer/components/meshes/DoorMesh.tsx\nsrc/domains/interior-designer/components/meshes/RoadMesh.tsx\nsrc/domains/interior-designer/components/meshes/WindowMesh.tsx\nsrc/domains/interior-designer/components/terrain/GlobalWaterPlane.tsx\nsrc/domains/interior-designer/components/terrain/TerrainBrushPreview.tsx\nsrc/domains/interior-designer/components/terrain/index.ts\nsrc/domains/interior-designer/components/tools/ObjectTool.tsx\nsrc/domains/interior-designer/components/tools/ScatterTool.tsx\nsrc/domains/interior-designer/components/tools/SurfaceTool.tsx\nsrc/domains/interior-designer/components/tools/TerrainTool.tsx\nsrc/domains/interior-designer/components/tools/WallTool.tsx\nsrc/domains/interior-designer/prompts/index.ts\nsrc/domains/interior-designer/store/useInteriorStore.ts\nsrc/domains/interior-designer/utils/UnityExporter.ts\nsrc/domains/interior-designer/utils/UnityYAML.ts\nsrc/domains/interior-designer/utils/polygonUtils.ts\nsrc/domains/interior-designer/utils/textureCache.ts\n\n=== git status ===\n\n=== architecture contract ===\n-rw-r--r-- 1 root root 38694 Jul  1 12:26 docs/unified/ARCHITECTURE.md\n-rw-r--r-- 1 root root 26993 Jul  1 12:26 docs/unified/SPEC.md",
-          "current_node": "verify",
+          "current_node": "verify_gate",
           "human.gate.selected": "B",
-          "failure_signature": "verify|deterministic|script failed with exit code: <n> ## output > typecheck > tsc --noemit <--- last few gcs ---> [<n>:0xffff85b60000] <n> ms: mark-compact <n>.<n> (<n>.<n>) -> <n>.<n> (<n>.<n>) mb,pooled: <n> mb,<n>.<n> / <n>.<n> ms (average mu = <n>.<n>,curr",
+          "failure_signature": "",
           "thread.Verification.current_node": "setup",
           "plan.has_p0_security_issue": "yes",
-          "internal.thread_id": "developer",
+          "internal.thread_id": "verify",
           "response.clarify_prep": "## Assessment summary\n`interior-designer` is still in a pre-blueprint legacy shape and currently violates the highest-risk architecture rules called out in `ARCHITECTURE.md`. The biggest problems are a direct browser→Supabase write path, a monolithic Zustand store that mixes every concern, and UI components that own fetch/polling/job orchestration instead of going through typed `io/`, TanStack Query, and Trigger tasks.\n\n## Key gaps (max 5)\n- Direct client-side Supabase writes from `store/useInteriorStore.ts`, which is a P0 security/correctness issue.\n- A 1661-line Zustand store that mixes ephemeral UI state, server state, persistence, jobs, and pure logic.\n- UI components (`DesignManager`, `PropertiesPanel`, `Toolbar`) bypass the intended state/io boundary with raw fetches, polling loops, and job status handling.\n- The module does not match the canonical blueprint yet: no `index.ts`, no `ui/state/io/core/services/tasks` layering, legacy `components/store/utils/ai` layout.\n- Cross-module deep imports and weak typed boundaries (`any`, untyped JSON edges) will make cleanup fragile unless addressed in the plan.\n\n## Pick one scope (buttons are A / B / C — meanings are module-specific below)\n\nThe Fabro dock shows generic **[A] [B] [C]** buttons. Your table defines what each means **for this module**:\n\n| Button | What the plan will assume for **this** module |\n| --- | --- |\n| **[A]** | **Foundation-first alignment.** Plan the P0 write-path fix **and** the minimum structural migration needed to establish the target seams: public `index.ts`, split `state/io/services/tasks`, TanStack Query for server state, and shared job-based async boundaries. This tackles the unsafe persistence path and the architectural hotspots without committing to a full module rewrite in one pass. |\n| **[B]** | **Safety-only containment.** Plan only the direct Supabase-write removal, typed API/service path, and the smallest possible store/query adjustments needed to stop unsafe persistence. Most folder reshaping, job-system standardization, component breakup, and deep-import cleanup are deferred. |\n| **[C]** | **Full blueprint migration.** Plan a broad end-state reshape of `interior-designer` into the canonical architecture: replace legacy folders with `ui/state/io/core/services/tasks`, move server state fully into TanStack Query, convert long work to module-owned Trigger tasks, extract pure core logic, split oversized components/stores, and clean up cross-module contracts in one coordinated effort. |\n\n**Advanced:** type custom constraints in freeform (routes to [F]) · pick [R] only if assess findings are wrong\n\n**Recommendation: [A]** — it addresses the P0 browser-write issue and the root-cause boundary problems together, without taking on the delivery risk of a full one-pass module rewrite.",
           "internal.retry_count.developer": 0,
           "human.gate.Verification.answer": "B",
@@ -5777,13 +6163,13 @@
           "human.gate.Clarify.answer": "A",
           "command.output": "blob://sha256/44b615ab804fbf85ad816815696b5b9cd2afc753df1496f6f68210ed2eda92b5",
           "thread.build.current_node": "developer",
-          "failure_class": "deterministic",
+          "failure_class": "",
           "graph.rankdir": "LR",
           "graph.label": "Optional Build",
           "response.developer": "Status: the approved minimum-first increment for `interior-designer` is already present on this branch, so I did not apply any new code changes in this pass.\n\nWhat’s already implemented\n- P0 rename fix\n  - `src/domains/interior-designer/store/useInteriorStore.ts`\n  - `renameDesign` now calls `interiorDesignerApi.updateDesign({ id, name })`\n  - no direct browser Supabase client usage remains in `src/domains/interior-designer`\n- Public module barrel\n  - `src/domains/interior-designer/index.ts`\n  - exports the minimal public surface (`InteriorDesignerWorkspace` + DTO types)\n- Typed `io/` edge\n  - `src/domains/interior-designer/io/interior-designer.api.ts`\n  - `src/domains/interior-designer/io/interior-designer.keys.ts`\n  - `src/domains/interior-designer/io/interior-designer.dto.ts`\n  - shared DTOs are wired into the designs route:\n    - `src/app/api/interior-designer/designs/route.ts`\n  - and follow-on route validation was also aligned for:\n    - `src/app/api/interior-designer/texture/route.ts`\n    - `src/app/api/interior-designer/material/route.ts`\n    - `src/app/api/interior-designer/material/[taskId]/route.ts`\n    - `src/app/api/interior-designer/retexture/route.ts`\n    - `src/app/api/interior-designer/retexture/[runId]/route.ts`\n    - `src/app/api/interior-designer/text-to-3d/route.ts`\n    - `src/app/api/interior-designer/text-to-3d/[taskId]/route.ts`\n\nVerification\n- Passed:\n  - `grep -RIn \"supabaseClient|getSupabaseClient\" src/domains/interior-designer` → no matches\n  - `grep -RIn \"@/domains/interior-designer/\" src --exclude-dir=interior-designer` → no external deep imports\n  - scoped `eslint` on the minimum-increment files → no errors, only pre-existing warnings in `useInteriorStore.ts`\n- Blocked:\n  - scoped TypeScript checks still hit the same 4GB OOM as the verify stage, even with a temp tsconfig narrowed to the interior-designer files\n  - that matches the existing repo-level typecheck memory blocker; I did not change repo-wide TS config because it’s outside the approved Items 1–3 increment\n\nFiles created/modified/deleted in the implemented increment\n- Created\n  - `src/domains/interior-designer/index.ts`\n  - `src/domains/interior-designer/io/interior-designer.api.ts`\n  - `src/domains/interior-designer/io/interior-designer.keys.ts`\n- Modified\n  - `src/domains/interior-designer/store/useInteriorStore.ts`\n  - `src/domains/interior-designer/io/interior-designer.dto.ts`\n  - `src/app/api/interior-designer/designs/route.ts`\n  - `src/app/api/interior-designer/texture/route.ts`\n  - `src/app/api/interior-designer/material/route.ts`\n  - `src/app/api/interior-designer/material/[taskId]/route.ts`\n  - `src/app/api/interior-designer/retexture/route.ts`\n  - `src/app/api/interior-designer/retexture/[runId]/route.ts`\n  - `src/app/api/interior-designer/text-to-3d/route.ts`\n  - `src/app/api/interior-designer/text-to-3d/[taskId]/route.ts`\n- Deleted\n  - none\n\nDeviations from plan\n- None in scope for the minimum increment.\n- No P2/P3 work was implemented.\n\nDeferred work\n- Item 4: split `useInteriorStore` into `state/` UI store + `state/queries/` server state\n- Item 5: introduce `services/` + `tasks/` and move one async flow to `useJob`\n- Items 6–8 remain deferred as planned\n\nIf you want, I can next tackle the verify blocker separately as a repo-wide TypeScript memory issue, but I left that untouched here because it is outside the approved `interior-designer` minimum increment.",
           "internal.retry_count.assess": 0,
           "thread.verify.current_node": "verify_gate",
-          "outcome": "failed",
+          "outcome": "succeeded",
           "internal.retry_count.Verification": 0,
           "response.plan": "`PLAN.md` and `DECISIONS.md` are updated. Stopping for Verification.\n\n---\n\n**1. P0 declaration** — `P0 exists`: `store/useInteriorStore.ts:1579` writes directly via `getSupabaseClient()` (`interior_designs.update({ name })`) from the browser, breaking invariant #2. It's the *only* remaining direct client write — save/create/delete already use the authenticated API.\n\n**2. Your Clarify decision: [A] Staged migration.**\n- In scope: P0 write-path fix + minimum canonical seams (`index.ts` barrel, typed `io/`, split store into UI-only Zustand + TanStack `state/queries/`, `services/`+`tasks/` scaffolding via shared `useJob`).\n- Explicitly deferred: full component breakup, migrating every async flow off polling, complete `ai/`→services consolidation, cross-module barrel additions in other modules.\n\n**3. First shippable increment: Items 1–3** — remove the Supabase write (route through the existing `PATCH /api/interior-designer/designs`, which already accepts `name`), add the module `index.ts` barrel, and define the typed `io/` edge (`.dto.ts`/`.keys.ts`/`.api.ts`). Plumbing only, no user-visible flow change; unblocks the store split.\n\n**4. Item count / effort** — 8 items. Increment 1 (Items 1–3): ~1–1.5 dev days (Item 1 is ~15 LOC). Full plan through Item 5: ~4–6 days.\n\n**5. Plan summary**\n- **Item 1 (P0/S)** — swap direct Supabase write for `fetch PATCH .../designs`; drop `supabaseClient` import.\n- **Item 2 (P1/S)** — minimal `index.ts` (no store/UI leak).\n- **Item 3 (P1/M)** — Zod DTOs + query keys + fetchers in `io/`, shared with routes.\n- **Item 4 (P1/L)** — split 1661-LOC store: `useInteriorDesignerUiStore` (ephemeral) + `state/queries/` (server via TanStack).\n- **Item 5 (P1/L)** — one long flow (retexture/text-to-3d) → `tasks/` schemaTask + server `services/` + `shared/jobs/useJob`; kills that flow's `setInterval`/`CustomEvent`/`localStorage`-key path.\n- **Item 6 (P2/M)** — extract pure geometry/export to `core/`.\n- **Item 7 (P2/M)** — folder-per-unit rename to `ui/`.\n- **Item 8 (P3)** — route cross-module imports (`world-building-toolkit`, `3d-asset-exporter`) via barrels.\n\nCorrections logged in DECISIONS.md: P0 is narrower than assess implied; `SurfaceProperties.tsx` (981 LOC) is a co-equal polling offender; client-held Meshy/Stability keys in `localStorage`; no schema inversion or `z.any()`.\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"yes\"\n  }\n}\n```\n\nAwaiting Verification approval — I will not implement until then.",
           "human.gate.Verification.question": "Plan is ready. Approve and build, save plan only, request changes, or abort?",
@@ -6064,9 +6450,9 @@
             }
           }
         },
-        "next_node_id": "verify_gate",
+        "next_node_id": "developer",
         "node_visits": {
-          "verify_gate": 2,
+          "verify_gate": 3,
           "Verification": 1,
           "clarify_prep": 1,
           "Clarify": 1,
@@ -6983,6 +7369,29 @@
       },
       "state": "succeeded"
     },
+    "verify_gate@3": {
+      "first_event_seq": 1012,
+      "prompt": null,
+      "response": null,
+      "completion": null,
+      "provider_used": null,
+      "diff": null,
+      "script_invocation": null,
+      "script_timing": null,
+      "parallel_results": null,
+      "output": null,
+      "started_at": "2026-07-01T13:31:33.360472Z",
+      "handler": "conditional",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "reasoning_tokens": 0,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0
+      },
+      "state": "running"
+    },
     "verify@1": {
       "first_event_seq": 578,
       "prompt": null,
@@ -7351,7 +7760,12 @@
       "first_event_seq": 1002,
       "prompt": null,
       "response": null,
-      "completion": null,
+      "completion": {
+        "outcome": "failed",
+        "notes": null,
+        "failure_reason": "Script failed with exit code: 134\n\n## output\n\n> typecheck\n> tsc --noEmit\n\n\n<--- Last few GCs --->\n\n[15375:0xffff85b60000]   174838 ms: Mark-Compact 4034.0 (4129.1) -> 4018.5 (4129.6) MB, pooled: 2 MB, 1903.48 / 0.00 ms  (average mu = 0.105, current mu = 0.017) allocation failure; scavenge might not succeed\n[15375:0xffff85b60000]   176590 ms: Mark-Compact 4034.6 (4129.6) -> 4019.1 (4130.1) MB, pooled: 2 MB, 1719.57 / 0.00 ms  (average mu = 0.069, current mu = 0.018) allocation failure; scavenge might not succeed\n\n\n<--- JS stacktrace --->\n\nFATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory\n----- Native stack trace -----\n\n 1: 0xe19178 node::OOMErrorHandler(char const*, v8::OOMDetails const&) [node]\n 2: 0x11cad4c v8::Utils::ReportOOMFailure(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [node]\n 3: 0x11caefc v8::internal::V8::FatalProcessOutOfMemory(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [node]\n 4: 0x13f098c  [node]\n 5: 0x13f09bc  [node]\n 6: 0x1408370  [node]\n 7: 0x140af5c  [node]\n 8: 0x1bf2714  [node]\nAborted\n",
+        "timestamp": "2026-07-01T13:31:29.795152Z"
+      },
       "provider_used": null,
       "diff": null,
       "script_invocation": {
@@ -7374,6 +7788,12 @@
       "termination": "exited",
       "started_at": "2026-07-01T13:28:32.509842Z",
       "handler": "command",
+      "timing": {
+        "wall_time_ms": 177197,
+        "inference_time_ms": 0,
+        "tool_time_ms": 177185,
+        "active_time_ms": 177185
+      },
       "usage": {
         "input_tokens": 0,
         "output_tokens": 0,
@@ -7382,7 +7802,7 @@
         "cache_read_tokens": 0,
         "cache_write_tokens": 0
       },
-      "state": "running"
+      "state": "failed"
     },
     "verify_gate@2": {
       "first_event_seq": 835,
