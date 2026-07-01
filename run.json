@@ -1300,7 +1300,7 @@
     "kind": "running"
   },
   "status_updated_at": "2026-07-01T12:28:25.229638Z",
-  "last_event_at": "2026-07-01T12:28:25.229638Z",
+  "last_event_at": "2026-07-01T12:31:10.847305Z",
   "pending_control": null,
   "checkpoints": [
     {
@@ -1749,9 +1749,9 @@
       }
     },
     {
-      "seq": 0,
+      "seq": 158,
       "checkpoint": {
-        "timestamp": "2026-07-01T12:28:25.308997Z",
+        "timestamp": "2026-07-01T12:28:28.726423Z",
         "current_node": "Clarify",
         "completed_nodes": [
           "start",
@@ -1762,25 +1762,234 @@
         ],
         "node_retries": {},
         "context_values": {
+          "internal.run_id": "01KWETASMAX880FRFWSNRZTC5N",
+          "current_node": "Clarify",
+          "response.scope": "=== module: interior-designer ===\nsrc/domains/interior-designer/__tests__/terrain-cdt.test.ts\nsrc/domains/interior-designer/__tests__/terrain-quality.test.ts\nsrc/domains/interior-designer/__tests__/unity-export.script.ts\nsrc/domains/interior-designer/__tests__/windows-doors.e2e.test.ts\nsrc/domains/interior-designer/ai/TextureService.ts\nsrc/domains/interior-designer/components/CameraController.tsx\nsrc/domains/interior-designer/components/DesignManager.tsx\nsrc/domains/interior-designer/components/Exporter.tsx\nsrc/domains/interior-designer/components/FloorManager.tsx\nsrc/domains/interior-designer/components/InteriorCanvas.tsx\nsrc/domains/interior-designer/components/KeybindingManager.tsx\nsrc/domains/interior-designer/components/ObjectManager.tsx\nsrc/domains/interior-designer/components/RetextureExporter.tsx\nsrc/domains/interior-designer/components/SculptableSurface.tsx\nsrc/domains/interior-designer/components/SurfaceManager.tsx\nsrc/domains/interior-designer/components/TransformManager.tsx\nsrc/domains/interior-designer/components/UI/AssetLibrary.tsx\nsrc/domains/interior-designer/components/UI/InteriorRightSidebar.tsx\nsrc/domains/interior-designer/components/UI/LayerPanel.tsx\nsrc/domains/interior-designer/components/UI/PropertiesPanel.tsx\nsrc/domains/interior-designer/components/UI/SurfaceProperties.tsx\nsrc/domains/interior-designer/components/UI/TerrainEditorPanel.tsx\nsrc/domains/interior-designer/components/UI/Toolbar.tsx\nsrc/domains/interior-designer/components/VoxelTerrainMesh.tsx\nsrc/domains/interior-designer/components/WallManager.tsx\nsrc/domains/interior-designer/components/meshes/DoorMesh.tsx\nsrc/domains/interior-designer/components/meshes/RoadMesh.tsx\nsrc/domains/interior-designer/components/meshes/WindowMesh.tsx\nsrc/domains/interior-designer/components/terrain/GlobalWaterPlane.tsx\nsrc/domains/interior-designer/components/terrain/TerrainBrushPreview.tsx\nsrc/domains/interior-designer/components/terrain/index.ts\nsrc/domains/interior-designer/components/tools/ObjectTool.tsx\nsrc/domains/interior-designer/components/tools/ScatterTool.tsx\nsrc/domains/interior-designer/components/tools/SurfaceTool.tsx\nsrc/domains/interior-designer/components/tools/TerrainTool.tsx\nsrc/domains/interior-designer/components/tools/WallTool.tsx\nsrc/domains/interior-designer/prompts/index.ts\nsrc/domains/interior-designer/store/useInteriorStore.ts\nsrc/domains/interior-designer/utils/UnityExporter.ts\nsrc/domains/interior-designer/utils/UnityYAML.ts\nsrc/domains/interior-designer/utils/polygonUtils.ts\nsrc/domains/interior-designer/utils/textureCache.ts\n\n=== git status ===\n\n=== architecture contract ===\n-rw-r--r-- 1 root root 38694 Jul  1 12:26 docs/unified/ARCHITECTURE.md\n-rw-r--r-- 1 root root 26993 Jul  1 12:26 docs/unified/SPEC.md",
+          "human.gate.selected": "A",
+          "response.clarify_prep": "## Assessment summary\n`interior-designer` is still in a pre-blueprint legacy shape and currently violates the highest-risk architecture rules called out in `ARCHITECTURE.md`. The biggest problems are a direct browser→Supabase write path, a monolithic Zustand store that mixes every concern, and UI components that own fetch/polling/job orchestration instead of going through typed `io/`, TanStack Query, and Trigger tasks.\n\n## Key gaps (max 5)\n- Direct client-side Supabase writes from `store/useInteriorStore.ts`, which is a P0 security/correctness issue.\n- A 1661-line Zustand store that mixes ephemeral UI state, server state, persistence, jobs, and pure logic.\n- UI components (`DesignManager`, `PropertiesPanel`, `Toolbar`) bypass the intended state/io boundary with raw fetches, polling loops, and job status handling.\n- The module does not match the canonical blueprint yet: no `index.ts`, no `ui/state/io/core/services/tasks` layering, legacy `components/store/utils/ai` layout.\n- Cross-module deep imports and weak typed boundaries (`any`, untyped JSON edges) will make cleanup fragile unless addressed in the plan.\n\n## Pick one scope (buttons are A / B / C — meanings are module-specific below)\n\nThe Fabro dock shows generic **[A] [B] [C]** buttons. Your table defines what each means **for this module**:\n\n| Button | What the plan will assume for **this** module |\n| --- | --- |\n| **[A]** | **Foundation-first alignment.** Plan the P0 write-path fix **and** the minimum structural migration needed to establish the target seams: public `index.ts`, split `state/io/services/tasks`, TanStack Query for server state, and shared job-based async boundaries. This tackles the unsafe persistence path and the architectural hotspots without committing to a full module rewrite in one pass. |\n| **[B]** | **Safety-only containment.** Plan only the direct Supabase-write removal, typed API/service path, and the smallest possible store/query adjustments needed to stop unsafe persistence. Most folder reshaping, job-system standardization, component breakup, and deep-import cleanup are deferred. |\n| **[C]** | **Full blueprint migration.** Plan a broad end-state reshape of `interior-designer` into the canonical architecture: replace legacy folders with `ui/state/io/core/services/tasks`, move server state fully into TanStack Query, convert long work to module-owned Trigger tasks, extract pure core logic, split oversized components/stores, and clean up cross-module contracts in one coordinated effort. |\n\n**Advanced:** type custom constraints in freeform (routes to [F]) · pick [R] only if assess findings are wrong\n\n**Recommendation: [A]** — it addresses the P0 browser-write issue and the root-cause boundary problems together, without taking on the delivery risk of a full one-pass module rewrite.",
+          "thread.review.current_node": "clarify_prep",
+          "internal.fidelity": "summary:medium",
+          "graph.rankdir": "LR",
+          "internal.retry_count.Clarify": 0,
+          "graph.label": "Optional Build",
+          "internal.retry_count.scope": 0,
+          "graph.default_max_retries": "1",
+          "human.gate.Clarify.answer": "A",
+          "internal.work_dir": "/workspace/kurvitza",
+          "last_stage": "clarify_prep",
+          "internal.node_visit_count": 1,
+          "internal.retry_count.assess": 0,
+          "last_response": "## Assessment summary\n`interior-designer` is still in a pre-blueprint legacy shape and currently violates the highest-risk architecture rules called out in `ARCHITECTURE.md`. The biggest problems are ",
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
+          "graph.goal": "Clean up and align the interior-designer module (src/domains/interior-designer) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
+          "failure_signature": "",
+          "human.gate.Clarify.label": "[A] Staged migration",
+          "outcome": "succeeded",
+          "graph.default_fidelity": "summary:medium",
+          "internal.retry_count.clarify_prep": 0,
+          "failure_class": "",
+          "human.gate.label": "[A] Staged migration",
+          "internal.retry_count.start": 0,
+          "internal.thread_id": "clarify_prep",
+          "graph.stall_timeout": "1800000ms",
+          "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)",
+          "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: `interior-designer` is still materially off the target architecture. The first three gaps to fix are:\n1. direct client-side Supabase write in `useInteriorStore`\n2. monolithic Zustand store mixing UI/server/persistence/job logic\n3. UI-owned fetch/polling/job orchestration instead of `io/` + `tasks/` + shared job hooks",
+          "preferred_label": "[A] Staged migration",
+          "thread.clarify_prep.current_node": "Clarify"
+        },
+        "node_outcomes": {
+          "assess": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_response": "Assessment written to `findings/assess.md`.\n\nVerdict: `interior-designer` is still materially off the target architecture. The first three gaps to fix are:\n1. direct client-side Supabase write in `use",
+              "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: `interior-designer` is still materially off the target architecture. The first three gaps to fix are:\n1. direct client-side Supabase write in `useInteriorStore`\n2. monolithic Zustand store mixing UI/server/persistence/job logic\n3. UI-owned fetch/polling/job orchestration instead of `io/` + `tasks/` + shared job hooks",
+              "last_stage": "assess"
+            },
+            "notes": "Stage completed: assess",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 35974,
+                    "output_tokens": 2831,
+                    "reasoning_tokens": 379,
+                    "cache_read_tokens": 139264,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 172901
+            },
+            "files_touched": [
+              "/workspace/kurvitza/findings/assess.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 36510,
+              "tool_time_ms": 720,
+              "active_time_ms": 37230
+            }
+          },
+          "start": {
+            "status": "succeeded",
+            "usage": null
+          },
+          "scope": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_stage": "scope",
+              "last_response": "=== module: interior-designer ===\nsrc/domains/interior-designer/__tests__/terrain-cdt.test.ts\nsrc/domains/interior-designer/__tests__/terrain-quality.test.ts\nsrc/domains/interior-designer/__tests__/un",
+              "response.scope": "=== module: interior-designer ===\nsrc/domains/interior-designer/__tests__/terrain-cdt.test.ts\nsrc/domains/interior-designer/__tests__/terrain-quality.test.ts\nsrc/domains/interior-designer/__tests__/unity-export.script.ts\nsrc/domains/interior-designer/__tests__/windows-doors.e2e.test.ts\nsrc/domains/interior-designer/ai/TextureService.ts\nsrc/domains/interior-designer/components/CameraController.tsx\nsrc/domains/interior-designer/components/DesignManager.tsx\nsrc/domains/interior-designer/components/Exporter.tsx\nsrc/domains/interior-designer/components/FloorManager.tsx\nsrc/domains/interior-designer/components/InteriorCanvas.tsx\nsrc/domains/interior-designer/components/KeybindingManager.tsx\nsrc/domains/interior-designer/components/ObjectManager.tsx\nsrc/domains/interior-designer/components/RetextureExporter.tsx\nsrc/domains/interior-designer/components/SculptableSurface.tsx\nsrc/domains/interior-designer/components/SurfaceManager.tsx\nsrc/domains/interior-designer/components/TransformManager.tsx\nsrc/domains/interior-designer/components/UI/AssetLibrary.tsx\nsrc/domains/interior-designer/components/UI/InteriorRightSidebar.tsx\nsrc/domains/interior-designer/components/UI/LayerPanel.tsx\nsrc/domains/interior-designer/components/UI/PropertiesPanel.tsx\nsrc/domains/interior-designer/components/UI/SurfaceProperties.tsx\nsrc/domains/interior-designer/components/UI/TerrainEditorPanel.tsx\nsrc/domains/interior-designer/components/UI/Toolbar.tsx\nsrc/domains/interior-designer/components/VoxelTerrainMesh.tsx\nsrc/domains/interior-designer/components/WallManager.tsx\nsrc/domains/interior-designer/components/meshes/DoorMesh.tsx\nsrc/domains/interior-designer/components/meshes/RoadMesh.tsx\nsrc/domains/interior-designer/components/meshes/WindowMesh.tsx\nsrc/domains/interior-designer/components/terrain/GlobalWaterPlane.tsx\nsrc/domains/interior-designer/components/terrain/TerrainBrushPreview.tsx\nsrc/domains/interior-designer/components/terrain/index.ts\nsrc/domains/interior-designer/components/tools/ObjectTool.tsx\nsrc/domains/interior-designer/components/tools/ScatterTool.tsx\nsrc/domains/interior-designer/components/tools/SurfaceTool.tsx\nsrc/domains/interior-designer/components/tools/TerrainTool.tsx\nsrc/domains/interior-designer/components/tools/WallTool.tsx\nsrc/domains/interior-designer/prompts/index.ts\nsrc/domains/interior-designer/store/useInteriorStore.ts\nsrc/domains/interior-designer/utils/UnityExporter.ts\nsrc/domains/interior-designer/utils/UnityYAML.ts\nsrc/domains/interior-designer/utils/polygonUtils.ts\nsrc/domains/interior-designer/utils/textureCache.ts\n\n=== git status ===\n\n=== architecture contract ===\n-rw-r--r-- 1 root root 38694 Jul  1 12:26 docs/unified/ARCHITECTURE.md\n-rw-r--r-- 1 root root 26993 Jul  1 12:26 docs/unified/SPEC.md"
+            },
+            "notes": "Stage completed: scope",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 5249,
+                    "output_tokens": 823,
+                    "reasoning_tokens": 13,
+                    "cache_read_tokens": 4096,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 26686
+            },
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 6425,
+              "tool_time_ms": 78,
+              "active_time_ms": 6503
+            }
+          },
+          "clarify_prep": {
+            "status": "succeeded",
+            "context_updates": {
+              "response.clarify_prep": "## Assessment summary\n`interior-designer` is still in a pre-blueprint legacy shape and currently violates the highest-risk architecture rules called out in `ARCHITECTURE.md`. The biggest problems are a direct browser→Supabase write path, a monolithic Zustand store that mixes every concern, and UI components that own fetch/polling/job orchestration instead of going through typed `io/`, TanStack Query, and Trigger tasks.\n\n## Key gaps (max 5)\n- Direct client-side Supabase writes from `store/useInteriorStore.ts`, which is a P0 security/correctness issue.\n- A 1661-line Zustand store that mixes ephemeral UI state, server state, persistence, jobs, and pure logic.\n- UI components (`DesignManager`, `PropertiesPanel`, `Toolbar`) bypass the intended state/io boundary with raw fetches, polling loops, and job status handling.\n- The module does not match the canonical blueprint yet: no `index.ts`, no `ui/state/io/core/services/tasks` layering, legacy `components/store/utils/ai` layout.\n- Cross-module deep imports and weak typed boundaries (`any`, untyped JSON edges) will make cleanup fragile unless addressed in the plan.\n\n## Pick one scope (buttons are A / B / C — meanings are module-specific below)\n\nThe Fabro dock shows generic **[A] [B] [C]** buttons. Your table defines what each means **for this module**:\n\n| Button | What the plan will assume for **this** module |\n| --- | --- |\n| **[A]** | **Foundation-first alignment.** Plan the P0 write-path fix **and** the minimum structural migration needed to establish the target seams: public `index.ts`, split `state/io/services/tasks`, TanStack Query for server state, and shared job-based async boundaries. This tackles the unsafe persistence path and the architectural hotspots without committing to a full module rewrite in one pass. |\n| **[B]** | **Safety-only containment.** Plan only the direct Supabase-write removal, typed API/service path, and the smallest possible store/query adjustments needed to stop unsafe persistence. Most folder reshaping, job-system standardization, component breakup, and deep-import cleanup are deferred. |\n| **[C]** | **Full blueprint migration.** Plan a broad end-state reshape of `interior-designer` into the canonical architecture: replace legacy folders with `ui/state/io/core/services/tasks`, move server state fully into TanStack Query, convert long work to module-owned Trigger tasks, extract pure core logic, split oversized components/stores, and clean up cross-module contracts in one coordinated effort. |\n\n**Advanced:** type custom constraints in freeform (routes to [F]) · pick [R] only if assess findings are wrong\n\n**Recommendation: [A]** — it addresses the P0 browser-write issue and the root-cause boundary problems together, without taking on the delivery risk of a full one-pass module rewrite.",
+              "last_stage": "clarify_prep",
+              "last_response": "## Assessment summary\n`interior-designer` is still in a pre-blueprint legacy shape and currently violates the highest-risk architecture rules called out in `ARCHITECTURE.md`. The biggest problems are "
+            },
+            "notes": "Stage completed: clarify_prep",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 16892,
+                    "output_tokens": 1453,
+                    "reasoning_tokens": 313,
+                    "cache_read_tokens": 48640,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 80880
+            },
+            "files_touched": [
+              "/workspace/kurvitza/CLARIFY.md",
+              "/workspace/kurvitza/DECISIONS.md",
+              "/workspace/kurvitza/PLAN.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 23892,
+              "tool_time_ms": 385,
+              "active_time_ms": 24277
+            }
+          },
+          "Clarify": {
+            "status": "succeeded",
+            "preferred_label": "[A] Staged migration",
+            "suggested_next_ids": [
+              "plan"
+            ],
+            "context_updates": {
+              "human.gate.label": "[A] Staged migration",
+              "human.gate.selected": "A",
+              "human.gate.Clarify.answer": "A",
+              "human.gate.Clarify.label": "[A] Staged migration",
+              "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)"
+            },
+            "usage": null
+          }
+        },
+        "next_node_id": "plan",
+        "git_commit_sha": "4fc2e62653139392ed618a476b4705416f04ecd2",
+        "node_visits": {
+          "scope": 1,
+          "assess": 1,
+          "start": 1,
+          "clarify_prep": 1,
+          "Clarify": 1
+        }
+      },
+      "diff": {
+        "summary": {
+          "files_changed": 0,
+          "additions": 0,
+          "deletions": 0
+        }
+      }
+    },
+    {
+      "seq": 0,
+      "checkpoint": {
+        "timestamp": "2026-07-01T12:31:10.913347Z",
+        "current_node": "plan",
+        "completed_nodes": [
+          "start",
+          "scope",
+          "assess",
+          "clarify_prep",
+          "Clarify",
+          "plan"
+        ],
+        "node_retries": {},
+        "context_values": {
           "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)",
           "response.scope": "=== module: interior-designer ===\nsrc/domains/interior-designer/__tests__/terrain-cdt.test.ts\nsrc/domains/interior-designer/__tests__/terrain-quality.test.ts\nsrc/domains/interior-designer/__tests__/unity-export.script.ts\nsrc/domains/interior-designer/__tests__/windows-doors.e2e.test.ts\nsrc/domains/interior-designer/ai/TextureService.ts\nsrc/domains/interior-designer/components/CameraController.tsx\nsrc/domains/interior-designer/components/DesignManager.tsx\nsrc/domains/interior-designer/components/Exporter.tsx\nsrc/domains/interior-designer/components/FloorManager.tsx\nsrc/domains/interior-designer/components/InteriorCanvas.tsx\nsrc/domains/interior-designer/components/KeybindingManager.tsx\nsrc/domains/interior-designer/components/ObjectManager.tsx\nsrc/domains/interior-designer/components/RetextureExporter.tsx\nsrc/domains/interior-designer/components/SculptableSurface.tsx\nsrc/domains/interior-designer/components/SurfaceManager.tsx\nsrc/domains/interior-designer/components/TransformManager.tsx\nsrc/domains/interior-designer/components/UI/AssetLibrary.tsx\nsrc/domains/interior-designer/components/UI/InteriorRightSidebar.tsx\nsrc/domains/interior-designer/components/UI/LayerPanel.tsx\nsrc/domains/interior-designer/components/UI/PropertiesPanel.tsx\nsrc/domains/interior-designer/components/UI/SurfaceProperties.tsx\nsrc/domains/interior-designer/components/UI/TerrainEditorPanel.tsx\nsrc/domains/interior-designer/components/UI/Toolbar.tsx\nsrc/domains/interior-designer/components/VoxelTerrainMesh.tsx\nsrc/domains/interior-designer/components/WallManager.tsx\nsrc/domains/interior-designer/components/meshes/DoorMesh.tsx\nsrc/domains/interior-designer/components/meshes/RoadMesh.tsx\nsrc/domains/interior-designer/components/meshes/WindowMesh.tsx\nsrc/domains/interior-designer/components/terrain/GlobalWaterPlane.tsx\nsrc/domains/interior-designer/components/terrain/TerrainBrushPreview.tsx\nsrc/domains/interior-designer/components/terrain/index.ts\nsrc/domains/interior-designer/components/tools/ObjectTool.tsx\nsrc/domains/interior-designer/components/tools/ScatterTool.tsx\nsrc/domains/interior-designer/components/tools/SurfaceTool.tsx\nsrc/domains/interior-designer/components/tools/TerrainTool.tsx\nsrc/domains/interior-designer/components/tools/WallTool.tsx\nsrc/domains/interior-designer/prompts/index.ts\nsrc/domains/interior-designer/store/useInteriorStore.ts\nsrc/domains/interior-designer/utils/UnityExporter.ts\nsrc/domains/interior-designer/utils/UnityYAML.ts\nsrc/domains/interior-designer/utils/polygonUtils.ts\nsrc/domains/interior-designer/utils/textureCache.ts\n\n=== git status ===\n\n=== architecture contract ===\n-rw-r--r-- 1 root root 38694 Jul  1 12:26 docs/unified/ARCHITECTURE.md\n-rw-r--r-- 1 root root 26993 Jul  1 12:26 docs/unified/SPEC.md",
           "internal.retry_count.clarify_prep": 0,
-          "last_response": "## Assessment summary\n`interior-designer` is still in a pre-blueprint legacy shape and currently violates the highest-risk architecture rules called out in `ARCHITECTURE.md`. The biggest problems are ",
-          "current_node": "Clarify",
+          "plan.has_ui_surface": "no",
+          "thread.planning.current_node": "plan",
+          "last_response": "`PLAN.md` and `DECISIONS.md` are updated. Stopping for Verification.\n\n---\n\n**1. P0 declaration** — `P0 exists`: `store/useInteriorStore.ts:1579` writes directly via `getSupabaseClient()` (`interior_",
+          "current_node": "plan",
           "human.gate.selected": "A",
           "human.gate.Clarify.label": "[A] Staged migration",
           "internal.retry_count.start": 0,
           "failure_signature": "",
           "graph.goal": "Clean up and align the interior-designer module (src/domains/interior-designer) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
           "internal.node_visit_count": 1,
-          "internal.thread_id": "clarify_prep",
+          "internal.thread_id": "planning",
           "internal.retry_count.Clarify": 0,
           "thread.review.current_node": "clarify_prep",
           "response.clarify_prep": "## Assessment summary\n`interior-designer` is still in a pre-blueprint legacy shape and currently violates the highest-risk architecture rules called out in `ARCHITECTURE.md`. The biggest problems are a direct browser→Supabase write path, a monolithic Zustand store that mixes every concern, and UI components that own fetch/polling/job orchestration instead of going through typed `io/`, TanStack Query, and Trigger tasks.\n\n## Key gaps (max 5)\n- Direct client-side Supabase writes from `store/useInteriorStore.ts`, which is a P0 security/correctness issue.\n- A 1661-line Zustand store that mixes ephemeral UI state, server state, persistence, jobs, and pure logic.\n- UI components (`DesignManager`, `PropertiesPanel`, `Toolbar`) bypass the intended state/io boundary with raw fetches, polling loops, and job status handling.\n- The module does not match the canonical blueprint yet: no `index.ts`, no `ui/state/io/core/services/tasks` layering, legacy `components/store/utils/ai` layout.\n- Cross-module deep imports and weak typed boundaries (`any`, untyped JSON edges) will make cleanup fragile unless addressed in the plan.\n\n## Pick one scope (buttons are A / B / C — meanings are module-specific below)\n\nThe Fabro dock shows generic **[A] [B] [C]** buttons. Your table defines what each means **for this module**:\n\n| Button | What the plan will assume for **this** module |\n| --- | --- |\n| **[A]** | **Foundation-first alignment.** Plan the P0 write-path fix **and** the minimum structural migration needed to establish the target seams: public `index.ts`, split `state/io/services/tasks`, TanStack Query for server state, and shared job-based async boundaries. This tackles the unsafe persistence path and the architectural hotspots without committing to a full module rewrite in one pass. |\n| **[B]** | **Safety-only containment.** Plan only the direct Supabase-write removal, typed API/service path, and the smallest possible store/query adjustments needed to stop unsafe persistence. Most folder reshaping, job-system standardization, component breakup, and deep-import cleanup are deferred. |\n| **[C]** | **Full blueprint migration.** Plan a broad end-state reshape of `interior-designer` into the canonical architecture: replace legacy folders with `ui/state/io/core/services/tasks`, move server state fully into TanStack Query, convert long work to module-owned Trigger tasks, extract pure core logic, split oversized components/stores, and clean up cross-module contracts in one coordinated effort. |\n\n**Advanced:** type custom constraints in freeform (routes to [F]) · pick [R] only if assess findings are wrong\n\n**Recommendation: [A]** — it addresses the P0 browser-write issue and the root-cause boundary problems together, without taking on the delivery risk of a full one-pass module rewrite.",
           "preferred_label": "[A] Staged migration",
-          "last_stage": "clarify_prep",
+          "plan.has_p0_security_issue": "yes",
+          "last_stage": "plan",
+          "internal.retry_count.plan": 0,
           "human.gate.Clarify.answer": "A",
-          "internal.fidelity": "summary:medium",
+          "internal.fidelity": "summary:high",
           "graph.stall_timeout": "1800000ms",
           "failure_class": "",
           "internal.run_id": "01KWETASMAX880FRFWSNRZTC5N",
@@ -1793,6 +2002,7 @@
           "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
           "outcome": "succeeded",
           "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: `interior-designer` is still materially off the target architecture. The first three gaps to fix are:\n1. direct client-side Supabase write in `useInteriorStore`\n2. monolithic Zustand store mixing UI/server/persistence/job logic\n3. UI-owned fetch/polling/job orchestration instead of `io/` + `tasks/` + shared job hooks",
+          "response.plan": "`PLAN.md` and `DECISIONS.md` are updated. Stopping for Verification.\n\n---\n\n**1. P0 declaration** — `P0 exists`: `store/useInteriorStore.ts:1579` writes directly via `getSupabaseClient()` (`interior_designs.update({ name })`) from the browser, breaking invariant #2. It's the *only* remaining direct client write — save/create/delete already use the authenticated API.\n\n**2. Your Clarify decision: [A] Staged migration.**\n- In scope: P0 write-path fix + minimum canonical seams (`index.ts` barrel, typed `io/`, split store into UI-only Zustand + TanStack `state/queries/`, `services/`+`tasks/` scaffolding via shared `useJob`).\n- Explicitly deferred: full component breakup, migrating every async flow off polling, complete `ai/`→services consolidation, cross-module barrel additions in other modules.\n\n**3. First shippable increment: Items 1–3** — remove the Supabase write (route through the existing `PATCH /api/interior-designer/designs`, which already accepts `name`), add the module `index.ts` barrel, and define the typed `io/` edge (`.dto.ts`/`.keys.ts`/`.api.ts`). Plumbing only, no user-visible flow change; unblocks the store split.\n\n**4. Item count / effort** — 8 items. Increment 1 (Items 1–3): ~1–1.5 dev days (Item 1 is ~15 LOC). Full plan through Item 5: ~4–6 days.\n\n**5. Plan summary**\n- **Item 1 (P0/S)** — swap direct Supabase write for `fetch PATCH .../designs`; drop `supabaseClient` import.\n- **Item 2 (P1/S)** — minimal `index.ts` (no store/UI leak).\n- **Item 3 (P1/M)** — Zod DTOs + query keys + fetchers in `io/`, shared with routes.\n- **Item 4 (P1/L)** — split 1661-LOC store: `useInteriorDesignerUiStore` (ephemeral) + `state/queries/` (server via TanStack).\n- **Item 5 (P1/L)** — one long flow (retexture/text-to-3d) → `tasks/` schemaTask + server `services/` + `shared/jobs/useJob`; kills that flow's `setInterval`/`CustomEvent`/`localStorage`-key path.\n- **Item 6 (P2/M)** — extract pure geometry/export to `core/`.\n- **Item 7 (P2/M)** — folder-per-unit rename to `ui/`.\n- **Item 8 (P3)** — route cross-module imports (`world-building-toolkit`, `3d-asset-exporter`) via barrels.\n\nCorrections logged in DECISIONS.md: P0 is narrower than assess implied; `SurfaceProperties.tsx` (981 LOC) is a co-equal polling offender; client-held Meshy/Stability keys in `localStorage`; no schema inversion or `z.any()`.\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"yes\"\n  }\n}\n```\n\nAwaiting Verification approval — I will not implement until then.",
           "thread.clarify_prep.current_node": "Clarify",
           "graph.default_max_retries": "1",
           "internal.work_dir": "/workspace/kurvitza"
@@ -1839,6 +2049,50 @@
               "inference_time_ms": 36510,
               "tool_time_ms": 720,
               "active_time_ms": 37230
+            }
+          },
+          "plan": {
+            "status": "succeeded",
+            "context_updates": {
+              "plan.has_ui_surface": "no",
+              "last_stage": "plan",
+              "last_response": "`PLAN.md` and `DECISIONS.md` are updated. Stopping for Verification.\n\n---\n\n**1. P0 declaration** — `P0 exists`: `store/useInteriorStore.ts:1579` writes directly via `getSupabaseClient()` (`interior_",
+              "response.plan": "`PLAN.md` and `DECISIONS.md` are updated. Stopping for Verification.\n\n---\n\n**1. P0 declaration** — `P0 exists`: `store/useInteriorStore.ts:1579` writes directly via `getSupabaseClient()` (`interior_designs.update({ name })`) from the browser, breaking invariant #2. It's the *only* remaining direct client write — save/create/delete already use the authenticated API.\n\n**2. Your Clarify decision: [A] Staged migration.**\n- In scope: P0 write-path fix + minimum canonical seams (`index.ts` barrel, typed `io/`, split store into UI-only Zustand + TanStack `state/queries/`, `services/`+`tasks/` scaffolding via shared `useJob`).\n- Explicitly deferred: full component breakup, migrating every async flow off polling, complete `ai/`→services consolidation, cross-module barrel additions in other modules.\n\n**3. First shippable increment: Items 1–3** — remove the Supabase write (route through the existing `PATCH /api/interior-designer/designs`, which already accepts `name`), add the module `index.ts` barrel, and define the typed `io/` edge (`.dto.ts`/`.keys.ts`/`.api.ts`). Plumbing only, no user-visible flow change; unblocks the store split.\n\n**4. Item count / effort** — 8 items. Increment 1 (Items 1–3): ~1–1.5 dev days (Item 1 is ~15 LOC). Full plan through Item 5: ~4–6 days.\n\n**5. Plan summary**\n- **Item 1 (P0/S)** — swap direct Supabase write for `fetch PATCH .../designs`; drop `supabaseClient` import.\n- **Item 2 (P1/S)** — minimal `index.ts` (no store/UI leak).\n- **Item 3 (P1/M)** — Zod DTOs + query keys + fetchers in `io/`, shared with routes.\n- **Item 4 (P1/L)** — split 1661-LOC store: `useInteriorDesignerUiStore` (ephemeral) + `state/queries/` (server via TanStack).\n- **Item 5 (P1/L)** — one long flow (retexture/text-to-3d) → `tasks/` schemaTask + server `services/` + `shared/jobs/useJob`; kills that flow's `setInterval`/`CustomEvent`/`localStorage`-key path.\n- **Item 6 (P2/M)** — extract pure geometry/export to `core/`.\n- **Item 7 (P2/M)** — folder-per-unit rename to `ui/`.\n- **Item 8 (P3)** — route cross-module imports (`world-building-toolkit`, `3d-asset-exporter`) via barrels.\n\nCorrections logged in DECISIONS.md: P0 is narrower than assess implied; `SurfaceProperties.tsx` (981 LOC) is a co-equal polling offender; client-held Meshy/Stability keys in `localStorage`; no schema inversion or `z.any()`.\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"yes\"\n  }\n}\n```\n\nAwaiting Verification approval — I will not implement until then.",
+              "plan.has_p0_security_issue": "yes"
+            },
+            "notes": "Stage completed: plan",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "anthropic",
+                    "model_id": "claude-opus-4-8"
+                  },
+                  "tokens": {
+                    "input_tokens": 28636,
+                    "output_tokens": 11203,
+                    "reasoning_tokens": 0,
+                    "cache_read_tokens": 260108,
+                    "cache_write_tokens": 75822
+                  }
+                },
+                "facts": {
+                  "algorithm": "anthropic",
+                  "cache_write_5m_tokens": 75822,
+                  "cache_write_1h_tokens": 0
+                }
+              },
+              "total_usd_micros": 1027196
+            },
+            "files_touched": [
+              "/workspace/kurvitza/DECISIONS.md",
+              "/workspace/kurvitza/PLAN.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 161030,
+              "tool_time_ms": 806,
+              "active_time_ms": 161836
             }
           },
           "Clarify": {
@@ -1934,13 +2188,14 @@
             }
           }
         },
-        "next_node_id": "plan",
+        "next_node_id": "Verification",
         "node_visits": {
           "start": 1,
           "assess": 1,
           "clarify_prep": 1,
           "scope": 1,
-          "Clarify": 1
+          "Clarify": 1,
+          "plan": 1
         }
       },
       "diff": {}
@@ -1977,7 +2232,12 @@
       "first_event_seq": 149,
       "prompt": null,
       "response": null,
-      "completion": null,
+      "completion": {
+        "outcome": "succeeded",
+        "notes": null,
+        "failure_reason": null,
+        "timestamp": "2026-07-01T12:28:25.307964Z"
+      },
       "provider_used": null,
       "diff": null,
       "script_invocation": null,
@@ -1986,6 +2246,12 @@
       "output": null,
       "started_at": "2026-07-01T12:28:16.738083Z",
       "handler": "human",
+      "timing": {
+        "wall_time_ms": 8491,
+        "inference_time_ms": 0,
+        "tool_time_ms": 0,
+        "active_time_ms": 0
+      },
       "usage": {
         "input_tokens": 0,
         "output_tokens": 0,
@@ -1994,7 +2260,7 @@
         "cache_read_tokens": 0,
         "cache_write_tokens": 0
       },
-      "state": "running"
+      "state": "succeeded"
     },
     "start@1": {
       "first_event_seq": 17,
@@ -2029,6 +2295,234 @@
         "cache_write_tokens": 0
       },
       "state": "succeeded"
+    },
+    "plan@1": {
+      "first_event_seq": 161,
+      "prompt": null,
+      "response": null,
+      "completion": null,
+      "provider_used": {
+        "mode": "agent",
+        "provider": "anthropic",
+        "model": "claude-opus-4-8",
+        "reasoning_effort": "high"
+      },
+      "diff": null,
+      "script_invocation": null,
+      "script_timing": null,
+      "parallel_results": null,
+      "output": null,
+      "started_at": "2026-07-01T12:28:28.726905Z",
+      "handler": "agent",
+      "usage": {
+        "input_tokens": 28636,
+        "output_tokens": 11203,
+        "total_tokens": 375769,
+        "reasoning_tokens": 0,
+        "cache_read_tokens": 260108,
+        "cache_write_tokens": 75822,
+        "total_usd_micros": 1027196
+      },
+      "model": {
+        "provider": "anthropic",
+        "model_id": "claude-opus-4-8"
+      },
+      "permission_level": "full",
+      "agent_tools": [
+        {
+          "name": "AskUserQuestion",
+          "description": "Ask the human one or more questions and wait for their answers before continuing this stage.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "TaskCreate",
+          "description": "Create pending tasks in the current session. Use concise subjects, descriptions, optional activeForm text, and metadata. Check TaskList first to avoid duplicate tasks.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "TaskGet",
+          "description": "Get one task by taskId, including subject, status, description, owner, blockedBy, and blocks.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "TaskList",
+          "description": "List tasks for the current session, including status, owner, and blocking dependencies. Use TaskGet with a taskId for full description and dependency details.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "TaskUpdate",
+          "description": "Update an existing task's status, text, owner, metadata, or dependencies. Valid statuses are pending, in_progress, completed, and deleted. After completing a task, call TaskList to find newly unblocked work.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "close_agent",
+          "description": "Close a running subagent that is no longer needed.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "edit_file",
+          "description": "Edit a file by replacing an exact string. The old_string must be an exact match and unique unless replace_all is true; include surrounding context when needed. Read the file first and preserve existing indentation.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "write",
+          "invoked": false
+        },
+        {
+          "name": "glob",
+          "description": "Find files by file names using a glob pattern. Use path to choose the search root. Prefer this over shell find or ls when locating repository files.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": true
+        },
+        {
+          "name": "grep",
+          "description": "Search file contents with a regex pattern. Use path to choose the search root, glob_filter to limit matching files, case_insensitive for case folding, and max_results to cap output.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": true
+        },
+        {
+          "name": "read_file",
+          "description": "Read files before editing them. Returns line-numbered text and supports offset/limit for large files. Use this instead of shell cat, head, tail, or sed when inspecting repository files.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": true
+        },
+        {
+          "name": "send_input",
+          "description": "Send a follow-up message to a running subagent when new information or corrected instructions are needed.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "shell",
+          "description": "Execute shell commands for terminal operations, package managers, tests and builds. Use dedicated tools for file reads, file edits, filename searches, and content searches. Provide timeout_ms for long-running commands.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "shell",
+          "invoked": true
+        },
+        {
+          "name": "spawn_agent",
+          "description": "Spawn a subagent for independent work or context isolation. Use it for tasks that can proceed separately, and avoid duplicating the same work in the parent session.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "wait",
+          "description": "Wait for a subagent to complete, then use the result to synthesize the outcome for the user.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "web_fetch",
+          "description": "Fetch content from a URL that starts with http:// or https://. Pass a prompt to extract specific information or summarize the page; omit prompt to return the page content.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "web_search",
+          "description": "Search the web using Brave Search when current external information is needed. Returns result titles, URLs, and descriptions; use web_fetch for a specific URL.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "write_file",
+          "description": "Create new files, or overwrite an existing file only when replacement is explicitly intended. Prefer edit_file for targeted changes to existing files because write_file overwrites the full file content.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "write",
+          "invoked": true
+        }
+      ],
+      "context_window": {
+        "provider": "anthropic",
+        "model": "claude-opus-4-8",
+        "context_window_tokens": 1000000,
+        "input_tokens": 44723,
+        "usage_percent": 4.4723,
+        "count_method": "response_usage_scaled_breakdown",
+        "staleness": "live",
+        "generated_at": "2026-07-01T12:31:10.847142Z",
+        "event_seq": 226,
+        "breakdown": [
+          {
+            "category": "system_prompt",
+            "tokens": 2378,
+            "usage_percent": 0.2378
+          },
+          {
+            "category": "tools",
+            "tokens": 2722,
+            "usage_percent": 0.2722
+          },
+          {
+            "category": "memory",
+            "tokens": 8746,
+            "usage_percent": 0.8746
+          },
+          {
+            "category": "conversation",
+            "tokens": 30869,
+            "usage_percent": 3.0869
+          },
+          {
+            "category": "other",
+            "tokens": 8,
+            "usage_percent": 0.0008
+          }
+        ],
+        "warnings": []
+      },
+      "state": "running"
     },
     "clarify_prep@1": {
       "first_event_seq": 105,
