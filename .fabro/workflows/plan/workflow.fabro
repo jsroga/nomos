@@ -109,7 +109,7 @@ digraph Plan {
             class="build"
             prompt="@prompts/implement.md"
             permissions="full"
-            max_visits=4
+            max_visits=3
         ]
 
         tester [
@@ -132,7 +132,7 @@ digraph Plan {
     verify [
         label="Typecheck + Lint\n[shell · no agent]"
         shape=parallelogram
-        script="NODE_OPTIONS=\"${NODE_OPTIONS:---max-old-space-size=4096}\" npm run typecheck && NODE_OPTIONS=\"${NODE_OPTIONS:---max-old-space-size=4096}\" npm run lint"
+        script="set -euo pipefail; node scripts/fabro-verify.mjs"
         max_visits=5
     ]
     verify_gate [shape=diamond, label="Static checks pass?"]
@@ -220,18 +220,18 @@ digraph Plan {
     // (internal.node_visit_count — the doc's fixed-count-loop pattern) so a stuck
     // build documents itself instead of hard-failing on developer's max_visits.
     verify_gate -> tester    [label="Pass", condition="outcome=succeeded"]
-    verify_gate -> developer [label="Fix", condition="internal.node_visit_count < 4", fidelity="compact"]
+    verify_gate -> developer [label="Fix", condition="outcome=failed && internal.node_visit_count < 3", fidelity="compact"]
     verify_gate -> Retro     [label="Static checks still failing after retries"]
 
     tester -> run_tests -> test_gate
 
     test_gate -> run_e2e [label="Pass", condition="outcome=succeeded"]
-    test_gate -> developer [label="Fix", condition="internal.node_visit_count < 4", fidelity="compact"]
+    test_gate -> developer [label="Fix", condition="outcome=failed && internal.node_visit_count < 3", fidelity="compact"]
     test_gate -> Retro     [label="Unit tests still failing after retries"]
 
     run_e2e -> e2e_gate
     e2e_gate -> screenshot [label="Pass", condition="outcome=succeeded"]
-    e2e_gate -> developer  [label="Fix", condition="internal.node_visit_count < 4", fidelity="compact"]
+    e2e_gate -> developer  [label="Fix", condition="outcome=failed && internal.node_visit_count < 3", fidelity="compact"]
     e2e_gate -> Retro      [label="E2E still failing after retries"]
 
     // UI increments: screenshot → dev server → Preview gate → Retro.

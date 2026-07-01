@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/domains/interior-designer/**/*.ts",
+    "src/domains/interior-designer/**/*.tsx",
+    "src/app/api/interior-designer/**/*.ts"
+  ]
+}

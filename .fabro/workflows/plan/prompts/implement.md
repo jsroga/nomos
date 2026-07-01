@@ -76,29 +76,22 @@ change traceable to a plan item. Mark each done as you finish it; keep exactly o
 
 ## Self-verification (targeted — fast, no false failures)
 
-Full-repo `npm run typecheck` / `npm run lint` are **slow** and can fail on
-**pre-existing** errors in modules you never touched. For your own check, scope to
-what you changed; the `verify` stage runs the full gate afterward.
+Full-repo `npm run typecheck` **OOMs** in the Fabro Docker sandbox (~4GB+ heap). The
+`verify` stage runs `node scripts/fabro-verify.mjs` — module-scoped typecheck + lint
+(only errors under `src/domains/<module>/` and `src/app/api/<module>/` fail the gate).
 
-First collect the files you changed (tracked edits + new untracked, `.ts`/`.tsx`):
+For your own check before handoff, run the same script:
 
 ```bash
-FILES=$( { git diff --name-only --diff-filter=ACMR HEAD; git ls-files --others --exclude-standard; } | grep -E '\.(ts|tsx)$' | sort -u )
+node scripts/fabro-verify.mjs
 ```
 
-1. **Typecheck (changed files only):**
-   `[ -n "$FILES" ] && NODE_OPTIONS=--max-old-space-size=4096 npx --yes tsc-files --noEmit $FILES`
-   `tsc-files` builds a temp tsconfig that **inherits the project config** (path
-   aliases, strict, libs) and checks only your files + their type deps — far faster
-   than the whole-program `tsc`. Plain `tsc --noEmit <file>` would ignore `tsconfig`,
-   so do **not** use it. The authoritative whole-program `tsc` runs in `verify`.
-2. **Lint (changed files only):** `[ -n "$FILES" ] && npx eslint $FILES`
-   — lint just your changes, not the whole repo.
-3. Re-read your diff; confirm only increment scope touched.
-4. Cross-check `PLAN.md` minimum increment — done or explicitly deferred with reason.
+Also run quick greps from `PLAN.md` verification bullets (e.g. no browser Supabase
+client in the module).
 
-`npm run typecheck` and `npm run lint` (full) must ultimately pass in the `verify`
-stage; keep your changes clean so they do.
+If the **minimum increment is already on the branch** (no new edits needed), still
+run `fabro-verify.mjs`, mark todos complete, and summarize what's already present —
+do **not** re-touch files or loop on unfixable infra failures.
 
 ## Rules
 

@@ -135,10 +135,9 @@ Daytona is the only provider that serves preview URLs.
 
 | Lever | Where | Effect |
 | --- | --- | --- |
-| Node heap `--max-old-space-size=4096` + 6GB/4cpu | `[environments.plan-docker].env`/`.resources` + `verify` script | stops `tsc` OOM (~2GB default heap) |
+| Node heap `--max-old-space-size=6144` + 8GB/4cpu | `[environments.plan-docker].env`/`.resources` + `fabro-verify.mjs` | module-scoped `tsc` avoids full-repo OOM |
+| `node scripts/fabro-verify.mjs` | `verify` shell + `implement.md` self-check | typecheck/lint target module only; ignores errors outside `src/domains/<m>/` |
 | `npm ci --prefer-offline --no-audit --no-fund` | Bootstrap script | skips audit/funding network calls |
-| Targeted typecheck (`npx tsc-files --noEmit` on `git diff` files) | developer self-check in `implement.md` | checks only changed files + type deps (respects tsconfig aliases); full `tsc` still runs in `verify` |
-| Targeted lint (`eslint` on `git diff` files) | developer self-check in `implement.md` | avoids false failures from pre-existing errors in untouched modules; full lint still runs in `verify` |
 | `grep`, not `rg` | assess/plan prompts | ripgrep isn't installed pre-Bootstrap |
 | Read-before-write reminder | assess/clarify-prep prompts | avoids blocked `write_file` on pre-existing `.md` files |
 
@@ -163,9 +162,9 @@ Fidelity is tuned per-transition so each stage gets exactly the context it needs
 | `Preview → developer` (revise) | `compact` | surfaces the reviewer's `human.gate.text` note |
 | everything else | `summary:medium` (graph default) | lean preambles |
 
-Fix loops bail out with `condition="internal.node_visit_count < 4"` (the docs'
-fixed-count-loop pattern) → **Retro** after repeated failures, so a stuck build
-documents itself instead of hard-failing on `developer`'s `max_visits`.
+Fix loops bail out with `condition="outcome=failed && internal.node_visit_count < 3"` →
+**Retro** after two fix attempts, so a stuck build (e.g. verify OOM) documents itself
+instead of burning `developer` visits.
 
 Routing reads context set by earlier stages: `plan.has_ui_surface` (UX/Preview
 routing), `outcome` (gate pass/fail), `human.gate.*` (Clarify/Verification choices).
