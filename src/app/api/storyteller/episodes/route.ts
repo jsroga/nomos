@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { asc, eq } from 'drizzle-orm'
+import { ZodError } from 'zod'
 
 import { episodes } from '@/db'
 import { requireAuth } from '@/lib/auth'
@@ -87,6 +88,13 @@ export async function POST(req: Request) {
 
     return NextResponse.json(newEpisode)
   } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid episode payload', details: error.flatten() },
+        { status: 400 }
+      )
+    }
+
     console.error('Error creating episode:', error)
     return NextResponse.json({ error: 'Failed to create episode' }, { status: 500 })
   }
