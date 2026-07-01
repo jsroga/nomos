@@ -1291,15 +1291,92 @@
     }
   },
   "web_url": "http://127.0.0.1:32276/runs/01KWESYEP7J0J0RK1EEPS0Z7S5",
-  "start": null,
-  "status": {
-    "kind": "starting"
+  "start": {
+    "start_time": "2026-07-01T12:20:16.245683Z",
+    "run_branch": "fabro/run/01KWESYEP7J0J0RK1EEPS0Z7S5",
+    "base_sha": "c94598b56a037621a2413712681bf6c01c1a8f77"
   },
-  "status_updated_at": "2026-07-01T12:20:02.418171Z",
-  "last_event_at": "2026-07-01T12:20:15.665261Z",
+  "status": {
+    "kind": "running"
+  },
+  "status_updated_at": "2026-07-01T12:20:16.245721Z",
+  "last_event_at": "2026-07-01T12:20:18.618552Z",
   "pending_control": null,
-  "checkpoints": [],
-  "conclusion": null,
+  "checkpoints": [
+    {
+      "seq": 20,
+      "checkpoint": {
+        "timestamp": "2026-07-01T12:20:18.618552Z",
+        "current_node": "start",
+        "completed_nodes": [
+          "start"
+        ],
+        "node_retries": {},
+        "context_values": {
+          "outcome": "succeeded",
+          "internal.fidelity": "summary:medium",
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
+          "failure_class": "",
+          "graph.stall_timeout": "1800000ms",
+          "graph.goal": "Clean up and align the interior-designer module (src/domains/interior-designer) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
+          "internal.work_dir": "/workspace/kurvitza",
+          "graph.default_max_retries": "1",
+          "graph.default_fidelity": "summary:medium",
+          "failure_signature": "",
+          "graph.rankdir": "LR",
+          "internal.node_visit_count": 1,
+          "internal.run_id": "01KWESYEP7J0J0RK1EEPS0Z7S5",
+          "graph.label": "Optional Build",
+          "internal.thread_id": null,
+          "current_node": "start",
+          "internal.retry_count.start": 0
+        },
+        "node_outcomes": {
+          "start": {
+            "status": "succeeded",
+            "usage": null
+          }
+        },
+        "next_node_id": "scope",
+        "node_visits": {
+          "start": 1
+        }
+      },
+      "diff": {}
+    }
+  ],
+  "conclusion": {
+    "timestamp": "2026-07-01T12:20:18.627198Z",
+    "status": "failed",
+    "timing": {
+      "wall_time_ms": 2375,
+      "inference_time_ms": 0,
+      "tool_time_ms": 0,
+      "active_time_ms": 0
+    },
+    "failure": {
+      "reason": "workflow_error",
+      "detail": {
+        "message": "node \"scope\" visited 1 times (node limit 1); run is stuck in a cycle",
+        "category": "deterministic"
+      }
+    },
+    "stages": [
+      {
+        "stage_id": "start",
+        "stage_label": "start",
+        "timing": {
+          "wall_time_ms": 0,
+          "inference_time_ms": 0,
+          "tool_time_ms": 0,
+          "active_time_ms": 0
+        },
+        "retries": 0
+      }
+    ],
+    "total_retries": 0,
+    "diff": {}
+  },
   "sandbox": {
     "kind": "ready",
     "plan": {
@@ -1325,5 +1402,40 @@
   "pull_request": null,
   "superseded_by": null,
   "pending_interviews": {},
-  "stages": {}
+  "stages": {
+    "start@1": {
+      "first_event_seq": 17,
+      "prompt": null,
+      "response": null,
+      "completion": {
+        "outcome": "succeeded",
+        "notes": null,
+        "failure_reason": null,
+        "timestamp": "2026-07-01T12:20:18.618446Z"
+      },
+      "provider_used": null,
+      "diff": null,
+      "script_invocation": null,
+      "script_timing": null,
+      "parallel_results": null,
+      "output": null,
+      "started_at": "2026-07-01T12:20:18.559404Z",
+      "handler": "start",
+      "timing": {
+        "wall_time_ms": 0,
+        "inference_time_ms": 0,
+        "tool_time_ms": 0,
+        "active_time_ms": 0
+      },
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "reasoning_tokens": 0,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0
+      },
+      "state": "succeeded"
+    }
+  }
 }
