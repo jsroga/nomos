@@ -1,0 +1,394 @@
+diff --git a/src/app/api/storyteller/episodes/__tests__/route.test.ts b/src/app/api/storyteller/episodes/__tests__/route.test.ts
+new file mode 100644
+index 0000000..85bc560
+--- /dev/null
++++ b/src/app/api/storyteller/episodes/__tests__/route.test.ts
+@@ -0,0 +1,182 @@
++import { beforeEach, describe, expect, it, vi } from 'vitest'
++
++const requireAuthMock = vi.fn()
++const verifyProjectAccessMock = vi.fn()
++const selectMock = vi.fn()
++const insertMock = vi.fn()
++const eqMock = vi.fn((field: unknown, value: unknown) => ({ field, value }))
++const ascMock = vi.fn((field: unknown) => field)
++
++vi.mock('@/lib/auth', () => ({
++  requireAuth: () => requireAuthMock(),
++}))
++
++vi.mock('@/shared/auth', () => ({
++  verifyProjectAccess: (...args: unknown[]) => verifyProjectAccessMock(...args),
++}))
++
++vi.mock('drizzle-orm', () => ({
++  eq: (...args: unknown[]) => eqMock(...args),
++  asc: (...args: unknown[]) => ascMock(...args),
++}))
++
++vi.mock('@/db', () => ({
++  episodes: {
++    projectId: 'episodes.projectId',
++    sequence: 'episodes.sequence',
++  },
++}))
++
++vi.mock('@/lib/db', () => ({
++  db: {
++    select: (...args: unknown[]) => selectMock(...args),
++    insert: (...args: unknown[]) => insertMock(...args),
++  },
++}))
++
++function createJsonRequest(url: string, init?: RequestInit) {
++  return new Request(url, {
++    headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
++    ...init,
++  })
++}
++
++describe('storyteller episodes route', () => {
++  beforeEach(() => {
++    vi.clearAllMocks()
++  })
++
++  it('returns 400 when GET is missing projectId', async () => {
++    const { GET } = await import('../route')
++
++    const response = await GET(createJsonRequest('http://localhost/api/storyteller/episodes'))
++
++    expect(response.status).toBe(400)
++    await expect(response.json()).resolves.toEqual({
++      error: 'Project ID is required',
++    })
++  })
++
++  it('returns the typed episode list for an authorized GET request', async () => {
++    const orderedEpisodes = [
++      { id: 'ep-1', title: 'Pilot', sequence: 1 },
++      { id: 'ep-2', title: null, sequence: 2 },
++    ]
++
++    requireAuthMock.mockResolvedValue({
++      session: { user: { id: 'user-1' } },
++    })
++    verifyProjectAccessMock.mockResolvedValue(true)
++    selectMock.mockReturnValue({
++      from: vi.fn(() => ({
++        where: vi.fn(() => ({
++          orderBy: vi.fn().mockResolvedValue(orderedEpisodes),
++        })),
++      })),
++    })
++
++    const { GET } = await import('../route')
++    const response = await GET(
++      createJsonRequest('http://localhost/api/storyteller/episodes?projectId=project-1')
++    )
++
++    expect(response.status).toBe(200)
++    await expect(response.json()).resolves.toEqual(orderedEpisodes)
++    expect(verifyProjectAccessMock).toHaveBeenCalledWith('project-1', 'user-1')
++    expect(eqMock).toHaveBeenCalledWith('episodes.projectId', 'project-1')
++    expect(ascMock).toHaveBeenCalledWith('episodes.sequence')
++  })
++
++  it('returns 403 when GET project access is denied', async () => {
++    requireAuthMock.mockResolvedValue({
++      session: { user: { id: 'user-1' } },
++    })
++    verifyProjectAccessMock.mockResolvedValue(false)
++
++    const { GET } = await import('../route')
++    const response = await GET(
++      createJsonRequest('http://localhost/api/storyteller/episodes?projectId=project-1')
++    )
++
++    expect(response.status).toBe(403)
++    await expect(response.json()).resolves.toEqual({
++      error: 'Unauthorized access to project',
++    })
++  })
++
++  it('returns 400 when POST body fails DTO validation', async () => {
++    requireAuthMock.mockResolvedValue({
++      session: { user: { id: 'user-1' } },
++    })
++
++    const { POST } = await import('../route')
++    const response = await POST(
++      createJsonRequest('http://localhost/api/storyteller/episodes', {
++        method: 'POST',
++        body: JSON.stringify({
++          projectId: 'project-1',
++          title: '',
++          sequence: 1,
++        }),
++      })
++    )
++
++    expect(response.status).toBe(400)
++    const body = await response.json()
++    expect(body.error).toBe('Invalid episode payload')
++    expect(body.details.fieldErrors.title).toBeDefined()
++  })
++
++  it('inserts a new episode with camelCase fields on POST', async () => {
++    requireAuthMock.mockResolvedValue({
++      session: { user: { id: 'user-1' } },
++    })
++    verifyProjectAccessMock.mockResolvedValue(true)
++
++    const returningMock = vi.fn().mockResolvedValue([
++      {
++        id: 'ep-1',
++        projectId: 'project-1',
++        title: 'Pilot',
++        sequence: 1,
++        masterPrompt: 'Write cinematically',
++        summary: 'Opening episode',
++      },
++    ])
++    const valuesMock = vi.fn(() => ({
++      returning: returningMock,
++    }))
++    insertMock.mockReturnValue({
++      values: valuesMock,
++    })
++
++    const { POST } = await import('../route')
++    const response = await POST(
++      createJsonRequest('http://localhost/api/storyteller/episodes', {
++        method: 'POST',
++        body: JSON.stringify({
++          projectId: 'project-1',
++          title: 'Pilot',
++          sequence: 1,
++          masterPrompt: 'Write cinematically',
++          summary: 'Opening episode',
++        }),
++      })
++    )
++
++    expect(response.status).toBe(200)
++    expect(verifyProjectAccessMock).toHaveBeenCalledWith('project-1', 'user-1')
++    expect(valuesMock).toHaveBeenCalledWith({
++      projectId: 'project-1',
++      title: 'Pilot',
++      sequence: 1,
++      masterPrompt: 'Write cinematically',
++      summary: 'Opening episode',
++      status: 'planning',
++    })
++    await expect(response.json()).resolves.toMatchObject({
++      id: 'ep-1',
++      title: 'Pilot',
++    })
++  })
++})
+diff --git a/src/app/api/storyteller/episodes/route.ts b/src/app/api/storyteller/episodes/route.ts
+index bcc2832..86a85bd 100644
+--- a/src/app/api/storyteller/episodes/route.ts
++++ b/src/app/api/storyteller/episodes/route.ts
+@@ -1,5 +1,6 @@
+ import { NextResponse } from 'next/server'
+ import { asc, eq } from 'drizzle-orm'
++import { ZodError } from 'zod'
+ 
+ import { episodes } from '@/db'
+ import { requireAuth } from '@/lib/auth'
+@@ -87,6 +88,13 @@ export async function POST(req: Request) {
+ 
+     return NextResponse.json(newEpisode)
+   } catch (error) {
++    if (error instanceof ZodError) {
++      return NextResponse.json(
++        { error: 'Invalid episode payload', details: error.flatten() },
++        { status: 400 }
++      )
++    }
++
+     console.error('Error creating episode:', error)
+     return NextResponse.json({ error: 'Failed to create episode' }, { status: 500 })
+   }
+diff --git a/src/domains/storyteller/hooks/__tests__/useBibleState.test.ts b/src/domains/storyteller/hooks/__tests__/useBibleState.test.ts
+new file mode 100644
+index 0000000..655d576
+--- /dev/null
++++ b/src/domains/storyteller/hooks/__tests__/useBibleState.test.ts
+@@ -0,0 +1,85 @@
++/**
++ * @vitest-environment jsdom
++ */
++
++import { renderHook, act, waitFor } from '@testing-library/react'
++import { beforeEach, describe, expect, it, vi } from 'vitest'
++
++import { useBibleState } from '../useBibleState'
++
++const pushMock = vi.fn()
++const replaceMock = vi.fn()
++const useBibleLockMock = vi.fn()
++const getUserMock = vi.fn()
++
++let searchParams = new URLSearchParams()
++let pathname = '/app/project-1/storyteller'
++
++vi.mock('next/navigation', () => ({
++  useSearchParams: () => searchParams,
++  useRouter: () => ({
++    push: pushMock,
++    replace: replaceMock,
++  }),
++  usePathname: () => pathname,
++}))
++
++vi.mock('@/domains/storyteller/state/queries/useBibleLock', () => ({
++  useBibleLock: (projectId: string | undefined) => useBibleLockMock(projectId),
++}))
++
++vi.mock('@supabase/auth-helpers-nextjs', () => ({
++  createClientComponentClient: () => ({
++    auth: {
++      getUser: () => getUserMock(),
++    },
++  }),
++}))
++
++describe('useBibleState', () => {
++  beforeEach(() => {
++    vi.clearAllMocks()
++    searchParams = new URLSearchParams()
++    pathname = '/app/project-1/storyteller'
++
++    useBibleLockMock.mockReturnValue({
++      data: { isLocked: false, lockedBy: null, lockedAt: null },
++    })
++    getUserMock.mockResolvedValue({
++      data: { user: { email: 'writer@example.com' } },
++    })
++  })
++
++  it('opens the Storybible by default on first visit and exposes the fetched user email', async () => {
++    const { result } = renderHook(() => useBibleState('project-1'))
++
++    await waitFor(() => {
++      expect(replaceMock).toHaveBeenCalledWith('/app/project-1/storyteller?bible=open', {
++        scroll: false,
++      })
++      expect(result.current.userEmail).toBe('writer@example.com')
++    })
++  })
++
++  it('surfaces bible lock state and dispatches the opened event when toggled on', async () => {
++    searchParams = new URLSearchParams('bible=off')
++    useBibleLockMock.mockReturnValue({
++      data: { isLocked: true, lockedBy: 'editor@example.com', lockedAt: null },
++    })
++    const dispatchSpy = vi.spyOn(window, 'dispatchEvent')
++
++    const { result } = renderHook(() => useBibleState('project-1'))
++
++    await waitFor(() => {
++      expect(result.current.isBibleLocked).toBe(true)
++      expect(result.current.bibleLockedBy).toBe('editor@example.com')
++    })
++
++    act(() => {
++      result.current.toggleBible()
++    })
++
++    expect(pushMock).toHaveBeenCalledWith('?bible=open')
++    expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'bible-opened' }))
++  })
++})
+diff --git a/src/domains/storyteller/hooks/__tests__/useEpisodeData.test.ts b/src/domains/storyteller/hooks/__tests__/useEpisodeData.test.ts
+new file mode 100644
+index 0000000..53e2497
+--- /dev/null
++++ b/src/domains/storyteller/hooks/__tests__/useEpisodeData.test.ts
+@@ -0,0 +1,84 @@
++/**
++ * @vitest-environment jsdom
++ */
++
++import { renderHook, act, waitFor } from '@testing-library/react'
++import { beforeEach, describe, expect, it, vi } from 'vitest'
++
++import { LocalStorageKeys } from '@/constants/localStorage'
++import { useEpisodeData } from '../useEpisodeData'
++
++const pushMock = vi.fn()
++const useEpisodesMock = vi.fn()
++const useEpisodeMock = vi.fn()
++
++let searchParams = new URLSearchParams()
++
++vi.mock('next/navigation', () => ({
++  useSearchParams: () => searchParams,
++  useRouter: () => ({ push: pushMock }),
++}))
++
++vi.mock('@/domains/storyteller/state/queries/useEpisodes', () => ({
++  useEpisodes: (projectId: string | undefined) => useEpisodesMock(projectId),
++  useEpisode: (episodeId: string | null | undefined) => useEpisodeMock(episodeId),
++}))
++
++describe('useEpisodeData', () => {
++  beforeEach(() => {
++    vi.clearAllMocks()
++    localStorage.clear()
++    searchParams = new URLSearchParams()
++
++    useEpisodesMock.mockReturnValue({ data: [] })
++    useEpisodeMock.mockReturnValue({ data: null })
++  })
++
++  it('prefers the localStorage override when forcing the has-episodes state', async () => {
++    localStorage.setItem(LocalStorageKeys.FORCE_STORYTELLER_STATE, 'HAS_EPISODES')
++
++    const { result } = renderHook(() => useEpisodeData('project-1'))
++
++    await waitFor(() => {
++      expect(result.current.overrideState).toBe('HAS_EPISODES')
++      expect(result.current.hasEpisodes).toBe(true)
++    })
++
++    expect(result.current.firstEpisodeId).toBeNull()
++  })
++
++  it('hydrates the selected episode and pushes a new episodeId when selecting another episode', async () => {
++    searchParams = new URLSearchParams('episodeId=ep-1')
++
++    useEpisodesMock.mockReturnValue({
++      data: [
++        { id: 'ep-1', title: 'Pilot', sequence: 1 },
++        { id: 'ep-2', title: 'Finale', sequence: 2 },
++      ],
++    })
++    useEpisodeMock.mockReturnValue({
++      data: {
++        id: 'ep-1',
++        title: 'Pilot',
++        masterPrompt: 'Write cinematically',
++        episode_prompt: 'Write cinematically',
++      },
++    })
++
++    const { result } = renderHook(() => useEpisodeData('project-1'))
++
++    await waitFor(() => {
++      expect(result.current.currentEpisodeId).toBe('ep-1')
++      expect(result.current.currentEpisodeTitle).toBe('Pilot')
++      expect(result.current.firstEpisodeId).toBe('ep-1')
++      expect(result.current.hasEpisodes).toBe(true)
++    })
++
++    act(() => {
++      result.current.selectEpisode('ep-2')
++    })
++
++    expect(pushMock).toHaveBeenCalledWith('?episodeId=ep-2')
++    expect(result.current.currentEpisodeId).toBe('ep-2')
++  })
++})
