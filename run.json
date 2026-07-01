@@ -1034,7 +1034,7 @@
     "kind": "running"
   },
   "status_updated_at": "2026-07-01T10:35:09.623606Z",
-  "last_event_at": "2026-07-01T10:35:12.252674Z",
+  "last_event_at": "2026-07-01T10:36:49.450587Z",
   "pending_control": null,
   "checkpoints": [
     {
@@ -1079,9 +1079,9 @@
       "diff": {}
     },
     {
-      "seq": 0,
+      "seq": 28,
       "checkpoint": {
-        "timestamp": "2026-07-01T10:35:12.306701Z",
+        "timestamp": "2026-07-01T10:35:15.620554Z",
         "current_node": "scope",
         "completed_nodes": [
           "start",
@@ -1089,26 +1089,26 @@
         ],
         "node_retries": {},
         "context_values": {
-          "current_node": "scope",
-          "outcome": "succeeded",
-          "internal.fidelity": "summary:medium",
-          "graph.goal": "Clean up and align the storyteller module (src/domains/storyteller) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
-          "internal.thread_id": "start",
-          "internal.retry_count.start": 0,
-          "graph.stall_timeout": "1800000ms",
-          "failure_class": "",
-          "internal.retry_count.scope": 0,
-          "internal.node_visit_count": 1,
-          "graph.default_fidelity": "summary:medium",
-          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
-          "internal.run_id": "01KWEKXTNN02DJ5H0RA9W7X74R",
-          "internal.work_dir": "/workspace/kurvitza",
-          "graph.rankdir": "LR",
+          "command.output": "blob://sha256/a1b56f3b2501b9dc928b6a840239aee6fac0d5486456f07515b7594f6055fc50",
           "failure_signature": "",
-          "graph.default_max_retries": "1",
           "thread.start.current_node": "scope",
+          "graph.default_max_retries": "1",
+          "graph.goal": "Clean up and align the storyteller module (src/domains/storyteller) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
+          "internal.node_visit_count": 1,
+          "internal.thread_id": "start",
+          "graph.rankdir": "LR",
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
           "graph.label": "Optional Build",
-          "command.output": "blob://sha256/a1b56f3b2501b9dc928b6a840239aee6fac0d5486456f07515b7594f6055fc50"
+          "internal.retry_count.scope": 0,
+          "internal.work_dir": "/workspace/kurvitza",
+          "internal.fidelity": "summary:medium",
+          "failure_class": "",
+          "current_node": "scope",
+          "graph.stall_timeout": "1800000ms",
+          "internal.retry_count.start": 0,
+          "graph.default_fidelity": "summary:medium",
+          "internal.run_id": "01KWEKXTNN02DJ5H0RA9W7X74R",
+          "outcome": "succeeded"
         },
         "node_outcomes": {
           "scope": {
@@ -1131,9 +1131,122 @@
           }
         },
         "next_node_id": "assess",
+        "git_commit_sha": "029d0387b2940d5a9e9012861835b09def2d860e",
+        "node_visits": {
+          "scope": 1,
+          "start": 1
+        }
+      },
+      "diff": {
+        "summary": {
+          "files_changed": 0,
+          "additions": 0,
+          "deletions": 0
+        }
+      }
+    },
+    {
+      "seq": 0,
+      "checkpoint": {
+        "timestamp": "2026-07-01T10:36:49.520129Z",
+        "current_node": "assess",
+        "completed_nodes": [
+          "start",
+          "scope",
+          "assess"
+        ],
+        "node_retries": {},
+        "context_values": {
+          "current_node": "assess",
+          "outcome": "succeeded",
+          "last_stage": "assess",
+          "internal.fidelity": "summary:medium",
+          "graph.goal": "Clean up and align the storyteller module (src/domains/storyteller) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
+          "internal.thread_id": "review",
+          "internal.retry_count.start": 0,
+          "graph.stall_timeout": "1800000ms",
+          "failure_class": "",
+          "thread.review.current_node": "assess",
+          "internal.retry_count.scope": 0,
+          "last_response": "Assessment written to `findings/assess.md`.\n\nShort summary:\n- Storyteller has an `index.ts`, but it currently exposes too much: DB schema, services, and agent internals leak through the public barrel.",
+          "internal.retry_count.assess": 0,
+          "internal.node_visit_count": 1,
+          "graph.default_fidelity": "summary:medium",
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
+          "internal.run_id": "01KWEKXTNN02DJ5H0RA9W7X74R",
+          "internal.work_dir": "/workspace/kurvitza",
+          "graph.rankdir": "LR",
+          "failure_signature": "",
+          "response.assess": "Assessment written to `findings/assess.md`.\n\nShort summary:\n- Storyteller has an `index.ts`, but it currently exposes too much: DB schema, services, and agent internals leak through the public barrel.\n- The module shape is still legacy (`components/hooks/tools/lib/db`) rather than the target `ui/state/io/core/services/agents/tasks/prompts` blueprint.\n- Highest-risk divergences are in client/server boundaries: raw client `fetch`, ad-hoc caching, localStorage/window-event job recovery, and parallel hand-rolled AI orchestration beside Mastra.\n\nTop 3 gaps first:\n1. Reshape the module toward the target blueprint.\n2. Narrow `src/domains/storyteller/index.ts` to a real public API.\n3. Move client-side server state into `io/` + TanStack Query `state/queries/` and retire bespoke fetch/caching patterns.\n\nNo code was modified beyond the findings file.",
+          "graph.default_max_retries": "1",
+          "thread.start.current_node": "scope",
+          "graph.label": "Optional Build",
+          "command.output": "blob://sha256/a1b56f3b2501b9dc928b6a840239aee6fac0d5486456f07515b7594f6055fc50"
+        },
+        "node_outcomes": {
+          "scope": {
+            "status": "succeeded",
+            "context_updates": {
+              "command.output": "blob://sha256/a1b56f3b2501b9dc928b6a840239aee6fac0d5486456f07515b7594f6055fc50"
+            },
+            "notes": "Script completed: M=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1",
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 140,
+              "active_time_ms": 140
+            }
+          },
+          "assess": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_stage": "assess",
+              "response.assess": "Assessment written to `findings/assess.md`.\n\nShort summary:\n- Storyteller has an `index.ts`, but it currently exposes too much: DB schema, services, and agent internals leak through the public barrel.\n- The module shape is still legacy (`components/hooks/tools/lib/db`) rather than the target `ui/state/io/core/services/agents/tasks/prompts` blueprint.\n- Highest-risk divergences are in client/server boundaries: raw client `fetch`, ad-hoc caching, localStorage/window-event job recovery, and parallel hand-rolled AI orchestration beside Mastra.\n\nTop 3 gaps first:\n1. Reshape the module toward the target blueprint.\n2. Narrow `src/domains/storyteller/index.ts` to a real public API.\n3. Move client-side server state into `io/` + TanStack Query `state/queries/` and retire bespoke fetch/caching patterns.\n\nNo code was modified beyond the findings file.",
+              "last_response": "Assessment written to `findings/assess.md`.\n\nShort summary:\n- Storyteller has an `index.ts`, but it currently exposes too much: DB schema, services, and agent internals leak through the public barrel."
+            },
+            "notes": "Stage completed: assess",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 102407,
+                    "output_tokens": 6017,
+                    "reasoning_tokens": 327,
+                    "cache_read_tokens": 365056,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 442441
+            },
+            "files_touched": [
+              "/workspace/kurvitza/findings/assess.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 62146,
+              "tool_time_ms": 1003,
+              "active_time_ms": 63149
+            }
+          },
+          "start": {
+            "status": "succeeded",
+            "usage": null
+          }
+        },
+        "next_node_id": "clarify_prep",
         "node_visits": {
           "start": 1,
-          "scope": 1
+          "scope": 1,
+          "assess": 1
         }
       },
       "diff": {}
@@ -1166,11 +1279,228 @@
   "superseded_by": null,
   "pending_interviews": {},
   "stages": {
+    "assess@1": {
+      "first_event_seq": 31,
+      "prompt": null,
+      "response": null,
+      "completion": null,
+      "provider_used": {
+        "mode": "agent",
+        "provider": "openai",
+        "model": "gpt-5.4",
+        "reasoning_effort": "low"
+      },
+      "diff": null,
+      "script_invocation": null,
+      "script_timing": null,
+      "parallel_results": null,
+      "output": null,
+      "started_at": "2026-07-01T10:35:15.622301Z",
+      "handler": "agent",
+      "usage": {
+        "input_tokens": 102407,
+        "output_tokens": 6017,
+        "total_tokens": 473807,
+        "reasoning_tokens": 327,
+        "cache_read_tokens": 365056,
+        "cache_write_tokens": 0,
+        "total_usd_micros": 442441
+      },
+      "model": {
+        "provider": "openai",
+        "model_id": "gpt-5.4"
+      },
+      "permission_level": "full",
+      "agent_tools": [
+        {
+          "name": "apply_patch",
+          "description": "Use the `apply_patch` tool to edit files. This is a FREEFORM tool, so do not wrap the patch in JSON.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "write",
+          "invoked": false
+        },
+        {
+          "name": "close_agent",
+          "description": "Close a running subagent that is no longer needed.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "glob",
+          "description": "Find files by file names using a glob pattern. Use path to choose the search root. Prefer this over shell find or ls when locating repository files.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": true
+        },
+        {
+          "name": "grep",
+          "description": "Search file contents with a regex pattern. Use path to choose the search root, glob_filter to limit matching files, case_insensitive for case folding, and max_results to cap output.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": true
+        },
+        {
+          "name": "read_file",
+          "description": "Read files before editing them. Returns line-numbered text and supports offset/limit for large files. Use this instead of shell cat, head, tail, or sed when inspecting repository files.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": true
+        },
+        {
+          "name": "request_user_input",
+          "description": "Ask the human one or more questions and wait for their answers before continuing this stage.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "send_input",
+          "description": "Send a follow-up message to a running subagent when new information or corrected instructions are needed.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "shell",
+          "description": "Execute shell commands for terminal operations, package managers, tests and builds. Use dedicated tools for file reads, file edits, filename searches, and content searches. Provide timeout_ms for long-running commands.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "shell",
+          "invoked": true
+        },
+        {
+          "name": "spawn_agent",
+          "description": "Spawn a subagent for independent work or context isolation. Use it for tasks that can proceed separately, and avoid duplicating the same work in the parent session.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "update_plan",
+          "description": "Update the multi-step plan for the current task. Submit the entire plan; existing steps are reconciled by exact step text.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "wait",
+          "description": "Wait for a subagent to complete, then use the result to synthesize the outcome for the user.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "web_fetch",
+          "description": "Fetch content from a URL that starts with http:// or https://. Pass a prompt to extract specific information or summarize the page; omit prompt to return the page content.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "web_search",
+          "description": "Search the web using Brave Search when current external information is needed. Returns result titles, URLs, and descriptions; use web_fetch for a specific URL.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "write_file",
+          "description": "Create new files, or overwrite an existing file only when replacement is explicitly intended. Prefer edit_file for targeted changes to existing files because write_file overwrites the full file content.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "write",
+          "invoked": true
+        }
+      ],
+      "mcp_servers": [
+        {
+          "server_name": "playwright",
+          "tool_count": 0,
+          "status": {
+            "kind": "failed",
+            "error": "MCP server did not start listening on port 3100 within 30s. stderr:\nsh: 1: npx: not found\n"
+          },
+          "invoked": false
+        }
+      ],
+      "context_window": {
+        "provider": "openai",
+        "model": "gpt-5.4",
+        "context_window_tokens": 272000,
+        "input_tokens": 54448,
+        "usage_percent": 20.01764705882353,
+        "count_method": "response_usage_scaled_breakdown",
+        "staleness": "live",
+        "generated_at": "2026-07-01T10:36:49.450329Z",
+        "event_seq": 122,
+        "breakdown": [
+          {
+            "category": "system_prompt",
+            "tokens": 1010,
+            "usage_percent": 0.3713235294117647
+          },
+          {
+            "category": "tools",
+            "tokens": 1472,
+            "usage_percent": 0.5411764705882353
+          },
+          {
+            "category": "memory",
+            "tokens": 1308,
+            "usage_percent": 0.4808823529411765
+          },
+          {
+            "category": "conversation",
+            "tokens": 50651,
+            "usage_percent": 18.621691176470588
+          },
+          {
+            "category": "other",
+            "tokens": 7,
+            "usage_percent": 0.002573529411764706
+          }
+        ],
+        "warnings": []
+      },
+      "state": "running"
+    },
     "scope@1": {
       "first_event_seq": 21,
       "prompt": null,
       "response": null,
-      "completion": null,
+      "completion": {
+        "outcome": "succeeded",
+        "notes": "Script completed: M=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1",
+        "failure_reason": null,
+        "timestamp": "2026-07-01T10:35:12.305830Z"
+      },
       "provider_used": null,
       "diff": null,
       "script_invocation": {
@@ -1193,6 +1523,12 @@
       "termination": "exited",
       "started_at": "2026-07-01T10:35:12.108038Z",
       "handler": "command",
+      "timing": {
+        "wall_time_ms": 144,
+        "inference_time_ms": 0,
+        "tool_time_ms": 140,
+        "active_time_ms": 140
+      },
       "usage": {
         "input_tokens": 0,
         "output_tokens": 0,
@@ -1201,7 +1537,7 @@
         "cache_read_tokens": 0,
         "cache_write_tokens": 0
       },
-      "state": "running"
+      "state": "succeeded"
     },
     "start@1": {
       "first_event_seq": 17,
