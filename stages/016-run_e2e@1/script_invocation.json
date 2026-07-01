@@ -1,0 +1,5 @@
+{
+  "script": "npm run test:e2e full-loop",
+  "command": "exec 2>&1\nnpm run test:e2e full-loop",
+  "language": "shell"
+}
