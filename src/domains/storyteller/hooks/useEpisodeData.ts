@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { cachedFetch } from '@/lib/fetch-cache'
 import { LocalStorageKeys } from '@/constants/localStorage'
+import { useEpisode, useEpisodes } from '@/domains/storyteller/state/queries/useEpisodes'
 
 interface EpisodeBasic {
   id: string
   episode_prompt?: string
+  title?: string | null
+  masterPrompt?: string | null
 }
 
 export function useEpisodeData(projectId: string | undefined) {
@@ -22,6 +24,8 @@ export function useEpisodeData(projectId: string | undefined) {
   const [hasEpisodes, setHasEpisodes] = useState(false)
   const [firstEpisodeId, setFirstEpisodeId] = useState<string | null>(null)
   const [overrideState, setOverrideState] = useState<string | null>(null)
+  const episodesQuery = useEpisodes(projectId)
+  const episodeQuery = useEpisode(currentEpisodeId)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -31,7 +35,6 @@ export function useEpisodeData(projectId: string | undefined) {
   }, [])
 
   useEffect(() => {
-    let isMounted = true
     if (!projectId) return
 
     if (overrideState === 'HAS_EPISODES') {
@@ -42,32 +45,12 @@ export function useEpisodeData(projectId: string | undefined) {
       return
     }
 
-    cachedFetch(
-      `episodes:${projectId}`,
-      async () => {
-        const res = await fetch(`/api/storyteller/episodes?projectId=${projectId}`)
-        return res.json()
-      },
-      { ttlMs: 60_000 }
-    )
-      .then(data => {
-        if (!isMounted) return
-        if (overrideState === 'HAS_EPISODES') {
-          setHasEpisodes(true)
-        } else if (overrideState === 'NO_EPISODES') {
-          setHasEpisodes(false)
-        } else if (Array.isArray(data)) {
-          const hasAny = data.length > 0
-          setHasEpisodes(hasAny)
-          setFirstEpisodeId(hasAny && data[0]?.id ? data[0].id : null)
-        }
-      })
-      .catch(() => {})
-
-    return () => {
-      isMounted = false
+    if (Array.isArray(episodesQuery.data)) {
+      const hasAny = episodesQuery.data.length > 0
+      setHasEpisodes(hasAny)
+      setFirstEpisodeId(hasAny && episodesQuery.data[0]?.id ? episodesQuery.data[0].id : null)
     }
-  }, [projectId, overrideState])
+  }, [projectId, overrideState, episodesQuery.data])
 
   useEffect(() => {
     if (!currentEpisodeId) {
@@ -75,21 +58,13 @@ export function useEpisodeData(projectId: string | undefined) {
       return
     }
 
-    const fetchEpisode = async () => {
-      try {
-        const res = await fetch(`/api/storyteller/episodes/${currentEpisodeId}`)
-        if (res.ok) {
-          const data = await res.json()
-          setCurrentEpisode(data)
-          if (data.title) setCurrentEpisodeTitle(data.title)
-        }
-      } catch (err) {
-        console.error('Failed to fetch episode:', err)
+    if (episodeQuery.data) {
+      setCurrentEpisode(episodeQuery.data)
+      if (episodeQuery.data.title) {
+        setCurrentEpisodeTitle(episodeQuery.data.title)
       }
     }
-
-    fetchEpisode()
-  }, [currentEpisodeId])
+  }, [currentEpisodeId, episodeQuery.data])
 
   // Sync Episode ID from URL if it changes
   useEffect(() => {
@@ -118,5 +93,7 @@ export function useEpisodeData(projectId: string | undefined) {
     firstEpisodeId,
     overrideState,
     selectEpisode,
+    episodesQuery,
+    episodeQuery,
   }
 }

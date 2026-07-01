@@ -30,7 +30,7 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
   try {
     // Fetch all known entities from the project
     const { db } = await import('@/lib/db')
-    const { projects, storyPlans, characters } = await import('@/domains/storyteller/db/schema')
+    const { projects, storyPlans, characters } = await import('@/db')
     const { eq } = await import('drizzle-orm')
 
     // Fetch project basics first (lighter query)

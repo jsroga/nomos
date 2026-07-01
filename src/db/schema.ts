@@ -4,21 +4,14 @@ import {
   text,
   timestamp,
   jsonb,
+  boolean,
   integer,
+  real,
   unique,
+  vector,
   decimal,
 } from 'drizzle-orm/pg-core'
-
-import {
-  characters,
-  episodes,
-  beats,
-  seriesBibles,
-  storyPlans,
-  entityReferences,
-  seriesBiblesRelations,
-  storyPlansRelations,
-} from '@/domains/storyteller'
+import { relations } from 'drizzle-orm'
 
 // Projects table (world-building + storyteller)
 export const projects = pgTable('projects', {
@@ -32,6 +25,186 @@ export const projects = pgTable('projects', {
   storyPlan: jsonb('story_plan'),
   styleReferenceUrls: jsonb('style_reference_urls').default([]),
   stylePreset: text('style_preset'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+// Storyteller tables
+export const characters = pgTable('characters', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  projectId: uuid('project_id')
+    .references(() => projects.id)
+    .notNull(),
+  name: text('name').notNull(),
+  role: text('role').notNull(),
+  gender: text('gender'),
+  description: text('description'),
+  portraitUrl: text('portrait_url'),
+  characterPrompt: text('character_prompt'),
+  mbti: text('mbti'),
+  valence: integer('valence').default(0),
+  arousal: integer('arousal').default(50),
+  autonomy: integer('autonomy').default(60),
+  competence: integer('competence').default(60),
+  relatedness: integer('relatedness').default(50),
+  cognitiveClarity: integer('cognitive_clarity').default(70),
+  perceivedStakes: integer('perceived_stakes').default(40),
+  socialSafety: integer('social_safety').default(60),
+  moralAlignment: integer('moral_alignment').default(70),
+  transformationProgress: integer('transformation_progress').default(0),
+  voiceSignature: text('voice_signature'),
+  psychology: jsonb('psychology').notNull().default({}),
+  arcStatus: jsonb('arc_status').notNull().default({}),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+export const episodes = pgTable('episodes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  projectId: uuid('project_id')
+    .references(() => projects.id)
+    .notNull(),
+  sequence: integer('sequence').notNull(),
+  title: text('title'),
+  masterPrompt: text('master_prompt'),
+  summary: text('summary'),
+  premise: text('premise'),
+  thematicFocus: text('thematic_focus'),
+  scriptContent: text('script_content'),
+  storyPlan: jsonb('story_plan'),
+  planApproved: boolean('plan_approved').default(false),
+  currentPhase: text('current_phase').default('premise'),
+  status: text('status').default('planning'),
+  tenPointsPlan: jsonb('ten_points_plan').default([]),
+  posterUrl: text('poster_url'),
+  posterPrompt: text('poster_prompt'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+export const beats = pgTable('beats', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  episodeId: uuid('episode_id')
+    .references(() => episodes.id)
+    .notNull(),
+  sequence: integer('sequence').notNull(),
+  logline: text('logline').notNull(),
+  beatType: text('beat_type').notNull(),
+  content: text('content'),
+  visualHook: text('visual_hook'),
+  charactersInvolved: jsonb('characters_involved').default([]),
+  emotionalShifts: jsonb('emotional_shifts').default({}),
+  causalDependencies: jsonb('causal_dependencies').default([]),
+  setupsPayoffs: jsonb('setups_payoffs').default({}),
+  status: text('status').default('proposed'),
+  imageUrl: text('image_url'),
+  imagePrompt: text('image_prompt'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+export const setups = pgTable('setups', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  projectId: uuid('project_id')
+    .references(() => projects.id)
+    .notNull(),
+  setupBeatId: uuid('setup_beat_id').references(() => beats.id),
+  payoffBeatId: uuid('payoff_beat_id').references(() => beats.id),
+  description: text('description').notNull(),
+  isResolved: boolean('is_resolved').default(false),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const documentEmbeddings = pgTable('document_embeddings', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  projectId: uuid('project_id')
+    .references(() => projects.id)
+    .notNull(),
+  content: text('content').notNull(),
+  metadata: jsonb('metadata').notNull(),
+  embedding: vector('embedding', { dimensions: 1536 }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const entityReferences = pgTable('entity_references', {
+  id: text('id').primaryKey(),
+  type: text('type').notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  metadata: jsonb('metadata').default({}),
+  projectId: uuid('project_id')
+    .references(() => projects.id, { onDelete: 'cascade' })
+    .notNull(),
+  sourceEntityId: uuid('source_entity_id'),
+  embedding: vector('embedding', { dimensions: 1536 }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  lastReferencedAt: timestamp('last_referenced_at').defaultNow(),
+})
+
+export const relationshipSnapshots = pgTable('relationship_snapshots', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  projectId: uuid('project_id')
+    .references(() => projects.id, { onDelete: 'cascade' })
+    .notNull(),
+  episodeId: uuid('episode_id'),
+  beatId: uuid('beat_id'),
+  sourceCharacterId: text('source_character_id').notNull(),
+  targetCharacterId: text('target_character_id').notNull(),
+  relationshipType: text('relationship_type'),
+  dynamicSummary: text('dynamic_summary'),
+  tensionPoints: jsonb('tension_points').default([]),
+  trust: integer('trust').default(50),
+  conflict: integer('conflict').default(0),
+  tension: integer('tension').default(0),
+  powerBalance: integer('power_balance').default(50),
+  changeReason: text('change_reason'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const relationshipEdges = pgTable(
+  'relationship_edges',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    projectId: uuid('project_id')
+      .references(() => projects.id, { onDelete: 'cascade' })
+      .notNull(),
+    sourceId: text('source_id').notNull(),
+    targetId: text('target_id').notNull(),
+    relationshipType: text('relationship_type').notNull(),
+    weight: real('weight').notNull().default(0.5),
+    label: text('label'),
+    evidence: text('evidence'),
+    llmGrounded: boolean('llm_grounded').notNull().default(false),
+    confidence: real('confidence'),
+    sinceBeatId: uuid('since_beat_id').references(() => beats.id, { onDelete: 'set null' }),
+    untilBeatId: uuid('until_beat_id').references(() => beats.id, { onDelete: 'set null' }),
+    extractedAt: timestamp('extracted_at').defaultNow().notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  table => [unique().on(table.projectId, table.sourceId, table.targetId, table.relationshipType)]
+)
+
+export const seriesBibles = pgTable('series_bibles', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  projectId: uuid('project_id')
+    .references(() => projects.id, { onDelete: 'cascade' })
+    .notNull()
+    .unique(),
+  content: jsonb('content').notNull().default({}),
+  isLocked: boolean('is_locked').default(false),
+  lockedBy: text('locked_by'),
+  lockedAt: timestamp('locked_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+export const storyPlans = pgTable('story_plans', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  projectId: uuid('project_id')
+    .references(() => projects.id, { onDelete: 'cascade' })
+    .notNull()
+    .unique(),
+  content: jsonb('content').default({}),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
@@ -358,12 +531,12 @@ export const marketAnalysisRisingCompetitors = pgTable('market_analysis_rising_c
 // Relations for Drizzle Query Builder (enables eager loading with `with:` clause)
 // =============================================================================
 
-import { relations } from 'drizzle-orm'
-
 // Projects relations
 export const projectsRelations = relations(projects, ({ one, many }) => ({
   characters: many(characters),
   episodes: many(episodes),
+  embeddings: many(documentEmbeddings),
+  relationshipEdges: many(relationshipEdges),
   tiles: many(tiles),
   assets: many(assets),
   interiorDesigns: many(interiorDesigns),
@@ -376,6 +549,35 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   storyPlanTable: one(storyPlans, {
     fields: [projects.id],
     references: [storyPlans.projectId],
+  }),
+}))
+
+export const episodesRelations = relations(episodes, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [episodes.projectId],
+    references: [projects.id],
+  }),
+  beats: many(beats),
+}))
+
+export const beatsRelations = relations(beats, ({ one }) => ({
+  episode: one(episodes, {
+    fields: [beats.episodeId],
+    references: [episodes.id],
+  }),
+}))
+
+export const seriesBiblesRelations = relations(seriesBibles, ({ one }) => ({
+  project: one(projects, {
+    fields: [seriesBibles.projectId],
+    references: [projects.id],
+  }),
+}))
+
+export const storyPlansRelations = relations(storyPlans, ({ one }) => ({
+  project: one(projects, {
+    fields: [storyPlans.projectId],
+    references: [projects.id],
   }),
 }))
 

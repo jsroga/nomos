@@ -6,7 +6,7 @@
  */
 
 import { db } from '@/lib/db'
-import { characters, projects, episodes, beats } from '@/domains/storyteller'
+import { beats, characters, episodes, projects } from '@/db'
 import { eq, desc } from 'drizzle-orm'
 import { z } from 'zod'
 

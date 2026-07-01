@@ -16,12 +16,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { characters, projects } from '@/db'
 import {
   contextualSummaryService,
   entityRegistry,
   getEntityTypeFromId,
-  projects,
-  characters,
   relationshipEnricher,
 } from '@/domains/storyteller'
 import { db } from '@/lib/db'
@@ -292,7 +291,7 @@ export async function GET(request: NextRequest) {
   try {
     // Security: Require authentication
     const { requireAuth } = await import('@/lib/auth')
-    const { verifyProjectAccess } = await import('@/domains/storyteller')
+    const { verifyProjectAccess } = await import('@/shared/auth')
 
     const { session } = await requireAuth()
     if (!session) {

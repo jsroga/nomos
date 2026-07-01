@@ -8,8 +8,8 @@
  * - Citation tracking for grounded generation
  */
 
+import { documentEmbeddings } from '@/db'
 import { db } from '@/lib/db'
-import { documentEmbeddings } from '@/domains/storyteller/db/schema'
 import { desc, sql } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 import {

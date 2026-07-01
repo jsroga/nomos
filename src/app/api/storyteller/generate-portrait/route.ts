@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { projects, verifyProjectAccess } from '@/domains/storyteller'
+import { projects } from '@/db'
+import { verifyProjectAccess } from '@/shared/auth'
 import { eq } from 'drizzle-orm'
 import { tasks } from '@trigger.dev/sdk/v3'
 import type { generatePortrait } from '@/trigger/generate-portrait'

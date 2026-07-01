@@ -18,8 +18,8 @@ import { runConsistencyCheck } from '@/domains/storyteller/agents/ConsistencyAge
 import { CreativeDirectorAgent } from '@/domains/storyteller/agents/CreativeDirectorAgent'
 import { getWorkflowTraceId, getWorkflowEventBus } from '@/domains/storyteller/core/WorkflowContext'
 import { langfuse } from '@/agent-core/observability'
+import { characters, storyPlans } from '@/db'
 import { db } from '@/lib/db'
-import { characters, storyPlans } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'
 
 import { WORKFLOW_EVENTS } from '@/domains/storyteller/core/WorkflowContext'

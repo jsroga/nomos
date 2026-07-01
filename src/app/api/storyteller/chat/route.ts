@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { runStorytellerWorkflow, normalizeMastraTraceId, beats } from '@/domains/storyteller'
+import { beats } from '@/db'
+import { normalizeMastraTraceId, runStorytellerWorkflow } from '@/domains/storyteller'
 import { db } from '@/lib/db'
 import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
 

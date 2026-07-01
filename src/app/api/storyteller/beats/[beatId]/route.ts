@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { beats, episodes, projects } from '@/domains/storyteller'
+import { beats, episodes, projects } from '@/db'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/lib/auth'
 

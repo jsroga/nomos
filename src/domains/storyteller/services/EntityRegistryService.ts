@@ -16,8 +16,8 @@
  * - POST /api/entities/mark-referenced
  */
 
+import { entityReferences } from '@/db'
 import { db } from '@/lib/db'
-import { entityReferences } from '@/domains/storyteller/db/schema'
 import { eq, and, inArray } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 

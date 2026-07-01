@@ -11,8 +11,8 @@
  * Uses pgvector for similarity search.
  */
 
+import { entityReferences } from '@/db'
 import { db } from '@/lib/db'
-import { entityReferences } from '@/domains/storyteller/db/schema'
 import { eq, and, sql, inArray, desc } from 'drizzle-orm'
 import { EntityReference, EntityType } from './EntityRegistryService'
 

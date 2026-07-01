@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { characters, projects } from '@/db'
 import { db } from '@/lib/db'
 import {
   bibleToPrompt,
   bibleToVisualPrompt,
-  characters,
-  projects,
   ragService,
   type SeriesBible,
-  verifyProjectAccess,
 } from '@/domains/storyteller'
+import { verifyProjectAccess } from '@/shared/auth'
 import { eq } from 'drizzle-orm'
 import { createOpenAI } from '@ai-sdk/openai'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'

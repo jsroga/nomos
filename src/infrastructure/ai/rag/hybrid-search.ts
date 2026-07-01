@@ -6,7 +6,7 @@
  */
 
 import { db } from '@/lib/db'
-import { documentEmbeddings } from '@/domains/storyteller'
+import { documentEmbeddings } from '@/db'
 import { sql, and, desc } from 'drizzle-orm'
 import { getVoyageEmbeddings } from '../embeddings/voyage-embeddings'
 

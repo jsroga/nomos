@@ -7,7 +7,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getUndoManager, verifyProjectAccess } from '@/domains/storyteller'
+import { getUndoManager } from '@/domains/storyteller'
+import { verifyProjectAccess } from '@/shared/auth'
 import { requireAuth } from '@/lib/auth'
 
 export const runtime = 'nodejs'

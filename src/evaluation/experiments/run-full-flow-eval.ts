@@ -13,7 +13,8 @@
  *           docs/modules/storyteller-evaluation-guide.md
  */
 
-import { createStorytellerAgent, projects } from '@/domains/storyteller'
+import { projects } from '@/db'
+import { createStorytellerAgent } from '@/domains/storyteller'
 import { langfuse } from '@/agent-core/observability'
 import { db } from '@/lib/db'
 import { eq } from 'drizzle-orm'

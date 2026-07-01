@@ -3,7 +3,7 @@ import { db } from '@/lib/db'
 import { interiorDesigns, projects } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
 import { requireAuth, checkRateLimit } from '@/lib/api-utils'
-import { verifyProjectAccess } from '@/domains/storyteller'
+import { verifyProjectAccess } from '@/shared/auth'
 
 /**
  * Verify design access using single JOIN query
