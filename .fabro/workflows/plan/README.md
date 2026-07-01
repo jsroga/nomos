@@ -76,7 +76,8 @@ on the default `buildpack-deps:noble` snapshot — it has no npm.
 Parameterized via `[run.inputs] module`. The `goal` and prompts use `{{ inputs.module }}`.
 
 ```bash
-fabro run .fabro/workflows/plan/workflow.toml               # storyteller (default)
+fabro run .fabro/workflows/plan/workflow.toml               # interior-designer (default)
+fabro run .fabro/workflows/plan/workflow.toml -I module=storyteller
 fabro run .fabro/workflows/plan/workflow.toml -I module=chat
 ```
 

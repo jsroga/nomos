@@ -58,6 +58,9 @@ If `UX.md` is absent (backend-only increment), skip `component-audit` and
 ## Rules
 
 - Place every change in the correct layer per `docs/unified/ARCHITECTURE.md`.
+- **Asset modules** (`interior-designer`, etc.): prioritize `ui/` + `state/queries/` +
+  `io/` + `tasks/`; no `agents/` unless the plan explicitly adds AI surfaces.
+  Replace browser Supabase writes and `localStorage` job recovery with API + `useJob`.
 - No browser→Supabase writes; no server state in Zustand; no `any` at boundaries.
 - If the plan violates an invariant, stop and flag it — do not implement the violation.
 

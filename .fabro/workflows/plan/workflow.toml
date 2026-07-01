@@ -11,7 +11,7 @@ graph = "workflow.fabro"
 goal = "Clean up and align the {{ inputs.module }} module (src/domains/{{ inputs.module }}) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification."
 
 [run.inputs]
-module = "storyteller"
+module = "interior-designer"
 
 [run.model]
 name = "codex"

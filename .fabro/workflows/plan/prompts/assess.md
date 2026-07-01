@@ -36,6 +36,11 @@ you do **not** modify code.
 5. **Framework-once** — hand-rolled parallels to Mastra primitives.
 6. **Typed boundaries & size** — `any` at edges; god files over the size limits.
 
+**Asset modules** (`interior-designer`, `world-building-toolkit`, `3d-asset-exporter`):
+lean on `tasks/` not `agents/`; flag browser→Supabase writes, bespoke job polling in
+`components/`, and monolithic Zustand stores (`useInteriorStore`, etc.) as high-leverage
+findings.
+
 ## Output
 
 Write concise findings to `findings/assess.md` with `write_file`, then give a short
