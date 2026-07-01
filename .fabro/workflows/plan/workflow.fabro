@@ -179,7 +179,12 @@ digraph Plan {
     ]
 
     // ── Wiring ───────────────────────────────────────────────────────────
-    start -> scope -> assess -> clarify_prep -> Clarify
+    // scope→assess carries the module file tree + git status as command.output.
+    // assess.md tells the agent to REUSE that tree (not re-glob), so force
+    // fidelity=compact on this edge — summary:medium can truncate a 120-line tree.
+    start -> scope
+    scope -> assess [fidelity="compact"]
+    assess -> clarify_prep -> Clarify
 
     // Primary choices first (dock order); advanced last
     Clarify -> plan [label="[A] Staged migration — boundaries first, bigger moves sequenced"]
@@ -207,17 +212,26 @@ digraph Plan {
 
     ux_designer -> developer -> verify -> verify_gate
 
+    // Fix loops: the developer node is fidelity=full (no preamble), so on a Fix
+    // transition it would NOT see the failing command.output. Force compact on the
+    // Fix edges so the typecheck/lint/test/e2e failures are injected into its
+    // preamble. Bail to Retro after a bounded number of gate visits
+    // (internal.node_visit_count — the doc's fixed-count-loop pattern) so a stuck
+    // build documents itself instead of hard-failing on developer's max_visits.
     verify_gate -> tester    [label="Pass", condition="outcome=succeeded"]
-    verify_gate -> developer [label="Fix"]
+    verify_gate -> developer [label="Fix", condition="internal.node_visit_count < 4", fidelity="compact"]
+    verify_gate -> Retro     [label="Static checks still failing after retries"]
 
     tester -> run_tests -> test_gate
 
     test_gate -> run_e2e [label="Pass", condition="outcome=succeeded"]
-    test_gate -> developer [label="Fix"]
+    test_gate -> developer [label="Fix", condition="internal.node_visit_count < 4", fidelity="compact"]
+    test_gate -> Retro     [label="Unit tests still failing after retries"]
 
     run_e2e -> e2e_gate
     e2e_gate -> screenshot [label="Pass", condition="outcome=succeeded"]
-    e2e_gate -> developer  [label="Fix"]
+    e2e_gate -> developer  [label="Fix", condition="internal.node_visit_count < 4", fidelity="compact"]
+    e2e_gate -> Retro      [label="E2E still failing after retries"]
 
     // UI increments: screenshot → dev server → Preview gate → Retro.
     // Backend-only increments skip straight to Retro.
@@ -225,7 +239,7 @@ digraph Plan {
     screenshot -> Retro
     serve -> Preview
     Preview -> Retro     [label="[A] Looks good — finish"]
-    Preview -> developer [label="[R] Revise — back to Implement", freeform=true]
+    Preview -> developer [label="[R] Revise — back to Implement", freeform=true, fidelity="compact"]
     Preview -> Retro     [label="[S] Skip preview"]
     Preview -> exit      [label="Unanswered — abort", condition="outcome=failed"]
     Retro -> exit

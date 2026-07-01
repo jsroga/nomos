@@ -112,6 +112,25 @@ Daytona is the only provider that serves preview URLs.
 
 **Local** provider runs in your working tree. **Files Changed** shows git checkpoints from the run; untracked files (`?? PLAN.md`) may show as **0 files changed**. Open artifacts from disk or the stage Thread view. For diff UI, use **Docker** or **Daytona** sandbox.
 
+## Context & fidelity ([context](https://docs.fabro.sh/execution/context))
+
+Fidelity is tuned per-transition so each stage gets exactly the context it needs:
+
+| Transition | Fidelity | Why |
+| --- | --- | --- |
+| `scope → assess` | `compact` | assess reuses the module file tree from scope's `command.output`; `summary:medium` can truncate a 120-line tree |
+| build cluster (nodes) | `full` + `thread_id=build` | UX→Implement→Tester share one conversation |
+| Fix loops (`*_gate → developer`) | `compact` | `full` gives **no preamble**, so the developer wouldn't see the failing typecheck/lint/test `command.output`; compact injects it |
+| `Preview → developer` (revise) | `compact` | surfaces the reviewer's `human.gate.text` note |
+| everything else | `summary:medium` (graph default) | lean preambles |
+
+Fix loops bail out with `condition="internal.node_visit_count < 4"` (the docs'
+fixed-count-loop pattern) → **Retro** after repeated failures, so a stuck build
+documents itself instead of hard-failing on `developer`'s `max_visits`.
+
+Routing reads context set by earlier stages: `plan.has_ui_surface` (UX/Preview
+routing), `outcome` (gate pass/fail), `human.gate.*` (Clarify/Verification choices).
+
 ## Reusable across modules ([variables](https://docs.fabro.sh/workflows/variables))
 
 Parameterized via `[run.inputs] module`. The `goal` and prompts use `{{ inputs.module }}`.
