@@ -1,0 +1,1327 @@
+diff --git a/src/app/api/interior-designer/designs/route.ts b/src/app/api/interior-designer/designs/route.ts
+index 28fc0c1..e3ace21 100644
+--- a/src/app/api/interior-designer/designs/route.ts
++++ b/src/app/api/interior-designer/designs/route.ts
+@@ -4,6 +4,13 @@ import { interiorDesigns, projects } from '@/db/schema'
+ import { eq, desc } from 'drizzle-orm'
+ import { requireAuth, checkRateLimit } from '@/lib/api-utils'
+ import { verifyProjectAccess } from '@/domains/storyteller'
++import {
++  createInteriorDesignRequestSchema,
++  interiorDesignSummaryListSchema,
++  toInteriorDesignDetail,
++  toInteriorDesignSummary,
++  updateInteriorDesignRequestSchema,
++} from '@/domains/interior-designer/io/interior-designer.dto'
+ 
+ /**
+  * Verify design access using single JOIN query
+@@ -57,18 +64,26 @@ export async function GET(req: NextRequest) {
+         .select()
+         .from(interiorDesigns)
+         .where(eq(interiorDesigns.id, designId))
+-      return NextResponse.json(design || null)
++
++      return NextResponse.json(design ? toInteriorDesignDetail(design) : null)
+     } else {
+       if (!(await verifyProjectAccess(projectId!, session.user.id))) {
+         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+       }
+ 
+       const designs = await db
+-        .select()
++        .select({
++          id: interiorDesigns.id,
++          name: interiorDesigns.name,
++          updatedAt: interiorDesigns.updatedAt,
++        })
+         .from(interiorDesigns)
+         .where(eq(interiorDesigns.projectId, projectId!))
+         .orderBy(desc(interiorDesigns.updatedAt))
+-      return NextResponse.json(designs)
++
++      return NextResponse.json(
++        interiorDesignSummaryListSchema.parse(designs.map(design => toInteriorDesignSummary(design)))
++      )
+     }
+   } catch (error) {
+     console.error('Failed to fetch interior designs:', error)
+@@ -87,16 +102,13 @@ export async function POST(req: NextRequest) {
+     })
+     if (!allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+ 
+-    const body = await req.json()
+-    const { projectId, name, sceneData } = body
+-
+-    if (!projectId || !name || !sceneData) {
+-      return NextResponse.json(
+-        { error: 'Project ID, name, and scene data are required' },
+-        { status: 400 }
+-      )
++    const parsedBody = createInteriorDesignRequestSchema.safeParse(await req.json())
++    if (!parsedBody.success) {
++      return NextResponse.json({ error: 'Invalid design payload' }, { status: 400 })
+     }
+ 
++    const { projectId, name, sceneData } = parsedBody.data
++
+     if (!(await verifyProjectAccess(projectId, session.user.id))) {
+       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+     }
+@@ -104,9 +116,13 @@ export async function POST(req: NextRequest) {
+     const [newDesign] = await db
+       .insert(interiorDesigns)
+       .values({ projectId, userId: session.user.id, name, sceneData })
+-      .returning()
++      .returning({
++        id: interiorDesigns.id,
++        name: interiorDesigns.name,
++        updatedAt: interiorDesigns.updatedAt,
++      })
+ 
+-    return NextResponse.json(newDesign)
++    return NextResponse.json(toInteriorDesignSummary(newDesign))
+   } catch (error) {
+     console.error('Failed to create interior design:', error)
+     return NextResponse.json({ error: 'Failed to create design' }, { status: 500 })
+@@ -118,10 +134,12 @@ export async function PATCH(req: NextRequest) {
+     const { session } = await requireAuth()
+     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+ 
+-    const body = await req.json()
+-    const { id, name, sceneData } = body
++    const parsedBody = updateInteriorDesignRequestSchema.safeParse(await req.json())
++    if (!parsedBody.success) {
++      return NextResponse.json({ error: 'Invalid design update payload' }, { status: 400 })
++    }
+ 
+-    if (!id) return NextResponse.json({ error: 'Design ID is required' }, { status: 400 })
++    const { id, name, sceneData } = parsedBody.data
+ 
+     const { hasAccess } = await verifyDesignAccess(id, session.user.id)
+     if (!hasAccess) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+@@ -134,9 +152,13 @@ export async function PATCH(req: NextRequest) {
+       .update(interiorDesigns)
+       .set(updates)
+       .where(eq(interiorDesigns.id, id))
+-      .returning()
++      .returning({
++        id: interiorDesigns.id,
++        name: interiorDesigns.name,
++        updatedAt: interiorDesigns.updatedAt,
++      })
+ 
+-    return NextResponse.json(updatedDesign)
++    return NextResponse.json(toInteriorDesignSummary(updatedDesign))
+   } catch (error) {
+     console.error('Failed to update interior design:', error)
+     return NextResponse.json({ error: 'Failed to update design' }, { status: 500 })
+diff --git a/src/app/app/[projectId]/interior-design/page.tsx b/src/app/app/[projectId]/interior-design/page.tsx
+index 83fb81e..d07f776 100644
+--- a/src/app/app/[projectId]/interior-design/page.tsx
++++ b/src/app/app/[projectId]/interior-design/page.tsx
+@@ -1,257 +1,5 @@
+-'use client'
+-
+-import React, { useEffect, useCallback } from 'react'
+-import dynamic from 'next/dynamic'
+-import { Loader2 } from 'lucide-react'
+-import { Toolbar } from '@/domains/interior-designer/components/UI/Toolbar'
+-import { InteriorRightSidebar } from '@/domains/interior-designer/components/UI/InteriorRightSidebar'
+-import { DesignManager } from '@/domains/interior-designer/components/DesignManager'
+-import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
+-
+-// Dynamic import with SSR disabled to avoid React reconciler issues with Three.js
+-const InteriorCanvas = dynamic(
+-  () =>
+-    import('@/domains/interior-designer/components/InteriorCanvas').then(mod => ({
+-      default: mod.InteriorCanvas,
+-    })),
+-  {
+-    ssr: false,
+-    loading: () => (
+-      <div className="w-full h-full flex items-center justify-center bg-slate-900">
+-        <Loader2 className="animate-spin text-muted-foreground" size={48} />
+-      </div>
+-    ),
+-  }
+-)
+-
+-import { Button } from '@/components/ui/button'
+-import { Download, Save, Focus } from 'lucide-react'
+-import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
+-import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
+-import { debounce } from 'lodash'
+-
+-import { cn } from '@/lib/utils'
+-import { TOUR_STEP_IDS } from '@/lib/tour-constants'
+-
+-import { DomainSidebar } from '@/components/ui/domain-sidebar'
++import { InteriorDesignerWorkspace } from '@/domains/interior-designer'
+ 
+ export default function InteriorDesignerPage() {
+-  useProjectFromUrl()
+-
+-  const setExportRequested = useInteriorStore(state => state.setExportRequested)
+-  const saveDesign = useInteriorStore(state => state.saveDesign)
+-  const hasUnsavedChanges = useInteriorStore(state => state.hasUnsavedChanges)
+-  const isSaving = useInteriorStore(state => state.isSaving)
+-  const setCameraResetRequested = useInteriorStore(state => state.setCameraResetRequested)
+-  const addObject = useInteriorStore(state => state.addObject)
+-  const mode = useInteriorStore(state => state.mode)
+-  const currentProject = useWorldStore(state => state.currentProject)
+-
+-  const handleManualSave = async () => {
+-    if (currentProject?.id) {
+-      await saveDesign(currentProject.id)
+-    }
+-  }
+-
+-  // Auto-save debounced (2 seconds after last change)
+-  const debouncedSave = useCallback(
+-    debounce(() => {
+-      if (currentProject?.id && hasUnsavedChanges) {
+-        saveDesign(currentProject.id)
+-      }
+-    }, 2000),
+-    [currentProject?.id]
+-  )
+-
+-  useEffect(() => {
+-    if (hasUnsavedChanges) {
+-      debouncedSave()
+-    }
+-  }, [hasUnsavedChanges, debouncedSave])
+-
+-  const zenMode = useInteriorStore(state => state.zenMode)
+-  const toggleZenMode = useInteriorStore(state => state.toggleZenMode)
+-
+-  // keyboard shortcuts
+-  useEffect(() => {
+-    const handleKeyDown = (e: KeyboardEvent) => {
+-      if (e.key === 'Tab') {
+-        e.preventDefault()
+-        toggleZenMode()
+-      }
+-    }
+-    window.addEventListener('keydown', handleKeyDown)
+-    return () => window.removeEventListener('keydown', handleKeyDown)
+-  }, [toggleZenMode])
+-
+-  return (
+-    <div className="w-full h-screen flex flex-col bg-black text-zinc-200 font-sans selection:bg-indigo-500/30 overflow-hidden">
+-      {/* Header - Aligned with other modules */}
+-      <header
+-        className={cn(
+-          'h-14 border-b border-border/50 bg-zinc-950/50 backdrop-blur-md flex items-center px-6 justify-between relative z-50 transition-all duration-500',
+-          zenMode && '-translate-y-full opacity-0'
+-        )}
+-      >
+-        <div className="flex items-center gap-4">
+-          <h1 className="font-mono font-bold text-sm tracking-widest text-zinc-100 uppercase">
+-            Interior Designer
+-          </h1>
+-          <DesignManager />
+-        </div>
+-        <div className="flex items-center gap-2">
+-          {hasUnsavedChanges && !isSaving && (
+-            <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-yellow-500/80 flex items-center gap-1.5 mr-2">
+-              <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(234,179,8,0.5)]" />
+-              Unsaved
+-            </div>
+-          )}
+-          {isSaving && (
+-            <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-400 animate-pulse mr-2">
+-              Saving...
+-            </div>
+-          )}
+-          <Button
+-            size="sm"
+-            variant="ghost"
+-            className="hover:bg-white/5 font-mono text-[10px] uppercase tracking-widest"
+-            onClick={handleManualSave}
+-            disabled={!hasUnsavedChanges || !currentProject}
+-          >
+-            <Save className="w-3.5 h-3.5 mr-2" />
+-            Save
+-          </Button>
+-          <Button
+-            size="sm"
+-            variant="ghost"
+-            className="hover:bg-white/5 font-mono text-[10px] uppercase tracking-widest"
+-            onClick={() => setCameraResetRequested(true)}
+-          >
+-            <Focus className="w-3.5 h-3.5 mr-2" />
+-            Reset View
+-          </Button>
+-          <div id={TOUR_STEP_IDS.INTERIOR_EXPORT} className="flex items-center gap-2">
+-            <Button
+-              size="sm"
+-              variant="ghost"
+-              className="hover:bg-white/5 font-mono text-[10px] uppercase tracking-widest"
+-              onClick={() => setExportRequested(true)}
+-            >
+-              <Download className="w-3.5 h-3.5 mr-2 text-indigo-400" />
+-              GLTF
+-            </Button>
+-            <Button
+-              size="sm"
+-              variant="ghost"
+-              className="hover:bg-white/5 font-mono text-[10px] uppercase tracking-widest border border-indigo-500/20"
+-              onClick={async () => {
+-                const { walls, objects } = useInteriorStore.getState()
+-                const zipBlob =
+-                  await import('@/domains/interior-designer/utils/UnityExporter').then(m =>
+-                    m.UnityExporter.createExportZip({ walls, objects })
+-                  )
+-
+-                const url = URL.createObjectURL(zipBlob)
+-                const link = document.createElement('a')
+-                link.href = url
+-                link.download = 'interior-design-unity.zip'
+-                document.body.appendChild(link)
+-                link.click()
+-                document.body.removeChild(link)
+-              }}
+-            >
+-              <Download className="w-3.5 h-3.5 mr-2 text-indigo-400" />
+-              Unity
+-            </Button>
+-          </div>
+-        </div>
+-      </header>
+-
+-      {/* Main Content Area */}
+-      <div className="flex-1 flex relative overflow-hidden">
+-        {/* Left Sidebar: Toolbar */}
+-        <div
+-          className={cn(
+-            'transition-all duration-700 ease-in-out h-full',
+-            zenMode ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0'
+-          )}
+-        >
+-          <DomainSidebar
+-            header={null}
+-            position="left"
+-            storageKey="interior-toolbar"
+-            defaultWidth={80}
+-            rawContent
+-          >
+-            <div id={TOUR_STEP_IDS.INTERIOR_TOOLBAR} className="flex-1 py-4">
+-              <Toolbar />
+-            </div>
+-          </DomainSidebar>
+-        </div>
+-
+-        {/* 3D Canvas Area */}
+-        <div className="flex-1 relative bg-black overflow-hidden">
+-          <div
+-            className="absolute inset-0 z-0"
+-            id={TOUR_STEP_IDS.INTERIOR_CANVAS}
+-            data-html2canvas-ignore="true"
+-            onDragOver={e => {
+-              e.preventDefault()
+-              e.dataTransfer.dropEffect = 'copy'
+-            }}
+-            onDrop={e => {
+-              e.preventDefault()
+-              try {
+-                const data = JSON.parse(e.dataTransfer.getData('application/json'))
+-                if (data.type === 'asset' && data.glbUrl) {
+-                  addObject({
+-                    modelUrl: data.glbUrl,
+-                    position: [0, 0, 0],
+-                    rotation: [0, 0, 0],
+-                    scale: [1, 1, 1],
+-                    isLoading: true,
+-                    thumbnailUrl: data.thumbnailUrl,
+-                  })
+-                  console.log('Dropped asset:', data)
+-                }
+-              } catch (err) {
+-                console.error('Drop error:', err)
+-              }
+-            }}
+-          >
+-            <InteriorCanvas />
+-          </div>
+-
+-          {/* Zen Mode Tip */}
+-          {!zenMode && (
+-            <div className="absolute bottom-6 left-6 text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500/40 hover:text-zinc-400 transition-colors cursor-default select-none pointer-events-none z-10">
+-              Press{' '}
+-              <span className="px-1.5 py-0.5 border border-zinc-700/50 rounded bg-zinc-800/50 text-zinc-300">
+-                Tab
+-              </span>{' '}
+-              for Zen Mode
+-            </div>
+-          )}
+-        </div>
+-
+-        {/* Right Sidebar: Properties & Assets */}
+-        <div
+-          className={cn(
+-            'transition-all duration-700 ease-in-out h-full',
+-            zenMode ? 'translate-x-full opacity-0 pointer-events-none' : 'translate-x-0'
+-          )}
+-        >
+-          <DomainSidebar
+-            header={null}
+-            position="right"
+-            storageKey="interior-properties"
+-            defaultWidth={400}
+-            rawContent
+-          >
+-            <InteriorRightSidebar />
+-          </DomainSidebar>
+-        </div>
+-      </div>
+-    </div>
+-  )
++  return <InteriorDesignerWorkspace />
+ }
+diff --git a/src/domains/interior-designer/components/DesignManager.tsx b/src/domains/interior-designer/components/DesignManager.tsx
+index 027097e..7e149be 100644
+--- a/src/domains/interior-designer/components/DesignManager.tsx
++++ b/src/domains/interior-designer/components/DesignManager.tsx
+@@ -1,4 +1,4 @@
+-import React, { useEffect, useState, useCallback } from 'react'
++import React, { useEffect, useState } from 'react'
+ import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
+ import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
+ import { Button } from '@/components/ui/button'
+@@ -14,12 +14,8 @@ import {
+   DialogHeader,
+   DialogTitle,
+ } from '@/components/ui/dialog'
+-
+-interface Design {
+-  id: string
+-  name: string
+-  updatedAt: string
+-}
++import { interiorDesignerApi } from '@/domains/interior-designer/io/interior-designer.api'
++import type { InteriorDesignSummary } from '@/domains/interior-designer/io/interior-designer.dto'
+ 
+ export const DesignManager: React.FC = () => {
+   const currentProject = useWorldStore(state => state.currentProject)
+@@ -31,31 +27,48 @@ export const DesignManager: React.FC = () => {
+   const renameDesign = useInteriorStore(state => state.renameDesign)
+   const hasUnsavedChanges = useInteriorStore(state => state.hasUnsavedChanges)
+ 
+-  const [designs, setDesigns] = useState<Design[]>([])
++  const [designs, setDesigns] = useState<InteriorDesignSummary[]>([])
+   const [isOpen, setIsOpen] = useState(false)
+   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
+   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false)
+   const [newSceneName, setNewSceneName] = useState('New Scene')
+   const [editingDesignId, setEditingDesignId] = useState<string | null>(null)
+ 
+-  // Define fetchDesigns BEFORE using it in useEffect
+-  const fetchDesigns = useCallback(async () => {
++  const fetchDesigns = async () => {
+     if (!currentProject?.id) return
+ 
+     try {
+-      const res = await fetch(`/api/interior-designer/designs?projectId=${currentProject.id}`)
+-      const data = await res.json()
++      const data = await interiorDesignerApi.listDesigns(currentProject.id)
+       setDesigns(data)
+     } catch (error) {
+       console.error('Failed to fetch designs:', error)
+     }
+-  }, [currentProject?.id])
++  }
+ 
+   useEffect(() => {
+-    if (currentProject?.id && isOpen) {
+-      fetchDesigns()
++    let isActive = true
++
++    if (!currentProject?.id || !isOpen) {
++      return () => {
++        isActive = false
++      }
++    }
++
++    void (async () => {
++      try {
++        const data = await interiorDesignerApi.listDesigns(currentProject.id)
++        if (isActive) {
++          setDesigns(data)
++        }
++      } catch (error) {
++        console.error('Failed to fetch designs:', error)
++      }
++    })()
++
++    return () => {
++      isActive = false
+     }
+-  }, [currentProject?.id, isOpen, fetchDesigns])
++  }, [currentProject?.id, isOpen])
+ 
+   const handleLoad = async (designId: string) => {
+     if (hasUnsavedChanges && currentProject?.id) {
+diff --git a/src/domains/interior-designer/index.ts b/src/domains/interior-designer/index.ts
+new file mode 100644
+index 0000000..d91c383
+--- /dev/null
++++ b/src/domains/interior-designer/index.ts
+@@ -0,0 +1,27 @@
++/**
++ * Interior-designer public module API.
++ *
++ * This is the only supported interior-designer import target for code outside
++ * src/domains/interior-designer while the module is migrated onto the unified
++ * blueprint.
++ */
++
++export { InteriorDesignerWorkspace } from './ui/InteriorDesignerWorkspace'
++
++export type {
++  CreateInteriorDesignRequest,
++  DeleteInteriorDesignResponse,
++  InteriorDesignDetail,
++  InteriorDesignSceneData,
++  InteriorDesignSummary,
++  InteriorDesignerJobStatus,
++  RetextureRequest,
++  RetextureStartResponse,
++  SurfaceMaterialRequest,
++  SurfaceMaterialStartResponse,
++  TextTo3DRequest,
++  TextTo3DStartResponse,
++  TextureGenerationRequest,
++  TextureGenerationResponse,
++  UpdateInteriorDesignRequest,
++} from './io/interior-designer.dto'
+diff --git a/src/domains/interior-designer/io/interior-designer.api.ts b/src/domains/interior-designer/io/interior-designer.api.ts
+new file mode 100644
+index 0000000..27bb58a
+--- /dev/null
++++ b/src/domains/interior-designer/io/interior-designer.api.ts
+@@ -0,0 +1,140 @@
++import { z } from 'zod'
++import {
++  createInteriorDesignRequestSchema,
++  deleteInteriorDesignResponseSchema,
++  interiorDesignDetailSchema,
++  interiorDesignerJobStatusSchema,
++  interiorDesignSummarySchema,
++  interiorDesignSummaryListSchema,
++  retextureRequestSchema,
++  retextureStartResponseSchema,
++  surfaceMaterialRequestSchema,
++  surfaceMaterialStartResponseSchema,
++  textTo3DRequestSchema,
++  textTo3DStartResponseSchema,
++  textureGenerationRequestSchema,
++  textureGenerationResponseSchema,
++  updateInteriorDesignRequestSchema,
++} from './interior-designer.dto'
++
++async function parseResponse<TSchema extends z.ZodTypeAny>(
++  response: Response,
++  schema: TSchema
++): Promise<z.infer<TSchema>> {
++  const data = await response.json().catch(() => null)
++
++  if (!response.ok) {
++    const message =
++      data && typeof data === 'object' && 'error' in data && typeof data.error === 'string'
++        ? data.error
++        : `Request failed with status ${response.status}`
++    throw new Error(message)
++  }
++
++  return schema.parse(data)
++}
++
++export const interiorDesignerApi = {
++  async listDesigns(projectId: string) {
++    const response = await fetch(
++      `/api/interior-designer/designs?projectId=${encodeURIComponent(projectId)}`
++    )
++    return parseResponse(response, interiorDesignSummaryListSchema)
++  },
++
++  async getDesign(designId: string) {
++    const response = await fetch(
++      `/api/interior-designer/designs?designId=${encodeURIComponent(designId)}`
++    )
++    return parseResponse(response, interiorDesignDetailSchema)
++  },
++
++  async createDesign(input: z.input<typeof createInteriorDesignRequestSchema>) {
++    const payload = createInteriorDesignRequestSchema.parse(input)
++    const response = await fetch('/api/interior-designer/designs', {
++      method: 'POST',
++      headers: { 'Content-Type': 'application/json' },
++      body: JSON.stringify(payload),
++    })
++    return parseResponse(response, interiorDesignSummarySchema)
++  },
++
++  async updateDesign(input: z.input<typeof updateInteriorDesignRequestSchema>) {
++    const payload = updateInteriorDesignRequestSchema.parse(input)
++    const response = await fetch('/api/interior-designer/designs', {
++      method: 'PATCH',
++      headers: { 'Content-Type': 'application/json' },
++      body: JSON.stringify(payload),
++    })
++    return parseResponse(response, interiorDesignSummarySchema)
++  },
++
++  async deleteDesign(designId: string) {
++    const response = await fetch(
++      `/api/interior-designer/designs?id=${encodeURIComponent(designId)}`,
++      { method: 'DELETE' }
++    )
++    return parseResponse(response, deleteInteriorDesignResponseSchema)
++  },
++
++  async generateTexture(input: z.input<typeof textureGenerationRequestSchema>) {
++    const payload = textureGenerationRequestSchema.parse(input)
++    const response = await fetch('/api/interior-designer/texture', {
++      method: 'POST',
++      headers: { 'Content-Type': 'application/json' },
++      body: JSON.stringify(payload),
++    })
++    return parseResponse(response, textureGenerationResponseSchema)
++  },
++
++  async startSurfaceMaterial(input: z.input<typeof surfaceMaterialRequestSchema>) {
++    const payload = surfaceMaterialRequestSchema.parse(input)
++    const response = await fetch('/api/interior-designer/material', {
++      method: 'POST',
++      headers: { 'Content-Type': 'application/json' },
++      body: JSON.stringify(payload),
++    })
++    return parseResponse(response, surfaceMaterialStartResponseSchema)
++  },
++
++  async getSurfaceMaterialRun(taskId: string) {
++    const response = await fetch(
++      `/api/interior-designer/material/${encodeURIComponent(taskId)}`
++    )
++    return parseResponse(response, interiorDesignerJobStatusSchema)
++  },
++
++  async startRetexture(input: z.input<typeof retextureRequestSchema>) {
++    const payload = retextureRequestSchema.parse(input)
++    const response = await fetch('/api/interior-designer/retexture', {
++      method: 'POST',
++      headers: { 'Content-Type': 'application/json' },
++      body: JSON.stringify(payload),
++    })
++    return parseResponse(response, retextureStartResponseSchema)
++  },
++
++  async getRetextureRun(runId: string) {
++    const response = await fetch(
++      `/api/interior-designer/retexture/${encodeURIComponent(runId)}`
++    )
++    return parseResponse(response, interiorDesignerJobStatusSchema)
++  },
++
++  async startTextTo3D(input: z.input<typeof textTo3DRequestSchema>) {
++    const payload = textTo3DRequestSchema.parse(input)
++    const response = await fetch('/api/interior-designer/text-to-3d', {
++      method: 'POST',
++      headers: { 'Content-Type': 'application/json' },
++      body: JSON.stringify(payload),
++    })
++    return parseResponse(response, textTo3DStartResponseSchema)
++  },
++
++  async getTextTo3DRun(taskId: string) {
++    const response = await fetch(
++      `/api/interior-designer/text-to-3d/${encodeURIComponent(taskId)}`
++    )
++    return parseResponse(response, interiorDesignerJobStatusSchema)
++  },
++}
+diff --git a/src/domains/interior-designer/io/interior-designer.dto.ts b/src/domains/interior-designer/io/interior-designer.dto.ts
+new file mode 100644
+index 0000000..dc7a320
+--- /dev/null
++++ b/src/domains/interior-designer/io/interior-designer.dto.ts
+@@ -0,0 +1,271 @@
++import { z } from 'zod'
++
++const idSchema = z.string().min(1)
++const isoDateTimeSchema = z.string().min(1)
++const vector3Schema = z.tuple([z.number(), z.number(), z.number()])
++
++const surfaceTypeSchema = z.enum([
++  'grass',
++  'water',
++  'road',
++  'dirt',
++  'pavement',
++  'mars',
++  'sand',
++  'rock',
++  'wall',
++])
++
++const gridResolutionSchema = z.enum(['low', 'medium', 'high'])
++const terrainQualitySchema = z.enum(['low', 'medium', 'high'])
++const objectTypeSchema = z.enum(['generic', 'window', 'door'])
++const textureStyleSchema = z.enum([
++  'painterly',
++  'realistic',
++  'sketch',
++  'decay',
++  'metallic',
++  'organic',
++])
++
++const surfaceBoundsSchema = z.object({
++  width: z.number(),
++  depth: z.number(),
++  centerX: z.number(),
++  centerZ: z.number(),
++})
++
++const interiorWallSchema = z.object({
++  id: idSchema,
++  start: vector3Schema,
++  end: vector3Schema,
++  height: z.number(),
++  thickness: z.number(),
++  texture: z.string().min(1).optional(),
++  level: z.number().optional(),
++})
++
++const interiorFloorSchema = z.object({
++  id: idSchema,
++  points: z.array(vector3Schema),
++  y: z.number(),
++  texture: z.string().min(1).optional(),
++  level: z.number().optional(),
++})
++
++const interiorWaterSchema = z.object({
++  id: idSchema,
++  points: z.array(vector3Schema),
++  y: z.number(),
++})
++
++const interiorSurfaceSchema = z.object({
++  id: idSchema,
++  type: surfaceTypeSchema,
++  points: z.array(vector3Schema),
++  isPath: z.boolean(),
++  curved: z.boolean(),
++  width: z.number().optional(),
++  layerIndex: z.number(),
++  texture: z.string().min(1).optional(),
++  textureScale: z.number().optional(),
++  roughness: z.number().optional(),
++  metalness: z.number().optional(),
++  roundness: z.number().optional(),
++  height: z.number().optional(),
++  isVertical: z.boolean().optional(),
++  rotation: vector3Schema.optional(),
++  level: z.number().optional(),
++})
++
++const interiorSceneObjectSchema = z.object({
++  id: idSchema,
++  modelUrl: z.string().min(1),
++  position: vector3Schema,
++  rotation: vector3Schema,
++  scale: vector3Schema,
++  objectType: objectTypeSchema.optional(),
++  color: z.string().min(1).optional(),
++  groupId: idSchema.optional(),
++  isLoading: z.boolean().optional(),
++  thumbnailUrl: z.string().min(1).optional(),
++  targetDimensions: vector3Schema.optional(),
++  level: z.number().optional(),
++})
++
++const terrainSettingsSchema = z.object({
++  baseGroundHeight: z.number().optional(),
++  waterSurfaceHeight: z.number().optional(),
++  showWaterPlane: z.boolean().optional(),
++  gridResolution: gridResolutionSchema.optional(),
++  quality: terrainQualitySchema.optional(),
++  groundColor: z.string().min(1).optional(),
++  waterColor: z.string().min(1).optional(),
++  waterOpacity: z.number().optional(),
++  sunAngle: z.number().optional(),
++  heightmapSize: z.number().int().nonnegative().optional(),
++  heightmap: z.array(z.number()).nullable().optional(),
++  heightmapVersion: z.number().int().nonnegative().optional(),
++  materialMap: z.array(z.number().int()).nullable().optional(),
++})
++
++export const interiorDesignSceneDataSchema = z.object({
++  walls: z.array(interiorWallSchema).default([]),
++  floors: z.array(interiorFloorSchema).default([]),
++  water: z.array(interiorWaterSchema).default([]),
++  surfaces: z.array(interiorSurfaceSchema).default([]),
++  objects: z.array(interiorSceneObjectSchema).default([]),
++  activeLevel: z.number().default(0),
++  terrainSettings: terrainSettingsSchema.nullish(),
++})
++
++export const interiorDesignSummarySchema = z.object({
++  id: idSchema,
++  name: z.string().min(1),
++  updatedAt: isoDateTimeSchema,
++})
++
++export const interiorDesignDetailSchema = interiorDesignSummarySchema.extend({
++  projectId: idSchema,
++  userId: idSchema,
++  createdAt: isoDateTimeSchema,
++  sceneData: interiorDesignSceneDataSchema,
++})
++
++export const interiorDesignSummaryListSchema = z.array(interiorDesignSummarySchema)
++
++export const createInteriorDesignRequestSchema = z.object({
++  projectId: idSchema,
++  name: z.string().min(1),
++  sceneData: interiorDesignSceneDataSchema,
++})
++
++export const updateInteriorDesignRequestSchema = z
++  .object({
++    id: idSchema,
++    name: z.string().min(1).optional(),
++    sceneData: interiorDesignSceneDataSchema.optional(),
++  })
++  .refine(input => input.name !== undefined || input.sceneData !== undefined, {
++    message: 'At least one of name or sceneData is required',
++  })
++
++export const deleteInteriorDesignResponseSchema = z.object({
++  success: z.boolean(),
++})
++
++export const textureGenerationRequestSchema = z.object({
++  prompt: z.string().min(1),
++  apiKey: z.string().min(1),
++  style: textureStyleSchema.optional(),
++  useSemanticSearch: z.boolean().optional(),
++  width: z.number().int().positive().optional(),
++  height: z.number().int().positive().optional(),
++})
++
++export const textureGenerationResponseSchema = z.object({
++  imageUrl: z.string().min(1),
++})
++
++export const surfaceMaterialRequestSchema = z.object({
++  projectId: idSchema,
++  surfaceId: idSchema,
++  prompt: z.string().min(1),
++  apiKey: z.string().min(1).optional(),
++  artStyle: z.string().min(1).optional(),
++  surfaceBounds: surfaceBoundsSchema,
++})
++
++export const surfaceMaterialStartResponseSchema = z.object({
++  success: z.boolean(),
++  runId: z.string().min(1),
++  publicAccessToken: z.string().min(1),
++})
++
++export const retextureRequestSchema = z.object({
++  modelUrlOrBase64: z.string().min(1),
++  prompt: z.string().min(1),
++  assetId: z.string().min(1).optional(),
++  projectId: z.string().min(1),
++  apiKey: z.string().min(1).optional(),
++})
++
++export const retextureStartResponseSchema = z.object({
++  runId: z.string().min(1),
++})
++
++export const textTo3DRequestSchema = z.object({
++  projectId: idSchema,
++  prompt: z.string().min(1),
++  seed: z.number().int().optional(),
++  apiKey: z.string().min(1).optional(),
++  artStyle: z.string().min(1).optional(),
++  enablePbr: z.boolean().optional(),
++  targetPolycount: z.number().int().positive().optional(),
++  topology: z.string().min(1).optional(),
++})
++
++export const textTo3DStartResponseSchema = z.object({
++  success: z.boolean(),
++  runId: z.string().min(1),
++  publicAccessToken: z.string().min(1),
++})
++
++export const interiorDesignerJobStatusSchema = z.object({
++  status: z.string().min(1),
++  output: z.unknown().optional(),
++  error: z.unknown().optional(),
++  metadata: z.unknown().optional(),
++})
++
++function serializeDate(value: Date | string): string {
++  return value instanceof Date ? value.toISOString() : value
++}
++
++export function toInteriorDesignSummary(input: {
++  id: string
++  name: string
++  updatedAt: Date | string
++}) {
++  return interiorDesignSummarySchema.parse({
++    id: input.id,
++    name: input.name,
++    updatedAt: serializeDate(input.updatedAt),
++  })
++}
++
++export function toInteriorDesignDetail(input: {
++  id: string
++  projectId: string
++  userId: string
++  name: string
++  sceneData: unknown
++  createdAt: Date | string
++  updatedAt: Date | string
++}) {
++  return interiorDesignDetailSchema.parse({
++    id: input.id,
++    projectId: input.projectId,
++    userId: input.userId,
++    name: input.name,
++    sceneData: input.sceneData,
++    createdAt: serializeDate(input.createdAt),
++    updatedAt: serializeDate(input.updatedAt),
++  })
++}
++
++export type InteriorDesignSceneData = z.infer<typeof interiorDesignSceneDataSchema>
++export type InteriorDesignSummary = z.infer<typeof interiorDesignSummarySchema>
++export type InteriorDesignDetail = z.infer<typeof interiorDesignDetailSchema>
++export type CreateInteriorDesignRequest = z.infer<typeof createInteriorDesignRequestSchema>
++export type UpdateInteriorDesignRequest = z.infer<typeof updateInteriorDesignRequestSchema>
++export type DeleteInteriorDesignResponse = z.infer<typeof deleteInteriorDesignResponseSchema>
++export type TextureGenerationRequest = z.infer<typeof textureGenerationRequestSchema>
++export type TextureGenerationResponse = z.infer<typeof textureGenerationResponseSchema>
++export type SurfaceMaterialRequest = z.infer<typeof surfaceMaterialRequestSchema>
++export type SurfaceMaterialStartResponse = z.infer<typeof surfaceMaterialStartResponseSchema>
++export type RetextureRequest = z.infer<typeof retextureRequestSchema>
++export type RetextureStartResponse = z.infer<typeof retextureStartResponseSchema>
++export type TextTo3DRequest = z.infer<typeof textTo3DRequestSchema>
++export type TextTo3DStartResponse = z.infer<typeof textTo3DStartResponseSchema>
++export type InteriorDesignerJobStatus = z.infer<typeof interiorDesignerJobStatusSchema>
+diff --git a/src/domains/interior-designer/io/interior-designer.keys.ts b/src/domains/interior-designer/io/interior-designer.keys.ts
+new file mode 100644
+index 0000000..dad303a
+--- /dev/null
++++ b/src/domains/interior-designer/io/interior-designer.keys.ts
+@@ -0,0 +1,11 @@
++export const interiorDesignerKeys = {
++  all: ['interior-designer'] as const,
++  designs: () => [...interiorDesignerKeys.all, 'designs'] as const,
++  projectDesigns: (projectId: string) =>
++    [...interiorDesignerKeys.designs(), 'project', projectId] as const,
++  designDetail: (designId: string) => [...interiorDesignerKeys.designs(), 'detail', designId] as const,
++  jobs: () => [...interiorDesignerKeys.all, 'jobs'] as const,
++  materialJob: (taskId: string) => [...interiorDesignerKeys.jobs(), 'material', taskId] as const,
++  retextureJob: (runId: string) => [...interiorDesignerKeys.jobs(), 'retexture', runId] as const,
++  textTo3DJob: (taskId: string) => [...interiorDesignerKeys.jobs(), 'text-to-3d', taskId] as const,
++} as const
+diff --git a/src/domains/interior-designer/store/useInteriorStore.ts b/src/domains/interior-designer/store/useInteriorStore.ts
+index 5cd7b2f..78496d2 100644
+--- a/src/domains/interior-designer/store/useInteriorStore.ts
++++ b/src/domains/interior-designer/store/useInteriorStore.ts
+@@ -1,9 +1,10 @@
+ import { create } from 'zustand'
+-import { useShallow } from 'zustand/shallow'
+ import { persist } from 'zustand/middleware'
+ import { v4 as uuidv4 } from 'uuid'
+ import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
+ import * as THREE from 'three'
++import { interiorDesignerApi } from '@/domains/interior-designer/io/interior-designer.api'
++import type { InteriorDesignSceneData } from '@/domains/interior-designer/io/interior-designer.dto'
+ 
+ export type InteractionMode =
+   | 'SELECT'
+@@ -1333,6 +1334,8 @@ export const useInteriorStore = create<InteriorState>()(
+ 
+             let count = 0
+             while (count < segments.length) {
++              if (!currentSeg) break
++
+               // Find the "other" end of current segment
+               const otherEnd = isSame(currentSeg.p1, currentPoint) ? currentSeg.p2 : currentSeg.p1
+               orderedPoints.push(otherEnd)
+@@ -1456,7 +1459,7 @@ export const useInteriorStore = create<InteriorState>()(
+           const state = get()
+           set({ isSaving: true })
+ 
+-          const sceneData = {
++          const sceneData: InteriorDesignSceneData = {
+             walls: state.walls,
+             floors: state.floors,
+             water: state.water,
+@@ -1481,17 +1484,11 @@ export const useInteriorStore = create<InteriorState>()(
+ 
+           try {
+             if (state.currentDesignId) {
+-              // Update existing
+-              const res = await fetch('/api/interior-designer/designs', {
+-                method: 'PATCH',
+-                headers: { 'Content-Type': 'application/json' },
+-                body: JSON.stringify({
+-                  id: state.currentDesignId,
+-                  name: name || state.currentDesignName,
+-                  sceneData,
+-                }),
++              const updated = await interiorDesignerApi.updateDesign({
++                id: state.currentDesignId,
++                name: name || state.currentDesignName || undefined,
++                sceneData,
+               })
+-              const updated = await res.json()
+               set({
+                 currentDesignName: updated.name,
+                 lastSaved: new Date(),
+@@ -1499,17 +1496,11 @@ export const useInteriorStore = create<InteriorState>()(
+                 isSaving: false,
+               })
+             } else {
+-              // Create new
+-              const res = await fetch('/api/interior-designer/designs', {
+-                method: 'POST',
+-                headers: { 'Content-Type': 'application/json' },
+-                body: JSON.stringify({
+-                  projectId,
+-                  name: name || 'Untitled Design',
+-                  sceneData,
+-                }),
++              const newDesign = await interiorDesignerApi.createDesign({
++                projectId,
++                name: name || 'Untitled Design',
++                sceneData,
+               })
+-              const newDesign = await res.json()
+               set({
+                 currentDesignId: newDesign.id,
+                 currentDesignName: newDesign.name,
+@@ -1526,15 +1517,16 @@ export const useInteriorStore = create<InteriorState>()(
+ 
+         loadDesign: async (designId: string) => {
+           try {
+-            const res = await fetch(`/api/interior-designer/designs?designId=${designId}`)
+-            const design = await res.json()
++            const design = await interiorDesignerApi.getDesign(designId)
+ 
+             if (design && design.sceneData) {
+               const savedTerrain = design.sceneData.terrainSettings
+               // Normalize loaded objects to ensure Y=0 (snapped to bottom of level)
+               const normalizedObjects = (design.sceneData.objects || []).map((obj: SceneObject) => ({
+                 ...obj,
+-                position: obj.position ? [obj.position[0], 0, obj.position[2]] : [0, 0, 0],
++                position: obj.position
++                  ? ([obj.position[0], 0, obj.position[2]] as [number, number, number])
++                  : ([0, 0, 0] as [number, number, number]),
+               }))
+               set({
+                 currentDesignId: design.id,
+@@ -1577,18 +1569,7 @@ export const useInteriorStore = create<InteriorState>()(
+         },
+ 
+         renameDesign: async (designId: string, newName: string) => {
+-          const supabase = (
+-            await import('@/infrastructure/storage/supabaseClient')
+-          ).getSupabaseClient()
+-          const { error } = await supabase
+-            .from('interior_designs')
+-            .update({ name: newName })
+-            .eq('id', designId)
+-
+-          if (error) {
+-            console.error('Failed to rename design:', error)
+-            throw error
+-          }
++          await interiorDesignerApi.updateDesign({ id: designId, name: newName })
+ 
+           // If we are currently editing this design, update local name
+           if (get().currentDesignId === designId) {
+@@ -1598,9 +1579,7 @@ export const useInteriorStore = create<InteriorState>()(
+ 
+         deleteDesign: async (designId: string) => {
+           try {
+-            await fetch(`/api/interior-designer/designs?id=${designId}`, {
+-              method: 'DELETE',
+-            })
++            await interiorDesignerApi.deleteDesign(designId)
+ 
+             // If we deleted the current design, reset to new
+             if (get().currentDesignId === designId) {
+diff --git a/src/domains/interior-designer/ui/InteriorDesignerWorkspace/InteriorDesignerWorkspace.tsx b/src/domains/interior-designer/ui/InteriorDesignerWorkspace/InteriorDesignerWorkspace.tsx
+new file mode 100644
+index 0000000..9a5d50f
+--- /dev/null
++++ b/src/domains/interior-designer/ui/InteriorDesignerWorkspace/InteriorDesignerWorkspace.tsx
+@@ -0,0 +1,247 @@
++'use client'
++
++import { useEffect, useMemo } from 'react'
++import dynamic from 'next/dynamic'
++import { Loader2, Download, Save, Focus } from 'lucide-react'
++import { debounce } from 'lodash'
++import { Button } from '@/components/ui/button'
++import { DomainSidebar } from '@/components/ui/domain-sidebar'
++import { DesignManager } from '@/domains/interior-designer/components/DesignManager'
++import { InteriorRightSidebar } from '@/domains/interior-designer/components/UI/InteriorRightSidebar'
++import { Toolbar } from '@/domains/interior-designer/components/UI/Toolbar'
++import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
++import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
++import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
++import { TOUR_STEP_IDS } from '@/lib/tour-constants'
++import { cn } from '@/lib/utils'
++
++const InteriorCanvas = dynamic(
++  () =>
++    import('@/domains/interior-designer/components/InteriorCanvas').then(mod => ({
++      default: mod.InteriorCanvas,
++    })),
++  {
++    ssr: false,
++    loading: () => (
++      <div className="w-full h-full flex items-center justify-center bg-slate-900">
++        <Loader2 className="animate-spin text-muted-foreground" size={48} />
++      </div>
++    ),
++  }
++)
++
++export function InteriorDesignerWorkspace() {
++  useProjectFromUrl()
++
++  const setExportRequested = useInteriorStore(state => state.setExportRequested)
++  const saveDesign = useInteriorStore(state => state.saveDesign)
++  const hasUnsavedChanges = useInteriorStore(state => state.hasUnsavedChanges)
++  const isSaving = useInteriorStore(state => state.isSaving)
++  const setCameraResetRequested = useInteriorStore(state => state.setCameraResetRequested)
++  const addObject = useInteriorStore(state => state.addObject)
++  const currentProject = useWorldStore(state => state.currentProject)
++
++  const handleManualSave = async () => {
++    if (currentProject?.id) {
++      await saveDesign(currentProject.id)
++    }
++  }
++
++  const debouncedSave = useMemo(
++    () =>
++      debounce(() => {
++        if (currentProject?.id && hasUnsavedChanges) {
++          saveDesign(currentProject.id)
++        }
++      }, 2000),
++    [currentProject?.id, hasUnsavedChanges, saveDesign]
++  )
++
++  useEffect(() => {
++    if (hasUnsavedChanges) {
++      debouncedSave()
++    }
++
++    return () => {
++      debouncedSave.cancel()
++    }
++  }, [hasUnsavedChanges, debouncedSave])
++
++  const zenMode = useInteriorStore(state => state.zenMode)
++  const toggleZenMode = useInteriorStore(state => state.toggleZenMode)
++
++  useEffect(() => {
++    const handleKeyDown = (event: KeyboardEvent) => {
++      if (event.key === 'Tab') {
++        event.preventDefault()
++        toggleZenMode()
++      }
++    }
++
++    window.addEventListener('keydown', handleKeyDown)
++    return () => window.removeEventListener('keydown', handleKeyDown)
++  }, [toggleZenMode])
++
++  return (
++    <div className="w-full h-screen flex flex-col bg-black text-zinc-200 font-sans selection:bg-indigo-500/30 overflow-hidden">
++      <header
++        className={cn(
++          'h-14 border-b border-border/50 bg-zinc-950/50 backdrop-blur-md flex items-center px-6 justify-between relative z-50 transition-all duration-500',
++          zenMode && '-translate-y-full opacity-0'
++        )}
++      >
++        <div className="flex items-center gap-4">
++          <h1 className="font-mono font-bold text-sm tracking-widest text-zinc-100 uppercase">
++            Interior Designer
++          </h1>
++          <DesignManager />
++        </div>
++        <div className="flex items-center gap-2">
++          {hasUnsavedChanges && !isSaving && (
++            <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-yellow-500/80 flex items-center gap-1.5 mr-2">
++              <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(234,179,8,0.5)]" />
++              Unsaved
++            </div>
++          )}
++          {isSaving && (
++            <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-400 animate-pulse mr-2">
++              Saving...
++            </div>
++          )}
++          <Button
++            size="sm"
++            variant="ghost"
++            className="hover:bg-white/5 font-mono text-[10px] uppercase tracking-widest"
++            onClick={handleManualSave}
++            disabled={!hasUnsavedChanges || !currentProject}
++          >
++            <Save className="w-3.5 h-3.5 mr-2" />
++            Save
++          </Button>
++          <Button
++            size="sm"
++            variant="ghost"
++            className="hover:bg-white/5 font-mono text-[10px] uppercase tracking-widest"
++            onClick={() => setCameraResetRequested(true)}
++          >
++            <Focus className="w-3.5 h-3.5 mr-2" />
++            Reset View
++          </Button>
++          <div id={TOUR_STEP_IDS.INTERIOR_EXPORT} className="flex items-center gap-2">
++            <Button
++              size="sm"
++              variant="ghost"
++              className="hover:bg-white/5 font-mono text-[10px] uppercase tracking-widest"
++              onClick={() => setExportRequested(true)}
++            >
++              <Download className="w-3.5 h-3.5 mr-2 text-indigo-400" />
++              GLTF
++            </Button>
++            <Button
++              size="sm"
++              variant="ghost"
++              className="hover:bg-white/5 font-mono text-[10px] uppercase tracking-widest border border-indigo-500/20"
++              onClick={async () => {
++                const { walls, objects } = useInteriorStore.getState()
++                const zipBlob = await import('@/domains/interior-designer/utils/UnityExporter').then(
++                  module => module.UnityExporter.createExportZip({ walls, objects })
++                )
++
++                const url = URL.createObjectURL(zipBlob)
++                const link = document.createElement('a')
++                link.href = url
++                link.download = 'interior-design-unity.zip'
++                document.body.appendChild(link)
++                link.click()
++                document.body.removeChild(link)
++              }}
++            >
++              <Download className="w-3.5 h-3.5 mr-2 text-indigo-400" />
++              Unity
++            </Button>
++          </div>
++        </div>
++      </header>
++
++      <div className="flex-1 flex relative overflow-hidden">
++        <div
++          className={cn(
++            'transition-all duration-700 ease-in-out h-full',
++            zenMode ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0'
++          )}
++        >
++          <DomainSidebar
++            header={null}
++            position="left"
++            storageKey="interior-toolbar"
++            defaultWidth={80}
++            rawContent
++          >
++            <div id={TOUR_STEP_IDS.INTERIOR_TOOLBAR} className="flex-1 py-4">
++              <Toolbar />
++            </div>
++          </DomainSidebar>
++        </div>
++
++        <div className="flex-1 relative bg-black overflow-hidden">
++          <div
++            className="absolute inset-0 z-0"
++            id={TOUR_STEP_IDS.INTERIOR_CANVAS}
++            data-html2canvas-ignore="true"
++            onDragOver={event => {
++              event.preventDefault()
++              event.dataTransfer.dropEffect = 'copy'
++            }}
++            onDrop={event => {
++              event.preventDefault()
++              try {
++                const data = JSON.parse(event.dataTransfer.getData('application/json'))
++                if (data.type === 'asset' && data.glbUrl) {
++                  addObject({
++                    modelUrl: data.glbUrl,
++                    position: [0, 0, 0],
++                    rotation: [0, 0, 0],
++                    scale: [1, 1, 1],
++                    isLoading: true,
++                    thumbnailUrl: data.thumbnailUrl,
++                  })
++                }
++              } catch (error) {
++                console.error('Drop error:', error)
++              }
++            }}
++          >
++            <InteriorCanvas />
++          </div>
++
++          {!zenMode && (
++            <div className="absolute bottom-6 left-6 text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500/40 hover:text-zinc-400 transition-colors cursor-default select-none pointer-events-none z-10">
++              Press{' '}
++              <span className="px-1.5 py-0.5 border border-zinc-700/50 rounded bg-zinc-800/50 text-zinc-300">
++                Tab
++              </span>{' '}
++              for Zen Mode
++            </div>
++          )}
++        </div>
++
++        <div
++          className={cn(
++            'transition-all duration-700 ease-in-out h-full',
++            zenMode ? 'translate-x-full opacity-0 pointer-events-none' : 'translate-x-0'
++          )}
++        >
++          <DomainSidebar
++            header={null}
++            position="right"
++            storageKey="interior-properties"
++            defaultWidth={400}
++            rawContent
++          >
++            <InteriorRightSidebar />
++          </DomainSidebar>
++        </div>
++      </div>
++    </div>
++  )
++}
+diff --git a/src/domains/interior-designer/ui/InteriorDesignerWorkspace/index.ts b/src/domains/interior-designer/ui/InteriorDesignerWorkspace/index.ts
+new file mode 100644
+index 0000000..6f0f597
+--- /dev/null
++++ b/src/domains/interior-designer/ui/InteriorDesignerWorkspace/index.ts
+@@ -0,0 +1 @@
++export { InteriorDesignerWorkspace } from './InteriorDesignerWorkspace'

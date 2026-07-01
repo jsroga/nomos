@@ -1,0 +1,5 @@
+{
+  "script": "NODE_OPTIONS=\"${NODE_OPTIONS:---max-old-space-size=4096}\" npm run typecheck && NODE_OPTIONS=\"${NODE_OPTIONS:---max-old-space-size=4096}\" npm run lint",
+  "command": "exec 2>&1\nNODE_OPTIONS=\"${NODE_OPTIONS:---max-old-space-size=4096}\" npm run typecheck && NODE_OPTIONS=\"${NODE_OPTIONS:---max-old-space-size=4096}\" npm run lint",
+  "language": "shell"
+}
