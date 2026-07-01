@@ -51,6 +51,7 @@ digraph Plan {
         label="How much should the cleanup plan take on?"
         question_type="multiple_choice"
         timeout="86400s"
+        human.default_choice="plan"
     ]
 
     // goal_gate + retry_target=clarify_prep: on plan failure, loops to clarify_prep
@@ -72,6 +73,7 @@ digraph Plan {
         label="Plan is ready. Approve and build, save plan only, request changes, or abort?"
         question_type="multiple_choice"
         timeout="86400s"
+        human.default_choice="Retro"
     ]
 
     setup [
@@ -150,6 +152,25 @@ digraph Plan {
     ]
     e2e_gate [shape=diamond, label="E2E pass?"]
 
+    // Preview (Preview doc): start a dev server, then a human gate so the human
+    // can open the running app before finishing. Preview URLs require the DAYTONA
+    // provider (run with `--environment plan-daytona --preserve-sandbox`); on
+    // local/docker the gate still pauses for manual review but generates no URL.
+    serve [
+        label="Dev server\n[shell · npm run dev :3000]"
+        shape=parallelogram
+        script="(npm run dev >/tmp/devserver.log 2>&1 &) ; echo 'started next dev on :3000 — Daytona: open Preview or `fabro sandbox preview <run> 3000`'; for i in $(seq 1 20); do curl -sf http://localhost:3000 >/dev/null 2>&1 && { echo 'dev server up'; break; }; sleep 3; done; true"
+        max_visits=2
+    ]
+
+    Preview [
+        shape=hexagon
+        label="Preview the running app on port 3000 (Daytona: Preview button or `fabro sandbox preview <run> 3000`). Approve, revise, or skip."
+        question_type="multiple_choice"
+        timeout="86400s"
+        human.default_choice="Retro"
+    ]
+
     Retro [
         label="Retro\nagent: Retro Author\nmodel: gpt-5.4"
         class="retro"
@@ -166,6 +187,9 @@ digraph Plan {
     Clarify -> plan [label="[C] Full blueprint — comprehensive end-state migration plan"]
     Clarify -> plan [label="[F] Custom scope rules", freeform=true]
     Clarify -> assess [label="[R] Re-assess — findings are wrong or stale"]
+    // Fail closed (Interviews/HITL): Interrupted/Skipped never approve; give the
+    // unanswered path an explicit terminal route instead of a silent stuck state.
+    Clarify -> exit [label="Unanswered — abort", condition="outcome=failed"]
 
     plan -> Verification
 
@@ -173,6 +197,7 @@ digraph Plan {
     Verification -> Retro       [label="[P] Approve, plan only"]
     Verification -> plan        [label="[I] Iterate with notes", freeform=true]
     Verification -> exit        [label="[X] Abort"]
+    Verification -> exit        [label="Unanswered — abort", condition="outcome=failed"]
 
     setup -> setup_gate
     setup_gate -> ux_designer [label="UI increment", condition="outcome=succeeded && plan.has_ui_surface=yes"]
@@ -194,6 +219,14 @@ digraph Plan {
     e2e_gate -> screenshot [label="Pass", condition="outcome=succeeded"]
     e2e_gate -> developer  [label="Fix"]
 
+    // UI increments: screenshot → dev server → Preview gate → Retro.
+    // Backend-only increments skip straight to Retro.
+    screenshot -> serve [label="Preview UI", condition="plan.has_ui_surface=yes"]
     screenshot -> Retro
+    serve -> Preview
+    Preview -> Retro     [label="[A] Looks good — finish"]
+    Preview -> developer [label="[R] Revise — back to Implement", freeform=true]
+    Preview -> Retro     [label="[S] Skip preview"]
+    Preview -> exit      [label="Unanswered — abort", condition="outcome=failed"]
     Retro -> exit
 }

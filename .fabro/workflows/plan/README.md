@@ -14,18 +14,56 @@ Run detail: `http://127.0.0.1:32276/runs/<run-id>`
 
 Fabro does **not** support custom tabs named "Verification" or "Retro" next to Sandbox / Files Changed. Those steps appear as **named stages** in the graph and Stages list, plus the **dock** for human gates.
 
-## Human gates in this workflow
+## Human gates in this workflow ([interviews](https://docs.fabro.sh/human-tools/interviews) · [human-in-the-loop](https://docs.fabro.sh/workflows/human-in-the-loop))
 
 Fabro shows the **preceding stage's final response** in the dock — not repo files.
 Gate labels and button text must be self-contained; never "read X.md".
+
+Each `hexagon` gate infers `multiple_choice` from its edge labels; the `[K] Label`
+prefixes are the keyboard accelerators. Edges with `freeform=true` add a free-text
+fallback (routed to `human.gate.text`).
 
 1. **Clarify** (before Plan): Clarify Prep's final response has the full decision
    table. Buttons: `[A]` staged · `[B]` minimal first step · `[C]` full blueprint
    · `[F]` custom (freeform) · `[R]` re-assess
 2. **Verification** (after Plan): `[B]` approve & build · `[P]` plan only ·
    `[I]` iterate (freeform) · `[X]` abort
+3. **Preview** (build path, UI increments only): `[A]` looks good · `[R]` revise
+   (freeform, back to Implement) · `[S]` skip
 
-No `human.default_choice` — gates fail closed until you answer ([human-in-the-loop](https://docs.fabro.sh/workflows/human-in-the-loop)).
+**Timeout defaults (`human.default_choice`).** Every gate has a 24h `timeout` plus a
+safe default so it never hangs indefinitely:
+
+| Gate | On timeout → | Why |
+| --- | --- | --- |
+| Clarify | `plan` (recommended [A] scope) | keeps planning moving |
+| Verification | `Retro` (plan-only) | **never auto-builds** unattended |
+| Preview | `Retro` (finish) | no destructive action |
+
+**Fail closed.** Per the docs, `Interrupted`/`Skipped` answers never fall through to
+an approval edge. Each gate has an explicit `condition="outcome=failed"` → **Exit**
+route so an unanswered/disconnected gate ends cleanly instead of silently stuck.
+Auto-approve (`--auto-approve`) selects the first option (Clarify `[A]`,
+Verification `[B]`) — an explicit operator choice, distinct from an unanswered prompt.
+
+## Preview ([preview](https://docs.fabro.sh/human-tools/preview))
+
+For UI increments the build path runs a **Dev server** stage (`npm run dev` on
+port 3000, backgrounded) then pauses at the **Preview** gate so you can open the
+running app before finishing.
+
+Preview URLs **require the Daytona provider** — local/docker sandboxes cannot serve
+previews (the gate still pauses for manual review, just without a URL). To actually
+preview:
+
+```bash
+fabro run .fabro/workflows/plan/workflow.toml -I module=interior-designer \
+  --environment plan-daytona --preserve-sandbox
+# at the Preview gate:
+fabro sandbox preview <run-id> 3000 --open     # or the Preview button in the web UI
+```
+
+`--preserve-sandbox` keeps the sandbox alive so preview URLs work after the run ends.
 
 ## Artifacts
 
@@ -38,7 +76,6 @@ No `human.default_choice` — gates fail closed until you answer ([human-in-the-
 | `UX.md` | UX Designer (build path only) |
 | `screenshots/**`, `SCREENSHOTS.md` | UI Screenshot (build path only) |
 | `RETRO.md` | Retro |
-
 ## Developer skills
 
 Skills in `.fabro/skills/` are auto-discovered. The **Implement** stage has
@@ -49,9 +86,10 @@ skill activations in the stage's **skills** projection in the Fabro UI.
 ## Build path routing
 
 - **`plan.has_ui_surface=yes`** (set by Plan Author `context_updates`) → Bootstrap →
-  **UX Designer** → Implement.
+  **UX Designer** → Implement → verify → test → e2e → Screenshot → **Dev server** →
+  **Preview** gate → Retro.
 - **`plan.has_ui_surface=no`** (typical backend cleanup) → Bootstrap → **Implement**
-  (skips UX Designer).
+  (skips UX Designer) → verify → test → e2e → Screenshot → Retro (skips Preview).
 - **Bootstrap failure** → `setup_fail` shell stage with a clear error → Exit (does
   not continue to Implement).
 
@@ -63,9 +101,12 @@ startup delay on plan-path agents before `npm ci`.
 
 ## Docker image
 
-`[environments.plan-docker.image]` uses **`docker = "node:22-bookworm-slim"`** (cache
-key includes Node) plus `../../docker/plan-sandbox.Dockerfile` for git. Do not rely
-on the default `buildpack-deps:noble` snapshot — it has no npm.
+`[environments.plan-docker.image]` uses **`docker = "node:22-bookworm"`** (has git +
+node + npm). The `-slim` variant lacks git and fails Fabro's clone step. The Docker
+provider ignores `image.dockerfile`, so the image must ship git itself.
+
+For **preview**, use `[environments.plan-daytona]` (`--environment plan-daytona`) —
+Daytona is the only provider that serves preview URLs.
 
 ## Local sandbox vs Files Changed
 

@@ -38,6 +38,15 @@ provider = "docker"
 # Slim image lacks git (Fabro requires git for clone). Full bookworm has git + node + npm.
 docker = "node:22-bookworm"
 
+# Preview URLs (fabro sandbox preview / Preview button) require the Daytona provider —
+# local/docker sandboxes cannot serve previews. Run UI increments you want to preview
+# with: fabro run … --environment plan-daytona --preserve-sandbox
+[environments.plan-daytona]
+provider = "daytona"
+
+[environments.plan-daytona.image]
+docker = "node:22-bookworm"
+
 # Playwright MCP is NOT configured at run level — it starts before bootstrap and
 # burns ~30s per plan-path stage (npx missing). Screenshot stage uses Playwright
 # CLI after npm ci instead (see prompts/screenshot.md).
