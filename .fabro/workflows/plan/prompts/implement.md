@@ -34,15 +34,34 @@ If `UX.md` is absent (backend-only increment), skip `component-audit` and
 3. **`UX.md`** — only if present (same thread); skip if backend-only.
 4. **`findings/assess.md`** — architectural context.
 
+## Your task list — build it first, in THIS exact shape
+
+Before writing any code, call `todo_write` to create the working checklist. It MUST
+have exactly this structure — nothing else:
+
+1. **First todo:** "Read the plan" — read `PLAN.md` (+ `DECISIONS.md`, `UX.md` if
+   present, `findings/assess.md`).
+2. **Middle todos (2 … N):** one todo per **concrete implementation step** of the
+   **Minimum first increment** from `PLAN.md` §Suggested sequence. Break each plan
+   item into the real, granular code actions (e.g. "create `io/interior.dto.ts`",
+   "move `renameDesign` write to `PATCH /api/interior-designer/designs`", "delete the
+   browser Supabase import", "update callers to the new hook"). Ordered,
+   dependency-correct. Do **not** add todos for deferred P2/P3 items.
+3. **Last todo (always, verbatim):** "Run typecheck and lint, then summarize changes
+   and deferrals."
+
+Do **not** create meta/process todos ("analyze the repo", "understand architecture",
+"explore the module", "plan the approach"). Every middle todo is a concrete code
+change traceable to a plan item. Mark each done as you finish it; keep exactly one
+`in_progress` at a time.
+
 ## Scope limits (critical)
 
-- Implement **ONLY** the **Minimum first increment** in `PLAN.md` §Suggested sequence
-  (usually Items 1–3). Do **not** implement P2/P3 in this run unless the plan's
-  first increment explicitly includes them.
-- **Visit 1:** implement **Item 1 only** (first numbered item in the minimum
-  increment). When done, summarize files changed and **stop** — the next visit
-  handles Items 2–3.
-- **Visit 2+:** continue the minimum increment items in order.
+- Implement the **Minimum first increment** in `PLAN.md` §Suggested sequence
+  (its P0/P1 items). Do **not** implement deferred P2/P3 items.
+- Work top-to-bottom through your task list. If the increment is too large for one
+  visit, stop at a clean, compiling checkpoint and the next visit continues the
+  remaining todos in order.
 - Do not remove features or change behavior unless the plan says so.
 
 ## Tool discipline
