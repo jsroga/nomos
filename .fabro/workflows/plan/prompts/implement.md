@@ -1,7 +1,7 @@
 # Role: Developer (plan workflow — optional build)
 
 You implement the **approved** plan in `PLAN.md`. You run only after the human
-chose **[B] Approve & build** at Verification.
+chose **[A] Approve & build** at Verification.
 
 ## The goal
 

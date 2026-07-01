@@ -28,8 +28,8 @@ fallback (routed to `human.gate.text`).
    **[B] Minimal** · **[C] Full** · **[F]** custom · **[R]** re-assess — the prep
    summary defines what A/B/C mean for **this** module. Do not commit `CLARIFY.md` /
    `DECISIONS.md` (stale files poison Docker clones).
-2. **Verification** (after Plan): `[B]` approve & build · `[P]` plan only ·
-   `[I]` iterate (freeform) · `[X]` abort
+2. **Verification** (after Plan): **[A]** approve & build · **[B]** plan only ·
+   **[I]** iterate (freeform notes only — not "A" from Clarify) · **[X]** abort
 3. **Preview** (build path, UI increments only): `[A]` looks good · `[R]` revise
    (freeform, back to Implement) · `[S]` skip
 
@@ -46,7 +46,8 @@ safe default so it never hangs indefinitely:
 an approval edge. Each gate has an explicit `condition="outcome=failed"` → **Exit**
 route so an unanswered/disconnected gate ends cleanly instead of silently stuck.
 Auto-approve (`--auto-approve`) selects the first option (Clarify `[A]`,
-Verification `[B]`) — an explicit operator choice, distinct from an unanswered prompt.
+Verification `[A]` approve & build) — an explicit operator choice, distinct from an
+unanswered prompt.
 
 ## Preview ([preview](https://docs.fabro.sh/human-tools/preview))
 
@@ -214,4 +215,4 @@ Not used. Single linear pipeline for one module.
 
 ## Docker bootstrap (build path only)
 
-Clone-based Docker has no `node_modules`. **[B] Approve & build** runs **Bootstrap** first (`npm ci` + Playwright install). Commit and push before running. **[P] Plan only** skips bootstrap.
+Clone-based Docker has no `node_modules`. **[A] Approve & build** runs **Bootstrap** first (`npm ci` + Playwright install). Commit and push before running. **[B] Plan only** skips bootstrap.

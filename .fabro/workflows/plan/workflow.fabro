@@ -71,7 +71,7 @@ digraph Plan {
 
     Verification [
         shape=hexagon
-        label="Plan is ready. Approve and build, save plan only, request changes, or abort?"
+        label="Plan is ready. [A] build · [B] plan only · [I] iterate (notes) · [X] abort — do not reuse Clarify's A/B/C here"
         question_type="multiple_choice"
         timeout="86400s"
         human.default_choice="Retro"
@@ -199,8 +199,8 @@ digraph Plan {
 
     plan -> Verification
 
-    Verification -> setup      [label="[B] Approve & build"]
-    Verification -> Retro       [label="[P] Approve, plan only"]
+    Verification -> setup      [label="[A] Approve & build"]
+    Verification -> Retro       [label="[B] Approve, plan only"]
     Verification -> plan        [label="[I] Iterate with notes", freeform=true]
     Verification -> exit        [label="[X] Abort"]
     Verification -> exit        [label="Unanswered — abort", condition="outcome=failed"]

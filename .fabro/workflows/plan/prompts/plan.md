@@ -21,9 +21,12 @@ touch a dependency-rule boundary or an invariant as a risk.
 3. **`DECISIONS.md`** — update with the human's Clarify choice **before** drafting.
    Read `human.gate.Clarify.*` and `human.gate.text`. Record option, freeform text,
    in-scope vs deferred.
-4. If re-invoked after Verification **[I]**, human notes are in
-   `human.gate.Verification.*` / `human.gate.text`. Update both files; human
-   judgment overrides severities.
+4. If re-invoked after Verification **[I] Iterate**, human notes are in
+   `human.gate.Verification.*` / `human.gate.text`. Update both files only when the
+   note is **substantive** (concrete changes requested). If the note is empty, a lone
+   letter (`A`, `B`, `P`), or generic approval ("looks good", "approve", "LGTM"), do
+   **not** rewrite the plan — respond: "No iteration notes. At Verification pick
+   **[A] Approve & build** to implement (Clarify is already done)." Then stop.
 
 ## Mandatory spot-checks (before writing PLAN.md)
 
@@ -102,6 +105,11 @@ Your final response **must** include:
 3. **First shippable increment** in bold.
 4. **Item count** and rough effort (e.g. "8 items, ~2–3 dev days for increment 1").
 5. Bulleted plan summary with concrete file references.
+
+6. **Verification reminder:** pick **[A] Approve & build** to implement, **[B]** for
+   plan-only, **[I]** only if you want plan changes (type notes), **[X]** to abort.
+   (Clarify's A/B/C are already decided — do not type `A` expecting build unless you
+   choose option **[A]** on this gate.)
 
 Then stop for **Verification**. Do not implement.
 
