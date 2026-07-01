@@ -1092,8 +1092,8 @@
   "status": {
     "kind": "running"
   },
-  "status_updated_at": "2026-07-01T11:30:13.607484Z",
-  "last_event_at": "2026-07-01T11:33:47.648880Z",
+  "status_updated_at": "2026-07-01T11:35:42.093769Z",
+  "last_event_at": "2026-07-01T11:35:42.093769Z",
   "pending_control": null,
   "checkpoints": [
     {
@@ -1661,9 +1661,9 @@
       }
     },
     {
-      "seq": 0,
+      "seq": 356,
       "checkpoint": {
-        "timestamp": "2026-07-01T11:33:47.723818Z",
+        "timestamp": "2026-07-01T11:33:51.239031Z",
         "current_node": "plan",
         "completed_nodes": [
           "start",
@@ -1675,48 +1675,110 @@
         ],
         "node_retries": {},
         "context_values": {
-          "current_node": "plan",
-          "last_response": "Plan and decisions written. Stopping for Verification.\n\n## Verification summary\n\n**1. P0 declaration** — **P0 exists.** `store/useInteriorStore.ts:1580-1586` (`renameDesign`) does a direct browser",
-          "human.gate.selected": "A",
-          "thread.planning.current_node": "plan",
-          "graph.default_fidelity": "summary:medium",
-          "graph.rankdir": "LR",
-          "internal.retry_count.start": 0,
-          "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: interior-designer is still pre-blueprint; the top 3 gaps are:\n1. direct client Supabase write in `useInteriorStore`\n2. a 1661-line Zustand store mixing UI/server/persistence concerns\n3. bespoke job polling plus cross-module internal coupling\n\nI did not modify code.",
-          "internal.retry_count.clarify_prep": 0,
-          "graph.stall_timeout": "1800000ms",
-          "failure_class": "",
-          "thread.start.current_node": "scope",
-          "thread.review.current_node": "clarify_prep",
-          "human.gate.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
-          "failure_signature": "",
-          "preferred_label": "[A] Staged migration — boundaries first, bigger moves sequenced",
-          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
-          "internal.thread_id": "planning",
-          "thread.clarify_prep.current_node": "Clarify",
-          "human.gate.Clarify.answer": "A",
-          "last_stage": "plan",
-          "internal.retry_count.assess": 0,
-          "response.plan": "Plan and decisions written. Stopping for Verification.\n\n## Verification summary\n\n**1. P0 declaration** — **P0 exists.** `store/useInteriorStore.ts:1580-1586` (`renameDesign`) does a direct browser→Supabase write (`supabase.from('interior_designs').update(...)`), bypassing the server auth gate (invariant #2).\n\n**2. Your Clarify decision: [A] Staged migration.** In scope: fix the security seam, add `index.ts` + `io/` + `state/queries/` + `services/` boundaries, then co-locate Trigger tasks, then decouple cross-module imports. Explicitly deferred: full Realtime `useJob` job migration (blocked — `shared/jobs` doesn't exist yet), god-component splitting, and `shared/` extraction.\n\n**3. First shippable increment: Items 1–3** — remove the browser Supabase write (route it to the **already-existing** authed `PATCH /api/interior-designer/designs`), add the module `index.ts` barrel, and introduce the `io/` edge (Zod DTOs + query keys + typed fetchers shared with the route).\n\n**4. Item count / effort** — 9 active items + 1 deferred. Increment 1 (Items 1–3): ~1–2 dev days (S + S + M).\n\n**5. Plan summary**\n- **Item 1 (P0/S):** `renameDesign` → `PATCH /api/interior-designer/designs`; delete the `getSupabaseClient` import.\n- **Item 2 (P1/S):** create `index.ts`; point `app/**/interior-design` at it.\n- **Item 3 (P1/M):** `io/interior-designer.{dto,keys,api}.ts`; centralize the scattered `fetch` in the store + `DesignManager.tsx:46`.\n- **Item 4 (P1/L):** dissolve server state from the 1661-LOC store into `state/queries/`; pure `core/SceneData.ts`.\n- **Item 5 (P1/M):** `services/InteriorDesignService.ts` (server-only, `Result<T>`); relocate `ai/TextureService.ts` → `services/`, its `TextureStyle` type → `core/`.\n- **Item 6 (P2/M):** kill deep imports of `world-building-toolkit`/`3d-asset-exporter` internals via their barrels.\n- **Item 7 (P2/M):** co-locate retexture/text-to-3d/material tasks under `tasks/` as `schemaTask`s.\n- **Item 8 (P2/M):** remove `any` at edges via the new DTOs.\n- **Item 9 (P3/L):** reshape `components/` → `ui/<Component>/`, split god panels.\n\nCorrections recorded in `DECISIONS.md`: P0 is narrower than assessed (only `renameDesign`); no `z.any()`; `localStorage` is API-key/prompt only; schema direction is correct; `TextureService` is live.\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"yes\"\n  }\n}\n```\n\nAwaiting human approval before implementing.",
-          "internal.node_visit_count": 1,
-          "internal.retry_count.scope": 0,
           "graph.goal": "Clean up and align the interior-designer module (src/domains/interior-designer) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
-          "graph.default_max_retries": "1",
-          "internal.run_id": "01KWEP38BTFCTZJRAPW78J15JT",
-          "human.gate.Clarify.question": "How much should the cleanup plan take on?",
-          "internal.retry_count.Clarify": 0,
-          "human.gate.Clarify.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
           "plan.has_p0_security_issue": "yes",
+          "internal.retry_count.scope": 0,
+          "failure_signature": "",
+          "human.gate.Clarify.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
+          "human.gate.selected": "A",
+          "internal.retry_count.Clarify": 0,
+          "graph.rankdir": "LR",
+          "internal.retry_count.clarify_prep": 0,
           "plan.has_ui_surface": "no",
-          "internal.work_dir": "/workspace/kurvitza",
-          "internal.retry_count.plan": 0,
-          "internal.fidelity": "summary:high",
           "outcome": "succeeded",
-          "response.clarify_prep": "## Assessment summary\n`src/domains/interior-designer` is materially off the target module blueprint. The biggest issues are a client-side Supabase write path, a very large Zustand store that mixes UI and server concerns, and long-running retexture/export flows that bypass the shared Trigger.dev job model.\n\nThis means the plan should focus first on restoring safe boundaries and layering, then on moving async work and cross-module seams into the architecture contract.\n\n## Key gaps (max 5)\n- Direct browser → Supabase writes in `useInteriorStore` break the server-only persistence rule.\n- A 1661-line Zustand store mixes ephemeral UI state, server state, persistence, jobs, and domain logic.\n- Retexture/export uses bespoke polling and client recovery instead of module-owned Trigger tasks + shared job hooks.\n- The module deep-imports internals from `world-building-toolkit` and `3d-asset-exporter`.\n- Legacy `ai/TextureService.ts` plus weak DTO typing leave the server/task boundary unclear.\n\n## Pick one scope (most teams pick A, B, or C)\n\n| Option | What the plan will assume |\n| --- | --- |\n| **[A] Staged migration** | Create a safe migration path: first introduce `index.ts`, `state/`, `io/`, and `services/` around design CRUD and auth-safe persistence; then move retexture/export into `tasks/` + shared job primitives; finally clean up cross-module API boundaries and leftover legacy AI/util code. |\n| **[B] Minimal first step** | Limit the plan to the highest-risk fixes first: remove browser writes, add typed DTO/API/service seams for design CRUD, and split server state out of Zustand, while deferring full retexture/export and broader folder convergence. |\n| **[C] Full blueprint** | Plan a full reshape now: migrate to `ui/state/io/core/services/tasks`, replace the god store, convert retexture/export to Trigger tasks, eliminate deep cross-module imports, and either remove or properly relocate incomplete AI code. |\n\n**Advanced:** [F] type custom constraints in freeform · [R] re-assess only if findings are wrong\n\n**Recommendation: [A]** — it fixes the active security/architecture risks first without forcing the whole module into a single high-risk rewrite.",
+          "internal.retry_count.assess": 0,
+          "graph.default_fidelity": "summary:medium",
+          "human.gate.Clarify.answer": "A",
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
+          "internal.retry_count.start": 0,
+          "internal.fidelity": "summary:high",
+          "internal.run_id": "01KWEP38BTFCTZJRAPW78J15JT",
           "command.output": "blob://sha256/757e155e41486ff58ca5b121ff783e67d36e35e835e3fd54895133b33caf5167",
-          "graph.label": "Optional Build"
+          "internal.work_dir": "/workspace/kurvitza",
+          "last_stage": "plan",
+          "internal.retry_count.plan": 0,
+          "response.clarify_prep": "## Assessment summary\n`src/domains/interior-designer` is materially off the target module blueprint. The biggest issues are a client-side Supabase write path, a very large Zustand store that mixes UI and server concerns, and long-running retexture/export flows that bypass the shared Trigger.dev job model.\n\nThis means the plan should focus first on restoring safe boundaries and layering, then on moving async work and cross-module seams into the architecture contract.\n\n## Key gaps (max 5)\n- Direct browser → Supabase writes in `useInteriorStore` break the server-only persistence rule.\n- A 1661-line Zustand store mixes ephemeral UI state, server state, persistence, jobs, and domain logic.\n- Retexture/export uses bespoke polling and client recovery instead of module-owned Trigger tasks + shared job hooks.\n- The module deep-imports internals from `world-building-toolkit` and `3d-asset-exporter`.\n- Legacy `ai/TextureService.ts` plus weak DTO typing leave the server/task boundary unclear.\n\n## Pick one scope (most teams pick A, B, or C)\n\n| Option | What the plan will assume |\n| --- | --- |\n| **[A] Staged migration** | Create a safe migration path: first introduce `index.ts`, `state/`, `io/`, and `services/` around design CRUD and auth-safe persistence; then move retexture/export into `tasks/` + shared job primitives; finally clean up cross-module API boundaries and leftover legacy AI/util code. |\n| **[B] Minimal first step** | Limit the plan to the highest-risk fixes first: remove browser writes, add typed DTO/API/service seams for design CRUD, and split server state out of Zustand, while deferring full retexture/export and broader folder convergence. |\n| **[C] Full blueprint** | Plan a full reshape now: migrate to `ui/state/io/core/services/tasks`, replace the god store, convert retexture/export to Trigger tasks, eliminate deep cross-module imports, and either remove or properly relocate incomplete AI code. |\n\n**Advanced:** [F] type custom constraints in freeform · [R] re-assess only if findings are wrong\n\n**Recommendation: [A]** — it fixes the active security/architecture risks first without forcing the whole module into a single high-risk rewrite.",
+          "failure_class": "",
+          "last_response": "Plan and decisions written. Stopping for Verification.\n\n## Verification summary\n\n**1. P0 declaration** — **P0 exists.** `store/useInteriorStore.ts:1580-1586` (`renameDesign`) does a direct browser",
+          "response.plan": "Plan and decisions written. Stopping for Verification.\n\n## Verification summary\n\n**1. P0 declaration** — **P0 exists.** `store/useInteriorStore.ts:1580-1586` (`renameDesign`) does a direct browser→Supabase write (`supabase.from('interior_designs').update(...)`), bypassing the server auth gate (invariant #2).\n\n**2. Your Clarify decision: [A] Staged migration.** In scope: fix the security seam, add `index.ts` + `io/` + `state/queries/` + `services/` boundaries, then co-locate Trigger tasks, then decouple cross-module imports. Explicitly deferred: full Realtime `useJob` job migration (blocked — `shared/jobs` doesn't exist yet), god-component splitting, and `shared/` extraction.\n\n**3. First shippable increment: Items 1–3** — remove the browser Supabase write (route it to the **already-existing** authed `PATCH /api/interior-designer/designs`), add the module `index.ts` barrel, and introduce the `io/` edge (Zod DTOs + query keys + typed fetchers shared with the route).\n\n**4. Item count / effort** — 9 active items + 1 deferred. Increment 1 (Items 1–3): ~1–2 dev days (S + S + M).\n\n**5. Plan summary**\n- **Item 1 (P0/S):** `renameDesign` → `PATCH /api/interior-designer/designs`; delete the `getSupabaseClient` import.\n- **Item 2 (P1/S):** create `index.ts`; point `app/**/interior-design` at it.\n- **Item 3 (P1/M):** `io/interior-designer.{dto,keys,api}.ts`; centralize the scattered `fetch` in the store + `DesignManager.tsx:46`.\n- **Item 4 (P1/L):** dissolve server state from the 1661-LOC store into `state/queries/`; pure `core/SceneData.ts`.\n- **Item 5 (P1/M):** `services/InteriorDesignService.ts` (server-only, `Result<T>`); relocate `ai/TextureService.ts` → `services/`, its `TextureStyle` type → `core/`.\n- **Item 6 (P2/M):** kill deep imports of `world-building-toolkit`/`3d-asset-exporter` internals via their barrels.\n- **Item 7 (P2/M):** co-locate retexture/text-to-3d/material tasks under `tasks/` as `schemaTask`s.\n- **Item 8 (P2/M):** remove `any` at edges via the new DTOs.\n- **Item 9 (P3/L):** reshape `components/` → `ui/<Component>/`, split god panels.\n\nCorrections recorded in `DECISIONS.md`: P0 is narrower than assessed (only `renameDesign`); no `z.any()`; `localStorage` is API-key/prompt only; schema direction is correct; `TextureService` is live.\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"yes\"\n  }\n}\n```\n\nAwaiting human approval before implementing.",
+          "thread.clarify_prep.current_node": "Clarify",
+          "thread.start.current_node": "scope",
+          "internal.thread_id": "planning",
+          "internal.node_visit_count": 1,
+          "thread.review.current_node": "clarify_prep",
+          "graph.label": "Optional Build",
+          "current_node": "plan",
+          "graph.stall_timeout": "1800000ms",
+          "thread.planning.current_node": "plan",
+          "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: interior-designer is still pre-blueprint; the top 3 gaps are:\n1. direct client Supabase write in `useInteriorStore`\n2. a 1661-line Zustand store mixing UI/server/persistence concerns\n3. bespoke job polling plus cross-module internal coupling\n\nI did not modify code.",
+          "graph.default_max_retries": "1",
+          "human.gate.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
+          "human.gate.Clarify.question": "How much should the cleanup plan take on?",
+          "preferred_label": "[A] Staged migration — boundaries first, bigger moves sequenced"
         },
         "node_outcomes": {
+          "start": {
+            "status": "succeeded",
+            "usage": null
+          },
+          "plan": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_response": "Plan and decisions written. Stopping for Verification.\n\n## Verification summary\n\n**1. P0 declaration** — **P0 exists.** `store/useInteriorStore.ts:1580-1586` (`renameDesign`) does a direct browser",
+              "plan.has_p0_security_issue": "yes",
+              "response.plan": "Plan and decisions written. Stopping for Verification.\n\n## Verification summary\n\n**1. P0 declaration** — **P0 exists.** `store/useInteriorStore.ts:1580-1586` (`renameDesign`) does a direct browser→Supabase write (`supabase.from('interior_designs').update(...)`), bypassing the server auth gate (invariant #2).\n\n**2. Your Clarify decision: [A] Staged migration.** In scope: fix the security seam, add `index.ts` + `io/` + `state/queries/` + `services/` boundaries, then co-locate Trigger tasks, then decouple cross-module imports. Explicitly deferred: full Realtime `useJob` job migration (blocked — `shared/jobs` doesn't exist yet), god-component splitting, and `shared/` extraction.\n\n**3. First shippable increment: Items 1–3** — remove the browser Supabase write (route it to the **already-existing** authed `PATCH /api/interior-designer/designs`), add the module `index.ts` barrel, and introduce the `io/` edge (Zod DTOs + query keys + typed fetchers shared with the route).\n\n**4. Item count / effort** — 9 active items + 1 deferred. Increment 1 (Items 1–3): ~1–2 dev days (S + S + M).\n\n**5. Plan summary**\n- **Item 1 (P0/S):** `renameDesign` → `PATCH /api/interior-designer/designs`; delete the `getSupabaseClient` import.\n- **Item 2 (P1/S):** create `index.ts`; point `app/**/interior-design` at it.\n- **Item 3 (P1/M):** `io/interior-designer.{dto,keys,api}.ts`; centralize the scattered `fetch` in the store + `DesignManager.tsx:46`.\n- **Item 4 (P1/L):** dissolve server state from the 1661-LOC store into `state/queries/`; pure `core/SceneData.ts`.\n- **Item 5 (P1/M):** `services/InteriorDesignService.ts` (server-only, `Result<T>`); relocate `ai/TextureService.ts` → `services/`, its `TextureStyle` type → `core/`.\n- **Item 6 (P2/M):** kill deep imports of `world-building-toolkit`/`3d-asset-exporter` internals via their barrels.\n- **Item 7 (P2/M):** co-locate retexture/text-to-3d/material tasks under `tasks/` as `schemaTask`s.\n- **Item 8 (P2/M):** remove `any` at edges via the new DTOs.\n- **Item 9 (P3/L):** reshape `components/` → `ui/<Component>/`, split god panels.\n\nCorrections recorded in `DECISIONS.md`: P0 is narrower than assessed (only `renameDesign`); no `z.any()`; `localStorage` is API-key/prompt only; schema direction is correct; `TextureService` is live.\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"yes\"\n  }\n}\n```\n\nAwaiting human approval before implementing.",
+              "last_stage": "plan",
+              "plan.has_ui_surface": "no"
+            },
+            "notes": "Stage completed: plan",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "anthropic",
+                    "model_id": "claude-opus-4-8"
+                  },
+                  "tokens": {
+                    "input_tokens": 48538,
+                    "output_tokens": 14578,
+                    "reasoning_tokens": 0,
+                    "cache_read_tokens": 593605,
+                    "cache_write_tokens": 111856
+                  }
+                },
+                "facts": {
+                  "algorithm": "anthropic",
+                  "cache_write_5m_tokens": 111856,
+                  "cache_write_1h_tokens": 0
+                }
+              },
+              "total_usd_micros": 1603042
+            },
+            "files_touched": [
+              "/workspace/kurvitza/DECISIONS.md",
+              "/workspace/kurvitza/PLAN.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 208959,
+              "tool_time_ms": 978,
+              "active_time_ms": 209937
+            }
+          },
+          "scope": {
+            "status": "succeeded",
+            "context_updates": {
+              "command.output": "blob://sha256/757e155e41486ff58ca5b121ff783e67d36e35e835e3fd54895133b33caf5167"
+            },
+            "notes": "Script completed: M=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1",
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 478,
+              "active_time_ms": 478
+            }
+          },
           "clarify_prep": {
             "status": "succeeded",
             "context_updates": {
@@ -1758,20 +1820,144 @@
               "active_time_ms": 28943
             }
           },
-          "scope": {
+          "Clarify": {
+            "status": "succeeded",
+            "preferred_label": "[A] Staged migration — boundaries first, bigger moves sequenced",
+            "suggested_next_ids": [
+              "plan"
+            ],
+            "context_updates": {
+              "human.gate.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
+              "human.gate.Clarify.answer": "A",
+              "human.gate.Clarify.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
+              "human.gate.selected": "A",
+              "human.gate.Clarify.question": "How much should the cleanup plan take on?"
+            },
+            "usage": null
+          },
+          "assess": {
             "status": "succeeded",
             "context_updates": {
-              "command.output": "blob://sha256/757e155e41486ff58ca5b121ff783e67d36e35e835e3fd54895133b33caf5167"
+              "last_response": "Assessment written to `findings/assess.md`.\n\nVerdict: interior-designer is still pre-blueprint; the top 3 gaps are:\n1. direct client Supabase write in `useInteriorStore`\n2. a 1661-line Zustand store m",
+              "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: interior-designer is still pre-blueprint; the top 3 gaps are:\n1. direct client Supabase write in `useInteriorStore`\n2. a 1661-line Zustand store mixing UI/server/persistence concerns\n3. bespoke job polling plus cross-module internal coupling\n\nI did not modify code.",
+              "last_stage": "assess"
             },
-            "notes": "Script completed: M=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1",
-            "usage": null,
+            "notes": "Stage completed: assess",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 79083,
+                    "output_tokens": 4954,
+                    "reasoning_tokens": 705,
+                    "cache_read_tokens": 327168,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 364384
+            },
+            "files_touched": [
+              "/workspace/kurvitza/findings/assess.md"
+            ],
             "timing": {
               "wall_time_ms": 0,
-              "inference_time_ms": 0,
-              "tool_time_ms": 478,
-              "active_time_ms": 478
+              "inference_time_ms": 60302,
+              "tool_time_ms": 1252,
+              "active_time_ms": 61554
             }
-          },
+          }
+        },
+        "next_node_id": "Verification",
+        "git_commit_sha": "746efa46b3342897f7b64f724dcec52a3c39cab7",
+        "node_visits": {
+          "start": 1,
+          "assess": 1,
+          "clarify_prep": 1,
+          "scope": 1,
+          "plan": 1,
+          "Clarify": 1
+        }
+      },
+      "diff": {
+        "patch": "diff --git a/DECISIONS.md b/DECISIONS.md\nindex 2a925ec..5ed6f47 100644\n--- a/DECISIONS.md\n+++ b/DECISIONS.md\n@@ -1,4 +1,43 @@\n # Decisions log\n \n-## Clarify gate (pending)\n-- Status: awaiting human selection\n+## Clarify gate (resolved)\n+- Question: How much should the cleanup plan take on?\n+- Selected: **[A] Staged migration — boundaries first, bigger moves sequenced**\n+- Freeform text: (none)\n+\n+### In scope (per Option A, staged)\n+1. Restore safe boundaries first: kill the one browser→Supabase write, add\n+   `index.ts`, `io/` (DTOs/fetchers/keys), and pull server state out of the god\n+   store into `state/queries/` TanStack hooks; formalize server writes behind a\n+   `services/` seam.\n+2. Then sequence the bigger async move: co-locate the existing retexture /\n+   text-to-3d / material Trigger tasks under module `tasks/` as `schemaTask`s.\n+3. Then clean cross-module seams (deep imports of `world-building-toolkit` /\n+   `3d-asset-exporter`) and leftover legacy AI/util code.\n+\n+### Explicitly deferred (not this pass)\n+- Full Trigger **Realtime + `useJob`** migration of the job flows — blocked on\n+  `shared/jobs` / `useJob`, which **do not exist yet** in the repo (SPEC §P1\n+  cross-module infra). Client polling stays until that lands.\n+- Splitting god UI components (`PropertiesPanel` 1323 LOC, `SurfaceProperties`\n+  981 LOC) below the ~400 LOC target — tracked as P3, not required for\n+  increment 1.\n+- Extracting shared project-selection / asset-browser primitives into `shared/`\n+  (only unblock via public `index.ts` first).\n+\n+## Corrections to findings/assess.md (verified during spot-checks)\n+- **P0 is narrower than assessed.** Only `renameDesign`\n+  (`store/useInteriorStore.ts:1580-1586`) does a direct browser Supabase write.\n+  Save/load/list/delete already go through `/api/interior-designer/designs`\n+  (`requireAuth()` + Drizzle). The target `PATCH` endpoint already exists and\n+  already updates `name` with auth (`designs/route.ts:116-144`), so the fix is S.\n+- **No `z.any()`** exists in the module. The typing debt is TS `any` +\n+  unvalidated `res.json()` at edges, not `z.any()`.\n+- **`localStorage`** in the module is for reading API keys (Meshy/Stability) and\n+  the master prompt (`SurfaceProperties.tsx`, `PropertiesPanel.tsx`), **not** job\n+  recovery. Job flows use client-side polling of `[taskId]`/`[runId]` routes.\n+- **No schema inversion.** `src/db/schema.ts` owns `interiorDesigns`\n+  (`schema.ts:133`); there is no module-local `db/schema.ts`. Direction is correct.\n+- **`index.ts` is missing** (confirmed).\n+- **`ai/TextureService.ts` is not dead** — used by `texture/route.ts` (server) and\n+  its `TextureStyle` type by `SurfaceProperties.tsx`. Relocate, don't delete.\ndiff --git a/PLAN.md b/PLAN.md\nindex d487887..385a9ea 100644\n--- a/PLAN.md\n+++ b/PLAN.md\n@@ -1,3 +1,190 @@\n-# Plan (pending)\n+# Plan — interior-designer module cleanup (staged / Option A)\n \n-Awaiting Plan Author — previous plan cleared at Clarify prep.\n+## Summary\n+`interior-designer` is pre-blueprint: no `index.ts`, a 1661-LOC Zustand store that\n+mixes UI + server state + persistence, one remaining browser→Supabase write, deep\n+imports of two sibling modules, and job flows that poll instead of using Realtime.\n+This plan follows the human's **[A] staged** decision: fix the security seam and\n+establish `index.ts` / `io/` / `state/queries/` / `services/` boundaries first, then\n+sequence the task co-location, then clean cross-module and legacy code. Full\n+Realtime/`useJob` job migration is deferred because the `shared/jobs` primitive does\n+not yet exist.\n+\n+Spot-check corrections are recorded in `DECISIONS.md` (P0 narrower than assessed; no\n+`z.any()`; `localStorage` is API-key/prompt only; schema direction correct;\n+`TextureService` is live, not dead).\n+\n+---\n+\n+## Prioritized items\n+\n+### [P0] Item 1 — Remove the browser→Supabase write in `renameDesign`\n+- Problem: `store/useInteriorStore.ts:1580-1586` dynamically imports\n+  `getSupabaseClient()` and does `supabase.from('interior_designs').update({name})`\n+  directly from the browser. Breaks invariant #2.\n+- Impact: Auth/business rules bypass the server gate; only RLS protects the write.\n+  Active security/consistency risk.\n+- Change: Point `renameDesign` at the **existing** authed endpoint\n+  `PATCH /api/interior-designer/designs` (`designs/route.ts:116-144` already updates\n+  `name` behind `requireAuth()` + `verifyDesignAccess` + Drizzle). Delete the\n+  `@/infrastructure/storage/supabaseClient` import from the store. Interim: call the\n+  route via `fetch` (matching the sibling CRUD methods); it moves into `io/` in Item 3.\n+- Effort: **S**\n+- Verification: typecheck, lint; manual rename in the UI persists and survives reload;\n+  confirm no other `supabase.from(` remains in the module (`grep`).\n+- Depends on: none.\n+\n+### [P1] Item 2 — Add the module public barrel `index.ts`\n+- Problem: `src/domains/interior-designer/index.ts` does not exist; outside code\n+  imports internals directly (and this module reaches into siblings' internals —\n+  Item 6). Breaks invariant #6 / blueprint rule.\n+- Impact: No enforceable public API; every later boundary fix has nothing to anchor to.\n+- Change: Create `src/domains/interior-designer/index.ts` re-exporting the module's\n+  public components (the editor entry component used by\n+  `app/app/[projectId]/interior-design`), the UI store hook, public types, and\n+  (type-only) task handles once Item 7 lands. Update `app/**/interior-design` imports\n+  to the barrel.\n+- Effort: **S**\n+- Verification: typecheck, lint; grep that `app/` imports the module only via `index.ts`.\n+- Depends on: none (do alongside Item 1).\n+\n+### [P1] Item 3 — Introduce the `io/` edge (DTOs + fetchers + keys)\n+- Problem: HTTP is scattered — `fetch('/api/interior-designer/designs')` lives in the\n+  store (`:1485,:1503,:1529,:1601`) and in `components/DesignManager.tsx:46`, with\n+  `res.json()` unvalidated. Breaks the `ui → state → io` rule and invariant #5.\n+- Impact: DTO/auth/versioning changes require touching many call sites; response\n+  shape drift is invisible.\n+- Change: Create\n+  - `io/interior-designer.dto.ts` — Zod schemas for design CRUD (list, get, create,\n+    update/rename, delete) and the persisted `sceneData` payload; **shared with**\n+    `designs/route.ts` (replace its inline `body` reads with the DTO parse).\n+  - `io/interior-designer.keys.ts` — query-key factory (`all`, `list(projectId)`,\n+    `detail(designId)`).\n+  - `io/interior-designer.api.ts` — typed `fetch` wrappers that validate responses\n+    with the DTOs.\n+  Route every existing design `fetch` (store + `DesignManager`) through `io/`.\n+- Effort: **M**\n+- Verification: typecheck, lint; unit test DTO parse of a representative `sceneData`;\n+  manual save/load/list/delete unchanged.\n+- Depends on: Item 1 (rename now also flows through `io/`).\n+\n+### [P1] Item 4 — Split server state out of the god store into `state/queries/`\n+- Problem: `store/useInteriorStore.ts` (1661 LOC) holds design lists / current design\n+  / load / save / rename / delete alongside ephemeral scene/UI state. Breaks\n+  invariant #1 and the `state/` contract.\n+- Impact: Untestable, hidden async side effects, manual cache management, high edit risk.\n+- Change:\n+  - Add `state/queries/useDesigns.ts` (list), `useDesign.ts` (detail), and\n+    `useDesignMutation.ts` (create/save/rename/delete) as TanStack hooks calling\n+    `io/` and invalidating `interior-designer.keys`.\n+  - Reduce `useInteriorStore` to **ephemeral UI/scene state only** (selection, tool\n+    mode, panel toggles, in-memory scene graph). Move `currentDesignId/Name`,\n+    `lastSaved`, `hasUnsavedChanges`, and the load/save/rename/delete actions out to\n+    the query hooks; components read server data from hooks.\n+  - Move pure transforms (scene serialize/deserialize, terrain\n+    heightmap/materialMap pack/unpack at `:1473-1477,:1560-1568`) into\n+    `core/SceneData.ts` (pure, unit-tested, no `Date.now()`), consumed by both the\n+    store and the mutation hooks.\n+- Effort: **L**\n+- Verification: typecheck, lint; unit tests for `core/SceneData` round-trip; module\n+  e2e / manual: create → edit → save → reload → rename → delete.\n+- Depends on: Items 2, 3.\n+\n+### [P1] Item 5 — Formalize the server write path in `services/`\n+- Problem: `designs/route.ts` inlines Drizzle reads/writes and access checks; there is\n+  no server-only service seam. Blueprint wants routes as thin glue over `services/`.\n+- Impact: Persistence logic can't be reused/tested; routes drift.\n+- Change: Add `services/InteriorDesignService.ts` (`import 'server-only'`) wrapping the\n+  Drizzle CRUD + `verifyDesignAccess`, returning `Result<T>`. Reduce\n+  `designs/route.ts` to `requireAuth()` → DTO parse (Item 3) → service call → map\n+  `Result` to HTTP. Relocate `ai/TextureService.ts` here as\n+  `services/TextureService.ts` (it is server-only and used by `texture/route.ts`);\n+  move its `TextureStyle` type to `core/` so `SurfaceProperties.tsx` stops importing\n+  from `ai/`.\n+- Effort: **M**\n+- Verification: typecheck, lint; `texture/route.ts` and `designs/route.ts` still pass;\n+  grep that no UI imports from `services/` or `ai/`.\n+- Depends on: Item 3 (shared DTOs). **Boundary risk:** ensure `services/` never gets\n+  imported by `ui/`/`state/` (dependency rule).\n+\n+### [P2] Item 6 — Remove cross-module internal imports\n+- Problem: `DesignManager.tsx:3`, `AssetLibrary.tsx:5-7`, `SurfaceProperties.tsx:27`,\n+  `PropertiesPanel.tsx:5` import `world-building-toolkit/store/useWorldStore`,\n+  `world-building-toolkit/components/AssetsPanel`, and\n+  `3d-asset-exporter/components/AssetUploadZone` — sibling internals. Breaks the\n+  dependency rule + invariant #6.\n+- Impact: Couples interior-designer to two modules' implementation details; blocks\n+  their parallel migration and lint enforcement.\n+- Change: Consume only each sibling's `index.ts` public API (add the needed exports to\n+  those barrels), or, if the shared concern is genuinely cross-module (project\n+  selection, asset browser/upload), lift it into `shared/`. Prefer the barrel route\n+  first; flag any `shared/` extraction as its own follow-up.\n+- Effort: **M**\n+- Verification: typecheck, lint (dependency-rule lint once added); grep shows no\n+  `@/domains/<other>/{store,components}/…` imports.\n+- Depends on: Items 2 (and the siblings exposing barrels).\n+\n+### [P2] Item 7 — Co-locate Trigger tasks under module `tasks/`\n+- Problem: `retexture-model.ts`, `text-to-3d.ts`, `surface-material.ts` (and 3d model\n+  tasks) live flat in `src/trigger/*`; not all are `schemaTask`s with Zod payloads.\n+  Blueprint §8 wants them authored in the module and re-exported from `src/trigger`.\n+- Impact: Ownership is unclear; payloads are loosely typed.\n+- Change: Move interior-owned tasks to `tasks/<verb>.task.ts` as `schemaTask`s with\n+  Zod payloads + `queue`/`retry`/`idempotencyKey`; re-export from `src/trigger/index`.\n+  Keep the existing authed API routes triggering them. Export type-only handles from\n+  `index.ts`.\n+- Effort: **M**\n+- Verification: typecheck, lint; `npx trigger.dev deploy` dry build discovers tasks;\n+  retexture/text-to-3d still trigger.\n+- Depends on: Item 2. Does **not** include the Realtime/`useJob` swap (deferred).\n+\n+### [P2] Item 8 — Tighten typed boundaries (`any` → inferred/Zod)\n+- Problem: `metadata: any` (`PropertiesPanel.tsx:705`), several `any` event/config\n+  props, and unvalidated `res.json()` at fetch sites. Breaks invariant #5.\n+- Impact: Job-metadata and API-response shape drift goes unnoticed.\n+- Change: Reuse the `io/` DTOs (Item 3) for API responses; add Zod for job status /\n+  metadata payloads; replace edge `any` with `z.infer` types. (No `z.any()` exists to\n+  remove — this is TS-`any` cleanup.)\n+- Effort: **M**\n+- Verification: typecheck with no new `any` at boundaries; lint.\n+- Depends on: Items 3, 7.\n+\n+### [P3] Item 9 — Split god UI components toward the ~400 LOC target\n+- Problem: `PropertiesPanel.tsx` (1323), `SurfaceProperties.tsx` (981),\n+  `SculptableSurface.tsx` (585), `LayerPanel.tsx` (583) exceed the size limit; folders\n+  are `components/`/`components/UI/` (flat), not `ui/<Component>/` folder-per-unit.\n+- Impact: Hard to review/test; violates naming + size rules.\n+- Change: Reshape `components/` → `ui/<Component>/` folder-per-unit with colocated\n+  tests + local barrels; extract retexture / material / text-to-3d controls out of\n+  `PropertiesPanel`/`SurfaceProperties` into their own components.\n+- Effort: **L**\n+- Verification: typecheck, lint; no component > ~400 LOC; e2e smoke unchanged.\n+- Depends on: Items 3, 4 (so extracted pieces read from hooks, not the god store).\n+\n+### [Deferred / flagged] Item 10 — Realtime `useJob` for job flows\n+- Problem: `PropertiesPanel.tsx` / `SurfaceProperties.tsx` poll `[taskId]`/`[runId]`\n+  routes for retexture/text-to-3d/material status (invariant #4 wants Realtime + `useJob`).\n+- Blocker: `shared/jobs` and `useJob` **do not exist in the repo yet** (verified). This\n+  is cross-module SPEC §P1 infra. Do not hand-roll a module-local copy.\n+- Action: Deferred until `shared/jobs` lands; revisit as a follow-up once Item 7 has the\n+  tasks co-located and typed.\n+\n+---\n+\n+## Suggested sequence\n+1. **Minimum first increment: Items 1–3** (P0 write fix + `index.ts` barrel + `io/`\n+   DTO/keys/api edge). This removes the security seam and creates the anchor every\n+   later boundary fix needs, with low blast radius.\n+2. Item 4 (server-state split) then Item 5 (services seam) — the structural core.\n+3. Items 6, 7 — cross-module decoupling and task co-location.\n+4. Item 8 — typing cleanup riding on the new DTOs/tasks.\n+5. Item 9 — component reshaping/size (P3), when capacity allows.\n+6. Item 10 — only after `shared/jobs` exists.\n+\n+## Deferred / out of scope\n+- Realtime/`useJob` job migration (Item 10) — blocked on `shared/jobs`.\n+- Splitting god components below ~400 LOC (Item 9) — P3, not in increment 1.\n+- Extracting shared project-selection/asset primitives into `shared/` — attempt public\n+  barrels first (Item 6); `shared/` lift is a separate follow-up.\n+- Any new product features, AI-kernel work, or scorer/observability changes (this is an\n+  asset module; no `agents/`/`prompts/` blueprint surface).\n",
+        "summary": {
+          "files_changed": 4,
+          "additions": 288,
+          "deletions": 421
+        }
+      }
+    },
+    {
+      "seq": 0,
+      "checkpoint": {
+        "timestamp": "2026-07-01T11:35:42.181940Z",
+        "current_node": "Verification",
+        "completed_nodes": [
+          "start",
+          "scope",
+          "assess",
+          "clarify_prep",
+          "Clarify",
+          "plan",
+          "Verification"
+        ],
+        "node_retries": {},
+        "context_values": {
+          "current_node": "Verification",
+          "last_response": "Plan and decisions written. Stopping for Verification.\n\n## Verification summary\n\n**1. P0 declaration** — **P0 exists.** `store/useInteriorStore.ts:1580-1586` (`renameDesign`) does a direct browser",
+          "human.gate.selected": "B",
+          "human.gate.Verification.label": "[B] Approve & build",
+          "thread.planning.current_node": "plan",
+          "graph.default_fidelity": "summary:medium",
+          "graph.rankdir": "LR",
+          "internal.retry_count.start": 0,
+          "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: interior-designer is still pre-blueprint; the top 3 gaps are:\n1. direct client Supabase write in `useInteriorStore`\n2. a 1661-line Zustand store mixing UI/server/persistence concerns\n3. bespoke job polling plus cross-module internal coupling\n\nI did not modify code.",
+          "human.gate.Verification.answer": "B",
+          "internal.retry_count.clarify_prep": 0,
+          "graph.stall_timeout": "1800000ms",
+          "failure_class": "",
+          "thread.start.current_node": "scope",
+          "thread.review.current_node": "clarify_prep",
+          "human.gate.label": "[B] Approve & build",
+          "internal.retry_count.Verification": 0,
+          "failure_signature": "",
+          "preferred_label": "[B] Approve & build",
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
+          "internal.thread_id": "plan",
+          "thread.clarify_prep.current_node": "Clarify",
+          "human.gate.Verification.question": "Plan is ready. Approve and build, save plan only, request changes, or abort?",
+          "thread.plan.current_node": "Verification",
+          "human.gate.Clarify.answer": "A",
+          "last_stage": "plan",
+          "internal.retry_count.assess": 0,
+          "response.plan": "Plan and decisions written. Stopping for Verification.\n\n## Verification summary\n\n**1. P0 declaration** — **P0 exists.** `store/useInteriorStore.ts:1580-1586` (`renameDesign`) does a direct browser→Supabase write (`supabase.from('interior_designs').update(...)`), bypassing the server auth gate (invariant #2).\n\n**2. Your Clarify decision: [A] Staged migration.** In scope: fix the security seam, add `index.ts` + `io/` + `state/queries/` + `services/` boundaries, then co-locate Trigger tasks, then decouple cross-module imports. Explicitly deferred: full Realtime `useJob` job migration (blocked — `shared/jobs` doesn't exist yet), god-component splitting, and `shared/` extraction.\n\n**3. First shippable increment: Items 1–3** — remove the browser Supabase write (route it to the **already-existing** authed `PATCH /api/interior-designer/designs`), add the module `index.ts` barrel, and introduce the `io/` edge (Zod DTOs + query keys + typed fetchers shared with the route).\n\n**4. Item count / effort** — 9 active items + 1 deferred. Increment 1 (Items 1–3): ~1–2 dev days (S + S + M).\n\n**5. Plan summary**\n- **Item 1 (P0/S):** `renameDesign` → `PATCH /api/interior-designer/designs`; delete the `getSupabaseClient` import.\n- **Item 2 (P1/S):** create `index.ts`; point `app/**/interior-design` at it.\n- **Item 3 (P1/M):** `io/interior-designer.{dto,keys,api}.ts`; centralize the scattered `fetch` in the store + `DesignManager.tsx:46`.\n- **Item 4 (P1/L):** dissolve server state from the 1661-LOC store into `state/queries/`; pure `core/SceneData.ts`.\n- **Item 5 (P1/M):** `services/InteriorDesignService.ts` (server-only, `Result<T>`); relocate `ai/TextureService.ts` → `services/`, its `TextureStyle` type → `core/`.\n- **Item 6 (P2/M):** kill deep imports of `world-building-toolkit`/`3d-asset-exporter` internals via their barrels.\n- **Item 7 (P2/M):** co-locate retexture/text-to-3d/material tasks under `tasks/` as `schemaTask`s.\n- **Item 8 (P2/M):** remove `any` at edges via the new DTOs.\n- **Item 9 (P3/L):** reshape `components/` → `ui/<Component>/`, split god panels.\n\nCorrections recorded in `DECISIONS.md`: P0 is narrower than assessed (only `renameDesign`); no `z.any()`; `localStorage` is API-key/prompt only; schema direction is correct; `TextureService` is live.\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"yes\"\n  }\n}\n```\n\nAwaiting human approval before implementing.",
+          "internal.node_visit_count": 1,
+          "internal.retry_count.scope": 0,
+          "graph.goal": "Clean up and align the interior-designer module (src/domains/interior-designer) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
+          "graph.default_max_retries": "1",
+          "internal.run_id": "01KWEP38BTFCTZJRAPW78J15JT",
+          "human.gate.Clarify.question": "How much should the cleanup plan take on?",
+          "internal.retry_count.Clarify": 0,
+          "human.gate.Clarify.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
+          "plan.has_p0_security_issue": "yes",
+          "plan.has_ui_surface": "no",
+          "internal.work_dir": "/workspace/kurvitza",
+          "internal.retry_count.plan": 0,
+          "internal.fidelity": "summary:medium",
+          "outcome": "succeeded",
+          "response.clarify_prep": "## Assessment summary\n`src/domains/interior-designer` is materially off the target module blueprint. The biggest issues are a client-side Supabase write path, a very large Zustand store that mixes UI and server concerns, and long-running retexture/export flows that bypass the shared Trigger.dev job model.\n\nThis means the plan should focus first on restoring safe boundaries and layering, then on moving async work and cross-module seams into the architecture contract.\n\n## Key gaps (max 5)\n- Direct browser → Supabase writes in `useInteriorStore` break the server-only persistence rule.\n- A 1661-line Zustand store mixes ephemeral UI state, server state, persistence, jobs, and domain logic.\n- Retexture/export uses bespoke polling and client recovery instead of module-owned Trigger tasks + shared job hooks.\n- The module deep-imports internals from `world-building-toolkit` and `3d-asset-exporter`.\n- Legacy `ai/TextureService.ts` plus weak DTO typing leave the server/task boundary unclear.\n\n## Pick one scope (most teams pick A, B, or C)\n\n| Option | What the plan will assume |\n| --- | --- |\n| **[A] Staged migration** | Create a safe migration path: first introduce `index.ts`, `state/`, `io/`, and `services/` around design CRUD and auth-safe persistence; then move retexture/export into `tasks/` + shared job primitives; finally clean up cross-module API boundaries and leftover legacy AI/util code. |\n| **[B] Minimal first step** | Limit the plan to the highest-risk fixes first: remove browser writes, add typed DTO/API/service seams for design CRUD, and split server state out of Zustand, while deferring full retexture/export and broader folder convergence. |\n| **[C] Full blueprint** | Plan a full reshape now: migrate to `ui/state/io/core/services/tasks`, replace the god store, convert retexture/export to Trigger tasks, eliminate deep cross-module imports, and either remove or properly relocate incomplete AI code. |\n\n**Advanced:** [F] type custom constraints in freeform · [R] re-assess only if findings are wrong\n\n**Recommendation: [A]** — it fixes the active security/architecture risks first without forcing the whole module into a single high-risk rewrite.",
+          "command.output": "blob://sha256/757e155e41486ff58ca5b121ff783e67d36e35e835e3fd54895133b33caf5167",
+          "graph.label": "Optional Build"
+        },
+        "node_outcomes": {
           "Clarify": {
             "status": "succeeded",
             "preferred_label": "[A] Staged migration — boundaries first, bigger moves sequenced",
@@ -1831,6 +2017,21 @@
               "active_time_ms": 209937
             }
           },
+          "Verification": {
+            "status": "succeeded",
+            "preferred_label": "[B] Approve & build",
+            "suggested_next_ids": [
+              "setup"
+            ],
+            "context_updates": {
+              "human.gate.selected": "B",
+              "human.gate.Verification.question": "Plan is ready. Approve and build, save plan only, request changes, or abort?",
+              "human.gate.Verification.label": "[B] Approve & build",
+              "human.gate.label": "[B] Approve & build",
+              "human.gate.Verification.answer": "B"
+            },
+            "usage": null
+          },
           "start": {
             "status": "succeeded",
             "usage": null
@@ -1873,14 +2074,70 @@
               "tool_time_ms": 1252,
               "active_time_ms": 61554
             }
+          },
+          "scope": {
+            "status": "succeeded",
+            "context_updates": {
+              "command.output": "blob://sha256/757e155e41486ff58ca5b121ff783e67d36e35e835e3fd54895133b33caf5167"
+            },
+            "notes": "Script completed: M=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1",
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 478,
+              "active_time_ms": 478
+            }
+          },
+          "clarify_prep": {
+            "status": "succeeded",
+            "context_updates": {
+              "response.clarify_prep": "## Assessment summary\n`src/domains/interior-designer` is materially off the target module blueprint. The biggest issues are a client-side Supabase write path, a very large Zustand store that mixes UI and server concerns, and long-running retexture/export flows that bypass the shared Trigger.dev job model.\n\nThis means the plan should focus first on restoring safe boundaries and layering, then on moving async work and cross-module seams into the architecture contract.\n\n## Key gaps (max 5)\n- Direct browser → Supabase writes in `useInteriorStore` break the server-only persistence rule.\n- A 1661-line Zustand store mixes ephemeral UI state, server state, persistence, jobs, and domain logic.\n- Retexture/export uses bespoke polling and client recovery instead of module-owned Trigger tasks + shared job hooks.\n- The module deep-imports internals from `world-building-toolkit` and `3d-asset-exporter`.\n- Legacy `ai/TextureService.ts` plus weak DTO typing leave the server/task boundary unclear.\n\n## Pick one scope (most teams pick A, B, or C)\n\n| Option | What the plan will assume |\n| --- | --- |\n| **[A] Staged migration** | Create a safe migration path: first introduce `index.ts`, `state/`, `io/`, and `services/` around design CRUD and auth-safe persistence; then move retexture/export into `tasks/` + shared job primitives; finally clean up cross-module API boundaries and leftover legacy AI/util code. |\n| **[B] Minimal first step** | Limit the plan to the highest-risk fixes first: remove browser writes, add typed DTO/API/service seams for design CRUD, and split server state out of Zustand, while deferring full retexture/export and broader folder convergence. |\n| **[C] Full blueprint** | Plan a full reshape now: migrate to `ui/state/io/core/services/tasks`, replace the god store, convert retexture/export to Trigger tasks, eliminate deep cross-module imports, and either remove or properly relocate incomplete AI code. |\n\n**Advanced:** [F] type custom constraints in freeform · [R] re-assess only if findings are wrong\n\n**Recommendation: [A]** — it fixes the active security/architecture risks first without forcing the whole module into a single high-risk rewrite.",
+              "last_stage": "clarify_prep",
+              "last_response": "## Assessment summary\n`src/domains/interior-designer` is materially off the target module blueprint. The biggest issues are a client-side Supabase write path, a very large Zustand store that mixes UI "
+            },
+            "notes": "Stage completed: clarify_prep",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 39154,
+                    "output_tokens": 2165,
+                    "reasoning_tokens": 284,
+                    "cache_read_tokens": 105472,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 160988
+            },
+            "files_touched": [
+              "/workspace/kurvitza/CLARIFY.md",
+              "/workspace/kurvitza/DECISIONS.md",
+              "/workspace/kurvitza/PLAN.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 28544,
+              "tool_time_ms": 399,
+              "active_time_ms": 28943
+            }
           }
         },
-        "next_node_id": "Verification",
+        "next_node_id": "setup",
         "node_visits": {
           "Clarify": 1,
           "start": 1,
           "assess": 1,
           "plan": 1,
+          "Verification": 1,
           "scope": 1,
           "clarify_prep": 1
         }
@@ -1919,7 +2176,12 @@
       "first_event_seq": 270,
       "prompt": null,
       "response": null,
-      "completion": null,
+      "completion": {
+        "outcome": "succeeded",
+        "notes": "Stage completed: plan",
+        "failure_reason": null,
+        "timestamp": "2026-07-01T11:33:47.717202Z"
+      },
       "provider_used": {
         "mode": "agent",
         "provider": "anthropic",
@@ -1933,13 +2195,19 @@
       "output": null,
       "started_at": "2026-07-01T11:30:17.391754Z",
       "handler": "agent",
+      "timing": {
+        "wall_time_ms": 210256,
+        "inference_time_ms": 208959,
+        "tool_time_ms": 978,
+        "active_time_ms": 209937
+      },
       "usage": {
-        "input_tokens": 53341,
-        "output_tokens": 15745,
-        "total_tokens": 834359,
+        "input_tokens": 48538,
+        "output_tokens": 14578,
+        "total_tokens": 768577,
         "reasoning_tokens": 0,
-        "cache_read_tokens": 651510,
-        "cache_write_tokens": 113763,
+        "cache_read_tokens": 593605,
+        "cache_write_tokens": 111856,
         "total_usd_micros": 1603042
       },
       "model": {
@@ -2141,7 +2409,7 @@
         ],
         "warnings": []
       },
-      "state": "running"
+      "state": "succeeded"
     },
     "scope@1": {
       "first_event_seq": 21,
@@ -2224,6 +2492,29 @@
         "cache_write_tokens": 0
       },
       "state": "succeeded"
+    },
+    "Verification@1": {
+      "first_event_seq": 359,
+      "prompt": null,
+      "response": null,
+      "completion": null,
+      "provider_used": null,
+      "diff": null,
+      "script_invocation": null,
+      "script_timing": null,
+      "parallel_results": null,
+      "output": null,
+      "started_at": "2026-07-01T11:33:51.240594Z",
+      "handler": "human",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "reasoning_tokens": 0,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0
+      },
+      "state": "running"
     },
     "assess@1": {
       "first_event_seq": 31,
