@@ -1,0 +1,6 @@
+{
+  "outcome": "failed",
+  "notes": null,
+  "failure_reason": "Script failed with exit code: 134\n\n## output\n\n> typecheck\n> tsc --noEmit\n\n\n<--- Last few GCs --->\n\n[9386:0xffffb9960000]   156390 ms: Mark-Compact 4034.7 (4129.3) -> 4019.3 (4129.6) MB, pooled: 2 MB, 1269.52 / 0.00 ms  (average mu = 0.093, current mu = 0.011) allocation failure; scavenge might not succeed\n[9386:0xffffb9960000]   157613 ms: Mark-Compact 4035.3 (4129.6) -> 4019.9 (4130.1) MB, pooled: 1 MB, 1206.11 / 0.00 ms  (average mu = 0.056, current mu = 0.014) allocation failure; scavenge might not succeed\n\n\n<--- JS stacktrace --->\n\nFATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory\n----- Native stack trace -----\n\n 1: 0xe19178 node::OOMErrorHandler(char const*, v8::OOMDetails const&) [node]\n 2: 0x11cad4c v8::Utils::ReportOOMFailure(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [node]\n 3: 0x11caefc v8::internal::V8::FatalProcessOutOfMemory(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [node]\n 4: 0x13f098c  [node]\n 5: 0x13f09bc  [node]\n 6: 0x1408370  [node]\n 7: 0x140af5c  [node]\n 8: 0x1bf2714  [node]\nAborted\n",
+  "timestamp": "2026-07-01T13:07:42.701753Z"
+}
