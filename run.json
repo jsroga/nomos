@@ -1034,7 +1034,7 @@
     "kind": "running"
   },
   "status_updated_at": "2026-07-01T10:47:10.584649Z",
-  "last_event_at": "2026-07-01T10:59:50.970432Z",
+  "last_event_at": "2026-07-01T10:59:54.669825Z",
   "pending_control": null,
   "checkpoints": [
     {
@@ -6572,9 +6572,9 @@
       }
     },
     {
-      "seq": 0,
+      "seq": 1874,
       "checkpoint": {
-        "timestamp": "2026-07-01T10:59:51.053367Z",
+        "timestamp": "2026-07-01T10:59:54.669551Z",
         "current_node": "Retro",
         "completed_nodes": [
           "start",
@@ -6599,180 +6599,81 @@
         ],
         "node_retries": {},
         "context_values": {
-          "outcome": "succeeded",
-          "thread.verify.current_node": "verify_gate",
-          "human.gate.Clarify.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
-          "internal.retry_count.plan": 0,
-          "graph.stall_timeout": "1800000ms",
-          "human.gate.Verification.question": "Plan is ready. Approve and build, save plan only, request changes, or abort?",
-          "thread.clarify_prep.current_node": "Clarify",
-          "response.ux_designer": "Wrote `UX.md` at the repo root.\n\nKey handoff points:\n- This is a **backend-heavy architecture cleanup**, so the UX spec keeps storyteller’s existing layout and mental model intact: left sidebar, center workspace, right writers-room rail, and the **Storybible overlay** on top of the center workspace.\n- The spec focuses on the real user-visible risk areas from the plan:\n  1. **Episodes** moving to TanStack/`io/` with explicit loading, empty, and error states.\n  2. **Storybible lock state** becoming reliable and clearly communicated.\n  3. **Poster + moodboard generation** moving to Trigger jobs with inline progress, reconnect-after-refresh behavior, and no regression to forgotten jobs.\n- I called out the exact surfaces to preserve or harden:\n  - `EpisodeManager`\n  - `StorytellerEmptyState`\n  - `StoryPlanBoard` / `EpisodePremisePanel`\n  - `WorldBiblePanel`\n  - `BibleOverview`\n  - `SectionPendingOverlay`\n  - `ActionApprovalModal`\n- The spec includes:\n  - concrete user flow\n  - component composition using existing primitives (`Button`, `Dialog`, `ConfirmDialog`, `Tooltip`, `Skeleton`, `Progress`, etc.)\n  - exhaustive states for each interactive surface\n  - exact copy for errors, toasts, labels, and progress/reconnect states\n  - accessibility guidance for keyboarding, live regions, and progressbars\n  - responsive constraints\n  - a developer checklist with migration priorities and easy-to-miss edge cases\n\nMost important implementation notes:\n- **No redesign.**\n- **No new jobs UI surface**; keep progress inline where the artwork already appears.\n- **Resubscribe after refresh** for poster/moodboard jobs instead of the old localStorage-scan/custom-event behavior.\n- **Disable only conflicting controls**, not whole panels, during long-running work.",
-          "response.plan": "`PLAN.md` and `DECISIONS.md` are written and grounded against the actual code. Stopping here for the Verification gate.\n\n## What I did\n- Recorded the Clarify decision (**[A] Staged migration — boundaries first**) in `DECISIONS.md`, including in-scope vs. deferred.\n- Verified every finding against the code (barrel contents, ~40 external importers, schema inversion, client-side \"services\", workflow `z.any()`, god-file LOC, cross-module coupling). Corrected two stale-draft claims: `index.ts` **exists** and leaks internals (that's the real issue), and `core/` is actually **pure** (injected clock), so no \"impure core\" item.\n\n## Plan summary\nBoundary-first, no P0 (storyteller already has no browser writes; core is pure). Prioritized items:\n\n- **P1 — Schema inversion:** move storyteller's Drizzle tables into `src/db/schema.ts` (it currently imports *up* into the module at `src/db/schema.ts:12-21`); repoint ~40 importers to `@/db`. This gates the barrel.\n- **P1 — Narrow `index.ts`:** stop exporting `db/schema`, `access-verification`, and raw `services/*`; add a deep-import lint rule.\n- **P1 — Layer skeleton + TanStack:** stand up `io/` + `state/queries/`, migrate the episodes and bible-lock flows off `cachedFetch`/raw `fetch` (anchored on the existing `useEntities`).\n- **P1 — Server-only boundaries:** mark real services `server-only`; move the three browser \"services\" (`Poster`/`Moodboard`/`BeatImage`) out of `services/`.\n- **P1/P2 — Jobs:** convert poster/moodboard `localStorage`+CustomEvent recovery into `tasks/*.task.ts` + shared `useJob`.\n- **P2 — Thin Mastra:** kill `z.any()` steps (StoryWorkflow lines 112/143/168/216) + hand-rolled Langfuse/event-bus; type `any` in agents.\n- **P2/P3 — Type porous boundaries, resolve `mentions↔chat` coupling, split god files (978/922/889/730/639/575 LOC), final folder consolidation + dependency lint.**\n\nSuggested first shippable increment: **Items 1–3**. Full §9 Mastra convergence, `shared/` extraction, and RLS/migration reconciliation are explicitly deferred.\n\nReady for your review at Verification.",
+          "thread.start.current_node": "scope",
+          "internal.thread_id": "retro",
+          "thread.plan.current_node": "Verification",
           "internal.retry_count.assess": 0,
+          "failure_signature": "",
+          "graph.goal": "Clean up and align the storyteller module (src/domains/storyteller) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
+          "command.output": "blob://sha256/59ab5fc17e019dcb04a301d9d5d0ac98b1507448f9a1ed495d54fe426082b799",
+          "human.gate.Verification.question": "Plan is ready. Approve and build, save plan only, request changes, or abort?",
+          "internal.retry_count.Clarify": 0,
+          "internal.retry_count.developer": 0,
+          "internal.retry_count.setup": 0,
+          "thread.run_tests.current_node": "test_gate",
+          "internal.retry_count.verify": 0,
+          "human.gate.Verification.label": "[B] Approve & build",
+          "graph.default_max_retries": "1",
+          "internal.retry_count.ux_designer": 0,
+          "human.gate.label": "[B] Approve & build",
+          "response.developer": "Implemented the approved boundary-first increment.\n\nWhat changed:\n- **Schema source of truth moved to `src/db/schema.ts`**\n  - Moved storyteller tables/relations into `src/db/schema.ts`\n  - Deleted `src/domains/storyteller/db/schema.ts`\n  - Updated schema consumers to import from `@/db`\n\n- **Access verification moved to shared auth**\n  - Added `src/shared/auth/storyteller-access.ts`\n  - Added `src/shared/auth/index.ts`\n  - Deleted `src/domains/storyteller/lib/access-verification.ts`\n  - Updated route/dynamic imports to use `@/shared/auth`\n\n- **Storyteller barrel narrowed**\n  - Removed schema/access/service wildcard leakage from `src/domains/storyteller/index.ts`\n  - Kept curated public server entry points and existing UI/hooks/types\n\n- **Target `io/` + `state/queries/` scaffolding added**\n  - Added:\n    - `src/domains/storyteller/io/storyteller.dto.ts`\n    - `src/domains/storyteller/io/storyteller.keys.ts`\n    - `src/domains/storyteller/io/storyteller.api.ts`\n    - `src/domains/storyteller/state/queries/useEpisodes.ts`\n    - `src/domains/storyteller/state/queries/useBibleLock.ts`\n\n- **Top client server-state hooks migrated off `cachedFetch`**\n  - `useEpisodeData` now uses TanStack-backed `useEpisodes` / `useEpisode`\n  - `useBibleState` now uses TanStack-backed `useBibleLock`\n  - `useEntity` query keys now route through `storyteller.keys`\n\n- **Episodes API moved toward typed/camelCase boundary**\n  - `src/app/api/storyteller/episodes/route.ts` now uses Drizzle + DTO parsing instead of Supabase admin fetches\n  - `src/app/api/storyteller/bible/lock/route.ts` now uses shared DTO parsing for query/response\n\nNotes:\n- I also updated the affected API/service/eval imports so schema/access no longer come from `@/domains/storyteller`.\n- I could **not run `npm run typecheck` or tests** here because `npm` is unavailable in this environment, so validation was limited to static inspection and import-path auditing.",
+          "response.ux_designer": "Wrote `UX.md` at the repo root.\n\nKey handoff points:\n- This is a **backend-heavy architecture cleanup**, so the UX spec keeps storyteller’s existing layout and mental model intact: left sidebar, center workspace, right writers-room rail, and the **Storybible overlay** on top of the center workspace.\n- The spec focuses on the real user-visible risk areas from the plan:\n  1. **Episodes** moving to TanStack/`io/` with explicit loading, empty, and error states.\n  2. **Storybible lock state** becoming reliable and clearly communicated.\n  3. **Poster + moodboard generation** moving to Trigger jobs with inline progress, reconnect-after-refresh behavior, and no regression to forgotten jobs.\n- I called out the exact surfaces to preserve or harden:\n  - `EpisodeManager`\n  - `StorytellerEmptyState`\n  - `StoryPlanBoard` / `EpisodePremisePanel`\n  - `WorldBiblePanel`\n  - `BibleOverview`\n  - `SectionPendingOverlay`\n  - `ActionApprovalModal`\n- The spec includes:\n  - concrete user flow\n  - component composition using existing primitives (`Button`, `Dialog`, `ConfirmDialog`, `Tooltip`, `Skeleton`, `Progress`, etc.)\n  - exhaustive states for each interactive surface\n  - exact copy for errors, toasts, labels, and progress/reconnect states\n  - accessibility guidance for keyboarding, live regions, and progressbars\n  - responsive constraints\n  - a developer checklist with migration priorities and easy-to-miss edge cases\n\nMost important implementation notes:\n- **No redesign.**\n- **No new jobs UI surface**; keep progress inline where the artwork already appears.\n- **Resubscribe after refresh** for poster/moodboard jobs instead of the old localStorage-scan/custom-event behavior.\n- **Disable only conflicting controls**, not whole panels, during long-running work.",
+          "internal.retry_count.tester": 0,
+          "response.screenshot": "I created `SCREENSHOTS.md` and the `screenshots/` artifact directory.\n\nGaps:\n- I could not capture any UI screenshots because:\n  - the Playwright/browser MCP tools referenced in the prompt were **not available** in this environment,\n  - `http://localhost:3000` was **not reachable**, and\n  - `node` / `npm` were **not installed**, so I could not start a dev server.\n\nDocumented in `SCREENSHOTS.md`:\n- intended storyteller screens to capture,\n- why capture was blocked,\n- which UX states were not reached.",
+          "last_stage": "Retro",
+          "human.gate.Verification.answer": "B",
+          "preferred_label": "[B] Approve & build",
+          "thread.build.current_node": "screenshot",
+          "response.assess": "Assessment written to `findings/assess.md`.\n\nShort summary:\n- Storyteller has an `index.ts`, but it currently exposes too much: DB schema, services, and agent internals leak through the public barrel.\n- The module shape is still legacy (`components/hooks/tools/lib/db`) rather than the target `ui/state/io/core/services/agents/tasks/prompts` blueprint.\n- Highest-risk divergences are in client/server boundaries: raw client `fetch`, ad-hoc caching, localStorage/window-event job recovery, and parallel hand-rolled AI orchestration beside Mastra.\n\nTop 3 gaps first:\n1. Reshape the module toward the target blueprint.\n2. Narrow `src/domains/storyteller/index.ts` to a real public API.\n3. Move client-side server state into `io/` + TanStack Query `state/queries/` and retire bespoke fetch/caching patterns.\n\nNo code was modified beyond the findings file.",
+          "internal.work_dir": "/workspace/kurvitza",
+          "internal.retry_count.run_e2e": 0,
+          "internal.retry_count.scope": 0,
+          "human.gate.Clarify.answer": "A",
+          "thread.planning.current_node": "plan",
+          "internal.node_visit_count": 1,
+          "thread.tester.current_node": "run_tests",
+          "internal.retry_count.clarify_prep": 0,
+          "internal.retry_count.Verification": 0,
+          "internal.retry_count.plan": 0,
+          "graph.rankdir": "LR",
+          "internal.retry_count.run_tests": 0,
+          "human.gate.selected": "B",
+          "thread.test_gate.current_node": "run_e2e",
+          "response.clarify_prep": "## Assessment summary\n`src/domains/storyteller` is still materially off the target module blueprint: its folder layout is legacy, its public barrel leaks internals, and client/server responsibilities are blurred. Planning can start now, but the architect needs one scope decision first because the biggest gaps affect import safety, TanStack/typed-io migration, job orchestration, and Mastra cleanup.\n\n## Key gaps (max 5)\n- The module shape is still legacy (`components/`, `hooks/`, `db/`, `tools/`, `mentions/`) instead of `ui/state/io/core/services/agents/tasks/prompts`.\n- `src/domains/storyteller/index.ts` exposes private DB/server-only internals, breaking the “one barrel” rule.\n- Client hooks/components fetch directly, hold server data locally, and bypass TanStack Query + typed `io/`.\n- Long-running storyteller flows still use bespoke recovery patterns (`localStorage`, `window` events) instead of Trigger.dev tasks + shared job primitives.\n- The AI layer mixes Mastra-native primitives with parallel hand-rolled orchestration/tracing and still has porous typed boundaries (`any`, `z.any`).\n\n## Pick one scope for the architect\n\n| Option | What the plan will assume |\n| --- | --- |\n| **[A] Staged migration** | Boundary-first roadmap: tighten `storyteller/index.ts`, map legacy roots to `ui/state/io/core/services/agents/tasks/prompts`, migrate the highest-value server-state flows to TanStack + typed `io/` first, then stage Trigger job migration, schema convergence, and Mastra cleanup after the boundaries are safe. |\n| **[B] Minimal first step** | Smallest safe slice only: lock down exports, add missing server-only guards, type the worst boundaries, and define seams for future `state/io/tasks` work; explicitly defer most folder moves, most TanStack migration, Trigger job replacement, and deeper Mastra consolidation. |\n| **[C] Full blueprint** | Comprehensive end-state reshape: fully reorganize storyteller into the blueprint, clean all cross-module/internal imports, migrate major client/server flows to TanStack + `io/`, move long-running work to `tasks/`, and make Mastra the only orchestration path planned for this effort. |\n| **[F] Custom** | Type your own constraints in freeform |\n| **[R] Re-assess** | Only if findings are wrong or code changed since assessment |\n\n**Recommendation: [A]** — storyteller’s biggest risks are boundary and data-flow problems, so a staged migration gives the architect enough scope to fix the real issues without forcing a brittle big-bang rewrite.\n\nThe buttons below match this table. Pick the option that fits.",
+          "graph.label": "Optional Build",
+          "internal.retry_count.screenshot": 0,
           "graph.default_fidelity": "summary:medium",
           "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
-          "internal.retry_count.ux_designer": 0,
-          "internal.work_dir": "/workspace/kurvitza",
-          "failure_signature": "",
-          "response.clarify_prep": "## Assessment summary\n`src/domains/storyteller` is still materially off the target module blueprint: its folder layout is legacy, its public barrel leaks internals, and client/server responsibilities are blurred. Planning can start now, but the architect needs one scope decision first because the biggest gaps affect import safety, TanStack/typed-io migration, job orchestration, and Mastra cleanup.\n\n## Key gaps (max 5)\n- The module shape is still legacy (`components/`, `hooks/`, `db/`, `tools/`, `mentions/`) instead of `ui/state/io/core/services/agents/tasks/prompts`.\n- `src/domains/storyteller/index.ts` exposes private DB/server-only internals, breaking the “one barrel” rule.\n- Client hooks/components fetch directly, hold server data locally, and bypass TanStack Query + typed `io/`.\n- Long-running storyteller flows still use bespoke recovery patterns (`localStorage`, `window` events) instead of Trigger.dev tasks + shared job primitives.\n- The AI layer mixes Mastra-native primitives with parallel hand-rolled orchestration/tracing and still has porous typed boundaries (`any`, `z.any`).\n\n## Pick one scope for the architect\n\n| Option | What the plan will assume |\n| --- | --- |\n| **[A] Staged migration** | Boundary-first roadmap: tighten `storyteller/index.ts`, map legacy roots to `ui/state/io/core/services/agents/tasks/prompts`, migrate the highest-value server-state flows to TanStack + typed `io/` first, then stage Trigger job migration, schema convergence, and Mastra cleanup after the boundaries are safe. |\n| **[B] Minimal first step** | Smallest safe slice only: lock down exports, add missing server-only guards, type the worst boundaries, and define seams for future `state/io/tasks` work; explicitly defer most folder moves, most TanStack migration, Trigger job replacement, and deeper Mastra consolidation. |\n| **[C] Full blueprint** | Comprehensive end-state reshape: fully reorganize storyteller into the blueprint, clean all cross-module/internal imports, migrate major client/server flows to TanStack + `io/`, move long-running work to `tasks/`, and make Mastra the only orchestration path planned for this effort. |\n| **[F] Custom** | Type your own constraints in freeform |\n| **[R] Re-assess** | Only if findings are wrong or code changed since assessment |\n\n**Recommendation: [A]** — storyteller’s biggest risks are boundary and data-flow problems, so a staged migration gives the architect enough scope to fix the real issues without forcing a brittle big-bang rewrite.\n\nThe buttons below match this table. Pick the option that fits.",
-          "internal.retry_count.verify_gate": 0,
-          "thread.run_tests.current_node": "test_gate",
-          "response.screenshot": "I created `SCREENSHOTS.md` and the `screenshots/` artifact directory.\n\nGaps:\n- I could not capture any UI screenshots because:\n  - the Playwright/browser MCP tools referenced in the prompt were **not available** in this environment,\n  - `http://localhost:3000` was **not reachable**, and\n  - `node` / `npm` were **not installed**, so I could not start a dev server.\n\nDocumented in `SCREENSHOTS.md`:\n- intended storyteller screens to capture,\n- why capture was blocked,\n- which UX states were not reached.",
-          "internal.retry_count.test_gate": 0,
-          "graph.goal": "Clean up and align the storyteller module (src/domains/storyteller) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
-          "thread.review.current_node": "clarify_prep",
-          "thread.test_gate.current_node": "run_e2e",
-          "internal.retry_count.screenshot": 0,
-          "internal.node_visit_count": 1,
-          "human.gate.Verification.answer": "B",
-          "human.gate.Verification.label": "[B] Approve & build",
-          "internal.retry_count.Clarify": 0,
-          "thread.build.current_node": "screenshot",
-          "human.gate.Clarify.question": "How much should the cleanup plan take on?",
-          "thread.run_e2e.current_node": "e2e_gate",
-          "human.gate.selected": "B",
-          "thread.plan.current_node": "Verification",
-          "current_node": "Retro",
-          "preferred_label": "[B] Approve & build",
-          "internal.retry_count.start": 0,
-          "failure_class": "",
-          "internal.retry_count.clarify_prep": 0,
-          "internal.retry_count.Retro": 0,
-          "internal.run_id": "01KWEKXTNN02DJ5H0RA9W7X74R",
-          "thread.retro.current_node": "Retro",
-          "graph.rankdir": "LR",
-          "response.developer": "Implemented the approved boundary-first increment.\n\nWhat changed:\n- **Schema source of truth moved to `src/db/schema.ts`**\n  - Moved storyteller tables/relations into `src/db/schema.ts`\n  - Deleted `src/domains/storyteller/db/schema.ts`\n  - Updated schema consumers to import from `@/db`\n\n- **Access verification moved to shared auth**\n  - Added `src/shared/auth/storyteller-access.ts`\n  - Added `src/shared/auth/index.ts`\n  - Deleted `src/domains/storyteller/lib/access-verification.ts`\n  - Updated route/dynamic imports to use `@/shared/auth`\n\n- **Storyteller barrel narrowed**\n  - Removed schema/access/service wildcard leakage from `src/domains/storyteller/index.ts`\n  - Kept curated public server entry points and existing UI/hooks/types\n\n- **Target `io/` + `state/queries/` scaffolding added**\n  - Added:\n    - `src/domains/storyteller/io/storyteller.dto.ts`\n    - `src/domains/storyteller/io/storyteller.keys.ts`\n    - `src/domains/storyteller/io/storyteller.api.ts`\n    - `src/domains/storyteller/state/queries/useEpisodes.ts`\n    - `src/domains/storyteller/state/queries/useBibleLock.ts`\n\n- **Top client server-state hooks migrated off `cachedFetch`**\n  - `useEpisodeData` now uses TanStack-backed `useEpisodes` / `useEpisode`\n  - `useBibleState` now uses TanStack-backed `useBibleLock`\n  - `useEntity` query keys now route through `storyteller.keys`\n\n- **Episodes API moved toward typed/camelCase boundary**\n  - `src/app/api/storyteller/episodes/route.ts` now uses Drizzle + DTO parsing instead of Supabase admin fetches\n  - `src/app/api/storyteller/bible/lock/route.ts` now uses shared DTO parsing for query/response\n\nNotes:\n- I also updated the affected API/service/eval imports so schema/access no longer come from `@/domains/storyteller`.\n- I could **not run `npm run typecheck` or tests** here because `npm` is unavailable in this environment, so validation was limited to static inspection and import-path auditing.",
-          "thread.Verification.current_node": "setup",
-          "internal.retry_count.developer": 0,
-          "graph.default_max_retries": "1",
-          "internal.retry_count.Verification": 0,
-          "internal.retry_count.verify": 0,
-          "graph.label": "Optional Build",
-          "internal.retry_count.run_e2e": 0,
-          "last_stage": "Retro",
-          "internal.retry_count.e2e_gate": 0,
-          "thread.planning.current_node": "plan",
-          "internal.fidelity": "summary:medium",
-          "human.gate.label": "[B] Approve & build",
-          "internal.thread_id": "retro",
-          "human.gate.Clarify.answer": "A",
-          "internal.retry_count.tester": 0,
-          "thread.tester.current_node": "run_tests",
-          "internal.retry_count.run_tests": 0,
-          "internal.retry_count.scope": 0,
-          "last_response": "Wrote `RETRO.md` at the repo root.\n\n# Run Retro — Storyteller architecture alignment\n\n## Outcome\nProduced an assessment-backed, prioritized migration plan for aligning `src/domains/storyteller` to `",
-          "response.tester": "Added targeted automated coverage for the architecture-alignment slice and fixed one low-risk source bug exposed while writing tests.\n\n### Tests added\n\n1. **`src/app/api/storyteller/episodes/__tests__/route.test.ts`**\n   - Pins down the `GET /api/storyteller/episodes` and `POST /api/storyteller/episodes` contract.\n   - Covers:\n     - `400` when `projectId` is missing\n     - `403` when project access is denied\n     - happy-path authorized `GET` returning the typed episode list\n     - `400` when `POST` body fails DTO validation\n     - happy-path `POST` inserting **camelCase** fields (`projectId`, `masterPrompt`, etc.) and returning the created episode\n\n2. **`src/domains/storyteller/hooks/__tests__/useEpisodeData.test.ts`**\n   - Covers the top migrated server-state hook behavior.\n   - Covers:\n     - override-driven empty/non-empty state via `LocalStorageKeys.FORCE_STORYTELLER_STATE`\n     - hydration of selected episode/title from the new query-backed data\n     - transition when selecting another episode and pushing the URL state\n\n3. **`src/domains/storyteller/hooks/__tests__/useBibleState.test.ts`**\n   - Covers the migrated Bible-lock/query-backed hook behavior.\n   - Covers:\n     - default `bible=open` URL behavior on first visit\n     - exposure of fetched lock state (`isBibleLocked`, `bibleLockedBy`)\n     - transition when toggling the Bible open, including the `bible-opened` event\n\n### Source fix made during testing\n\n- **File:** `src/app/api/storyteller/episodes/route.ts`\n- **Fix:** invalid `POST` payloads now return **`400 Invalid episode payload`** instead of falling into a generic `500`.\n- This was a real boundary bug: the new Zod validation existed, but parse failures were not surfaced as client errors.\n\n### UX states / edge cases covered\n\n- **Error states**\n  - missing query param\n  - access denied\n  - invalid episode creation payload\n- **Empty / forced state transitions**\n  - `HAS_EPISODES` override in `useEpisodeData`\n- **Success / happy path**\n  - typed episode list fetch\n  - episode creation with camelCase fields\n  - selected-episode hydration\n  - Bible auto-open and lock-state hydration\n- **Important transitions**\n  - selecting an episode updates URL state\n  - toggling Bible open dispatches the expected event\n\n### What I could not complete\n\nI **could not run** `npm run test:unit` or `npm run typecheck` in this environment because the container has **no `node`/`npm` binaries installed**.\n\nRepro:\n- `npm run test:unit` → `/bin/bash: npm: command not found`\n- `npm run typecheck` → `/bin/bash: npm: command not found`\n\n### Risk-based gaps left untested\n\n- I did **not** add broader integration coverage for the many import rewires from `@/domains/storyteller` → `@/db` / `@/shared/auth`, because the highest-risk observable behaviors in this increment are the new typed episode boundary and the migrated query-backed hooks.\n- I did **not** add UI component tests for sidebar empty/error rendering because the shipped code in this increment primarily changed hooks/routes, not the component rendering layer itself.\n\nIf you want, the next best step is to run:\n- `npm run typecheck`\n- `npm run test:unit`\n\nin an environment with Node/npm available, then loop back on any concrete failures.",
-          "response.Retro": "Wrote `RETRO.md` at the repo root.\n\n# Run Retro — Storyteller architecture alignment\n\n## Outcome\nProduced an assessment-backed, prioritized migration plan for aligning `src/domains/storyteller` to `docs/unified/ARCHITECTURE.md`. Clarify chose **[A] staged migration — boundaries first**. Verification chose **[B] Approve & build**. The run entered the validation path, but unit and e2e commands could not execute in this environment because `npm` was unavailable (`/bin/bash: npm: command not found`). Net: **plan delivered and approved; no verified implementation/build evidence from this run**.\n\n## Stages\nScope → Assess → Clarify Prep → Clarify [human] → Plan → Verification [human] → optional build/validation path attempted → Unit (failed: missing `npm`) → E2E (failed: missing `npm`) → Screenshot → Retro\n\n## Human decisions\n- **Clarify:** **[A] Staged migration — boundaries first, bigger moves sequenced**.\n- **Verification:** **[B] Approve & build**.\n\n## Top gaps & plan thrust\n- **Schema/barrel boundary drift:** storyteller-owned Drizzle schema and a leaky public barrel were the main architectural blockers; the plan put these first with **P1 Item 1 (move schema ownership to `src/db`)** and **P1 Item 2 (narrow `index.ts`)**.\n- **Client server-state bypassing target layers:** raw fetches and ad-hoc cache/state in hooks conflicted with `ui → state → io → core`; the plan answered with **P1 Item 3** to stand up `io/` + TanStack `state/queries/` for episodes and bible-lock first.\n- **Bespoke async/AI infrastructure:** browser job recovery, weak server-only signaling, and Mastra plus hand-rolled workflow plumbing remained off-architecture; the plan sequenced **Items 4–6** to mark server-only boundaries, move long-running flows to Trigger tasks/`useJob`, and thin custom workflow machinery around typed Mastra primitives.\n\n## Timing & cost\nPer-stage wall-clock and token totals were not available in the checked artifacts. For timings/tokens, use the Fabro Billing tab or `fabro inspect 01KWEKXTNN02DJ5H0RA9W7X74R`.\n\n## What worked / improve\n- **Worked:** Clarify forced an explicit scope choice early, which kept the plan realistic and sequenced around boundary risk instead of a big-bang rewrite.\n- **Worked:** The plan identified a concrete first shippable increment (Items 1–3), making execution reviewable and lower risk.\n- **Improve:** Validation infrastructure was incomplete (`npm` missing), so the build/test path did not produce useful confidence signals; environment readiness should be checked before optional execution stages.\n\n## Follow-ups\n1. Treat **Items 1–3** as the first implementation wave: schema source of truth, public barrel narrowing, then the first `io/` + TanStack slice.\n2. Restore a working Node/npm toolchain in CI/dev before the next execution pass.\n3. On the next build run, verify with `npm run typecheck`, `npm run lint`, `npm run test:unit`, and targeted storyteller smoke/e2e coverage.\n4. After the first wave lands, continue with server-only boundaries and job migration (Items 4–5), then the lighter Mastra typing/convergence pass (Item 6).",
-          "response.assess": "Assessment written to `findings/assess.md`.\n\nShort summary:\n- Storyteller has an `index.ts`, but it currently exposes too much: DB schema, services, and agent internals leak through the public barrel.\n- The module shape is still legacy (`components/hooks/tools/lib/db`) rather than the target `ui/state/io/core/services/agents/tasks/prompts` blueprint.\n- Highest-risk divergences are in client/server boundaries: raw client `fetch`, ad-hoc caching, localStorage/window-event job recovery, and parallel hand-rolled AI orchestration beside Mastra.\n\nTop 3 gaps first:\n1. Reshape the module toward the target blueprint.\n2. Narrow `src/domains/storyteller/index.ts` to a real public API.\n3. Move client-side server state into `io/` + TanStack Query `state/queries/` and retire bespoke fetch/caching patterns.\n\nNo code was modified beyond the findings file.",
-          "internal.retry_count.setup": 0,
           "thread.developer.current_node": "verify",
-          "thread.start.current_node": "scope",
-          "command.output": "blob://sha256/59ab5fc17e019dcb04a301d9d5d0ac98b1507448f9a1ed495d54fe426082b799"
+          "thread.retro.current_node": "Retro",
+          "human.gate.Clarify.question": "How much should the cleanup plan take on?",
+          "internal.retry_count.e2e_gate": 0,
+          "last_response": "Wrote `RETRO.md` at the repo root.\n\n# Run Retro — Storyteller architecture alignment\n\n## Outcome\nProduced an assessment-backed, prioritized migration plan for aligning `src/domains/storyteller` to `",
+          "response.plan": "`PLAN.md` and `DECISIONS.md` are written and grounded against the actual code. Stopping here for the Verification gate.\n\n## What I did\n- Recorded the Clarify decision (**[A] Staged migration — boundaries first**) in `DECISIONS.md`, including in-scope vs. deferred.\n- Verified every finding against the code (barrel contents, ~40 external importers, schema inversion, client-side \"services\", workflow `z.any()`, god-file LOC, cross-module coupling). Corrected two stale-draft claims: `index.ts` **exists** and leaks internals (that's the real issue), and `core/` is actually **pure** (injected clock), so no \"impure core\" item.\n\n## Plan summary\nBoundary-first, no P0 (storyteller already has no browser writes; core is pure). Prioritized items:\n\n- **P1 — Schema inversion:** move storyteller's Drizzle tables into `src/db/schema.ts` (it currently imports *up* into the module at `src/db/schema.ts:12-21`); repoint ~40 importers to `@/db`. This gates the barrel.\n- **P1 — Narrow `index.ts`:** stop exporting `db/schema`, `access-verification`, and raw `services/*`; add a deep-import lint rule.\n- **P1 — Layer skeleton + TanStack:** stand up `io/` + `state/queries/`, migrate the episodes and bible-lock flows off `cachedFetch`/raw `fetch` (anchored on the existing `useEntities`).\n- **P1 — Server-only boundaries:** mark real services `server-only`; move the three browser \"services\" (`Poster`/`Moodboard`/`BeatImage`) out of `services/`.\n- **P1/P2 — Jobs:** convert poster/moodboard `localStorage`+CustomEvent recovery into `tasks/*.task.ts` + shared `useJob`.\n- **P2 — Thin Mastra:** kill `z.any()` steps (StoryWorkflow lines 112/143/168/216) + hand-rolled Langfuse/event-bus; type `any` in agents.\n- **P2/P3 — Type porous boundaries, resolve `mentions↔chat` coupling, split god files (978/922/889/730/639/575 LOC), final folder consolidation + dependency lint.**\n\nSuggested first shippable increment: **Items 1–3**. Full §9 Mastra convergence, `shared/` extraction, and RLS/migration reconciliation are explicitly deferred.\n\nReady for your review at Verification.",
+          "thread.run_e2e.current_node": "e2e_gate",
+          "failure_class": "",
+          "internal.fidelity": "summary:medium",
+          "internal.retry_count.test_gate": 0,
+          "graph.stall_timeout": "1800000ms",
+          "internal.run_id": "01KWEKXTNN02DJ5H0RA9W7X74R",
+          "thread.review.current_node": "clarify_prep",
+          "internal.retry_count.Retro": 0,
+          "human.gate.Clarify.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
+          "outcome": "succeeded",
+          "thread.verify.current_node": "verify_gate",
+          "internal.retry_count.start": 0,
+          "internal.retry_count.verify_gate": 0,
+          "response.tester": "Added targeted automated coverage for the architecture-alignment slice and fixed one low-risk source bug exposed while writing tests.\n\n### Tests added\n\n1. **`src/app/api/storyteller/episodes/__tests__/route.test.ts`**\n   - Pins down the `GET /api/storyteller/episodes` and `POST /api/storyteller/episodes` contract.\n   - Covers:\n     - `400` when `projectId` is missing\n     - `403` when project access is denied\n     - happy-path authorized `GET` returning the typed episode list\n     - `400` when `POST` body fails DTO validation\n     - happy-path `POST` inserting **camelCase** fields (`projectId`, `masterPrompt`, etc.) and returning the created episode\n\n2. **`src/domains/storyteller/hooks/__tests__/useEpisodeData.test.ts`**\n   - Covers the top migrated server-state hook behavior.\n   - Covers:\n     - override-driven empty/non-empty state via `LocalStorageKeys.FORCE_STORYTELLER_STATE`\n     - hydration of selected episode/title from the new query-backed data\n     - transition when selecting another episode and pushing the URL state\n\n3. **`src/domains/storyteller/hooks/__tests__/useBibleState.test.ts`**\n   - Covers the migrated Bible-lock/query-backed hook behavior.\n   - Covers:\n     - default `bible=open` URL behavior on first visit\n     - exposure of fetched lock state (`isBibleLocked`, `bibleLockedBy`)\n     - transition when toggling the Bible open, including the `bible-opened` event\n\n### Source fix made during testing\n\n- **File:** `src/app/api/storyteller/episodes/route.ts`\n- **Fix:** invalid `POST` payloads now return **`400 Invalid episode payload`** instead of falling into a generic `500`.\n- This was a real boundary bug: the new Zod validation existed, but parse failures were not surfaced as client errors.\n\n### UX states / edge cases covered\n\n- **Error states**\n  - missing query param\n  - access denied\n  - invalid episode creation payload\n- **Empty / forced state transitions**\n  - `HAS_EPISODES` override in `useEpisodeData`\n- **Success / happy path**\n  - typed episode list fetch\n  - episode creation with camelCase fields\n  - selected-episode hydration\n  - Bible auto-open and lock-state hydration\n- **Important transitions**\n  - selecting an episode updates URL state\n  - toggling Bible open dispatches the expected event\n\n### What I could not complete\n\nI **could not run** `npm run test:unit` or `npm run typecheck` in this environment because the container has **no `node`/`npm` binaries installed**.\n\nRepro:\n- `npm run test:unit` → `/bin/bash: npm: command not found`\n- `npm run typecheck` → `/bin/bash: npm: command not found`\n\n### Risk-based gaps left untested\n\n- I did **not** add broader integration coverage for the many import rewires from `@/domains/storyteller` → `@/db` / `@/shared/auth`, because the highest-risk observable behaviors in this increment are the new typed episode boundary and the migrated query-backed hooks.\n- I did **not** add UI component tests for sidebar empty/error rendering because the shipped code in this increment primarily changed hooks/routes, not the component rendering layer itself.\n\nIf you want, the next best step is to run:\n- `npm run typecheck`\n- `npm run test:unit`\n\nin an environment with Node/npm available, then loop back on any concrete failures.",
+          "thread.clarify_prep.current_node": "Clarify",
+          "thread.Verification.current_node": "setup",
+          "response.Retro": "Wrote `RETRO.md` at the repo root.\n\n# Run Retro — Storyteller architecture alignment\n\n## Outcome\nProduced an assessment-backed, prioritized migration plan for aligning `src/domains/storyteller` to `docs/unified/ARCHITECTURE.md`. Clarify chose **[A] staged migration — boundaries first**. Verification chose **[B] Approve & build**. The run entered the validation path, but unit and e2e commands could not execute in this environment because `npm` was unavailable (`/bin/bash: npm: command not found`). Net: **plan delivered and approved; no verified implementation/build evidence from this run**.\n\n## Stages\nScope → Assess → Clarify Prep → Clarify [human] → Plan → Verification [human] → optional build/validation path attempted → Unit (failed: missing `npm`) → E2E (failed: missing `npm`) → Screenshot → Retro\n\n## Human decisions\n- **Clarify:** **[A] Staged migration — boundaries first, bigger moves sequenced**.\n- **Verification:** **[B] Approve & build**.\n\n## Top gaps & plan thrust\n- **Schema/barrel boundary drift:** storyteller-owned Drizzle schema and a leaky public barrel were the main architectural blockers; the plan put these first with **P1 Item 1 (move schema ownership to `src/db`)** and **P1 Item 2 (narrow `index.ts`)**.\n- **Client server-state bypassing target layers:** raw fetches and ad-hoc cache/state in hooks conflicted with `ui → state → io → core`; the plan answered with **P1 Item 3** to stand up `io/` + TanStack `state/queries/` for episodes and bible-lock first.\n- **Bespoke async/AI infrastructure:** browser job recovery, weak server-only signaling, and Mastra plus hand-rolled workflow plumbing remained off-architecture; the plan sequenced **Items 4–6** to mark server-only boundaries, move long-running flows to Trigger tasks/`useJob`, and thin custom workflow machinery around typed Mastra primitives.\n\n## Timing & cost\nPer-stage wall-clock and token totals were not available in the checked artifacts. For timings/tokens, use the Fabro Billing tab or `fabro inspect 01KWEKXTNN02DJ5H0RA9W7X74R`.\n\n## What worked / improve\n- **Worked:** Clarify forced an explicit scope choice early, which kept the plan realistic and sequenced around boundary risk instead of a big-bang rewrite.\n- **Worked:** The plan identified a concrete first shippable increment (Items 1–3), making execution reviewable and lower risk.\n- **Improve:** Validation infrastructure was incomplete (`npm` missing), so the build/test path did not produce useful confidence signals; environment readiness should be checked before optional execution stages.\n\n## Follow-ups\n1. Treat **Items 1–3** as the first implementation wave: schema source of truth, public barrel narrowing, then the first `io/` + TanStack slice.\n2. Restore a working Node/npm toolchain in CI/dev before the next execution pass.\n3. On the next build run, verify with `npm run typecheck`, `npm run lint`, `npm run test:unit`, and targeted storyteller smoke/e2e coverage.\n4. After the first wave lands, continue with server-only boundaries and job migration (Items 4–5), then the lighter Mastra typing/convergence pass (Item 6).",
+          "current_node": "Retro"
         },
         "node_outcomes": {
-          "scope": {
+          "e2e_gate": {
             "status": "succeeded",
-            "context_updates": {
-              "command.output": "blob://sha256/a1b56f3b2501b9dc928b6a840239aee6fac0d5486456f07515b7594f6055fc50"
-            },
-            "notes": "Script completed: M=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1",
-            "usage": null,
-            "timing": {
-              "wall_time_ms": 0,
-              "inference_time_ms": 0,
-              "tool_time_ms": 140,
-              "active_time_ms": 140
-            }
-          },
-          "setup": {
-            "status": "failed",
-            "context_updates": {
-              "command.output": "blob://sha256/904db0d48d97ba6bbbdcf6d739a2d855662051a0d4e850c1f7f4694fb16c9d19"
-            },
-            "failure": {
-              "message": "Script failed with exit code: 127\n\n## output\n=== sandbox bootstrap ===\n/bin/bash: line 2: npm: command not found\n",
-              "category": "deterministic"
-            },
-            "usage": null,
-            "timing": {
-              "wall_time_ms": 0,
-              "inference_time_ms": 0,
-              "tool_time_ms": 150,
-              "active_time_ms": 150
-            }
-          },
-          "verify": {
-            "status": "failed",
-            "context_updates": {
-              "command.output": "blob://sha256/59ab5fc17e019dcb04a301d9d5d0ac98b1507448f9a1ed495d54fe426082b799"
-            },
-            "failure": {
-              "message": "Script failed with exit code: 127\n\n## output\n/bin/bash: line 2: npm: command not found\n",
-              "category": "deterministic"
-            },
-            "usage": null,
-            "timing": {
-              "wall_time_ms": 0,
-              "inference_time_ms": 0,
-              "tool_time_ms": 147,
-              "active_time_ms": 147
-            }
-          },
-          "screenshot": {
-            "status": "succeeded",
-            "context_updates": {
-              "response.screenshot": "I created `SCREENSHOTS.md` and the `screenshots/` artifact directory.\n\nGaps:\n- I could not capture any UI screenshots because:\n  - the Playwright/browser MCP tools referenced in the prompt were **not available** in this environment,\n  - `http://localhost:3000` was **not reachable**, and\n  - `node` / `npm` were **not installed**, so I could not start a dev server.\n\nDocumented in `SCREENSHOTS.md`:\n- intended storyteller screens to capture,\n- why capture was blocked,\n- which UX states were not reached.",
-              "last_stage": "screenshot",
-              "last_response": "I created `SCREENSHOTS.md` and the `screenshots/` artifact directory.\n\nGaps:\n- I could not capture any UI screenshots because:\n  - the Playwright/browser MCP tools referenced in the prompt were **not "
-            },
-            "notes": "Stage completed: screenshot",
-            "usage": {
-              "input": {
-                "usage": {
-                  "model": {
-                    "provider": "openai",
-                    "model_id": "gpt-5.4"
-                  },
-                  "tokens": {
-                    "input_tokens": 27600,
-                    "output_tokens": 778,
-                    "reasoning_tokens": 389,
-                    "cache_read_tokens": 1407488,
-                    "cache_write_tokens": 0
-                  }
-                },
-                "facts": {
-                  "algorithm": "openai"
-                }
-              },
-              "total_usd_micros": 438377
-            },
-            "files_touched": [
-              "/workspace/kurvitza/SCREENSHOTS.md"
-            ],
-            "timing": {
-              "wall_time_ms": 0,
-              "inference_time_ms": 35892,
-              "tool_time_ms": 453,
-              "active_time_ms": 36345
-            }
-          },
-          "run_tests": {
-            "status": "failed",
-            "context_updates": {
-              "command.output": "blob://sha256/59ab5fc17e019dcb04a301d9d5d0ac98b1507448f9a1ed495d54fe426082b799"
-            },
-            "failure": {
-              "message": "Script failed with exit code: 127\n\n## output\n/bin/bash: line 2: npm: command not found\n",
-              "category": "deterministic"
-            },
-            "usage": null,
-            "timing": {
-              "wall_time_ms": 0,
-              "inference_time_ms": 0,
-              "tool_time_ms": 153,
-              "active_time_ms": 153
-            }
+            "notes": "Conditional node evaluated: e2e_gate",
+            "usage": null
           },
           "verify_gate": {
             "status": "succeeded",
@@ -6851,54 +6752,30 @@
               "active_time_ms": 44257
             }
           },
-          "test_gate": {
-            "status": "succeeded",
-            "notes": "Conditional node evaluated: test_gate",
-            "usage": null
-          },
-          "developer": {
-            "status": "succeeded",
-            "context_updates": {
-              "last_stage": "developer",
-              "last_response": "Implemented the approved boundary-first increment.\n\nWhat changed:\n- **Schema source of truth moved to `src/db/schema.ts`**\n  - Moved storyteller tables/relations into `src/db/schema.ts`\n  - Deleted `s",
-              "response.developer": "Implemented the approved boundary-first increment.\n\nWhat changed:\n- **Schema source of truth moved to `src/db/schema.ts`**\n  - Moved storyteller tables/relations into `src/db/schema.ts`\n  - Deleted `src/domains/storyteller/db/schema.ts`\n  - Updated schema consumers to import from `@/db`\n\n- **Access verification moved to shared auth**\n  - Added `src/shared/auth/storyteller-access.ts`\n  - Added `src/shared/auth/index.ts`\n  - Deleted `src/domains/storyteller/lib/access-verification.ts`\n  - Updated route/dynamic imports to use `@/shared/auth`\n\n- **Storyteller barrel narrowed**\n  - Removed schema/access/service wildcard leakage from `src/domains/storyteller/index.ts`\n  - Kept curated public server entry points and existing UI/hooks/types\n\n- **Target `io/` + `state/queries/` scaffolding added**\n  - Added:\n    - `src/domains/storyteller/io/storyteller.dto.ts`\n    - `src/domains/storyteller/io/storyteller.keys.ts`\n    - `src/domains/storyteller/io/storyteller.api.ts`\n    - `src/domains/storyteller/state/queries/useEpisodes.ts`\n    - `src/domains/storyteller/state/queries/useBibleLock.ts`\n\n- **Top client server-state hooks migrated off `cachedFetch`**\n  - `useEpisodeData` now uses TanStack-backed `useEpisodes` / `useEpisode`\n  - `useBibleState` now uses TanStack-backed `useBibleLock`\n  - `useEntity` query keys now route through `storyteller.keys`\n\n- **Episodes API moved toward typed/camelCase boundary**\n  - `src/app/api/storyteller/episodes/route.ts` now uses Drizzle + DTO parsing instead of Supabase admin fetches\n  - `src/app/api/storyteller/bible/lock/route.ts` now uses shared DTO parsing for query/response\n\nNotes:\n- I also updated the affected API/service/eval imports so schema/access no longer come from `@/domains/storyteller`.\n- I could **not run `npm run typecheck` or tests** here because `npm` is unavailable in this environment, so validation was limited to static inspection and import-path auditing."
-            },
-            "notes": "Stage completed: developer",
-            "usage": {
-              "input": {
-                "usage": {
-                  "model": {
-                    "provider": "openai",
-                    "model_id": "gpt-5.4"
-                  },
-                  "tokens": {
-                    "input_tokens": 201575,
-                    "output_tokens": 19358,
-                    "reasoning_tokens": 11476,
-                    "cache_read_tokens": 9424896,
-                    "cache_write_tokens": 0
-                  }
-                },
-                "facts": {
-                  "algorithm": "openai"
-                }
-              },
-              "total_usd_micros": 3322671
-            },
-            "timing": {
-              "wall_time_ms": 0,
-              "inference_time_ms": 347308,
-              "tool_time_ms": 10487,
-              "active_time_ms": 357795
-            }
-          },
-          "run_e2e": {
+          "run_tests": {
             "status": "failed",
             "context_updates": {
               "command.output": "blob://sha256/59ab5fc17e019dcb04a301d9d5d0ac98b1507448f9a1ed495d54fe426082b799"
             },
             "failure": {
               "message": "Script failed with exit code: 127\n\n## output\n/bin/bash: line 2: npm: command not found\n",
+              "category": "deterministic"
+            },
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 153,
+              "active_time_ms": 153
+            }
+          },
+          "setup": {
+            "status": "failed",
+            "context_updates": {
+              "command.output": "blob://sha256/904db0d48d97ba6bbbdcf6d739a2d855662051a0d4e850c1f7f4694fb16c9d19"
+            },
+            "failure": {
+              "message": "Script failed with exit code: 127\n\n## output\n=== sandbox bootstrap ===\n/bin/bash: line 2: npm: command not found\n",
               "category": "deterministic"
             },
             "usage": null,
@@ -6948,118 +6825,9 @@
               "active_time_ms": 40831
             }
           },
-          "e2e_gate": {
+          "test_gate": {
             "status": "succeeded",
-            "notes": "Conditional node evaluated: e2e_gate",
-            "usage": null
-          },
-          "assess": {
-            "status": "succeeded",
-            "context_updates": {
-              "last_stage": "assess",
-              "response.assess": "Assessment written to `findings/assess.md`.\n\nShort summary:\n- Storyteller has an `index.ts`, but it currently exposes too much: DB schema, services, and agent internals leak through the public barrel.\n- The module shape is still legacy (`components/hooks/tools/lib/db`) rather than the target `ui/state/io/core/services/agents/tasks/prompts` blueprint.\n- Highest-risk divergences are in client/server boundaries: raw client `fetch`, ad-hoc caching, localStorage/window-event job recovery, and parallel hand-rolled AI orchestration beside Mastra.\n\nTop 3 gaps first:\n1. Reshape the module toward the target blueprint.\n2. Narrow `src/domains/storyteller/index.ts` to a real public API.\n3. Move client-side server state into `io/` + TanStack Query `state/queries/` and retire bespoke fetch/caching patterns.\n\nNo code was modified beyond the findings file.",
-              "last_response": "Assessment written to `findings/assess.md`.\n\nShort summary:\n- Storyteller has an `index.ts`, but it currently exposes too much: DB schema, services, and agent internals leak through the public barrel."
-            },
-            "notes": "Stage completed: assess",
-            "usage": {
-              "input": {
-                "usage": {
-                  "model": {
-                    "provider": "openai",
-                    "model_id": "gpt-5.4"
-                  },
-                  "tokens": {
-                    "input_tokens": 102407,
-                    "output_tokens": 6017,
-                    "reasoning_tokens": 327,
-                    "cache_read_tokens": 365056,
-                    "cache_write_tokens": 0
-                  }
-                },
-                "facts": {
-                  "algorithm": "openai"
-                }
-              },
-              "total_usd_micros": 442441
-            },
-            "files_touched": [
-              "/workspace/kurvitza/findings/assess.md"
-            ],
-            "timing": {
-              "wall_time_ms": 0,
-              "inference_time_ms": 62146,
-              "tool_time_ms": 1003,
-              "active_time_ms": 63149
-            }
-          },
-          "tester": {
-            "status": "succeeded",
-            "context_updates": {
-              "last_stage": "tester",
-              "response.tester": "Added targeted automated coverage for the architecture-alignment slice and fixed one low-risk source bug exposed while writing tests.\n\n### Tests added\n\n1. **`src/app/api/storyteller/episodes/__tests__/route.test.ts`**\n   - Pins down the `GET /api/storyteller/episodes` and `POST /api/storyteller/episodes` contract.\n   - Covers:\n     - `400` when `projectId` is missing\n     - `403` when project access is denied\n     - happy-path authorized `GET` returning the typed episode list\n     - `400` when `POST` body fails DTO validation\n     - happy-path `POST` inserting **camelCase** fields (`projectId`, `masterPrompt`, etc.) and returning the created episode\n\n2. **`src/domains/storyteller/hooks/__tests__/useEpisodeData.test.ts`**\n   - Covers the top migrated server-state hook behavior.\n   - Covers:\n     - override-driven empty/non-empty state via `LocalStorageKeys.FORCE_STORYTELLER_STATE`\n     - hydration of selected episode/title from the new query-backed data\n     - transition when selecting another episode and pushing the URL state\n\n3. **`src/domains/storyteller/hooks/__tests__/useBibleState.test.ts`**\n   - Covers the migrated Bible-lock/query-backed hook behavior.\n   - Covers:\n     - default `bible=open` URL behavior on first visit\n     - exposure of fetched lock state (`isBibleLocked`, `bibleLockedBy`)\n     - transition when toggling the Bible open, including the `bible-opened` event\n\n### Source fix made during testing\n\n- **File:** `src/app/api/storyteller/episodes/route.ts`\n- **Fix:** invalid `POST` payloads now return **`400 Invalid episode payload`** instead of falling into a generic `500`.\n- This was a real boundary bug: the new Zod validation existed, but parse failures were not surfaced as client errors.\n\n### UX states / edge cases covered\n\n- **Error states**\n  - missing query param\n  - access denied\n  - invalid episode creation payload\n- **Empty / forced state transitions**\n  - `HAS_EPISODES` override in `useEpisodeData`\n- **Success / happy path**\n  - typed episode list fetch\n  - episode creation with camelCase fields\n  - selected-episode hydration\n  - Bible auto-open and lock-state hydration\n- **Important transitions**\n  - selecting an episode updates URL state\n  - toggling Bible open dispatches the expected event\n\n### What I could not complete\n\nI **could not run** `npm run test:unit` or `npm run typecheck` in this environment because the container has **no `node`/`npm` binaries installed**.\n\nRepro:\n- `npm run test:unit` → `/bin/bash: npm: command not found`\n- `npm run typecheck` → `/bin/bash: npm: command not found`\n\n### Risk-based gaps left untested\n\n- I did **not** add broader integration coverage for the many import rewires from `@/domains/storyteller` → `@/db` / `@/shared/auth`, because the highest-risk observable behaviors in this increment are the new typed episode boundary and the migrated query-backed hooks.\n- I did **not** add UI component tests for sidebar empty/error rendering because the shipped code in this increment primarily changed hooks/routes, not the component rendering layer itself.\n\nIf you want, the next best step is to run:\n- `npm run typecheck`\n- `npm run test:unit`\n\nin an environment with Node/npm available, then loop back on any concrete failures.",
-              "last_response": "Added targeted automated coverage for the architecture-alignment slice and fixed one low-risk source bug exposed while writing tests.\n\n### Tests added\n\n1. **`src/app/api/storyteller/episodes/__tests__"
-            },
-            "notes": "Stage completed: tester",
-            "usage": {
-              "input": {
-                "usage": {
-                  "model": {
-                    "provider": "openai",
-                    "model_id": "gpt-5.4"
-                  },
-                  "tokens": {
-                    "input_tokens": 120538,
-                    "output_tokens": 4828,
-                    "reasoning_tokens": 4409,
-                    "cache_read_tokens": 2022912,
-                    "cache_write_tokens": 0
-                  }
-                },
-                "facts": {
-                  "algorithm": "openai"
-                }
-              },
-              "total_usd_micros": 945628
-            },
-            "timing": {
-              "wall_time_ms": 0,
-              "inference_time_ms": 99159,
-              "tool_time_ms": 1377,
-              "active_time_ms": 100536
-            }
-          },
-          "Verification": {
-            "status": "succeeded",
-            "preferred_label": "[B] Approve & build",
-            "suggested_next_ids": [
-              "setup"
-            ],
-            "context_updates": {
-              "human.gate.Verification.question": "Plan is ready. Approve and build, save plan only, request changes, or abort?",
-              "human.gate.Verification.label": "[B] Approve & build",
-              "human.gate.selected": "B",
-              "human.gate.label": "[B] Approve & build",
-              "human.gate.Verification.answer": "B"
-            },
-            "usage": null
-          },
-          "Clarify": {
-            "status": "succeeded",
-            "preferred_label": "[A] Staged migration — boundaries first, bigger moves sequenced",
-            "suggested_next_ids": [
-              "plan"
-            ],
-            "context_updates": {
-              "human.gate.Clarify.question": "How much should the cleanup plan take on?",
-              "human.gate.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
-              "human.gate.selected": "A",
-              "human.gate.Clarify.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
-              "human.gate.Clarify.answer": "A"
-            },
-            "usage": null
-          },
-          "start": {
-            "status": "succeeded",
+            "notes": "Conditional node evaluated: test_gate",
             "usage": null
           },
           "plan": {
@@ -7103,35 +6871,521 @@
               "tool_time_ms": 1102,
               "active_time_ms": 403967
             }
+          },
+          "assess": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_stage": "assess",
+              "response.assess": "Assessment written to `findings/assess.md`.\n\nShort summary:\n- Storyteller has an `index.ts`, but it currently exposes too much: DB schema, services, and agent internals leak through the public barrel.\n- The module shape is still legacy (`components/hooks/tools/lib/db`) rather than the target `ui/state/io/core/services/agents/tasks/prompts` blueprint.\n- Highest-risk divergences are in client/server boundaries: raw client `fetch`, ad-hoc caching, localStorage/window-event job recovery, and parallel hand-rolled AI orchestration beside Mastra.\n\nTop 3 gaps first:\n1. Reshape the module toward the target blueprint.\n2. Narrow `src/domains/storyteller/index.ts` to a real public API.\n3. Move client-side server state into `io/` + TanStack Query `state/queries/` and retire bespoke fetch/caching patterns.\n\nNo code was modified beyond the findings file.",
+              "last_response": "Assessment written to `findings/assess.md`.\n\nShort summary:\n- Storyteller has an `index.ts`, but it currently exposes too much: DB schema, services, and agent internals leak through the public barrel."
+            },
+            "notes": "Stage completed: assess",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 102407,
+                    "output_tokens": 6017,
+                    "reasoning_tokens": 327,
+                    "cache_read_tokens": 365056,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 442441
+            },
+            "files_touched": [
+              "/workspace/kurvitza/findings/assess.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 62146,
+              "tool_time_ms": 1003,
+              "active_time_ms": 63149
+            }
+          },
+          "screenshot": {
+            "status": "succeeded",
+            "context_updates": {
+              "response.screenshot": "I created `SCREENSHOTS.md` and the `screenshots/` artifact directory.\n\nGaps:\n- I could not capture any UI screenshots because:\n  - the Playwright/browser MCP tools referenced in the prompt were **not available** in this environment,\n  - `http://localhost:3000` was **not reachable**, and\n  - `node` / `npm` were **not installed**, so I could not start a dev server.\n\nDocumented in `SCREENSHOTS.md`:\n- intended storyteller screens to capture,\n- why capture was blocked,\n- which UX states were not reached.",
+              "last_stage": "screenshot",
+              "last_response": "I created `SCREENSHOTS.md` and the `screenshots/` artifact directory.\n\nGaps:\n- I could not capture any UI screenshots because:\n  - the Playwright/browser MCP tools referenced in the prompt were **not "
+            },
+            "notes": "Stage completed: screenshot",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 27600,
+                    "output_tokens": 778,
+                    "reasoning_tokens": 389,
+                    "cache_read_tokens": 1407488,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 438377
+            },
+            "files_touched": [
+              "/workspace/kurvitza/SCREENSHOTS.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 35892,
+              "tool_time_ms": 453,
+              "active_time_ms": 36345
+            }
+          },
+          "start": {
+            "status": "succeeded",
+            "usage": null
+          },
+          "scope": {
+            "status": "succeeded",
+            "context_updates": {
+              "command.output": "blob://sha256/a1b56f3b2501b9dc928b6a840239aee6fac0d5486456f07515b7594f6055fc50"
+            },
+            "notes": "Script completed: M=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1",
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 140,
+              "active_time_ms": 140
+            }
+          },
+          "Clarify": {
+            "status": "succeeded",
+            "preferred_label": "[A] Staged migration — boundaries first, bigger moves sequenced",
+            "suggested_next_ids": [
+              "plan"
+            ],
+            "context_updates": {
+              "human.gate.Clarify.question": "How much should the cleanup plan take on?",
+              "human.gate.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
+              "human.gate.selected": "A",
+              "human.gate.Clarify.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
+              "human.gate.Clarify.answer": "A"
+            },
+            "usage": null
+          },
+          "developer": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_stage": "developer",
+              "last_response": "Implemented the approved boundary-first increment.\n\nWhat changed:\n- **Schema source of truth moved to `src/db/schema.ts`**\n  - Moved storyteller tables/relations into `src/db/schema.ts`\n  - Deleted `s",
+              "response.developer": "Implemented the approved boundary-first increment.\n\nWhat changed:\n- **Schema source of truth moved to `src/db/schema.ts`**\n  - Moved storyteller tables/relations into `src/db/schema.ts`\n  - Deleted `src/domains/storyteller/db/schema.ts`\n  - Updated schema consumers to import from `@/db`\n\n- **Access verification moved to shared auth**\n  - Added `src/shared/auth/storyteller-access.ts`\n  - Added `src/shared/auth/index.ts`\n  - Deleted `src/domains/storyteller/lib/access-verification.ts`\n  - Updated route/dynamic imports to use `@/shared/auth`\n\n- **Storyteller barrel narrowed**\n  - Removed schema/access/service wildcard leakage from `src/domains/storyteller/index.ts`\n  - Kept curated public server entry points and existing UI/hooks/types\n\n- **Target `io/` + `state/queries/` scaffolding added**\n  - Added:\n    - `src/domains/storyteller/io/storyteller.dto.ts`\n    - `src/domains/storyteller/io/storyteller.keys.ts`\n    - `src/domains/storyteller/io/storyteller.api.ts`\n    - `src/domains/storyteller/state/queries/useEpisodes.ts`\n    - `src/domains/storyteller/state/queries/useBibleLock.ts`\n\n- **Top client server-state hooks migrated off `cachedFetch`**\n  - `useEpisodeData` now uses TanStack-backed `useEpisodes` / `useEpisode`\n  - `useBibleState` now uses TanStack-backed `useBibleLock`\n  - `useEntity` query keys now route through `storyteller.keys`\n\n- **Episodes API moved toward typed/camelCase boundary**\n  - `src/app/api/storyteller/episodes/route.ts` now uses Drizzle + DTO parsing instead of Supabase admin fetches\n  - `src/app/api/storyteller/bible/lock/route.ts` now uses shared DTO parsing for query/response\n\nNotes:\n- I also updated the affected API/service/eval imports so schema/access no longer come from `@/domains/storyteller`.\n- I could **not run `npm run typecheck` or tests** here because `npm` is unavailable in this environment, so validation was limited to static inspection and import-path auditing."
+            },
+            "notes": "Stage completed: developer",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 201575,
+                    "output_tokens": 19358,
+                    "reasoning_tokens": 11476,
+                    "cache_read_tokens": 9424896,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 3322671
+            },
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 347308,
+              "tool_time_ms": 10487,
+              "active_time_ms": 357795
+            }
+          },
+          "Verification": {
+            "status": "succeeded",
+            "preferred_label": "[B] Approve & build",
+            "suggested_next_ids": [
+              "setup"
+            ],
+            "context_updates": {
+              "human.gate.Verification.question": "Plan is ready. Approve and build, save plan only, request changes, or abort?",
+              "human.gate.Verification.label": "[B] Approve & build",
+              "human.gate.selected": "B",
+              "human.gate.label": "[B] Approve & build",
+              "human.gate.Verification.answer": "B"
+            },
+            "usage": null
+          },
+          "run_e2e": {
+            "status": "failed",
+            "context_updates": {
+              "command.output": "blob://sha256/59ab5fc17e019dcb04a301d9d5d0ac98b1507448f9a1ed495d54fe426082b799"
+            },
+            "failure": {
+              "message": "Script failed with exit code: 127\n\n## output\n/bin/bash: line 2: npm: command not found\n",
+              "category": "deterministic"
+            },
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 150,
+              "active_time_ms": 150
+            }
+          },
+          "verify": {
+            "status": "failed",
+            "context_updates": {
+              "command.output": "blob://sha256/59ab5fc17e019dcb04a301d9d5d0ac98b1507448f9a1ed495d54fe426082b799"
+            },
+            "failure": {
+              "message": "Script failed with exit code: 127\n\n## output\n/bin/bash: line 2: npm: command not found\n",
+              "category": "deterministic"
+            },
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 147,
+              "active_time_ms": 147
+            }
+          },
+          "tester": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_stage": "tester",
+              "response.tester": "Added targeted automated coverage for the architecture-alignment slice and fixed one low-risk source bug exposed while writing tests.\n\n### Tests added\n\n1. **`src/app/api/storyteller/episodes/__tests__/route.test.ts`**\n   - Pins down the `GET /api/storyteller/episodes` and `POST /api/storyteller/episodes` contract.\n   - Covers:\n     - `400` when `projectId` is missing\n     - `403` when project access is denied\n     - happy-path authorized `GET` returning the typed episode list\n     - `400` when `POST` body fails DTO validation\n     - happy-path `POST` inserting **camelCase** fields (`projectId`, `masterPrompt`, etc.) and returning the created episode\n\n2. **`src/domains/storyteller/hooks/__tests__/useEpisodeData.test.ts`**\n   - Covers the top migrated server-state hook behavior.\n   - Covers:\n     - override-driven empty/non-empty state via `LocalStorageKeys.FORCE_STORYTELLER_STATE`\n     - hydration of selected episode/title from the new query-backed data\n     - transition when selecting another episode and pushing the URL state\n\n3. **`src/domains/storyteller/hooks/__tests__/useBibleState.test.ts`**\n   - Covers the migrated Bible-lock/query-backed hook behavior.\n   - Covers:\n     - default `bible=open` URL behavior on first visit\n     - exposure of fetched lock state (`isBibleLocked`, `bibleLockedBy`)\n     - transition when toggling the Bible open, including the `bible-opened` event\n\n### Source fix made during testing\n\n- **File:** `src/app/api/storyteller/episodes/route.ts`\n- **Fix:** invalid `POST` payloads now return **`400 Invalid episode payload`** instead of falling into a generic `500`.\n- This was a real boundary bug: the new Zod validation existed, but parse failures were not surfaced as client errors.\n\n### UX states / edge cases covered\n\n- **Error states**\n  - missing query param\n  - access denied\n  - invalid episode creation payload\n- **Empty / forced state transitions**\n  - `HAS_EPISODES` override in `useEpisodeData`\n- **Success / happy path**\n  - typed episode list fetch\n  - episode creation with camelCase fields\n  - selected-episode hydration\n  - Bible auto-open and lock-state hydration\n- **Important transitions**\n  - selecting an episode updates URL state\n  - toggling Bible open dispatches the expected event\n\n### What I could not complete\n\nI **could not run** `npm run test:unit` or `npm run typecheck` in this environment because the container has **no `node`/`npm` binaries installed**.\n\nRepro:\n- `npm run test:unit` → `/bin/bash: npm: command not found`\n- `npm run typecheck` → `/bin/bash: npm: command not found`\n\n### Risk-based gaps left untested\n\n- I did **not** add broader integration coverage for the many import rewires from `@/domains/storyteller` → `@/db` / `@/shared/auth`, because the highest-risk observable behaviors in this increment are the new typed episode boundary and the migrated query-backed hooks.\n- I did **not** add UI component tests for sidebar empty/error rendering because the shipped code in this increment primarily changed hooks/routes, not the component rendering layer itself.\n\nIf you want, the next best step is to run:\n- `npm run typecheck`\n- `npm run test:unit`\n\nin an environment with Node/npm available, then loop back on any concrete failures.",
+              "last_response": "Added targeted automated coverage for the architecture-alignment slice and fixed one low-risk source bug exposed while writing tests.\n\n### Tests added\n\n1. **`src/app/api/storyteller/episodes/__tests__"
+            },
+            "notes": "Stage completed: tester",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 120538,
+                    "output_tokens": 4828,
+                    "reasoning_tokens": 4409,
+                    "cache_read_tokens": 2022912,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 945628
+            },
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 99159,
+              "tool_time_ms": 1377,
+              "active_time_ms": 100536
+            }
           }
         },
         "next_node_id": "exit",
+        "git_commit_sha": "45abf1670ae9ebd47fbfa6f356146ec9e33bf30b",
+        "loop_failure_signatures": {
+          "run_e2e|deterministic|script failed with exit code: <n> ## output /bin/bash: line <n>: npm: command not found": 1,
+          "run_tests|deterministic|script failed with exit code: <n> ## output /bin/bash: line <n>: npm: command not found": 1,
+          "verify|deterministic|script failed with exit code: <n> ## output /bin/bash: line <n>: npm: command not found": 1,
+          "setup|deterministic|script failed with exit code: <n> ## output === sandbox bootstrap === /bin/bash: line <n>: npm: command not found": 1
+        },
         "node_visits": {
-          "e2e_gate": 1,
-          "tester": 1,
-          "ux_designer": 1,
-          "scope": 1,
-          "screenshot": 1,
           "assess": 1,
+          "developer": 1,
           "plan": 1,
+          "verify": 1,
+          "scope": 1,
+          "Verification": 1,
+          "Retro": 1,
+          "tester": 1,
+          "run_e2e": 1,
+          "screenshot": 1,
+          "ux_designer": 1,
           "run_tests": 1,
           "verify_gate": 1,
-          "Retro": 1,
-          "verify": 1,
-          "Clarify": 1,
-          "test_gate": 1,
-          "run_e2e": 1,
-          "Verification": 1,
-          "start": 1,
-          "developer": 1,
+          "setup": 1,
+          "e2e_gate": 1,
           "clarify_prep": 1,
-          "setup": 1
+          "test_gate": 1,
+          "start": 1,
+          "Clarify": 1
         }
       },
-      "diff": {}
+      "diff": {
+        "patch": "diff --git a/RETRO.md b/RETRO.md\nnew file mode 100644\nindex 0000000..1e681c3\n--- /dev/null\n+++ b/RETRO.md\n@@ -0,0 +1,30 @@\n+# Run Retro — Storyteller architecture alignment\n+\n+## Outcome\n+Produced an assessment-backed, prioritized migration plan for aligning `src/domains/storyteller` to `docs/unified/ARCHITECTURE.md`. Clarify chose **[A] staged migration — boundaries first**. Verification chose **[B] Approve & build**. The run entered the validation path, but unit and e2e commands could not execute in this environment because `npm` was unavailable (`/bin/bash: npm: command not found`). Net: **plan delivered and approved; no verified implementation/build evidence from this run**.\n+\n+## Stages\n+Scope → Assess → Clarify Prep → Clarify [human] → Plan → Verification [human] → optional build/validation path attempted → Unit (failed: missing `npm`) → E2E (failed: missing `npm`) → Screenshot → Retro\n+\n+## Human decisions\n+- **Clarify:** **[A] Staged migration — boundaries first, bigger moves sequenced**.\n+- **Verification:** **[B] Approve & build**.\n+\n+## Top gaps & plan thrust\n+- **Schema/barrel boundary drift:** storyteller-owned Drizzle schema and a leaky public barrel were the main architectural blockers; the plan put these first with **P1 Item 1 (move schema ownership to `src/db`)** and **P1 Item 2 (narrow `index.ts`)**.\n+- **Client server-state bypassing target layers:** raw fetches and ad-hoc cache/state in hooks conflicted with `ui → state → io → core`; the plan answered with **P1 Item 3** to stand up `io/` + TanStack `state/queries/` for episodes and bible-lock first.\n+- **Bespoke async/AI infrastructure:** browser job recovery, weak server-only signaling, and Mastra plus hand-rolled workflow plumbing remained off-architecture; the plan sequenced **Items 4–6** to mark server-only boundaries, move long-running flows to Trigger tasks/`useJob`, and thin custom workflow machinery around typed Mastra primitives.\n+\n+## Timing & cost\n+Per-stage wall-clock and token totals were not available in the checked artifacts. For timings/tokens, use the Fabro Billing tab or `fabro inspect 01KWEKXTNN02DJ5H0RA9W7X74R`.\n+\n+## What worked / improve\n+- **Worked:** Clarify forced an explicit scope choice early, which kept the plan realistic and sequenced around boundary risk instead of a big-bang rewrite.\n+- **Worked:** The plan identified a concrete first shippable increment (Items 1–3), making execution reviewable and lower risk.\n+- **Improve:** Validation infrastructure was incomplete (`npm` missing), so the build/test path did not produce useful confidence signals; environment readiness should be checked before optional execution stages.\n+\n+## Follow-ups\n+1. Treat **Items 1–3** as the first implementation wave: schema source of truth, public barrel narrowing, then the first `io/` + TanStack slice.\n+2. Restore a working Node/npm toolchain in CI/dev before the next execution pass.\n+3. On the next build run, verify with `npm run typecheck`, `npm run lint`, `npm run test:unit`, and targeted storyteller smoke/e2e coverage.\n+4. After the first wave lands, continue with server-only boundaries and job migration (Items 4–5), then the lighter Mastra typing/convergence pass (Item 6).\n",
+        "summary": {
+          "files_changed": 71,
+          "additions": 1491,
+          "deletions": 983
+        }
+      }
     }
   ],
-  "conclusion": null,
+  "conclusion": {
+    "timestamp": "2026-07-01T10:59:54.709833Z",
+    "status": "succeeded",
+    "timing": {
+      "wall_time_ms": 1484999,
+      "inference_time_ms": 1149690,
+      "tool_time_ms": 18109,
+      "active_time_ms": 1167799
+    },
+    "final_git_commit_sha": "45abf1670ae9ebd47fbfa6f356146ec9e33bf30b",
+    "stages": [
+      {
+        "stage_id": "start",
+        "stage_label": "start",
+        "timing": {
+          "wall_time_ms": 0,
+          "inference_time_ms": 0,
+          "tool_time_ms": 0,
+          "active_time_ms": 0
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "scope",
+        "stage_label": "scope",
+        "timing": {
+          "wall_time_ms": 144,
+          "inference_time_ms": 0,
+          "tool_time_ms": 140,
+          "active_time_ms": 140
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "assess",
+        "stage_label": "assess",
+        "timing": {
+          "wall_time_ms": 93839,
+          "inference_time_ms": 62146,
+          "tool_time_ms": 1003,
+          "active_time_ms": 63149
+        },
+        "billing_usd_micros": 442441,
+        "retries": 0
+      },
+      {
+        "stage_id": "clarify_prep",
+        "stage_label": "clarify_prep",
+        "timing": {
+          "wall_time_ms": 74959,
+          "inference_time_ms": 43768,
+          "tool_time_ms": 489,
+          "active_time_ms": 44257
+        },
+        "billing_usd_micros": 207302,
+        "retries": 0
+      },
+      {
+        "stage_id": "Clarify",
+        "stage_label": "Clarify",
+        "timing": {
+          "wall_time_ms": 81397,
+          "inference_time_ms": 0,
+          "tool_time_ms": 0,
+          "active_time_ms": 0
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "plan",
+        "stage_label": "plan",
+        "timing": {
+          "wall_time_ms": 434666,
+          "inference_time_ms": 402865,
+          "tool_time_ms": 1102,
+          "active_time_ms": 403967
+        },
+        "billing_usd_micros": 2418550,
+        "retries": 0
+      },
+      {
+        "stage_id": "Verification",
+        "stage_label": "Verification",
+        "timing": {
+          "wall_time_ms": 16109,
+          "inference_time_ms": 0,
+          "tool_time_ms": 0,
+          "active_time_ms": 0
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "setup",
+        "stage_label": "setup",
+        "timing": {
+          "wall_time_ms": 153,
+          "inference_time_ms": 0,
+          "tool_time_ms": 150,
+          "active_time_ms": 150
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "ux_designer",
+        "stage_label": "ux_designer",
+        "timing": {
+          "wall_time_ms": 150885,
+          "inference_time_ms": 118331,
+          "tool_time_ms": 1848,
+          "active_time_ms": 120179
+        },
+        "billing_usd_micros": 709506,
+        "retries": 0
+      },
+      {
+        "stage_id": "developer",
+        "stage_label": "developer",
+        "timing": {
+          "wall_time_ms": 357943,
+          "inference_time_ms": 347308,
+          "tool_time_ms": 10487,
+          "active_time_ms": 357795
+        },
+        "billing_usd_micros": 3322671,
+        "retries": 0
+      },
+      {
+        "stage_id": "verify",
+        "stage_label": "verify",
+        "timing": {
+          "wall_time_ms": 153,
+          "inference_time_ms": 0,
+          "tool_time_ms": 147,
+          "active_time_ms": 147
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "verify_gate",
+        "stage_label": "verify_gate",
+        "timing": {
+          "wall_time_ms": 0,
+          "inference_time_ms": 0,
+          "tool_time_ms": 0,
+          "active_time_ms": 0
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "tester",
+        "stage_label": "tester",
+        "timing": {
+          "wall_time_ms": 100567,
+          "inference_time_ms": 99159,
+          "tool_time_ms": 1377,
+          "active_time_ms": 100536
+        },
+        "billing_usd_micros": 945628,
+        "retries": 0
+      },
+      {
+        "stage_id": "run_tests",
+        "stage_label": "run_tests",
+        "timing": {
+          "wall_time_ms": 158,
+          "inference_time_ms": 0,
+          "tool_time_ms": 153,
+          "active_time_ms": 153
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "test_gate",
+        "stage_label": "test_gate",
+        "timing": {
+          "wall_time_ms": 0,
+          "inference_time_ms": 0,
+          "tool_time_ms": 0,
+          "active_time_ms": 0
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "run_e2e",
+        "stage_label": "run_e2e",
+        "timing": {
+          "wall_time_ms": 156,
+          "inference_time_ms": 0,
+          "tool_time_ms": 150,
+          "active_time_ms": 150
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "e2e_gate",
+        "stage_label": "e2e_gate",
+        "timing": {
+          "wall_time_ms": 0,
+          "inference_time_ms": 0,
+          "tool_time_ms": 0,
+          "active_time_ms": 0
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "screenshot",
+        "stage_label": "screenshot",
+        "timing": {
+          "wall_time_ms": 36392,
+          "inference_time_ms": 35892,
+          "tool_time_ms": 453,
+          "active_time_ms": 36345
+        },
+        "billing_usd_micros": 438377,
+        "retries": 0
+      },
+      {
+        "stage_id": "Retro",
+        "stage_label": "Retro",
+        "timing": {
+          "wall_time_ms": 71594,
+          "inference_time_ms": 40221,
+          "tool_time_ms": 610,
+          "active_time_ms": 40831
+        },
+        "billing_usd_micros": 127794,
+        "retries": 0
+      }
+    ],
+    "billing": {
+      "input_tokens": 1223194,
+      "output_tokens": 106592,
+      "total_tokens": 34597410,
+      "reasoning_tokens": 42559,
+      "cache_read_tokens": 33079468,
+      "cache_write_tokens": 145597,
+      "total_usd_micros": 8612269
+    },
+    "total_retries": 0,
+    "diff": {}
+  },
   "sandbox": {
     "kind": "ready",
     "plan": {
@@ -8408,7 +8662,12 @@
       "first_event_seq": 1804,
       "prompt": null,
       "response": null,
-      "completion": null,
+      "completion": {
+        "outcome": "succeeded",
+        "notes": "Stage completed: Retro",
+        "failure_reason": null,
+        "timestamp": "2026-07-01T10:59:51.052560Z"
+      },
       "provider_used": {
         "mode": "agent",
         "provider": "openai",
@@ -8422,6 +8681,12 @@
       "output": null,
       "started_at": "2026-07-01T10:58:39.387236Z",
       "handler": "agent",
+      "timing": {
+        "wall_time_ms": 71594,
+        "inference_time_ms": 40221,
+        "tool_time_ms": 610,
+        "active_time_ms": 40831
+      },
       "usage": {
         "input_tokens": 21198,
         "output_tokens": 2498,
@@ -8638,7 +8903,41 @@
         ],
         "warnings": []
       },
-      "state": "running"
+      "state": "succeeded"
+    },
+    "exit@1": {
+      "first_event_seq": 1877,
+      "prompt": null,
+      "response": null,
+      "completion": {
+        "outcome": "succeeded",
+        "notes": null,
+        "failure_reason": null,
+        "timestamp": "2026-07-01T10:59:54.669711Z"
+      },
+      "provider_used": null,
+      "diff": null,
+      "script_invocation": null,
+      "script_timing": null,
+      "parallel_results": null,
+      "output": null,
+      "started_at": "2026-07-01T10:59:54.669695Z",
+      "handler": "exit",
+      "timing": {
+        "wall_time_ms": 0,
+        "inference_time_ms": 0,
+        "tool_time_ms": 0,
+        "active_time_ms": 0
+      },
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "reasoning_tokens": 0,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0
+      },
+      "state": "succeeded"
     },
     "scope@1": {
       "first_event_seq": 21,
