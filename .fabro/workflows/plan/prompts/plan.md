@@ -27,7 +27,10 @@ touch a dependency-rule boundary or an invariant as a risk.
 
 ## Mandatory spot-checks (before writing PLAN.md)
 
-Run these **once** — do not exploratory re-discover what assess already found:
+Run these **once** — do not exploratory re-discover what assess already found.
+**Use `grep`, not `rg`** (ripgrep isn't installed on this stage); for literal
+strings with regex chars use `grep -rnF`. Keep patterns simple to avoid failed
+tool calls:
 
 1. `index.ts` — does `src/domains/{{ inputs.module }}/index.ts` exist? Read it; note
    what it exports (barrel leak vs missing).

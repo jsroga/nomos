@@ -19,6 +19,10 @@ You do **not** write the full `PLAN.md`. You do **not** implement anything.
 2. The Scope stage output in context (module tree, git status).
 3. **Run context** — check `human.gate.Clarify.*` and `human.gate.Clarify.answer`.
 
+**Read before write.** `CLARIFY.md`, `DECISIONS.md`, and `PLAN.md` usually already
+exist (prior runs / this repo). Fabro blocks `write_file` on an unread existing file,
+so read each one before you overwrite it — otherwise the write fails and wastes a turn.
+
 ## If Clarify was already answered (re-run / plan retry loop)
 
 If `human.gate.Clarify.answer` or `human.gate.Clarify.label` is already set in run

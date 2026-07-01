@@ -68,11 +68,29 @@ change traceable to a plan item. Mark each done as you finish it; keep exactly o
 
 - **Import scanning:** use shell `grep -rn "from '@/domains/…'" src/` — do **not**
   spawn a subagent for grep-style searches. Reserve `spawn_agent` for work that can
-  run fully parallel with your implementation.
+  run fully parallel with your implementation. (`rg`/ripgrep is not installed —
+  use `grep`.)
 - **Read before write:** Fabro blocks `write_file` on unread existing files — read
   each file you will edit first.
-- Match existing code style. `npm run typecheck` and `npm run lint` must pass before
-  you finish (hooks run after you).
+- Match existing code style.
+
+## Self-verification (targeted — fast, no false failures)
+
+Full-repo `npm run typecheck` / `npm run lint` are **slow** and can fail on
+**pre-existing** errors in modules you never touched. For your own check, scope to
+what you changed; the `verify` stage runs the full gate afterward.
+
+1. **Typecheck:** `NODE_OPTIONS=--max-old-space-size=4096 npm run typecheck`
+   (whole-project — TS needs the full program; the heap flag avoids OOM). If it fails,
+   confirm the error is in a file **you** touched before fixing — don't chase
+   pre-existing errors in unrelated modules (note them for the plan instead).
+2. **Lint (changed files only):** `npx eslint $(git diff --name-only --diff-filter=ACMR HEAD | grep -E '\.(ts|tsx)$')`
+   — lint just your changes, not the whole repo.
+3. Re-read your diff; confirm only increment scope touched.
+4. Cross-check `PLAN.md` minimum increment — done or explicitly deferred with reason.
+
+`npm run typecheck` and `npm run lint` (full) must ultimately pass in the `verify`
+stage; keep your changes clean so they do.
 
 ## Rules
 
@@ -82,13 +100,6 @@ change traceable to a plan item. Mark each done as you finish it; keep exactly o
   Replace browser Supabase writes and `localStorage` job recovery with API + `useJob`.
 - No browser→Supabase writes; no server state in Zustand; no `any` at boundaries.
 - If the plan violates an invariant, stop and flag it — do not implement the violation.
-
-## Self-verification
-
-1. `npm run typecheck`
-2. `npm run lint`
-3. Re-read your diff; confirm only increment scope touched.
-4. Cross-check `PLAN.md` minimum increment — done or explicitly deferred with reason.
 
 ## Handoff
 

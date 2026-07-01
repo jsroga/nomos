@@ -20,6 +20,13 @@ you do **not** modify code.
 - Read **only** what you need to judge alignment: the module's `index.ts` (if any),
   its top-level folders, and a *small* representative sample (2-4 files) per concern
   below. Skim, don't deep-read every file.
+- **Search with `grep`, not `rg`.** `ripgrep` is NOT installed on this stage
+  (it runs before Bootstrap). Use `grep -rn "text" src/domains/<module>`; for literal
+  strings that contain regex chars (`.`, `(`, `'`, `@`, `/`) use `grep -rnF`. Keep
+  patterns simple — a bad regex wastes a whole tool call.
+- **Read before write.** `findings/assess.md` may already exist from a prior run;
+  Fabro blocks `write_file` on an unread existing file. Read it first (or just
+  overwrite after reading) — don't burn a turn on a blocked write.
 - Judge against the **target** state, but be fair: modules are mid-migration, so
   distinguish "not yet migrated" from "actively moving the wrong way".
 - Do not modify code. Do not run builds or tests.

@@ -129,6 +129,21 @@ provider ignores `image.dockerfile`, so the image must ship git itself.
 For **preview**, use `[environments.plan-daytona]` (`--environment plan-daytona`) —
 Daytona is the only provider that serves preview URLs.
 
+## Build performance / optimizations
+
+| Lever | Where | Effect |
+| --- | --- | --- |
+| Node heap `--max-old-space-size=4096` + 6GB/4cpu | `[environments.plan-docker].env`/`.resources` + `verify` script | stops `tsc` OOM (~2GB default heap) |
+| `npm ci --prefer-offline --no-audit --no-fund` | Bootstrap script | skips audit/funding network calls |
+| Targeted lint (`eslint` on `git diff` files) | developer self-check in `implement.md` | avoids false failures from pre-existing errors in untouched modules; full lint still runs in `verify` |
+| `grep`, not `rg` | assess/plan prompts | ripgrep isn't installed pre-Bootstrap |
+| Read-before-write reminder | assess/clarify-prep prompts | avoids blocked `write_file` on pre-existing `.md` files |
+
+**Not yet done — npm cache volume.** `npm ci` re-downloads deps each build run. A
+persistent npm cache (Docker volume mounted at `/root/.npmcache` with
+`npm_config_cache`) or a pre-baked image with `node_modules` would save ~2 min/run,
+but the Docker provider here uses a clean clone with no volume mount configured.
+
 ## Local sandbox vs Files Changed
 
 **Local** provider runs in your working tree. **Files Changed** shows git checkpoints from the run; untracked files (`?? PLAN.md`) may show as **0 files changed**. Open artifacts from disk or the stage Thread view. For diff UI, use **Docker** or **Daytona** sandbox.
