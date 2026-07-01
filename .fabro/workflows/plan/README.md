@@ -76,12 +76,33 @@ fabro sandbox preview <run-id> 3000 --open     # or the Preview button in the we
 | `UX.md` | UX Designer (build path only) |
 | `screenshots/**`, `SCREENSHOTS.md` | UI Screenshot (build path only) |
 | `RETRO.md` | Retro |
-## Developer skills
+## Developer skills ([skills](https://docs.fabro.sh/agents/skills))
 
-Skills in `.fabro/skills/` are auto-discovered. The **Implement** stage has
-`permissions="full"` and its prompt instructs the agent to call `use_skill` for
-`refactor`, `write-tests`, `services-audit`, `trigger-dev`, etc. You should see
-skill activations in the stage's **skills** projection in the Fabro UI.
+The 16 skills live in `.fabro/skills/*/SKILL.md` (valid YAML frontmatter) and the
+**Implement** stage has `permissions="full"` + a `use_skill` table in its prompt.
+
+**Gotcha for sandboxed runs (why you saw `skills 0/0`):** Fabro runs skill
+**discovery on the local server**, not inside the sandbox. It searches, in order:
+
+```
+~/.fabro/skills            → resolves to the Mac home (LOCAL)
+{git_root}/.fabro/skills   → resolves to the SANDBOX path /workspace/<repo>/.fabro/skills
+{git_root}/skills
+```
+
+For a Docker/Daytona run the `{git_root}` path is a **container** path that doesn't
+exist on the Mac, so the committed project skills are never found — discovery returns
+`[]` and the agent shows `0/0`. The only reliably-scanned dir is the **global** one.
+
+**Fix (local, one-time):** symlink the global dir at the repo skills so they're always
+discovered:
+
+```bash
+ln -s "$PWD/.fabro/skills" ~/.fabro/skills   # run once from the repo root
+```
+
+`agent.skills.discovered` in the run events should then list all 16 skills. This
+symlink is machine-local (not committed) — recreate it on a new machine.
 
 ## Build path routing
 

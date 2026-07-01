@@ -18,8 +18,10 @@ name = "codex"
 provider = "openai"
 fallbacks = ["anthropic", "openai"]
 
-# Agent defaults — skills auto-discover from .fabro/skills/; full permissions so
-# developer can run shell (grep, typecheck) and use_skill without prompts.
+# Agent defaults — skills load from the GLOBAL ~/.fabro/skills (Fabro runs skill
+# discovery on the local server, so the sandbox {git_root}/.fabro/skills path is not
+# found — symlink once: `ln -s "$PWD/.fabro/skills" ~/.fabro/skills`). full
+# permissions so developer can run shell (grep, typecheck) and use_skill w/o prompts.
 [run.agent]
 permissions = "full"
 
