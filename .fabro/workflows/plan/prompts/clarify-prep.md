@@ -25,9 +25,15 @@ so read each one before you overwrite it — otherwise the write fails and waste
 
 ## If Clarify was already answered (re-run / plan retry loop)
 
-If `human.gate.Clarify.answer` or `human.gate.Clarify.label` is already set in run
-context, **do not** reset `DECISIONS.md` to "pending" and **do not** re-present
-open questions. Instead:
+Skip re-prompting **only** when Fabro run context already has `human.gate.Clarify.answer`
+or `human.gate.Clarify.label` set (plan retry / checkpoint resume).
+
+**Never** skip because `DECISIONS.md` or `CLARIFY.md` on disk say "resolved" — those files
+may be **stale artifacts from a prior module or run** (they must not be committed; this
+run overwrites them). If the files mention a different module than `{{ goal }}`, ignore
+them entirely and regenerate from `findings/assess.md`.
+
+If `human.gate.Clarify.answer` or `human.gate.Clarify.label` **is** set in run context:
 
 - Write a one-line note to `CLARIFY.md`: "Clarify already resolved — see DECISIONS.md."
 - Skip the human gate brief in your final response; say "Clarify already answered:
@@ -38,8 +44,13 @@ This prevents plan `goal_gate` retries from wiping a resolved decision.
 
 ## What to look for
 
-Summarize the **biggest gaps** (max 5 bullets). The human picks **one** scope level
-(A/B/C/F/R) — not five separate questions.
+Target module is in the run goal (`src/domains/<name>/`). **Only** use
+`findings/assess.md` and Scope output for this run — not stale `CLARIFY.md` /
+`DECISIONS.md` text from another module.
+
+Summarize the **biggest gaps for this module** (max 5 bullets). The human picks
+**one** scope level (A/B/C) via the gate buttons. **Do not** invent a multi-question
+Q1–Q5 survey — one decision, three module-specific scope postures.
 
 ## Output files
 
@@ -92,19 +103,23 @@ Do **not** tell them to read `CLARIFY.md`. Put everything inline:
 ## Key gaps (max 5)
 - …
 
-## Pick one scope (most teams pick A, B, or C)
+## Pick one scope (buttons are A / B / C — meanings are module-specific below)
 
-| Option | What the plan will assume |
+The Fabro dock shows generic **[A] [B] [C]** buttons. Your table defines what each
+means **for this module** (from assess findings — not a generic migration template):
+
+| Button | What the plan will assume for **this** module |
 | --- | --- |
-| **[A] Staged migration** | <module-specific> |
-| **[B] Minimal first step** | <module-specific> |
-| **[C] Full blueprint** | <module-specific> |
+| **[A]** | <staged posture — cite actual gaps: files, layers, risks> |
+| **[B]** | <minimal first step — cite what is in vs deferred for this module> |
+| **[C]** | <full blueprint — cite end-state reshape for this module> |
 
-**Advanced:** [F] type custom constraints in freeform · [R] re-assess only if findings are wrong
+**Advanced:** type custom constraints in freeform (routes to [F]) · pick [R] only if
+assess findings are wrong
 
-**Recommendation: [A/B/C]** — <one sentence why>
+**Recommendation: [A/B/C]** — <one sentence tied to this module's P0/P1 findings>
 
-The buttons below match this table.
+The [A]/[B]/[C] buttons match this table, not the other way around.
 ```
 
 Tailor every row to **this** module. Then stop.

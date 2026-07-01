@@ -23,9 +23,11 @@ Each `hexagon` gate infers `multiple_choice` from its edge labels; the `[K] Labe
 prefixes are the keyboard accelerators. Edges with `freeform=true` add a free-text
 fallback (routed to `human.gate.text`).
 
-1. **Clarify** (before Plan): Clarify Prep's final response has the full decision
-   table. Buttons: `[A]` staged · `[B]` minimal first step · `[C]` full blueprint
-   · `[F]` custom (freeform) · `[R]` re-assess
+1. **Clarify** (before Plan): Clarify Prep's final response has the **module-specific**
+   scope table (from `findings/assess.md`). Dock buttons are generic **[A] Staged** ·
+   **[B] Minimal** · **[C] Full** · **[F]** custom · **[R]** re-assess — the prep
+   summary defines what A/B/C mean for **this** module. Do not commit `CLARIFY.md` /
+   `DECISIONS.md` (stale files poison Docker clones).
 2. **Verification** (after Plan): `[B]` approve & build · `[P]` plan only ·
    `[I]` iterate (freeform) · `[X]` abort
 3. **Preview** (build path, UI increments only): `[A]` looks good · `[R]` revise

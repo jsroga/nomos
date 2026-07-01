@@ -49,7 +49,7 @@ digraph Plan {
 
     Clarify [
         shape=hexagon
-        label="How much should the cleanup plan take on?"
+        label="Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)"
         question_type="multiple_choice"
         timeout="86400s"
         human.default_choice="plan"
@@ -187,12 +187,12 @@ digraph Plan {
     scope -> assess [fidelity="compact"]
     assess -> clarify_prep -> Clarify
 
-    // Primary choices first (dock order); advanced last
-    Clarify -> plan [label="[A] Staged migration — boundaries first, bigger moves sequenced"]
-    Clarify -> plan [label="[B] Minimal first step — public API and import boundaries only"]
-    Clarify -> plan [label="[C] Full blueprint — comprehensive end-state migration plan"]
-    Clarify -> plan [label="[F] Custom scope rules", freeform=true]
-    Clarify -> assess [label="[R] Re-assess — findings are wrong or stale"]
+    // A/B/C are accelerators only — module-specific meanings come from clarify_prep dock.
+    Clarify -> plan [label="[A] Staged migration"]
+    Clarify -> plan [label="[B] Minimal first step"]
+    Clarify -> plan [label="[C] Full blueprint"]
+    Clarify -> plan [label="[F] Custom scope", freeform=true]
+    Clarify -> assess [label="[R] Re-assess"]
     // Fail closed (Interviews/HITL): Interrupted/Skipped never approve; give the
     // unanswered path an explicit terminal route instead of a silent stuck state.
     Clarify -> exit [label="Unanswered — abort", condition="outcome=failed"]
