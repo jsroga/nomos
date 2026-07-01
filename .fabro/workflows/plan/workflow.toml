@@ -35,8 +35,8 @@ provider = "local"
 provider = "docker"
 
 [environments.plan-docker.image]
-# Docker provider ignores dockerfile — only `docker` is used (preflight confirms).
-docker = "node:22-bookworm-slim"
+# Slim image lacks git (Fabro requires git for clone). Full bookworm has git + node + npm.
+docker = "node:22-bookworm"
 
 # Playwright MCP is NOT configured at run level — it starts before bootstrap and
 # burns ~30s per plan-path stage (npx missing). Screenshot stage uses Playwright
