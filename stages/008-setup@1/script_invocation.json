@@ -1,0 +1,5 @@
+{
+  "script": "set -euo pipefail; echo '=== sandbox bootstrap ==='; npm ci; npm run test:playwright:install; echo '=== bootstrap complete ==='",
+  "command": "exec 2>&1\nset -euo pipefail; echo '=== sandbox bootstrap ==='; npm ci; npm run test:playwright:install; echo '=== bootstrap complete ==='",
+  "language": "shell"
+}
