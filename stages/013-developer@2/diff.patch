@@ -1,0 +1,470 @@
+diff --git a/src/app/api/interior-designer/material/[taskId]/route.ts b/src/app/api/interior-designer/material/[taskId]/route.ts
+index 7c15b52..b5d44e4 100644
+--- a/src/app/api/interior-designer/material/[taskId]/route.ts
++++ b/src/app/api/interior-designer/material/[taskId]/route.ts
+@@ -1,11 +1,12 @@
+ import { runs } from '@trigger.dev/sdk/v3'
+ import { NextRequest, NextResponse } from 'next/server'
++import { interiorDesignerJobStatusSchema } from '@/domains/interior-designer/io/interior-designer.dto'
+ import { requireAuth } from '@/lib/auth'
+ import { getErrorMessage } from '@/lib/error-utils'
+ 
+ export const dynamic = 'force-dynamic'
+ 
+-export async function GET(req: NextRequest, { params }: { params: Promise<{ taskId: string }> }) {
++export async function GET(_req: NextRequest, { params }: { params: Promise<{ taskId: string }> }) {
+   try {
+     const { session } = await requireAuth()
+     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+@@ -18,12 +19,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ task
+ 
+     const run = await runs.retrieve(taskId)
+ 
+-    return NextResponse.json({
++    return NextResponse.json(interiorDesignerJobStatusSchema.parse({
+       status: run.status,
+       output: run.output,
+       error: run.error,
+       metadata: run.metadata,
+-    })
++    }))
+   } catch (error: unknown) {
+     console.error('Failed to get surface-material run status:', error)
+     return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
+diff --git a/src/app/api/interior-designer/material/route.ts b/src/app/api/interior-designer/material/route.ts
+index 4b4fecf..b14f5e5 100644
+--- a/src/app/api/interior-designer/material/route.ts
++++ b/src/app/api/interior-designer/material/route.ts
+@@ -1,5 +1,9 @@
+ import { tasks } from '@trigger.dev/sdk/v3'
+ import { NextRequest, NextResponse } from 'next/server'
++import {
++  surfaceMaterialRequestSchema,
++  surfaceMaterialStartResponseSchema,
++} from '@/domains/interior-designer/io/interior-designer.dto'
+ import type { surfaceMaterialTask } from '@/trigger/surface-material'
+ import {
+   withAuth,
+@@ -11,17 +15,14 @@ import {
+ export const dynamic = 'force-dynamic'
+ 
+ export const POST = withRateLimit(
+-  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
+-    const body = await request.json()
+-    const { projectId, surfaceId, prompt, apiKey, artStyle, surfaceBounds } = body
+-
+-    if (!projectId || !surfaceId || !prompt) {
+-      return NextResponse.json(
+-        { error: 'Missing required fields: projectId, surfaceId, and prompt' },
+-        { status: 400 }
+-      )
++  withAuth<Record<string, unknown>>(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
++    const parsedBody = surfaceMaterialRequestSchema.safeParse(await request.json())
++    if (!parsedBody.success) {
++      return NextResponse.json({ error: 'Invalid surface material payload' }, { status: 400 })
+     }
+ 
++    const { projectId, surfaceId, prompt, apiKey, artStyle, surfaceBounds } = parsedBody.data
++
+     // Verify project access via RLS
+     const hasAccess = await verifyProjectAccess(supabase, projectId)
+     if (!hasAccess) {
+@@ -46,11 +47,11 @@ export const POST = withRateLimit(
+       { ttl: '1h' }
+     )
+ 
+-    return NextResponse.json({
++    return NextResponse.json(surfaceMaterialStartResponseSchema.parse({
+       success: true,
+       runId: handle.id,
+       publicAccessToken: handle.publicAccessToken,
+-    })
++    }))
+   }),
+   { maxRequests: 10, windowMs: 60000 }
+ )
+diff --git a/src/app/api/interior-designer/retexture/[runId]/route.ts b/src/app/api/interior-designer/retexture/[runId]/route.ts
+index e85f971..3f44ca9 100644
+--- a/src/app/api/interior-designer/retexture/[runId]/route.ts
++++ b/src/app/api/interior-designer/retexture/[runId]/route.ts
+@@ -1,9 +1,10 @@
+ import { runs } from '@trigger.dev/sdk/v3'
+ import { NextRequest, NextResponse } from 'next/server'
++import { interiorDesignerJobStatusSchema } from '@/domains/interior-designer/io/interior-designer.dto'
+ import { requireAuth } from '@/lib/auth'
+ import { getErrorMessage } from '@/lib/error-utils'
+ 
+-export async function GET(req: NextRequest, { params }: { params: Promise<{ runId: string }> }) {
++export async function GET(_req: NextRequest, { params }: { params: Promise<{ runId: string }> }) {
+   try {
+     const { session } = await requireAuth()
+     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+@@ -16,11 +17,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ runI
+ 
+     const run = await runs.retrieve(runId)
+ 
+-    return NextResponse.json({
++    return NextResponse.json(interiorDesignerJobStatusSchema.parse({
+       status: run.status,
+       output: run.output,
+       error: run.error,
+-    })
++      metadata: run.metadata,
++    }))
+   } catch (error: unknown) {
+     console.error('Failed to get run status:', error)
+     return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
+diff --git a/src/app/api/interior-designer/retexture/route.ts b/src/app/api/interior-designer/retexture/route.ts
+index c320447..78e5651 100644
+--- a/src/app/api/interior-designer/retexture/route.ts
++++ b/src/app/api/interior-designer/retexture/route.ts
+@@ -1,6 +1,10 @@
+ import { retextureModelTask } from '@/trigger/retexture-model'
+ import { tasks } from '@trigger.dev/sdk/v3'
+ import { NextRequest, NextResponse } from 'next/server'
++import {
++  retextureRequestSchema,
++  retextureStartResponseSchema,
++} from '@/domains/interior-designer/io/interior-designer.dto'
+ import {
+   withAuth,
+   withRateLimit,
+@@ -9,13 +13,14 @@ import {
+ } from '@/lib/api-utils'
+ 
+ export const POST = withRateLimit(
+-  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
+-    const { modelUrlOrBase64, prompt, assetId, projectId, apiKey } = await request.json()
+-
+-    if (!modelUrlOrBase64 || !prompt || !projectId) {
+-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
++  withAuth<Record<string, unknown>>(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
++    const parsedBody = retextureRequestSchema.safeParse(await request.json())
++    if (!parsedBody.success) {
++      return NextResponse.json({ error: 'Invalid retexture payload' }, { status: 400 })
+     }
+ 
++    const { modelUrlOrBase64, prompt, assetId, projectId, apiKey } = parsedBody.data
++
+     // Verify project access via RLS
+     if (projectId !== 'default') {
+       const hasAccess = await verifyProjectAccess(supabase, projectId)
+@@ -33,7 +38,8 @@ export const POST = withRateLimit(
+         .eq('id', projectId)
+         .single()
+ 
+-      const styleReferenceUrls = (data?.style_reference_urls as string[]) || []
++      const projectRow = data as { style_reference_urls?: string[] | null } | null
++      const styleReferenceUrls = projectRow?.style_reference_urls ?? []
+ 
+       if (styleReferenceUrls.length > 0) {
+         // Validate first URL is accessible
+@@ -51,16 +57,21 @@ export const POST = withRateLimit(
+       }
+     }
+ 
++    const meshyApiKey = apiKey || process.env.MESHY_API_KEY
++    if (!meshyApiKey) {
++      return NextResponse.json({ error: 'Meshy API key not configured' }, { status: 400 })
++    }
++
+     const handle = await tasks.trigger<typeof retextureModelTask>('retexture-model', {
+       modelBase64: modelUrlOrBase64,
+       prompt,
+       assetId: assetId || 'temp-asset',
+       projectId,
+-      apiKey: apiKey || process.env.MESHY_API_KEY,
++      apiKey: meshyApiKey,
+       styleImageUrl,
+     })
+ 
+-    return NextResponse.json({ runId: handle.id })
++    return NextResponse.json(retextureStartResponseSchema.parse({ runId: handle.id }))
+   }),
+   { maxRequests: 5, windowMs: 60000 }
+ )
+diff --git a/src/app/api/interior-designer/text-to-3d/[taskId]/route.ts b/src/app/api/interior-designer/text-to-3d/[taskId]/route.ts
+index 61663b4..2036a28 100644
+--- a/src/app/api/interior-designer/text-to-3d/[taskId]/route.ts
++++ b/src/app/api/interior-designer/text-to-3d/[taskId]/route.ts
+@@ -1,11 +1,12 @@
+ import { runs } from '@trigger.dev/sdk/v3'
+ import { NextRequest, NextResponse } from 'next/server'
++import { interiorDesignerJobStatusSchema } from '@/domains/interior-designer/io/interior-designer.dto'
+ import { requireAuth } from '@/lib/auth'
+ import { getErrorMessage } from '@/lib/error-utils'
+ 
+ export const dynamic = 'force-dynamic'
+ 
+-export async function GET(req: NextRequest, { params }: { params: Promise<{ taskId: string }> }) {
++export async function GET(_req: NextRequest, { params }: { params: Promise<{ taskId: string }> }) {
+   try {
+     const { session } = await requireAuth()
+     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+@@ -18,12 +19,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ task
+ 
+     const run = await runs.retrieve(taskId)
+ 
+-    return NextResponse.json({
++    return NextResponse.json(interiorDesignerJobStatusSchema.parse({
+       status: run.status,
+       output: run.output,
+       error: run.error,
+       metadata: run.metadata,
+-    })
++    }))
+   } catch (error: unknown) {
+     console.error('Failed to get text-to-3d run status:', error)
+     return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
+diff --git a/src/app/api/interior-designer/text-to-3d/route.ts b/src/app/api/interior-designer/text-to-3d/route.ts
+index be03018..0e87136 100644
+--- a/src/app/api/interior-designer/text-to-3d/route.ts
++++ b/src/app/api/interior-designer/text-to-3d/route.ts
+@@ -1,5 +1,9 @@
+ import { tasks } from '@trigger.dev/sdk/v3'
+ import { NextRequest, NextResponse } from 'next/server'
++import {
++  textTo3DRequestSchema,
++  textTo3DStartResponseSchema,
++} from '@/domains/interior-designer/io/interior-designer.dto'
+ import type { textTo3DTask } from '@/trigger/text-to-3d'
+ import {
+   withAuth,
+@@ -11,17 +15,15 @@ import {
+ export const dynamic = 'force-dynamic'
+ 
+ export const POST = withRateLimit(
+-  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
+-    const body = await request.json()
+-    const { projectId, prompt, seed, apiKey, artStyle, enablePbr, targetPolycount, topology } = body
+-
+-    if (!projectId || !prompt) {
+-      return NextResponse.json(
+-        { error: 'Missing required fields: projectId and prompt' },
+-        { status: 400 }
+-      )
++  withAuth<Record<string, unknown>>(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
++    const parsedBody = textTo3DRequestSchema.safeParse(await request.json())
++    if (!parsedBody.success) {
++      return NextResponse.json({ error: 'Invalid text-to-3d payload' }, { status: 400 })
+     }
+ 
++    const { projectId, prompt, seed, apiKey, artStyle, enablePbr, targetPolycount, topology } =
++      parsedBody.data
++
+     // Verify project access
+     const hasAccess = await verifyProjectAccess(supabase, projectId)
+     if (!hasAccess) {
+@@ -48,11 +50,11 @@ export const POST = withRateLimit(
+       { ttl: '1h' }
+     )
+ 
+-    return NextResponse.json({
++    return NextResponse.json(textTo3DStartResponseSchema.parse({
+       success: true,
+       runId: handle.id,
+       publicAccessToken: handle.publicAccessToken,
+-    })
++    }))
+   }),
+   { maxRequests: 5, windowMs: 60000 }
+ )
+diff --git a/src/app/api/interior-designer/texture/route.ts b/src/app/api/interior-designer/texture/route.ts
+index 02ed800..2ff6298 100644
+--- a/src/app/api/interior-designer/texture/route.ts
++++ b/src/app/api/interior-designer/texture/route.ts
+@@ -1,16 +1,20 @@
+ import { NextRequest, NextResponse } from 'next/server'
+ import { textureService } from '@/domains/interior-designer/ai/TextureService'
+-import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/lib/api-utils'
++import {
++  textureGenerationRequestSchema,
++  textureGenerationResponseSchema,
++} from '@/domains/interior-designer/io/interior-designer.dto'
++import { withAuth, withRateLimit } from '@/lib/api-utils'
+ 
+ export const POST = withRateLimit(
+-  withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
+-    const body = await request.json()
+-    const { prompt, apiKey, style, useSemanticSearch, width, height } = body
+-
+-    if (!prompt) {
+-      return NextResponse.json({ error: 'Prompt is required' }, { status: 400 })
++  withAuth<Record<string, unknown>>(async (request: NextRequest) => {
++    const parsedBody = textureGenerationRequestSchema.safeParse(await request.json())
++    if (!parsedBody.success) {
++      return NextResponse.json({ error: 'Invalid texture generation payload' }, { status: 400 })
+     }
+ 
++    const { prompt, apiKey, style, useSemanticSearch, width, height } = parsedBody.data
++
+     if (!apiKey) {
+       return NextResponse.json({ error: 'API Key is required' }, { status: 401 })
+     }
+@@ -24,7 +28,7 @@ export const POST = withRateLimit(
+       dims
+     )
+ 
+-    return NextResponse.json({ imageUrl })
++    return NextResponse.json(textureGenerationResponseSchema.parse({ imageUrl }))
+   }),
+   { maxRequests: 20, windowMs: 60000 }
+ )
+diff --git a/src/domains/interior-designer/io/interior-designer.dto.ts b/src/domains/interior-designer/io/interior-designer.dto.ts
+index dc7a320..f85e70e 100644
+--- a/src/domains/interior-designer/io/interior-designer.dto.ts
++++ b/src/domains/interior-designer/io/interior-designer.dto.ts
+@@ -27,6 +27,8 @@ const textureStyleSchema = z.enum([
+   'metallic',
+   'organic',
+ ])
++const meshyArtStyleSchema = z.enum(['realistic', 'sculpture'])
++const meshyTopologySchema = z.enum(['triangle', 'quad'])
+ 
+ const surfaceBoundsSchema = z.object({
+   width: z.number(),
+@@ -172,7 +174,7 @@ export const surfaceMaterialRequestSchema = z.object({
+   surfaceId: idSchema,
+   prompt: z.string().min(1),
+   apiKey: z.string().min(1).optional(),
+-  artStyle: z.string().min(1).optional(),
++  artStyle: meshyArtStyleSchema.optional(),
+   surfaceBounds: surfaceBoundsSchema,
+ })
+ 
+@@ -199,10 +201,10 @@ export const textTo3DRequestSchema = z.object({
+   prompt: z.string().min(1),
+   seed: z.number().int().optional(),
+   apiKey: z.string().min(1).optional(),
+-  artStyle: z.string().min(1).optional(),
++  artStyle: meshyArtStyleSchema.optional(),
+   enablePbr: z.boolean().optional(),
+   targetPolycount: z.number().int().positive().optional(),
+-  topology: z.string().min(1).optional(),
++  topology: meshyTopologySchema.optional(),
+ })
+ 
+ export const textTo3DStartResponseSchema = z.object({
+diff --git a/src/infrastructure/storage/supabase.ts b/src/infrastructure/storage/supabase.ts
+index d7f8981..c9f9b94 100644
+--- a/src/infrastructure/storage/supabase.ts
++++ b/src/infrastructure/storage/supabase.ts
+@@ -14,6 +14,6 @@ function getClient(): SupabaseClient {
+ /** Lazy-initialized so Trigger.dev indexer can import task files without Supabase env at build time. */
+ export const supabase = new Proxy({} as SupabaseClient, {
+   get(_, prop) {
+-    return (getClient() as Record<string | symbol, unknown>)[prop]
++    return Reflect.get(getClient() as object, prop)
+   },
+ })
+diff --git a/src/lib/api-utils.ts b/src/lib/api-utils.ts
+index a50c46e..0b0b685 100644
+--- a/src/lib/api-utils.ts
++++ b/src/lib/api-utils.ts
+@@ -26,7 +26,7 @@ export interface AuthenticatedRequest {
+   supabase: ReturnType<typeof createRouteHandlerClient>
+ }
+ 
+-export type ApiHandler<T = any> = (
++export type ApiHandler<T = unknown> = (
+   request: NextRequest,
+   auth: AuthenticatedRequest,
+   context?: { params: Record<string, string> }
+@@ -57,7 +57,7 @@ export async function requireAuth() {
+  *   return NextResponse.json({ userId: session.user.id })
+  * })
+  */
+-export function withAuth<T = any>(handler: ApiHandler<T>) {
++export function withAuth<T = unknown>(handler: ApiHandler<T>) {
+   return async (request: NextRequest, context?: { params: Record<string, string> }) => {
+     const { session, supabase, error } = await getUserSession()
+ 
+@@ -135,13 +135,16 @@ export function checkRateLimit(
+ /**
+  * Rate limiting wrapper for API routes
+  */
+-export function withRateLimit<T = any>(
+-  handler: ApiHandler<T> | ((request: NextRequest, context?: any) => Promise<NextResponse<T>>),
++export function withRateLimit<T = unknown>(
++  handler: (request: NextRequest, context?: unknown) => Promise<NextResponse<T>>,
+   config: RateLimitConfig & { getKey?: (request: NextRequest) => string } = {}
+ ) {
+-  return async (request: NextRequest, context?: any) => {
++  return async (request: NextRequest, context?: unknown) => {
+     const {
+-      getKey = req => req.ip || req.headers.get('x-forwarded-for') || 'anonymous',
++      getKey = req => {
++        const forwardedFor = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
++        return forwardedFor || req.headers.get('x-real-ip') || 'anonymous'
++      },
+       ...rateLimitConfig
+     } = config
+     const key = getKey(request)
+@@ -175,12 +178,6 @@ export function withRateLimit<T = any>(
+ // CSRF PROTECTION
+ // ============================================
+ 
+-const ALLOWED_ORIGINS = [
+-  process.env.NEXT_PUBLIC_APP_URL,
+-  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+-  'http://localhost:3000',
+-  'http://localhost:3001',
+-].filter(Boolean) as string[]
+ // ============================================
+ // PROJECT ACCESS VERIFICATION
+ // ============================================
+@@ -197,4 +194,3 @@ export async function verifyProjectAccess(
+ 
+   return !error && !!data
+ }
+-
+diff --git a/src/lib/supabase-admin.ts b/src/lib/supabase-admin.ts
+index 9d8285b..f51954b 100644
+--- a/src/lib/supabase-admin.ts
++++ b/src/lib/supabase-admin.ts
+@@ -19,6 +19,6 @@ function getClient(): SupabaseClient {
+ /** Lazy-initialized so Trigger.dev indexer can import task files without Supabase env at build time. */
+ export const supabaseAdmin = new Proxy({} as SupabaseClient, {
+   get(_, prop) {
+-    return (getClient() as Record<string | symbol, unknown>)[prop]
++    return Reflect.get(getClient() as object, prop)
+   },
+ })
+diff --git a/tsconfig.changed.F4zwLx.json b/tsconfig.changed.F4zwLx.json
+new file mode 100644
+index 0000000..dc55a5f
+--- /dev/null
++++ b/tsconfig.changed.F4zwLx.json
+@@ -0,0 +1,13 @@
++{
++  "extends": "./tsconfig.json",
++  "compilerOptions": { "noEmit": true },
++  "files": [
++    "src/app/api/interior-designer/material/[taskId]/route.ts",
++    "src/app/api/interior-designer/material/route.ts",
++    "src/app/api/interior-designer/retexture/[runId]/route.ts",
++    "src/app/api/interior-designer/retexture/route.ts",
++    "src/app/api/interior-designer/text-to-3d/[taskId]/route.ts",
++    "src/app/api/interior-designer/text-to-3d/route.ts",
++    "src/app/api/interior-designer/texture/route.ts"
++  ]
++}
+diff --git a/tsconfig.changed.bDQgju.json b/tsconfig.changed.bDQgju.json
+new file mode 100644
+index 0000000..dc55a5f
+--- /dev/null
++++ b/tsconfig.changed.bDQgju.json
+@@ -0,0 +1,13 @@
++{
++  "extends": "./tsconfig.json",
++  "compilerOptions": { "noEmit": true },
++  "files": [
++    "src/app/api/interior-designer/material/[taskId]/route.ts",
++    "src/app/api/interior-designer/material/route.ts",
++    "src/app/api/interior-designer/retexture/[runId]/route.ts",
++    "src/app/api/interior-designer/retexture/route.ts",
++    "src/app/api/interior-designer/text-to-3d/[taskId]/route.ts",
++    "src/app/api/interior-designer/text-to-3d/route.ts",
++    "src/app/api/interior-designer/texture/route.ts"
++  ]
++}
