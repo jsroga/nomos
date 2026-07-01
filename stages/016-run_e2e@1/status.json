@@ -1,0 +1,6 @@
+{
+  "outcome": "failed",
+  "notes": null,
+  "failure_reason": "Script failed with exit code: 127\n\n## output\n/bin/bash: line 2: npm: command not found\n",
+  "timestamp": "2026-07-01T10:57:52.519391Z"
+}
