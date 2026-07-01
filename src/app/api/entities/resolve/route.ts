@@ -16,11 +16,15 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { entityRegistry, getEntityTypeFromId } from '@/domains/storyteller/services/EntityRegistryService'
-import { relationshipEnricher } from '@/domains/storyteller/services/RelationshipEnricherService'
-import { contextualSummaryService } from '@/domains/storyteller/services/ContextualSummaryService'
+import {
+  contextualSummaryService,
+  entityRegistry,
+  getEntityTypeFromId,
+  projects,
+  characters,
+  relationshipEnricher,
+} from '@/domains/storyteller'
 import { db } from '@/lib/db'
-import { projects, characters } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'
 
 /**
@@ -288,7 +292,7 @@ export async function GET(request: NextRequest) {
   try {
     // Security: Require authentication
     const { requireAuth } = await import('@/lib/auth')
-    const { verifyProjectAccess } = await import('@/domains/storyteller/lib/access-verification')
+    const { verifyProjectAccess } = await import('@/domains/storyteller')
 
     const { session } = await requireAuth()
     if (!session) {

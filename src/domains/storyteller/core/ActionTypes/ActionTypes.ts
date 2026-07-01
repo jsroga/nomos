@@ -7,7 +7,7 @@ import {
   InspirationItem,
   KeyCharacter,
   EpisodePremise,
-} from '@/domains/storyteller/prompts/schemas/agent-schemas'
+} from '@/domains/storyteller/core/StoryPlanTypes'
 import { QuestionType, QuestionUrgency, QuestionStatus, ActionStatus, ActionType } from '@/domains/storyteller/core/Enums'
 
 // Re-export ActionType for convenience
@@ -316,4 +316,3 @@ export interface QuestionSession {
   answeredAt?: Date
   createdAt: Date
 }
-

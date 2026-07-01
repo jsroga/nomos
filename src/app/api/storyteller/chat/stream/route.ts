@@ -1,14 +1,12 @@
-import { createStorytellerAgent } from '@/domains/storyteller/agents'
-import { normalizeMastraTraceId } from '@/domains/storyteller/core/WorkflowContext'
+import { createStorytellerAgent, normalizeMastraTraceId } from '@/domains/storyteller'
 import { EventEmitter } from 'node:events'
-import { BibleSection } from '@/domains/storyteller/core/Enums'
-import { assembleStorytellerContext } from '@/domains/storyteller/services/ContextAssemblyService'
+import { BibleSection, assembleStorytellerContext } from '@/domains/storyteller'
 import {
   mapToolResultToAction,
   detectLoadingSection,
   getActionDedupeKey,
   type DetectedSection,
-} from '@/domains/storyteller/config/tool-result-mapper'
+} from '@/domains/storyteller'
 
 // Node.js Runtime required for Mastra core dependencies
 export const runtime = 'nodejs'
@@ -39,7 +37,7 @@ export async function POST(req: Request) {
     // Security: Require authentication
     const { requireAuth } = await import('@/lib/auth')
     const { verifyProjectAccess, verifyEpisodeAccess } =
-      await import('@/domains/storyteller/lib/access-verification')
+      await import('@/domains/storyteller')
 
     const { session } = await requireAuth()
     if (!session) {
@@ -197,7 +195,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
     // Create EventBus for Workflow Visibility
     // EventEmitter imported at top level to avoid edge runtime issues
     const { workflowContext, WORKFLOW_EVENTS } =
-      await import('@/domains/storyteller/core/WorkflowContext')
+      await import('@/domains/storyteller')
     const eventBus = new EventEmitter()
     const activeSpans = new Map<string, ReturnType<NonNullable<typeof trace>['span']>>() // Track spans by step name
 
@@ -658,7 +656,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
                         if (projectId) {
                           try {
                             const { entityAutoLinker } =
-                              await import('@/domains/storyteller/services/EntityAutoLinkerService')
+                              await import('@/domains/storyteller')
 
                             // Auto-link text fields in the payload
                             for (const [key, value] of Object.entries(linkedPayload)) {
@@ -808,7 +806,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
           if (projectId && fullText.length > 0) {
             try {
               const { entityAutoLinker } =
-                await import('@/domains/storyteller/services/EntityAutoLinkerService')
+                await import('@/domains/storyteller')
               finalText = await entityAutoLinker.autoLink(fullText, projectId)
             } catch (err) {
               console.warn('[Stream] Entity auto-linking failed:', err)

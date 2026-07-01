@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { characters } from '@/domains/storyteller/db/schema'
+import { characters, verifyCharacterAccess, verifyProjectAccess } from '@/domains/storyteller'
 import { eq } from 'drizzle-orm'
 import fs from 'fs'
 import path from 'path'
 import { requireAuth } from '@/lib/auth'
-import {
-  verifyProjectAccess,
-  verifyCharacterAccess,
-} from '@/domains/storyteller/lib/access-verification'
 
 export async function POST(req: NextRequest) {
   try {

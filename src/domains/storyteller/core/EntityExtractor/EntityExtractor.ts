@@ -1,5 +1,5 @@
-import { StoryPlan } from '@/domains/storyteller/prompts/schemas/agent-schemas'
-import { EntityReference } from '@/domains/storyteller/components/ReferenceText'
+import { StoryPlan } from '@/domains/storyteller/core/StoryPlanTypes'
+import { EntityReference } from '@/domains/storyteller/core/EntityReferences'
 import { createRefId } from '@/domains/storyteller/core/ReferenceParser'
 
 /**
@@ -8,7 +8,8 @@ import { createRefId } from '@/domains/storyteller/core/ReferenceParser'
  */
 export function extractEntitiesFromPlan(
   plan: StoryPlan,
-  projectId: string
+  projectId: string,
+  now: () => Date = () => new Date()
 ): Map<string, EntityReference> {
   const map = new Map<string, EntityReference>()
 
@@ -42,8 +43,8 @@ export function extractEntitiesFromPlan(
       description: description || '',
       metadata,
       projectId,
-      createdAt: new Date(),
-      lastReferencedAt: new Date(),
+      createdAt: now(),
+      lastReferencedAt: now(),
     })
   }
 

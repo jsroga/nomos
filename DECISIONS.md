@@ -1,47 +1,30 @@
-# Decisions — Storyteller Module Alignment
+# Decisions log
 
-## Clarify gate
+## Clarify gate (resolved)
 
-- **Selected option:** [C] Full blueprint migration
-- **Label:** `[C] Full blueprint migration`
-- **Freeform text:** none provided
-- **Question:** Clarify [human gate] — read CLARIFY.md, pick a direction or type custom instructions.
+- **Selected option:** [A] Recommended defaults (per CLARIFY.md)
+- **Freeform text:** none
+- **Resolved at:** stage `Clarify` (human gate)
 
-### How this constrains scope and prioritization
+### What [A] means for this run
 
-The human chose the **most ambitious** of the offered directions: converge
-`src/domains/storyteller` **fully** onto the canonical blueprint in
-`docs/unified/ARCHITECTURE.md` §4, not merely stop the bleeding or stage behind a
-permanent compatibility barrel. Concretely:
+Produce a **prioritized, staged** cleanup plan rather than a one-pass reshape or a
+narrow first-increment-only slice. Concretely, the plan is constrained as follows:
 
-1. **The full mass-move is IN scope, not deferred.** Legacy folders
-   (`components/`, `hooks/`, `lib/`, `db/`, `mentions/`, `config/`, `tools/`) are
-   migrated into the target layout (`ui/`, `state/`, `io/`, `core/`, `services/`,
-   `agents/`, `tasks/`, `prompts/`, `storyteller.config.ts`) and the legacy folders
-   are deleted once empty. The previous plan's "Deferred: full mass-move" item is
-   promoted into the plan.
-2. **The `index.ts` barrel is the enforcement seam, not the end state.** It still
-   lands early (P1) so every subsequent move is lint-guarded, but the goal is the
-   final blueprint shape, so the barrel's public surface is trimmed to the intended
-   API — not a dumping ground that freezes the legacy layout.
-3. **AI-tool relocation is required**: `tools/` → `agents/tools/` (asset/AI-facing
-   Mastra tools), with server-only guards.
-4. **Cross-module `chat` deps must be resolved for real** (moved to `src/shared/*`
-   or exposed via the barrel), because a full migration cannot leave `chat` reaching
-   into internals.
-5. **Correctness P0s still go first** (duplicate Drizzle schema, browser privileged
-   Supabase auth) — a full migration is meaningless if it rebuilds on a data-integrity
-   hazard.
+| Clarify question | Chosen direction (Option A default) | Constraint on the plan |
+| --- | --- | --- |
+| Q1 — staged vs one-pass | Staged migration led by a new `index.ts` | Establish the public barrel first, then move internals behind it in prioritized slices. No big-bang folder rename. |
+| Q2 — UI behavior preservation | Preserve user-visible behavior where practical | Internal state/query rewiring and removal of undocumented implementation details is allowed; do not intentionally change editing/locking UX. |
+| Q3 — job orchestration scope | Include job alignment, but later priority | Sequence Trigger/`useJob` migration **after** module boundary + state-layer fixes. Create the structural seams (`tasks/`, server-only services, typed payloads) first. |
+| Q4 — DB/schema convergence | Dedicated workstream, sequenced later | Plan schema convergence to `src/db/schema.ts`, but after public API + layer-boundary cleanup. Adapter/re-export boundary acceptable as an interim. |
+| Q5 — Mastra consolidation | Consolidate where it reduces local complexity | Type the tool/workflow boundaries and remove obvious parallel primitives; do **not** require a full shared-kernel rewrite in this run. |
 
-### Explicitly still deferred (unchanged by [C])
+### Prioritization consequences
 
-- Building the whole `src/shared/agent-kernel` cross-module layer (repo-wide effort;
-  this plan introduces only the minimum shared surface storyteller needs).
-- Mastra Memory / Scorers / Processors migration beyond the concrete verified
-  violations (span tree, event bus, `z.any()` steps, `any` tool signatures).
-- "[C] Full blueprint" raises structural ambition for **this module**; it does not
-  authorize a repo-wide shared-layer build.
-
-## Verification gate
-
-Pending. No Verification iteration notes yet.
+1. **P0/P1 = boundary + state**: the public `index.ts`, stopping deep imports, and
+   moving server state to TanStack Query lead the plan.
+2. **Jobs, schema convergence, and Mastra-native consolidation are staged later**
+   (P2), planned but explicitly sequenced after boundary/state work.
+3. **Behavior preservation** is a standing constraint on every UI/state item.
+4. A **full blueprint reshape (Option C)** and a **boundary-only stop (Option B)**
+   are both out of scope: the plan stages the middle path.

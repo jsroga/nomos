@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { characters } from '@/domains/storyteller/db/schema'
+import { characters, verifyCharacterAccess, verifyProjectAccess } from '@/domains/storyteller'
 import { eq, desc, and, sql } from 'drizzle-orm'
 import { requireAuth } from '@/lib/auth'
-
-import {
-  verifyProjectAccess,
-  verifyCharacterAccess,
-} from '@/domains/storyteller/lib/access-verification'
 
 /**
  * @openapi

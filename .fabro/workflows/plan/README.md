@@ -71,3 +71,16 @@ Not used. This is a single linear pipeline for one module; child runs are for or
 ## Local sandbox vs Files Changed
 
 **Local** provider runs in your working tree. **Files Changed** shows git checkpoints from the run; untracked files (`?? PLAN.md`) may show as **0 files changed**. Open artifacts from disk or the stage Thread view. For diff UI, use **Docker** or **Daytona** sandbox.
+
+## Docker bootstrap (build path only)
+
+The Docker sandbox clones `origin/<branch>` with no `node_modules`. When you pick
+**[B] Approve & build**, the **Bootstrap** shell stage runs first:
+
+```bash
+npm ci && npm run test:playwright:install
+```
+
+That installs deps and Playwright browsers before UX → Implement → verify →
+unit/e2e hooks → screenshot. Commit and push your branch before starting a Docker
+run so the sandbox sees your latest code. Plan-only path (`[P]`) skips bootstrap.

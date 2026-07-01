@@ -7,9 +7,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getUndoManager } from '@/domains/storyteller/core/UndoManager'
+import { getUndoManager, verifyProjectAccess } from '@/domains/storyteller'
 import { requireAuth } from '@/lib/auth'
-import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30

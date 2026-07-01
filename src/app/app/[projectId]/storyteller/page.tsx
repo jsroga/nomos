@@ -5,51 +5,54 @@ import { cn } from '@/lib/utils'
 import { TOUR_STEP_IDS } from '@/lib/tour-constants'
 import { useSearchParams, useRouter, useParams, usePathname } from 'next/navigation'
 import { toast } from 'sonner'
-import { CorkBoard } from '@/domains/storyteller/components/CorkBoard'
-import { CharacterPanel } from '@/domains/storyteller/components/CharacterPanel'
-// Consolidated Chat & Storyteller Imports
-import { AgentAction, AgentQuestion } from '@/domains/storyteller/core/ActionTypes'
-import { ActionStatus } from '@/domains/storyteller/core/Enums'
 import {
+  type AgentAction,
+  type AgentQuestion,
+  ActionStatus,
   actionRequiresApproval,
+  CharacterPanel,
+  CorkBoard,
   getSectionForActionType,
-} from '@/domains/storyteller/config/action-config'
-import { QuestionSession } from '@/domains/storyteller/core/ActionTypes'
+  MentionsChatInterface,
+  MentionsProvider,
+  PhaseNavigatorCompact,
+  type QuestionSession,
+  STORYTELLER_AGENT_CONFIG,
+  StorytellerEmptyState,
+  type StoryPlan,
+  type StorySequence,
+  useBibleState,
+  useEpisodeData,
+  useLoadingStates,
+  useStorytellerActions,
+  useStorytellerHydration,
+} from '@/domains/storyteller'
+// Consolidated Chat & Storyteller Imports
 import { SmartQuickActions } from '@/domains/chat/components/QuickActions'
 import { StreamingTerminal } from '@/domains/chat/components/StreamingTerminal'
 import { StreamingSectionsInline } from '@/domains/chat/components/StreamingSectionsInline'
 import { useChatStream } from '@/domains/chat/hooks/useChatStream'
 import { Message } from '@/domains/chat/types'
-import {
-  MentionsProvider,
-  MentionsChatInterface,
-} from '@/domains/storyteller/mentions/MentionsProvider'
 // Action UI components loaded dynamically below (ActionCommitted, ActionSuggestion, ActionApprovalModal, QuestionCard)
 import {
   Loader2,
   Lock,
   Network,
 } from 'lucide-react'
-import { STORYTELLER_AGENT_CONFIG } from '@/domains/storyteller/config/storyteller-agents'
 
 // EpisodeManager and MasterPromptEditor loaded dynamically below
-import { useLoadingStates } from '@/domains/storyteller/hooks/useLoadingStates'
-import { useBibleState } from '@/domains/storyteller/hooks/useBibleState'
-import { useEpisodeData } from '@/domains/storyteller/hooks/useEpisodeData'
-import { useStorytellerHydration } from '@/domains/storyteller/hooks/useStorytellerHydration'
-import { useStorytellerActions } from '@/domains/storyteller/hooks/useStorytellerActions'
-import { PhaseNavigatorCompact } from '@/domains/storyteller/components/PhaseNavigator'
-import { StorytellerEmptyState } from '@/domains/storyteller/components/StorytellerEmptyState'
 import dynamic from 'next/dynamic'
-import type { ScriptEditorProps } from '@/domains/storyteller/components/ScriptEditor'
-import type { TimelineProps } from '@/domains/storyteller/components/Timeline'
-import type { StoryPlanBoardProps } from '@/domains/storyteller/components/StoryPlanBoard'
-import type { WorldBiblePanelProps } from '@/domains/storyteller/components/WorldBiblePanel'
-import type { CharacterWebProps } from '@/domains/storyteller/components/CharacterWeb/CharacterWeb'
+import type {
+  CharacterWebProps,
+  ScriptEditorProps,
+  StoryPlanBoardProps,
+  TimelineProps,
+  WorldBiblePanelProps,
+} from '@/domains/storyteller'
 
 // Dynamic imports for heavy components to reduce initial bundle size
 const ScriptEditor = dynamic<ScriptEditorProps>(
-  () => import('@/domains/storyteller/components/ScriptEditor').then(m => m.default),
+  () => import('@/domains/storyteller').then(m => m.ScriptEditor),
   {
     ssr: false,
     loading: () => (
@@ -59,11 +62,11 @@ const ScriptEditor = dynamic<ScriptEditorProps>(
     ),
   }
 )
-const Timeline = dynamic<TimelineProps>(() => import('@/domains/storyteller/components/Timeline'), {
+const Timeline = dynamic<TimelineProps>(() => import('@/domains/storyteller').then(m => m.Timeline), {
   ssr: false,
 })
 const StoryPlanBoard = dynamic<StoryPlanBoardProps>(
-  () => import('@/domains/storyteller/components/StoryPlanBoard'),
+  () => import('@/domains/storyteller').then(m => m.StoryPlanBoard),
   {
     ssr: false,
     loading: () => (
@@ -74,7 +77,7 @@ const StoryPlanBoard = dynamic<StoryPlanBoardProps>(
   }
 )
 const WorldBiblePanel = dynamic<WorldBiblePanelProps>(
-  () => import('@/domains/storyteller/components/WorldBiblePanel'),
+  () => import('@/domains/storyteller').then(m => m.WorldBiblePanel),
   {
     ssr: false,
     loading: () => (
@@ -85,7 +88,7 @@ const WorldBiblePanel = dynamic<WorldBiblePanelProps>(
   }
 )
 const CharacterWeb = dynamic<CharacterWebProps>(
-  () => import('@/domains/storyteller/components/CharacterWeb').then(m => m.CharacterWeb),
+  () => import('@/domains/storyteller').then(m => m.CharacterWeb),
   {
     ssr: false,
     loading: () => (
@@ -96,27 +99,27 @@ const CharacterWeb = dynamic<CharacterWebProps>(
   }
 )
 const ActionApprovalModal = dynamic(
-  () => import('@/domains/storyteller/components/ActionApprovalModal').then(m => m.ActionApprovalModal),
+  () => import('@/domains/storyteller').then(m => m.ActionApprovalModal),
   { ssr: false }
 )
 const ActionCommitted = dynamic(
-  () => import('@/domains/storyteller/components/ActionToast').then(m => m.ActionCommitted),
+  () => import('@/domains/storyteller').then(m => m.ActionCommitted),
   { ssr: false }
 )
 const ActionSuggestion = dynamic(
-  () => import('@/domains/storyteller/components/ActionToast').then(m => m.ActionSuggestion),
+  () => import('@/domains/storyteller').then(m => m.ActionSuggestion),
   { ssr: false }
 )
 const QuestionCard = dynamic(
-  () => import('@/domains/storyteller/components/QuestionCard').then(m => m.QuestionCard),
+  () => import('@/domains/storyteller').then(m => m.QuestionCard),
   { ssr: false }
 )
 const EpisodeManager = dynamic(
-  () => import('@/domains/storyteller/components/EpisodeManager').then(m => m.EpisodeManager),
+  () => import('@/domains/storyteller').then(m => m.EpisodeManager),
   { ssr: false }
 )
 const MasterPromptEditor = dynamic(
-  () => import('@/domains/storyteller/components/MasterPromptEditor').then(m => m.MasterPromptEditor),
+  () => import('@/domains/storyteller').then(m => m.MasterPromptEditor),
   { ssr: false }
 )
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
@@ -130,9 +133,6 @@ import {
   SidebarEmptyState,
   SidebarHeader,
 } from '@/components/ui/domain-sidebar'
-// regenerateText moved to API call to fix client-side bundle issues
-import { StoryPlan, StorySequence } from '@/domains/storyteller/prompts/schemas/agent-schemas'
-
 // import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
 import { useConfirmDialog } from '@/components/ui/confirm-dialog'
 
@@ -1014,7 +1014,7 @@ export default function StorytellerPage() {
     if (currentProject?.id && lastResumedProjectId.current !== currentProject.id) {
       lastResumedProjectId.current = currentProject.id
 
-      import('@/domains/storyteller/services/PosterGenerationService').then(({ posterGenerationService }) =>
+      import('@/domains/storyteller').then(({ posterGenerationService }) =>
         posterGenerationService.resumePendingGenerations(
           currentProject!.id,
           async (url, episodeId, type) => {
@@ -1090,7 +1090,7 @@ export default function StorytellerPage() {
           imagePrompt: b.imagePrompt,
         }))
 
-        const { posterGenerationService } = await import('@/domains/storyteller/services/PosterGenerationService')
+        const { posterGenerationService } = await import('@/domains/storyteller')
         await posterGenerationService.generateStoryboard(
           currentProject.id,
           episodeId,
@@ -1175,7 +1175,7 @@ export default function StorytellerPage() {
           ...prev,
         ])
 
-        const { posterGenerationService: posterSvc } = await import('@/domains/storyteller/services/PosterGenerationService')
+        const { posterGenerationService: posterSvc } = await import('@/domains/storyteller')
         await posterSvc.generatePoster(
           currentProject.id,
           episodeId,
@@ -1239,7 +1239,7 @@ export default function StorytellerPage() {
 
       if (!projectId) return
 
-      const { moodboardGenerationService } = await import('@/domains/storyteller/services/MoodboardGenerationService')
+      const { moodboardGenerationService } = await import('@/domains/storyteller')
       await moodboardGenerationService.generate(projectId, [], undefined, {}, async () => {
         // Refetch project data when generation completes
         try {
@@ -1426,7 +1426,7 @@ export default function StorytellerPage() {
   useEffect(() => {
     const projectId = currentProject?.id
     if (projectId) {
-      import('@/domains/storyteller/services/MoodboardGenerationService').then(({ moodboardGenerationService }) =>
+      import('@/domains/storyteller').then(({ moodboardGenerationService }) =>
         moodboardGenerationService.resumePendingGenerations(projectId, async () => {
           try {
             const response = await fetch(`/api/storyteller/projects/${projectId}`)

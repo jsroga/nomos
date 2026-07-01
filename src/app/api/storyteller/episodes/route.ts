@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { requireAuth } from '@/lib/auth'
 
-import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
+import { verifyProjectAccess } from '@/domains/storyteller'
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)

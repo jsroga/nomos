@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { runStorytellerWorkflow } from '@/domains/storyteller/agents/StorytellerWorkflow'
-import { normalizeMastraTraceId } from '@/domains/storyteller/core/WorkflowContext'
+import { runStorytellerWorkflow, normalizeMastraTraceId, beats } from '@/domains/storyteller'
 import { db } from '@/lib/db'
-import { beats } from '@/domains/storyteller/db/schema'
 import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
 
 // Persist approved beats to database

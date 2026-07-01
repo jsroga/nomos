@@ -7,14 +7,12 @@ import {
   beats,
   characters,
   episodes,
-} from '@/domains/storyteller/db/schema'
+  verifyEpisodeAccess,
+  verifyProjectAccess,
+} from '@/domains/storyteller'
 import { eq, and } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 import { requireAuth } from '@/lib/auth'
-import {
-  verifyProjectAccess,
-  verifyEpisodeAccess,
-} from '@/domains/storyteller/lib/access-verification'
 import { recordUserAction, flushObservability } from '@/agent-core/observability'
 
 /**
@@ -553,7 +551,7 @@ export async function POST(req: NextRequest) {
 
         // Register as entity with name-based ID for entity linking
         try {
-          const { entityRegistry } = await import('@/domains/storyteller/services/EntityRegistryService')
+          const { entityRegistry } = await import('@/domains/storyteller')
           const slugName = action.payload.name.toLowerCase().replace(/\s+/g, '-')
           await entityRegistry.registerWithId(`char-${slugName}`, {
             name: action.payload.name,

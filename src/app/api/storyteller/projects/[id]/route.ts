@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { projects, seriesBibles, storyPlans } from '@/domains/storyteller/db/schema'
+import { projects, seriesBibles, storyPlans, verifyProjectAccess } from '@/domains/storyteller'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/lib/auth'
-import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
 
 export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params

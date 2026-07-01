@@ -5,7 +5,7 @@ import {
   GameLoopWorkflow,
 } from '@/workflows/game-design/game-loop-workflow'
 import { requireAuth, checkRateLimit } from '@/lib/api-utils'
-import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
+import { verifyProjectAccess } from '@/domains/storyteller'
 import { getErrorMessage } from '@/lib/error-utils'
 
 // Request schemas

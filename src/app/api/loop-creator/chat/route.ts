@@ -8,7 +8,7 @@
 
 import { NextRequest } from 'next/server'
 import { requireAuth } from '@/lib/auth'
-import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
+import { verifyProjectAccess } from '@/domains/storyteller'
 import { streamLoopCreator } from '@/domains/loop-creator/graph/loop-graph'
 import { LoopCreatorState } from '@/domains/loop-creator/graph/state'
 import { HumanMessage, AIMessage } from '@langchain/core/messages'

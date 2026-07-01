@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { episodes, projects } from '@/domains/storyteller/db/schema'
+import { episodes, projects } from '@/domains/storyteller'
 import { eq } from 'drizzle-orm'
 import { tasks } from '@trigger.dev/sdk/v3'
 import type { generatePoster } from '@/trigger/generate-poster'

@@ -8,10 +8,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { runConsistencyCheck } from '@/domains/storyteller/agents/ConsistencyAgent'
-import { ConsistencyCheckRequest } from '@/domains/storyteller/core/ConsistencyTypes'
+import {
+  runConsistencyCheck,
+  type ConsistencyCheckRequest,
+  verifyProjectAccess,
+} from '@/domains/storyteller'
 import { requireAuth } from '@/lib/auth'
-import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60

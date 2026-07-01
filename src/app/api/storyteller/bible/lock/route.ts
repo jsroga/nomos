@@ -10,7 +10,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { isCentralUser } from '@/lib/bible-permissions'
 import { requireAuth } from '@/lib/auth'
-import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
+import { verifyProjectAccess } from '@/domains/storyteller'
 
 export async function POST(request: NextRequest) {
   try {

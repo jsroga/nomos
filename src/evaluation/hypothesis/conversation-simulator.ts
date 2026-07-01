@@ -6,7 +6,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid'
-import { createStorytellerAgent } from '@/domains/storyteller/agents/StorytellerAgent'
+import { createStorytellerAgent } from '@/domains/storyteller'
 import { langfuse } from '@/agent-core/observability'
 import {
   Hypothesis,

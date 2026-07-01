@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { regenerateText } from '@/domains/storyteller/services/ScriptOperationsService'
+import { regenerateText } from '@/domains/storyteller'
 import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
 
 export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedRequest) => {

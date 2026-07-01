@@ -5,7 +5,7 @@ import { requireAuth } from '@/lib/auth'
 import {
   verifyBeatAccess,
   verifyCharacterAccess,
-} from '@/domains/storyteller/lib/access-verification'
+} from '@/domains/storyteller'
 
 export async function POST(req: NextRequest) {
   try {

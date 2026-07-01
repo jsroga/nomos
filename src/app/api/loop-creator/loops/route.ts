@@ -6,7 +6,7 @@ import { requireAuth, checkRateLimit } from '@/lib/api-utils'
 import {
   verifyProjectAccess,
   verifyGameLoopAccess,
-} from '@/domains/storyteller/lib/access-verification'
+} from '@/domains/storyteller'
 
 /**
  * GET - Fetch game loops

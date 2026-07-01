@@ -13,10 +13,9 @@
  *           docs/modules/storyteller-evaluation-guide.md
  */
 
-import { createStorytellerAgent } from '@/domains/storyteller/agents/StorytellerAgent'
+import { createStorytellerAgent, projects } from '@/domains/storyteller'
 import { langfuse } from '@/agent-core/observability'
 import { db } from '@/lib/db'
-import { projects } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 import { createOpenAI } from '@ai-sdk/openai'

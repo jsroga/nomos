@@ -107,6 +107,23 @@ digraph Feature {
     ]
     test_gate [shape=diamond, label="Tests pass?"]
 
+    // ── Spec conformance: LLM-as-judge quality gate ──────────────────
+    // Agent (has tools) so it can read the spec and inspect the diff.
+    // goal_gate=true: if the change never conforms to docs/unified/SPEC.md
+    // (fix loop exhausted), the run FAILS at exit instead of shipping.
+    // output_schema="routing" forces a machine-readable pass/fail verdict.
+    spec_audit [
+        label="Spec Audit\n(LLM-as-judge)"
+        class="testing"
+        prompt="@prompts/spec-audit.md"
+        output_schema="routing"
+        output_retries=2
+        goal_gate=true
+        retry_target="developer"
+        max_visits=3
+    ]
+    spec_gate [shape=diamond, label="Conforms to spec?"]
+
     // ── HUMAN GATE: shipping decision (multiple_choice) ──────────────
     // Final human control over what happens with green tests.
     ship [
@@ -146,8 +163,12 @@ digraph Feature {
 
     tester -> run_tests -> test_gate
 
-    test_gate -> ship        [label="Pass", condition="outcome=succeeded"]
+    test_gate -> spec_audit  [label="Pass", condition="outcome=succeeded"]
     test_gate -> developer   [label="Fix"]
+
+    spec_audit -> spec_gate
+    spec_gate -> ship        [label="Pass", condition="outcome=succeeded"]
+    spec_gate -> developer   [label="Fix"]
 
     ship -> done      [label="[S] Ship it"]
     ship -> developer [label="[P] Polish first", freeform=true]

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { projects } from '@/domains/storyteller/db/schema'
+import { projects } from '@/domains/storyteller'
 
 /**
  * @openapi

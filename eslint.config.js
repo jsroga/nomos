@@ -167,4 +167,21 @@ module.exports = [
       },
     },
   },
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/domains/storyteller/**'],
+    rules: {
+      'no-restricted-imports': [
+        'warn',
+        {
+          patterns: [
+            {
+              group: ['@/domains/storyteller/*'],
+              message: 'Import from "@/domains/storyteller" instead of storyteller internals.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]

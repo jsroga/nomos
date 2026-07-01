@@ -22,38 +22,14 @@ import { useEntities } from '@/domains/storyteller/hooks/useEntity'
 import { cn } from '@/lib/utils'
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 import { splitIntoSegments, ParsedReference, TextSegment, stripReferences } from '@/domains/storyteller/core/ReferenceParser'
+import {
+  EntityReference,
+  EntityRelationship,
+  EntityType,
+} from '@/domains/storyteller/core/EntityReferences'
 import { User, MapPin, Calendar, Users, Scroll, Film, BookOpen, Loader2 } from 'lucide-react'
 
-// Entity types (duplicated to avoid server-only imports)
-type EntityType = 'character' | 'place' | 'event' | 'faction' | 'rule' | 'beat' | 'episode'
-
-// Relationship interface (matches Relationship from relationship-enricher service)
-interface EntityRelationship {
-  targetId: string
-  targetName: string
-  targetType: 'character' | 'place' | 'event' | 'faction' | 'rule' | 'beat' | 'episode'
-  relationshipType: string
-  strength: number
-  description?: string
-}
-
-// Entity reference interface for client-side use
-export interface EntityReference {
-  id: string
-  type: EntityType
-  name: string
-  description: string
-  metadata: Record<string, unknown>
-  projectId: string
-  sourceEntityId?: string
-  createdAt: Date
-  lastReferencedAt: Date
-  // Enriched relationship data (optional)
-  relationships?: EntityRelationship[]
-  relationshipSummary?: string
-  // AI-generated contextual summary (explains relevance in surrounding text)
-  contextualSummary?: string
-}
+export type { EntityReference, EntityRelationship, EntityType }
 
 // Global Alt-key state for sticky tooltips
 let isAltKeyDown = false

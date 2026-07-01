@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { entityRegistry } from '@/domains/storyteller/services/EntityRegistryService'
+import { entityRegistry } from '@/domains/storyteller'
 import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
 
 export const POST = withAuth(async (request: NextRequest, _auth: AuthenticatedRequest) => {

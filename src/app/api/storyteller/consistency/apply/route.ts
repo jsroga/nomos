@@ -7,11 +7,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { applyCascadingFixes } from '@/domains/storyteller/core/CascadeEditor'
-import { getUndoManager } from '@/domains/storyteller/core/UndoManager'
-import { ConsistencyFix } from '@/domains/storyteller/core/ConsistencyTypes'
+import {
+  applyCascadingFixes,
+  getUndoManager,
+  type ConsistencyFix,
+  verifyProjectAccess,
+} from '@/domains/storyteller'
 import { requireAuth } from '@/lib/auth'
-import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30

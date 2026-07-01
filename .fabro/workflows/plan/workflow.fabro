@@ -24,8 +24,8 @@ digraph Plan {
         default_fidelity="summary:medium"
 
         // Plan phase budget: Scope+Assess+Clarify prep aim < 10 min to Clarify gate.
-        // Opus Plan is slow — expect several more minutes before Verification.
-        stall_timeout="600s"
+        // Build path (npm ci + Playwright + e2e) may need up to ~30 min.
+        stall_timeout="1800s"
     ]
     rankdir=LR
 
@@ -103,6 +103,15 @@ digraph Plan {
     ]
 
     // ── OPTIONAL BUILD (only when you pick [B] Approve & build) ───────────
+    // Docker sandbox clones origin fresh — no node_modules. Bootstrap runs once
+    // at the start of the build path so hooks, verify, e2e, and screenshot work.
+    setup [
+        label="Bootstrap\n[shell · npm ci + Playwright]"
+        shape=parallelogram
+        script="set -euo pipefail; echo '=== sandbox bootstrap ==='; npm ci; npm run test:playwright:install; echo '=== bootstrap complete ==='"
+        max_visits=2
+    ]
+
     subgraph cluster_build {
         label="Optional Build"
         node [thread_id="build", fidelity="full"]
@@ -189,7 +198,8 @@ digraph Plan {
     // "outcome=succeeded" (always true after answering) would hijack every
     // choice and jump to that edge. Human-gate routing must rely on
     // preferred_label matching only.
-    Verification -> ux_designer [label="[B] Approve & build"]
+    Verification -> setup      [label="[B] Approve & build"]
+    setup -> ux_designer
     Verification -> Retro       [label="[P] Approve, plan only"]
     Verification -> plan        [label="[I] Iterate with notes", freeform=true]
     Verification -> exit        [label="[X] Abort"]

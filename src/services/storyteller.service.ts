@@ -6,7 +6,7 @@
  */
 
 import { db } from '@/lib/db'
-import { characters, projects, episodes, beats } from '@/domains/storyteller/db/schema'
+import { characters, projects, episodes, beats } from '@/domains/storyteller'
 import { eq, desc } from 'drizzle-orm'
 import { z } from 'zod'
 
@@ -344,7 +344,7 @@ export class StorytellerService {
     }
 
     // Import the graph dynamically to avoid circular dependencies
-    const { getWritersRoomGraph } = await import('@/domains/storyteller/agents/WritersRoomGraph')
+    const { getWritersRoomGraph } = await import('@/domains/storyteller')
     const graph = await getWritersRoomGraph()
 
     // Generate thread ID if not provided
