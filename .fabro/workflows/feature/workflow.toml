@@ -1,0 +1,16 @@
+_version = 1
+
+[workflow]
+graph = "workflow.fabro"
+
+# Pass the feature goal at run time:
+#   fabro run .fabro/workflows/feature/workflow.toml --goal "Add a dark-mode toggle to settings"
+# Or edit the default below.
+[run]
+# goal = "Describe the feature to build"
+
+[run.environment]
+id = "local"
+
+[environments.local]
+provider = "local"

@@ -1,6 +1,6 @@
 
 import { describe, it, expect } from 'vitest'
-import { getPlotPhaseTool, validateConsistencyTool } from '../../src/domains/storyteller/tools/v2/storytelling-adapter'
+import { getPlotPhaseTool, validateConsistencyTool } from '../../src/domains/storyteller/tools/storytelling-adapter'
 
 // Helper to parse tool result whether it's a string or object
 function parseResult(result: any): any {

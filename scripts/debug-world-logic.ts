@@ -1,5 +1,5 @@
 
-import { StorytellerAgent } from '../src/domains/storyteller/agents/v2/storyteller-agent'
+import { StorytellerAgent } from '@/domains/storyteller/agents/StorytellerAgent'
 import * as dotenv from 'dotenv'
 
 dotenv.config({ path: '.env.local' })

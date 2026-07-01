@@ -8,8 +8,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { runConsistencyCheck } from '@/domains/storyteller/agents/v2/consistency-agent'
-import { ConsistencyCheckRequest } from '@/domains/storyteller/consistency/types'
+import { runConsistencyCheck } from '@/domains/storyteller/agents/ConsistencyAgent'
+import { ConsistencyCheckRequest } from '@/domains/storyteller/core/ConsistencyTypes'
 import { requireAuth } from '@/lib/auth'
 import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
 

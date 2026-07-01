@@ -16,7 +16,7 @@
 import * as dotenv from 'dotenv'
 dotenv.config({ path: '.env.local' })
 
-import { createStorytellerAgent } from '@/domains/storyteller/agents/v2/storyteller-agent'
+import { createStorytellerAgent } from '@/domains/storyteller/agents/StorytellerAgent'
 import { getConfidentAIClient, getTestRunUrl, LLMTestCase, TestRunResponse } from './client'
 import { setupConfidentAI, getCollectionNames } from './setup'
 import { getTestCasesForEvaluation, printDatasetSummary } from './datasets'

@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect } from 'react'
-import type { StoryPlan } from '../schemas/agent-schemas'
+import type { StoryPlan } from '@/domains/storyteller/prompts/schemas/agent-schemas'
+import { dedupeCastByName, mergeCastFromSource, readCastFromPlan } from '@/domains/storyteller/core/StoryPlanFields'
 
 interface HydrationParams {
   currentProject: any
@@ -81,12 +82,7 @@ export function useStorytellerHydration({
           }
         }
 
-        const charAliases = ['characters', 'cast', 'keyPlayers', 'key_players']
-        for (const alias of charAliases) {
-          if (source[alias] && Array.isArray(source[alias]) && source[alias].length > 0) {
-            initialPlan.keyCharacters = [...(initialPlan.keyCharacters || []), ...source[alias]]
-          }
-        }
+        mergeCastFromSource(initialPlan, source)
 
         if (source.rules && Array.isArray(source.rules)) {
           initialPlan.worldRules = [...(initialPlan.worldRules || []), ...source.rules]
@@ -101,12 +97,11 @@ export function useStorytellerHydration({
 
       mergeFromSource(bible, true)
 
-      if (initialPlan.keyCharacters) {
-        const unique = new Map()
-        initialPlan.keyCharacters.forEach((c: any) => {
-          if (c && c.name) unique.set(c.name, c)
-        })
-        initialPlan.keyCharacters = Array.from(unique.values())
+      const cast = readCastFromPlan(initialPlan)
+      if (cast.length > 0) {
+        const merged = dedupeCastByName(cast)
+        initialPlan.cast = merged
+        initialPlan.keyCharacters = merged
       }
 
       if (initialPlan.worldRules) {

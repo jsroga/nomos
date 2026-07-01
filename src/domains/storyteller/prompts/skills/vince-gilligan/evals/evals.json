@@ -1,0 +1,15 @@
+{
+  "skill_name": "vince-gilligan",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "A chemistry teacher decides to cook meth to pay medical bills. Describe the moment they cross the line — no dialogue monologue, visual storytelling only.",
+      "expected_output": "Shot-by-shot or prose beats focused on objects, color, silence, and incremental moral decay; cause-and-effect logic; ironic undertone."
+    },
+    {
+      "id": 2,
+      "prompt": "My script saves the protagonist with a lucky phone call when they're trapped. Fix the beat using Gilligan logic.",
+      "expected_output": "Replacement beat where the character's own choices (or intelligence limits) drive the outcome; no coincidence rescue; visual metaphor where possible."
+    }
+  ]
+}

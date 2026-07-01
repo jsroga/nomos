@@ -28,7 +28,7 @@ import {
 } from 'lucide-react'
 import { ConsistencyMessage } from '@/domains/storyteller/components/ConsistencyMessage'
 import { ReferenceText } from '@/domains/storyteller/components/ReferenceText'
-import { hasReferences } from '@/domains/storyteller/utils/reference-parser'
+import { hasReferences } from '@/domains/storyteller/core/ReferenceParser'
 import { motion, AnimatePresence } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
 

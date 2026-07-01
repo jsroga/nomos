@@ -29,14 +29,12 @@ jobs:
 
       - run: npm ci
 
-      - name: TypeScript
-        run: npm run typecheck
+      - name: TypeScript (ratchet)
+        run: npm run typecheck:ratchet
         env:
           NODE_OPTIONS: --max-old-space-size=6144
-        continue-on-error: true
-      - name: ESLint
-        run: npx eslint . --quiet
-        continue-on-error: true
+      - name: ESLint (ratchet)
+        run: npm run lint:ratchet
 
   # ───────────────────────────────────────────────
   # Job 2: Unit Tests

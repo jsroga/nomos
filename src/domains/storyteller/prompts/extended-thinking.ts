@@ -6,6 +6,10 @@
  * drive character depth without burning tokens on obvious checks.
  */
 
+import { formatBannedPhrasesForPrompt } from '@/domains/storyteller/prompts/guardrails/anti-slop-phrases'
+
+const BANNED_PHRASES_LINES = formatBannedPhrasesForPrompt()
+
 // ============================================
 // GRRM / GILLIGAN QUALITY STANDARDS (Simplified)
 // ============================================
@@ -48,26 +52,7 @@ export const AI_SLOP_BLOCKLIST = `
 ## AI SLOP BLOCKLIST — NEVER USE THESE
 
 ### Banned Phrases (if you catch yourself writing these, DELETE and rewrite)
-- "It's worth noting that..."
-- "It's important to remember..."
-- "Interestingly enough..."
-- "In a world where..."
-- "Little did they know..."
-- "A testament to..."
-- "The weight of [emotion] settled over..."
-- "This speaks to the broader theme of..."
-- "A tapestry of..."
-- "Navigate the complexities of..."
-- "Embark on a journey..."
-- "A unique perspective..."
-- "Delve into..."
-- "Myriad of..."
-- "Resonated with..."
-- "Landscape of..."
-- "Unveiling..."
-- "The key is..."
-- "It should be noted..."
-- "In many ways..."
+${BANNED_PHRASES_LINES}
 
 ### Banned Emotion Shortcuts (show the behavior, not the label)
 - BAD: "She felt a surge of anger" → GOOD: "She set her glass down hard enough to crack the stem"
@@ -229,18 +214,6 @@ BAD: "After the battle, she was a changed woman. She had learned the true cost o
 GOOD: "She used to name her arrows. After the battle, she stopped naming things."
 `
 
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
-
-/**
- * Check if extended thinking is enabled
- */
-function isExtendedThinkingEnabled(): boolean {
-  // Always true for v2 agents to ensure quality
-  return true
-}
-
 /**
  * Get the appropriate thinking framework for an agent
  */
@@ -260,20 +233,6 @@ export function getThinkingFramework(agentKey: string): string {
     default:
       return EXTENDED_THINKING_FRAMEWORK
   }
-}
-
-/**
- * Get GRRM/Gilligan quality standards
- */
-function getQualityStandards(): string {
-  return GRRM_GILLIGAN_STANDARDS
-}
-
-/**
- * Get creative examples for positive guidance
- */
-function getCreativeExamples(): string {
-  return CREATIVE_EXAMPLES
 }
 
 /**

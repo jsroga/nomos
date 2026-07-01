@@ -1,15 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { ActionHistoryEntry, AgentAction } from '../actions/types'
-import { ActionStatus, BibleSection } from '../enums'
+import { ActionHistoryEntry, AgentAction } from '@/domains/storyteller/core/ActionTypes'
+import { BibleSection } from '@/domains/storyteller/core/Enums'
 import {
-  actionRequiresApproval,
   getSectionForActionType,
   applyUpdatesToStoryPlan,
-} from '../config/action-config'
-import type { StoryPlan } from '../schemas/agent-schemas'
-import { clearFetchCache } from '@/lib/fetch-cache'
+} from '@/domains/storyteller/config/action-config'
+import type { StoryPlan } from '@/domains/storyteller/prompts/schemas/agent-schemas'
 
 interface Character {
   id: string

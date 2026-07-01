@@ -1,6 +1,6 @@
 
 import { describe, it, expect } from 'vitest'
-import { createStorytellerAgent } from '../../src/domains/storyteller/agents/v2/storyteller-agent'
+import { createStorytellerAgent } from '@/domains/storyteller/agents/StorytellerAgent'
 
 /**
  * Council Integration Test

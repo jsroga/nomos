@@ -553,7 +553,7 @@ export async function POST(req: NextRequest) {
 
         // Register as entity with name-based ID for entity linking
         try {
-          const { entityRegistry } = await import('@/domains/storyteller/services/entity-registry')
+          const { entityRegistry } = await import('@/domains/storyteller/services/EntityRegistryService')
           const slugName = action.payload.name.toLowerCase().replace(/\s+/g, '-')
           await entityRegistry.registerWithId(`char-${slugName}`, {
             name: action.payload.name,

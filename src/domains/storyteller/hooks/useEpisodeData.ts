@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { cachedFetch, clearFetchCache } from '@/lib/fetch-cache'
+import { cachedFetch } from '@/lib/fetch-cache'
 import { LocalStorageKeys } from '@/constants/localStorage'
 
 interface EpisodeBasic {

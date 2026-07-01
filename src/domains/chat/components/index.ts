@@ -14,7 +14,7 @@ export {
 
 export { SectionProgress, type ProgressSection } from './SectionProgress'
 
-export { CitationMarker, CitationPreview, type Citation } from './CitationDisplay'
+export { CitationPreview, type Citation } from './CitationDisplay'
 
 export { ChatInterface } from './ChatInterface'
 export { ChatInput } from './ChatInput'
@@ -28,12 +28,6 @@ export {
 } from '../types'
 
 export { QuickActions, SmartQuickActions, type QuickAction } from './QuickActions'
-
-export { HoverActions } from './HoverActions'
-
-export { ContextChips, type ContextItem } from './ContextChips'
-
-export { type Suggestion } from './SuggestionCard'
 
 export { StreamingTerminal } from './StreamingTerminal'
 export { StreamingSectionsInline } from './StreamingSectionsInline'

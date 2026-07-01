@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ExecutiveAgent } from '../../src/agent-core/executive'
 import { createPlannerTool, PlanPersistence } from '../../src/agent-core/planner'
-import { researchTool } from '../../src/domains/storyteller/tools/v2/research-adapter'
+import { researchTool } from '../../src/domains/storyteller/tools/research-adapter'
 import { Plan } from '../../src/agent-core/schemas'
 import { registerCorePrompts } from '../../src/prompts/registry'
 

@@ -501,51 +501,6 @@ function HeightScaleControl({
 }
 
 // Elevation Control Component - for precise Y axis placement
-function ObjectElevationControl({
-  currentPosition,
-  onElevationChange,
-}: {
-  currentPosition: [number, number, number]
-  onElevationChange: (newY: number) => void
-}) {
-  const currentY = currentPosition[1]
-
-  const [yValue, setYValue] = React.useState(currentY)
-
-  React.useEffect(() => {
-    setYValue(currentPosition[1])
-  }, [currentPosition[1]])
-
-  const handleYChange = (newY: number) => {
-    setYValue(newY)
-    onElevationChange(newY)
-  }
-
-  return (
-    <div className="space-y-3 p-4 bg-zinc-900/30 rounded-lg border border-zinc-800/50 mt-2">
-      <div className="flex items-center justify-between">
-        <label className="text-xs font-mono font-medium flex items-center gap-1.5">
-          <Move size={12} />
-          Elevation (Y-Axis)
-        </label>
-        <span className="text-xs text-muted-foreground font-mono">{yValue.toFixed(2)}m</span>
-      </div>
-      <Slider
-        value={[yValue]}
-        min={-5}
-        max={15}
-        step={0.1}
-        onValueChange={vals => handleYChange(vals[0])}
-      />
-      <div className="flex justify-between text-[10px] text-muted-foreground">
-        <span>-5m</span>
-        <span>Vertical Placement</span>
-        <span>15m</span>
-      </div>
-    </div>
-  )
-}
-
 // Retexture Controls Component
 function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl: string }) {
   const [prompt, setPrompt] = React.useState('')

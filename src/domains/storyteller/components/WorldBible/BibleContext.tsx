@@ -9,8 +9,8 @@ import {
   StorySequence,
   Item,
   StoryEvent,
-} from '../../schemas/agent-schemas'
-import { isCentralUser, canEditBible } from '@/lib/bible-permissions'
+} from '@/domains/storyteller/prompts/schemas/agent-schemas'
+import { canEditBible } from '@/lib/bible-permissions'
 import { cachedFetch, clearFetchCache } from '@/lib/fetch-cache'
 
 // Pending action for a section
@@ -147,7 +147,6 @@ export const BibleProvider: React.FC<{
       [onSetPendingAction]
     )
 
-    const isUserCentral = isCentralUser(userEmail)
     const canEdit = canEditBible(userEmail, isLocked)
     const effectiveReadOnly = isReadOnly || !canEdit
 
@@ -252,7 +251,7 @@ export const BibleProvider: React.FC<{
           setLockedAt(data.lockedAt ? new Date(data.lockedAt) : null)
           toast.success(data.action === 'lock' ? '🔒 Bible locked' : '🔓 Bible unlocked')
         }
-      } catch (error) {
+      } catch (_error) {
         toast.error('Failed to update lock status')
       } finally {
         setIsLockLoading(false)

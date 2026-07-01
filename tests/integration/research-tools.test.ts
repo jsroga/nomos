@@ -1,6 +1,6 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { researchTool, factCheckTool, referenceLookupTool } from '../../src/domains/storyteller/tools/v2/research-adapter'
+import { researchTool, factCheckTool, referenceLookupTool } from '../../src/domains/storyteller/tools/research-adapter'
 
 describe('Research Tools Integration', () => {
 

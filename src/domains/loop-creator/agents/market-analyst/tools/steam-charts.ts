@@ -161,32 +161,3 @@ export const steamChartsTool = new DynamicStructuredTool({
     }
   },
 })
-
-/**
- * Get aggregate stats for a genre
- */
-async function getGenreStats(genre: string): Promise<{
-  averagePeak: number
-  averageCurrent: number
-  topPerformers: string[]
-}> {
-  const roguelikeGames = [
-    'Vampire Survivors',
-    'Hades',
-    'Dead Cells',
-    'Slay the Spire',
-    'Risk of Rain 2',
-  ]
-  const actionGames = ['Enter the Gungeon', 'Cult of the Lamb', 'Dead Cells']
-
-  let relevantGames = roguelikeGames
-  if (genre.toLowerCase().includes('action')) {
-    relevantGames = actionGames
-  }
-
-  return {
-    averagePeak: 50000,
-    averageCurrent: 8000,
-    topPerformers: relevantGames,
-  }
-}

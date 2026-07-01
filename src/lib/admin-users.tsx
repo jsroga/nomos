@@ -26,34 +26,3 @@ export function isAdminUser(userEmail?: string | null): boolean {
 
   return adminUsers.includes(normalizedEmail)
 }
-
-/**
- * Check if user should bypass onboarding
- */
-function shouldBypassOnboarding(userEmail?: string | null): boolean {
-  return isAdminUser(userEmail)
-}
-
-/**
- * Get admin badge config
- */
-function getAdminBadge(userEmail?: string | null): {
-  isAdmin: boolean
-  badge?: React.ReactNode
-} {
-  const isAdmin = isAdminUser(userEmail)
-
-  if (!isAdmin) {
-    return { isAdmin: false }
-  }
-
-  return {
-    isAdmin: true,
-    badge: (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-[9px] font-black uppercase tracking-wider rounded-full shadow-lg">
-        <span>⭐</span>
-        <span>ADMIN</span>
-      </span>
-    ),
-  }
-}

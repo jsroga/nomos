@@ -5,9 +5,6 @@ import { entitiesTools } from './domains/entities/tools'
 import { storytellerTools } from './domains/storyteller/tools'
 import { generationTools } from './domains/generation/tools'
 import { triggerTools } from './domains/trigger/tools'
-import { loopCreatorTools } from './domains/loop-creator/tools'
-import { interiorDesignerTools } from './domains/interior-designer/tools'
-import { worldBuildingTools } from './domains/world-building/tools'
 
 // Initialize Memory with Postgres persistence
 const connectionString = process.env.DATABASE_URL!
@@ -15,17 +12,16 @@ const store = new PostgresStore({
   id: 'world-building-store',
   connectionString,
 })
-const memory = new Memory({ store })
+const memory = new Memory({ storage: store })
 
-// Aggregate all tools
+// Aggregate all implemented tools.
+// loop-creator, interior-designer, and world-building domains are not yet
+// implemented as MCP tools — add them here when their tools.ts is built.
 export const allTools = {
   ...entitiesTools,
   ...storytellerTools,
   ...generationTools,
   ...triggerTools,
-  ...loopCreatorTools,
-  ...interiorDesignerTools,
-  ...worldBuildingTools,
 }
 
 // Define the Agent
@@ -35,11 +31,7 @@ export const worldBuildingAgent = new Agent({
   instructions: `You are the World Building Kit AI, a powerful assistant for game developers and storytellers.
 You have access to a wide range of tools to manage game entities, characters, episodes, assets, and more.
 You can remember context from previous interactions to assist in long-term world building.`,
-  model: {
-    provider: 'OPENAI',
-    name: 'gpt-4o',
-    toolChoice: 'auto',
-  },
+  model: 'openai/gpt-4o',
   memory,
   tools: allTools,
 })

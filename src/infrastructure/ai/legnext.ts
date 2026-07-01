@@ -1,13 +1,3 @@
-interface LegNextResponse {
-  job_id: string
-  status: string
-  output?: {
-    image_url?: string
-    image_urls?: string[]
-    error_messages?: string[]
-  }
-}
-
 export async function submitImagineTask(prompt: string, apiKey: string): Promise<string> {
   const response = await fetch('https://api.legnext.ai/api/v1/diffusion', {
     method: 'POST',

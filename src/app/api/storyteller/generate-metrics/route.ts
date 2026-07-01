@@ -2,12 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+function getOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) return null
+  return new OpenAI({ apiKey })
+}
 
 export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedRequest) => {
   try {
+    const openai = getOpenAIClient()
+    if (!openai) {
+      return NextResponse.json({ error: 'OPENAI_API_KEY is not configured' }, { status: 500 })
+    }
+
     const body = await req.json()
     const { description } = body
 

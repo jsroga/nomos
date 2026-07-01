@@ -279,7 +279,7 @@ export class MoodboardGenerationService {
             // Start polling
             this.startPolling(runState, key, onComplete)
           }
-        } catch (e) {
+        } catch (_e) {
           console.warn('Failed to parse moodboard generation run state:', key)
         }
       }

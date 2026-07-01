@@ -8,82 +8,16 @@
  * - Payload extraction logic
  */
 
-import { ActionType, BibleSection } from '../enums'
+import { ActionType, BibleSection } from '@/domains/storyteller/core/Enums'
+import { deepMerge, smartMergeArray } from '@/domains/storyteller/core/DeepMerge'
+import {
+  extractCastFromUpdates,
+  normalizeCastInUpdates,
+  readCastFromPlan,
+} from '@/domains/storyteller/core/StoryPlanFields'
 
-// ============================================
-// Deep Merge Utility
-// ============================================
-
-/**
- * Smart merge two arrays based on common identifier keys.
- * If an item with the same identifier exists, merge them. Otherwise, append.
- */
-export function smartMergeArray(targetArr: any[], sourceArr: any[]): any[] {
-  if (!targetArr || !targetArr.length) return [...sourceArr]
-
-  const result = [...targetArr]
-
-  for (const sourceItem of sourceArr) {
-    if (!sourceItem) continue
-
-    // Try to find a matching item based on common identifier keys
-    const identifierKey = ['id', 'name', 'rule', 'title'].find(k => typeof sourceItem === 'object' && sourceItem[k])
-
-    if (identifierKey) {
-      const matchIndex = result.findIndex(targetItem => targetItem && typeof targetItem === 'object' && targetItem[identifierKey] === sourceItem[identifierKey])
-      if (matchIndex >= 0) {
-        // Merge the objects
-        result[matchIndex] = deepMerge(result[matchIndex], sourceItem)
-      } else {
-        // Append new
-        result.push(sourceItem)
-      }
-    } else {
-      // If primitive, append if not already exists
-      if (typeof sourceItem === 'string' || typeof sourceItem === 'number') {
-        if (!result.includes(sourceItem)) result.push(sourceItem)
-      } else {
-        result.push(sourceItem)
-      }
-    }
-  }
-
-  return result
-}
-
-/**
- * Deep merge objects, handling nested objects while replacing arrays
- */
-export function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T {
-  const result = { ...target } as T
-
-  for (const key of Object.keys(source) as (keyof T)[]) {
-    const sourceVal = source[key]
-    const targetVal = target[key]
-
-    // Skip undefined/null source values
-    if (sourceVal === undefined || sourceVal === null) continue
-
-    // If both are arrays, smart merge them
-    if (Array.isArray(sourceVal) && Array.isArray(targetVal)) {
-      result[key] = smartMergeArray(targetVal, sourceVal) as any
-    }
-    // If both are plain objects (not arrays), merge recursively
-    else if (
-      sourceVal &&
-      typeof sourceVal === 'object' &&
-      targetVal &&
-      typeof targetVal === 'object'
-    ) {
-      result[key] = deepMerge(targetVal, sourceVal as any)
-    } else {
-      // Otherwise replace
-      result[key] = sourceVal as T[keyof T]
-    }
-  }
-
-  return result
-}
+// Re-export merge helpers for callers and tests
+export { deepMerge, smartMergeArray } from '@/domains/storyteller/core/DeepMerge'
 
 // ============================================
 // Section Configuration
@@ -350,42 +284,41 @@ export function applyUpdatesToStoryPlan<T extends Record<string, any>>(
   currentPlan: T | null,
   updates: Record<string, unknown>
 ): T {
+  const normalizedUpdates = normalizeCastInUpdates(updates)
   const result = { ...(currentPlan || {}) } as T
 
   // Apply standard plan fields
   for (const field of STORY_PLAN_FIELDS) {
-    if (updates[field] !== undefined) {
-      if (typeof updates[field] === 'object' && updates[field] !== null && !Array.isArray(updates[field])) {
-        // e.g. episodeRoadmap, inspirations
-        ; (result as any)[field] = deepMerge((currentPlan as any)?.[field] || {}, updates[field] as any)
-      } else if (Array.isArray(updates[field])) {
-        // e.g. factions, worldRules, cast, sequences, items, events
+    if (normalizedUpdates[field] !== undefined) {
+      if (typeof normalizedUpdates[field] === 'object' && normalizedUpdates[field] !== null && !Array.isArray(normalizedUpdates[field])) {
+        ; (result as any)[field] = deepMerge((currentPlan as any)?.[field] || {}, normalizedUpdates[field] as any)
+      } else if (Array.isArray(normalizedUpdates[field])) {
         const currentArr = Array.isArray((currentPlan as any)?.[field]) ? (currentPlan as any)[field] : []
-          ; (result as any)[field] = smartMergeArray(currentArr, updates[field] as any[])
+          ; (result as any)[field] = smartMergeArray(currentArr, normalizedUpdates[field] as any[])
       } else {
-        // Primitives like strings
-        ; (result as any)[field] = updates[field]
+        ; (result as any)[field] = normalizedUpdates[field]
       }
     }
   }
 
-  // Handle cast field aliases (cast is the canonical field)
-  const cast = updates.cast || updates.characters
+  const cast = extractCastFromUpdates(normalizedUpdates)
   if (cast) {
-    const currentCast = Array.isArray((currentPlan as any)?.cast) ? (currentPlan as any).cast : []
-      ; (result as any).cast = Array.isArray(cast) ? smartMergeArray(currentCast, cast) : cast
+    const currentCast = readCastFromPlan(currentPlan as Record<string, unknown>)
+    const mergedCast = Array.isArray(cast) ? smartMergeArray(currentCast, cast) : cast
+    ; (result as any).cast = mergedCast
+    ; (result as any).keyCharacters = mergedCast
   }
 
   // Handle moodboard/moodImages aliases
-  const moodImages = updates.moodImages || updates.moodboard
+  const moodImages = normalizedUpdates.moodImages || normalizedUpdates.moodboard
   if (moodImages) {
     ; (result as any).moodImages = moodImages
   }
 
   // Handle episode premise - MERGE, don't replace
-  const premiseUpdate = updates.episodePremise || updates.premise
+  const premiseUpdate = normalizedUpdates.episodePremise || normalizedUpdates.premise
   if (premiseUpdate) {
-    ; (result as any).premise = deepMerge((currentPlan as any)?.premise || {}, premiseUpdate)
+    ; (result as any).premise = deepMerge((currentPlan as any)?.premise || {}, premiseUpdate as Record<string, unknown>)
   }
 
   return result

@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { Music, RefreshCw, Loader2 } from 'lucide-react'
-import { SoundtrackTrack } from '../../schemas/agent-schemas'
+import { SoundtrackTrack } from '@/domains/storyteller/prompts/schemas/agent-schemas'
 import { YouTubePlayer, YouTubeEmbedPlayer } from '../YouTubePlayer'
-import { extractVideoId } from '../../utils/youtube-utils'
+import { extractVideoId } from '@/domains/storyteller/core/utils/youtube-utils'
 
 import { useBible } from './BibleContext'
 import { SectionPendingOverlay } from './SectionPendingOverlay'

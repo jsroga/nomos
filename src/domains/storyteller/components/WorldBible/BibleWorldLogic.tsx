@@ -1,6 +1,6 @@
 import React from 'react'
 import { Scale, Plus, RefreshCw, Trash2, Shuffle, Loader2 } from 'lucide-react'
-import { WorldRule } from '../../schemas/agent-schemas'
+import { WorldRule } from '@/domains/storyteller/prompts/schemas/agent-schemas'
 import { WorldRuleCard } from '../WorldRuleCard'
 import { RichText } from '../RichText'
 

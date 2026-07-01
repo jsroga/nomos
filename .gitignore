@@ -1,4 +1,5 @@
-# Claude local settings (machine-specific, not shared)
+# Skill eval run outputs (see agentskills.io skill evaluation model)
+**/*-workspace/
 .claude/settings.local.json
 
 # Logs
@@ -45,6 +46,13 @@ lint_results.txt
 test_results.txt
 test-tool-output.ts
 test-*-output.*
+test-output.txt
+knip-report.json
+debug-workflow.ts
+test-in-memory-store.ts
+
+# TypeScript build cache
+*.tsbuildinfo
 
 # Local dev DBs (e.g. Mastra memory)
 mastra-memory.db

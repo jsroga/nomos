@@ -1,0 +1,20 @@
+{
+  "skill_name": "storyteller",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm outlining episode 3 of a sci-fi series. The protagonist just learned their mentor lied about the colony's food supply. Give me a Save the Cat beat sheet for this episode with emotional stakes for each beat.",
+      "expected_output": "A structured episode beat sheet (opening image through final image) with clear emotional stakes per beat, character-driven turns, and at least one visual hook per major scene."
+    },
+    {
+      "id": 2,
+      "prompt": "hey can u fix this scene — everyone sounds the same and it's all exposition:\n\nCAPTAIN: We need to go to the station because the reactor is failing and the council won't help us.\nSCIENCE OFFICER: Yes, and also my sister is missing and the logs show sabotage.",
+      "expected_output": "Rewritten scene dialogue with distinct voices, subtext instead of exposition, and a visual or behavioral beat that shows tension rather than explaining the plot."
+    },
+    {
+      "id": 3,
+      "prompt": "Cold open: a detective finds a child's shoe in a flooded basement. No body. 90 seconds of screen time. What happens?",
+      "expected_output": "A tight cold-open outline that shows rather than tells dread, ends on a visual hook, and sets a question the audience needs answered — without resolving the mystery."
+    }
+  ]
+}

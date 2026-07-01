@@ -59,7 +59,7 @@ export const GENERATION_PROMPTS = {
     },
 
     MIDJOURNEY: (prompt: string, styleInfo: string) =>
-      `Fill grey space seamlessly to match surrounding edges --q 2`,
+      'Fill grey space seamlessly to match surrounding edges --q 2',
 
     OPENAI: (prompt: string) =>
       `Fill seamlessly to match surrounding edges: ${prompt}. Maintain isometric perspective and consistent style.`,
@@ -124,29 +124,6 @@ export function getCreativityPrompt(creativity: number): string {
   }
 
   return `CREATIVITY LEVEL: ${level}/100. ${hint}`
-}
-
-/**
- * Get creativity prompt specifically for edge-matching generation
- */
-function getGenerationCreativityPrompt(creativity: number): string {
-  const level = Math.round(creativity * 100)
-  let hint: string
-
-  if (creativity <= 0.2) {
-    hint =
-      'VERY CONSERVATIVE - propagate existing patterns from edges exactly. Do not add new elements.'
-  } else if (creativity <= 0.4) {
-    hint = 'CONSERVATIVE - closely match surrounding style and patterns. Minimal interpretation.'
-  } else if (creativity <= 0.6) {
-    hint = 'BALANCED - match edges while adding appropriate detail consistent with style.'
-  } else if (creativity <= 0.8) {
-    hint = 'CREATIVE - match edges but freely enhance with rich details and textures.'
-  } else {
-    hint = 'MAXIMUM FREEDOM - match edge connections but add maximum detail and richness.'
-  }
-
-  return `CREATIVITY: ${level}/100. ${hint}`
 }
 
 // ============================================================================

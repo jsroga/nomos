@@ -36,23 +36,3 @@ export function canEditBible(userEmail?: string | null, isBibleLocked?: boolean)
   // If Bible is locked, only central users can edit
   return isCentralUser(userEmail)
 }
-
-/**
- * Get Bible lock status message
- */
-function getBibleLockMessage(
-  isLocked: boolean,
-  lockedBy?: string | null,
-  lockedAt?: Date | null
-): string {
-  if (!isLocked) {
-    return 'Bible is unlocked - all users can edit'
-  }
-
-  if (lockedBy) {
-    const date = lockedAt ? new Date(lockedAt).toLocaleString() : 'Unknown'
-    return `Bible locked by ${lockedBy} on ${date}`
-  }
-
-  return 'Bible is locked - only central users can edit'
-}

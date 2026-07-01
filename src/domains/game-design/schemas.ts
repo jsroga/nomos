@@ -104,54 +104,6 @@ export const GameLoopSchema = z.object({
 // AGENT INTERACTION SCHEMAS
 // ==========================================
 
-const AnalyzeBalanceInputSchema = z.object({
-  loopId: z.string().uuid(),
-  targetAudience: z.enum(['casual', 'midcore', 'hardcore']),
-  durationSeconds: z.number().default(600), // Simulation time
-})
-
-const SuggestProgressionInputSchema = z.object({
-  currentLoop: GameLoopSchema,
-  expansionDirection: z.enum(['depth', 'breadth', 'complexity']),
-  theme: z.string().optional(),
-})
-
-// ==========================================
-// BALANCE CONFIG SCHEMAS
-// ==========================================
-
-export const ResourceRateSchema = z.object({
-  resourceId: z.string().uuid(),
-  rate: z.number().describe('Units per second'),
-  variability: z.number().min(0).max(1).default(0).describe('Random variance factor'),
-  cooldown: z.number().optional().describe('Seconds between activations'),
-})
-
-export const BalanceConstraintSchema = z.object({
-  id: z.string().uuid(),
-  type: z.enum(['min_value', 'max_value', 'ratio', 'rate_cap']),
-  resourceId: z.string().uuid(),
-  value: z.number(),
-  comparisonResourceId: z.string().uuid().optional().describe('For ratio constraints'),
-})
-
-export const BalanceConfigSchema = z.object({
-  id: z.string().uuid(),
-  loopId: z.string().uuid(),
-  name: z.string().min(1),
-  resources: z.array(GameResourceSchema),
-  generationRates: z.array(ResourceRateSchema).describe('How resources are generated'),
-  consumptionRates: z.array(ResourceRateSchema).describe('How resources are consumed'),
-  constraints: z.array(BalanceConstraintSchema).optional(),
-  targetSessionLength: z.number().default(1800).describe('Target session length in seconds'),
-  difficultyScale: z.number().min(0.1).max(3).default(1).describe('Global difficulty multiplier'),
-  economyType: z.enum(['inflationary', 'deflationary', 'stable']).default('stable'),
-})
-
-// ==========================================
-// AGENT INTERACTION SCHEMAS
-// ==========================================
-
 export const IdentifyCoreLoopInputSchema = z.object({
   mechanics: z.array(GameMechanicSchema),
   genre: z.string().describe('Game genre (e.g., roguelike, farming sim)'),
@@ -223,35 +175,8 @@ export const SuggestProgressionOutputSchema = z.object({
   overallDirection: z.string().describe('Strategic advice for progression'),
 })
 
-export const GameDesignInputSchema = z.object({
-  projectId: z.string().uuid(),
-  goal: z.string().describe('What the agent should achieve'),
-  context: z
-    .object({
-      existingLoops: z.array(GameLoopSchema).optional(),
-      genre: z.string().optional(),
-      targetAudience: z.enum(['casual', 'midcore', 'hardcore']).optional(),
-      theme: z.string().optional(),
-      referenceGames: z.array(z.string()).optional(),
-    })
-    .optional(),
-  constraints: z
-    .object({
-      maxMechanics: z.number().optional(),
-      requiredFeatures: z.array(z.string()).optional(),
-      prohibitedFeatures: z.array(z.string()).optional(),
-    })
-    .optional(),
-})
-
 export type GameLoop = z.infer<typeof GameLoopSchema>
 export type GameMechanic = z.infer<typeof GameMechanicSchema>
-type GameResource = z.infer<typeof GameResourceSchema>
-type BalanceConfig = z.infer<typeof BalanceConfigSchema>
-type GameDesignInput = z.infer<typeof GameDesignInputSchema>
-type IdentifyCoreLoopOutput = z.infer<typeof IdentifyCoreLoopOutputSchema>
-type AnalyzeBalanceOutput = z.infer<typeof AnalyzeBalanceOutputSchema>
-type SuggestProgressionOutput = z.infer<typeof SuggestProgressionOutputSchema>
 
 // ==========================================
 // HAUTE GAME FRAMEWORK SCHEMAS (Klei + CDPR + Kojima)
@@ -460,39 +385,3 @@ export const MundanePoetOutputSchema = z.object({
   ),
   mundaneBeautyScore: z.number().min(0).max(10),
 })
-
-// --- Combined Haute Game Output ---
-export const HauteGameDesignSchema = z.object({
-  atomicSystems: AtomicLoomOutputSchema.optional(),
-  worldMemory: MemoryKeeperOutputSchema.optional(),
-  moralChoices: GreyPaletteOutputSchema.optional(),
-  strandConnections: StrandWeaverOutputSchema.optional(),
-  implicitLearning: SilentTeacherOutputSchema.optional(),
-  meaningfulMundane: MundanePoetOutputSchema.optional(),
-
-  // Overall scores
-  overallScores: z.object({
-    systemElegance: z.number().min(0).max(10),
-    narrativeIntegration: z.number().min(0).max(10),
-    connectionMeaning: z.number().min(0).max(10),
-    discoveryRespect: z.number().min(0).max(10),
-    mundaneBeauty: z.number().min(0).max(10),
-    cohesion: z.number().min(0).max(10),
-  }),
-
-  // The ultimate test
-  wouldPlayersTellStories: z.boolean(),
-  storyPotentialExamples: z.array(z.string()).describe('Example emergent stories'),
-})
-
-// Export Haute Game types
-type AtomicVerb = z.infer<typeof AtomicVerbSchema>
-type AtomicNoun = z.infer<typeof AtomicNounSchema>
-type InteractionRule = z.infer<typeof InteractionRuleSchema>
-type AtomicLoomOutput = z.infer<typeof AtomicLoomOutputSchema>
-type MemoryKeeperOutput = z.infer<typeof MemoryKeeperOutputSchema>
-type GreyPaletteOutput = z.infer<typeof GreyPaletteOutputSchema>
-type StrandWeaverOutput = z.infer<typeof StrandWeaverOutputSchema>
-type SilentTeacherOutput = z.infer<typeof SilentTeacherOutputSchema>
-type MundanePoetOutput = z.infer<typeof MundanePoetOutputSchema>
-type HauteGameDesign = z.infer<typeof HauteGameDesignSchema>

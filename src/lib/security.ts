@@ -318,30 +318,3 @@ export const secureLog = {
     }
   },
 }
-
-// ============================================
-// SECURITY HEADERS
-// ============================================
-
-export const securityHeaders = {
-  'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'DENY',
-  'X-XSS-Protection': '1; mode=block',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-}
-
-/**
- * Apply security headers to a response
- */
-function applySecurityHeaders(response: Response): Response {
-  const headers = new Headers(response.headers)
-  for (const [key, value] of Object.entries(securityHeaders)) {
-    headers.set(key, value)
-  }
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  })
-}

@@ -12,10 +12,10 @@ import { Langfuse } from 'langfuse'
 dotenv.config({ path: '.env.local' })
 
 // Import agents
-import { createPsychologistAgent } from '../../src/domains/storyteller/agents/v2/psychologist-agent'
-import { createConsequenceAgent } from '../../src/domains/storyteller/agents/v2/consequence-agent'
-import { createGardenerAgent } from '../../src/domains/storyteller/agents/v2/gardener-agent'
-import { createDevilsAdvocateAgent } from '../../src/domains/storyteller/agents/v2/devils-advocate-agent'
+import { createPsychologistAgent } from '@/domains/storyteller/agents/PsychologistAgent'
+import { createConsequenceAgent } from '@/domains/storyteller/agents/ConsequenceAgent'
+import { createGardenerAgent } from '@/domains/storyteller/agents/GardenerAgent'
+import { createDevilsAdvocateAgent } from '@/domains/storyteller/agents/DevilsAdvocateAgent'
 import { flushObservability } from '../../src/agent-core/observability'
 
 // Create a verification client

@@ -6,7 +6,6 @@ export enum LocalStorageKeys {
 
   // AI Configuration
   AI_CONFIG_GEMINI = 'ai-config-gemini',
-  AI_CONFIG_NANO_BANANA = 'ai-config-nano-banana',
   AI_CONFIG_FAL = 'ai-config-fal',
   AI_CONFIG_HYPER3D = 'ai-config-hyper3d',
   AI_CONFIG_MESHY = 'ai-config-meshy',

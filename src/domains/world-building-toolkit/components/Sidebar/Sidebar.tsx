@@ -170,14 +170,6 @@ export const Sidebar: React.FC = () => {
   })
   const [fidelityCreativity, setFidelityCreativity] = useState(0.3)
 
-  // Save fidelity prompt to localStorage
-  const handleFidelityPromptChange = (value: string) => {
-    setFidelityPrompt(value)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(LocalStorageKeys.FIDELITY_PROMPT, value)
-    }
-  }
-
   // MJ Variant Picker state
   const [mjGridData, setMjGridData] = useState<{
     tileId: string

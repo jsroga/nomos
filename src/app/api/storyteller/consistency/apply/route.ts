@@ -7,9 +7,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { applyCascadingFixes } from '@/domains/storyteller/consistency/cascade-editor'
-import { getUndoManager } from '@/domains/storyteller/consistency/undo-manager'
-import { ConsistencyFix } from '@/domains/storyteller/consistency/types'
+import { applyCascadingFixes } from '@/domains/storyteller/core/CascadeEditor'
+import { getUndoManager } from '@/domains/storyteller/core/UndoManager'
+import { ConsistencyFix } from '@/domains/storyteller/core/ConsistencyTypes'
 import { requireAuth } from '@/lib/auth'
 import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
 

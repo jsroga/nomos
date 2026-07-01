@@ -356,18 +356,4 @@ export function getVoyageEmbeddings(config?: Partial<VoyageEmbeddingConfig>): Vo
   return voyageInstance
 }
 
-/**
- * Utility function to clear the embedding cache
- */
-function clearEmbeddingCache(): void {
-  embeddingCache.clear()
-}
-
-/**
- * Get embedding dimensions for the current model
- */
-function getEmbeddingDimensions(): number {
-  return EMBEDDING_DIMENSIONS
-}
-
 export { EMBEDDING_DIMENSIONS, VOYAGE_MODEL }

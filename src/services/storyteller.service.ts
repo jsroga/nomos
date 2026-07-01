@@ -9,7 +9,13 @@ import { db } from '@/lib/db'
 import { characters, projects, episodes, beats } from '@/domains/storyteller/db/schema'
 import { eq, desc } from 'drizzle-orm'
 import { z } from 'zod'
-import { RunnableConfig } from '@langchain/core/runnables'
+
+type LangsmithTraceConfig = {
+  runName?: string
+  tags?: string[]
+  metadata?: Record<string, unknown>
+  configurable?: Record<string, unknown>
+}
 
 // ============================================
 // SCHEMAS
@@ -338,7 +344,7 @@ export class StorytellerService {
     }
 
     // Import the graph dynamically to avoid circular dependencies
-    const { getWritersRoomGraph } = await import('@/domains/storyteller/graph/writers-room')
+    const { getWritersRoomGraph } = await import('@/domains/storyteller/agents/WritersRoomGraph')
     const graph = await getWritersRoomGraph()
 
     // Generate thread ID if not provided
@@ -346,7 +352,7 @@ export class StorytellerService {
       validated.threadId || `thread_${Date.now()}_${Math.random().toString(36).slice(2)}`
 
     // Build LangSmith config
-    const langsmithConfig: RunnableConfig = {
+    const langsmithConfig: LangsmithTraceConfig = {
       runName: langsmithContext?.runName || 'storyteller_chat',
       tags: langsmithContext?.tags || ['storyteller', 'chat'],
       metadata: {

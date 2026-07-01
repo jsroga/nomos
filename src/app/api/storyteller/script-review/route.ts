@@ -14,7 +14,7 @@ import {
   reviewScript,
   quickReview,
   ScriptReviewRequest,
-} from '@/domains/storyteller/agents/v2/script-review-agent'
+} from '@/domains/storyteller/agents/ScriptReviewAgent'
 import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
 import { getErrorMessage } from '@/lib/error-utils'
 

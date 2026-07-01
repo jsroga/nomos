@@ -101,7 +101,7 @@ module.exports = [
       // Dead code: use 'error' to fail CI on unused vars (after fixing existing warnings).
       'unused-imports/no-unused-vars': [
         'warn',
-        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
       ],
       '@typescript-eslint/no-require-imports': 'off',
       'react/react-in-jsx-scope': 'off',

@@ -149,50 +149,6 @@ export async function buildCrossDomainContext(projectId: string): Promise<string
 }
 
 /**
- * Build a summary of available entities for agent prompts
- */
-async function buildCrossDomainSummary(projectId: string): Promise<string> {
-  if (!projectId) return ''
-
-  try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/entities?projectId=${projectId}`
-    )
-
-    if (!response.ok) return ''
-
-    const { entities } = await response.json()
-
-    if (!entities || entities.length === 0) {
-      return 'No cross-domain entities available yet.'
-    }
-
-    // Count by type
-    const counts: Record<string, number> = {}
-    for (const entity of entities) {
-      counts[entity.entityType] = (counts[entity.entityType] || 0) + 1
-    }
-
-    const summary: string[] = []
-    summary.push('Available entities from other domains:')
-
-    if (counts.character) summary.push(`- ${counts.character} character(s)`)
-    if (counts.location) summary.push(`- ${counts.location} location(s)`)
-    if (counts.mechanic) summary.push(`- ${counts.mechanic} mechanic(s)`)
-    if (counts.faction) summary.push(`- ${counts.faction} faction(s)`)
-    if (counts.item) summary.push(`- ${counts.item} item(s)`)
-    if (counts.quest) summary.push(`- ${counts.quest} quest(s)`)
-
-    summary.push('\nYou can reference these entities using @mentions in your responses.')
-
-    return summary.join('\n')
-  } catch (error) {
-    console.error('[CrossDomainContext] Error building summary:', error)
-    return ''
-  }
-}
-
-/**
  * Escape special XML characters
  */
 function escapeXml(str: string): string {

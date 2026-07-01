@@ -3,18 +3,25 @@ import { tasks } from '@trigger.dev/sdk/v3'
 import { db } from '@/lib/db'
 import { projects } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'
-import { StoryPlan } from '@/domains/storyteller/schemas/agent-schemas'
+import { StoryPlan } from '@/domains/storyteller/prompts/schemas/agent-schemas'
 import OpenAI from 'openai'
 import { requireAuth } from '@/lib/auth'
 import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
 import { resolveStyleReferenceUrls } from '@/config/style-presets'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+function getOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) return null
+  return new OpenAI({ apiKey })
+}
 
 export async function POST(req: NextRequest) {
   try {
+    const openai = getOpenAIClient()
+    if (!openai) {
+      return NextResponse.json({ error: 'OPENAI_API_KEY is not configured' }, { status: 500 })
+    }
+
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

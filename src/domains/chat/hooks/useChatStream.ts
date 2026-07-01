@@ -58,34 +58,6 @@ interface UseChatStreamProps {
   verboseUiEnabled?: boolean
 }
 
-interface StreamState {
-  // Core state
-  messages: Message[]
-  isSending: boolean
-  thinkingAgent: string | null
-
-  // Streaming state
-  streamingTokens: string
-  isTokenStreaming: boolean
-  isAwaitingInput: boolean
-
-  // Progress tracking
-  streamingSections: ProgressSection[]
-
-  // Agent status
-  activeAgents: AgentStatusInfo[]
-
-  // Citations
-  citations: Citation[]
-  groundingScore: number | null
-
-  // Round tracking
-  roundCount: number
-
-  // Section-specific loading states (for bible sections like soundtracks, factions, etc.)
-  loadingSections: Record<string, { loading: boolean; message?: string }>
-}
-
 export function useChatStream({
   initialMessages = [],
   onAction,

@@ -120,69 +120,12 @@ export interface AIProvider {
 // =============================================================================
 // IMAGE GENERATION TYPES
 // =============================================================================
-
-interface ImageGenerationOptions {
-  width?: number
-  height?: number
-  steps?: number
-  cfgScale?: number
-  sampler?: string
-  seed?: number
-  style?: string
-  negativePrompt?: string
-}
-
-interface ImageGenerationResult {
-  url: string
-  base64?: string
-  width: number
-  height: number
-  format: 'png' | 'jpg' | 'webp'
-  revisedPrompt?: string
-}
-
 // =============================================================================
 // 3D GENERATION TYPES
 // =============================================================================
-
-interface ThreeDGenerationOptions {
-  format?: 'glb' | 'gltf' | 'obj' | 'fbx'
-  quality?: 'draft' | 'standard' | 'high'
-  textured?: boolean
-  pivotPoint?: 'center' | 'bottom'
-}
-
-interface ThreeDGenerationResult {
-  modelUrl: string
-  thumbnailUrl?: string
-  format: string
-  vertices?: number
-  textured: boolean
-}
-
 // =============================================================================
 // TEXT GENERATION TYPES
 // =============================================================================
-
-interface TextGenerationOptions {
-  maxTokens?: number
-  temperature?: number
-  topP?: number
-  stopSequences?: string[]
-  systemPrompt?: string
-  stream?: boolean
-}
-
-interface TextGenerationResult {
-  text: string
-  finishReason: 'stop' | 'length' | 'content_filter'
-  usage?: {
-    promptTokens: number
-    completionTokens: number
-    totalTokens: number
-  }
-}
-
 // =============================================================================
 // A/B TESTING TYPES
 // =============================================================================
@@ -234,8 +177,4 @@ export interface ProviderMetrics {
 
 export function isAIGatewayError(result: AIGatewayResult): result is AIGatewayError {
   return result.success === false
-}
-
-function isAIGatewayResponse<T>(result: AIGatewayResult<T>): result is AIGatewayResponse<T> {
-  return result.success === true
 }

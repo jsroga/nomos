@@ -206,7 +206,7 @@ async function assembleOnMainThread(
   const loadImage = (src: string): Promise<HTMLImageElement> =>
     new Promise((resolve, reject) => {
       if (src.startsWith('data:') && !src.startsWith('data:image/')) {
-        reject(new Error(`Cannot load non-image data URI`))
+        reject(new Error('Cannot load non-image data URI'))
         return
       }
       const img = new Image()

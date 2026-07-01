@@ -39,8 +39,8 @@ import {
     analyzeRelationshipsTool,
     checkContinuityTool,
     quickConsistencyCheckTool,
-} from '../../src/domains/storyteller/tools/v2'
-import { BeatStatus, BeatType } from '../../src/domains/storyteller/enums'
+} from '../../src/domains/storyteller/tools'
+import { BeatStatus, BeatType } from '@/domains/storyteller/core/Enums'
 
 // Helper to parse tool result whether it's a string or object
 function parseResult(result: any): any {
@@ -266,7 +266,7 @@ describe('Storyteller v2 Tools Integration', () => {
 describe('Storyteller Workflow Integration', () => {
     it('should export workflow function', async () => {
         const { runStorytellerWorkflow } = await import(
-            '../../src/domains/storyteller/workflows/storyteller-workflow'
+            '@/domains/storyteller/agents/StorytellerWorkflow'
         )
         expect(typeof runStorytellerWorkflow).toBe('function')
     })

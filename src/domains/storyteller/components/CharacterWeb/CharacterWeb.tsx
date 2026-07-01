@@ -248,7 +248,7 @@ function convertToFlowData(data: RelationshipMatrixResponse): {
   nodes: CharacterWebNode[]
   edges: CharacterWebEdge[]
 } {
-  const nodes: CharacterWebNode[] = data.nodes.map((n, index) => ({
+  const nodes: CharacterWebNode[] = data.nodes.map((n, _index) => ({
     id: n.id,
     type: 'characterNode',
     position: { x: 0, y: 0 }, // Will be set by layout
@@ -263,7 +263,7 @@ function convertToFlowData(data: RelationshipMatrixResponse): {
     },
   }))
 
-  const edges: CharacterWebEdge[] = data.edges.map((e, index) => {
+  const edges: CharacterWebEdge[] = data.edges.map((e, _index) => {
     const relType = (e.type as RelationshipType) || 'related'
     const style = RELATIONSHIP_STYLES[relType] || RELATIONSHIP_STYLES.related
 
@@ -322,7 +322,7 @@ export function CharacterWeb({
   const [error, setError] = useState<string | null>(null)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
-  const reactFlowRef = React.useRef<any>(null)
+  React.useRef<any>(null)
   const layoutCacheRef = useRef<Map<string, CharacterWebNode[]>>(new Map())
 
   const adjacencyByNodeId = useMemo(() => {
@@ -528,17 +528,17 @@ export function CharacterWeb({
   }, [updateUrlWithNode])
 
   // Legend items
-  const legendItems = useMemo(
-    () => [
-      { type: 'ally', label: 'Ally', color: RELATIONSHIP_STYLES.ally.color },
-      { type: 'enemy', label: 'Enemy', color: RELATIONSHIP_STYLES.enemy.color },
-      { type: 'rival', label: 'Rival', color: RELATIONSHIP_STYLES.rival.color },
-      { type: 'mentor', label: 'Mentor', color: RELATIONSHIP_STYLES.mentor.color },
-      { type: 'lover', label: 'Lover', color: RELATIONSHIP_STYLES.lover.color },
-      { type: 'family', label: 'Family', color: RELATIONSHIP_STYLES.family.color },
-    ],
-    []
-  )
+  useMemo(
+        () => [
+          { type: 'ally', label: 'Ally', color: RELATIONSHIP_STYLES.ally.color },
+          { type: 'enemy', label: 'Enemy', color: RELATIONSHIP_STYLES.enemy.color },
+          { type: 'rival', label: 'Rival', color: RELATIONSHIP_STYLES.rival.color },
+          { type: 'mentor', label: 'Mentor', color: RELATIONSHIP_STYLES.mentor.color },
+          { type: 'lover', label: 'Lover', color: RELATIONSHIP_STYLES.lover.color },
+          { type: 'family', label: 'Family', color: RELATIONSHIP_STYLES.family.color },
+        ],
+        []
+      )
 
   if (isLoading) {
     return (

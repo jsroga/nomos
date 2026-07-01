@@ -2,9 +2,6 @@ import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
 import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/constants/polling'
 
 // Define local storage keys
-const DynamicLocalStorageKeys = {
-  posterGen: (episodeId: string) => `poster-gen-${episodeId}`,
-}
 
 interface PosterGenRunState {
   runId: string
@@ -354,7 +351,7 @@ export class PosterGenerationService {
               : undefined
             this.startPolling(runState, key, completionHandler)
           }
-        } catch (e) {
+        } catch (_e) {
           console.warn('Failed to parse poster generation run state:', key)
         }
       }

@@ -61,41 +61,6 @@ export const IMPROVEMENT_LOOP = {
 // =============================================================================
 
 /**
- * Create model for Mastra agents (requires specificationVersion: 'v2')
- */
-export function createModel(modelName: string) {
-  // OpenAI
-  if (modelName.startsWith('openai:')) {
-    const modelId = modelName.replace('openai:', '')
-    const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY })
-    const model = openai(modelId)
-      ; (model as any).specificationVersion = 'v2' // Mastra compatibility
-    return model
-  }
-
-  // Anthropic
-  if (modelName.startsWith('anthropic:')) {
-    const modelId = modelName.replace('anthropic:', '')
-    const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-    const model = anthropic(modelId)
-      ; (model as any).specificationVersion = 'v2'
-    return model
-  }
-
-  // Google
-  if (modelName.startsWith('google:')) {
-    const modelId = modelName.replace('google:', '')
-    const model = google(modelId)
-      ; (model as any).specificationVersion = 'v2'
-    return model
-  }
-
-  // Default fallback
-  const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  return openai('gpt-4o')
-}
-
-/**
  * Create model for pure AI SDK usage (generateObject, generateText)
  * Does NOT set specificationVersion - uses native AI SDK behavior
  */
@@ -136,11 +101,6 @@ export const getGenerationModel = (tier: 'primary' | 'fast' | 'creative' = 'prim
 /** Get model for judging/evaluation (independent layer) - uses pure AI SDK */
 export const getJudgingModel = (tier: 'primary' | 'fallback' = 'primary') =>
   createPureModel(MODELS.judging[tier])
-
-/** Get model for planning/reasoning */
-const getPlanningModel = (tier: 'primary' | 'reasoning' = 'primary') =>
-  createModel(MODELS.planning[tier])
-
 // =============================================================================
 // THE MAZUR FRAMEWORK - Why These Four Masters?
 // =============================================================================
@@ -304,19 +264,3 @@ export const PERSONAS = {
     voice: 'Precise, understated, deceptively simple, cuts to the bone',
   },
 } as const
-
-type PersonaId = keyof typeof PERSONAS
-
-/**
- * The Mazur Score combines all four dimensions.
- * Great storytelling needs ALL FOUR to score high.
- * AI slop consistently fails all four.
- */
-interface MazurScore {
-  depth: number // GRRM dimension (0-1)
-  structure: number // Gilligan dimension (0-1)
-  feeling: number // Lynch dimension (0-1)
-  originality: number // Le Guin dimension (0-1)
-  overall: number // Combined score
-  slopScore: number // Inverse - how much AI slop detected (0 = no slop, 1 = pure slop)
-}

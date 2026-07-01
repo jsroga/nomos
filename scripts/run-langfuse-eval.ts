@@ -1,7 +1,7 @@
 
 import { EvaluationRunner, EvaluationItem } from '../src/evaluation/engine/runner'
 import { RoutingJudge, HaltingJudge, ConsistencyJudge } from '../src/evaluation/judges'
-import { StorytellerPlanner } from '../src/domains/storyteller/planner/storyteller-planner'
+import { StorytellerPlanner } from '@/domains/storyteller/agents/StorytellerPlanner'
 import { MemoryPersistence } from '../src/agent-core/persistence/memory-store'
 
 async function main() {

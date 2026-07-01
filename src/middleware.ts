@@ -1,13 +1,22 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const INTERNAL_SECRET = process.env.INTERNAL_DOCS_SECRET || 'okurwadiabel'
+const INTERNAL_SECRET = process.env.INTERNAL_DOCS_SECRET
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Only protect /docs/internal routes
   if (pathname.startsWith('/docs/internal')) {
+    // Fail closed: no secret configured means no access
+    if (!INTERNAL_SECRET) {
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      const response = NextResponse.next()
+      response.headers.set('x-internal-auth-required', 'true')
+      return response
+    }
     // Check for auth cookie (set by the login form)
     const authCookie = request.cookies.get('internal_docs_auth')
 

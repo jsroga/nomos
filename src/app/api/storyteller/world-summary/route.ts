@@ -9,8 +9,8 @@ import {
   bibleToPrompt,
   bibleToVisualPrompt,
   SeriesBible,
-} from '@/domains/storyteller/context/series-bible'
-import { ragService } from '@/domains/storyteller/services/rag-service'
+} from '@/domains/storyteller/services/context/SeriesBible'
+import { ragService } from '@/domains/storyteller/services/RagService'
 import { requireAuth } from '@/lib/auth'
 import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
 

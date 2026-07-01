@@ -1,0 +1,138 @@
+digraph Feature {
+    graph [
+        goal="Ship a feature end-to-end: architect a plan, design the UX, implement it, and verify with tests"
+        model_stylesheet="
+            *              { model: claude-haiku-4-5; reasoning_effort: medium; }
+            .planning      { model: claude-sonnet-4-6; reasoning_effort: high; }
+            .design        { model: claude-sonnet-4-6; reasoning_effort: high; }
+            .coding        { model: claude-sonnet-4-6; reasoning_effort: high; }
+            .testing       { model: claude-sonnet-4-6; reasoning_effort: high; }
+        "
+        default_max_retries=1
+        stall_timeout="1800s"
+    ]
+    rankdir=LR
+
+    start [shape=Mdiamond, label="Start"]
+    exit  [shape=Msquare, label="Exit"]
+
+    // ── 1. ARCHITECT ────────────────────────────────────────────────
+    // Turns the goal into a concrete, reviewable implementation plan.
+    architect [
+        label="Architect"
+        class="planning"
+        prompt="@prompts/architect.md"
+    ]
+
+    // ── HUMAN GATE: plan review (multiple_choice + freeform) ─────────
+    // The reviewer can approve, ask for a revision (typing feedback via
+    // the freeform edge), or abort. Times out to "Approve" after 1h so
+    // unattended CI runs still make progress.
+    approve_plan [
+        shape=hexagon
+        label="Review the implementation plan. Approve to proceed, request changes with notes, or abort."
+        question_type="multiple_choice"
+        human.default_choice="ux_designer"
+        timeout="3600s"
+    ]
+
+    // ── 2. UX DESIGNER + 3. DEVELOPER (shared thread) ────────────────
+    // Full-fidelity thread so the developer sees every design decision.
+    subgraph cluster_build {
+        label="Build"
+        node [thread_id="build", fidelity="full"]
+
+        ux_designer [
+            label="UX Designer"
+            class="design"
+            prompt="@prompts/ux-designer.md"
+        ]
+
+        developer [
+            label="Developer"
+            class="coding"
+            prompt="@prompts/developer.md"
+            max_visits=4
+        ]
+    }
+
+    // ── HUMAN GATE: design sign-off (yes_no) ─────────────────────────
+    // Quick binary confirmation that the UX direction is acceptable
+    // before we spend tokens implementing it.
+    design_ok [
+        shape=hexagon
+        label="Is the proposed UX direction acceptable to implement?"
+        question_type="yes_no"
+        human.default_choice="developer"
+        timeout="1800s"
+    ]
+
+    // ── Static verification: types + lint ────────────────────────────
+    verify [
+        label="Typecheck + Lint"
+        shape=parallelogram
+        script="npm run typecheck && npm run lint"
+    ]
+    verify_gate [shape=diamond, label="Static checks pass?"]
+
+    // ── 4. TESTER ────────────────────────────────────────────────────
+    tester [
+        label="Tester"
+        class="testing"
+        prompt="@prompts/tester.md"
+        max_visits=3
+    ]
+    run_tests [
+        label="Run Unit Tests"
+        shape=parallelogram
+        script="npm run test:unit"
+    ]
+    test_gate [shape=diamond, label="Tests pass?"]
+
+    // ── HUMAN GATE: shipping decision (multiple_choice) ──────────────
+    // Final human control over what happens with green tests.
+    ship [
+        shape=hexagon
+        label="All checks are green. How should we finish this feature?"
+        question_type="multiple_choice"
+        human.default_choice="done"
+        timeout="3600s"
+    ]
+
+    // ── Final goal gate: run only succeeds if we reach a clean finish.
+    done [
+        label="Verify Done"
+        shape=tab
+        prompt="@prompts/done.md"
+        goal_gate=true
+        retry_target="developer"
+        fallback_retry_target="architect"
+    ]
+
+    // ── Wiring ───────────────────────────────────────────────────────
+    start -> architect -> approve_plan
+
+    approve_plan -> ux_designer [label="[A] Approve plan"]
+    approve_plan -> architect   [label="[R] Request changes", freeform=true]
+    approve_plan -> exit        [label="[X] Abort", condition="outcome=succeeded"]
+
+    ux_designer -> design_ok
+
+    design_ok -> developer   [label="[Y] Yes"]
+    design_ok -> ux_designer [label="[N] No, rethink it", freeform=true]
+
+    developer -> verify -> verify_gate
+
+    verify_gate -> tester    [label="Pass", condition="outcome=succeeded"]
+    verify_gate -> developer [label="Fix"]
+
+    tester -> run_tests -> test_gate
+
+    test_gate -> ship        [label="Pass", condition="outcome=succeeded"]
+    test_gate -> developer   [label="Fix"]
+
+    ship -> done      [label="[S] Ship it"]
+    ship -> developer [label="[P] Polish first", freeform=true]
+
+    done -> exit
+}

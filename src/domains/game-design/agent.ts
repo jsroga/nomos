@@ -392,11 +392,5 @@ If you use any tools, describe what you learned from them.`
 }
 
 // Factory function for easy instantiation
-async function createGameDesignAgent(
-  modelName: string = 'openai:gpt-4o'
-): Promise<GameDesignAgent> {
-  return GameDesignAgent.create({ modelName })
-}
-
 // Re-export for convenience
 export { GameDesignMemory } from './memory'

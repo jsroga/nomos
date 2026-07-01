@@ -35,13 +35,6 @@ export interface Citation {
   }
 }
 
-interface CitationMarkerProps {
-  marker: string
-  confidence: number
-  onClick?: () => void
-  isActive?: boolean
-}
-
 interface CitationPreviewProps {
   citation: Citation
   isExpanded?: boolean
@@ -91,32 +84,6 @@ function getConfidenceColor(confidence: number): string {
  */
 function formatConfidence(confidence: number): string {
   return `${Math.round(confidence * 100)}%`
-}
-
-/**
- * Inline citation marker component
- */
-export const CitationMarker: React.FC<CitationMarkerProps> = ({
-  marker,
-  confidence,
-  onClick,
-  isActive,
-}) => {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'inline-flex items-center justify-center px-1.5 py-0.5 rounded text-xs font-mono font-medium',
-        'transition-all duration-150 cursor-pointer',
-        getConfidenceColor(confidence),
-        isActive && 'ring-2 ring-offset-2 ring-offset-background',
-        'hover:scale-105'
-      )}
-      title={`Source confidence: ${formatConfidence(confidence)}`}
-    >
-      {marker}
-    </button>
-  )
 }
 
 /**
@@ -312,54 +279,4 @@ const CitationDisplay: React.FC<CitationDisplayProps> = ({
       </div>
     </div>
   )
-}
-
-/**
- * Inline citations parser - replaces [1], [2] markers with interactive components
- */
-function parseInlineCitations(
-  text: string,
-  citations: Citation[],
-  onCitationClick?: (citation: Citation) => void
-): React.ReactNode[] {
-  const citationMap = new Map(citations.map(c => [c.marker, c]))
-  const parts: React.ReactNode[] = []
-
-  // Pattern to match [1], [2], etc.
-  const pattern = /\[(\d+)\]/g
-  let lastIndex = 0
-  let match
-
-  while ((match = pattern.exec(text)) !== null) {
-    // Add text before marker
-    if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index))
-    }
-
-    // Add citation marker
-    const marker = match[0]
-    const citation = citationMap.get(marker)
-
-    if (citation) {
-      parts.push(
-        <CitationMarker
-          key={`${citation.id}-${match.index}`}
-          marker={marker}
-          confidence={citation.confidence}
-          onClick={() => onCitationClick?.(citation)}
-        />
-      )
-    } else {
-      parts.push(marker)
-    }
-
-    lastIndex = match.index + match[0].length
-  }
-
-  // Add remaining text
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex))
-  }
-
-  return parts
 }

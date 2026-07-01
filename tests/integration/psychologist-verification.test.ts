@@ -1,5 +1,5 @@
 
-import { createPsychologistAgent } from '../../src/domains/storyteller/agents/v2/psychologist-agent'
+import { createPsychologistAgent } from '@/domains/storyteller/agents/PsychologistAgent'
 import * as dotenv from 'dotenv'
 
 dotenv.config()

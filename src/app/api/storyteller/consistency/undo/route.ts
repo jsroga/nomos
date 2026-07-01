@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getUndoManager } from '@/domains/storyteller/consistency/undo-manager'
+import { getUndoManager } from '@/domains/storyteller/core/UndoManager'
 import { requireAuth } from '@/lib/auth'
 import { verifyProjectAccess } from '@/domains/storyteller/lib/access-verification'
 

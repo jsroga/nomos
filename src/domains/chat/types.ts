@@ -1,5 +1,5 @@
 import { ReactNode } from 'react'
-import { ConsistencyCheckResult } from '@/domains/storyteller/consistency/types'
+import { ConsistencyCheckResult } from '@/domains/storyteller/core/ConsistencyTypes'
 
 // Thinking entry with agent attribution
 export interface ThinkingEntry {

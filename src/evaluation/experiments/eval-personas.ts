@@ -20,7 +20,7 @@ if (fs.existsSync(envPath)) {
 }
 
 import { registerCorePrompts } from '../../prompts/registry'
-import { StorytellerAgent } from '../../domains/storyteller/agents/v2/storyteller-agent'
+import { StorytellerAgent } from '@/domains/storyteller/agents/StorytellerAgent'
 import { PersonaFidelityJudge } from '../judges/creative/persona-judge'
 import { MagicJudge } from '../judges/creative/magic-judge'
 import { CoherenceJudge } from '../judges/coherence-judge'

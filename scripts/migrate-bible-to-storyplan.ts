@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
-import * as schema from '../src/domains/storyteller/db/schema'
+import * as schema from '@/domains/storyteller/db/schema'
 import * as dotenv from 'dotenv'
 import { eq } from 'drizzle-orm'
 import { deepMerge } from '@/domains/storyteller/config/action-config'

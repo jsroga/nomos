@@ -15,8 +15,10 @@ vi.mock('@trigger.dev/sdk/v3', () => ({
   tasks: { trigger: (...args: unknown[]) => mockTrigger(...args) },
 }))
 
+type RouteHandler = (req: Request, auth?: unknown) => Promise<Response> | Response
+
 vi.mock('@/lib/api-utils', () => ({
-  withAuth: (handler: Function) => async (req: Request) => {
+  withAuth: (handler: RouteHandler) => async (req: Request) => {
     const mockSupabase = {
       from: () => ({
         select: () => ({
@@ -34,7 +36,7 @@ vi.mock('@/lib/api-utils', () => ({
     }
     return handler(req, auth)
   },
-  withRateLimit: (handler: Function) => handler,
+  withRateLimit: (handler: RouteHandler) => handler,
   verifyProjectAccess: vi.fn().mockResolvedValue(true),
 }))
 
@@ -58,7 +60,7 @@ async function responseJson(res: Response) {
 // ─── trigger-tile ───
 
 describe('POST /api/trigger-tile', () => {
-  let POST: Function
+  let POST: RouteHandler
 
   const savedEnv = { ...process.env }
 
@@ -173,7 +175,7 @@ describe('POST /api/trigger-tile', () => {
     expect(payload.aiConfig.apiKey).toBe('leg-key-123')
   })
 
-  it('returns 500 when LEGNEXT_API_KEY is missing for first tile', async () => {
+  it('falls back to gemini when LEGNEXT_API_KEY is missing for first tile', async () => {
     delete process.env.LEGNEXT_API_KEY
     process.env.GOOGLE_API_KEY = 'goog-key'
     POST = await importRoute()
@@ -187,9 +189,31 @@ describe('POST /api/trigger-tile', () => {
     })
 
     const res = await POST(req)
+    expect(res.status).toBe(200)
+    const body = await responseJson(res)
+    expect(body.success).toBe(true)
+    const [, payload] = mockTrigger.mock.calls[0]
+    expect(payload.aiProvider).toBe('gemini')
+    expect(payload.aiConfig.apiKey).toBe('goog-key')
+  })
+
+  it('returns 500 when no AI provider keys are configured', async () => {
+    delete process.env.LEGNEXT_API_KEY
+    delete process.env.GOOGLE_API_KEY
+    POST = await importRoute()
+
+    const req = jsonRequest({
+      projectId: 'proj_1',
+      x: 0,
+      y: 0,
+      prompt: 'forest',
+      isFirstTile: true,
+    })
+
+    const res = await POST(req)
     expect(res.status).toBe(500)
     const body = await responseJson(res)
-    expect(body.error).toContain('LEGNEXT_API_KEY')
+    expect(body.error).toMatch(/LEGNEXT_API_KEY|GOOGLE_API_KEY/)
   })
 
   it('returns 500 when GOOGLE_API_KEY is missing for follow-up tile', async () => {
@@ -212,7 +236,7 @@ describe('POST /api/trigger-tile', () => {
     expect(body.error).toContain('GOOGLE_API_KEY')
   })
 
-  it('returns 500 when LEGNEXT_API_KEY is missing for legnext follow-up tile', async () => {
+  it('falls back to nano-banana when LEGNEXT is missing for legnext follow-up tile', async () => {
     delete process.env.LEGNEXT_API_KEY
     process.env.GOOGLE_API_KEY = 'goog'
     process.env.FOLLOW_UP_IMAGE_PROVIDER = 'legnext-upload-paint'
@@ -227,9 +251,11 @@ describe('POST /api/trigger-tile', () => {
     })
 
     const res = await POST(req)
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(200)
     const body = await responseJson(res)
-    expect(body.error).toContain('LEGNEXT_API_KEY')
+    expect(body.success).toBe(true)
+    const [, payload] = mockTrigger.mock.calls[0]
+    expect(payload.aiProvider).toBe('nano-banana')
   })
 
   it('returns 400 when required fields are missing', async () => {
@@ -245,7 +271,7 @@ describe('POST /api/trigger-tile', () => {
 // ─── trigger-upscale ───
 
 describe('POST /api/trigger-upscale', () => {
-  let POST: Function
+  let POST: RouteHandler
   const savedEnv = { ...process.env }
 
   beforeEach(async () => {
@@ -348,7 +374,7 @@ describe('POST /api/trigger-upscale', () => {
 // ─── trigger-fidelity ───
 
 describe('POST /api/trigger-fidelity', () => {
-  let POST: Function
+  let POST: RouteHandler
   const savedEnv = { ...process.env }
 
   beforeEach(async () => {

@@ -1,6 +1,6 @@
 import React from 'react'
 import { Lightbulb, RefreshCw, Book, Film, Gamepad2, Loader2 } from 'lucide-react'
-import { InspirationItem } from '../../schemas/agent-schemas'
+import { InspirationItem } from '@/domains/storyteller/prompts/schemas/agent-schemas'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 import { useBible } from './BibleContext'

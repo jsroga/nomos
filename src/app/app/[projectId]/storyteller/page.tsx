@@ -8,27 +8,24 @@ import { toast } from 'sonner'
 import { CorkBoard } from '@/domains/storyteller/components/CorkBoard'
 import { CharacterPanel } from '@/domains/storyteller/components/CharacterPanel'
 // Consolidated Chat & Storyteller Imports
-import { ActionHistoryEntry, AgentAction, AgentQuestion } from '@/domains/storyteller/actions/types'
-import { ActionStatus } from '@/domains/storyteller/enums'
+import { AgentAction, AgentQuestion } from '@/domains/storyteller/core/ActionTypes'
+import { ActionStatus } from '@/domains/storyteller/core/Enums'
 import {
   actionRequiresApproval,
   getSectionForActionType,
 } from '@/domains/storyteller/config/action-config'
-import { QuestionSession } from '@/domains/storyteller/questions/types'
-import { ChatInterface } from '@/domains/chat/components/ChatInterface'
+import { QuestionSession } from '@/domains/storyteller/core/ActionTypes'
 import { SmartQuickActions } from '@/domains/chat/components/QuickActions'
 import { StreamingTerminal } from '@/domains/chat/components/StreamingTerminal'
 import { StreamingSectionsInline } from '@/domains/chat/components/StreamingSectionsInline'
 import { useChatStream } from '@/domains/chat/hooks/useChatStream'
 import { Message } from '@/domains/chat/types'
 import {
-  getStorytellerMentionProviders,
-  buildStorytellerProjectContext,
-} from '@/domains/storyteller/mentions/providers'
-import { getGameEntityProvider } from '@/domains/chat/mentions/game-entity-provider'
+  MentionsProvider,
+  MentionsChatInterface,
+} from '@/domains/storyteller/mentions/MentionsProvider'
 // Action UI components loaded dynamically below (ActionCommitted, ActionSuggestion, ActionApprovalModal, QuestionCard)
 import {
-  Sparkles,
   Loader2,
   Lock,
   Network,
@@ -134,7 +131,7 @@ import {
   SidebarHeader,
 } from '@/components/ui/domain-sidebar'
 // regenerateText moved to API call to fix client-side bundle issues
-import { StoryPlan, StorySequence } from '@/domains/storyteller/schemas/agent-schemas'
+import { StoryPlan, StorySequence } from '@/domains/storyteller/prompts/schemas/agent-schemas'
 
 // import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
 import { useConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -2133,57 +2130,6 @@ export default function StorytellerPage() {
   // Track pending action executions to ensure cleanup waits for them - actually hook handles async actions if we await them in onAction!
   // But our executeAction is async. The hook awaits onAction. So we are good!
 
-  // --- MENTIONS SYSTEM ---
-  // Includes domain-specific mentions + cross-domain game entities
-  const mentionProviders = React.useMemo(
-    () => [
-      ...getStorytellerMentionProviders(),
-      getGameEntityProvider(), // Cross-domain entities from all tools
-    ],
-    []
-  )
-
-  const projectContextForMentions = React.useMemo(
-    () =>
-      buildStorytellerProjectContext({
-        projectId: currentProject?.id || '',
-        characters,
-        episodes: [], // Episode list not maintained in this component
-        beats: beats,
-        seriesBible: {
-          ...storyPlan,
-          worldRules: storyPlan?.worldRules || [],
-          inspirations: storyPlan?.inspirations,
-          soundtracks: storyPlan?.soundtracks || [],
-          plotTwists: storyPlan?.plotTwists || [],
-          factions: storyPlan?.factions || [],
-        },
-      }),
-    [currentProject?.id, characters, beats, storyPlan]
-  )
-
-  // Legacy mentions for backwards compatibility
-  // Use Array.isArray to handle cases where worldRules/factions might be non-array values
-  const worldRulesArray = Array.isArray(storyPlan?.worldRules) ? storyPlan.worldRules : []
-  const factionsArray = Array.isArray(storyPlan?.factions) ? storyPlan.factions : []
-
-  const mentionItems = useMemo<any[]>(
-    () => [
-      ...characters.map(c => ({ id: c.id, name: c.name, type: 'character' as const })),
-      ...worldRulesArray.map((r: any, idx: number) => ({
-        id: `rule-${idx}`,
-        name: r.rule,
-        type: 'world_rule' as const,
-      })),
-      ...factionsArray.map((f: any, idx: number) => ({
-        id: `faction-${idx}`,
-        name: f.name,
-        type: 'faction' as const,
-      })),
-    ],
-    [characters, worldRulesArray, factionsArray]
-  )
-
   // Stop streaming handler removed (handled by hook)
 
   // Use ref for currentEpisodeId to avoid stale closure
@@ -2981,15 +2927,18 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           rawContent
         >
           <div className="flex flex-col h-full" id={TOUR_STEP_IDS.STORYTELLER_CHAT}>
-            <ChatInterface
+            <MentionsProvider
+              projectId={currentProject?.id || ''}
+              characters={characters}
+              beats={beats}
+              storyPlan={storyPlan}
+            >
+            <MentionsChatInterface
               isActivityPanelOpen={isActivityPanelOpen}
               onActivityToggle={toggleActivityPanel}
               isAdmin={isAdminUser(userEmail)}
               messages={messages}
               agentConfig={STORYTELLER_AGENT_CONFIG}
-              mentions={mentionItems}
-              mentionProviders={mentionProviders}
-              projectContext={projectContextForMentions}
               projectId={currentProject?.id}
               thinkingAgent={thinkingAgent}
               streamingTokens={streamingTokens}
@@ -3036,7 +2985,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                       variant="ghost"
                       size="sm"
                       className="h-5 px-2 text-[10px] text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 transition-colors"
-                      onClick={() => handleSendMessage(undefined, "I'd like to expand our cast of characters. Considering the setting and story so far, who would be an interesting new character to introduce next?")}
+                      onClick={() => handleSendMessage(undefined, 'I\'d like to expand our cast of characters. Considering the setting and story so far, who would be an interesting new character to introduce next?')}
                     >
                       <Users className="w-3 h-3 mr-1" />
                       Add Cast
@@ -3050,7 +2999,8 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
                   />
                 </div>
               )}
-            </ChatInterface>
+            </MentionsChatInterface>
+            </MentionsProvider>
           </div>
         </DomainSidebar>
       </div >

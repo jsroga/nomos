@@ -385,36 +385,3 @@ export async function runImprovementLoop(
 // =============================================================================
 // QUICK IMPROVEMENT (Single pass with judgment)
 // =============================================================================
-
-async function quickImprove(
-  content: string,
-  traceId?: string
-): Promise<{ improved: string; judgment: MazurJudgment; delta: number }> {
-  const tid = traceId || uuidv4()
-
-  const initialJudgment = await judgeMazur(content, tid)
-
-  if (initialJudgment.verdict === 'PASS') {
-    return { improved: content, judgment: initialJudgment, delta: 0 }
-  }
-
-  // Plan refinement for Langfuse visibility (logged internally)
-  await planRefinement(content, initialJudgment, tid)
-
-  const model = getGenerationModel('creative')
-  const prompt = buildRefinementPrompt(content, initialJudgment, 1)
-
-  const refined = await generateText({
-    model,
-    prompt,
-    temperature: 0.4,
-  })
-
-  const finalJudgment = await judgeMazur(refined.text, tid)
-
-  return {
-    improved: refined.text,
-    judgment: finalJudgment,
-    delta: finalJudgment.overallScore - initialJudgment.overallScore,
-  }
-}

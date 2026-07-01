@@ -62,14 +62,6 @@ export function buildMessageWithContext(
 }
 
 /**
- * Extract agent routing hints from mentions
- * Returns agent names that should be prioritized for routing
- */
-function extractAgentHints(mentions: MentionItem[]): string[] {
-  return mentions.filter(m => m.category === 'agent').map(m => m.type)
-}
-
-/**
  * Remove duplicate mentions (same id)
  */
 function deduplicateMentions(mentions: MentionItem[]): MentionItem[] {
@@ -91,45 +83,6 @@ function escapeXml(str: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;')
-}
-
-/**
- * Parse @ mentions from input text
- * Returns array of mention names found in the text
- */
-function parseMentionsFromText(text: string): string[] {
-  const mentionRegex = /@([\w_]+)/g
-  const matches: string[] = []
-  let match
-
-  while ((match = mentionRegex.exec(text)) !== null) {
-    matches.push(match[1])
-  }
-
-  return matches
-}
-
-/**
- * Replace @ mentions in text with formatted version
- * Useful for display purposes
- */
-function formatMentionsInText(
-  text: string,
-  mentions: MentionItem[],
-  format: 'plain' | 'markdown' = 'plain'
-): string {
-  let result = text
-
-  for (const mention of mentions) {
-    const mentionPattern = new RegExp(`@${escapeRegex(mention.name)}\\b`, 'g')
-
-    if (format === 'markdown') {
-      result = result.replace(mentionPattern, `**@${mention.name}**`)
-    }
-    // Plain format keeps @ as-is
-  }
-
-  return result
 }
 
 /**

@@ -1,61 +1,21 @@
-import { createStorytellerAgent } from '@/domains/storyteller/agents/v2'
-import { normalizeMastraTraceId } from '@/domains/storyteller/utils/workflow-context'
-import { db } from '@/lib/db'
-import { projects, storyPlans } from '@/domains/storyteller/db/schema'
-import { eq } from 'drizzle-orm'
+import { createStorytellerAgent } from '@/domains/storyteller/agents'
+import { normalizeMastraTraceId } from '@/domains/storyteller/core/WorkflowContext'
 import { EventEmitter } from 'node:events'
-import { BibleSection, ActionType } from '@/domains/storyteller/enums'
+import { BibleSection } from '@/domains/storyteller/core/Enums'
+import { assembleStorytellerContext } from '@/domains/storyteller/services/ContextAssemblyService'
 import {
-  processToolResultToAction,
-  getActionTypeForSection,
-} from '@/domains/storyteller/config/action-config'
-import { budgetContext, type RawContextParts } from '@/domains/storyteller/context/token-budget'
-import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
+  mapToolResultToAction,
+  detectLoadingSection,
+  getActionDedupeKey,
+  type DetectedSection,
+} from '@/domains/storyteller/config/tool-result-mapper'
 
-// Node.js Runtime required for Mastra core dependencies
 // Node.js Runtime required for Mastra core dependencies
 export const runtime = 'nodejs'
-
-// Interfaces for structured data
-interface Character {
-  id: string
-  name: string
-  role?: string
-  description?: string
-  psychology?: Record<string, unknown>
-}
-
-interface Beat {
-  id: string
-  logline?: string
-  sequence?: number
-  title?: string
-  beatType?: string
-}
 
 interface StreamChunk {
   type: string
   payload?: any
-}
-
-interface StoryPlan {
-  cast?: Character[]
-  keyCharacters?: Character[]
-  premise?: Record<string, unknown>
-  episodePremise?: Record<string, unknown>
-  worldDescription?: string
-  genre?: string | string[]
-  tone?: string | string[]
-  centralTheme?: string
-  worldRules?: Array<{ category?: string; rule: string; consequence?: string }>
-  factions?: Array<{ id?: string; name: string; ideology?: string; description?: string }>
-  inspirations?: {
-    movies?: Array<string | { title: string }>
-    books?: Array<string | { title: string }>
-    games?: Array<string | { title: string }>
-  }
-  sequences?: Array<{ name: string; description?: string }>
-  masterPrompt?: string
 }
 
 // Import Langfuse observability with enhanced tracing
@@ -70,29 +30,6 @@ import { getErrorMessage } from '@/lib/error-utils'
 
 // Use the imported langfuse client if enabled
 const langfuseClient = isLangfuseEnabled ? langfuse : null
-
-// Safe RAG service wrapper
-async function getRAGContext(projectId: string, query: string): Promise<string> {
-  try {
-    const { ragService } = await import('@/domains/storyteller/services/rag-service')
-    const ragResults = await ragService.assembleAgentContext(projectId, 'showrunner', query)
-
-    let ragContext = ''
-    if (ragResults.relevantHistory) {
-      ragContext += `\n## RELEVANT HISTORY\n${ragResults.relevantHistory}\n`
-    }
-    if (ragResults.pastDecisions) {
-      ragContext += `\n## PAST DECISIONS\n${ragResults.pastDecisions}\n`
-    }
-    if (ragResults.userPreferences) {
-      ragContext += `\n## USER PREFERENCES\n${ragResults.userPreferences}\n`
-    }
-    return ragContext
-  } catch (e) {
-    console.warn('RAG context retrieval failed:', e)
-    return ''
-  }
-}
 
 export async function POST(req: Request) {
   let trace: ReturnType<typeof langfuse.trace> | null = null
@@ -191,265 +128,27 @@ export async function POST(req: Request) {
       }
     }
 
-    // 1. Fetch FULL Context - Project, Bible, StoryPlan, Characters, Beats
-    let contextPrompt = ''
-
-    if (projectId) {
-      try {
-        // Parallel fetch ALL data for rich context
-        const [projectData, storyPlanData, serviceData, ragContext] = await Promise.all([
-          // Direct DB fetch for full project data
-          db
-            .select()
-            .from(projects)
-            .where(eq(projects.id, projectId))
-            .then(r => r[0]),
-          // Story plan (separate table)
-          db
-            .select()
-            .from(storyPlans)
-            .where(eq(storyPlans.projectId, projectId))
-            .then(r => r[0]),
-          // Service fetch for characters and beats
-          import('@/services/storyteller.service').then(async m => {
-            const [charsReq, beatsReq] = await Promise.all([
-              m.storytellerService
-                .listCharacters({ projectId }, { userId: session.user.id })
-                .catch(() => ({ characters: [] })),
-              episodeId
-                ? m.storytellerService
-                  .listBeats({ episodeId }, { userId: session.user.id })
-                  .catch(() => ({ beats: [] }))
-                : Promise.resolve({ beats: [] }),
-            ])
-            return { characters: charsReq.characters || [], beats: beatsReq.beats || [] }
-          }),
-          // RAG context based on user query
-          getRAGContext(projectId, message),
-        ])
-
-        const rawBible = (projectData?.seriesBible as Record<string, unknown>) || {}
-        const storyPlan = ((storyPlanData?.content as unknown) as StoryPlan) || ({} as StoryPlan)
-
-        // Flatten nested category objects from seriesBible (e.g., 'Setting', 'History', etc.)
-        const knownCategories = [
-          'General',
-          'Setting',
-          'History',
-          'Magic',
-          'Factions',
-          'Technology',
-          'Culture',
-        ]
-        const bible: Record<string, unknown> = {}
-        for (const [key, value] of Object.entries(rawBible)) {
-          if (knownCategories.includes(key) && typeof value === 'object' && value !== null) {
-            Object.assign(bible, value)
-          } else {
-            bible[key] = value
-          }
-        }
-
-        // masterPrompt is a TOP-LEVEL column on projects table, not nested in seriesBible
-        const masterPrompt =
-          projectData?.masterPrompt || bible.masterPrompt || storyPlan.masterPrompt || ''
-        // Merge characters from DB table AND storyPlan.keyCharacters/cast
-        // Users may define cast in the World Bible (stored in storyPlan) before syncing to the characters table
-        const dbCharacters = (serviceData.characters as Character[]) || []
-        const planCast = storyPlan.cast || storyPlan.keyCharacters || []
-        const dbNames = new Set(dbCharacters.map(c => c.name?.toLowerCase()))
-        const mergedCharacters = [
-          ...dbCharacters,
-          ...planCast.filter(c => c?.name && !dbNames.has(c.name.toLowerCase())),
-        ]
-        const characters = mergedCharacters
-        const beats = serviceData.beats || []
-
-        // 2. Build context with token budget enforcement
-        // Assemble each section separately, then run through budgetContext()
-        const linkReqs = getEntityLinkRequirements()
-        const systemCtx = `=== IQ 200 CONTEXT ENGINEERING & ENTITY LINKS ===
-You are in a high-fidelity creative workspace. To maintain continuity and enable user interaction, you MUST use the following rules for entity references:
-1. ENTITY LINKS: Whenever you mention a Character, Faction, World Rule, Episode, Item, or Event, ALWAYS use the format: [Entity Name][entity-id].
-   Example: "[Marcus][char-123] challenged the [Council of Seven][faction-456] for the [One Ring][item-001]."
-2. REQUIRED MINIMUMS (in the prose only): The worldDescription narrative text (the paragraphs) MUST contain at least ${linkReqs.minItems} ITEM, ${linkReqs.minEvents} EVENT, and ${linkReqs.minRules} RULE links woven into the prose. Separate "Items:" / "Events:" / "Rules:" lists do NOT count—only [Name][item-id] etc. inside the worldDescription string. Weave entities into sentences; if below minimum, the tool will REJECT.
-3. CLICKABLE UI: These tags are rendered as clickable links and hover tooltips in the user's interface. Using them makes your intelligence visible and actionable.
-4. CONTEXT SYNTHESIS: Use the technical data below to weave a "connected" world. Don't just list facts; synthesize them into a brilliant narrative.
-5. IQ 200 REASONING: Your Council of Agents provides raw data; your job as Showrunner is to spot the "out of the box" connections they missed.
-
-=== SYSTEM CONTEXT ===
-projectId: ${projectId}
-${episodeId ? `episodeId: ${episodeId}` : ''}
-currentPhase: ${currentPhase || 'premise'}
-IMPORTANT: When calling tools that require projectId, you MUST use: "${projectId}"
-${episodeId ? `When calling tools that require episodeId, you MUST use: "${episodeId}"` : ''}
-CURRENT STORY PHASE: ${currentPhase || 'premise'}
-- premise: Concept planning, world building, episode premise.
-- breaking: Plot structure, beat board organization.
-- writing: Scripting and dialogue execution.
-⚠️ REFERENCE ONLY: Content below is for world/history consistency. When asked to GENERATE, create NEW content.
-${masterPrompt ? `\n=== MASTER PROMPT ===\n${masterPrompt}` : ''}
-`
-
-        const projectCtx = `=== PROJECT ===
-Title: ${projectData?.name || 'Untitled'} | Genre: ${Array.isArray(storyPlan.genre) ? storyPlan.genre.join(', ') : storyPlan.genre || bible.genre || 'Not set'} | Tone: ${Array.isArray(storyPlan.tone) ? storyPlan.tone.join(', ') : storyPlan.tone || bible.tone || 'Not set'} | Theme: ${storyPlan.centralTheme || bible.centralTheme || 'Not set'}
-
-=== EPISODE PREMISE ===
-${storyPlan.premise || storyPlan.episodePremise || bible.episodePremise
-            ? JSON.stringify(storyPlan.premise || storyPlan.episodePremise || bible.episodePremise)
-            : 'No episode premise yet'
-          }
-
-=== WORLD ===
-${storyPlan.worldDescription || bible.worldDescription || 'No world description yet'}
-
-=== WORLD RULES ===
-${Array.isArray(storyPlan.worldRules) && storyPlan.worldRules.length > 0
-            ? storyPlan.worldRules
-              .map(
-                (r: any) =>
-                  `- [${r.category || 'General'}] ${r.rule}${r.consequence ? ` → ${r.consequence}` : ''}`
-              )
-              .join('\n')
-            : '(none)'
-          }
-
-=== FACTIONS ===
-${Array.isArray(storyPlan.factions) && storyPlan.factions.length > 0
-            ? storyPlan.factions
-              .map((f: any) => {
-                const factionId = `faction-${f.id?.slice(0, 8) || f.name.toLowerCase().replace(/\s+/g, '-')}`
-                return `- [${f.name}][${factionId}]: ${f.ideology || f.description || 'No description'}`
-              })
-              .join('\n')
-            : '(none)'
-          }
-
-=== ITEMS ===
-${Array.isArray((storyPlan as any).items) && (storyPlan as any).items.length > 0
-            ? (storyPlan as any).items
-              .map((i: any) => {
-                const itemId = 'item-' + (i.id?.slice(0, 8) || i.name.toLowerCase().replace(/\s+/g, '-'))
-                return '- [' + i.name + '][' + itemId + ']: ' + (i.description || 'No description')
-              })
-              .join('\n')
-            : '(none)'
-          }
-
-=== EVENTS ===
-${Array.isArray((storyPlan as any).events) && (storyPlan as any).events.length > 0
-            ? (storyPlan as any).events
-              .map((e: any) => {
-                const eventId = 'event-' + (e.id?.slice(0, 8) || e.name.toLowerCase().replace(/\s+/g, '-'))
-                return '- [' + e.name + '][' + eventId + ']: ' + (e.description || 'No description')
-              })
-              .join('\n')
-            : '(none)'
-          }
-
-=== WORLD RULES ===
-${Array.isArray((storyPlan as any).worldRules) && (storyPlan as any).worldRules.length > 0
-            ? (storyPlan as any).worldRules
-              .map((r: any) => {
-                const ruleId = 'rule-' + (r.id?.slice(0, 8) || r.name?.toLowerCase().replace(/\s+/g, '-') || 'unknown')
-                return `- [${r.name || r.category || 'Rule'}][${ruleId}]: ${r.rule || 'No description'}`
-              })
-              .join('\n')
-            : '(none)'
-          }
-
-=== INSPIRATIONS ===
-${storyPlan.inspirations ? `Movies: ${Array.isArray(storyPlan.inspirations.movies) ? storyPlan.inspirations.movies.map((m: any) => (typeof m === 'string' ? m : m.title)).join(', ') : 'None'} | Books: ${Array.isArray(storyPlan.inspirations.books) ? storyPlan.inspirations.books.map((b: any) => (typeof b === 'string' ? b : b.title)).join(', ') : 'None'} | Games: ${Array.isArray(storyPlan.inspirations.games) ? storyPlan.inspirations.games.map((g: any) => (typeof g === 'string' ? g : g.title)).join(', ') : 'None'}` : '(none)'}
-
-=== SEQUENCES ===
-${Array.isArray(storyPlan.sequences) && storyPlan.sequences.length > 0
-            ? storyPlan.sequences
-              .map((s: any, i: number) => `${i + 1}. ${s.name}: ${s.description || ''}`)
-              .join('\n')
-            : '(none)'
-          }`
-
-        // Characters: Increased limit to ensure key cast is included, sorted by role
-        const rolePriority: Record<string, number> = {
-          'protagonist': 1,
-          'hero': 1,
-          'main': 1,
-          'antagonist': 2,
-          'villain': 2,
-          'mentor': 3,
-          'guide': 3,
-          'supporting': 4,
-          'side': 5,
-        }
-
-        const sortedChars = [...characters].sort((a, b) => {
-          const roleA = (a.role || '').toLowerCase()
-          const roleB = (b.role || '').toLowerCase()
-          const priorityA = rolePriority[roleA] || 99
-          const priorityB = rolePriority[roleB] || 99
-          if (priorityA !== priorityB) return priorityA - priorityB
-          return 0
-        })
-
-        const charsCtx =
-          sortedChars.length > 0
-            ? `=== CHARACTERS (${sortedChars.length}) ===\n` +
-            sortedChars
-              .slice(0, 20)
-              .map((c: any) => {
-                const charId = `char-${c.id?.slice(0, 8) || c.name.toLowerCase().replace(/\s+/g, '-')}`
-                return `- [${c.name}][${charId}] (${c.role || '?'}): ${c.description || 'No description'}`
-              })
-              .join('\n')
-            : ''
-
-        // Beats: reduced from 8 to 3
-        const beatsCtx =
-          beats.length > 0
-            ? `=== RECENT BEATS (${beats.length}) ===\n` +
-            beats
-              .slice(-3)
-              .map((b: any) => {
-                const beatId = `beat-${b.id?.slice(0, 8)}`
-                return `- [${b.logline || `Beat ${b.sequence}`}][${beatId}]`
-              })
-              .join('\n')
-            : ''
-
-        // Apply token budget enforcement — truncates any section that exceeds its limit
-        const rawParts: RawContextParts = {
-          systemPrompt: systemCtx,
-          projectContext: projectCtx,
-          characters: charsCtx,
-          beats: beatsCtx,
-          rag: ragContext || undefined,
-          userMessage: message,
-        }
-        const budgeted = budgetContext(rawParts)
-
-        if (budgeted.trimmed.length > 0) {
-          console.log('[Stream] Token budget trimmed sections:', budgeted.trimmed)
-        }
-        console.log(`[Stream] Context tokens: ~${budgeted.totalTokens}`)
-
-        contextPrompt = budgeted.context
-      } catch (err) {
-        console.warn('Failed to load context for stream:', err)
+    // 1. Fetch + format FULL context (project, bible, story plan, characters, beats, RAG)
+    const { contextPrompt, existingBibleData } = await assembleStorytellerContext({
+      projectId,
+      episodeId,
+      message,
+      currentPhase,
+      userId: session.user.id,
+      onError: err => {
         try {
           trace?.update({ metadata: { contextError: String(err) } })
         } catch {
           /* ignore */
         }
-      }
-    }
+      },
+    })
 
     const agent = await createStorytellerAgent()
 
-    // No pattern matching - LLM decides what to update via tool calls
-    // Section is extracted from the tool result's `keys` array
-    // No pattern matching - LLM decides what to update via tool calls
-    // Section is extracted from the tool result's `keys` array
-    let detectedSection: BibleSection | 'beats' = BibleSection.FULL
+    // No pattern matching - LLM decides what to update via tool calls.
+    // Section is extracted from the tool result, not pre-detected.
+    let detectedSection: DetectedSection = BibleSection.FULL
     const isSectionUpdate = false // Will be determined by tool call
     const sectionPrompt = '' // No forced section mode
 
@@ -498,7 +197,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
     // Create EventBus for Workflow Visibility
     // EventEmitter imported at top level to avoid edge runtime issues
     const { workflowContext, WORKFLOW_EVENTS } =
-      await import('@/domains/storyteller/utils/workflow-context')
+      await import('@/domains/storyteller/core/WorkflowContext')
     const eventBus = new EventEmitter()
     const activeSpans = new Map<string, ReturnType<NonNullable<typeof trace>['span']>>() // Track spans by step name
 
@@ -560,22 +259,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
       },
     }
 
-    // Track existing bible data for "before" comparison in diff viewer
-    let existingBibleData: Record<string, unknown> = {}
-
-    // Fetch existing data for diff viewer (no pattern matching - LLM decides what to update)
-    if (projectId) {
-      try {
-        const projectRow = await db
-          .select()
-          .from(projects)
-          .where(eq(projects.id, projectId))
-          .then(r => r[0])
-        existingBibleData = (projectRow?.seriesBible as Record<string, unknown>) || {}
-      } catch (e) {
-        console.warn('Failed to fetch existing bible for diff:', e)
-      }
-    }
+    // existingBibleData (for diff "before" state) comes from assembleStorytellerContext above.
 
     const result = await workflowContext.run({ traceId, sessionId, userId, eventBus }, async () => {
       return agent.stream(promptWithContext, streamOptions)
@@ -592,35 +276,6 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
 
     // Collect actions to emit AFTER final message (better UX - approval appears at end)
     const pendingActions: Record<string, unknown>[] = []
-
-    /**
-     * Generate a deduplication key for an action
-     * Format: toolName:section:contentHash
-     *
-     * For beats: use beat ID or title as key
-     * For bible sections: use section name + content hash
-     */
-    function getActionDedupeKey(toolName: string, section: string, payload: Record<string, unknown>): string {
-      // For beat management, use beat ID or title for deduplication
-      if (toolName === 'manage_beat') {
-        const beatId = (payload as any)?.id || (payload as any)?.beatId || (payload as any)?.beat?.id
-        const beatTitle = (payload as any)?.title || (payload as any)?.beat?.title || 'untitled'
-        return `manage_beat:${beatId || beatTitle}`
-      }
-
-      // For world bible updates, include main content identifiers
-      if (toolName === 'update_world_bible') {
-        // Create a content-based key using first few chars of stringified payload
-        const contentPreview = JSON.stringify(payload || {}).slice(0, 100)
-        return `${toolName}:${section}:${contentPreview}`
-      }
-
-      // Default: use payload keys
-      const payloadKeys = Object.keys(payload || {})
-        .sort()
-        .join(',')
-      return `${toolName}:${section}:${payloadKeys}`
-    }
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -853,80 +508,15 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
                   toolCallSummary.push(`Tool: ${toolName}`)
 
                   // Emit section_loading when update tools are called
-                  if (
-                    toolName === 'update_world_bible' ||
-                    toolName === 'consult_premise_architect'
-                  ) {
-                    // Try to detect section from tool args - check all known section keys
-                    const sectionKeys = [
-                      'soundtracks',
-                      'worldRules',
-                      'factions',
-                      'inspirations',
-                      'keyCharacters',
-                      'worldDescription',
-                      'plotTwists',
-                      'episodePremise',
-                      'episodeRoadmap',
-                      'sequences',
-                      'premise',
-                      'characters',
-                      'cast',
-                      // Individual premise sections for regeneration
-                      'protagonistHook',
-                      'fatalFlaw',
-                      'stakes',
-                      'inevitableConsequence',
-                      'theHook',
-                      'theTurn',
-                      'theAftermath',
-                      'transformation',
-                      'thematicFocus',
-                      'logline',
-                      'title',
-                    ]
-
-                    // For consult_premise_architect, check task and section args
-                    let argSection =
-                      toolArgs.section || Object.keys(toolArgs).find(k => sectionKeys.includes(k))
-
-                    // If regenerating a premise section, map to episodePremise for UI shimmer
-                    const premiseSections = [
-                      'protagonistHook',
-                      'fatalFlaw',
-                      'stakes',
-                      'inevitableConsequence',
-                      'theHook',
-                      'theTurn',
-                      'theAftermath',
-                      'transformation',
-                      'thematicFocus',
-                      'logline',
-                      'title',
-                    ]
-                    if (argSection && premiseSections.includes(argSection)) {
-                      console.log(`[Stream] Premise section regeneration detected: ${argSection}`)
-                      argSection = 'episodePremise' // Show shimmer on episode premise panel
-                    }
-
-                    console.log(`[Stream] Detected section from args: ${argSection || 'none'}`)
-
-                    if (argSection) {
-                      // Normalize section name
-                      const normalizedSection =
-                        argSection === 'characters' || argSection === 'cast'
-                          ? 'keyCharacters'
-                          : argSection
-
-                      console.log(`[Stream] Emitting section_loading for: ${normalizedSection}`)
-                      safeEnqueue(
-                        `data: ${JSON.stringify({
-                          type: 'section_loading',
-                          section: normalizedSection,
-                          loading: true,
-                        })}\n\n`
-                      )
-                    }
+                  const loadingSection = detectLoadingSection(toolName, toolArgs)
+                  if (loadingSection) {
+                    safeEnqueue(
+                      `data: ${JSON.stringify({
+                        type: 'section_loading',
+                        section: loadingSection,
+                        loading: true,
+                      })}\n\n`
+                    )
                   }
 
                   safeEnqueue(
@@ -1010,192 +600,44 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
                       )
                     }
 
-                    // Handle ask_character_questions tool - emit as question event
-                    if (toolName === 'ask_character_questions' && parsed?.type === 'questions') {
-                      console.log('[Stream] Character questions detected, emitting to UI')
+                    // Map the parsed tool result to a UI outcome (pure logic)
+                    const outcome = mapToolResultToAction({
+                      toolName,
+                      parsed,
+                      episodeId,
+                      isSectionUpdate,
+                      currentSection: detectedSection,
+                    })
+
+                    // Interactive / notification outcomes are emitted directly (no action)
+                    if (outcome.kind === 'questions') {
                       safeEnqueue(
-                        `data: ${JSON.stringify({
-                          type: 'questions',
-                          questions: parsed.questions.map((q: any) => ({
-                            id: q.id,
-                            question: q.question,
-                            options: q.options,
-                            urgency: 'normal',
-                            context: `Character: ${parsed.characterName}`,
-                          })),
-                        })}\n\n`
+                        `data: ${JSON.stringify({ type: 'questions', questions: outcome.questions })}\n\n`
                       )
-                      continue // Don't process as normal action
+                      continue
+                    }
+                    if (outcome.kind === 'info') {
+                      safeEnqueue(
+                        `data: ${JSON.stringify({ type: 'info', message: outcome.message, data: outcome.data })}\n\n`
+                      )
+                      continue
+                    }
+                    if (outcome.kind === 'navigation') {
+                      safeEnqueue(
+                        `data: ${JSON.stringify({ type: 'navigation', action: outcome.action, episodeId: outcome.episodeId })}\n\n`
+                      )
+                      continue
                     }
 
-                    // Handle ask_continue_to_beats tool - emit as question event
-                    if (toolName === 'ask_continue_to_beats' && parsed?.type === 'questions') {
-                      console.log('[Stream] Continue to beats question detected')
-                      safeEnqueue(
-                        `data: ${JSON.stringify({
-                          type: 'questions',
-                          questions: parsed.questions.map((q: any) => ({
-                            id: q.id,
-                            question: q.question,
-                            options: q.options || [],
-                            urgency: 'normal',
-                            context: parsed.context,
-                          })),
-                        })}\n\n`
-                      )
-                      continue // Don't process as normal action
-                    }
-
-                    // Map tool names to action types for UI refresh
                     let actionType: string | null = null
                     let actionPayload: Record<string, unknown> = {}
-                    let requiresApproval = false // Section updates need approval
+                    let requiresApproval = false
 
-                    // Handle consult_premise_architect (returns episodePremise, not success)
-                    if (toolName === 'consult_premise_architect' && parsed?.episodePremise) {
-                      actionType = 'UPDATE_EPISODE_PREMISE'
-                      actionPayload = {
-                        episodeId: episodeId || null,
-                        premise: parsed.episodePremise,
-                      }
-                      requiresApproval = true
-                    }
-                    // Handle tools that return { success: true, ... }
-                    else if (parsed?.success) {
-                      // Use configuration-driven action processing for update_world_bible
-                      if (toolName === 'update_world_bible') {
-                        const fields = parsed.updatedFields || {}
-                        console.log(
-                          '[Stream] update_world_bible fields:',
-                          Object.keys(fields),
-                          JSON.stringify(fields).slice(0, 300)
-                        )
-
-                        const processedAction = processToolResultToAction(
-                          toolName,
-                          fields,
-                          episodeId
-                        )
-                        console.log(
-                          '[Stream] processedAction:',
-                          processedAction
-                            ? {
-                              actionType: processedAction.actionType,
-                              section: processedAction.section,
-                              payloadKeys: Object.keys(processedAction.payload),
-                            }
-                            : 'null'
-                        )
-
-                        if (processedAction) {
-                          actionType = processedAction.actionType
-                          actionPayload = processedAction.payload
-                          requiresApproval = processedAction.requiresApproval
-                          detectedSection = processedAction.section
-                        }
-                      }
-                      // Handle beat management tool
-                      else if (toolName === 'manage_beat' && parsed.beat) {
-                        const operation = parsed.message?.toLowerCase() || ''
-                        const beatActions: Record<
-                          string,
-                          { type: ActionType; payload: Record<string, unknown>; approval: boolean }
-                        > = {
-                          created: {
-                            type: ActionType.CREATE_BEAT,
-                            payload: parsed.beat,
-                            approval: true,
-                          },
-                          updated: {
-                            type: ActionType.UPDATE_BEAT,
-                            payload: { beatId: parsed.beat.id, updates: parsed.beat },
-                            approval: true,
-                          },
-                          deleted: {
-                            type: ActionType.DELETE_BEAT,
-                            payload: { beatId: parsed.deletedId || parsed.beat?.id },
-                            approval: false,
-                          },
-                          approved: {
-                            type: ActionType.UPDATE_BEAT,
-                            payload: {
-                              beatId: parsed.beat?.id,
-                              updates: { status: parsed.status },
-                            },
-                            approval: false,
-                          },
-                          locked: {
-                            type: ActionType.UPDATE_BEAT,
-                            payload: {
-                              beatId: parsed.beat?.id,
-                              updates: { status: parsed.status },
-                            },
-                            approval: false,
-                          },
-                        }
-
-                        const matchedAction = Object.entries(beatActions).find(([key]) =>
-                          operation.includes(key)
-                        )
-                        if (matchedAction) {
-                          const [, config] = matchedAction
-                          actionType = config.type
-                          actionPayload = config.payload
-                          requiresApproval = config.approval
-                          detectedSection = 'beats' // Set section for deduplication
-                        }
-                      }
-                      // Handle phase updates
-                      else if (toolName === 'update_story_phase') {
-                        actionType = ActionType.UPDATE_STORY_PHASE
-                        actionPayload = { phase: parsed.phase }
-                        console.log(`[Stream] Phase update detected: ${parsed.phase}`)
-                      }
-                      // Handle character creation
-                      else if (toolName === 'create_character' && parsed.character) {
-                        actionType = ActionType.CREATE_CHARACTER
-                        actionPayload = parsed.character
-                        requiresApproval = false // Character creation is immediate
-                        console.log(`[Stream] Character created: ${parsed.character.name}`)
-                      }
-                      // Handle episode creation
-                      else if (toolName === 'create_episode' && parsed.episode) {
-                        // Emit as info notification, not approval action
-                        safeEnqueue(
-                          `data: ${JSON.stringify({
-                            type: 'info',
-                            message: parsed.message || `Episode created: ${parsed.episode.title}`,
-                            data: parsed.episode,
-                          })}\n\n`
-                        )
-                        console.log(`[Stream] Episode created: ${parsed.episode.title}`)
-
-                        // If nextStep suggests asking about beats, the agent will call ask_continue_to_beats next
-                        continue // Don't create an action
-                      }
-                      // Handle start_beat_planning
-                      else if (toolName === 'start_beat_planning' && parsed.type === 'navigation') {
-                        safeEnqueue(
-                          `data: ${JSON.stringify({
-                            type: 'navigation',
-                            action: parsed.action,
-                            episodeId: parsed.episodeId,
-                          })}\n\n`
-                        )
-                        console.log(`[Stream] Navigation signal: ${parsed.action}`)
-                        continue // Don't create an action
-                      }
-                    }
-
-                    // FALLBACK: If we detected a section update but no action was mapped,
-                    // create a generic action based on the section
-                    if (!actionType && isSectionUpdate && toolName === 'update_world_bible') {
-                      actionType = getActionTypeForSection(detectedSection as BibleSection)
-                      actionPayload = parsed?.updatedFields || parsed || {}
-                      requiresApproval = true
-                      console.log(
-                        `[Stream] Using fallback action type: ${actionType} for section ${detectedSection}`
-                      )
+                    if (outcome.kind === 'action') {
+                      actionType = outcome.actionType
+                      actionPayload = outcome.actionPayload
+                      requiresApproval = outcome.requiresApproval
+                      detectedSection = outcome.detectedSection
                     }
 
                     // Collect action to emit AFTER final message (better UX)
@@ -1216,7 +658,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
                         if (projectId) {
                           try {
                             const { entityAutoLinker } =
-                              await import('@/domains/storyteller/services/entity-auto-linker')
+                              await import('@/domains/storyteller/services/EntityAutoLinkerService')
 
                             // Auto-link text fields in the payload
                             for (const [key, value] of Object.entries(linkedPayload)) {
@@ -1366,7 +808,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
           if (projectId && fullText.length > 0) {
             try {
               const { entityAutoLinker } =
-                await import('@/domains/storyteller/services/entity-auto-linker')
+                await import('@/domains/storyteller/services/EntityAutoLinkerService')
               finalText = await entityAutoLinker.autoLink(fullText, projectId)
             } catch (err) {
               console.warn('[Stream] Entity auto-linking failed:', err)

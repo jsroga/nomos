@@ -24,12 +24,6 @@ export interface LoadingOperation {
   details?: string
 }
 
-interface LoadingState {
-  operations: Map<string, LoadingOperation>
-  isAnyLoading: boolean
-  loadingSections: Set<string>
-}
-
 interface UseLoadingStatesReturn {
   // State
   operations: LoadingOperation[]
@@ -183,38 +177,3 @@ export function useLoadingStates(): UseLoadingStatesReturn {
     loadingSections,
   }
 }
-
-// Predefined section identifiers for consistency
-export const LOADING_SECTIONS = {
-  // Premise phase
-  PREMISE_HOOK: 'protagonistHook',
-  PREMISE_FLAW: 'fatalFlaw',
-  PREMISE_STAKES: 'stakes',
-  PREMISE_CONSEQUENCE: 'inevitableConsequence',
-  PREMISE_FULL: 'premise',
-  PREMISE_POSTER: 'poster',
-  PREMISE_STORYBOARD: 'storyboard',
-
-  // Bible
-  BIBLE_OVERVIEW: 'bible-overview',
-  BIBLE_CHARACTERS: 'bible-characters',
-  BIBLE_FACTIONS: 'bible-factions',
-  BIBLE_RULES: 'bible-rules',
-  BIBLE_MOODBOARD: 'bible-moodboard',
-
-  // Breaking phase
-  BEAT_CREATE: 'beat-create',
-  BEAT_UPDATE: 'beat-update',
-  BEAT_APPROVE: 'beat-approve',
-
-  // Writing phase
-  SCRIPT_GENERATE: 'script-generate',
-  SCRIPT_EDIT: 'script-edit',
-
-  // Characters
-  CHARACTER_CREATE: 'character-create',
-  CHARACTER_UPDATE: 'character-update',
-  CHARACTER_PSYCHOLOGY: 'character-psychology',
-} as const
-
-type LoadingSectionType = (typeof LOADING_SECTIONS)[keyof typeof LOADING_SECTIONS]

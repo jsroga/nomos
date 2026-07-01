@@ -5,8 +5,12 @@
  */
 
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { getUserSession } from './auth'
+
+// Re-exported so existing `@/lib/api-utils` importers keep working.
+// Canonical implementation (incl. E2E bypass) lives in ./auth.
+export { getUserSession }
 
 // ============================================
 // TYPES
@@ -31,20 +35,6 @@ export type ApiHandler<T = any> = (
 // ============================================
 // AUTHENTICATION
 // ============================================
-
-/**
- * Get user session and authenticated Supabase client
- */
-export async function getUserSession() {
-  const cookieStore = await cookies()
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
-  const {
-    data: { session },
-    error,
-  } = await supabase.auth.getSession()
-
-  return { session, supabase, error }
-}
 
 /**
  * Require authentication - returns session or throws
@@ -191,32 +181,6 @@ const ALLOWED_ORIGINS = [
   'http://localhost:3000',
   'http://localhost:3001',
 ].filter(Boolean) as string[]
-
-/**
- * Validate request origin for CSRF protection
- */
-function validateOrigin(request: NextRequest): boolean {
-  const origin = request.headers.get('origin')
-  const referer = request.headers.get('referer')
-
-  // Allow requests without origin (same-origin, server-to-server)
-  if (!origin && !referer) {
-    return true
-  }
-
-  // Check origin header
-  if (origin) {
-    return ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed))
-  }
-
-  // Fallback to referer
-  if (referer) {
-    return ALLOWED_ORIGINS.some(allowed => referer.startsWith(allowed))
-  }
-
-  return false
-}
-
 // ============================================
 // PROJECT ACCESS VERIFICATION
 // ============================================

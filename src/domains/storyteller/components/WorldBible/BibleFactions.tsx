@@ -1,6 +1,6 @@
 import React from 'react'
 import { Crown, Plus, RefreshCw, Trash2, Loader2 } from 'lucide-react'
-import { Faction } from '../../schemas/agent-schemas'
+import { Faction } from '@/domains/storyteller/prompts/schemas/agent-schemas'
 import { FactionCard } from '../FactionCard'
 
 import { useBible } from './BibleContext'

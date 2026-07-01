@@ -7,6 +7,15 @@
 import * as fs from 'fs/promises'
 import * as path from 'path'
 
+/**
+ * Location of agent skill files, relative to the project root (process.cwd()).
+ * Skills are storyteller/narrative-specific, so they live inside that domain.
+ * Single source of truth — referenced by mastra-instance and validate-skills.
+ */
+export const SKILLS_DIR = 'src/domains/storyteller/prompts/skills'
+
+export { SkillEvalCaseSchema, SkillEvalsFileSchema } from './eval-schema'
+
 export interface Skill {
   name: string
   content: string
@@ -22,7 +31,7 @@ interface SkillReference {
  * Load a skill from the skills directory
  */
 export async function loadSkill(skillName: string): Promise<Skill | null> {
-  const skillPath = path.join(process.cwd(), 'skills', skillName)
+  const skillPath = path.join(process.cwd(), SKILLS_DIR, skillName)
 
   try {
     // Load main SKILL.md
@@ -101,7 +110,7 @@ export function buildSkillsPrompt(skills: Skill[], includeReferences: boolean = 
  * List available skills
  */
 export async function listAvailableSkills(): Promise<string[]> {
-  const skillsPath = path.join(process.cwd(), 'skills')
+  const skillsPath = path.join(process.cwd(), SKILLS_DIR)
 
   try {
     const entries = await fs.readdir(skillsPath, { withFileTypes: true })
@@ -119,7 +128,7 @@ async function getSkillMetadata(skillName: string): Promise<{
   hasReferences: boolean
   referenceCount: number
 } | null> {
-  const skillPath = path.join(process.cwd(), 'skills', skillName)
+  const skillPath = path.join(process.cwd(), SKILLS_DIR, skillName)
 
   try {
     await fs.access(path.join(skillPath, 'SKILL.md'))

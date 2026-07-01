@@ -20,12 +20,12 @@ import { initializeWorkspace, getStorytellerWorkspace } from '../../src/agent-co
 import { getSearchEngine } from '../../src/agent-core/search'
 import { loadSkills, buildSkillsPrompt } from '../../src/agent-core/skills'
 import { flushObservability, langfuse } from '../../src/agent-core/observability'
-import { workflowContext, WORKFLOW_EVENTS } from '../../src/domains/storyteller/utils/workflow-context'
+import { workflowContext, WORKFLOW_EVENTS } from '@/domains/storyteller/core/WorkflowContext'
 
 // Import agents
-import { createPsychologistAgent } from '../../src/domains/storyteller/agents/v2/psychologist-agent'
-import { createGardenerAgent } from '../../src/domains/storyteller/agents/v2/gardener-agent'
-import { createConsequenceAgent } from '../../src/domains/storyteller/agents/v2/consequence-agent'
+import { createPsychologistAgent } from '@/domains/storyteller/agents/PsychologistAgent'
+import { createGardenerAgent } from '@/domains/storyteller/agents/GardenerAgent'
+import { createConsequenceAgent } from '@/domains/storyteller/agents/ConsequenceAgent'
 
 interface TestResult {
     step: string

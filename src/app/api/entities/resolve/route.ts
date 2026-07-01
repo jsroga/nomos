@@ -16,9 +16,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { entityRegistry, getEntityTypeFromId } from '@/domains/storyteller/services/entity-registry'
-import { relationshipEnricher } from '@/domains/storyteller/services/relationship-enricher'
-import { contextualSummaryService } from '@/domains/storyteller/services/contextual-summary-service'
+import { entityRegistry, getEntityTypeFromId } from '@/domains/storyteller/services/EntityRegistryService'
+import { relationshipEnricher } from '@/domains/storyteller/services/RelationshipEnricherService'
+import { contextualSummaryService } from '@/domains/storyteller/services/ContextualSummaryService'
 import { db } from '@/lib/db'
 import { projects, characters } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'

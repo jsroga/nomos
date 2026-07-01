@@ -6,9 +6,11 @@
  *
  * Configuration can be overridden via:
  * 1. Environment variables
- * 2. LangSmith Prompt Hub (for prompts)
+ * 2. Langfuse remote prompts (ENABLE_REMOTE_PROMPTS)
  * 3. Runtime configuration
  */
+
+import { deepMerge } from '@/domains/storyteller/core/DeepMerge'
 
 // ============================================
 // TYPES
@@ -44,10 +46,10 @@ export interface EvaluationConfig {
 }
 
 export interface PromptConfig {
-  useHub: boolean // Pull prompts from LangSmith Hub
-  hubOwner: string // LangSmith Hub organization
+  useHub: boolean // Pull prompts from Langfuse when ENABLE_REMOTE_PROMPTS=true
+  hubOwner: string // Legacy LangSmith Hub org (unused; kept for config compat)
   environment: 'production' | 'staging' | 'dev'
-  fallbackToLocal: boolean // Use local prompts if Hub fails
+  fallbackToLocal: boolean // Use local prompts if remote fetch fails
 }
 
 /** Minimum entity links required in world description / roadmap / episode description. Easy to set to 5-6 via env. */
@@ -185,42 +187,6 @@ export function getStorytellerConfig(): StorytellerConfig {
 }
 
 /**
- * Update runtime configuration
- * Changes persist until process restart
- */
-function updateStorytellerConfig(updates: Partial<StorytellerConfig>): void {
-  runtimeConfig = deepMerge(runtimeConfig, updates) as Partial<StorytellerConfig>
-  console.log('[Storyteller Config] Configuration updated')
-}
-
-/**
- * Reset to default configuration
- */
-function resetStorytellerConfig(): void {
-  runtimeConfig = {}
-  console.log('[Storyteller Config] Reset to defaults')
-}
-
-// ============================================
-// SPECIFIC CONFIG GETTERS
-// ============================================
-
-/**
- * Check if a specific guardrail is enabled
- */
-function isGuardrailEnabled(guardrail: 'antiSlop' | 'hallucination' | 'consistency'): boolean {
-  const config = getStorytellerConfig()
-  return config.guardrails.globalEnabled && config.guardrails[guardrail].enabled
-}
-
-/**
- * Get anti-slop configuration
- */
-function getAntiSlopConfig(): AntiSlopConfig {
-  return getStorytellerConfig().guardrails.antiSlop
-}
-
-/**
  * Get required minimum entity links for world description / roadmap.
  * Used by agent prompt and update_world_bible tool. Change to 5-6 via env:
  * STORYTELLER_MIN_ITEM_LINKS=5 STORYTELLER_MIN_EVENT_LINKS=5 STORYTELLER_MIN_RULE_LINKS=5
@@ -229,26 +195,13 @@ export function getEntityLinkRequirements(): EntityLinkRequirements {
   return getStorytellerConfig().entityLinks
 }
 
-/**
- * Get prompt hub configuration
- */
-export function getPromptConfig(): PromptConfig {
-  return getStorytellerConfig().prompts
-}
-
-/**
- * Get evaluation configuration
- */
-function getEvaluationConfig(): EvaluationConfig {
-  return getStorytellerConfig().evaluation
-}
-
 // ============================================
 // PROMPT IDENTIFIERS
 // ============================================
 
 /**
- * Prompt identifiers for LangSmith Hub
+ * Prompt identifiers for Langfuse / local registry names.
+ * Push via: npm run prompts:push[:staging|:prod]
  */
 export const PROMPT_IDS = {
   // Main Agent Prompts
@@ -277,78 +230,9 @@ export const PROMPT_IDS = {
   sectionSoundtracks: 'storyteller-section-soundtracks',
 } as const
 
-/**
- * Get full Hub path for a prompt
- */
-function getPromptHubPath(
-  promptId: keyof typeof PROMPT_IDS,
-  environment?: 'production' | 'staging' | 'dev'
-): string {
-  const config = getPromptConfig()
-  const env = environment || config.environment
-  return `${config.hubOwner}/${PROMPT_IDS[promptId]}:${env}`
-}
-
 // ============================================
 // ENVIRONMENT VARIABLE KEYS
 // ============================================
-
-/**
- * Environment variable names for documentation
- */
-const ENV_VARS = {
-  // Entity link minimums (world description & roadmap). Default 3; set to 5 or 6 for richer linking.
-  STORYTELLER_MIN_ITEM_LINKS: 'Minimum [Name][item-id] in world description (default 3)',
-  STORYTELLER_MIN_EVENT_LINKS: 'Minimum [Name][event-id] in world description (default 3)',
-  STORYTELLER_MIN_RULE_LINKS: 'Minimum [Name][rule-id] in world description (default 3)',
-
-  // Feature flags
-  STORYTELLER_HITL_ENABLED: 'Enable human-in-the-loop confirmation',
-  STORYTELLER_GUARDRAILS_ENABLED: 'Enable all guardrails (master switch)',
-  STORYTELLER_FORCE_CLAUDE: 'Force Claude Opus 4.5 for all storyteller operations',
-
-  // Prompt Hub
-  STORYTELLER_USE_PROMPT_HUB: 'Pull prompts from LangSmith Hub',
-  STORYTELLER_PROMPT_ENV: 'Prompt environment (production/staging/dev)',
-  LANGSMITH_HUB_OWNER: 'LangSmith Hub organization name',
-
-  // Debugging
-  STORYTELLER_VERBOSE: 'Enable verbose logging',
-  STORYTELLER_LOG_DECISIONS: 'Log agent decisions',
-  STORYTELLER_LOG_RAG: 'Log RAG queries',
-
-  // LangSmith
-  LANGCHAIN_API_KEY: 'LangSmith API key',
-  LANGCHAIN_TRACING_V2: 'Enable LangSmith tracing',
-  LANGCHAIN_PROJECT: 'LangSmith project name',
-
-  // Model Configuration
-  ANTHROPIC_API_KEY: 'Anthropic API key for Claude Opus 4.5',
-} as const
-
-// ============================================
-// HELPERS
-// ============================================
-
-/**
- * Deep merge two objects
- */
-function deepMerge(target: any, source: any): any {
-  if (!source) return target
-
-  const result = { ...target }
-
-  for (const key of Object.keys(source)) {
-    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-      result[key] = deepMerge(result[key] || {}, source[key])
-    } else if (source[key] !== undefined) {
-      result[key] = source[key]
-    }
-  }
-
-  return result
-}
-
 // ============================================
 // EXPORT SINGLETON
 // ============================================

@@ -28,18 +28,13 @@
     "src/evaluation/experiments/extended-thinking-ab-test.ts",
     "src/evaluation/experiments/loop-creator.ts",
     "e2e/parallel-runner.ts",
-    "src/components/LiquidGlass.tsx",
-    "src/domains/chat/components/ContextChips.tsx",
-    "src/domains/chat/components/HoverActions.tsx",
-    "src/domains/chat/components/index.ts",
-    "src/domains/chat/components/SuggestionCard.tsx"
+    "src/domains/chat/components/index.ts"
   ],
   "ignoreDependencies": [
     "@types/*",
     "server-only",
     "eslint-*",
     "@anthropic-ai/sdk",
-    "@mastra/observability",
     "webpack"
   ],
   "ignoreBinaries": [

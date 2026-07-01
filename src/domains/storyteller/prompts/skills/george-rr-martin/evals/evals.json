@@ -1,0 +1,15 @@
+{
+  "skill_name": "george-rr-martin",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Two noble houses must marry to end a war, but the bride's brother murdered the groom's father years ago. Outline the wedding feast scene — politics, not battle.",
+      "expected_output": "Scene plan emphasizing political tension, gray morality, food/heraldry texture, and consequences — no clean reconciliation or plot-armor escape."
+    },
+    {
+      "id": 2,
+      "prompt": "My hero captain always makes the smart choice and never pays for mistakes. Rewrite their arc beat where they ignore a warning because of pride.",
+      "expected_output": "A character beat where pride causes a costly, believable consequence; voice feels grounded; no sudden redemption or miracle save."
+    }
+  ]
+}
