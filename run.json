@@ -1092,8 +1092,8 @@
   "status": {
     "kind": "running"
   },
-  "status_updated_at": "2026-07-01T11:12:57.007980Z",
-  "last_event_at": "2026-07-01T11:14:38.101079Z",
+  "status_updated_at": "2026-07-01T11:30:13.607484Z",
+  "last_event_at": "2026-07-01T11:30:13.607484Z",
   "pending_control": null,
   "checkpoints": [
     {
@@ -1319,9 +1319,9 @@
       }
     },
     {
-      "seq": 0,
+      "seq": 200,
       "checkpoint": {
-        "timestamp": "2026-07-01T11:14:38.204445Z",
+        "timestamp": "2026-07-01T11:14:41.904808Z",
         "current_node": "clarify_prep",
         "completed_nodes": [
           "start",
@@ -1331,8 +1331,169 @@
         ],
         "node_retries": {},
         "context_values": {
-          "current_node": "clarify_prep",
+          "internal.retry_count.scope": 0,
+          "internal.retry_count.start": 0,
+          "internal.run_id": "01KWEP38BTFCTZJRAPW78J15JT",
+          "graph.default_max_retries": "1",
           "last_response": "## Assessment summary\n`src/domains/interior-designer` is materially off the target module blueprint. The biggest issues are a client-side Supabase write path, a very large Zustand store that mixes UI ",
+          "last_stage": "clarify_prep",
+          "outcome": "succeeded",
+          "thread.review.current_node": "clarify_prep",
+          "thread.start.current_node": "scope",
+          "graph.rankdir": "LR",
+          "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: interior-designer is still pre-blueprint; the top 3 gaps are:\n1. direct client Supabase write in `useInteriorStore`\n2. a 1661-line Zustand store mixing UI/server/persistence concerns\n3. bespoke job polling plus cross-module internal coupling\n\nI did not modify code.",
+          "current_node": "clarify_prep",
+          "command.output": "blob://sha256/757e155e41486ff58ca5b121ff783e67d36e35e835e3fd54895133b33caf5167",
+          "graph.stall_timeout": "1800000ms",
+          "internal.thread_id": "review",
+          "graph.goal": "Clean up and align the interior-designer module (src/domains/interior-designer) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
+          "internal.fidelity": "summary:medium",
+          "internal.work_dir": "/workspace/kurvitza",
+          "response.clarify_prep": "## Assessment summary\n`src/domains/interior-designer` is materially off the target module blueprint. The biggest issues are a client-side Supabase write path, a very large Zustand store that mixes UI and server concerns, and long-running retexture/export flows that bypass the shared Trigger.dev job model.\n\nThis means the plan should focus first on restoring safe boundaries and layering, then on moving async work and cross-module seams into the architecture contract.\n\n## Key gaps (max 5)\n- Direct browser → Supabase writes in `useInteriorStore` break the server-only persistence rule.\n- A 1661-line Zustand store mixes ephemeral UI state, server state, persistence, jobs, and domain logic.\n- Retexture/export uses bespoke polling and client recovery instead of module-owned Trigger tasks + shared job hooks.\n- The module deep-imports internals from `world-building-toolkit` and `3d-asset-exporter`.\n- Legacy `ai/TextureService.ts` plus weak DTO typing leave the server/task boundary unclear.\n\n## Pick one scope (most teams pick A, B, or C)\n\n| Option | What the plan will assume |\n| --- | --- |\n| **[A] Staged migration** | Create a safe migration path: first introduce `index.ts`, `state/`, `io/`, and `services/` around design CRUD and auth-safe persistence; then move retexture/export into `tasks/` + shared job primitives; finally clean up cross-module API boundaries and leftover legacy AI/util code. |\n| **[B] Minimal first step** | Limit the plan to the highest-risk fixes first: remove browser writes, add typed DTO/API/service seams for design CRUD, and split server state out of Zustand, while deferring full retexture/export and broader folder convergence. |\n| **[C] Full blueprint** | Plan a full reshape now: migrate to `ui/state/io/core/services/tasks`, replace the god store, convert retexture/export to Trigger tasks, eliminate deep cross-module imports, and either remove or properly relocate incomplete AI code. |\n\n**Advanced:** [F] type custom constraints in freeform · [R] re-assess only if findings are wrong\n\n**Recommendation: [A]** — it fixes the active security/architecture risks first without forcing the whole module into a single high-risk rewrite.",
+          "graph.label": "Optional Build",
+          "graph.default_fidelity": "summary:medium",
+          "failure_signature": "",
+          "internal.node_visit_count": 1,
+          "internal.retry_count.clarify_prep": 0,
+          "failure_class": "",
+          "internal.retry_count.assess": 0
+        },
+        "node_outcomes": {
+          "start": {
+            "status": "succeeded",
+            "usage": null
+          },
+          "assess": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_response": "Assessment written to `findings/assess.md`.\n\nVerdict: interior-designer is still pre-blueprint; the top 3 gaps are:\n1. direct client Supabase write in `useInteriorStore`\n2. a 1661-line Zustand store m",
+              "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: interior-designer is still pre-blueprint; the top 3 gaps are:\n1. direct client Supabase write in `useInteriorStore`\n2. a 1661-line Zustand store mixing UI/server/persistence concerns\n3. bespoke job polling plus cross-module internal coupling\n\nI did not modify code.",
+              "last_stage": "assess"
+            },
+            "notes": "Stage completed: assess",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 79083,
+                    "output_tokens": 4954,
+                    "reasoning_tokens": 705,
+                    "cache_read_tokens": 327168,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 364384
+            },
+            "files_touched": [
+              "/workspace/kurvitza/findings/assess.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 60302,
+              "tool_time_ms": 1252,
+              "active_time_ms": 61554
+            }
+          },
+          "clarify_prep": {
+            "status": "succeeded",
+            "context_updates": {
+              "response.clarify_prep": "## Assessment summary\n`src/domains/interior-designer` is materially off the target module blueprint. The biggest issues are a client-side Supabase write path, a very large Zustand store that mixes UI and server concerns, and long-running retexture/export flows that bypass the shared Trigger.dev job model.\n\nThis means the plan should focus first on restoring safe boundaries and layering, then on moving async work and cross-module seams into the architecture contract.\n\n## Key gaps (max 5)\n- Direct browser → Supabase writes in `useInteriorStore` break the server-only persistence rule.\n- A 1661-line Zustand store mixes ephemeral UI state, server state, persistence, jobs, and domain logic.\n- Retexture/export uses bespoke polling and client recovery instead of module-owned Trigger tasks + shared job hooks.\n- The module deep-imports internals from `world-building-toolkit` and `3d-asset-exporter`.\n- Legacy `ai/TextureService.ts` plus weak DTO typing leave the server/task boundary unclear.\n\n## Pick one scope (most teams pick A, B, or C)\n\n| Option | What the plan will assume |\n| --- | --- |\n| **[A] Staged migration** | Create a safe migration path: first introduce `index.ts`, `state/`, `io/`, and `services/` around design CRUD and auth-safe persistence; then move retexture/export into `tasks/` + shared job primitives; finally clean up cross-module API boundaries and leftover legacy AI/util code. |\n| **[B] Minimal first step** | Limit the plan to the highest-risk fixes first: remove browser writes, add typed DTO/API/service seams for design CRUD, and split server state out of Zustand, while deferring full retexture/export and broader folder convergence. |\n| **[C] Full blueprint** | Plan a full reshape now: migrate to `ui/state/io/core/services/tasks`, replace the god store, convert retexture/export to Trigger tasks, eliminate deep cross-module imports, and either remove or properly relocate incomplete AI code. |\n\n**Advanced:** [F] type custom constraints in freeform · [R] re-assess only if findings are wrong\n\n**Recommendation: [A]** — it fixes the active security/architecture risks first without forcing the whole module into a single high-risk rewrite.",
+              "last_stage": "clarify_prep",
+              "last_response": "## Assessment summary\n`src/domains/interior-designer` is materially off the target module blueprint. The biggest issues are a client-side Supabase write path, a very large Zustand store that mixes UI "
+            },
+            "notes": "Stage completed: clarify_prep",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 39154,
+                    "output_tokens": 2165,
+                    "reasoning_tokens": 284,
+                    "cache_read_tokens": 105472,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 160988
+            },
+            "files_touched": [
+              "/workspace/kurvitza/CLARIFY.md",
+              "/workspace/kurvitza/DECISIONS.md",
+              "/workspace/kurvitza/PLAN.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 28544,
+              "tool_time_ms": 399,
+              "active_time_ms": 28943
+            }
+          },
+          "scope": {
+            "status": "succeeded",
+            "context_updates": {
+              "command.output": "blob://sha256/757e155e41486ff58ca5b121ff783e67d36e35e835e3fd54895133b33caf5167"
+            },
+            "notes": "Script completed: M=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1",
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 478,
+              "active_time_ms": 478
+            }
+          }
+        },
+        "next_node_id": "Clarify",
+        "git_commit_sha": "89c7a7697f565929e813f5bf13457cff9b6ecac4",
+        "node_visits": {
+          "clarify_prep": 1,
+          "scope": 1,
+          "start": 1,
+          "assess": 1
+        }
+      },
+      "diff": {
+        "patch": "diff --git a/CLARIFY.md b/CLARIFY.md\nindex 29e93c9..3d96831 100644\n--- a/CLARIFY.md\n+++ b/CLARIFY.md\n@@ -1,55 +1,17 @@\n-# Clarify — decisions needed before planning\n+# Clarify reference\n \n ## Summary\n-The assessment found that `src/domains/storyteller` is still materially off the target module blueprint: it lacks a single public `index.ts`, still uses legacy top-level folders, mixes client/server responsibilities, keeps server state outside TanStack Query, and runs a parallel hand-rolled orchestration layer beside Mastra. A good plan is possible now, but the architect still needs human direction on migration breadth, compatibility constraints, and whether to include the highest-risk subsystems (World Bible state/job flows, DB/schema convergence, and Mastra cleanup) in this run or stage them.\n-\n-## Open questions\n-\n-### Q1: Should planning target a staged migration or a one-pass blueprint reshape?\n-- **Context:** The biggest structural gap is the lack of a public module contract plus the legacy folder layout (`components/`, `hooks/`, `db/`, `tools/`, etc.). The architect can either plan around a compatibility-first shell or assume broader moves/renames up front.\n-- **If we guess wrong:** A too-big plan may create long-lived breakage across `app/` and `chat` imports; a too-small plan may preserve the legacy shape so long that later cleanup gets more expensive.\n-- **Option A (Recommended defaults):** Plan a staged migration led by a new `src/domains/storyteller/index.ts`, then move internals behind that contract in prioritized slices.\n-- **Option B (First increment):** Limit the first plan to import-boundary cleanup plus the minimum folder moves needed to stop new deep imports.\n-- **Option C (Full migration):** Plan a full blueprint reshape of storyteller folders/layers in one coordinated effort.\n-- **Custom:** Define your own rule for how aggressive structural moves may be in this run.\n-\n-### Q2: How strictly must existing Storyteller UI behavior be preserved during the World Bible/state cleanup?\n-- **Context:** The assessment found server state mixed into custom hooks/context, plus lock/session behavior tied to URL wiring and custom events. Moving this to `state/queries` + `io/` may expose behavior differences unless compatibility is explicitly preserved.\n-- **If we guess wrong:** We could either freeze poor UX patterns for too long or accidentally change editing/locking flows that users rely on.\n-- **Option A (Recommended defaults):** Preserve user-visible behavior where practical, but allow internal state/query rewiring and removal of undocumented implementation details.\n-- **Option B (First increment):** Keep current World Bible behaviors fully intact for now; only isolate boundaries and prepare TanStack Query migration.\n-- **Option C (Full migration):** Allow the plan to redesign World Bible state flows to match the blueprint even if some URL/custom-event behavior changes.\n-- **Custom:** Specify exact Storyteller behaviors that are contractually fixed vs safe to change.\n-\n-### Q3: Should long-running storyteller jobs be included in scope now, or only prepared structurally?\n-- **Context:** Image-generation flows currently rely on bespoke polling, `localStorage`, and `window` events instead of Trigger Realtime + shared `useJob`. This is a major architecture violation, but also a high-risk UX path.\n-- **If we guess wrong:** Deferring too much leaves one of the largest blueprint violations untouched; forcing full job migration now could dominate the entire cleanup plan.\n-- **Option A (Recommended defaults):** Include job-flow alignment in the plan, but as a later priority after module boundary and state-layer fixes.\n-- **Option B (First increment):** Only create the structural seams (`tasks/`, server-only services, typed payloads) and defer the shared `useJob` UX migration.\n-- **Option C (Full migration):** Make full Trigger.dev + shared `useJob` replacement part of this cleanup plan.\n-- **Custom:** Set a narrower or broader scope for job orchestration changes.\n-\n-### Q4: Should the plan include DB/schema convergence out of `src/domains/storyteller/db/schema.ts` now?\n-- **Context:** The assessment found storyteller’s module-local schema still acting as an effective source of truth and being imported from routes/services/tools. The architecture requires `src/db/schema.ts` to be the single source of truth.\n-- **If we guess wrong:** Deferring schema convergence may keep cross-layer leakage in place; forcing it now could expand the plan into a repo-wide persistence migration rather than a module cleanup.\n-- **Option A (Recommended defaults):** Plan schema convergence as a dedicated workstream, but sequence it after public API and layer-boundary cleanup.\n-- **Option B (First increment):** Reduce new schema coupling and add adapter boundaries, but defer true source-of-truth migration.\n-- **Option C (Full migration):** Include full schema-source convergence and route/service import cleanup in this run’s plan.\n-- **Custom:** Define whether storyteller may temporarily keep a compatibility schema layer.\n-\n-### Q5: How much Mastra-native consolidation should this cleanup plan absorb?\n-- **Context:** Storyteller already uses Mastra, but also keeps manual tracing, skill loading, loose workflow typing, and other parallel orchestration machinery. The architecture strongly prefers “use the framework once.”\n-- **If we guess wrong:** Under-scoping leaves the most complex technical debt in place; over-scoping may turn a module cleanup into a deep AI-platform refactor.\n-- **Option A (Recommended defaults):** Plan Mastra consolidation where it directly reduces storyteller-local complexity (typed tool/workflow boundaries, remove obvious parallel primitives), but do not require a full shared-kernel rewrite first.\n-- **Option B (First increment):** Restrict this run to typed boundaries and local cleanup; defer broader Mastra consolidation to a later dedicated AI-platform pass.\n-- **Option C (Full migration):** Make end-to-end Mastra-native tracing/skills/workflow consolidation a core part of the storyteller cleanup plan.\n-- **Custom:** Specify which orchestration concerns are in or out of scope.\n-\n-## Gate guide (maps to Clarify dock buttons)\n-| Button | Meaning for THIS run |\n-| --- | --- |\n-| [A] Recommended defaults | Produce a prioritized, staged plan: establish `storyteller/index.ts`, stop deep imports, reshape layers incrementally, preserve visible behavior where practical, and sequence jobs/schema/Mastra cleanup after boundary fixes. |\n-| [B] First increment only | Produce a narrow first-step plan focused on public API/import boundaries and minimum-risk structural seams, explicitly deferring major World Bible, job, schema, and Mastra rewrites. |\n-| [C] Full blueprint migration | Produce a comprehensive end-state plan that assumes storyteller should be fully reshaped to the module blueprint, including job orchestration, schema convergence, and major Mastra consolidation. |\n-| [F] Custom directions | You provide your own migration constraints, compatibility requirements, or subsystem scope rules for the architect to follow. |\n-| [R] Re-assess | Re-run assessment only if you believe the findings missed major context or code has changed enough to invalidate them. |\n+interior-designer is still in a pre-blueprint shape: client state, persistence, job orchestration, and cross-module dependencies are tangled inside legacy `components/`, `store/`, `utils/`, and `ai/` folders. The first plan should restore the architecture contract at the highest-risk seams first, especially browser writes, server state ownership, and long-running job handling.\n+\n+## Key risks (max 5)\n+- Direct browser → Supabase writes in `useInteriorStore` violate the server-only persistence rule.\n+- The 1661-line Zustand store mixes UI state, server state, persistence, and domain logic, blocking clean layering.\n+- Retexture/export flows use bespoke polling and client recovery instead of module-owned Trigger tasks + shared job primitives.\n+- The module imports internals from `world-building-toolkit` and `3d-asset-exporter`, preventing a clean public API boundary.\n+- Legacy `ai/TextureService.ts` and weak DTO typing make the asset-module server boundary ambiguous.\n+\n+## Scope mapping\n+| Option | Posture for this module |\n+| A | Stage the migration: first carve out `index.ts`, `state/`, `io/`, and `services/` for design CRUD/auth-safe persistence; then move retexture/export to `tasks/` and shared job APIs; finally clean cross-module/public API seams. |\n+| B | Take the minimum safe step: stop browser writes, add typed DTO/API/service seams for design CRUD, and split ephemeral UI state from server state without fully reshaping retexture/export yet. |\n+| C | Do the full blueprint pass now: reshape folders to `ui/state/io/core/services/tasks`, replace the god store, convert retexture/export to Trigger tasks, remove internal cross-module imports, and resolve dead/incomplete AI code. |\ndiff --git a/DECISIONS.md b/DECISIONS.md\nindex 55ebe07..2a925ec 100644\n--- a/DECISIONS.md\n+++ b/DECISIONS.md\n@@ -1,30 +1,4 @@\n # Decisions log\n \n-## Clarify gate (resolved)\n-\n-- **Selected option:** [A] Recommended defaults (per CLARIFY.md)\n-- **Freeform text:** none\n-- **Resolved at:** stage `Clarify` (human gate)\n-\n-### What [A] means for this run\n-\n-Produce a **prioritized, staged** cleanup plan rather than a one-pass reshape or a\n-narrow first-increment-only slice. Concretely, the plan is constrained as follows:\n-\n-| Clarify question | Chosen direction (Option A default) | Constraint on the plan |\n-| --- | --- | --- |\n-| Q1 — staged vs one-pass | Staged migration led by a new `index.ts` | Establish the public barrel first, then move internals behind it in prioritized slices. No big-bang folder rename. |\n-| Q2 — UI behavior preservation | Preserve user-visible behavior where practical | Internal state/query rewiring and removal of undocumented implementation details is allowed; do not intentionally change editing/locking UX. |\n-| Q3 — job orchestration scope | Include job alignment, but later priority | Sequence Trigger/`useJob` migration **after** module boundary + state-layer fixes. Create the structural seams (`tasks/`, server-only services, typed payloads) first. |\n-| Q4 — DB/schema convergence | Dedicated workstream, sequenced later | Plan schema convergence to `src/db/schema.ts`, but after public API + layer-boundary cleanup. Adapter/re-export boundary acceptable as an interim. |\n-| Q5 — Mastra consolidation | Consolidate where it reduces local complexity | Type the tool/workflow boundaries and remove obvious parallel primitives; do **not** require a full shared-kernel rewrite in this run. |\n-\n-### Prioritization consequences\n-\n-1. **P0/P1 = boundary + state**: the public `index.ts`, stopping deep imports, and\n-   moving server state to TanStack Query lead the plan.\n-2. **Jobs, schema convergence, and Mastra-native consolidation are staged later**\n-   (P2), planned but explicitly sequenced after boundary/state work.\n-3. **Behavior preservation** is a standing constraint on every UI/state item.\n-4. A **full blueprint reshape (Option C)** and a **boundary-only stop (Option B)**\n-   are both out of scope: the plan stages the middle path.\n+## Clarify gate (pending)\n+- Status: awaiting human selection\ndiff --git a/PLAN.md b/PLAN.md\nindex d4fd0fa..d487887 100644\n--- a/PLAN.md\n+++ b/PLAN.md\n@@ -1,298 +1,3 @@\n-# Storyteller Module — Architecture Alignment Plan\n+# Plan (pending)\n \n-> **Clarify decision: [A] Recommended defaults.** This plan is a **staged**\n-> migration led by the public `index.ts` barrel. Job orchestration, schema\n-> convergence, and broad Mastra consolidation are **planned but sequenced after**\n-> the module-boundary and state-layer fixes. User-visible behavior is preserved\n-> where practical. This supersedes an earlier draft that assumed [C] full\n-> blueprint migration. See `DECISIONS.md`.\n->\n-> **This is a plan only. Nothing is implemented. Implement after human approval at\n-> Verification.** All findings below were spot-checked against the actual code.\n-\n-## Summary\n-\n-`src/domains/storyteller` is the repo's most feature-complete module but is still\n-**legacy-shaped**: it has **no public barrel** (`index.ts` — verified absent), so\n-~30 `src/app/api/storyteller/*` routes plus sibling modules (`chat`, `loop-creator`,\n-`interior-designer`, `game-design`) deep-import its internals (`db/schema`, `lib/`,\n-`services/`, `agents/`, `core/`, `components/`, `config/`, `hooks/`, `mentions/`,\n-`prompts/`). Its folders are `components/hooks/lib/db/tools/mentions/config` rather\n-than `ui/state/io/tasks`; `core/EntityExtractor` imports UI + prompt types (impure);\n-`services/` contains **client-side** polling/orchestration (verified: no service has\n-`import 'server-only'`); server state lives in custom hooks/context instead of\n-TanStack Query; and the AI layer runs `z.any()` workflow steps + hand-rolled tracing\n-in parallel with Mastra.\n-\n-Per the [A] decision, the plan **establishes the module contract first** (barrel +\n-stop deep imports + pure core), **then** migrates internals behind it in risk-ordered\n-slices (folders → server state → god-file splits), and **stages last** the\n-server-only/jobs seam, schema convergence, typed boundaries, and scoped Mastra\n-consolidation. It deliberately does **not** attempt a one-pass folder reshape (that's\n-[C]) nor stop at boundaries only (that's [B]).\n-\n----\n-\n-## Prioritized items\n-\n-### [P0] Introduce the public `index.ts` barrel (façade over current paths)\n-- **Problem:** No `src/domains/storyteller/index.ts` exists (verified via glob).\n-  Outsiders import internals directly — `src/app/app/[projectId]/storyteller/page.tsx`\n-  pulls from `components/`, `core/ActionTypes`, `core/Enums`, `config/*`,\n-  `mentions/MentionsProvider`, `hooks/*`, `prompts/schemas/agent-schemas`, and\n-  `services/{Poster,Moodboard}GenerationService`; `chat` imports `core/ConsistencyTypes`,\n-  `components/{ConsistencyMessage,ReferenceText}`, `core/ReferenceParser` (verified).\n-- **Impact:** Breaks invariant #6/#10 (single barrel is the only legal import target).\n-  Internals are de-facto public, so every later move is outsider-breaking. **Blocks all\n-  structural work.**\n-- **Change:** Create `src/domains/storyteller/index.ts` re-exporting exactly the surface\n-  outsiders use today (the `page.tsx` components + lazy-component types, the `chat`\n-  cross-module symbols, public types `StoryPlan`/`ActionTypes`/`Enums`, the hooks\n-  `page.tsx` consumes). Keep type-only exports type-only. Do **not** move files yet — the\n-  barrel is a stable façade over current paths. Mark any interim server-only re-exports\n-  (`access-verification`, `db/schema`) in a clearly-labeled section for P2 removal.\n-- **Effort:** M\n-- **Verification:** `npm run typecheck` green; barrel compiles; no consumer paths changed.\n-- **Depends on:** none. **Do first.**\n-- **Risk flag:** establishes invariant #6 — no boundary crossed yet (façade only).\n-\n-### [P0] Migrate external consumers to the barrel + add deep-import lint rule\n-- **Problem:** ~30 route files and 4 sibling-module files deep-import storyteller\n-  internals (verified list includes `db/schema`, `lib/access-verification`, `services/*`,\n-  `agents/*`, `core/*`, `config/*`, `components/*`, `prompts/*`).\n-- **Impact:** Until consumers use the barrel, the surface can't be enforced and internals\n-  can't be safely reshaped. Invariant #6.\n-- **Change:** Repoint all `@/domains/storyteller/<internal>` imports in `src/app/**` and\n-  in `src/domains/{chat,loop-creator,interior-designer,game-design}/**` to\n-  `@/domains/storyteller`. Add an ESLint `no-restricted-imports` /\n-  `import/no-internal-modules` rule banning `@/domains/storyteller/*` from outside the\n-  module; start `warn`, ratchet to `error` once clean. `access-verification` and\n-  `db/schema` are really shared concerns consumed by other modules — re-export them\n-  through the barrel now as an **interim seam**, with true relocation tracked in P2.\n-- **Effort:** L (many files, mechanical)\n-- **Verification:** `npm run typecheck` + `npm run lint` green; grep for\n-  `@/domains/storyteller/<segment>` outside the module → 0; lint fires on a deliberate\n-  violation.\n-- **Depends on:** P0 barrel.\n-- **Risk flag:** touches the app→module and cross-module dependency boundary. The\n-  `access-verification`/`db/schema` re-exports are interim compatibility, flagged for P2.\n-\n-### [P0] Make `core/` pure (dependency-rule violation on a shared path)\n-- **Problem:** `core/EntityExtractor/EntityExtractor.ts:1-2` imports `StoryPlan` from\n-  `prompts/schemas/agent-schemas` and `EntityReference` from `components/ReferenceText`\n-  (verified); core also stamps runtime `Date`.\n-- **Impact:** Breaks invariant #8 + the dependency rule (`core/` may import only\n-  `core/`/`zod`). `core/` is what every layer points at, so impurity is a hot-path\n-  problem and blocks offline unit tests.\n-- **Change:** Move `EntityReference` into `core/` (e.g. `core/EntityTypes`) and have\n-  `ReferenceText` import from there; relocate the `StoryPlan` schema/type so `core/`\n-  depends only on `core/`+`zod` (re-export to `prompts/`/`io/`); inject a clock instead\n-  of direct `new Date()`.\n-- **Effort:** M\n-- **Verification:** grep shows `core/**` imports only `core/`/`zod`; `npm run typecheck`;\n-  existing `core/**/__tests__` pass under `npm run test:unit` (offline).\n-- **Depends on:** P0 barrel (so moved-type references resolve through the barrel).\n-\n-### [P1] Reshape folders toward the blueprint (staged, one folder per commit)\n-- **Problem:** Top-level `components/`, `hooks/`, `lib/`, `db/`, `tools/`, `mentions/`,\n-  `config/` instead of `ui/`, `state/`, `io/`, `core/`, `services/`, `agents/`, `tasks/`,\n-  `prompts/` (verified via `find`). Target folders `ui/`, `state/`, `io/`, `tasks/` do\n-  not exist.\n-- **Impact:** Blueprint §4 + naming contract. Ad-hoc folders mix client/server and make\n-  every later item harder. Because the barrel (P0) hides paths, these moves are\n-  non-breaking to outsiders.\n-- **Change (in dependency order; each slice keeps the barrel + lint green):**\n-  1. `components/` → `ui/` (already folder-per-component + colocated tests; just relocate\n-     + update the barrel).\n-  2. `hooks/` split: server-data hooks (`useEntity`/`useEntities`, `useEpisodeData`,\n-     bible fetch parts) → `state/queries/`; ephemeral-UI hooks (`useLoadingStates`) →\n-     `state/`.\n-  3. `mentions/` → treat as a UI feature under `ui/` (it is UI, not a layer).\n-  4. `config/` → `storyteller.config.ts` (constants/model matrix); move pure\n-     `tool-result-mapper`/`action-config` logic into `core/`.\n-  5. `lib/entity-loader.ts` (client fetcher) → `io/`; `lib/access-verification.ts`\n-     (server auth) → `services/` interim (flagged for `shared/auth` in P2).\n-  - Delete each legacy folder once empty.\n-- **Effort:** L\n-- **Verification:** `npm run typecheck` + `npm run lint` after each slice; barrel exports\n-  unchanged; `npx knip` shows no new orphans. Behavior-preserving — no logic changes\n-  during moves.\n-- **Depends on:** P0 barrel + P0 consumer migration.\n-- **Risk flag:** large mechanical churn; one folder per commit for cheap review/revert.\n-\n-### [P1] Migrate server state to TanStack Query with `io/` fetchers\n-- **Problem:** `components/WorldBible/BibleContext.tsx` (575 LOC) and\n-  `hooks/useBibleState.ts` fetch lock/session/remote state via `useEffect`/`cachedFetch`\n-  + manual invalidation; episode data via `hooks/useEpisodeData.ts`. A good precedent\n-  exists: `hooks/useEntity.ts` (`useEntities`) is already a proper TanStack hook (§6.3).\n-- **Impact:** Breaks invariant #1 (server state in TanStack, never in custom stores) and\n-  the `state → io` contract; bypasses cache consistency.\n-- **Change:** Add `io/storyteller.api.ts` (typed fetchers over `/api/storyteller/*`),\n-  `io/storyteller.keys.ts` (key factory), `io/storyteller.dto.ts` (Zod DTOs shared with\n-  routes). Add `state/queries/`: `useBible`, `useEpisodes`, `useEpisode`, `useCharacters`,\n-  `useBeats` (+ mutations, e.g. `useBibleLockMutation`) modeled on `useEntities`.\n-  Mutations call `io/` then invalidate keys. Reduce `BibleContext` to ephemeral panel/edit\n-  UI state (moved toward a `useStorytellerUiStore`).\n-  **Behavior preservation (Q2):** keep lock/edit UX identical; only rewire the data path.\n-- **Effort:** L\n-- **Verification:** `npm run typecheck` + `npm run test:unit`; manual World Bible\n-  lock/edit smoke; no `cache:'no-store'`/manual invalidation left in the bible/episode\n-  paths.\n-- **Depends on:** P1 folder reshape (needs `io/`, `state/queries/`).\n-- **Risk flag:** touches state→io boundary + user-facing UX (highest-value, most\n-  behavior-sensitive). Gate on manual smoke before merge.\n-\n-### [P1] Split the god files while relocating them\n-- **Problem:** `components/WorldBible/BibleContext.tsx` (575),\n-  `agents/StorytellerAgent/StorytellerAgent.ts` (639), `tools/agent-tools.ts` (730)\n-  exceed the ~400 LOC guardrail (verified via `wc -l`).\n-- **Impact:** Invariant #8; these concentrate responsibilities and slow migration.\n-- **Change:** `BibleContext` — query hooks leave in the P1 TanStack item, residual UI\n-  context lands < 400 LOC. `StorytellerAgent` — extract prompt-building/guardrail-prose\n-  into `prompts/` builders (keep `withSpan`/Langfuse + memory bounds intact).\n-  `agent-tools.ts` — split into `agents/tools/<tool>.ts` families (feeds P2 typed\n-  boundaries).\n-- **Effort:** M\n-- **Verification:** each target < ~400 LOC; `npm run typecheck` + `npm run test:unit`\n-  (esp. `tools/__tests__/*`); export signatures unchanged.\n-- **Depends on:** P1 folder reshape + P1 TanStack (Bible), P1 reshape (agents).\n-\n-### [P2] Make `services/` server-only; move client orchestration to `state/`\n-- **Problem:** `services/MoodboardGenerationService.ts` (290) and\n-  `services/PosterGenerationService.ts` (362) are **client** code: they import\n-  `@/store/useGlobalStatusStore`, call `fetch`, hold `pollingIntervals: Map<..,Timeout>`,\n-  use per-op localStorage-key helpers, and take `providerConfig: any` (verified). No\n-  storyteller service has `import 'server-only'` (verified: 0 matches). `page.tsx`\n-  dynamically imports these client services.\n-- **Impact:** Breaks the service contract (`services/` = server-only) + invariant #4.\n-  **Staged to P2 per Q3** (structural seams now; `useJob` UX later).\n-- **Change (seam only this run):** relocate the client polling/orchestration out of\n-  `services/` into `state/` (e.g. `useMoodboardGeneration`/`usePosterGeneration`), so\n-  `services/` becomes truly server-only; add `import 'server-only'` to genuine server\n-  services; replace `providerConfig: any` with a Zod-typed payload. The `useJob`/Trigger\n-  Realtime replacement is deferred (P3).\n-- **Effort:** M\n-- **Verification:** every `services/*` server file starts with `import 'server-only'`;\n-  `services/` has no `fetch`/`window`/`useGlobalStatusStore`/polling; `npm run typecheck`;\n-  moodboard/poster smoke unchanged.\n-- **Depends on:** P1 folder reshape (needs `state/`).\n-- **Risk flag:** high-risk UX path (image generation). Keep behavior identical this run.\n-\n-### [P2] Typed boundaries: kill `z.any()` in workflows and `any` in tools/payloads\n-- **Problem:** `agents/StoryWorkflow/StoryWorkflow.ts` has `inputSchema: z.any()` at\n-  lines 112, 143, 168, 216 (verified); `MoodboardGenerationService` takes\n-  `providerConfig: any`; assessment cites loose tool/plan payload typing.\n-- **Impact:** Breaks invariant #5 (Zod at every edge; ban `any` at boundaries); lets\n-  runtime drift through and makes refactors unsafe.\n-- **Change:** Replace each workflow step `z.any()` with explicit `inputSchema`/\n-  `outputSchema` from `core/`/`agents` DTOs; flow via `getStepResult` inferred types.\n-  Give each tool (post P1 split) strict Zod `inputSchema`/`outputSchema`. Type the\n-  moodboard/poster payloads (folds into the P2 services seam).\n-- **Effort:** M\n-- **Verification:** `grep z.any() src/domains/storyteller` → 0; no `: any` at\n-  tool/task/workflow boundaries; `npm run typecheck`;\n-  `agents/__tests__/schema-validation.test.ts` + `tools/__tests__/*` pass.\n-- **Depends on:** P1 god-file split (tool families), P2 services seam (payloads).\n-\n-### [P2] Schema convergence: fold module-local `db/schema` into `src/db/schema.ts`\n-- **Problem:** `src/domains/storyteller/db/schema.ts` is the effective source of truth,\n-  imported by ~15 `src/app/api/storyteller/*` routes plus `save-model`/`debug`/`relations`\n-  routes and `src/lib/db.ts` (verified). It defines `projects`, `characters`, `episodes`,\n-  `beats`, `storyPlans`, `seriesBibles`, `entityReferences`, `relationshipEdges`, etc.,\n-  while `src/db/schema.ts` also defines `projects` — two definitions coexist.\n-- **Impact:** Breaks invariant #3 (one schema, camelCase end-to-end) + topology. Blocks\n-  encapsulation; risks migration drift.\n-- **Change (dedicated workstream, sequenced after barrel/boundary per Q4):**\n-  - Diff the two `projects` column maps and reconcile into `src/db/schema.ts` (do not\n-    assume identical); move storyteller-only tables + `relations(...)` there.\n-  - Confine Drizzle access to `services/`; remove manual snake_case↔camelCase remapping.\n-  - Delete `src/domains/storyteller/db/schema.ts` once `src/db/schema.ts` is the source\n-    and all consumers use services/the barrel; drop the interim barrel re-export from P0.\n-- **Effort:** L\n-- **Verification:** `npm run typecheck`; Drizzle diff/generate shows no unintended\n-  migration; grep shows zero `@/domains/storyteller/db/schema` imports;\n-  `npm run test:unit`.\n-- **Depends on:** P0 consumer migration, P1 reshape (services own DB).\n-- **Risk flag:** persistence-layer change + invariant #3; sequence last among structural\n-  work; reconcile `projects` before deleting the module copy.\n-\n-### [P3] Scoped Mastra-native consolidation (local complexity only)\n-- **Problem:** Storyteller keeps hand-rolled Langfuse spans, a `WORKFLOW_EVENTS` bus, a\n-  `core/WorkflowContext` ALS, and prompt-time skill injection alongside Mastra primitives\n-  (arch §1.1/§9).\n-- **Impact:** Breaks invariant #7 (\"use the framework once\"); double complexity for\n-  tracing/workflow behavior.\n-- **Change (Q5 default — only where it reduces storyteller-local complexity; **not** a\n-  shared-kernel rewrite):** land the typed workflow steps (the P2 item, which removes the\n-  `z.any()` parallel); remove obviously-redundant per-step manual spans that Mastra AI\n-  Tracing already nests, leaving Mastra `Observability` + `LangfuseExporter` as the tracer\n-  for those paths. **Explicitly deferred:** deleting `AgentMemory`, the `skill-loader`,\n-  porting judges to `createScorer`, building `shared/agent-kernel`, replacing the event\n-  bus with `run.stream().fullStream`, and `WorkflowContext` ALS → `RequestContext` — these\n-  are cross-module AI-platform work.\n-- **Effort:** M (scoped) — full consolidation is L+ and deferred.\n-- **Verification:** `npm run typecheck` + `npm run test:unit`; `agents/__tests__/*.e2e`\n-  pass; Langfuse traces still nest; targeted `npm run eval` (storyteller/tools) for parity.\n-- **Depends on:** P2 typed boundaries.\n-- **Risk flag:** correctness-sensitive AI path; keep to low-risk removals; eval-gate.\n-\n-### [P3] Deferred `useJob`/Trigger Realtime migration for image generation\n-- **Problem:** Bespoke polling/status-store wiring for moodboard/poster (see P2 seam).\n-- **Impact:** Invariant #4. Deferred per Q3 (structural seams now, UX later).\n-- **Change:** After the P2 seam lands, replace polling with a shared `shared/jobs`\n-  `useJob` hook on Trigger Realtime; author `tasks/generate-moodboard.task.ts` /\n-  `tasks/generate-poster.task.ts` as `schemaTask`s (queue/retry/idempotency), re-exported\n-  from `src/trigger/index.ts`.\n-- **Effort:** L\n-- **Verification:** no client polling loops remain; job status flows via `useJob`;\n-  image-gen smoke unchanged.\n-- **Depends on:** P2 services seam. **Deferred — plan target, not this increment.**\n-\n----\n-\n-## Suggested sequence (first shippable increment first)\n-\n-**Increment 1 — establish the contract (first shippable, low behavior risk):**\n-1. P0 — `index.ts` barrel (façade). Non-breaking, independently shippable.\n-2. P0 — Migrate consumers to the barrel + add the deep-import lint rule.\n-3. P0 — Make `core/` pure (`EntityExtractor`).\n-> *End state: contract established, deep imports gone, core pure — everything after\n-> is safer.*\n-\n-**Increment 2 — reshape + state (the big structural win):**\n-4. P1 — Folder reshape toward the blueprint (one folder per commit).\n-5. P1 — Migrate server state to TanStack Query + `io/` fetchers/DTOs.\n-6. P1 — Split the god files while relocating them.\n-\n-**Increment 3 — server-only seam + typing (staged per Q3/Q5):**\n-7. P2 — Make `services/` server-only; move client orchestration to `state/`.\n-8. P2 — Typed boundaries (kill `z.any()` / `any` at edges).\n-\n-**Increment 4 — deferred workstreams (last):**\n-9. P2 — Schema convergence into `src/db/schema.ts` (dedicated, last structural change).\n-10. P3 — Scoped Mastra consolidation, then the deferred `useJob` migration.\n-\n-Increment 1 is the first shippable increment; each later increment is independently\n-reviewable and reversible. Jobs, schema, and Mastra work are intentionally staged last\n-per the [A] decision.\n-\n----\n-\n-## Deferred / out of scope\n-\n-- **Full `shared/agent-kernel` / `shared/*` build** (arch §9.1, §12): `src/shared/` does\n-  not yet exist; building the kernel (model registry, `OrchestrationEvent` union, ports,\n-  `useJob`) is a repo-wide, cross-module effort. This plan introduces only the minimum\n-  shared surface storyteller needs.\n-- **Full `useJob`/Trigger Realtime UX migration** (arch §7): staged after the server-only\n-  seam per Q3; listed as P3 deferred.\n-- **Mastra Memory / Scorers / Processors migration** (§9.3, §9.6, §9.7): deleting\n-  `AgentMemory`, porting judges to `createScorer`, and processor guardrails are follow-on\n-  work driven by the shared-kernel plan and eval evidence — beyond a module cleanup (Q5).\n-- **True relocation of `access-verification` → `shared/auth`:** only the import boundary\n-  is fixed this run (barrel/services interim); moving it to `shared/*` is repo-wide.\n-- **Chat/loop-creator/etc. changes beyond repointing their storyteller imports to the\n-  barrel:** each is a separate module with its own convergence track.\n-- **`prompts/` reorganization:** already matches the target authoring format; no\n-  divergence found, left as-is.\n-- **New product behavior / World Bible UX redesign:** Q2 chose preservation; out of scope.\n+Awaiting Plan Author — previous plan cleared at Clarify prep.\n",
+        "summary": {
+          "files_changed": 4,
+          "additions": 77,
+          "deletions": 436
+        }
+      }
+    },
+    {
+      "seq": 0,
+      "checkpoint": {
+        "timestamp": "2026-07-01T11:30:13.698207Z",
+        "current_node": "Clarify",
+        "completed_nodes": [
+          "start",
+          "scope",
+          "assess",
+          "clarify_prep",
+          "Clarify"
+        ],
+        "node_retries": {},
+        "context_values": {
+          "current_node": "Clarify",
+          "last_response": "## Assessment summary\n`src/domains/interior-designer` is materially off the target module blueprint. The biggest issues are a client-side Supabase write path, a very large Zustand store that mixes UI ",
+          "human.gate.selected": "A",
           "graph.default_fidelity": "summary:medium",
           "graph.rankdir": "LR",
           "internal.retry_count.start": 0,
@@ -1342,9 +1503,13 @@
           "failure_class": "",
           "thread.start.current_node": "scope",
           "thread.review.current_node": "clarify_prep",
+          "human.gate.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
           "failure_signature": "",
+          "preferred_label": "[A] Staged migration — boundaries first, bigger moves sequenced",
           "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
-          "internal.thread_id": "review",
+          "internal.thread_id": "clarify_prep",
+          "thread.clarify_prep.current_node": "Clarify",
+          "human.gate.Clarify.answer": "A",
           "last_stage": "clarify_prep",
           "internal.retry_count.assess": 0,
           "internal.node_visit_count": 1,
@@ -1352,6 +1517,9 @@
           "graph.goal": "Clean up and align the interior-designer module (src/domains/interior-designer) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
           "graph.default_max_retries": "1",
           "internal.run_id": "01KWEP38BTFCTZJRAPW78J15JT",
+          "human.gate.Clarify.question": "How much should the cleanup plan take on?",
+          "internal.retry_count.Clarify": 0,
+          "human.gate.Clarify.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
           "internal.work_dir": "/workspace/kurvitza",
           "internal.fidelity": "summary:medium",
           "outcome": "succeeded",
@@ -1415,6 +1583,21 @@
               "active_time_ms": 478
             }
           },
+          "Clarify": {
+            "status": "succeeded",
+            "preferred_label": "[A] Staged migration — boundaries first, bigger moves sequenced",
+            "suggested_next_ids": [
+              "plan"
+            ],
+            "context_updates": {
+              "human.gate.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
+              "human.gate.Clarify.answer": "A",
+              "human.gate.Clarify.label": "[A] Staged migration — boundaries first, bigger moves sequenced",
+              "human.gate.selected": "A",
+              "human.gate.Clarify.question": "How much should the cleanup plan take on?"
+            },
+            "usage": null
+          },
           "start": {
             "status": "succeeded",
             "usage": null
@@ -1459,8 +1642,9 @@
             }
           }
         },
-        "next_node_id": "Clarify",
+        "next_node_id": "plan",
         "node_visits": {
+          "Clarify": 1,
           "start": 1,
           "assess": 1,
           "scope": 1,
@@ -1795,7 +1979,12 @@
       "first_event_seq": 134,
       "prompt": null,
       "response": null,
-      "completion": null,
+      "completion": {
+        "outcome": "succeeded",
+        "notes": "Stage completed: clarify_prep",
+        "failure_reason": null,
+        "timestamp": "2026-07-01T11:14:38.203153Z"
+      },
       "provider_used": {
         "mode": "agent",
         "provider": "openai",
@@ -1809,6 +1998,12 @@
       "output": null,
       "started_at": "2026-07-01T11:14:08.856126Z",
       "handler": "agent",
+      "timing": {
+        "wall_time_ms": 29260,
+        "inference_time_ms": 28544,
+        "tool_time_ms": 399,
+        "active_time_ms": 28943
+      },
       "usage": {
         "input_tokens": 39154,
         "output_tokens": 2165,
@@ -2013,6 +2208,29 @@
           }
         ],
         "warnings": []
+      },
+      "state": "succeeded"
+    },
+    "Clarify@1": {
+      "first_event_seq": 203,
+      "prompt": null,
+      "response": null,
+      "completion": null,
+      "provider_used": null,
+      "diff": null,
+      "script_invocation": null,
+      "script_timing": null,
+      "parallel_results": null,
+      "output": null,
+      "started_at": "2026-07-01T11:14:41.909569Z",
+      "handler": "human",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "reasoning_tokens": 0,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0
       },
       "state": "running"
     }
