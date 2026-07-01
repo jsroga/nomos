@@ -32,25 +32,37 @@ digraph Plan {
     exit  [shape=Msquare, label="Exit"]
 
     // ── Scope ───────────────────────────────────────────────────────────
+    // NOTE: `script` attributes do NOT render {{ inputs.module }} (Fabro only
+    // templates `goal` and `prompt`). So we read the module from FABRO_INPUT_MODULE
+    // (exported by the run) and fall back to storyteller. The Assess agent also
+    // gets {{ inputs.module }} via its prompt, so targeting stays correct even if
+    // this default is used.
     scope [
         label="Scope\n[shell · no agent]"
         shape=parallelogram
-        script="echo '=== module tree ==='; find src/domains/storyteller -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1"
+        script="M=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1"
     ]
 
     // ── Assess: fast architecture alignment review (< 2 min) ──────────────
+    // retry_policy=patient + fallback chain (workflow.toml) so a transient
+    // provider error / usage limit retries and switches provider instead of
+    // silently failing through to the human gate.
     assess [
         label="Assess\nagent: Architecture Assessor\nmodel: codex"
         class="review"
         prompt="@prompts/assess.md"
+        retry_policy="patient"
+        max_retries=2
         max_visits=2
     ]
 
     // ── Clarify prep: surface conflicts / open questions BEFORE the architect ─
-  clarify_prep [
+    clarify_prep [
         label="Clarify Prep\nagent: Clarify Facilitator\nmodel: codex"
         class="review"
         prompt="@prompts/clarify-prep.md"
+        retry_policy="patient"
+        max_retries=2
         max_visits=2
     ]
 
@@ -67,10 +79,14 @@ digraph Plan {
     ]
 
     // ── Plan (Architect): writes PLAN.md ──────────────────────────────────
+    // fidelity=summary:high so the architect sees your Clarify answer (incl.
+    // freeform text via human.gate.text) in detail, not a compressed summary.
+    // https://docs.fabro.sh/execution/context
     plan [
         label="Plan (Architect)\nagent: Plan Author\nmodel: claude-opus-4-8"
         class="planning"
         prompt="@prompts/plan.md"
+        fidelity="summary:high"
         goal_gate=true
         retry_target="clarify_prep"
         max_visits=5
