@@ -5,7 +5,7 @@ digraph Plan {
         model_stylesheet="
             *          { model: gpt-5.4;         reasoning_effort: medium; }
             .review    { model: codex;           reasoning_effort: low;    }
-            .planning  { model: gpt-5.4;         reasoning_effort: high;   }
+            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }
             .design    { model: gpt-5.4;         reasoning_effort: medium; }
             .build     { model: codex;           reasoning_effort: high;   }
             .testing   { model: gpt-5.4;         reasoning_effort: medium; }
