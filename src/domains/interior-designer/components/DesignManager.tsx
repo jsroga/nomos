@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { Button } from '@/components/ui/button'
@@ -14,12 +14,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-
-interface Design {
-  id: string
-  name: string
-  updatedAt: string
-}
+import { interiorDesignerApi } from '@/domains/interior-designer/io/interior-designer.api'
+import type { InteriorDesignSummary } from '@/domains/interior-designer/io/interior-designer.dto'
 
 export const DesignManager: React.FC = () => {
   const currentProject = useWorldStore(state => state.currentProject)
@@ -31,31 +27,48 @@ export const DesignManager: React.FC = () => {
   const renameDesign = useInteriorStore(state => state.renameDesign)
   const hasUnsavedChanges = useInteriorStore(state => state.hasUnsavedChanges)
 
-  const [designs, setDesigns] = useState<Design[]>([])
+  const [designs, setDesigns] = useState<InteriorDesignSummary[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false)
   const [newSceneName, setNewSceneName] = useState('New Scene')
   const [editingDesignId, setEditingDesignId] = useState<string | null>(null)
 
-  // Define fetchDesigns BEFORE using it in useEffect
-  const fetchDesigns = useCallback(async () => {
+  const fetchDesigns = async () => {
     if (!currentProject?.id) return
 
     try {
-      const res = await fetch(`/api/interior-designer/designs?projectId=${currentProject.id}`)
-      const data = await res.json()
+      const data = await interiorDesignerApi.listDesigns(currentProject.id)
       setDesigns(data)
     } catch (error) {
       console.error('Failed to fetch designs:', error)
     }
-  }, [currentProject?.id])
+  }
 
   useEffect(() => {
-    if (currentProject?.id && isOpen) {
-      fetchDesigns()
+    let isActive = true
+
+    if (!currentProject?.id || !isOpen) {
+      return () => {
+        isActive = false
+      }
     }
-  }, [currentProject?.id, isOpen, fetchDesigns])
+
+    void (async () => {
+      try {
+        const data = await interiorDesignerApi.listDesigns(currentProject.id)
+        if (isActive) {
+          setDesigns(data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch designs:', error)
+      }
+    })()
+
+    return () => {
+      isActive = false
+    }
+  }, [currentProject?.id, isOpen])
 
   const handleLoad = async (designId: string) => {
     if (hasUnsavedChanges && currentProject?.id) {

@@ -4,6 +4,13 @@ import { interiorDesigns, projects } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
 import { requireAuth, checkRateLimit } from '@/lib/api-utils'
 import { verifyProjectAccess } from '@/domains/storyteller'
+import {
+  createInteriorDesignRequestSchema,
+  interiorDesignSummaryListSchema,
+  toInteriorDesignDetail,
+  toInteriorDesignSummary,
+  updateInteriorDesignRequestSchema,
+} from '@/domains/interior-designer/io/interior-designer.dto'
 
 /**
  * Verify design access using single JOIN query
@@ -57,18 +64,26 @@ export async function GET(req: NextRequest) {
         .select()
         .from(interiorDesigns)
         .where(eq(interiorDesigns.id, designId))
-      return NextResponse.json(design || null)
+
+      return NextResponse.json(design ? toInteriorDesignDetail(design) : null)
     } else {
       if (!(await verifyProjectAccess(projectId!, session.user.id))) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
       }
 
       const designs = await db
-        .select()
+        .select({
+          id: interiorDesigns.id,
+          name: interiorDesigns.name,
+          updatedAt: interiorDesigns.updatedAt,
+        })
         .from(interiorDesigns)
         .where(eq(interiorDesigns.projectId, projectId!))
         .orderBy(desc(interiorDesigns.updatedAt))
-      return NextResponse.json(designs)
+
+      return NextResponse.json(
+        interiorDesignSummaryListSchema.parse(designs.map(design => toInteriorDesignSummary(design)))
+      )
     }
   } catch (error) {
     console.error('Failed to fetch interior designs:', error)
@@ -87,15 +102,12 @@ export async function POST(req: NextRequest) {
     })
     if (!allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
 
-    const body = await req.json()
-    const { projectId, name, sceneData } = body
-
-    if (!projectId || !name || !sceneData) {
-      return NextResponse.json(
-        { error: 'Project ID, name, and scene data are required' },
-        { status: 400 }
-      )
+    const parsedBody = createInteriorDesignRequestSchema.safeParse(await req.json())
+    if (!parsedBody.success) {
+      return NextResponse.json({ error: 'Invalid design payload' }, { status: 400 })
     }
+
+    const { projectId, name, sceneData } = parsedBody.data
 
     if (!(await verifyProjectAccess(projectId, session.user.id))) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
@@ -104,9 +116,13 @@ export async function POST(req: NextRequest) {
     const [newDesign] = await db
       .insert(interiorDesigns)
       .values({ projectId, userId: session.user.id, name, sceneData })
-      .returning()
+      .returning({
+        id: interiorDesigns.id,
+        name: interiorDesigns.name,
+        updatedAt: interiorDesigns.updatedAt,
+      })
 
-    return NextResponse.json(newDesign)
+    return NextResponse.json(toInteriorDesignSummary(newDesign))
   } catch (error) {
     console.error('Failed to create interior design:', error)
     return NextResponse.json({ error: 'Failed to create design' }, { status: 500 })
@@ -118,10 +134,12 @@ export async function PATCH(req: NextRequest) {
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const body = await req.json()
-    const { id, name, sceneData } = body
+    const parsedBody = updateInteriorDesignRequestSchema.safeParse(await req.json())
+    if (!parsedBody.success) {
+      return NextResponse.json({ error: 'Invalid design update payload' }, { status: 400 })
+    }
 
-    if (!id) return NextResponse.json({ error: 'Design ID is required' }, { status: 400 })
+    const { id, name, sceneData } = parsedBody.data
 
     const { hasAccess } = await verifyDesignAccess(id, session.user.id)
     if (!hasAccess) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
@@ -134,9 +152,13 @@ export async function PATCH(req: NextRequest) {
       .update(interiorDesigns)
       .set(updates)
       .where(eq(interiorDesigns.id, id))
-      .returning()
+      .returning({
+        id: interiorDesigns.id,
+        name: interiorDesigns.name,
+        updatedAt: interiorDesigns.updatedAt,
+      })
 
-    return NextResponse.json(updatedDesign)
+    return NextResponse.json(toInteriorDesignSummary(updatedDesign))
   } catch (error) {
     console.error('Failed to update interior design:', error)
     return NextResponse.json({ error: 'Failed to update design' }, { status: 500 })
