@@ -1,0 +1,1950 @@
+diff --git a/src/app/api/debug/inspect/[id]/route.ts b/src/app/api/debug/inspect/[id]/route.ts
+index 2603ed5..adeffe8 100644
+--- a/src/app/api/debug/inspect/[id]/route.ts
++++ b/src/app/api/debug/inspect/[id]/route.ts
+@@ -1,7 +1,7 @@
+ 
+ import { NextRequest, NextResponse } from 'next/server'
+ import { db } from '@/lib/db'
+-import { projects } from '@/domains/storyteller'
++import { projects } from '@/db'
+ import { eq } from 'drizzle-orm'
+ 
+ export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+diff --git a/src/app/api/entities/resolve/route.ts b/src/app/api/entities/resolve/route.ts
+index ccb6f1f..1814fd9 100644
+--- a/src/app/api/entities/resolve/route.ts
++++ b/src/app/api/entities/resolve/route.ts
+@@ -16,12 +16,11 @@
+  */
+ 
+ import { NextRequest, NextResponse } from 'next/server'
++import { characters, projects } from '@/db'
+ import {
+   contextualSummaryService,
+   entityRegistry,
+   getEntityTypeFromId,
+-  projects,
+-  characters,
+   relationshipEnricher,
+ } from '@/domains/storyteller'
+ import { db } from '@/lib/db'
+@@ -292,7 +291,7 @@ export async function GET(request: NextRequest) {
+   try {
+     // Security: Require authentication
+     const { requireAuth } = await import('@/lib/auth')
+-    const { verifyProjectAccess } = await import('@/domains/storyteller')
++    const { verifyProjectAccess } = await import('@/shared/auth')
+ 
+     const { session } = await requireAuth()
+     if (!session) {
+diff --git a/src/app/api/interior-designer/designs/route.ts b/src/app/api/interior-designer/designs/route.ts
+index 28fc0c1..1784b7f 100644
+--- a/src/app/api/interior-designer/designs/route.ts
++++ b/src/app/api/interior-designer/designs/route.ts
+@@ -3,7 +3,7 @@ import { db } from '@/lib/db'
+ import { interiorDesigns, projects } from '@/db/schema'
+ import { eq, desc } from 'drizzle-orm'
+ import { requireAuth, checkRateLimit } from '@/lib/api-utils'
+-import { verifyProjectAccess } from '@/domains/storyteller'
++import { verifyProjectAccess } from '@/shared/auth'
+ 
+ /**
+  * Verify design access using single JOIN query
+diff --git a/src/app/api/loop-creator/chat/route.ts b/src/app/api/loop-creator/chat/route.ts
+index e5839e2..51e9b65 100644
+--- a/src/app/api/loop-creator/chat/route.ts
++++ b/src/app/api/loop-creator/chat/route.ts
+@@ -8,7 +8,7 @@
+ 
+ import { NextRequest } from 'next/server'
+ import { requireAuth } from '@/lib/auth'
+-import { verifyProjectAccess } from '@/domains/storyteller'
++import { verifyProjectAccess } from '@/shared/auth'
+ import { streamLoopCreator } from '@/domains/loop-creator/graph/loop-graph'
+ import { LoopCreatorState } from '@/domains/loop-creator/graph/state'
+ import { HumanMessage, AIMessage } from '@langchain/core/messages'
+diff --git a/src/app/api/loop-creator/loops/route.ts b/src/app/api/loop-creator/loops/route.ts
+index 590fddb..07332d8 100644
+--- a/src/app/api/loop-creator/loops/route.ts
++++ b/src/app/api/loop-creator/loops/route.ts
+@@ -3,10 +3,7 @@ import { db } from '@/lib/db'
+ import { gameLoops } from '@/db/schema'
+ import { eq, desc } from 'drizzle-orm'
+ import { requireAuth, checkRateLimit } from '@/lib/api-utils'
+-import {
+-  verifyProjectAccess,
+-  verifyGameLoopAccess,
+-} from '@/domains/storyteller'
++import { verifyGameLoopAccess, verifyProjectAccess } from '@/shared/auth'
+ 
+ /**
+  * GET - Fetch game loops
+diff --git a/src/app/api/save-model/route.ts b/src/app/api/save-model/route.ts
+index 58d6c8d..56961f5 100644
+--- a/src/app/api/save-model/route.ts
++++ b/src/app/api/save-model/route.ts
+@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
+ import fs from 'fs'
+ import { requireAuth } from '@/lib/auth'
+ import { db } from '@/lib/db'
+-import { projects } from '@/domains/storyteller'
++import { projects } from '@/db'
+ import { eq } from 'drizzle-orm'
+ import {
+   sanitizePath,
+diff --git a/src/app/api/storyteller/actions/route.ts b/src/app/api/storyteller/actions/route.ts
+index fa596ad..b4f9ec6 100644
+--- a/src/app/api/storyteller/actions/route.ts
++++ b/src/app/api/storyteller/actions/route.ts
+@@ -1,15 +1,7 @@
+ import { NextRequest, NextResponse } from 'next/server'
++import { beats, characters, episodes, projects, seriesBibles, storyPlans } from '@/db'
+ import { db } from '@/lib/db'
+-import {
+-  seriesBibles,
+-  storyPlans,
+-  projects,
+-  beats,
+-  characters,
+-  episodes,
+-  verifyEpisodeAccess,
+-  verifyProjectAccess,
+-} from '@/domains/storyteller'
++import { verifyEpisodeAccess, verifyProjectAccess } from '@/shared/auth'
+ import { eq, and } from 'drizzle-orm'
+ import { v4 as uuidv4 } from 'uuid'
+ import { requireAuth } from '@/lib/auth'
+diff --git a/src/app/api/storyteller/beats/[beatId]/generate-image/route.ts b/src/app/api/storyteller/beats/[beatId]/generate-image/route.ts
+index 138906f..3a9014f 100644
+--- a/src/app/api/storyteller/beats/[beatId]/generate-image/route.ts
++++ b/src/app/api/storyteller/beats/[beatId]/generate-image/route.ts
+@@ -1,6 +1,6 @@
+ import { NextResponse } from 'next/server'
+ import { db } from '@/lib/db'
+-import { beats, projects, episodes } from '@/domains/storyteller'
++import { beats, episodes, projects } from '@/db'
+ import { eq } from 'drizzle-orm'
+ import { generateStoryboard } from '@/trigger/generate-storyboard'
+ 
+diff --git a/src/app/api/storyteller/beats/[beatId]/route.ts b/src/app/api/storyteller/beats/[beatId]/route.ts
+index 7cb73a3..de1a609 100644
+--- a/src/app/api/storyteller/beats/[beatId]/route.ts
++++ b/src/app/api/storyteller/beats/[beatId]/route.ts
+@@ -1,6 +1,6 @@
+ import { NextResponse } from 'next/server'
+ import { db } from '@/lib/db'
+-import { beats, episodes, projects } from '@/domains/storyteller'
++import { beats, episodes, projects } from '@/db'
+ import { eq } from 'drizzle-orm'
+ import { requireAuth } from '@/lib/auth'
+ 
+diff --git a/src/app/api/storyteller/bible/lock/route.ts b/src/app/api/storyteller/bible/lock/route.ts
+index f9a8ba5..0605f62 100644
+--- a/src/app/api/storyteller/bible/lock/route.ts
++++ b/src/app/api/storyteller/bible/lock/route.ts
+@@ -8,9 +8,13 @@
+ import { NextRequest, NextResponse } from 'next/server'
+ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+ import { cookies } from 'next/headers'
++import {
++  storytellerBibleLockQuerySchema,
++  storytellerBibleLockResponseSchema,
++} from '@/domains/storyteller/io/storyteller.dto'
+ import { isCentralUser } from '@/lib/bible-permissions'
+ import { requireAuth } from '@/lib/auth'
+-import { verifyProjectAccess } from '@/domains/storyteller'
++import { verifyProjectAccess } from '@/shared/auth'
+ 
+ export async function POST(request: NextRequest) {
+   try {
+@@ -91,12 +95,16 @@ export async function GET(request: NextRequest) {
+     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+ 
+     const { searchParams } = new URL(request.url)
+-    const projectId = searchParams.get('projectId')
++    const parsedQuery = storytellerBibleLockQuerySchema.safeParse({
++      projectId: searchParams.get('projectId'),
++    })
+ 
+-    if (!projectId) {
++    if (!parsedQuery.success) {
+       return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+     }
+ 
++    const { projectId } = parsedQuery.data
++
+     // Verify project access
+     if (!(await verifyProjectAccess(projectId, session.user.id))) {
+       return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+@@ -113,14 +121,19 @@ export async function GET(request: NextRequest) {
+ 
+     if (error) {
+       console.error('[Bible Lock API] Fetch error:', error)
+-      return NextResponse.json({ isLocked: false, lockedBy: null, lockedAt: null }, { status: 200 })
++      return NextResponse.json(
++        storytellerBibleLockResponseSchema.parse({ isLocked: false, lockedBy: null, lockedAt: null }),
++        { status: 200 }
++      )
+     }
+ 
+-    return NextResponse.json({
+-      isLocked: data?.is_locked || false,
+-      lockedBy: data?.locked_by || null,
+-      lockedAt: data?.locked_at || null,
+-    })
++    return NextResponse.json(
++      storytellerBibleLockResponseSchema.parse({
++        isLocked: data?.is_locked || false,
++        lockedBy: data?.locked_by || null,
++        lockedAt: data?.locked_at || null,
++      })
++    )
+   } catch (error) {
+     console.error('[Bible Lock API] Error:', error)
+     return NextResponse.json(
+diff --git a/src/app/api/storyteller/bible/route.ts b/src/app/api/storyteller/bible/route.ts
+index bb90400..b5c9f61 100644
+--- a/src/app/api/storyteller/bible/route.ts
++++ b/src/app/api/storyteller/bible/route.ts
+@@ -1,6 +1,6 @@
+ import { NextResponse } from 'next/server'
+ import { db } from '@/lib/db'
+-import { projects, storyPlans } from '@/domains/storyteller'
++import { projects, storyPlans } from '@/db'
+ import { eq } from 'drizzle-orm'
+ import { requireAuth } from '@/lib/auth'
+ 
+diff --git a/src/app/api/storyteller/characters/[characterId]/route.ts b/src/app/api/storyteller/characters/[characterId]/route.ts
+index e7fa2d0..d4a800e 100644
+--- a/src/app/api/storyteller/characters/[characterId]/route.ts
++++ b/src/app/api/storyteller/characters/[characterId]/route.ts
+@@ -1,6 +1,6 @@
+ import { NextResponse } from 'next/server'
+ import { db } from '@/lib/db'
+-import { characters, projects } from '@/domains/storyteller'
++import { characters, projects } from '@/db'
+ import { eq } from 'drizzle-orm'
+ import { requireAuth } from '@/lib/auth'
+ 
+diff --git a/src/app/api/storyteller/characters/route.ts b/src/app/api/storyteller/characters/route.ts
+index f2bd48c..ebb4a98 100644
+--- a/src/app/api/storyteller/characters/route.ts
++++ b/src/app/api/storyteller/characters/route.ts
+@@ -1,6 +1,7 @@
+ import { NextRequest, NextResponse } from 'next/server'
+ import { db } from '@/lib/db'
+-import { characters, verifyCharacterAccess, verifyProjectAccess } from '@/domains/storyteller'
++import { characters } from '@/db'
++import { verifyCharacterAccess, verifyProjectAccess } from '@/shared/auth'
+ import { eq, desc, and, sql } from 'drizzle-orm'
+ import { requireAuth } from '@/lib/auth'
+ 
+diff --git a/src/app/api/storyteller/chat/route.ts b/src/app/api/storyteller/chat/route.ts
+index f7719bc..4d37d2f 100644
+--- a/src/app/api/storyteller/chat/route.ts
++++ b/src/app/api/storyteller/chat/route.ts
+@@ -1,5 +1,6 @@
+ import { NextRequest, NextResponse } from 'next/server'
+-import { runStorytellerWorkflow, normalizeMastraTraceId, beats } from '@/domains/storyteller'
++import { beats } from '@/db'
++import { normalizeMastraTraceId, runStorytellerWorkflow } from '@/domains/storyteller'
+ import { db } from '@/lib/db'
+ import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
+ 
+diff --git a/src/app/api/storyteller/chat/stream/route.ts b/src/app/api/storyteller/chat/stream/route.ts
+index 6c84e07..a139a0d 100644
+--- a/src/app/api/storyteller/chat/stream/route.ts
++++ b/src/app/api/storyteller/chat/stream/route.ts
+@@ -36,8 +36,7 @@ export async function POST(req: Request) {
+   try {
+     // Security: Require authentication
+     const { requireAuth } = await import('@/lib/auth')
+-    const { verifyProjectAccess, verifyEpisodeAccess } =
+-      await import('@/domains/storyteller')
++    const { verifyProjectAccess, verifyEpisodeAccess } = await import('@/shared/auth')
+ 
+     const { session } = await requireAuth()
+     if (!session) {
+diff --git a/src/app/api/storyteller/consistency/apply/route.ts b/src/app/api/storyteller/consistency/apply/route.ts
+index ca7f0f8..377c9dd 100644
+--- a/src/app/api/storyteller/consistency/apply/route.ts
++++ b/src/app/api/storyteller/consistency/apply/route.ts
+@@ -11,8 +11,8 @@ import {
+   applyCascadingFixes,
+   getUndoManager,
+   type ConsistencyFix,
+-  verifyProjectAccess,
+ } from '@/domains/storyteller'
++import { verifyProjectAccess } from '@/shared/auth'
+ import { requireAuth } from '@/lib/auth'
+ 
+ export const runtime = 'nodejs'
+diff --git a/src/app/api/storyteller/consistency/check/route.ts b/src/app/api/storyteller/consistency/check/route.ts
+index 2f695d7..0746223 100644
+--- a/src/app/api/storyteller/consistency/check/route.ts
++++ b/src/app/api/storyteller/consistency/check/route.ts
+@@ -11,8 +11,8 @@ import { NextRequest, NextResponse } from 'next/server'
+ import {
+   runConsistencyCheck,
+   type ConsistencyCheckRequest,
+-  verifyProjectAccess,
+ } from '@/domains/storyteller'
++import { verifyProjectAccess } from '@/shared/auth'
+ import { requireAuth } from '@/lib/auth'
+ 
+ export const runtime = 'nodejs'
+diff --git a/src/app/api/storyteller/consistency/undo/route.ts b/src/app/api/storyteller/consistency/undo/route.ts
+index 4309a9f..1f89a2d 100644
+--- a/src/app/api/storyteller/consistency/undo/route.ts
++++ b/src/app/api/storyteller/consistency/undo/route.ts
+@@ -7,7 +7,8 @@
+  */
+ 
+ import { NextRequest, NextResponse } from 'next/server'
+-import { getUndoManager, verifyProjectAccess } from '@/domains/storyteller'
++import { getUndoManager } from '@/domains/storyteller'
++import { verifyProjectAccess } from '@/shared/auth'
+ import { requireAuth } from '@/lib/auth'
+ 
+ export const runtime = 'nodejs'
+diff --git a/src/app/api/storyteller/episodes/[episodeId]/beats/route.ts b/src/app/api/storyteller/episodes/[episodeId]/beats/route.ts
+index db570e1..3cbfbc1 100644
+--- a/src/app/api/storyteller/episodes/[episodeId]/beats/route.ts
++++ b/src/app/api/storyteller/episodes/[episodeId]/beats/route.ts
+@@ -1,6 +1,6 @@
+ import { NextResponse } from 'next/server'
+ import { db } from '@/lib/db'
+-import { beats, episodes, projects } from '@/domains/storyteller'
++import { beats, episodes, projects } from '@/db'
+ import { eq, asc } from 'drizzle-orm'
+ import { requireAuth } from '@/lib/auth'
+ 
+diff --git a/src/app/api/storyteller/episodes/[episodeId]/generate-combined/route.ts b/src/app/api/storyteller/episodes/[episodeId]/generate-combined/route.ts
+index a442fe3..0435348 100644
+--- a/src/app/api/storyteller/episodes/[episodeId]/generate-combined/route.ts
++++ b/src/app/api/storyteller/episodes/[episodeId]/generate-combined/route.ts
+@@ -1,6 +1,6 @@
+ import { NextResponse } from 'next/server'
+ import { db } from '@/lib/db'
+-import { episodes, projects } from '@/domains/storyteller'
++import { episodes, projects } from '@/db'
+ import { eq } from 'drizzle-orm'
+ import { generateCombinedStoryboard } from '@/trigger/generate-combined-storyboard'
+ 
+diff --git a/src/app/api/storyteller/episodes/[episodeId]/generate-poster/route.ts b/src/app/api/storyteller/episodes/[episodeId]/generate-poster/route.ts
+index 4d1ff27..4a445e7 100644
+--- a/src/app/api/storyteller/episodes/[episodeId]/generate-poster/route.ts
++++ b/src/app/api/storyteller/episodes/[episodeId]/generate-poster/route.ts
+@@ -1,6 +1,6 @@
+ import { NextResponse } from 'next/server'
+ import { db } from '@/lib/db'
+-import { episodes, projects } from '@/domains/storyteller'
++import { episodes, projects } from '@/db'
+ import { eq } from 'drizzle-orm'
+ import { tasks } from '@trigger.dev/sdk/v3'
+ import type { generatePoster } from '@/trigger/generate-poster'
+diff --git a/src/app/api/storyteller/episodes/[episodeId]/route.ts b/src/app/api/storyteller/episodes/[episodeId]/route.ts
+index 3560ba8..eccdb6c 100644
+--- a/src/app/api/storyteller/episodes/[episodeId]/route.ts
++++ b/src/app/api/storyteller/episodes/[episodeId]/route.ts
+@@ -1,6 +1,6 @@
+ import { NextResponse } from 'next/server'
+ import { db } from '@/lib/db'
+-import { episodes } from '@/domains/storyteller'
++import { episodes } from '@/db'
+ import { eq } from 'drizzle-orm'
+ 
+ export async function GET(req: Request, props: { params: Promise<{ episodeId: string }> }) {
+diff --git a/src/app/api/storyteller/episodes/route.ts b/src/app/api/storyteller/episodes/route.ts
+index a6416b3..bcc2832 100644
+--- a/src/app/api/storyteller/episodes/route.ts
++++ b/src/app/api/storyteller/episodes/route.ts
+@@ -1,17 +1,30 @@
+ import { NextResponse } from 'next/server'
+-import { supabaseAdmin } from '@/lib/supabase-admin'
+-import { requireAuth } from '@/lib/auth'
++import { asc, eq } from 'drizzle-orm'
+ 
+-import { verifyProjectAccess } from '@/domains/storyteller'
++import { episodes } from '@/db'
++import { requireAuth } from '@/lib/auth'
++import { db } from '@/lib/db'
++import {
++  parseCreateStorytellerEpisodeRequest,
++} from '@/domains/storyteller/io/storyteller.api'
++import {
++  storytellerEpisodesQuerySchema,
++  storytellerEpisodesResponseSchema,
++} from '@/domains/storyteller/io/storyteller.dto'
++import { verifyProjectAccess } from '@/shared/auth'
+ 
+ export async function GET(req: Request) {
+   const { searchParams } = new URL(req.url)
+-  const projectId = searchParams.get('projectId')
++  const parsedQuery = storytellerEpisodesQuerySchema.safeParse({
++    projectId: searchParams.get('projectId'),
++  })
+ 
+-  if (!projectId) {
++  if (!parsedQuery.success) {
+     return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+   }
+ 
++  const { projectId } = parsedQuery.data
++
+   try {
+     const { session } = await requireAuth()
+     if (!session) {
+@@ -23,15 +36,13 @@ export async function GET(req: Request) {
+       return NextResponse.json({ error: 'Unauthorized access to project' }, { status: 403 })
+     }
+ 
+-    const { data: projectEpisodes, error } = await supabaseAdmin
+-      .from('episodes')
+-      .select('*')
+-      .eq('project_id', projectId)
+-      .order('sequence', { ascending: true })
+-
+-    if (error) throw error
++    const projectEpisodes = await db
++      .select()
++      .from(episodes)
++      .where(eq(episodes.projectId, projectId))
++      .orderBy(asc(episodes.sequence))
+ 
+-    return NextResponse.json(projectEpisodes)
++    return NextResponse.json(storytellerEpisodesResponseSchema.parse(projectEpisodes))
+   } catch (error) {
+     console.error('Error fetching episodes:', error)
+     return NextResponse.json({ error: 'Failed to fetch episodes' }, { status: 500 })
+@@ -52,8 +63,8 @@ export async function POST(req: Request) {
+       }
+     }
+ 
+-    const body = await req.json()
+-    const { projectId, title, sequence, masterPrompt, summary } = body
++    const { projectId, title, sequence, masterPrompt, summary } =
++      parseCreateStorytellerEpisodeRequest(await req.json())
+ 
+     if (!isSystem && session) {
+       const hasAccess = await verifyProjectAccess(projectId, session.user.id)
+@@ -62,20 +73,17 @@ export async function POST(req: Request) {
+       }
+     }
+ 
+-    const { data: newEpisode, error } = await supabaseAdmin
+-      .from('episodes')
+-      .insert({
+-        project_id: projectId,
++    const [newEpisode] = await db
++      .insert(episodes)
++      .values({
++        projectId,
+         title,
+         sequence,
+-        master_prompt: masterPrompt,
++        masterPrompt,
+         summary,
+         status: 'planning',
+       })
+-      .select()
+-      .single()
+-
+-    if (error) throw error
++      .returning()
+ 
+     return NextResponse.json(newEpisode)
+   } catch (error) {
+diff --git a/src/app/api/storyteller/generate-portrait/route.ts b/src/app/api/storyteller/generate-portrait/route.ts
+index df6b870..5c2f8d7 100644
+--- a/src/app/api/storyteller/generate-portrait/route.ts
++++ b/src/app/api/storyteller/generate-portrait/route.ts
+@@ -1,6 +1,7 @@
+ import { NextRequest, NextResponse } from 'next/server'
+ import { db } from '@/lib/db'
+-import { projects, verifyProjectAccess } from '@/domains/storyteller'
++import { projects } from '@/db'
++import { verifyProjectAccess } from '@/shared/auth'
+ import { eq } from 'drizzle-orm'
+ import { tasks } from '@trigger.dev/sdk/v3'
+ import type { generatePortrait } from '@/trigger/generate-portrait'
+diff --git a/src/app/api/storyteller/moodboard/trigger/route.ts b/src/app/api/storyteller/moodboard/trigger/route.ts
+index 141d725..f055e3b 100644
+--- a/src/app/api/storyteller/moodboard/trigger/route.ts
++++ b/src/app/api/storyteller/moodboard/trigger/route.ts
+@@ -1,7 +1,9 @@
+ import { NextRequest, NextResponse } from 'next/server'
+ import { tasks } from '@trigger.dev/sdk/v3'
+ import { db } from '@/lib/db'
+-import { projects, type StoryPlan, verifyProjectAccess } from '@/domains/storyteller'
++import { projects } from '@/db'
++import { type StoryPlan } from '@/domains/storyteller'
++import { verifyProjectAccess } from '@/shared/auth'
+ import { eq } from 'drizzle-orm'
+ import OpenAI from 'openai'
+ import { requireAuth } from '@/lib/auth'
+diff --git a/src/app/api/storyteller/plan/route.ts b/src/app/api/storyteller/plan/route.ts
+index d151a49..e842f9f 100644
+--- a/src/app/api/storyteller/plan/route.ts
++++ b/src/app/api/storyteller/plan/route.ts
+@@ -1,12 +1,7 @@
+ import { NextRequest, NextResponse } from 'next/server'
++import { episodes, projects, storyPlans } from '@/db'
+ import { db } from '@/lib/db'
+-import {
+-  episodes,
+-  projects,
+-  storyPlans,
+-  verifyEpisodeAccess,
+-  verifyProjectAccess,
+-} from '@/domains/storyteller'
++import { verifyEpisodeAccess, verifyProjectAccess } from '@/shared/auth'
+ import { eq } from 'drizzle-orm'
+ import { requireAuth } from '@/lib/auth'
+ 
+diff --git a/src/app/api/storyteller/projects/[id]/route.ts b/src/app/api/storyteller/projects/[id]/route.ts
+index 1a36289..4bf5c12 100644
+--- a/src/app/api/storyteller/projects/[id]/route.ts
++++ b/src/app/api/storyteller/projects/[id]/route.ts
+@@ -1,6 +1,7 @@
+ import { NextRequest, NextResponse } from 'next/server'
+ import { db } from '@/lib/db'
+-import { projects, seriesBibles, storyPlans, verifyProjectAccess } from '@/domains/storyteller'
++import { projects, seriesBibles, storyPlans } from '@/db'
++import { verifyProjectAccess } from '@/shared/auth'
+ import { eq } from 'drizzle-orm'
+ import { requireAuth } from '@/lib/auth'
+ 
+diff --git a/src/app/api/storyteller/projects/route.ts b/src/app/api/storyteller/projects/route.ts
+index 57ce9f5..634abae 100644
+--- a/src/app/api/storyteller/projects/route.ts
++++ b/src/app/api/storyteller/projects/route.ts
+@@ -1,6 +1,6 @@
+ import { NextResponse } from 'next/server'
+ import { db } from '@/lib/db'
+-import { projects } from '@/domains/storyteller'
++import { projects } from '@/db'
+ 
+ /**
+  * @openapi
+diff --git a/src/app/api/storyteller/relationships/route.ts b/src/app/api/storyteller/relationships/route.ts
+index 91e2b70..8d9ff88 100644
+--- a/src/app/api/storyteller/relationships/route.ts
++++ b/src/app/api/storyteller/relationships/route.ts
+@@ -16,7 +16,7 @@
+ 
+ import { NextRequest, NextResponse } from 'next/server'
+ import { db } from '@/lib/db'
+-import { projects, characters, entityReferences, relationshipEdges } from '@/domains/storyteller'
++import { characters, entityReferences, projects, relationshipEdges } from '@/db'
+ import { eq, sql, and, gt } from 'drizzle-orm'
+ import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
+ 
+diff --git a/src/app/api/storyteller/save-episode-poster-variant/route.ts b/src/app/api/storyteller/save-episode-poster-variant/route.ts
+index 03e7051..1f507df 100644
+--- a/src/app/api/storyteller/save-episode-poster-variant/route.ts
++++ b/src/app/api/storyteller/save-episode-poster-variant/route.ts
+@@ -1,6 +1,7 @@
+ import { NextRequest, NextResponse } from 'next/server'
+ import { db } from '@/lib/db'
+-import { episodes, verifyEpisodeAccess, verifyProjectAccess } from '@/domains/storyteller'
++import { episodes } from '@/db'
++import { verifyEpisodeAccess, verifyProjectAccess } from '@/shared/auth'
+ import { eq } from 'drizzle-orm'
+ import fs from 'fs'
+ import path from 'path'
+diff --git a/src/app/api/storyteller/save-portrait-variant/route.ts b/src/app/api/storyteller/save-portrait-variant/route.ts
+index 422f5d8..f2e1b60 100644
+--- a/src/app/api/storyteller/save-portrait-variant/route.ts
++++ b/src/app/api/storyteller/save-portrait-variant/route.ts
+@@ -1,6 +1,7 @@
+ import { NextRequest, NextResponse } from 'next/server'
+ import { db } from '@/lib/db'
+-import { characters, verifyCharacterAccess, verifyProjectAccess } from '@/domains/storyteller'
++import { characters } from '@/db'
++import { verifyCharacterAccess, verifyProjectAccess } from '@/shared/auth'
+ import { eq } from 'drizzle-orm'
+ import fs from 'fs'
+ import path from 'path'
+diff --git a/src/app/api/storyteller/snapshots/route.ts b/src/app/api/storyteller/snapshots/route.ts
+index 80165e9..4c58db8 100644
+--- a/src/app/api/storyteller/snapshots/route.ts
++++ b/src/app/api/storyteller/snapshots/route.ts
+@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
+ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+ import { cookies } from 'next/headers'
+ import { requireAuth } from '@/lib/auth'
+-import {
+-  verifyBeatAccess,
+-  verifyCharacterAccess,
+-} from '@/domains/storyteller'
++import { verifyBeatAccess, verifyCharacterAccess } from '@/shared/auth'
+ 
+ export async function POST(req: NextRequest) {
+   try {
+diff --git a/src/app/api/storyteller/timeline/route.ts b/src/app/api/storyteller/timeline/route.ts
+index 50a56eb..9037f02 100644
+--- a/src/app/api/storyteller/timeline/route.ts
++++ b/src/app/api/storyteller/timeline/route.ts
+@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
+ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+ import { cookies } from 'next/headers'
+ import { requireAuth } from '@/lib/auth'
+-import { verifyEpisodeAccess } from '@/domains/storyteller'
++import { verifyEpisodeAccess } from '@/shared/auth'
+ 
+ export async function GET(req: NextRequest) {
+   try {
+diff --git a/src/app/api/storyteller/world-summary/route.ts b/src/app/api/storyteller/world-summary/route.ts
+index dc5cd6f..a4a3783 100644
+--- a/src/app/api/storyteller/world-summary/route.ts
++++ b/src/app/api/storyteller/world-summary/route.ts
+@@ -1,14 +1,13 @@
+ import { NextRequest, NextResponse } from 'next/server'
++import { characters, projects } from '@/db'
+ import { db } from '@/lib/db'
+ import {
+   bibleToPrompt,
+   bibleToVisualPrompt,
+-  characters,
+-  projects,
+   ragService,
+   type SeriesBible,
+-  verifyProjectAccess,
+ } from '@/domains/storyteller'
++import { verifyProjectAccess } from '@/shared/auth'
+ import { eq } from 'drizzle-orm'
+ import { createOpenAI } from '@ai-sdk/openai'
+ import { createGoogleGenerativeAI } from '@ai-sdk/google'
+diff --git a/src/app/api/workflows/game-design/route.ts b/src/app/api/workflows/game-design/route.ts
+index 5ed5001..b145487 100644
+--- a/src/app/api/workflows/game-design/route.ts
++++ b/src/app/api/workflows/game-design/route.ts
+@@ -5,7 +5,7 @@ import {
+   GameLoopWorkflow,
+ } from '@/workflows/game-design/game-loop-workflow'
+ import { requireAuth, checkRateLimit } from '@/lib/api-utils'
+-import { verifyProjectAccess } from '@/domains/storyteller'
++import { verifyProjectAccess } from '@/shared/auth'
+ import { getErrorMessage } from '@/lib/error-utils'
+ 
+ // Request schemas
+diff --git a/src/db/schema.ts b/src/db/schema.ts
+index 7256801..b7f7ec4 100644
+--- a/src/db/schema.ts
++++ b/src/db/schema.ts
+@@ -4,21 +4,14 @@ import {
+   text,
+   timestamp,
+   jsonb,
++  boolean,
+   integer,
++  real,
+   unique,
++  vector,
+   decimal,
+ } from 'drizzle-orm/pg-core'
+-
+-import {
+-  characters,
+-  episodes,
+-  beats,
+-  seriesBibles,
+-  storyPlans,
+-  entityReferences,
+-  seriesBiblesRelations,
+-  storyPlansRelations,
+-} from '@/domains/storyteller'
++import { relations } from 'drizzle-orm'
+ 
+ // Projects table (world-building + storyteller)
+ export const projects = pgTable('projects', {
+@@ -36,6 +29,186 @@ export const projects = pgTable('projects', {
+   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+ })
+ 
++// Storyteller tables
++export const characters = pgTable('characters', {
++  id: uuid('id').defaultRandom().primaryKey(),
++  projectId: uuid('project_id')
++    .references(() => projects.id)
++    .notNull(),
++  name: text('name').notNull(),
++  role: text('role').notNull(),
++  gender: text('gender'),
++  description: text('description'),
++  portraitUrl: text('portrait_url'),
++  characterPrompt: text('character_prompt'),
++  mbti: text('mbti'),
++  valence: integer('valence').default(0),
++  arousal: integer('arousal').default(50),
++  autonomy: integer('autonomy').default(60),
++  competence: integer('competence').default(60),
++  relatedness: integer('relatedness').default(50),
++  cognitiveClarity: integer('cognitive_clarity').default(70),
++  perceivedStakes: integer('perceived_stakes').default(40),
++  socialSafety: integer('social_safety').default(60),
++  moralAlignment: integer('moral_alignment').default(70),
++  transformationProgress: integer('transformation_progress').default(0),
++  voiceSignature: text('voice_signature'),
++  psychology: jsonb('psychology').notNull().default({}),
++  arcStatus: jsonb('arc_status').notNull().default({}),
++  createdAt: timestamp('created_at').defaultNow().notNull(),
++  updatedAt: timestamp('updated_at').defaultNow().notNull(),
++})
++
++export const episodes = pgTable('episodes', {
++  id: uuid('id').defaultRandom().primaryKey(),
++  projectId: uuid('project_id')
++    .references(() => projects.id)
++    .notNull(),
++  sequence: integer('sequence').notNull(),
++  title: text('title'),
++  masterPrompt: text('master_prompt'),
++  summary: text('summary'),
++  premise: text('premise'),
++  thematicFocus: text('thematic_focus'),
++  scriptContent: text('script_content'),
++  storyPlan: jsonb('story_plan'),
++  planApproved: boolean('plan_approved').default(false),
++  currentPhase: text('current_phase').default('premise'),
++  status: text('status').default('planning'),
++  tenPointsPlan: jsonb('ten_points_plan').default([]),
++  posterUrl: text('poster_url'),
++  posterPrompt: text('poster_prompt'),
++  createdAt: timestamp('created_at').defaultNow().notNull(),
++  updatedAt: timestamp('updated_at').defaultNow().notNull(),
++})
++
++export const beats = pgTable('beats', {
++  id: uuid('id').defaultRandom().primaryKey(),
++  episodeId: uuid('episode_id')
++    .references(() => episodes.id)
++    .notNull(),
++  sequence: integer('sequence').notNull(),
++  logline: text('logline').notNull(),
++  beatType: text('beat_type').notNull(),
++  content: text('content'),
++  visualHook: text('visual_hook'),
++  charactersInvolved: jsonb('characters_involved').default([]),
++  emotionalShifts: jsonb('emotional_shifts').default({}),
++  causalDependencies: jsonb('causal_dependencies').default([]),
++  setupsPayoffs: jsonb('setups_payoffs').default({}),
++  status: text('status').default('proposed'),
++  imageUrl: text('image_url'),
++  imagePrompt: text('image_prompt'),
++  createdAt: timestamp('created_at').defaultNow().notNull(),
++  updatedAt: timestamp('updated_at').defaultNow().notNull(),
++})
++
++export const setups = pgTable('setups', {
++  id: uuid('id').defaultRandom().primaryKey(),
++  projectId: uuid('project_id')
++    .references(() => projects.id)
++    .notNull(),
++  setupBeatId: uuid('setup_beat_id').references(() => beats.id),
++  payoffBeatId: uuid('payoff_beat_id').references(() => beats.id),
++  description: text('description').notNull(),
++  isResolved: boolean('is_resolved').default(false),
++  createdAt: timestamp('created_at').defaultNow().notNull(),
++})
++
++export const documentEmbeddings = pgTable('document_embeddings', {
++  id: uuid('id').defaultRandom().primaryKey(),
++  projectId: uuid('project_id')
++    .references(() => projects.id)
++    .notNull(),
++  content: text('content').notNull(),
++  metadata: jsonb('metadata').notNull(),
++  embedding: vector('embedding', { dimensions: 1536 }),
++  createdAt: timestamp('created_at').defaultNow().notNull(),
++})
++
++export const entityReferences = pgTable('entity_references', {
++  id: text('id').primaryKey(),
++  type: text('type').notNull(),
++  name: text('name').notNull(),
++  description: text('description'),
++  metadata: jsonb('metadata').default({}),
++  projectId: uuid('project_id')
++    .references(() => projects.id, { onDelete: 'cascade' })
++    .notNull(),
++  sourceEntityId: uuid('source_entity_id'),
++  embedding: vector('embedding', { dimensions: 1536 }),
++  createdAt: timestamp('created_at').defaultNow().notNull(),
++  lastReferencedAt: timestamp('last_referenced_at').defaultNow(),
++})
++
++export const relationshipSnapshots = pgTable('relationship_snapshots', {
++  id: uuid('id').defaultRandom().primaryKey(),
++  projectId: uuid('project_id')
++    .references(() => projects.id, { onDelete: 'cascade' })
++    .notNull(),
++  episodeId: uuid('episode_id'),
++  beatId: uuid('beat_id'),
++  sourceCharacterId: text('source_character_id').notNull(),
++  targetCharacterId: text('target_character_id').notNull(),
++  relationshipType: text('relationship_type'),
++  dynamicSummary: text('dynamic_summary'),
++  tensionPoints: jsonb('tension_points').default([]),
++  trust: integer('trust').default(50),
++  conflict: integer('conflict').default(0),
++  tension: integer('tension').default(0),
++  powerBalance: integer('power_balance').default(50),
++  changeReason: text('change_reason'),
++  createdAt: timestamp('created_at').defaultNow().notNull(),
++})
++
++export const relationshipEdges = pgTable(
++  'relationship_edges',
++  {
++    id: uuid('id').defaultRandom().primaryKey(),
++    projectId: uuid('project_id')
++      .references(() => projects.id, { onDelete: 'cascade' })
++      .notNull(),
++    sourceId: text('source_id').notNull(),
++    targetId: text('target_id').notNull(),
++    relationshipType: text('relationship_type').notNull(),
++    weight: real('weight').notNull().default(0.5),
++    label: text('label'),
++    evidence: text('evidence'),
++    llmGrounded: boolean('llm_grounded').notNull().default(false),
++    confidence: real('confidence'),
++    sinceBeatId: uuid('since_beat_id').references(() => beats.id, { onDelete: 'set null' }),
++    untilBeatId: uuid('until_beat_id').references(() => beats.id, { onDelete: 'set null' }),
++    extractedAt: timestamp('extracted_at').defaultNow().notNull(),
++    createdAt: timestamp('created_at').defaultNow().notNull(),
++  },
++  table => [unique().on(table.projectId, table.sourceId, table.targetId, table.relationshipType)]
++)
++
++export const seriesBibles = pgTable('series_bibles', {
++  id: uuid('id').defaultRandom().primaryKey(),
++  projectId: uuid('project_id')
++    .references(() => projects.id, { onDelete: 'cascade' })
++    .notNull()
++    .unique(),
++  content: jsonb('content').notNull().default({}),
++  isLocked: boolean('is_locked').default(false),
++  lockedBy: text('locked_by'),
++  lockedAt: timestamp('locked_at'),
++  createdAt: timestamp('created_at').defaultNow().notNull(),
++  updatedAt: timestamp('updated_at').defaultNow().notNull(),
++})
++
++export const storyPlans = pgTable('story_plans', {
++  id: uuid('id').defaultRandom().primaryKey(),
++  projectId: uuid('project_id')
++    .references(() => projects.id, { onDelete: 'cascade' })
++    .notNull()
++    .unique(),
++  content: jsonb('content').default({}),
++  createdAt: timestamp('created_at').defaultNow().notNull(),
++  updatedAt: timestamp('updated_at').defaultNow().notNull(),
++})
++
+ // Game Entities table (shared across ALL domains - the Swiss Army Knife bridge)
+ export const gameEntities = pgTable('game_entities', {
+   id: uuid('id').primaryKey().defaultRandom(),
+@@ -358,12 +531,12 @@ export const marketAnalysisRisingCompetitors = pgTable('market_analysis_rising_c
+ // Relations for Drizzle Query Builder (enables eager loading with `with:` clause)
+ // =============================================================================
+ 
+-import { relations } from 'drizzle-orm'
+-
+ // Projects relations
+ export const projectsRelations = relations(projects, ({ one, many }) => ({
+   characters: many(characters),
+   episodes: many(episodes),
++  embeddings: many(documentEmbeddings),
++  relationshipEdges: many(relationshipEdges),
+   tiles: many(tiles),
+   assets: many(assets),
+   interiorDesigns: many(interiorDesigns),
+@@ -379,6 +552,35 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
+   }),
+ }))
+ 
++export const episodesRelations = relations(episodes, ({ one, many }) => ({
++  project: one(projects, {
++    fields: [episodes.projectId],
++    references: [projects.id],
++  }),
++  beats: many(beats),
++}))
++
++export const beatsRelations = relations(beats, ({ one }) => ({
++  episode: one(episodes, {
++    fields: [beats.episodeId],
++    references: [episodes.id],
++  }),
++}))
++
++export const seriesBiblesRelations = relations(seriesBibles, ({ one }) => ({
++  project: one(projects, {
++    fields: [seriesBibles.projectId],
++    references: [projects.id],
++  }),
++}))
++
++export const storyPlansRelations = relations(storyPlans, ({ one }) => ({
++  project: one(projects, {
++    fields: [storyPlans.projectId],
++    references: [projects.id],
++  }),
++}))
++
+ // Game Loop relations
+ export const gameLoopsRelations = relations(gameLoops, ({ many }) => ({
+   marketAnalyses: many(marketAnalyses),
+diff --git a/src/domains/storyteller/db/schema.ts b/src/domains/storyteller/db/schema.ts
+deleted file mode 100644
+index 1925031..0000000
+--- a/src/domains/storyteller/db/schema.ts
++++ /dev/null
+@@ -1,275 +0,0 @@
+-import {
+-  pgTable,
+-  text,
+-  timestamp,
+-  uuid,
+-  jsonb,
+-  boolean,
+-  integer,
+-  real,
+-  vector,
+-  unique,
+-} from 'drizzle-orm/pg-core'
+-import { relations } from 'drizzle-orm'
+-
+-// Projects Table - The container for a story
+-export const projects = pgTable('projects', {
+-  id: uuid('id').defaultRandom().primaryKey(),
+-  userId: uuid('user_id').notNull(), // Owner of the project
+-  name: text('name').notNull(),
+-  description: text('description'),
+-  masterPrompt: text('master_prompt'), // Global style/instruction
+-  seriesBible: jsonb('series_bible').notNull().default({}), // Stores the immutable truths
+-  storyPlan: jsonb('story_plan'), // Series-level story plan (applies to all episodes)
+-  styleReferenceUrls: jsonb('style_reference_urls').default([]), // Midjourney --sref URLs
+-  stylePreset: text('style_preset'), // Predefined style preset key (overrides styleReferenceUrls)
+-  createdAt: timestamp('created_at').defaultNow().notNull(),
+-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+-})
+-
+-// Characters Table
+-export const characters = pgTable('characters', {
+-  id: uuid('id').defaultRandom().primaryKey(),
+-  projectId: uuid('project_id')
+-    .references(() => projects.id)
+-    .notNull(),
+-  name: text('name').notNull(),
+-  role: text('role').notNull(), // Protagonist, Antagonist, etc.
+-  gender: text('gender'),
+-  description: text('description'), // Physical/Personality description
+-  portraitUrl: text('portrait_url'), // URL to character portrait
+-  characterPrompt: text('character_prompt'), // Specific instructions for this character
+-  mbti: text('mbti'), // e.g. INTJ
+-
+-  // Psychologically-grounded metrics (based on Affective Circumplex + Self-Determination Theory)
+-  // Core Affective State
+-  valence: integer('valence').default(0), // -100 to +100 - Emotional tone (negative to positive)
+-  arousal: integer('arousal').default(50), // 0-100 - Energy/activation level
+-
+-  // Psychological Needs (Self-Determination Theory)
+-  autonomy: integer('autonomy').default(60), // 0-100 - Perceived freedom and self-direction
+-  competence: integer('competence').default(60), // 0-100 - Belief in capability
+-  relatedness: integer('relatedness').default(50), // 0-100 - Sense of connection to others
+-
+-  // Cognitive & Threat Assessment
+-  cognitiveClarity: integer('cognitive_clarity').default(70), // 0-100 - Mental sharpness
+-  perceivedStakes: integer('perceived_stakes').default(40), // 0-100 - How much is on the line
+-
+-  // Social & Moral Mechanisms
+-  socialSafety: integer('social_safety').default(60), // 0-100 - Perceived safety in social context
+-  moralAlignment: integer('moral_alignment').default(70), // 0-100 - Alignment between actions and values
+-
+-  transformationProgress: integer('transformation_progress').default(0), // 0-100 - Arc progress
+-  voiceSignature: text('voice_signature'), // Description of how they speak
+-  psychology: jsonb('psychology').notNull().default({}), // Goals, fears, delusions
+-  arcStatus: jsonb('arc_status').notNull().default({}), // Current transformation state
+-  createdAt: timestamp('created_at').defaultNow().notNull(),
+-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+-})
+-
+-// Episodes/Chapters Table
+-export const episodes = pgTable('episodes', {
+-  id: uuid('id').defaultRandom().primaryKey(),
+-  projectId: uuid('project_id')
+-    .references(() => projects.id)
+-    .notNull(),
+-  sequence: integer('sequence').notNull(),
+-  title: text('title'),
+-  masterPrompt: text('master_prompt'), // Episode-specific style override
+-  summary: text('summary'), // Compressed context
+-  premise: text('premise'), // The "Ozymandias" style premise
+-  thematicFocus: text('thematic_focus'), // The central theme of this episode
+-  scriptContent: text('script_content'), // The actual prose
+-  storyPlan: jsonb('story_plan'), // 8-sequence structure
+-  planApproved: boolean('plan_approved').default(false), // Whether the plan has been approved
+-  currentPhase: text('current_phase').default('premise'), // premise, breaking, cardlock, writing, complete
+-  status: text('status').default('planning'), // planning, breaking, writing, completed
+-  tenPointsPlan: jsonb('ten_points_plan').default([]), // The 10-point plan for the episode
+-  posterUrl: text('poster_url'), // Generated episode poster/cover URL
+-  posterPrompt: text('poster_prompt'), // The prompt used to generate the poster
+-  createdAt: timestamp('created_at').defaultNow().notNull(),
+-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+-})
+-
+-// Beats Table - The core unit (Index Card)
+-export const beats = pgTable('beats', {
+-  id: uuid('id').defaultRandom().primaryKey(),
+-  episodeId: uuid('episode_id')
+-    .references(() => episodes.id)
+-    .notNull(),
+-  sequence: integer('sequence').notNull(),
+-  logline: text('logline').notNull(),
+-  beatType: text('beat_type').notNull(), // setup, complication, revelation, decision, consequence
+-  content: text('content'), // Detailed description
+-  visualHook: text('visual_hook'), // "What's the first thing we see?"
+-  charactersInvolved: jsonb('characters_involved').default([]),
+-  emotionalShifts: jsonb('emotional_shifts').default({}), // { "charId": { from: "A", to: "B" } }
+-  causalDependencies: jsonb('causal_dependencies').default([]), // Array of beat IDs
+-  setupsPayoffs: jsonb('setups_payoffs').default({}), // { setupId?: string; payoffFor?: string }
+-  status: text('status').default('proposed'), // proposed, challenged, approved, locked
+-  imageUrl: text('image_url'), // Generated storyboard image URL
+-  imagePrompt: text('image_prompt'), // The prompt used to generate the image
+-  createdAt: timestamp('created_at').defaultNow().notNull(),
+-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+-})
+-
+-// Setups/Payoffs Table - Tracking causality
+-export const setups = pgTable('setups', {
+-  id: uuid('id').defaultRandom().primaryKey(),
+-  projectId: uuid('project_id')
+-    .references(() => projects.id)
+-    .notNull(),
+-  setupBeatId: uuid('setup_beat_id').references(() => beats.id),
+-  payoffBeatId: uuid('payoff_beat_id').references(() => beats.id),
+-  description: text('description').notNull(),
+-  isResolved: boolean('is_resolved').default(false),
+-  createdAt: timestamp('created_at').defaultNow().notNull(),
+-})
+-
+-// RAG Embeddings Table
+-export const documentEmbeddings = pgTable('document_embeddings', {
+-  id: uuid('id').defaultRandom().primaryKey(),
+-  projectId: uuid('project_id')
+-    .references(() => projects.id)
+-    .notNull(),
+-  content: text('content').notNull(),
+-  metadata: jsonb('metadata').notNull(), // { type: 'script'|'beat', sourceId: '...' }
+-  embedding: vector('embedding', { dimensions: 1536 }), // OpenAI ada-002 dimensions
+-  createdAt: timestamp('created_at').defaultNow().notNull(),
+-})
+-
+-// Entity References Table - For smart entity linking system
+-// Stores all referenceable entities with embeddings for GraphRAG
+-export const entityReferences = pgTable('entity_references', {
+-  id: text('id').primaryKey(), // e.g., "char-a1b2c3d4", "place-e5f6g7h8"
+-  type: text('type').notNull(), // character, place, event, faction, rule, beat
+-  name: text('name').notNull(), // Display name
+-  description: text('description'), // For tooltip display
+-  metadata: jsonb('metadata').default({}), // Full entity data for context injection
+-  projectId: uuid('project_id')
+-    .references(() => projects.id, { onDelete: 'cascade' })
+-    .notNull(),
+-  sourceEntityId: uuid('source_entity_id'), // Link to original table (characters.id, beats.id, etc.)
+-  embedding: vector('embedding', { dimensions: 1536 }), // For GraphRAG similarity search
+-  createdAt: timestamp('created_at').defaultNow().notNull(),
+-  lastReferencedAt: timestamp('last_referenced_at').defaultNow(),
+-})
+-
+-// Relationship Snapshots Table - Tracks relationship evolution per beat (R2)
+-export const relationshipSnapshots = pgTable('relationship_snapshots', {
+-  id: uuid('id').defaultRandom().primaryKey(),
+-  projectId: uuid('project_id')
+-    .references(() => projects.id, { onDelete: 'cascade' })
+-    .notNull(),
+-  episodeId: uuid('episode_id'),
+-  beatId: uuid('beat_id'), // Which beat caused this snapshot
+-  sourceCharacterId: text('source_character_id').notNull(), // Character ID or name
+-  targetCharacterId: text('target_character_id').notNull(), // Character ID or name
+-  relationshipType: text('relationship_type'), // Deprecated: ally, enemy, rival, mentor, etc.
+-  dynamicSummary: text('dynamic_summary'), // LLM-generated core dynamic of the relationship
+-  tensionPoints: jsonb('tension_points').default([]), // Active unresolved issues/tensions between the pair
+-  trust: integer('trust').default(50), // 0-100
+-  conflict: integer('conflict').default(0), // 0-100
+-  tension: integer('tension').default(0), // 0-100
+-  powerBalance: integer('power_balance').default(50), // 0-100 (who holds power: 0=target, 100=source)
+-  changeReason: text('change_reason'), // Why this changed
+-  createdAt: timestamp('created_at').defaultNow().notNull(),
+-})
+-
+-// Relationship Edges Table - Pre-computed LLM-extracted graph edges for CharacterWeb
+-// Distinct from relationship_snapshots (per-beat evolution) — this is the authoritative
+-// current graph that the relationships API reads first before falling back to live extraction.
+-export const relationshipEdges = pgTable(
+-  'relationship_edges',
+-  {
+-    id: uuid('id').defaultRandom().primaryKey(),
+-    projectId: uuid('project_id')
+-      .references(() => projects.id, { onDelete: 'cascade' })
+-      .notNull(),
+-    // Source and target use canonical entity IDs
+-    sourceId: text('source_id').notNull(),
+-    targetId: text('target_id').notNull(),
+-    // Relationship semantics
+-    relationshipType: text('relationship_type').notNull(),
+-    weight: real('weight').notNull().default(0.5),
+-    label: text('label'),
+-    // LLM extraction provenance
+-    evidence: text('evidence'),
+-    llmGrounded: boolean('llm_grounded').notNull().default(false),
+-    confidence: real('confidence'),
+-    // Temporal awareness
+-    sinceBeatId: uuid('since_beat_id').references(() => beats.id, { onDelete: 'set null' }),
+-    untilBeatId: uuid('until_beat_id').references(() => beats.id, { onDelete: 'set null' }),
+-    extractedAt: timestamp('extracted_at').defaultNow().notNull(),
+-    createdAt: timestamp('created_at').defaultNow().notNull(),
+-  },
+-  table => [unique().on(table.projectId, table.sourceId, table.targetId, table.relationshipType)]
+-)
+-
+-// New tables for migration
+-export const seriesBibles = pgTable('series_bibles', {
+-  id: uuid('id').defaultRandom().primaryKey(),
+-  projectId: uuid('project_id')
+-    .references(() => projects.id, { onDelete: 'cascade' })
+-    .notNull()
+-    .unique(),
+-  content: jsonb('content').notNull().default({}),
+-  createdAt: timestamp('created_at').defaultNow().notNull(),
+-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+-})
+-
+-export const storyPlans = pgTable('story_plans', {
+-  id: uuid('id').defaultRandom().primaryKey(),
+-  projectId: uuid('project_id')
+-    .references(() => projects.id, { onDelete: 'cascade' })
+-    .notNull()
+-    .unique(),
+-  content: jsonb('content').default({}),
+-  createdAt: timestamp('created_at').defaultNow().notNull(),
+-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+-})
+-
+-// Relations for Drizzle Queries
+-export const projectsRelations = relations(projects, ({ one, many }) => ({
+-  characters: many(characters),
+-  episodes: many(episodes),
+-  embeddings: many(documentEmbeddings),
+-  relationshipEdges: many(relationshipEdges),
+-  seriesBibleTable: one(seriesBibles, {
+-    fields: [projects.id],
+-    references: [seriesBibles.projectId],
+-  }),
+-  storyPlanTable: one(storyPlans, {
+-    fields: [projects.id],
+-    references: [storyPlans.projectId],
+-  }),
+-}))
+-
+-export const episodesRelations = relations(episodes, ({ one, many }) => ({
+-  project: one(projects, {
+-    fields: [episodes.projectId],
+-    references: [projects.id],
+-  }),
+-  beats: many(beats),
+-}))
+-
+-export const beatsRelations = relations(beats, ({ one }) => ({
+-  episode: one(episodes, {
+-    fields: [beats.episodeId],
+-    references: [episodes.id],
+-  }),
+-}))
+-
+-export const seriesBiblesRelations = relations(seriesBibles, ({ one }) => ({
+-  project: one(projects, {
+-    fields: [seriesBibles.projectId],
+-    references: [projects.id],
+-  }),
+-}))
+-
+-export const storyPlansRelations = relations(storyPlans, ({ one }) => ({
+-  project: one(projects, {
+-    fields: [storyPlans.projectId],
+-    references: [projects.id],
+-  }),
+-}))
+diff --git a/src/domains/storyteller/hooks/useBibleState.ts b/src/domains/storyteller/hooks/useBibleState.ts
+index c0938df..53ef88b 100644
+--- a/src/domains/storyteller/hooks/useBibleState.ts
++++ b/src/domains/storyteller/hooks/useBibleState.ts
+@@ -2,7 +2,7 @@
+ 
+ import { useState, useEffect, useCallback } from 'react'
+ import { useSearchParams, useRouter, usePathname } from 'next/navigation'
+-import { cachedFetch } from '@/lib/fetch-cache'
++import { useBibleLock } from '@/domains/storyteller/state/queries/useBibleLock'
+ 
+ export function useBibleState(projectId: string | undefined) {
+   const searchParams = useSearchParams()
+@@ -11,6 +11,7 @@ export function useBibleState(projectId: string | undefined) {
+ 
+   const bibleParamValue = searchParams?.get('bible') ?? null
+   const [optimisticBibleOpen, setOptimisticBibleOpen] = useState<boolean | null>(null)
++  const bibleLockQuery = useBibleLock(projectId)
+ 
+   useEffect(() => {
+     if (optimisticBibleOpen === null) return
+@@ -22,8 +23,6 @@ export function useBibleState(projectId: string | undefined) {
+ 
+   const isWorldBibleOpen = optimisticBibleOpen ?? (bibleParamValue === 'open')
+ 
+-  const [isBibleLocked, setIsBibleLocked] = useState(false)
+-  const [bibleLockedBy, setBibleLockedBy] = useState<string | null>(null)
+   const [userEmail, setUserEmail] = useState<string | null>(null)
+ 
+   useEffect(() => {
+@@ -37,39 +36,6 @@ export function useBibleState(projectId: string | undefined) {
+     fetchUser()
+   }, [])
+ 
+-  useEffect(() => {
+-    let isMounted = true
+-    if (!projectId) return
+-
+-    cachedFetch(
+-      `bible-lock:${projectId}`,
+-      async () => {
+-        const response = await fetch(`/api/storyteller/bible/lock?projectId=${projectId}`)
+-        if (response.ok) {
+-          return response.json()
+-        }
+-        return { isLocked: false, lockedBy: null }
+-      },
+-      { ttlMs: 60_000 }
+-    )
+-      .then(data => {
+-        if (isMounted) {
+-          setIsBibleLocked(data.isLocked || false)
+-          setBibleLockedBy(data.lockedBy || null)
+-        }
+-      })
+-      .catch(() => {
+-        if (isMounted) {
+-          setIsBibleLocked(false)
+-          setBibleLockedBy(null)
+-        }
+-      })
+-
+-    return () => {
+-      isMounted = false
+-    }
+-  }, [projectId])
+-
+   // Default to bible=open on first visit
+   useEffect(() => {
+     if (!pathname || searchParams?.has('bible')) return
+@@ -123,11 +89,12 @@ export function useBibleState(projectId: string | undefined) {
+ 
+   return {
+     isWorldBibleOpen,
+-    isBibleLocked,
+-    bibleLockedBy,
++    isBibleLocked: bibleLockQuery.data?.isLocked ?? false,
++    bibleLockedBy: bibleLockQuery.data?.lockedBy ?? null,
+     userEmail,
+     setOptimisticBibleOpen,
+     toggleBible,
+     closeBible,
++    bibleLockQuery,
+   }
+ }
+diff --git a/src/domains/storyteller/hooks/useEntity.ts b/src/domains/storyteller/hooks/useEntity.ts
+index 7b10f1b..cc8e4cc 100644
+--- a/src/domains/storyteller/hooks/useEntity.ts
++++ b/src/domains/storyteller/hooks/useEntity.ts
+@@ -1,10 +1,11 @@
+ import { useQueries } from '@tanstack/react-query'
+ import { entityLoader } from '@/domains/storyteller/lib/entity-loader'
++import { storytellerKeys } from '@/domains/storyteller/io/storyteller.keys'
+ 
+ export function useEntities(ids: string[], projectId: string | null | undefined, context?: string) {
+   return useQueries({
+     queries: ids.map(id => ({
+-      queryKey: ['entity', projectId, id, context],
++      queryKey: storytellerKeys.entity(projectId, id, context),
+       queryFn: () => {
+         if (!id || !projectId) return null
+         return entityLoader.load(id, projectId, context)
+diff --git a/src/domains/storyteller/hooks/useEpisodeData.ts b/src/domains/storyteller/hooks/useEpisodeData.ts
+index 5cd3864..90dcf2a 100644
+--- a/src/domains/storyteller/hooks/useEpisodeData.ts
++++ b/src/domains/storyteller/hooks/useEpisodeData.ts
+@@ -2,12 +2,14 @@
+ 
+ import { useState, useEffect, useCallback } from 'react'
+ import { useSearchParams, useRouter } from 'next/navigation'
+-import { cachedFetch } from '@/lib/fetch-cache'
+ import { LocalStorageKeys } from '@/constants/localStorage'
++import { useEpisode, useEpisodes } from '@/domains/storyteller/state/queries/useEpisodes'
+ 
+ interface EpisodeBasic {
+   id: string
+   episode_prompt?: string
++  title?: string | null
++  masterPrompt?: string | null
+ }
+ 
+ export function useEpisodeData(projectId: string | undefined) {
+@@ -22,6 +24,8 @@ export function useEpisodeData(projectId: string | undefined) {
+   const [hasEpisodes, setHasEpisodes] = useState(false)
+   const [firstEpisodeId, setFirstEpisodeId] = useState<string | null>(null)
+   const [overrideState, setOverrideState] = useState<string | null>(null)
++  const episodesQuery = useEpisodes(projectId)
++  const episodeQuery = useEpisode(currentEpisodeId)
+ 
+   useEffect(() => {
+     if (typeof window !== 'undefined') {
+@@ -31,7 +35,6 @@ export function useEpisodeData(projectId: string | undefined) {
+   }, [])
+ 
+   useEffect(() => {
+-    let isMounted = true
+     if (!projectId) return
+ 
+     if (overrideState === 'HAS_EPISODES') {
+@@ -42,32 +45,12 @@ export function useEpisodeData(projectId: string | undefined) {
+       return
+     }
+ 
+-    cachedFetch(
+-      `episodes:${projectId}`,
+-      async () => {
+-        const res = await fetch(`/api/storyteller/episodes?projectId=${projectId}`)
+-        return res.json()
+-      },
+-      { ttlMs: 60_000 }
+-    )
+-      .then(data => {
+-        if (!isMounted) return
+-        if (overrideState === 'HAS_EPISODES') {
+-          setHasEpisodes(true)
+-        } else if (overrideState === 'NO_EPISODES') {
+-          setHasEpisodes(false)
+-        } else if (Array.isArray(data)) {
+-          const hasAny = data.length > 0
+-          setHasEpisodes(hasAny)
+-          setFirstEpisodeId(hasAny && data[0]?.id ? data[0].id : null)
+-        }
+-      })
+-      .catch(() => {})
+-
+-    return () => {
+-      isMounted = false
++    if (Array.isArray(episodesQuery.data)) {
++      const hasAny = episodesQuery.data.length > 0
++      setHasEpisodes(hasAny)
++      setFirstEpisodeId(hasAny && episodesQuery.data[0]?.id ? episodesQuery.data[0].id : null)
+     }
+-  }, [projectId, overrideState])
++  }, [projectId, overrideState, episodesQuery.data])
+ 
+   useEffect(() => {
+     if (!currentEpisodeId) {
+@@ -75,21 +58,13 @@ export function useEpisodeData(projectId: string | undefined) {
+       return
+     }
+ 
+-    const fetchEpisode = async () => {
+-      try {
+-        const res = await fetch(`/api/storyteller/episodes/${currentEpisodeId}`)
+-        if (res.ok) {
+-          const data = await res.json()
+-          setCurrentEpisode(data)
+-          if (data.title) setCurrentEpisodeTitle(data.title)
+-        }
+-      } catch (err) {
+-        console.error('Failed to fetch episode:', err)
++    if (episodeQuery.data) {
++      setCurrentEpisode(episodeQuery.data)
++      if (episodeQuery.data.title) {
++        setCurrentEpisodeTitle(episodeQuery.data.title)
+       }
+     }
+-
+-    fetchEpisode()
+-  }, [currentEpisodeId])
++  }, [currentEpisodeId, episodeQuery.data])
+ 
+   // Sync Episode ID from URL if it changes
+   useEffect(() => {
+@@ -118,5 +93,7 @@ export function useEpisodeData(projectId: string | undefined) {
+     firstEpisodeId,
+     overrideState,
+     selectEpisode,
++    episodesQuery,
++    episodeQuery,
+   }
+ }
+diff --git a/src/domains/storyteller/index.ts b/src/domains/storyteller/index.ts
+index 0f4b743..4087d4e 100644
+--- a/src/domains/storyteller/index.ts
++++ b/src/domains/storyteller/index.ts
+@@ -2,8 +2,7 @@
+  * Storyteller public module API.
+  *
+  * This is the only supported storyteller import target for code outside
+- * src/domains/storyteller. A few server-side re-exports remain as an interim
+- * seam until later shared-layer/schema cleanup work lands.
++ * src/domains/storyteller.
+  */
+ 
+ // Agents
+@@ -56,6 +55,8 @@ export * from './hooks/useEpisodeData'
+ export * from './hooks/useLoadingStates'
+ export * from './hooks/useStorytellerActions'
+ export * from './hooks/useStorytellerHydration'
++export * from './state/queries/useBibleLock'
++export * from './state/queries/useEpisodes'
+ 
+ // Mentions
+ export * from './mentions/MentionsProvider'
+@@ -63,17 +64,11 @@ export * from './mentions/MentionsProvider'
+ // Prompt types/schemas
+ export * from './prompts/schemas/agent-schemas'
+ 
+-// Interim server-side compatibility re-exports (scheduled for later cleanup)
+-export * from './db/schema'
+-export * as storytellerSchema from './db/schema'
+-export * from './lib/access-verification'
+-export * from './services/ContextAssemblyService'
+-export * from './services/ContextualSummaryService'
+-export * from './services/EntityAutoLinkerService'
+-export * from './services/EntityRegistryService'
+-export * from './services/MoodboardGenerationService'
+-export * from './services/PosterGenerationService'
+-export * from './services/RagService'
+-export * from './services/RelationshipEnricherService'
+-export * from './services/ScriptOperationsService'
+-export * from './services/context/SeriesBible'
++// Public server-side entry points consumed outside the module
++export { assembleStorytellerContext } from './services/ContextAssemblyService'
++export { contextualSummaryService } from './services/ContextualSummaryService'
++export { entityRegistry } from './services/EntityRegistryService'
++export { ragService } from './services/RagService'
++export { relationshipEnricher } from './services/RelationshipEnricherService'
++export { regenerateText } from './services/ScriptOperationsService'
++export { bibleToPrompt, bibleToVisualPrompt, type BibleSection, type SeriesBible } from './services/context/SeriesBible'
+diff --git a/src/domains/storyteller/io/storyteller.api.ts b/src/domains/storyteller/io/storyteller.api.ts
+new file mode 100644
+index 0000000..c01104b
+--- /dev/null
++++ b/src/domains/storyteller/io/storyteller.api.ts
+@@ -0,0 +1,59 @@
++import {
++  storytellerBibleLockQuerySchema,
++  storytellerBibleLockResponseSchema,
++  storytellerCreateEpisodeRequestSchema,
++  storytellerEpisodeResponseSchema,
++  storytellerEpisodesQuerySchema,
++  storytellerEpisodesResponseSchema,
++  type StorytellerBibleLockResponse,
++  type StorytellerEpisodeListItem,
++  type StorytellerEpisodeResponse,
++} from './storyteller.dto'
++
++async function fetchAndParse<T>(input: RequestInfo | URL, schema: { parse: (value: unknown) => T }) {
++  const response = await fetch(input)
++
++  if (!response.ok) {
++    throw new Error(`Request failed with status ${response.status}`)
++  }
++
++  return schema.parse(await response.json())
++}
++
++export async function fetchStorytellerEpisodes(
++  rawProjectId: string
++): Promise<StorytellerEpisodeListItem[]> {
++  const { projectId } = storytellerEpisodesQuerySchema.parse({ projectId: rawProjectId })
++  return fetchAndParse(
++    `/api/storyteller/episodes?projectId=${encodeURIComponent(projectId)}`,
++    storytellerEpisodesResponseSchema
++  )
++}
++
++export async function fetchStorytellerEpisode(
++  episodeId: string
++): Promise<StorytellerEpisodeResponse & { episode_prompt?: string | null }> {
++  const episode = await fetchAndParse(
++    `/api/storyteller/episodes/${encodeURIComponent(episodeId)}`,
++    storytellerEpisodeResponseSchema
++  )
++
++  return {
++    ...episode,
++    episode_prompt: episode.masterPrompt ?? null,
++  }
++}
++
++export async function fetchStorytellerBibleLock(
++  rawProjectId: string
++): Promise<StorytellerBibleLockResponse> {
++  const { projectId } = storytellerBibleLockQuerySchema.parse({ projectId: rawProjectId })
++  return fetchAndParse(
++    `/api/storyteller/bible/lock?projectId=${encodeURIComponent(projectId)}`,
++    storytellerBibleLockResponseSchema
++  )
++}
++
++export function parseCreateStorytellerEpisodeRequest(input: unknown) {
++  return storytellerCreateEpisodeRequestSchema.parse(input)
++}
+diff --git a/src/domains/storyteller/io/storyteller.dto.ts b/src/domains/storyteller/io/storyteller.dto.ts
+new file mode 100644
+index 0000000..2add25a
+--- /dev/null
++++ b/src/domains/storyteller/io/storyteller.dto.ts
+@@ -0,0 +1,45 @@
++import { z } from 'zod'
++
++export const storytellerEpisodesQuerySchema = z.object({
++  projectId: z.string().min(1),
++})
++
++export const storytellerCreateEpisodeRequestSchema = z.object({
++  projectId: z.string().min(1),
++  title: z.string().trim().min(1),
++  sequence: z.number().int().positive(),
++  masterPrompt: z.string().optional(),
++  summary: z.string().optional(),
++})
++
++export const storytellerEpisodeListItemSchema = z
++  .object({
++    id: z.string(),
++    title: z.string().nullable().optional(),
++    sequence: z.number().nullable().optional(),
++  })
++  .passthrough()
++
++export const storytellerEpisodesResponseSchema = z.array(storytellerEpisodeListItemSchema)
++
++export const storytellerEpisodeResponseSchema = z
++  .object({
++    id: z.string(),
++    title: z.string().nullable().optional(),
++    masterPrompt: z.string().nullable().optional(),
++  })
++  .passthrough()
++
++export const storytellerBibleLockQuerySchema = z.object({
++  projectId: z.string().min(1),
++})
++
++export const storytellerBibleLockResponseSchema = z.object({
++  isLocked: z.boolean(),
++  lockedBy: z.string().nullable(),
++  lockedAt: z.string().nullable(),
++})
++
++export type StorytellerEpisodeListItem = z.infer<typeof storytellerEpisodeListItemSchema>
++export type StorytellerEpisodeResponse = z.infer<typeof storytellerEpisodeResponseSchema>
++export type StorytellerBibleLockResponse = z.infer<typeof storytellerBibleLockResponseSchema>
+diff --git a/src/domains/storyteller/io/storyteller.keys.ts b/src/domains/storyteller/io/storyteller.keys.ts
+new file mode 100644
+index 0000000..1224712
+--- /dev/null
++++ b/src/domains/storyteller/io/storyteller.keys.ts
+@@ -0,0 +1,8 @@
++export const storytellerKeys = {
++  all: ['storyteller'] as const,
++  episodes: (projectId: string) => [...storytellerKeys.all, 'episodes', projectId] as const,
++  episode: (episodeId: string) => [...storytellerKeys.all, 'episode', episodeId] as const,
++  bibleLock: (projectId: string) => [...storytellerKeys.all, 'bible-lock', projectId] as const,
++  entity: (projectId: string | null | undefined, id: string, context?: string) =>
++    [...storytellerKeys.all, 'entity', projectId ?? null, id, context ?? null] as const,
++}
+diff --git a/src/domains/storyteller/services/ContextAssemblyService.ts b/src/domains/storyteller/services/ContextAssemblyService.ts
+index fdeb2b3..63d7cdd 100644
+--- a/src/domains/storyteller/services/ContextAssemblyService.ts
++++ b/src/domains/storyteller/services/ContextAssemblyService.ts
+@@ -7,8 +7,8 @@
+  */
+ 
+ import { eq } from 'drizzle-orm'
++import { projects, storyPlans } from '@/db'
+ import { db } from '@/lib/db'
+-import { projects, storyPlans } from '@/domains/storyteller/db/schema'
+ import { budgetContext, type RawContextParts } from '@/domains/storyteller/services/context/token-budget'
+ import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
+ 
+diff --git a/src/domains/storyteller/services/EntityAutoLinkerService.ts b/src/domains/storyteller/services/EntityAutoLinkerService.ts
+index 10cc359..f668c35 100644
+--- a/src/domains/storyteller/services/EntityAutoLinkerService.ts
++++ b/src/domains/storyteller/services/EntityAutoLinkerService.ts
+@@ -30,7 +30,7 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
+   try {
+     // Fetch all known entities from the project
+     const { db } = await import('@/lib/db')
+-    const { projects, storyPlans, characters } = await import('@/domains/storyteller/db/schema')
++    const { projects, storyPlans, characters } = await import('@/db')
+     const { eq } = await import('drizzle-orm')
+ 
+     // Fetch project basics first (lighter query)
+diff --git a/src/domains/storyteller/services/EntityGraphService.ts b/src/domains/storyteller/services/EntityGraphService.ts
+index 9499955..e405023 100644
+--- a/src/domains/storyteller/services/EntityGraphService.ts
++++ b/src/domains/storyteller/services/EntityGraphService.ts
+@@ -11,8 +11,8 @@
+  * Uses pgvector for similarity search.
+  */
+ 
++import { entityReferences } from '@/db'
+ import { db } from '@/lib/db'
+-import { entityReferences } from '@/domains/storyteller/db/schema'
+ import { eq, and, sql, inArray, desc } from 'drizzle-orm'
+ import { EntityReference, EntityType } from './EntityRegistryService'
+ 
+diff --git a/src/domains/storyteller/services/EntityRegistryService.ts b/src/domains/storyteller/services/EntityRegistryService.ts
+index bd24a48..8c1b7e0 100644
+--- a/src/domains/storyteller/services/EntityRegistryService.ts
++++ b/src/domains/storyteller/services/EntityRegistryService.ts
+@@ -16,8 +16,8 @@
+  * - POST /api/entities/mark-referenced
+  */
+ 
++import { entityReferences } from '@/db'
+ import { db } from '@/lib/db'
+-import { entityReferences } from '@/domains/storyteller/db/schema'
+ import { eq, and, inArray } from 'drizzle-orm'
+ import { v4 as uuidv4 } from 'uuid'
+ 
+diff --git a/src/domains/storyteller/services/RagService.ts b/src/domains/storyteller/services/RagService.ts
+index 81cb882..2a7a34c 100644
+--- a/src/domains/storyteller/services/RagService.ts
++++ b/src/domains/storyteller/services/RagService.ts
+@@ -8,8 +8,8 @@
+  * - Citation tracking for grounded generation
+  */
+ 
++import { documentEmbeddings } from '@/db'
+ import { db } from '@/lib/db'
+-import { documentEmbeddings } from '@/domains/storyteller/db/schema'
+ import { desc, sql } from 'drizzle-orm'
+ import { v4 as uuidv4 } from 'uuid'
+ import {
+diff --git a/src/domains/storyteller/state/queries/useBibleLock.ts b/src/domains/storyteller/state/queries/useBibleLock.ts
+new file mode 100644
+index 0000000..b423c49
+--- /dev/null
++++ b/src/domains/storyteller/state/queries/useBibleLock.ts
+@@ -0,0 +1,15 @@
++'use client'
++
++import { useQuery } from '@tanstack/react-query'
++
++import { fetchStorytellerBibleLock } from '../../io/storyteller.api'
++import { storytellerKeys } from '../../io/storyteller.keys'
++
++export function useBibleLock(projectId: string | undefined) {
++  return useQuery({
++    queryKey: storytellerKeys.bibleLock(projectId ?? ''),
++    queryFn: () => fetchStorytellerBibleLock(projectId!),
++    enabled: Boolean(projectId),
++    staleTime: 60_000,
++  })
++}
+diff --git a/src/domains/storyteller/state/queries/useEpisodes.ts b/src/domains/storyteller/state/queries/useEpisodes.ts
+new file mode 100644
+index 0000000..8573a60
+--- /dev/null
++++ b/src/domains/storyteller/state/queries/useEpisodes.ts
+@@ -0,0 +1,24 @@
++'use client'
++
++import { useQuery } from '@tanstack/react-query'
++
++import { fetchStorytellerEpisode, fetchStorytellerEpisodes } from '../../io/storyteller.api'
++import { storytellerKeys } from '../../io/storyteller.keys'
++
++export function useEpisodes(projectId: string | undefined) {
++  return useQuery({
++    queryKey: storytellerKeys.episodes(projectId ?? ''),
++    queryFn: () => fetchStorytellerEpisodes(projectId!),
++    enabled: Boolean(projectId),
++    staleTime: 60_000,
++  })
++}
++
++export function useEpisode(episodeId: string | null | undefined) {
++  return useQuery({
++    queryKey: storytellerKeys.episode(episodeId ?? ''),
++    queryFn: () => fetchStorytellerEpisode(episodeId!),
++    enabled: Boolean(episodeId),
++    staleTime: 60_000,
++  })
++}
+diff --git a/src/domains/storyteller/tools/agent-tools.ts b/src/domains/storyteller/tools/agent-tools.ts
+index 525f643..ea2f86d 100644
+--- a/src/domains/storyteller/tools/agent-tools.ts
++++ b/src/domains/storyteller/tools/agent-tools.ts
+@@ -18,8 +18,8 @@ import { runConsistencyCheck } from '@/domains/storyteller/agents/ConsistencyAge
+ import { CreativeDirectorAgent } from '@/domains/storyteller/agents/CreativeDirectorAgent'
+ import { getWorkflowTraceId, getWorkflowEventBus } from '@/domains/storyteller/core/WorkflowContext'
+ import { langfuse } from '@/agent-core/observability'
++import { characters, storyPlans } from '@/db'
+ import { db } from '@/lib/db'
+-import { characters, storyPlans } from '@/domains/storyteller/db/schema'
+ import { eq } from 'drizzle-orm'
+ 
+ import { WORKFLOW_EVENTS } from '@/domains/storyteller/core/WorkflowContext'
+diff --git a/src/domains/storyteller/tools/beat-tools.ts b/src/domains/storyteller/tools/beat-tools.ts
+index 105ecab..e36eeca 100644
+--- a/src/domains/storyteller/tools/beat-tools.ts
++++ b/src/domains/storyteller/tools/beat-tools.ts
+@@ -7,10 +7,10 @@
+ 
+ import { createTool } from '@mastra/core/tools'
+ import { z } from 'zod'
++import { beats } from '@/db'
+ import { BeatType, BeatStatus } from '@/domains/storyteller/core/Enums'
+ import { v4 as uuidv4 } from 'uuid'
+ import { db } from '@/lib/db'
+-import { beats } from '@/domains/storyteller/db/schema'
+ import { eq } from 'drizzle-orm'
+ import { getErrorMessage } from '@/lib/error-utils'
+ 
+@@ -477,4 +477,4 @@ export const listBeatsTool = createTool({
+ 
+     return `Beat Board (${beats.length} beats):\n\n${beatList}`
+   },
+-})
+\ No newline at end of file
++})
+diff --git a/src/domains/storyteller/tools/storytelling-adapter.ts b/src/domains/storyteller/tools/storytelling-adapter.ts
+index fd21b4f..94f0ab0 100644
+--- a/src/domains/storyteller/tools/storytelling-adapter.ts
++++ b/src/domains/storyteller/tools/storytelling-adapter.ts
+@@ -1,7 +1,7 @@
+ import { createTool } from '@mastra/core/tools'
+ import { GetPlotPhaseInputSchema, ValidateConsistencyInputSchema } from './schemas'
++import { episodes } from '@/db'
+ import { db } from '@/lib/db'
+-import { episodes } from '@/domains/storyteller/db/schema'
+ import { eq } from 'drizzle-orm'
+ import { z } from 'zod'
+ 
+diff --git a/src/domains/storyteller/tools/world-building-tools.ts b/src/domains/storyteller/tools/world-building-tools.ts
+index 2641ebb..fc89a6f 100644
+--- a/src/domains/storyteller/tools/world-building-tools.ts
++++ b/src/domains/storyteller/tools/world-building-tools.ts
+@@ -6,8 +6,8 @@
+ 
+ import { createTool } from '@mastra/core/tools'
+ import { z } from 'zod'
++import { characters, projects } from '@/db'
+ import { db } from '@/lib/db'
+-import { projects, characters } from '@/domains/storyteller/db/schema'
+ import { eq, and } from 'drizzle-orm'
+ import { deepMerge } from '@/domains/storyteller/config/action-config'
+ import { getErrorMessage } from '@/lib/error-utils'
+diff --git a/src/evaluation/experiments/run-full-flow-eval.ts b/src/evaluation/experiments/run-full-flow-eval.ts
+index a5728a4..f1593b8 100644
+--- a/src/evaluation/experiments/run-full-flow-eval.ts
++++ b/src/evaluation/experiments/run-full-flow-eval.ts
+@@ -13,7 +13,8 @@
+  *           docs/modules/storyteller-evaluation-guide.md
+  */
+ 
+-import { createStorytellerAgent, projects } from '@/domains/storyteller'
++import { projects } from '@/db'
++import { createStorytellerAgent } from '@/domains/storyteller'
+ import { langfuse } from '@/agent-core/observability'
+ import { db } from '@/lib/db'
+ import { eq } from 'drizzle-orm'
+diff --git a/src/infrastructure/ai/rag/hybrid-search.ts b/src/infrastructure/ai/rag/hybrid-search.ts
+index 86a837f..246f75a 100644
+--- a/src/infrastructure/ai/rag/hybrid-search.ts
++++ b/src/infrastructure/ai/rag/hybrid-search.ts
+@@ -6,7 +6,7 @@
+  */
+ 
+ import { db } from '@/lib/db'
+-import { documentEmbeddings } from '@/domains/storyteller'
++import { documentEmbeddings } from '@/db'
+ import { sql, and, desc } from 'drizzle-orm'
+ import { getVoyageEmbeddings } from '../embeddings/voyage-embeddings'
+ 
+diff --git a/src/lib/db.ts b/src/lib/db.ts
+index e360021..a5301fc 100644
+--- a/src/lib/db.ts
++++ b/src/lib/db.ts
+@@ -1,6 +1,6 @@
+ import { drizzle } from 'drizzle-orm/node-postgres'
+ import { Pool } from 'pg'
+-import { storytellerSchema } from '@/domains/storyteller'
++import * as storytellerSchema from '@/db'
+ 
+ const connectionString = process.env.DATABASE_URL!
+ 
+diff --git a/src/services/storyteller.service.ts b/src/services/storyteller.service.ts
+index a756408..47acf86 100644
+--- a/src/services/storyteller.service.ts
++++ b/src/services/storyteller.service.ts
+@@ -6,7 +6,7 @@
+  */
+ 
+ import { db } from '@/lib/db'
+-import { characters, projects, episodes, beats } from '@/domains/storyteller'
++import { beats, characters, episodes, projects } from '@/db'
+ import { eq, desc } from 'drizzle-orm'
+ import { z } from 'zod'
+ 
+diff --git a/src/shared/auth/index.ts b/src/shared/auth/index.ts
+new file mode 100644
+index 0000000..d482fb9
+--- /dev/null
++++ b/src/shared/auth/index.ts
+@@ -0,0 +1,2 @@
++export * from '@/lib/auth'
++export * from './storyteller-access'
+diff --git a/src/domains/storyteller/lib/access-verification.ts b/src/shared/auth/storyteller-access.ts
+similarity index 60%
+rename from src/domains/storyteller/lib/access-verification.ts
+rename to src/shared/auth/storyteller-access.ts
+index b2fe74a..51ce17d 100644
+--- a/src/domains/storyteller/lib/access-verification.ts
++++ b/src/shared/auth/storyteller-access.ts
+@@ -1,18 +1,7 @@
+-/**
+- * Storyteller Access Verification - Optimized with JOINs
+- *
+- * Fixes N+1 query patterns by using single JOIN queries
+- * instead of multiple sequential queries.
+- */
+-
+-import { db } from '@/lib/db'
+-import { beats, episodes, projects, characters } from '@/domains/storyteller/db/schema'
+-import { gameLoops } from '@/db/schema'
+ import { eq } from 'drizzle-orm'
+ 
+-// ============================================
+-// TYPES
+-// ============================================
++import { db } from '@/lib/db'
++import { beats, characters, episodes, gameLoops, projects } from '@/db'
+ 
+ export interface AccessResult {
+   hasAccess: boolean
+@@ -23,14 +12,6 @@ export interface BeatAccessResult extends AccessResult {
+   episodeId?: string
+ }
+ 
+-// ============================================
+-// PROJECT ACCESS
+-// ============================================
+-
+-/**
+- * Verify user has access to a project
+- * Single query - most basic check
+- */
+ export async function verifyProjectAccess(projectId: string, userId: string): Promise<boolean> {
+   const [project] = await db
+     .select({ userId: projects.userId })
+@@ -40,7 +21,6 @@ export async function verifyProjectAccess(projectId: string, userId: string): Pr
+ 
+   if (!project) return false
+ 
+-  // Allow E2E test user to bypass access checks in dev/test
+   if (
+     userId === 'e2e-test-user-id' &&
+     ['development', 'test'].includes(process.env.NODE_ENV || '')
+@@ -51,14 +31,6 @@ export async function verifyProjectAccess(projectId: string, userId: string): Pr
+   return project.userId === userId
+ }
+ 
+-// ============================================
+-// EPISODE ACCESS
+-// ============================================
+-
+-/**
+- * Verify user has access to an episode through project ownership
+- * Uses single JOIN query instead of 2 sequential queries
+- */
+ export async function verifyEpisodeAccess(
+   episodeId: string,
+   userId: string
+@@ -89,14 +61,6 @@ export async function verifyEpisodeAccess(
+   }
+ }
+ 
+-// ============================================
+-// BEAT ACCESS
+-// ============================================
+-
+-/**
+- * Verify user has access to a beat through episode -> project ownership
+- * Uses single JOIN query instead of 3 sequential queries
+- */
+ export async function verifyBeatAccess(beatId: string, userId: string): Promise<BeatAccessResult> {
+   const result = await db
+     .select({
+@@ -127,14 +91,6 @@ export async function verifyBeatAccess(beatId: string, userId: string): Promise<
+   }
+ }
+ 
+-// ============================================
+-// CHARACTER ACCESS
+-// ============================================
+-
+-/**
+- * Verify user has access to a character through project ownership
+- * Uses single JOIN query instead of 2 sequential queries
+- */
+ export async function verifyCharacterAccess(
+   characterId: string,
+   userId: string
+@@ -165,14 +121,6 @@ export async function verifyCharacterAccess(
+   }
+ }
+ 
+-// ============================================
+-// GAME LOOP ACCESS
+-// ============================================
+-
+-/**
+- * Verify user has access to a game loop through project ownership
+- * Uses single JOIN query instead of 2 sequential queries
+- */
+ export async function verifyGameLoopAccess(loopId: string, userId: string): Promise<AccessResult> {
+   const result = await db
+     .select({
+@@ -199,22 +147,3 @@ export async function verifyGameLoopAccess(loopId: string, userId: string): Prom
+     projectId: row.projectId,
+   }
+ }
+-
+-// ============================================
+-// BULK ACCESS (for lists)
+-// ============================================
+-
+-/**
+- * Get all projects accessible by a user
+- * Returns list of project IDs
+- */
+-async function getUserProjects(userId: string): Promise<string[]> {
+-  const result = await db
+-    .select({ id: projects.id })
+-    .from(projects)
+-    .where(eq(projects.userId, userId))
+-
+-  return result.map(r => r.id)
+-}
+-
+-
