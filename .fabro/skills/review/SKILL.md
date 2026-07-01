@@ -89,5 +89,26 @@ Then a short **Summary**: overall assessment and a clear verdict —
   scope, note it as a follow-up, not a blocker.
 - Do not modify code in this skill — this is a review. Report; let the author fix.
 
+## Finding format
+
+Make each finding copy-actionable:
+
+```
+🔴 src/app/api/x/route.ts:42 — Unvalidated `id` flows into the DB query.
+   Why: attacker-controlled input can alter the query.
+   Fix: parse the params with the existing Zod schema before use.
+```
+
+## Reviewer checklist
+
+- [ ] Read the full context around each hunk, not just the diff.
+- [ ] Traced the important code paths for correctness.
+- [ ] Checked untrusted input → sink flows for security issues.
+- [ ] Verified error/edge handling matches the intended UX.
+- [ ] Looked for `any`, `@ts-ignore`, unsafe casts.
+- [ ] Confirmed risky paths are tested; no weakened/skipped tests.
+- [ ] Flagged scope creep and noise comments.
+- [ ] Gave a clear verdict.
+
 Keep the report skimmable: an experienced engineer should get the blocking items
 in the first ten seconds.

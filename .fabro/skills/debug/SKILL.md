@@ -70,6 +70,40 @@ Distinguish:
 - Do not delete or weaken the failing test to "resolve" the bug.
 - Do not expand the change into an unrelated refactor.
 
+## Techniques by bug class
+
+- **Wrong output / logic bug:** trace inputs at each layer; the defect is usually
+  a bad assumption about the data shape, not a typo.
+- **Intermittent / flaky:** suspect timing, ordering, shared mutable state, or an
+  uncontrolled dependency (clock, network, randomness). Make it deterministic
+  before fixing.
+- **"Works locally, fails in CI/prod":** compare environment — env vars, node
+  version, build vs. dev, data differences. Reproduce in the failing environment's
+  conditions.
+- **Type/runtime mismatch:** a value isn't the shape the type claims. Validate at
+  the boundary where untrusted data enters.
+- **State bug in React:** stale closures, missing/incorrect effect deps, or
+  updating state after unmount. Check the dependency arrays.
+- **Regression:** `git log`/`git blame` the suspect lines; a recent change likely
+  introduced it.
+
+## Questions to ask before touching code
+
+- What is the *exact* expected vs. actual behavior?
+- What is the smallest input that triggers it?
+- When did it last work? What changed since?
+- Is the bad value produced here, or does it arrive here already broken?
+- Does my hypothesis explain *all* the observed symptoms, or just some?
+
+## Worked flow (shape)
+
+1. Reproduce with a failing test or a minimal script.
+2. Log/inspect at the suspected boundary; confirm where the invariant breaks.
+3. State the root cause in one sentence.
+4. Make the minimal correct fix.
+5. Turn the repro into a regression test; run the suite, typecheck, lint.
+6. Remove temporary instrumentation.
+
 ## Deliverable
 
 Report: the reproduction, the root cause (stated plainly), the fix and why it's

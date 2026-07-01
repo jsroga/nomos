@@ -85,6 +85,41 @@ Rules:
 - If a test fails because the **test** is wrong, fix the test.
 - Never use `.skip`, `expect(true)`, or loosened assertions to force green.
 
+## Mocking patterns (vitest)
+
+```ts
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+// Module boundary
+vi.mock('@/lib/db', () => ({ db: { query: vi.fn() } }))
+
+// Injected callback
+const onSave = vi.fn()
+
+// Deterministic time
+beforeEach(() => vi.useFakeTimers().setSystemTime(new Date('2026-01-01')))
+```
+
+Mock the boundary (DB, HTTP, LLM provider), not the unit under test.
+
+## Coverage-by-risk cheatsheet
+
+| Area | Must cover |
+| --- | --- |
+| API handler | happy path, invalid body (400), auth failure |
+| Store/hook | each state transition the UX depends on |
+| Pure function | happy path + boundary + empty/invalid input |
+| Error path | dependency rejects → error surfaces correctly |
+| Destructive action | confirm/rollback behavior |
+
+## Red flags in your own tests
+
+- The test passes even when you break the code → it asserts nothing meaningful.
+- You had to read the implementation to write the assertion → you're testing
+  internals, not behavior.
+- The test needs `await sleep()` or real timers → non-deterministic; fix it.
+- One test asserts five unrelated things → split it.
+
 ## Deliverable
 
 Report: the test files added/changed, what behavior each pins down, the edge

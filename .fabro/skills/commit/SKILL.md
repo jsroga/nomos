@@ -93,4 +93,41 @@ EOF
 - Never skip hooks unless the user explicitly asks.
 - Do not create empty commits.
 
-Report back: the final commit hash, the message, and the files included.
+## Splitting into multiple commits
+
+If the working tree mixes unrelated changes, don't force them into one commit.
+Stage and commit each logical unit separately:
+
+- A bug fix and an unrelated feature → two commits.
+- Refactor + behavior change → separate them so the refactor is reviewable alone.
+- Generated files (migrations, lockfiles) → keep with the change that caused them,
+  not in a mystery "misc" commit.
+
+Ask before splitting only if the boundaries are genuinely ambiguous; otherwise
+use your judgment and explain the grouping in your report.
+
+## Type selection cheatsheet
+
+| Change | Type |
+| --- | --- |
+| New user-facing capability | `feat` |
+| Bug fix | `fix` |
+| Behavior-preserving restructure | `refactor` |
+| Speed/memory improvement | `perf` |
+| Tests only | `test` |
+| Docs only | `docs` |
+| Tooling, deps, config | `chore` / `build` / `ci` |
+| Formatting, no logic change | `style` |
+
+## Body-writing tips
+
+- Answer "why now?" and "why this way?" — reviewers can read the diff for "what".
+- Note side effects, migrations, or manual steps needed on deploy.
+- Reference issues/tickets the user mentioned (`Refs #123`, `Fixes #123`).
+- If the change is a one-liner with an obvious subject, a body is optional.
+
+## Report back
+
+State the final commit hash, the message, and the files included. If you split
+into multiple commits, list each hash with its subject and grouping rationale.
+

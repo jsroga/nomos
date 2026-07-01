@@ -5,6 +5,7 @@ digraph Feature {
             *              { model: claude-haiku-4-5; reasoning_effort: medium; }
             .planning      { model: claude-sonnet-4-6; reasoning_effort: high; }
             .design        { model: claude-sonnet-4-6; reasoning_effort: high; }
+            .ai            { model: claude-sonnet-4-6; reasoning_effort: high; }
             .coding        { model: claude-sonnet-4-6; reasoning_effort: high; }
             .testing       { model: claude-sonnet-4-6; reasoning_effort: high; }
         "
@@ -36,8 +37,10 @@ digraph Feature {
         timeout="3600s"
     ]
 
-    // ── 2. UX DESIGNER + 3. DEVELOPER (shared thread) ────────────────
-    // Full-fidelity thread so the developer sees every design decision.
+    // ── 2. UX DESIGNER + 3. MASTRA ENGINEER + 4. DEVELOPER ───────────
+    // One full-fidelity thread so each build agent sees prior decisions.
+    // UX designs → Mastra engineer builds the AI subsystem → Developer
+    // implements the rest (UI/state/io/services/API) and integrates.
     subgraph cluster_build {
         label="Build"
         node [thread_id="build", fidelity="full"]
@@ -46,6 +49,13 @@ digraph Feature {
             label="UX Designer"
             class="design"
             prompt="@prompts/ux-designer.md"
+        ]
+
+        mastra_engineer [
+            label="Mastra Engineer"
+            class="ai"
+            prompt="@prompts/mastra-engineer.md"
+            max_visits=4
         ]
 
         developer [
@@ -68,14 +78,20 @@ digraph Feature {
     ]
 
     // ── Static verification: types + lint ────────────────────────────
+    // goal_gate=true makes this a real quality gate: if types/lint never
+    // pass (fix loop exhausted), the run FAILS at exit instead of finishing
+    // green. retry_target routes a failing check back to the developer.
+    // https://docs.fabro.sh/execution/outcomes#goal-gate-interaction
     verify [
         label="Typecheck + Lint"
         shape=parallelogram
         script="npm run typecheck && npm run lint"
+        goal_gate=true
+        retry_target="developer"
     ]
     verify_gate [shape=diamond, label="Static checks pass?"]
 
-    // ── 4. TESTER ────────────────────────────────────────────────────
+    // ── 5. TESTER ────────────────────────────────────────────────────
     tester [
         label="Tester"
         class="testing"
@@ -86,6 +102,8 @@ digraph Feature {
         label="Run Unit Tests"
         shape=parallelogram
         script="npm run test:unit"
+        goal_gate=true
+        retry_target="developer"
     ]
     test_gate [shape=diamond, label="Tests pass?"]
 
@@ -118,10 +136,10 @@ digraph Feature {
 
     ux_designer -> design_ok
 
-    design_ok -> developer   [label="[Y] Yes"]
-    design_ok -> ux_designer [label="[N] No, rethink it", freeform=true]
+    design_ok -> mastra_engineer [label="[Y] Yes"]
+    design_ok -> ux_designer     [label="[N] No, rethink it", freeform=true]
 
-    developer -> verify -> verify_gate
+    mastra_engineer -> developer -> verify -> verify_gate
 
     verify_gate -> tester    [label="Pass", condition="outcome=succeeded"]
     verify_gate -> developer [label="Fix"]

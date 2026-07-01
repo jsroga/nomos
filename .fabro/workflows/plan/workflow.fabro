@@ -16,6 +16,7 @@ digraph Plan {
             .design    { model: gpt-5.4;         reasoning_effort: medium; }
             .build     { model: codex;           reasoning_effort: high;   }
             .testing   { model: gpt-5.4;         reasoning_effort: medium; }
+            .visual    { model: gpt-5.4;         reasoning_effort: medium; }
             .retro     { model: gpt-5.4;         reasoning_effort: medium; }
         "
 
@@ -66,14 +67,14 @@ digraph Plan {
         max_visits=2
     ]
 
-    // ── HUMAN GATE: Clarify — clickable options + custom freeform ─────────
-    // Options are fixed in the graph; clarify_prep contextualizes them in
-    // CLARIFY.md for this run. Answers land in run context as human.gate.*
-    // and are persisted to DECISIONS.md by the Plan stage.
+    // ── HUMAN GATE: Clarify — one scope decision for the architect ─────────
+    // clarify_prep puts the full brief in its stage summary (what the dock shows).
+    // CLARIFY.md is architect reference only — not shown in the Fabro UI.
+    // Answers land in run context as human.gate.* and DECISIONS.md via Plan.
     // https://docs.fabro.sh/workflows/human-in-the-loop
     Clarify [
         shape=hexagon
-        label="Clarify [human gate]\nread CLARIFY.md — pick a direction or type custom instructions"
+        label="How much should the cleanup plan take on?"
         question_type="multiple_choice"
         timeout="86400s"
     ]
@@ -96,7 +97,7 @@ digraph Plan {
     // NO default_choice — fails closed until you answer (no auto-skip to Retro).
     Verification [
         shape=hexagon
-        label="Verification [human gate]\nreview PLAN.md — approve & build, plan only, iterate, or abort"
+        label="Plan is ready. Approve and build, save plan only, request changes, or abort?"
         question_type="multiple_choice"
         timeout="86400s"
     ]
@@ -125,6 +126,18 @@ digraph Plan {
             class="testing"
             prompt="@../feature/prompts/tester.md"
             max_visits=3
+        ]
+
+        // Browser capture via Playwright MCP (configured in workflow.toml).
+        // Best-effort visual evidence → screenshots/ (auto-collected artifacts).
+        // Vision-capable model; never blocks the run (single edge onward to Retro).
+        screenshot [
+            label="UI Screenshot\nagent: UI Screenshotter\nmodel: gpt-5.4 (vision) + Playwright MCP"
+            class="visual"
+            prompt="@prompts/screenshot.md"
+            retry_policy="patient"
+            max_retries=1
+            max_visits=2
         ]
     }
 
@@ -163,11 +176,11 @@ digraph Plan {
     // ── Wiring ───────────────────────────────────────────────────────────
     start -> scope -> assess -> clarify_prep -> Clarify
 
-    Clarify -> plan [label="[A] Recommended defaults (per CLARIFY.md)"]
-    Clarify -> plan [label="[B] First increment only — smallest shippable slice"]
-    Clarify -> plan [label="[C] Full blueprint migration"]
-    Clarify -> plan [label="[F] Custom directions", freeform=true]
-    Clarify -> assess [label="[R] Re-assess"]
+    Clarify -> plan [label="[A] Staged migration — boundaries first, bigger moves sequenced"]
+    Clarify -> plan [label="[B] Minimal first step — public API and import boundaries only"]
+    Clarify -> plan [label="[C] Full blueprint — comprehensive end-state migration plan"]
+    Clarify -> plan [label="[F] Custom scope rules", freeform=true]
+    Clarify -> assess [label="[R] Re-assess — findings are wrong or stale"]
 
     plan -> Verification
 
@@ -192,8 +205,12 @@ digraph Plan {
     test_gate -> developer [label="Fix"]
 
     run_e2e -> e2e_gate
-    e2e_gate -> Retro     [label="Pass", condition="outcome=succeeded"]
-    e2e_gate -> developer [label="Fix"]
+    e2e_gate -> screenshot [label="Pass", condition="outcome=succeeded"]
+    e2e_gate -> developer  [label="Fix"]
+
+    // Screenshot is best-effort: single unconditional edge → proceeds to Retro
+    // even if capture fails, so it never blocks shipping.
+    screenshot -> Retro
 
     Retro -> exit
 }

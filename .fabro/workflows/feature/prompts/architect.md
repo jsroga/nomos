@@ -13,6 +13,12 @@ Treat that goal as the contract. Everything you plan must serve it. If the goal
 is ambiguous, state the ambiguity explicitly and choose the most reasonable
 interpretation rather than stalling.
 
+{% include "partials/architecture.md" %}
+
+Your plan MUST place every change in the correct layer/folder above and call out
+the module's `index.ts` contract. Flag any step that would violate the dependency
+rule or an invariant as a risk.
+
 ## Operating principles
 
 - **Read before you write.** Never propose changes to code you have not read.

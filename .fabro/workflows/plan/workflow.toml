@@ -25,11 +25,37 @@ name = "codex"
 provider = "openai"
 fallbacks = ["anthropic", "openai"]
 
+# Docker sandbox: git-checkpoints the run so PLAN.md / DECISIONS.md show in
+# "Files Changed". Clone-based — clones origin/<branch>; commit + push before
+# running. Switch back to working-tree runs with id = "local".
 [run.environment]
-id = "local"
+id = "docker"
 
 [environments.local]
 provider = "local"
+
+[environments.docker]
+provider = "docker"
+
+[environments.docker.image]
+dockerfile = "FROM node:22-slim\nRUN apt-get update && apt-get install -y git ca-certificates && rm -rf /var/lib/apt/lists/*"
+
+# Browser automation for the UI Screenshot stage — https://docs.fabro.sh/agents/mcp
+# Playwright MCP exposes browser_navigate/click/type/snapshot/take_screenshot.
+# The `sandbox` transport starts the MCP server inside the sandbox — works best
+# in Docker/Daytona (which you're now on). The screenshot stage is best-effort
+# and never blocks the run. The agent calls browser_install first in a fresh box.
+[run.agent.mcps.playwright]
+type = "sandbox"
+protocol = "sse"
+command = ["npx", "@playwright/mcp@latest", "--port", "3100", "--headless", "--browser", "chromium"]
+port = 3100
+startup_timeout = "90s"
+tool_timeout = "3m"
+
+# Collect screenshots as run artifacts (in addition to auto-scanned test-results/).
+[run.artifacts]
+include = ["screenshots/**", "SCREENSHOTS.md"]
 
 # Hooks — https://docs.fabro.sh/agents/hooks
 [[run.hooks]]

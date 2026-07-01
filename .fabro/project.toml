@@ -3,6 +3,9 @@
 
 _version = 1
 
+[project]
+name = "Game Building Kit"
+
 # Auto-create pull requests on successful workflow runs.
 [run.pull_request]
 enabled = true

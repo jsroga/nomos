@@ -1,0 +1,103 @@
+digraph CodeReview {
+    graph [
+        goal="Review the target code and produce a prioritized improvement plan, with human validation of the findings before the plan is written"
+        model_stylesheet="
+            *            { model: gpt-5.4-mini; reasoning_effort: medium; }
+            .review      { model: gpt-5.4; reasoning_effort: high; }
+            .planning    { model: gpt-5.4; reasoning_effort: high; }
+        "
+        default_max_retries=1
+        stall_timeout="1800s"
+    ]
+    rankdir=LR
+
+    start [shape=Mdiamond, label="Start"]
+    exit  [shape=Msquare, label="Exit"]
+
+    // ── Scope: give reviewers a starting map (changed files + tree) ──
+    scope [
+        label="Scope"
+        shape=parallelogram
+        script="echo '=== git status ==='; git status --short; echo; echo '=== recent commits ==='; git log --oneline -10 || true"
+    ]
+
+    // ── Review across three lenses ───────────────────────────────────
+    // NOTE: Fabro's local runtime has a race in agent-session init — when 2+
+    // sessions become "ready" within ~100ms of each other, all but one die
+    // instantly (before any LLM call, no error logged). So we SERIALIZE the
+    // reviewers (max_parallel=1) so only one session initializes at a time.
+    // patient/retries added as a belt-and-braces recovery.
+    fan [
+        label="Review (serial fan-out)"
+        shape=component
+        join_policy="wait_all"
+        max_parallel=1
+        max_visits=3
+    ]
+
+    security_review [
+        label="Security Review"
+        class="review"
+        prompt="@prompts/security-review.md"
+        retry_policy="patient"
+        max_retries=2
+        max_visits=3
+    ]
+    architecture_review [
+        label="Architecture Review"
+        class="review"
+        prompt="@prompts/architecture-review.md"
+        retry_policy="patient"
+        max_retries=2
+        max_visits=3
+    ]
+    quality_review [
+        label="Quality Review"
+        class="review"
+        prompt="@prompts/quality-review.md"
+        retry_policy="patient"
+        max_retries=2
+        max_visits=3
+    ]
+
+    merge [
+        label="Merge Findings"
+        shape=tripleoctagon
+    ]
+
+    // ── HUMAN-IN-THE-LOOP validation (the middle gate) ───────────────
+    // A person validates/prioritizes the raw findings BEFORE any plan is
+    // written. multiple_choice with a freeform "re-review with notes" edge.
+    triage [
+        shape=hexagon
+        label="Validate the review findings. Approve to turn them into an improvement plan, send back for re-review with notes, or stop."
+        question_type="multiple_choice"
+        human.default_choice="improvement_plan"
+        timeout="3600s"
+    ]
+
+    // ── Synthesize the validated findings into the deliverable ───────
+    improvement_plan [
+        label="Improvement Plan"
+        class="planning"
+        prompt="@prompts/improvement-plan.md"
+        goal_gate=true
+        retry_target="fan"
+        fallback_retry_target="triage"
+    ]
+
+    // ── Wiring ───────────────────────────────────────────────────────
+    start -> scope -> fan
+
+    fan -> security_review     -> merge
+    fan -> architecture_review -> merge
+    fan -> quality_review      -> merge
+
+    merge -> triage
+
+    triage -> improvement_plan [label="[A] Approve findings & prioritize"]
+    triage -> fan              [label="[R] Re-review with notes", freeform=true]
+    triage -> exit             [label="[X] Stop"]
+
+    improvement_plan -> exit
+}

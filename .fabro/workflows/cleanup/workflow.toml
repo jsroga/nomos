@@ -1,0 +1,21 @@
+_version = 1
+
+[workflow]
+graph = "workflow.fabro"
+
+# Pass the cleanup target as the goal at run time, e.g.:
+#   fabro run .fabro/workflows/cleanup/workflow.toml \
+#     --goal "Clean up src/domains/storyteller: dead code, unused exports, type
+#             safety, error handling, and structural alignment with
+#             docs/unified/ARCHITECTURE.md — without changing behavior"
+#
+# Flow: fast parallel review -> cleanup plan -> HUMAN APPROVES the plan ->
+#       execute cleanup -> typecheck/lint/test verify chain (fix loop) -> done.
+[run]
+# goal = "Clean up <target> without changing behavior"
+
+[run.environment]
+id = "local"
+
+[environments.local]
+provider = "local"

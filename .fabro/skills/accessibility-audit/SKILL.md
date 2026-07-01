@@ -80,6 +80,47 @@ semantic elements and Radix primitives, add the missing labels/roles/handlers,
 restore focus styles, and manage focus for overlays. Keep changes minimal and in
 the project's style, then run `npm run typecheck` and `npm run lint`.
 
+## Quick before/after examples
+
+Icon-only button missing a name:
+
+```tsx
+// Before — screen readers announce nothing useful
+<button onClick={toggle}><StarIcon /></button>
+
+// After
+<button onClick={toggle} aria-label="Add to favorites" aria-pressed={isFav}>
+  <StarIcon aria-hidden="true" />
+</button>
+```
+
+Clickable div (not keyboard-operable):
+
+```tsx
+// Before
+<div onClick={open}>Open</div>
+
+// After — use a real button (or add role + key handlers if truly unavoidable)
+<button onClick={open}>Open</button>
+```
+
+## WCAG AA quick reference
+
+| Concern | Requirement |
+| --- | --- |
+| Text contrast | ≥ 4.5:1 (≥ 3:1 large text / UI boundaries) |
+| Keyboard | All functionality operable without a mouse |
+| Focus visible | Always a visible indicator |
+| Names | Every control has an accessible name |
+| Status | Not conveyed by color alone |
+| Motion | Respect `prefers-reduced-motion` |
+| Zoom | Usable at 200% |
+
+## When in doubt
+
+Reach for a native element or a Radix primitive before hand-rolling ARIA. Correct
+semantics beat clever markup, and a wrong `role` is worse than none.
+
 ## Deliverable
 
 Report: the issues found by severity, the fixes applied (or recommended if

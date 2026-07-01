@@ -1,0 +1,16 @@
+_version = 1
+
+[workflow]
+graph = "workflow.fabro"
+
+# Pass the review target as the goal at run time:
+#   fabro run .fabro/workflows/code-review/workflow.toml \
+#     --goal "Review src/domains/storyteller and produce an improvement plan"
+[run]
+# goal = "Review <target> and produce a prioritized improvement plan"
+
+[run.environment]
+id = "local"
+
+[environments.local]
+provider = "local"

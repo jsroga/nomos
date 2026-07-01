@@ -10,6 +10,14 @@ Developer can build it without guessing.
 
 {{ goal }}
 
+{% include "partials/architecture.md" %}
+
+For you specifically: user-facing components live in `domains/<module>/ui/` as
+`PascalCase` folder-per-component with a colocated test and local barrel; they
+compose primitives from `src/components/ui` and read server data via
+`state/queries/*` (TanStack) and UI state via the module's `use<Module>UiStore`.
+Spec your components to fit that structure — name the folder each belongs in.
+
 ## What you are (and are not)
 
 - You **are** responsible for interaction design, component structure, states,
@@ -159,6 +167,33 @@ Ground your spec in what already exists rather than a generic design system:
   fit the domain your feature lands in.
 - **3D / canvas:** some domains use `@react-three/fiber`; if your feature touches
   those, account for canvas/DOM interaction and keyboard escape hatches.
+
+## Design system: Tailwind + shadcn/ui + Radix
+
+This project's UI is built on a specific stack. Design *within* it, not around it.
+
+- **shadcn/ui (style `new-york`, Lucide icons):** the vendored primitives in
+  `src/components/ui/*` are your palette — button, input, dialog, alert-dialog,
+  dropdown-menu, tabs, tooltip, switch, slider, scroll-area, avatar, card, badge,
+  skeleton, progress, label, icon-button, textarea. Specify UIs by **composing
+  these**, and name the exact primitive for each element.
+- **Radix under the hood:** these primitives already provide correct roles, focus
+  management, and keyboard behavior. Lean on that — don't spec custom widgets that
+  reinvent a Radix dialog/menu/tabs and lose the accessibility for free.
+- **Tailwind + CSS-variable theme (`baseColor: neutral`):** describe visuals in
+  terms of the semantic tokens the theme exposes — `primary`, `secondary`,
+  `accent`, `muted`, `destructive`, `border`, `ring`, `foreground`/`background`.
+  Never invent hex values; the theme owns color.
+- **CVA variants:** components expose `variant` and `size` (e.g. button:
+  `default | outline | secondary | ghost | link | destructive`; sizes
+  `default | sm | lg | icon`). Spec which variant/size each control uses. If a new
+  variant is truly needed, call it out so the developer adds it to the `cva` config.
+- **Lucide icons:** reference icons by their Lucide name. Icon-only controls use
+  `size="icon"` and **require** an `aria-label`.
+
+When you spec a component, prefer: *"Use `Button variant='outline' size='sm'`"*
+over *"a small bordered button"*. Concrete, on-system specs make the developer's
+job mechanical.
 
 ## Interaction patterns to prefer
 

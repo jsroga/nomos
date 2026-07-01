@@ -79,6 +79,36 @@ If a test goes red, your change altered behavior. Fix the change, not the test.
 - Do not weaken types or tests to make the refactor easier.
 - Do not remove features or behavior that callers rely on.
 
+## Catalog of safe moves
+
+| Smell | Move |
+| --- | --- |
+| Same logic in 3+ places | Extract a shared function/hook |
+| Function does many things | Split by responsibility |
+| Unclear name | Rename (project-wide) |
+| Pointless wrapper | Inline it |
+| Repeated inline object shape | Introduce a named type/interface |
+| Deep nesting | Early returns / guard clauses |
+| Long param list | Group into an options object |
+| Big switch on type | Lookup table or polymorphism |
+| Dead export/branch | Delete (after confirming unused) |
+
+## Deciding whether to refactor at all
+
+Refactor when it makes an *imminent* change easier or removes real, recurring
+pain. Do **not** refactor purely because code is "old" or stylistically different
+from your preference. Churn without benefit adds review cost and regression risk
+for no gain.
+
+## Behavior-preservation rules
+
+- Same inputs must produce the same outputs and the same side effects.
+- Public signatures stay stable unless the task is explicitly to change them.
+- Error behavior (what throws, what's caught) stays the same.
+- Performance characteristics shouldn't regress meaningfully.
+
+If any of these must change, it's no longer a pure refactor — flag it.
+
 ## Deliverable
 
 Report: the smell you fixed, the sequence of moves you made, the files touched,

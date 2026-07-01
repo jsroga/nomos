@@ -68,6 +68,60 @@ For code comments specifically:
 - Do not let docs drift from code — if you change behavior, update the docs in
   the same pass.
 
+## Structure patterns by doc type
+
+**How-to guide**
+
+1. What you'll accomplish (one line).
+2. Prerequisites.
+3. Numbered steps with copy-pasteable commands/code.
+4. How to verify it worked.
+5. Troubleshooting for common failure points.
+
+**API/reference entry**
+
+- Signature (exact, copied from code).
+- Parameters table: name, type, required, description.
+- Return value and error cases.
+- A minimal, correct example.
+
+**Architecture note**
+
+- The problem/context.
+- The decision and the alternatives considered.
+- Consequences and trade-offs.
+
+## Writing quality checklist
+
+- [ ] First sentence states the point.
+- [ ] Every API name/param/path matches the code exactly.
+- [ ] At least one correct, minimal example that you verified.
+- [ ] No aspirational or stale content.
+- [ ] Consistent terminology with the product and codebase.
+- [ ] Proper Markdown: fenced code with language tags, tables, backticked
+      identifiers, working links.
+- [ ] Concise — no filler, no restating the obvious.
+
+## Example: documenting a function
+
+````markdown
+### `resolveEntity(store, id)`
+
+Returns the entity matching `id`, or `null` if none exists.
+
+| Param | Type | Description |
+| --- | --- | --- |
+| `store` | `EntityStore` | The store to look in. |
+| `id` | `string` | The entity id to resolve. |
+
+```ts
+const beat = resolveEntity(store, 'beat_123')
+if (beat) render(beat)
+```
+````
+
+Notice: real signature, typed params, a correct example.
+
 ## Deliverable
 
 Report: which docs you wrote or updated, the audience, and confirmation that
