@@ -77,7 +77,7 @@ digraph Plan {
     setup [
         label="Bootstrap\n[shell · npm ci + Playwright]"
         shape=parallelogram
-        script="set -euo pipefail; echo '=== sandbox bootstrap ==='; if ! command -v npm >/dev/null; then echo 'npm missing — installing nodejs'; apt-get update && apt-get install -y nodejs npm git; fi; command -v npm >/dev/null || { echo 'ERROR: npm still missing — image must be node:22-bookworm-slim'; exit 1; }; npm ci; npm run test:playwright:install; echo '=== bootstrap complete ==='"
+        script="set -euo pipefail; echo '=== sandbox bootstrap ==='; if ! command -v git >/dev/null; then apt-get update && apt-get install -y git ca-certificates; fi; if ! command -v npm >/dev/null; then apt-get update && apt-get install -y nodejs npm; fi; command -v npm >/dev/null || { echo 'ERROR: npm still missing — expected image node:22-bookworm-slim'; exit 1; }; npm ci; npm run test:playwright:install; echo '=== bootstrap complete ==='"
         max_visits=1
     ]
 
