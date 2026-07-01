@@ -5,7 +5,7 @@ digraph Plan {
         model_stylesheet="
             *          { model: gpt-5.4;         reasoning_effort: medium; }
             .review    { model: codex;           reasoning_effort: low;    }
-            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }
+            .planning  { model: gpt-5.4;         reasoning_effort: high;   }
             .design    { model: gpt-5.4;         reasoning_effort: medium; }
             .build     { model: codex;           reasoning_effort: high;   }
             .testing   { model: gpt-5.4;         reasoning_effort: medium; }
@@ -197,7 +197,11 @@ digraph Plan {
     // unanswered path an explicit terminal route instead of a silent stuck state.
     Clarify -> exit [label="Unanswered — abort", condition="outcome=failed"]
 
-    plan -> Verification
+    // Only a SUCCESSFUL plan reaches Verification. A failed plan (LLM/provider
+    // error, e.g. dead Anthropic credits) must NOT march into build on an empty/stale
+    // PLAN.md — route it to Retro so the failure is documented instead of silent.
+    plan -> Verification [condition="outcome=succeeded"]
+    plan -> Retro        [label="Plan failed — no valid plan to build"]
 
     Verification -> setup      [label="[A] Approve & build"]
     Verification -> Retro       [label="[B] Approve, plan only"]

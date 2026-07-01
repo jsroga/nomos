@@ -16,7 +16,11 @@ goal = "Clean up and align the {{ inputs.module }} module (src/domains/{{ inputs
 [run.model]
 name = "codex"
 provider = "openai"
-fallbacks = ["anthropic", "openai"]
+# Anthropic dropped from fallbacks: account credits are exhausted (opus planner
+# failed instantly). Planning now uses gpt-5.4 (high) via the .planning class in
+# workflow.fabro. Re-add "anthropic" and restore .planning=claude-opus-4-8 after
+# topping up Anthropic credits if you want opus-quality plans back.
+fallbacks = ["openai"]
 
 # Agent defaults — skills load from the GLOBAL ~/.fabro/skills (Fabro runs skill
 # discovery on the local server, so the sandbox {git_root}/.fabro/skills path is not
