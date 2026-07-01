@@ -1,0 +1,199 @@
+digraph Plan {
+    graph [
+        goal="Assess a module, clarify ambiguities with the human, produce a reviewable improvement plan aligned to the target architecture, gate it at Verification, then OPTIONALLY build it (UX → implement → verify → test → e2e) and finish with Retro"
+
+        model_stylesheet="
+            *          { model: gpt-5.4;         reasoning_effort: medium; }
+            .review    { model: codex;           reasoning_effort: low;    }
+            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }
+            .design    { model: gpt-5.4;         reasoning_effort: medium; }
+            .build     { model: codex;           reasoning_effort: high;   }
+            .testing   { model: gpt-5.4;         reasoning_effort: medium; }
+            .visual    { model: gpt-5.4;         reasoning_effort: medium; }
+            .retro     { model: gpt-5.4;         reasoning_effort: medium; }
+        "
+
+        default_max_retries=1
+        default_fidelity="summary:medium"
+        stall_timeout="1800s"
+    ]
+    rankdir=LR
+
+    start [shape=Mdiamond, label="Start"]
+    exit  [shape=Msquare, label="Exit"]
+
+    scope [
+        label="Scope\n[shell · no agent]"
+        shape=parallelogram
+        script="M=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1"
+    ]
+
+    assess [
+        label="Assess\nagent: Architecture Assessor\nmodel: codex"
+        class="review"
+        prompt="@prompts/assess.md"
+        retry_policy="patient"
+        max_retries=2
+        max_visits=2
+    ]
+
+    clarify_prep [
+        label="Clarify Prep\nagent: Clarify Facilitator\nmodel: codex"
+        class="review"
+        prompt="@prompts/clarify-prep.md"
+        retry_policy="patient"
+        max_retries=2
+        max_visits=2
+    ]
+
+    Clarify [
+        shape=hexagon
+        label="How much should the cleanup plan take on?"
+        question_type="multiple_choice"
+        timeout="86400s"
+    ]
+
+    // goal_gate + retry_target=clarify_prep: on plan failure, loops to clarify_prep
+    // (max_visits=2). clarify_prep skips re-prompting if human.gate.Clarify.* is set.
+    // Human is NOT re-asked at Clarify unless clarify_prep exhausts visits and the
+    // graph re-enters Clarify from a different path — plan max_visits=5 caps total.
+    plan [
+        label="Plan (Architect)\nagent: Plan Author\nmodel: claude-opus-4-8"
+        class="planning"
+        prompt="@prompts/plan.md"
+        fidelity="summary:high"
+        goal_gate=true
+        retry_target="clarify_prep"
+        max_visits=5
+    ]
+
+    Verification [
+        shape=hexagon
+        label="Plan is ready. Approve and build, save plan only, request changes, or abort?"
+        question_type="multiple_choice"
+        timeout="86400s"
+    ]
+
+    setup [
+        label="Bootstrap\n[shell · npm ci + Playwright]"
+        shape=parallelogram
+        script="set -euo pipefail; echo '=== sandbox bootstrap ==='; if ! command -v git >/dev/null; then apt-get update && apt-get install -y git ca-certificates; fi; if ! command -v npm >/dev/null; then apt-get update && apt-get install -y nodejs npm; fi; command -v npm >/dev/null || { echo 'ERROR: npm still missing — expected image node:22-bookworm'; exit 1; }; npm ci; npm run test:playwright:install; echo '=== bootstrap complete ==='"
+        max_visits=2
+    ]
+
+    setup_gate [shape=diamond, label="Bootstrap OK?"]
+
+    setup_fail [
+        label="Bootstrap failed\n[shell · notify]"
+        shape=parallelogram
+        script="echo '=== BOOTSTRAP FAILED ===' >&2; echo 'Node.js/npm not available. Expected Docker image: node:22-bookworm.' >&2; echo 'Check workflow.toml [environments.plan-docker.image] and ../../docker/plan-sandbox.Dockerfile.' >&2; exit 1"
+        max_visits=2
+    ]
+
+    subgraph cluster_build {
+        label="Optional Build"
+        node [thread_id="build", fidelity="full"]
+
+        ux_designer [
+            label="UX Designer\nagent: UX Designer\nmodel: gpt-5.4"
+            class="design"
+            prompt="@../feature/prompts/ux-designer.md"
+            max_visits=2
+        ]
+
+        developer [
+            label="Implement\nagent: Developer\nmodel: codex"
+            class="build"
+            prompt="@prompts/implement.md"
+            permissions="full"
+            max_visits=4
+        ]
+
+        tester [
+            label="Tester\nagent: Tester\nmodel: gpt-5.4"
+            class="testing"
+            prompt="@../feature/prompts/tester.md"
+            max_visits=3
+        ]
+
+        screenshot [
+            label="UI Screenshot\nagent: UI Screenshotter\nmodel: gpt-5.4"
+            class="visual"
+            prompt="@prompts/screenshot.md"
+            retry_policy="patient"
+            max_retries=1
+            max_visits=2
+        ]
+    }
+
+    verify [
+        label="Typecheck + Lint\n[shell · no agent]"
+        shape=parallelogram
+        script="npm run typecheck && npm run lint"
+        max_visits=5
+    ]
+    verify_gate [shape=diamond, label="Static checks pass?"]
+
+    run_tests [
+        label="Unit Tests\n[shell · npm run test:unit]"
+        shape=parallelogram
+        script="npm run test:unit"
+        max_visits=5
+    ]
+    test_gate [shape=diamond, label="Unit tests pass?"]
+
+    run_e2e [
+        label="E2E Full\n[shell · npm run test:e2e full-loop]"
+        shape=parallelogram
+        script="npm run test:e2e full-loop"
+        max_visits=3
+    ]
+    e2e_gate [shape=diamond, label="E2E pass?"]
+
+    Retro [
+        label="Retro\nagent: Retro Author\nmodel: gpt-5.4"
+        class="retro"
+        prompt="@prompts/retro.md"
+        max_visits=2
+    ]
+
+    // ── Wiring ───────────────────────────────────────────────────────────
+    start -> scope -> assess -> clarify_prep -> Clarify
+
+    // Primary choices first (dock order); advanced last
+    Clarify -> plan [label="[A] Staged migration — boundaries first, bigger moves sequenced"]
+    Clarify -> plan [label="[B] Minimal first step — public API and import boundaries only"]
+    Clarify -> plan [label="[C] Full blueprint — comprehensive end-state migration plan"]
+    Clarify -> plan [label="[F] Custom scope rules", freeform=true]
+    Clarify -> assess [label="[R] Re-assess — findings are wrong or stale"]
+
+    plan -> Verification
+
+    Verification -> setup      [label="[B] Approve & build"]
+    Verification -> Retro       [label="[P] Approve, plan only"]
+    Verification -> plan        [label="[I] Iterate with notes", freeform=true]
+    Verification -> exit        [label="[X] Abort"]
+
+    setup -> setup_gate
+    setup_gate -> ux_designer [label="UI increment", condition="outcome=succeeded && plan.has_ui_surface=yes"]
+    setup_gate -> developer   [label="Backend increment", condition="outcome=succeeded"]
+    setup_gate -> setup_fail
+    setup_fail -> exit
+
+    ux_designer -> developer -> verify -> verify_gate
+
+    verify_gate -> tester    [label="Pass", condition="outcome=succeeded"]
+    verify_gate -> developer [label="Fix"]
+
+    tester -> run_tests -> test_gate
+
+    test_gate -> run_e2e [label="Pass", condition="outcome=succeeded"]
+    test_gate -> developer [label="Fix"]
+
+    run_e2e -> e2e_gate
+    e2e_gate -> screenshot [label="Pass", condition="outcome=succeeded"]
+    e2e_gate -> developer  [label="Fix"]
+
+    screenshot -> Retro
+    Retro -> exit
+}
