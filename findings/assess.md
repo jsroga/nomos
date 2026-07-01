@@ -1,61 +1,60 @@
-### [Critical] No single public module API; other modules import storyteller internals directly
-- Location: module root; external imports in `src/domains/chat/components/AgentLog.tsx`, `src/domains/chat/types.ts`, many `src/app/api/storyteller/*`
-- Divergence: Breaks the module blueprint and invariant #6/#10 (`index.ts` as the only legal import target).
-- Cost: Storyteller internals are now de facto public, making any cleanup risky; app/chat code is coupled to component/core file paths instead of a stable contract.
-- Target: Add `src/domains/storyteller/index.ts` as the only public surface, then migrate app/chat/cross-module consumers to that barrel and block deep imports with lint.
+### [Critical] Browser-side Supabase write bypasses the required server/service path
+- Location: `src/domains/interior-designer/store/useInteriorStore.ts:1579`
+- Divergence: Breaks invariant #2 (`No browser→Supabase writes`) and the `services/` server-only contract.
+- Cost: Auth and write policy are split between browser code and server routes, making security/correctness dependent on client behavior and blocking clean Drizzle ownership.
+- Target: All design writes go through typed `io/` calls to `/api/interior-designer/*` → `requireAuth()` → server-only `services/` using Drizzle; the Zustand store only triggers those mutations.
 
-### [Critical] Layer blueprint is still legacy-shaped, not target-shaped
-- Location: `src/domains/storyteller/` top level (`components/`, `hooks/`, `lib/`, `db/`, `tools/`, `mentions/`, `config/`), with no `ui/`, `state/`, `io/`, or `tasks/`
-- Divergence: Breaks the canonical module blueprint (§4) and naming/layering contract.
-- Cost: Responsibilities are spread across ad-hoc folders, so state, client edge logic, server logic, and agent code are hard to separate and migrate incrementally.
-- Target: Converge on `ui/`, `state/`, `io/`, `core/`, `services/`, `agents/`, `tasks/`, `prompts/`, `<module>.config.ts`, with folder-per-unit naming and local barrels.
+### [High] Module shape is still legacy and lacks the canonical public barrel
+- Location: `src/domains/interior-designer/` top level (`ai/`, `components/`, `store/`, `utils/`) with no `index.ts`, `ui/`, `state/`, `io/`, `core/`, `services/`, or `tasks/`
+- Divergence: Breaks the module blueprint in `docs/unified/ARCHITECTURE.md` §4 and invariant #6 (`One barrel`).
+- Cost: There is no stable public contract, and responsibilities are spread across ad-hoc folders that make migration, lint enforcement, and cross-module reuse risky.
+- Target: Reshape to the blueprint with `index.ts` as the only public surface, `ui/state/io/core/services/tasks`, and folder-per-unit naming.
 
-### [High] “Core” is not pure; it imports UI and prompt-layer types and uses runtime time directly
-- Location: `src/domains/storyteller/core/EntityExtractor/EntityExtractor.ts`
-- Divergence: Breaks the dependency rule (`core/` may not import React/UI/other layers) and invariant #8 (pure core testable offline).
-- Cost: Core logic now depends on `components/ReferenceText` and `prompts/schemas/agent-schemas`, and also stamps `new Date()`, which makes the supposedly pure layer impure and harder to reuse/test.
-- Target: Move shared entity/reference DTOs into `core/` or `io/`, keep `core/` free of UI/prompt imports, and inject clocks/metadata instead of calling `Date` directly.
+### [High] The module keeps nearly all server state, persistence, and UI state in one giant Zustand store
+- Location: `src/domains/interior-designer/store/useInteriorStore.ts` (1661 LOC)
+- Divergence: Breaks invariant #1 (`Server state in TanStack Query, never in Zustand`) and the dependency rule (`state -> io`, not direct fetch/Supabase/persistence logic).
+- Cost: Remote data, save/load flows, undo history, selection state, and long-job coordination are tightly coupled, which makes caching, invalidation, and incremental refactors hard.
+- Target: Keep Zustand only for ephemeral UI/editor state; move remote reads/writes into `state/queries/*` backed by typed `io/*.api.ts` + query keys, and move pure geometry/business rules into `core/`.
 
-### [High] “Services” contains client-side orchestration, polling, localStorage, and window events
-- Location: `src/domains/storyteller/services/MoodboardGenerationService.ts`, `src/domains/storyteller/services/PosterGenerationService.ts`, plus UI helpers in `components/WorldBiblePanel/WorldBiblePanel.tsx`
-- Divergence: Breaks the service contract (`services/` must be server-only) and invariant #4 (long work must use Trigger Realtime + shared `useJob`, no bespoke polling/localStorage/window events).
-- Cost: Server/client responsibilities are inverted: browser concerns live in `services/`, long-running job UX is bespoke, and recovery/status behavior is scattered across polling loops and custom events.
-- Target: Move browser behavior into `state/` + shared jobs hooks, keep `services/` server-only (`import 'server-only'`), and represent Trigger jobs via module `tasks/` plus shared `useJob` rather than local polling.
+### [High] Long-running work uses bespoke polling, localStorage, and window events instead of module-owned jobs
+- Location: `components/UI/PropertiesPanel.tsx`, `components/UI/SurfaceProperties.tsx`, `components/UI/Toolbar.tsx`
+- Divergence: Breaks invariant #4 (`Long work is a Job`) and the asset-module rule to lean on `tasks/` + shared jobs infrastructure.
+- Cost: Job status recovery, progress, and retries are scattered across polling loops, local browser storage, and `CustomEvent` signaling, which is brittle and inconsistent with Trigger.dev Realtime.
+- Target: Represent retexture/material/text-to-3d flows as module `tasks/*.task.ts`, surface them through shared `useJob`, and remove bespoke interval polling/localStorage recovery/event buses from components.
 
-### [High] Client state and server state are mixed in custom hooks/context instead of TanStack Query
-- Location: `src/domains/storyteller/components/WorldBible/BibleContext.tsx`, `src/domains/storyteller/hooks/useBibleState.ts`
-- Divergence: Breaks invariant #1 (server state in TanStack Query, never in Zustand/custom stores) and the `state/ -> io/` contract.
-- Cost: Fetching lock state and user/session state is handled via `useEffect`, `cachedFetch`, manual invalidation, and URL/window event wiring; this bypasses cache consistency and makes the World Bible UI hard to reason about.
-- Target: Move remote reads/writes into `state/queries/*` hooks backed by typed `io/` fetchers and query keys; leave only ephemeral panel/editing state in client state.
+### [High] UI components call fetch directly and reach into other modules’ internals
+- Location: `components/DesignManager.tsx`, `components/UI/PropertiesPanel.tsx`, `components/UI/SurfaceProperties.tsx`, `components/UI/AssetLibrary.tsx`
+- Divergence: Breaks the dependency rule (`ui` should not call `io`/fetch directly) and invariant #6 (`One barrel`; no cross-module internal imports).
+- Cost: The UI layer is coupled to API URLs and deep paths like `world-building-toolkit/store/useWorldStore` and `3d-asset-exporter/components/AssetUploadZone`, so module boundaries cannot be enforced.
+- Target: UI imports only this module’s `state/` hooks and shared primitives; cross-module usage goes through each module’s `index.ts`; network calls move behind typed `io/` and query/mutation hooks.
 
-### [High] Storyteller keeps a parallel hand-rolled orchestration stack beside Mastra
-- Location: `src/domains/storyteller/agents/StoryWorkflow/StoryWorkflow.ts`, `src/domains/storyteller/agents/StorytellerAgent/StorytellerAgent.ts`, `src/domains/storyteller/agents/MastraInstance/MastraInstance.ts`
-- Divergence: Breaks invariant #7/#11 (“use the framework once”): manual Langfuse spans, ad-hoc workflow event bus, step `z.any()`, direct tool mutation, prompt-time skill injection despite Workspace already configured.
-- Cost: The AI layer pays double complexity for tracing/skills/workflow behavior; correctness depends on manual glue instead of Mastra primitives, which raises migration and debugging cost.
-- Target: Let Mastra own tracing, workflow typing, skills access, and agent/tool composition end-to-end; remove manual parallel machinery and replace `z.any()` workflow boundaries with explicit schemas.
+### [Medium] Asset-module server work is misplaced under `ai/`/`prompts/` and not expressed as services/tasks
+- Location: `src/domains/interior-designer/ai/TextureService.ts`, `src/domains/interior-designer/prompts/index.ts`
+- Divergence: Breaks the target blueprint for asset modules, which should skip `agents/` and lean on `services/` + `tasks/`.
+- Cost: Server concerns are hard to reason about, and module intent is muddy: prompt handling and external API orchestration sit outside the target server layers.
+- Target: Move prompt/texture orchestration into server-only `services/` and Trigger tasks, with Zod-typed DTOs at the API/task boundaries.
 
-### [High] Module-local DB schema is still the effective source of truth and is imported broadly
-- Location: `src/domains/storyteller/db/schema.ts`, imported by `src/app/api/storyteller/*`, `src/lib/db.ts`, storyteller tools/services
-- Divergence: Breaks repository topology and invariant #3 (single schema source in `src/db/schema.ts`).
-- Cost: The schema boundary remains storyteller-owned rather than repo-owned, so the module cannot be cleanly encapsulated and other layers continue to reach through storyteller to touch persistence details.
-- Target: Make `src/db/schema.ts` the true source of truth, keep Drizzle access in server services, and stop importing module-local schema files from app routes/tools.
+### [Medium] Typed boundaries are weak in the highest-risk job/UI paths
+- Location: `components/UI/PropertiesPanel.tsx:705`, `components/SurfaceManager.tsx:146`, `components/SculptableSurface.tsx`, `components/UI/Toolbar.tsx`, tests and helper props across `components/`
+- Divergence: Breaks invariant #5 (`Typed boundaries`) and signals that DTOs/contracts are not centralized.
+- Cost: Job metadata and event payloads are free-form, making refactors of retexture/text-to-3d/material flows risky and increasing runtime-only failures.
+- Target: Define Zod DTOs in `io/*.dto.ts` (and task payload schemas), infer types from them, and remove `any` from component/job boundaries.
 
-### [Medium] Typed boundaries are still weak, especially in tools and workflow steps
-- Location: `src/domains/storyteller/tools/*.ts`, `src/domains/storyteller/agents/StoryWorkflow/StoryWorkflow.ts`, `src/domains/storyteller/core/StoryTypes/StoryTypes.ts`
-- Divergence: Breaks invariant #5 (Zod at edges, ban `any` at boundaries).
-- Cost: Tool inputs/outputs and workflow step contracts are loosely typed (`execute(args: any)`, `z.any()`, `Record<string, any>`), which increases runtime drift and makes refactors unsafe.
-- Target: Replace boundary `any` with strict Zod DTOs and inferred types, especially for Mastra tools, workflow steps, and story-plan payloads.
+### [Medium] Several files are already past the architecture size limits and combine multiple responsibilities
+- Location: `store/useInteriorStore.ts` (1661 LOC), `components/UI/PropertiesPanel.tsx` (1323 LOC), `components/UI/SurfaceProperties.tsx` (981 LOC)
+- Divergence: Breaks invariant #8 (size guardrails) and makes the migration harder.
+- Cost: Large files currently mix rendering, async orchestration, persistence, and editor logic, so even small changes have high regression risk.
+- Target: Split by target layer/responsibility while migrating: query/mutation hooks into `state/queries`, typed fetchers into `io`, pure transforms into `core`, and narrower UI units under `ui/`.
 
-### [Medium] Several files are already past the architecture size guardrails
-- Location: `components/WorldBible/BibleContext.tsx` (575 LOC), `agents/StorytellerAgent/StorytellerAgent.ts` (639 LOC), `tools/agent-tools.ts` (730 LOC)
-- Divergence: Breaks invariant #8 (components < ~400 LOC; split god files).
-- Cost: The largest files now concentrate multiple responsibilities, which will make the migration to the target layers slower and riskier.
-- Target: Split by responsibility while moving to the new folders: query hooks/DTOs out of Bible context, prompt-building out of `StorytellerAgent`, and tool families into smaller typed units under `agents/tools` or `services`.
+## Metadata
+- has_ui_surface: yes
+- has_p0_security_issue: yes
+- top_violation_layer: state
 
 ## Open questions for Clarify
-- Should storyteller’s existing `components/` and `hooks/` be renamed/moved in one structural pass first, or can the migration proceed incrementally behind a new `index.ts` contract?
-- Is the World Bible lock/session UX allowed to change to fit TanStack Query + typed API boundaries, or must current URL/custom-event behaviors be preserved exactly during migration?
-- Should long-running image generation in storyteller be fully moved onto shared `useJob`/Trigger Realtime in this cleanup scope, or only prepared structurally for a later migration?
+- Should this cleanup also create/standardize public barrels for `world-building-toolkit` and `3d-asset-exporter`, or should interior-designer temporarily adapt around their current deep-import surfaces?
+- Is preserving the current local draft persistence/undo behavior in Zustand a hard requirement during this increment, or can it be reduced to pure UI state while remote scene data moves to TanStack Query?
+- For the Meshy/Stability/OpenAI API-key flows currently sourced from `localStorage`, should this increment only restructure the architecture, or also move credential handling fully server-side?
 
-Verdict: storyteller is pointed at the right architecture concepts, but its current public boundaries and client/server layering are still too legacy-shaped to plan implementation safely without first enforcing the module contract.
-Top 3 gaps: missing public `index.ts` contract, legacy folder/layer shape (`components/hooks/db/tools` instead of `ui/state/io/tasks`), and bespoke client/job orchestration living outside TanStack Query + shared Trigger/Mastra primitives.
+Verdict: interior-designer is still far from the target module contract and is actively violating the most important state/job/security invariants, so planning should start with boundary and state-layer cleanup rather than UI polish.
+Top 3 gaps: browser→Supabase write path, monolithic Zustand store mixing server + UI state, and bespoke long-job orchestration instead of module `tasks/` + shared job primitives.
