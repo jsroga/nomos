@@ -2,6 +2,10 @@ import { retextureModelTask } from '@/trigger/retexture-model'
 import { tasks } from '@trigger.dev/sdk/v3'
 import { NextRequest, NextResponse } from 'next/server'
 import {
+  retextureRequestSchema,
+  retextureStartResponseSchema,
+} from '@/domains/interior-designer/io/interior-designer.dto'
+import {
   withAuth,
   withRateLimit,
   verifyProjectAccess,
@@ -9,12 +13,13 @@ import {
 } from '@/lib/api-utils'
 
 export const POST = withRateLimit(
-  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
-    const { modelUrlOrBase64, prompt, assetId, projectId, apiKey } = await request.json()
-
-    if (!modelUrlOrBase64 || !prompt || !projectId) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+  withAuth<Record<string, unknown>>(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
+    const parsedBody = retextureRequestSchema.safeParse(await request.json())
+    if (!parsedBody.success) {
+      return NextResponse.json({ error: 'Invalid retexture payload' }, { status: 400 })
     }
+
+    const { modelUrlOrBase64, prompt, assetId, projectId, apiKey } = parsedBody.data
 
     // Verify project access via RLS
     if (projectId !== 'default') {
@@ -33,7 +38,8 @@ export const POST = withRateLimit(
         .eq('id', projectId)
         .single()
 
-      const styleReferenceUrls = (data?.style_reference_urls as string[]) || []
+      const projectRow = data as { style_reference_urls?: string[] | null } | null
+      const styleReferenceUrls = projectRow?.style_reference_urls ?? []
 
       if (styleReferenceUrls.length > 0) {
         // Validate first URL is accessible
@@ -51,16 +57,21 @@ export const POST = withRateLimit(
       }
     }
 
+    const meshyApiKey = apiKey || process.env.MESHY_API_KEY
+    if (!meshyApiKey) {
+      return NextResponse.json({ error: 'Meshy API key not configured' }, { status: 400 })
+    }
+
     const handle = await tasks.trigger<typeof retextureModelTask>('retexture-model', {
       modelBase64: modelUrlOrBase64,
       prompt,
       assetId: assetId || 'temp-asset',
       projectId,
-      apiKey: apiKey || process.env.MESHY_API_KEY,
+      apiKey: meshyApiKey,
       styleImageUrl,
     })
 
-    return NextResponse.json({ runId: handle.id })
+    return NextResponse.json(retextureStartResponseSchema.parse({ runId: handle.id }))
   }),
   { maxRequests: 5, windowMs: 60000 }
 )

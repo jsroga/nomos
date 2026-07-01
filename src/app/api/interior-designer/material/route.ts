@@ -1,5 +1,9 @@
 import { tasks } from '@trigger.dev/sdk/v3'
 import { NextRequest, NextResponse } from 'next/server'
+import {
+  surfaceMaterialRequestSchema,
+  surfaceMaterialStartResponseSchema,
+} from '@/domains/interior-designer/io/interior-designer.dto'
 import type { surfaceMaterialTask } from '@/trigger/surface-material'
 import {
   withAuth,
@@ -11,16 +15,13 @@ import {
 export const dynamic = 'force-dynamic'
 
 export const POST = withRateLimit(
-  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
-    const body = await request.json()
-    const { projectId, surfaceId, prompt, apiKey, artStyle, surfaceBounds } = body
-
-    if (!projectId || !surfaceId || !prompt) {
-      return NextResponse.json(
-        { error: 'Missing required fields: projectId, surfaceId, and prompt' },
-        { status: 400 }
-      )
+  withAuth<Record<string, unknown>>(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
+    const parsedBody = surfaceMaterialRequestSchema.safeParse(await request.json())
+    if (!parsedBody.success) {
+      return NextResponse.json({ error: 'Invalid surface material payload' }, { status: 400 })
     }
+
+    const { projectId, surfaceId, prompt, apiKey, artStyle, surfaceBounds } = parsedBody.data
 
     // Verify project access via RLS
     const hasAccess = await verifyProjectAccess(supabase, projectId)
@@ -46,11 +47,11 @@ export const POST = withRateLimit(
       { ttl: '1h' }
     )
 
-    return NextResponse.json({
+    return NextResponse.json(surfaceMaterialStartResponseSchema.parse({
       success: true,
       runId: handle.id,
       publicAccessToken: handle.publicAccessToken,
-    })
+    }))
   }),
   { maxRequests: 10, windowMs: 60000 }
 )

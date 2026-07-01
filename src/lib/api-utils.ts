@@ -26,7 +26,7 @@ export interface AuthenticatedRequest {
   supabase: ReturnType<typeof createRouteHandlerClient>
 }
 
-export type ApiHandler<T = any> = (
+export type ApiHandler<T = unknown> = (
   request: NextRequest,
   auth: AuthenticatedRequest,
   context?: { params: Record<string, string> }
@@ -57,7 +57,7 @@ export async function requireAuth() {
  *   return NextResponse.json({ userId: session.user.id })
  * })
  */
-export function withAuth<T = any>(handler: ApiHandler<T>) {
+export function withAuth<T = unknown>(handler: ApiHandler<T>) {
   return async (request: NextRequest, context?: { params: Record<string, string> }) => {
     const { session, supabase, error } = await getUserSession()
 
@@ -135,13 +135,16 @@ export function checkRateLimit(
 /**
  * Rate limiting wrapper for API routes
  */
-export function withRateLimit<T = any>(
-  handler: ApiHandler<T> | ((request: NextRequest, context?: any) => Promise<NextResponse<T>>),
+export function withRateLimit<T = unknown>(
+  handler: (request: NextRequest, context?: unknown) => Promise<NextResponse<T>>,
   config: RateLimitConfig & { getKey?: (request: NextRequest) => string } = {}
 ) {
-  return async (request: NextRequest, context?: any) => {
+  return async (request: NextRequest, context?: unknown) => {
     const {
-      getKey = req => req.ip || req.headers.get('x-forwarded-for') || 'anonymous',
+      getKey = req => {
+        const forwardedFor = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+        return forwardedFor || req.headers.get('x-real-ip') || 'anonymous'
+      },
       ...rateLimitConfig
     } = config
     const key = getKey(request)
@@ -175,12 +178,6 @@ export function withRateLimit<T = any>(
 // CSRF PROTECTION
 // ============================================
 
-const ALLOWED_ORIGINS = [
-  process.env.NEXT_PUBLIC_APP_URL,
-  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
-  'http://localhost:3000',
-  'http://localhost:3001',
-].filter(Boolean) as string[]
 // ============================================
 // PROJECT ACCESS VERIFICATION
 // ============================================
@@ -197,4 +194,3 @@ export async function verifyProjectAccess(
 
   return !error && !!data
 }
-

@@ -27,6 +27,8 @@ const textureStyleSchema = z.enum([
   'metallic',
   'organic',
 ])
+const meshyArtStyleSchema = z.enum(['realistic', 'sculpture'])
+const meshyTopologySchema = z.enum(['triangle', 'quad'])
 
 const surfaceBoundsSchema = z.object({
   width: z.number(),
@@ -172,7 +174,7 @@ export const surfaceMaterialRequestSchema = z.object({
   surfaceId: idSchema,
   prompt: z.string().min(1),
   apiKey: z.string().min(1).optional(),
-  artStyle: z.string().min(1).optional(),
+  artStyle: meshyArtStyleSchema.optional(),
   surfaceBounds: surfaceBoundsSchema,
 })
 
@@ -199,10 +201,10 @@ export const textTo3DRequestSchema = z.object({
   prompt: z.string().min(1),
   seed: z.number().int().optional(),
   apiKey: z.string().min(1).optional(),
-  artStyle: z.string().min(1).optional(),
+  artStyle: meshyArtStyleSchema.optional(),
   enablePbr: z.boolean().optional(),
   targetPolycount: z.number().int().positive().optional(),
-  topology: z.string().min(1).optional(),
+  topology: meshyTopologySchema.optional(),
 })
 
 export const textTo3DStartResponseSchema = z.object({

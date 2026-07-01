@@ -1,5 +1,9 @@
 import { tasks } from '@trigger.dev/sdk/v3'
 import { NextRequest, NextResponse } from 'next/server'
+import {
+  textTo3DRequestSchema,
+  textTo3DStartResponseSchema,
+} from '@/domains/interior-designer/io/interior-designer.dto'
 import type { textTo3DTask } from '@/trigger/text-to-3d'
 import {
   withAuth,
@@ -11,16 +15,14 @@ import {
 export const dynamic = 'force-dynamic'
 
 export const POST = withRateLimit(
-  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
-    const body = await request.json()
-    const { projectId, prompt, seed, apiKey, artStyle, enablePbr, targetPolycount, topology } = body
-
-    if (!projectId || !prompt) {
-      return NextResponse.json(
-        { error: 'Missing required fields: projectId and prompt' },
-        { status: 400 }
-      )
+  withAuth<Record<string, unknown>>(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
+    const parsedBody = textTo3DRequestSchema.safeParse(await request.json())
+    if (!parsedBody.success) {
+      return NextResponse.json({ error: 'Invalid text-to-3d payload' }, { status: 400 })
     }
+
+    const { projectId, prompt, seed, apiKey, artStyle, enablePbr, targetPolycount, topology } =
+      parsedBody.data
 
     // Verify project access
     const hasAccess = await verifyProjectAccess(supabase, projectId)
@@ -48,11 +50,11 @@ export const POST = withRateLimit(
       { ttl: '1h' }
     )
 
-    return NextResponse.json({
+    return NextResponse.json(textTo3DStartResponseSchema.parse({
       success: true,
       runId: handle.id,
       publicAccessToken: handle.publicAccessToken,
-    })
+    }))
   }),
   { maxRequests: 5, windowMs: 60000 }
 )

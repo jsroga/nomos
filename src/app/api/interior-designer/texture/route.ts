@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { textureService } from '@/domains/interior-designer/ai/TextureService'
-import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/lib/api-utils'
+import {
+  textureGenerationRequestSchema,
+  textureGenerationResponseSchema,
+} from '@/domains/interior-designer/io/interior-designer.dto'
+import { withAuth, withRateLimit } from '@/lib/api-utils'
 
 export const POST = withRateLimit(
-  withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
-    const body = await request.json()
-    const { prompt, apiKey, style, useSemanticSearch, width, height } = body
-
-    if (!prompt) {
-      return NextResponse.json({ error: 'Prompt is required' }, { status: 400 })
+  withAuth<Record<string, unknown>>(async (request: NextRequest) => {
+    const parsedBody = textureGenerationRequestSchema.safeParse(await request.json())
+    if (!parsedBody.success) {
+      return NextResponse.json({ error: 'Invalid texture generation payload' }, { status: 400 })
     }
+
+    const { prompt, apiKey, style, useSemanticSearch, width, height } = parsedBody.data
 
     if (!apiKey) {
       return NextResponse.json({ error: 'API Key is required' }, { status: 401 })
@@ -24,7 +28,7 @@ export const POST = withRateLimit(
       dims
     )
 
-    return NextResponse.json({ imageUrl })
+    return NextResponse.json(textureGenerationResponseSchema.parse({ imageUrl }))
   }),
   { maxRequests: 20, windowMs: 60000 }
 )
