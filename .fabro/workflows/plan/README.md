@@ -170,15 +170,38 @@ routing), `outcome` (gate pass/fail), `human.gate.*` (Clarify/Verification choic
 
 ## Reusable across modules ([variables](https://docs.fabro.sh/workflows/variables))
 
-Parameterized via `[run.inputs] module`. The `goal` and prompts use `{{ inputs.module }}`.
+**Module is required on every run** — there is no default in the workflow:
 
 ```bash
-fabro run .fabro/workflows/plan/workflow.toml               # interior-designer (default)
-fabro run .fabro/workflows/plan/workflow.toml -I module=storyteller
-fabro run .fabro/workflows/plan/workflow.toml -I module=chat
+fabro run .fabro/workflows/plan/workflow.toml -I module=<domain-folder>
 ```
 
-The `scope` shell script reads `FABRO_INPUT_MODULE` (default `storyteller`).
+`<domain-folder>` is the name under `src/domains/` (e.g. `interior-designer`,
+`storyteller`, `chat`). Fabro renders `{{ inputs.module }}` only in **`goal` and
+`prompt`** attributes ([docs](https://docs.fabro.sh/workflows/variables)) — not in
+shell `script` or environment `env`. The **Scope** stage is therefore a prompt node
+(`prompts/scope.md`) so the module path is templated correctly.
+
+## Merging when the run succeeds
+
+Fabro checkpoints code on a managed branch `fabro/run/<run-id>` (pushed to origin
+when `[run.run_branch].push = true`).
+
+1. **Review** — Fabro UI → **Files Changed** (sandbox git diff) or the run's final
+   branch on GitHub.
+2. **Open a PR** (recommended):
+   ```bash
+   fabro pr create <run-id>
+   ```
+   Then review and merge on GitHub, or `fabro pr merge <run-id>` if the PR is linked.
+3. **Manual merge** — fetch the run branch and merge locally:
+   ```bash
+   git fetch origin fabro/run/<run-id>
+   git checkout main && git merge origin/fabro/run/<run-id>
+   ```
+
+Plan-only path (`[P]` at Verification) still produces `PLAN.md` / `DECISIONS.md` on
+the run branch — merge those the same way if you want them on `main` without building.
 
 ## Model resilience ([fallbacks](https://docs.fabro.sh/execution/failures))
 

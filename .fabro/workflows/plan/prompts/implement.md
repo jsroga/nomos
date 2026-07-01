@@ -43,9 +43,9 @@ have exactly this structure — nothing else:
    present, `findings/assess.md`).
 2. **Middle todos (2 … N):** one todo per **concrete implementation step** of the
    **Minimum first increment** from `PLAN.md` §Suggested sequence. Break each plan
-   item into the real, granular code actions (e.g. "create `io/interior.dto.ts`",
-   "move `renameDesign` write to `PATCH /api/interior-designer/designs`", "delete the
-   browser Supabase import", "update callers to the new hook"). Ordered,
+   item into the real, granular code actions (e.g. "create `io/<module>.dto.ts`",
+   "route the browser write through the existing PATCH API", "delete the Supabase
+   client import from the store", "update callers to the new hook"). Ordered,
    dependency-correct. Do **not** add todos for deferred P2/P3 items.
 3. **Last todo (always, verbatim):** "Run typecheck and lint, then summarize changes
    and deferrals."

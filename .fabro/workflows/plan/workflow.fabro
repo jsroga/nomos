@@ -23,9 +23,10 @@ digraph Plan {
     exit  [shape=Msquare, label="Exit"]
 
     scope [
-        label="Scope\n[shell · no agent]"
-        shape=parallelogram
-        script="M=\"${FABRO_INPUT_MODULE:-storyteller}\"; echo \"=== module: $M ===\"; find \"src/domains/$M\" -type f | sort | head -120; echo; echo '=== git status ==='; git status --short; echo; echo '=== architecture contract ==='; ls -la docs/unified/ARCHITECTURE.md docs/unified/SPEC.md 2>&1"
+        label="Scope\nagent: Scope Runner\nmodel: codex"
+        class="review"
+        prompt="@prompts/scope.md"
+        max_visits=1
     ]
 
     assess [
