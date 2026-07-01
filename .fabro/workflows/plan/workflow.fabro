@@ -131,7 +131,7 @@ digraph Plan {
     verify [
         label="Typecheck + Lint\n[shell · no agent]"
         shape=parallelogram
-        script="npm run typecheck && npm run lint"
+        script="NODE_OPTIONS=\"${NODE_OPTIONS:---max-old-space-size=4096}\" npm run typecheck && NODE_OPTIONS=\"${NODE_OPTIONS:---max-old-space-size=4096}\" npm run lint"
         max_visits=5
     ]
     verify_gate [shape=diamond, label="Static checks pass?"]

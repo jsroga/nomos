@@ -40,6 +40,16 @@ provider = "docker"
 # Slim image lacks git (Fabro requires git for clone). Full bookworm has git + node + npm.
 docker = "node:22-bookworm"
 
+# tsc on this monorepo exceeds Node's default ~2GB old-space heap (OOM in `verify`).
+# Give the container headroom and raise the heap for all sandbox commands (verify,
+# test hooks, e2e).
+[environments.plan-docker.resources]
+cpu = 4
+memory = "6GB"
+
+[environments.plan-docker.env]
+NODE_OPTIONS = "--max-old-space-size=4096"
+
 # Preview URLs (fabro sandbox preview / Preview button) require the Daytona provider —
 # local/docker sandboxes cannot serve previews. Run UI increments you want to preview
 # with: fabro run … --environment plan-daytona --preserve-sandbox
@@ -48,6 +58,13 @@ provider = "daytona"
 
 [environments.plan-daytona.image]
 docker = "node:22-bookworm"
+
+[environments.plan-daytona.resources]
+cpu = 4
+memory = "6GB"
+
+[environments.plan-daytona.env]
+NODE_OPTIONS = "--max-old-space-size=4096"
 
 # Playwright MCP is NOT configured at run level — it starts before bootstrap and
 # burns ~30s per plan-path stage (npx missing). Screenshot stage uses Playwright
