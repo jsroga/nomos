@@ -1,0 +1,51 @@
+_version = 1
+
+[workflow]
+graph = "workflow.fabro"
+
+# Run (module is parameterized — override per module):
+#   fabro run .fabro/workflows/plan/workflow.toml
+#   fabro run .fabro/workflows/plan/workflow.toml -I module=chat
+#   fabro run .fabro/workflows/plan/workflow.toml --goal "…custom goal…"
+[run]
+goal = "Clean up and align the {{ inputs.module }} module (src/domains/{{ inputs.module }}) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification."
+
+# Typed inputs — https://docs.fabro.sh/workflows/variables
+# Available as {{ inputs.module }} in the goal and every node prompt.
+[run.inputs]
+module = "storyteller"
+
+# Model fallback chain — https://docs.fabro.sh/execution/failures
+# codex + gpt-5.4 share ONE usage-limited OpenAI account; when it hits
+# `usage_limit_reached`, Fabro falls back to Anthropic (separate metered account
+# with credits), auto-selecting the closest model per node by capability/cost.
+# openai is listed last so Anthropic-primary nodes (opus Plan) still have a net.
+[run.model]
+name = "codex"
+provider = "openai"
+fallbacks = ["anthropic", "openai"]
+
+[run.environment]
+id = "local"
+
+[environments.local]
+provider = "local"
+
+# Hooks — https://docs.fabro.sh/agents/hooks
+[[run.hooks]]
+id = "unit-tests-after-implement"
+name = "unit-tests-after-implement"
+event = "stage_complete"
+script = "npm run test:unit"
+matcher = "developer"
+blocking = true
+timeout = "10m"
+
+[[run.hooks]]
+id = "e2e-full-after-implement"
+name = "e2e-full-after-implement"
+event = "stage_complete"
+script = "npm run test:e2e full-loop"
+matcher = "developer"
+blocking = false
+timeout = "30m"
