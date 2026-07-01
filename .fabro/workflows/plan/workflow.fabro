@@ -26,7 +26,7 @@ digraph Plan {
         label="Scope\nagent: Scope Runner\nmodel: codex"
         class="review"
         prompt="@prompts/scope.md"
-        max_visits=1
+        max_visits=2
     ]
 
     assess [
