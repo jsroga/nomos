@@ -1,0 +1,2706 @@
+diff --git a/src/app/api/interior-designer/designs/route.ts b/src/app/api/interior-designer/designs/route.ts
+index 28fc0c1..d72db40 100644
+--- a/src/app/api/interior-designer/designs/route.ts
++++ b/src/app/api/interior-designer/designs/route.ts
+@@ -3,6 +3,15 @@ import { db } from '@/lib/db'
+ import { interiorDesigns, projects } from '@/db/schema'
+ import { eq, desc } from 'drizzle-orm'
+ import { requireAuth, checkRateLimit } from '@/lib/api-utils'
++import {
++  createInteriorDesignRequestSchema,
++  deleteInteriorDesignQuerySchema,
++  deleteInteriorDesignResponseSchema,
++  interiorDesignListResponseSchema,
++  interiorDesignLookupQuerySchema,
++  interiorDesignResponseSchema,
++  updateInteriorDesignRequestSchema,
++} from '@/domains/interior-designer/io/interior-designer.dto'
+ import { verifyProjectAccess } from '@/domains/storyteller'
+ 
+ /**
+@@ -36,17 +45,21 @@ async function verifyDesignAccess(
+ 
+ export async function GET(req: NextRequest) {
+   const { searchParams } = new URL(req.url)
+-  const projectId = searchParams.get('projectId')
+-  const designId = searchParams.get('designId')
++  const parsedQuery = interiorDesignLookupQuerySchema.safeParse({
++    projectId: searchParams.get('projectId') ?? undefined,
++    designId: searchParams.get('designId') ?? undefined,
++  })
+ 
+-  if (!projectId && !designId) {
+-    return NextResponse.json({ error: 'Project ID or Design ID is required' }, { status: 400 })
++  if (!parsedQuery.success) {
++    return NextResponse.json({ error: parsedQuery.error.issues[0]?.message }, { status: 400 })
+   }
+ 
+   try {
+     const { session } = await requireAuth()
+     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+ 
++    const { projectId, designId } = parsedQuery.data
++
+     if (designId) {
+       const { hasAccess } = await verifyDesignAccess(designId, session.user.id)
+       if (!hasAccess) {
+@@ -57,7 +70,8 @@ export async function GET(req: NextRequest) {
+         .select()
+         .from(interiorDesigns)
+         .where(eq(interiorDesigns.id, designId))
+-      return NextResponse.json(design || null)
++
++      return NextResponse.json(interiorDesignResponseSchema.parse(design || null))
+     } else {
+       if (!(await verifyProjectAccess(projectId!, session.user.id))) {
+         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+@@ -68,7 +82,8 @@ export async function GET(req: NextRequest) {
+         .from(interiorDesigns)
+         .where(eq(interiorDesigns.projectId, projectId!))
+         .orderBy(desc(interiorDesigns.updatedAt))
+-      return NextResponse.json(designs)
++
++      return NextResponse.json(interiorDesignListResponseSchema.parse(designs))
+     }
+   } catch (error) {
+     console.error('Failed to fetch interior designs:', error)
+@@ -87,16 +102,13 @@ export async function POST(req: NextRequest) {
+     })
+     if (!allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+ 
+-    const body = await req.json()
+-    const { projectId, name, sceneData } = body
+-
+-    if (!projectId || !name || !sceneData) {
+-      return NextResponse.json(
+-        { error: 'Project ID, name, and scene data are required' },
+-        { status: 400 }
+-      )
++    const parsedBody = createInteriorDesignRequestSchema.safeParse(await req.json())
++    if (!parsedBody.success) {
++      return NextResponse.json({ error: parsedBody.error.issues[0]?.message }, { status: 400 })
+     }
+ 
++    const { projectId, name, sceneData } = parsedBody.data
++
+     if (!(await verifyProjectAccess(projectId, session.user.id))) {
+       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+     }
+@@ -106,7 +118,7 @@ export async function POST(req: NextRequest) {
+       .values({ projectId, userId: session.user.id, name, sceneData })
+       .returning()
+ 
+-    return NextResponse.json(newDesign)
++    return NextResponse.json(interiorDesignResponseSchema.parse(newDesign))
+   } catch (error) {
+     console.error('Failed to create interior design:', error)
+     return NextResponse.json({ error: 'Failed to create design' }, { status: 500 })
+@@ -118,10 +130,12 @@ export async function PATCH(req: NextRequest) {
+     const { session } = await requireAuth()
+     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+ 
+-    const body = await req.json()
+-    const { id, name, sceneData } = body
++    const parsedBody = updateInteriorDesignRequestSchema.safeParse(await req.json())
++    if (!parsedBody.success) {
++      return NextResponse.json({ error: parsedBody.error.issues[0]?.message }, { status: 400 })
++    }
+ 
+-    if (!id) return NextResponse.json({ error: 'Design ID is required' }, { status: 400 })
++    const { id, name, sceneData } = parsedBody.data
+ 
+     const { hasAccess } = await verifyDesignAccess(id, session.user.id)
+     if (!hasAccess) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+@@ -136,7 +150,7 @@ export async function PATCH(req: NextRequest) {
+       .where(eq(interiorDesigns.id, id))
+       .returning()
+ 
+-    return NextResponse.json(updatedDesign)
++    return NextResponse.json(interiorDesignResponseSchema.parse(updatedDesign))
+   } catch (error) {
+     console.error('Failed to update interior design:', error)
+     return NextResponse.json({ error: 'Failed to update design' }, { status: 500 })
+@@ -145,19 +159,25 @@ export async function PATCH(req: NextRequest) {
+ 
+ export async function DELETE(req: NextRequest) {
+   const { searchParams } = new URL(req.url)
+-  const id = searchParams.get('id')
++  const parsedQuery = deleteInteriorDesignQuerySchema.safeParse({
++    id: searchParams.get('id') ?? undefined,
++  })
+ 
+-  if (!id) return NextResponse.json({ error: 'Design ID is required' }, { status: 400 })
++  if (!parsedQuery.success) {
++    return NextResponse.json({ error: parsedQuery.error.issues[0]?.message }, { status: 400 })
++  }
+ 
+   try {
+     const { session } = await requireAuth()
+     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+ 
++    const { id } = parsedQuery.data
++
+     const { hasAccess } = await verifyDesignAccess(id, session.user.id)
+     if (!hasAccess) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+ 
+     await db.delete(interiorDesigns).where(eq(interiorDesigns.id, id))
+-    return NextResponse.json({ success: true })
++    return NextResponse.json(deleteInteriorDesignResponseSchema.parse({ success: true }))
+   } catch (error) {
+     console.error('Failed to delete interior design:', error)
+     return NextResponse.json({ error: 'Failed to delete design' }, { status: 500 })
+diff --git a/src/app/api/interior-designer/material/[taskId]/route.ts b/src/app/api/interior-designer/material/[taskId]/route.ts
+index 7c15b52..e01d4b5 100644
+--- a/src/app/api/interior-designer/material/[taskId]/route.ts
++++ b/src/app/api/interior-designer/material/[taskId]/route.ts
+@@ -1,5 +1,9 @@
+ import { runs } from '@trigger.dev/sdk/v3'
+ import { NextRequest, NextResponse } from 'next/server'
++import {
++  interiorMaterialStatusResponseSchema,
++  interiorTaskParamsSchema,
++} from '@/domains/interior-designer/io/interior-designer.dto'
+ import { requireAuth } from '@/lib/auth'
+ import { getErrorMessage } from '@/lib/error-utils'
+ 
+@@ -10,20 +14,23 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ task
+     const { session } = await requireAuth()
+     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+ 
+-    const { taskId } = await params
+-
+-    if (!taskId) {
+-      return NextResponse.json({ error: 'Missing taskId' }, { status: 400 })
++    const parsedParams = interiorTaskParamsSchema.safeParse(await params)
++    if (!parsedParams.success) {
++      return NextResponse.json({ error: parsedParams.error.issues[0]?.message }, { status: 400 })
+     }
+ 
++    const { taskId } = parsedParams.data
++
+     const run = await runs.retrieve(taskId)
+ 
+-    return NextResponse.json({
+-      status: run.status,
+-      output: run.output,
+-      error: run.error,
+-      metadata: run.metadata,
+-    })
++    return NextResponse.json(
++      interiorMaterialStatusResponseSchema.parse({
++        status: run.status,
++        output: run.output,
++        error: run.error,
++        metadata: run.metadata,
++      })
++    )
+   } catch (error: unknown) {
+     console.error('Failed to get surface-material run status:', error)
+     return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
+diff --git a/src/app/api/interior-designer/material/route.ts b/src/app/api/interior-designer/material/route.ts
+index 4b4fecf..784793d 100644
+--- a/src/app/api/interior-designer/material/route.ts
++++ b/src/app/api/interior-designer/material/route.ts
+@@ -1,5 +1,10 @@
+ import { tasks } from '@trigger.dev/sdk/v3'
+ import { NextRequest, NextResponse } from 'next/server'
++import {
++  interiorMaterialRequestSchema,
++  interiorMaterialResponseSchema,
++  type InteriorMaterialResponse,
++} from '@/domains/interior-designer/io/interior-designer.dto'
+ import type { surfaceMaterialTask } from '@/trigger/surface-material'
+ import {
+   withAuth,
+@@ -11,46 +16,49 @@ import {
+ export const dynamic = 'force-dynamic'
+ 
+ export const POST = withRateLimit(
+-  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
+-    const body = await request.json()
+-    const { projectId, surfaceId, prompt, apiKey, artStyle, surfaceBounds } = body
++  withAuth(
++    async (
++      request: NextRequest,
++      { session, supabase }: AuthenticatedRequest
++    ): Promise<NextResponse<InteriorMaterialResponse | { error: string }>> => {
++      const parsedBody = interiorMaterialRequestSchema.safeParse(await request.json())
++      if (!parsedBody.success) {
++        return NextResponse.json({ error: parsedBody.error.issues[0]?.message }, { status: 400 })
++      }
+ 
+-    if (!projectId || !surfaceId || !prompt) {
+-      return NextResponse.json(
+-        { error: 'Missing required fields: projectId, surfaceId, and prompt' },
+-        { status: 400 }
+-      )
+-    }
++      const { projectId, surfaceId, prompt, apiKey, artStyle, surfaceBounds } = parsedBody.data
+ 
+-    // Verify project access via RLS
+-    const hasAccess = await verifyProjectAccess(supabase, projectId)
+-    if (!hasAccess) {
+-      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+-    }
++      const hasAccess = await verifyProjectAccess(supabase, projectId)
++      if (!hasAccess) {
++        return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
++      }
+ 
+-    const meshyApiKey = apiKey || process.env.MESHY_API_KEY
+-    if (!meshyApiKey) {
+-      return NextResponse.json({ error: 'Meshy API key not configured' }, { status: 400 })
+-    }
++      const meshyApiKey = apiKey || process.env.MESHY_API_KEY
++      if (!meshyApiKey) {
++        return NextResponse.json({ error: 'Meshy API key not configured' }, { status: 400 })
++      }
+ 
+-    const handle = await tasks.trigger<typeof surfaceMaterialTask>(
+-      'surface-material',
+-      {
+-        projectId,
+-        surfaceId,
+-        prompt,
+-        apiKey: meshyApiKey,
+-        artStyle: artStyle || 'realistic',
+-        surfaceBounds,
+-      },
+-      { ttl: '1h' }
+-    )
++      const handle = await tasks.trigger<typeof surfaceMaterialTask>(
++        'surface-material',
++        {
++          projectId,
++          surfaceId,
++          prompt,
++          apiKey: meshyApiKey,
++          artStyle: artStyle || 'realistic',
++          surfaceBounds,
++        },
++        { ttl: '1h' }
++      )
+ 
+-    return NextResponse.json({
+-      success: true,
+-      runId: handle.id,
+-      publicAccessToken: handle.publicAccessToken,
+-    })
+-  }),
++      return NextResponse.json(
++        interiorMaterialResponseSchema.parse({
++          success: true,
++          runId: handle.id,
++          publicAccessToken: handle.publicAccessToken,
++        })
++      )
++    }
++  ),
+   { maxRequests: 10, windowMs: 60000 }
+ )
+diff --git a/src/app/api/interior-designer/retexture/[runId]/route.ts b/src/app/api/interior-designer/retexture/[runId]/route.ts
+index e85f971..c413313 100644
+--- a/src/app/api/interior-designer/retexture/[runId]/route.ts
++++ b/src/app/api/interior-designer/retexture/[runId]/route.ts
+@@ -1,5 +1,9 @@
+ import { runs } from '@trigger.dev/sdk/v3'
+ import { NextRequest, NextResponse } from 'next/server'
++import {
++  interiorRetextureParamsSchema,
++  interiorRetextureStatusResponseSchema,
++} from '@/domains/interior-designer/io/interior-designer.dto'
+ import { requireAuth } from '@/lib/auth'
+ import { getErrorMessage } from '@/lib/error-utils'
+ 
+@@ -8,19 +12,22 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ runI
+     const { session } = await requireAuth()
+     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+ 
+-    const { runId } = await params
+-
+-    if (!runId) {
+-      return NextResponse.json({ error: 'Missing runId' }, { status: 400 })
++    const parsedParams = interiorRetextureParamsSchema.safeParse(await params)
++    if (!parsedParams.success) {
++      return NextResponse.json({ error: parsedParams.error.issues[0]?.message }, { status: 400 })
+     }
+ 
++    const { runId } = parsedParams.data
++
+     const run = await runs.retrieve(runId)
+ 
+-    return NextResponse.json({
+-      status: run.status,
+-      output: run.output,
+-      error: run.error,
+-    })
++    return NextResponse.json(
++      interiorRetextureStatusResponseSchema.parse({
++        status: run.status,
++        output: run.output,
++        error: run.error,
++      })
++    )
+   } catch (error: unknown) {
+     console.error('Failed to get run status:', error)
+     return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
+diff --git a/src/app/api/interior-designer/retexture/route.ts b/src/app/api/interior-designer/retexture/route.ts
+index c320447..2fe2765 100644
+--- a/src/app/api/interior-designer/retexture/route.ts
++++ b/src/app/api/interior-designer/retexture/route.ts
+@@ -1,6 +1,11 @@
+ import { retextureModelTask } from '@/trigger/retexture-model'
+ import { tasks } from '@trigger.dev/sdk/v3'
+ import { NextRequest, NextResponse } from 'next/server'
++import {
++  interiorRetextureRequestSchema,
++  interiorRetextureResponseSchema,
++  type InteriorRetextureResponse,
++} from '@/domains/interior-designer/io/interior-designer.dto'
+ import {
+   withAuth,
+   withRateLimit,
+@@ -9,58 +14,69 @@ import {
+ } from '@/lib/api-utils'
+ 
+ export const POST = withRateLimit(
+-  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
+-    const { modelUrlOrBase64, prompt, assetId, projectId, apiKey } = await request.json()
++  withAuth(
++    async (
++      request: NextRequest,
++      { session, supabase }: AuthenticatedRequest
++    ): Promise<NextResponse<InteriorRetextureResponse | { error: string }>> => {
++      const parsedBody = interiorRetextureRequestSchema.safeParse(await request.json())
++      if (!parsedBody.success) {
++        return NextResponse.json({ error: parsedBody.error.issues[0]?.message }, { status: 400 })
++      }
+ 
+-    if (!modelUrlOrBase64 || !prompt || !projectId) {
+-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+-    }
++      const { modelUrlOrBase64, prompt, assetId, projectId, apiKey } = parsedBody.data
+ 
+-    // Verify project access via RLS
+-    if (projectId !== 'default') {
+-      const hasAccess = await verifyProjectAccess(supabase, projectId)
+-      if (!hasAccess) {
+-        return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
++      if (projectId !== 'default') {
++        const hasAccess = await verifyProjectAccess(supabase, projectId)
++        if (!hasAccess) {
++          return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
++        }
+       }
+-    }
+ 
+-    // Fetch style reference URLs using authenticated client
+-    let styleImageUrl: string | undefined
+-    if (projectId !== 'default') {
+-      const { data } = await supabase
+-        .from('projects')
+-        .select('style_reference_urls')
+-        .eq('id', projectId)
+-        .single()
++      let styleImageUrl: string | undefined
++      if (projectId !== 'default') {
++        const { data } = await supabase
++          .from('projects')
++          .select('style_reference_urls')
++          .eq('id', projectId)
++          .single()
+ 
+-      const styleReferenceUrls = (data?.style_reference_urls as string[]) || []
++        const projectData = data as { style_reference_urls?: string[] } | null
++        const styleReferenceUrls = Array.isArray(projectData?.style_reference_urls)
++          ? projectData.style_reference_urls
++          : []
+ 
+-      if (styleReferenceUrls.length > 0) {
+-        // Validate first URL is accessible
+-        try {
+-          const response = await fetch(styleReferenceUrls[0], {
+-            method: 'HEAD',
+-            signal: AbortSignal.timeout(5000),
+-          })
+-          if (response.ok) {
+-            styleImageUrl = styleReferenceUrls[0]
++        if (styleReferenceUrls.length > 0) {
++          try {
++            const response = await fetch(styleReferenceUrls[0], {
++              method: 'HEAD',
++              signal: AbortSignal.timeout(5000),
++            })
++            if (response.ok) {
++              styleImageUrl = styleReferenceUrls[0]
++            }
++          } catch {
++            // Style URL not accessible, skip
+           }
+-        } catch {
+-          // Style URL not accessible, skip
+         }
+       }
+-    }
+ 
+-    const handle = await tasks.trigger<typeof retextureModelTask>('retexture-model', {
+-      modelBase64: modelUrlOrBase64,
+-      prompt,
+-      assetId: assetId || 'temp-asset',
+-      projectId,
+-      apiKey: apiKey || process.env.MESHY_API_KEY,
+-      styleImageUrl,
+-    })
++      const meshyApiKey = apiKey || process.env.MESHY_API_KEY
++      if (!meshyApiKey) {
++        return NextResponse.json({ error: 'Meshy API key not configured' }, { status: 400 })
++      }
++
++      const handle = await tasks.trigger<typeof retextureModelTask>('retexture-model', {
++        modelBase64: modelUrlOrBase64,
++        prompt,
++        assetId: assetId || 'temp-asset',
++        projectId,
++        apiKey: meshyApiKey,
++        styleImageUrl,
++      })
+ 
+-    return NextResponse.json({ runId: handle.id })
+-  }),
++      return NextResponse.json(interiorRetextureResponseSchema.parse({ runId: handle.id }))
++    }
++  ),
+   { maxRequests: 5, windowMs: 60000 }
+ )
+diff --git a/src/app/api/interior-designer/text-to-3d/[taskId]/route.ts b/src/app/api/interior-designer/text-to-3d/[taskId]/route.ts
+index 61663b4..136d24e 100644
+--- a/src/app/api/interior-designer/text-to-3d/[taskId]/route.ts
++++ b/src/app/api/interior-designer/text-to-3d/[taskId]/route.ts
+@@ -1,5 +1,9 @@
+ import { runs } from '@trigger.dev/sdk/v3'
+ import { NextRequest, NextResponse } from 'next/server'
++import {
++  interiorTaskParamsSchema,
++  interiorTextTo3DStatusResponseSchema,
++} from '@/domains/interior-designer/io/interior-designer.dto'
+ import { requireAuth } from '@/lib/auth'
+ import { getErrorMessage } from '@/lib/error-utils'
+ 
+@@ -10,20 +14,23 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ task
+     const { session } = await requireAuth()
+     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+ 
+-    const { taskId } = await params
+-
+-    if (!taskId) {
+-      return NextResponse.json({ error: 'Missing taskId' }, { status: 400 })
++    const parsedParams = interiorTaskParamsSchema.safeParse(await params)
++    if (!parsedParams.success) {
++      return NextResponse.json({ error: parsedParams.error.issues[0]?.message }, { status: 400 })
+     }
+ 
++    const { taskId } = parsedParams.data
++
+     const run = await runs.retrieve(taskId)
+ 
+-    return NextResponse.json({
+-      status: run.status,
+-      output: run.output,
+-      error: run.error,
+-      metadata: run.metadata,
+-    })
++    return NextResponse.json(
++      interiorTextTo3DStatusResponseSchema.parse({
++        status: run.status,
++        output: run.output,
++        error: run.error,
++        metadata: run.metadata,
++      })
++    )
+   } catch (error: unknown) {
+     console.error('Failed to get text-to-3d run status:', error)
+     return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
+diff --git a/src/app/api/interior-designer/text-to-3d/route.ts b/src/app/api/interior-designer/text-to-3d/route.ts
+index be03018..9b23e06 100644
+--- a/src/app/api/interior-designer/text-to-3d/route.ts
++++ b/src/app/api/interior-designer/text-to-3d/route.ts
+@@ -1,5 +1,10 @@
+ import { tasks } from '@trigger.dev/sdk/v3'
+ import { NextRequest, NextResponse } from 'next/server'
++import {
++  interiorTextTo3DRequestSchema,
++  interiorTextTo3DResponseSchema,
++  type InteriorTextTo3DResponse,
++} from '@/domains/interior-designer/io/interior-designer.dto'
+ import type { textTo3DTask } from '@/trigger/text-to-3d'
+ import {
+   withAuth,
+@@ -11,48 +16,52 @@ import {
+ export const dynamic = 'force-dynamic'
+ 
+ export const POST = withRateLimit(
+-  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
+-    const body = await request.json()
+-    const { projectId, prompt, seed, apiKey, artStyle, enablePbr, targetPolycount, topology } = body
++  withAuth(
++    async (
++      request: NextRequest,
++      { session, supabase }: AuthenticatedRequest
++    ): Promise<NextResponse<InteriorTextTo3DResponse | { error: string }>> => {
++      const parsedBody = interiorTextTo3DRequestSchema.safeParse(await request.json())
++      if (!parsedBody.success) {
++        return NextResponse.json({ error: parsedBody.error.issues[0]?.message }, { status: 400 })
++      }
+ 
+-    if (!projectId || !prompt) {
+-      return NextResponse.json(
+-        { error: 'Missing required fields: projectId and prompt' },
+-        { status: 400 }
+-      )
+-    }
++      const { projectId, prompt, seed, apiKey, artStyle, enablePbr, targetPolycount, topology } =
++        parsedBody.data
+ 
+-    // Verify project access
+-    const hasAccess = await verifyProjectAccess(supabase, projectId)
+-    if (!hasAccess) {
+-      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+-    }
++      const hasAccess = await verifyProjectAccess(supabase, projectId)
++      if (!hasAccess) {
++        return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
++      }
+ 
+-    const meshyApiKey = apiKey || process.env.MESHY_API_KEY
+-    if (!meshyApiKey) {
+-      return NextResponse.json({ error: 'Meshy API key not configured' }, { status: 400 })
+-    }
++      const meshyApiKey = apiKey || process.env.MESHY_API_KEY
++      if (!meshyApiKey) {
++        return NextResponse.json({ error: 'Meshy API key not configured' }, { status: 400 })
++      }
+ 
+-    const handle = await tasks.trigger<typeof textTo3DTask>(
+-      'text-to-3d',
+-      {
+-        projectId,
+-        prompt,
+-        seed: seed || Math.floor(Math.random() * 2147483647),
+-        apiKey: meshyApiKey,
+-        artStyle: artStyle || 'realistic',
+-        enablePbr: enablePbr !== false,
+-        targetPolycount: targetPolycount || 30000,
+-        topology: topology || 'triangle',
+-      },
+-      { ttl: '1h' }
+-    )
++      const handle = await tasks.trigger<typeof textTo3DTask>(
++        'text-to-3d',
++        {
++          projectId,
++          prompt,
++          seed: seed || Math.floor(Math.random() * 2147483647),
++          apiKey: meshyApiKey,
++          artStyle: artStyle || 'realistic',
++          enablePbr: enablePbr !== false,
++          targetPolycount: targetPolycount || 30000,
++          topology: topology || 'triangle',
++        },
++        { ttl: '1h' }
++      )
+ 
+-    return NextResponse.json({
+-      success: true,
+-      runId: handle.id,
+-      publicAccessToken: handle.publicAccessToken,
+-    })
+-  }),
++      return NextResponse.json(
++        interiorTextTo3DResponseSchema.parse({
++          success: true,
++          runId: handle.id,
++          publicAccessToken: handle.publicAccessToken,
++        })
++      )
++    }
++  ),
+   { maxRequests: 5, windowMs: 60000 }
+ )
+diff --git a/src/app/api/interior-designer/texture/route.ts b/src/app/api/interior-designer/texture/route.ts
+index 02ed800..8e3cda0 100644
+--- a/src/app/api/interior-designer/texture/route.ts
++++ b/src/app/api/interior-designer/texture/route.ts
+@@ -1,30 +1,42 @@
+ import { NextRequest, NextResponse } from 'next/server'
+ import { textureService } from '@/domains/interior-designer/ai/TextureService'
++import {
++  interiorTextureRequestSchema,
++  interiorTextureResponseSchema,
++  type InteriorTextureResponse,
++} from '@/domains/interior-designer/io/interior-designer.dto'
+ import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/lib/api-utils'
+ 
+ export const POST = withRateLimit(
+-  withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
+-    const body = await request.json()
+-    const { prompt, apiKey, style, useSemanticSearch, width, height } = body
++  withAuth(
++    async (
++      request: NextRequest,
++      { session }: AuthenticatedRequest
++    ): Promise<NextResponse<InteriorTextureResponse | { error: string }>> => {
++      const body = await request.json()
++      const { prompt, apiKey } = body as { prompt?: string; apiKey?: string }
+ 
+-    if (!prompt) {
+-      return NextResponse.json({ error: 'Prompt is required' }, { status: 400 })
+-    }
++      if (!prompt) {
++        return NextResponse.json({ error: 'Prompt is required' }, { status: 400 })
++      }
+ 
+-    if (!apiKey) {
+-      return NextResponse.json({ error: 'API Key is required' }, { status: 401 })
+-    }
++      if (!apiKey) {
++        return NextResponse.json({ error: 'API Key is required' }, { status: 401 })
++      }
+ 
+-    const dims = { width: width || 1024, height: height || 1024 }
+-    const imageUrl = await textureService.generateTexture(
+-      prompt,
+-      apiKey,
+-      style || 'painterly',
+-      useSemanticSearch,
+-      dims
+-    )
++      const parsedBody = interiorTextureRequestSchema.parse(body)
++      const { style, useSemanticSearch, width, height } = parsedBody
++      const dims = { width: width || 1024, height: height || 1024 }
++      const imageUrl = await textureService.generateTexture(
++        prompt,
++        apiKey,
++        style || 'painterly',
++        useSemanticSearch,
++        dims
++      )
+ 
+-    return NextResponse.json({ imageUrl })
+-  }),
++      return NextResponse.json(interiorTextureResponseSchema.parse({ imageUrl }))
++    }
++  ),
+   { maxRequests: 20, windowMs: 60000 }
+ )
+diff --git a/src/app/api/interior-designer/textures/route.ts b/src/app/api/interior-designer/textures/route.ts
+index 98600d6..8822d4e 100644
+--- a/src/app/api/interior-designer/textures/route.ts
++++ b/src/app/api/interior-designer/textures/route.ts
+@@ -1,24 +1,35 @@
+ import { NextRequest, NextResponse } from 'next/server'
+ import { ReplicateClient } from '@/infrastructure/ai/replicate'
++import {
++  interiorTexturesRequestSchema,
++  interiorTexturesResponseSchema,
++  type InteriorTexturesResponse,
++} from '@/domains/interior-designer/io/interior-designer.dto'
+ import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/lib/api-utils'
+ 
+ export const POST = withRateLimit(
+-  withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
+-    const { prompt } = await request.json()
++  withAuth(
++    async (
++      request: NextRequest,
++      { session }: AuthenticatedRequest
++    ): Promise<NextResponse<InteriorTexturesResponse | { error: string }>> => {
++      const parsedBody = interiorTexturesRequestSchema.safeParse(await request.json())
++      if (!parsedBody.success) {
++        return NextResponse.json({ error: parsedBody.error.issues[0]?.message }, { status: 400 })
++      }
+ 
+-    if (!prompt) {
+-      return NextResponse.json({ error: 'Prompt is required' }, { status: 400 })
+-    }
++      const { prompt } = parsedBody.data
+ 
+-    const apiKey = process.env.REPLICATE_API_TOKEN
+-    if (!apiKey) {
+-      return NextResponse.json({ error: 'Replicate API token not configured' }, { status: 500 })
+-    }
++      const apiKey = process.env.REPLICATE_API_TOKEN
++      if (!apiKey) {
++        return NextResponse.json({ error: 'Replicate API token not configured' }, { status: 500 })
++      }
+ 
+-    const client = new ReplicateClient(apiKey)
+-    const textureUrl = await client.generateTexture(prompt)
++      const client = new ReplicateClient(apiKey)
++      const textureUrl = await client.generateTexture(prompt)
+ 
+-    return NextResponse.json({ url: textureUrl })
+-  }),
++      return NextResponse.json(interiorTexturesResponseSchema.parse({ url: textureUrl }))
++    }
++  ),
+   { maxRequests: 20, windowMs: 60000 }
+ )
+diff --git a/src/app/app/[projectId]/interior-design/page.tsx b/src/app/app/[projectId]/interior-design/page.tsx
+index 83fb81e..f8a23eb 100644
+--- a/src/app/app/[projectId]/interior-design/page.tsx
++++ b/src/app/app/[projectId]/interior-design/page.tsx
+@@ -1,257 +1,7 @@
+ 'use client'
+ 
+-import React, { useEffect, useCallback } from 'react'
+-import dynamic from 'next/dynamic'
+-import { Loader2 } from 'lucide-react'
+-import { Toolbar } from '@/domains/interior-designer/components/UI/Toolbar'
+-import { InteriorRightSidebar } from '@/domains/interior-designer/components/UI/InteriorRightSidebar'
+-import { DesignManager } from '@/domains/interior-designer/components/DesignManager'
+-import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
+-
+-// Dynamic import with SSR disabled to avoid React reconciler issues with Three.js
+-const InteriorCanvas = dynamic(
+-  () =>
+-    import('@/domains/interior-designer/components/InteriorCanvas').then(mod => ({
+-      default: mod.InteriorCanvas,
+-    })),
+-  {
+-    ssr: false,
+-    loading: () => (
+-      <div className="w-full h-full flex items-center justify-center bg-slate-900">
+-        <Loader2 className="animate-spin text-muted-foreground" size={48} />
+-      </div>
+-    ),
+-  }
+-)
+-
+-import { Button } from '@/components/ui/button'
+-import { Download, Save, Focus } from 'lucide-react'
+-import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
+-import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
+-import { debounce } from 'lodash'
+-
+-import { cn } from '@/lib/utils'
+-import { TOUR_STEP_IDS } from '@/lib/tour-constants'
+-
+-import { DomainSidebar } from '@/components/ui/domain-sidebar'
++import { InteriorDesignerWorkspace } from '@/domains/interior-designer'
+ 
+ export default function InteriorDesignerPage() {
+-  useProjectFromUrl()
+-
+-  const setExportRequested = useInteriorStore(state => state.setExportRequested)
+-  const saveDesign = useInteriorStore(state => state.saveDesign)
+-  const hasUnsavedChanges = useInteriorStore(state => state.hasUnsavedChanges)
+-  const isSaving = useInteriorStore(state => state.isSaving)
+-  const setCameraResetRequested = useInteriorStore(state => state.setCameraResetRequested)
+-  const addObject = useInteriorStore(state => state.addObject)
+-  const mode = useInteriorStore(state => state.mode)
+-  const currentProject = useWorldStore(state => state.currentProject)
+-
+-  const handleManualSave = async () => {
+-    if (currentProject?.id) {
+-      await saveDesign(currentProject.id)
+-    }
+-  }
+-
+-  // Auto-save debounced (2 seconds after last change)
+-  const debouncedSave = useCallback(
+-    debounce(() => {
+-      if (currentProject?.id && hasUnsavedChanges) {
+-        saveDesign(currentProject.id)
+-      }
+-    }, 2000),
+-    [currentProject?.id]
+-  )
+-
+-  useEffect(() => {
+-    if (hasUnsavedChanges) {
+-      debouncedSave()
+-    }
+-  }, [hasUnsavedChanges, debouncedSave])
+-
+-  const zenMode = useInteriorStore(state => state.zenMode)
+-  const toggleZenMode = useInteriorStore(state => state.toggleZenMode)
+-
+-  // keyboard shortcuts
+-  useEffect(() => {
+-    const handleKeyDown = (e: KeyboardEvent) => {
+-      if (e.key === 'Tab') {
+-        e.preventDefault()
+-        toggleZenMode()
+-      }
+-    }
+-    window.addEventListener('keydown', handleKeyDown)
+-    return () => window.removeEventListener('keydown', handleKeyDown)
+-  }, [toggleZenMode])
+-
+-  return (
+-    <div className="w-full h-screen flex flex-col bg-black text-zinc-200 font-sans selection:bg-indigo-500/30 overflow-hidden">
+-      {/* Header - Aligned with other modules */}
+-      <header
+-        className={cn(
+-          'h-14 border-b border-border/50 bg-zinc-950/50 backdrop-blur-md flex items-center px-6 justify-between relative z-50 transition-all duration-500',
+-          zenMode && '-translate-y-full opacity-0'
+-        )}
+-      >
+-        <div className="flex items-center gap-4">
+-          <h1 className="font-mono font-bold text-sm tracking-widest text-zinc-100 uppercase">
+-            Interior Designer
+-          </h1>
+-          <DesignManager />
+-        </div>
+-        <div className="flex items-center gap-2">
+-          {hasUnsavedChanges && !isSaving && (
+-            <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-yellow-500/80 flex items-center gap-1.5 mr-2">
+-              <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(234,179,8,0.5)]" />
+-              Unsaved
+-            </div>
+-          )}
+-          {isSaving && (
+-            <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-400 animate-pulse mr-2">
+-              Saving...
+-            </div>
+-          )}
+-          <Button
+-            size="sm"
+-            variant="ghost"
+-            className="hover:bg-white/5 font-mono text-[10px] uppercase tracking-widest"
+-            onClick={handleManualSave}
+-            disabled={!hasUnsavedChanges || !currentProject}
+-          >
+-            <Save className="w-3.5 h-3.5 mr-2" />
+-            Save
+-          </Button>
+-          <Button
+-            size="sm"
+-            variant="ghost"
+-            className="hover:bg-white/5 font-mono text-[10px] uppercase tracking-widest"
+-            onClick={() => setCameraResetRequested(true)}
+-          >
+-            <Focus className="w-3.5 h-3.5 mr-2" />
+-            Reset View
+-          </Button>
+-          <div id={TOUR_STEP_IDS.INTERIOR_EXPORT} className="flex items-center gap-2">
+-            <Button
+-              size="sm"
+-              variant="ghost"
+-              className="hover:bg-white/5 font-mono text-[10px] uppercase tracking-widest"
+-              onClick={() => setExportRequested(true)}
+-            >
+-              <Download className="w-3.5 h-3.5 mr-2 text-indigo-400" />
+-              GLTF
+-            </Button>
+-            <Button
+-              size="sm"
+-              variant="ghost"
+-              className="hover:bg-white/5 font-mono text-[10px] uppercase tracking-widest border border-indigo-500/20"
+-              onClick={async () => {
+-                const { walls, objects } = useInteriorStore.getState()
+-                const zipBlob =
+-                  await import('@/domains/interior-designer/utils/UnityExporter').then(m =>
+-                    m.UnityExporter.createExportZip({ walls, objects })
+-                  )
+-
+-                const url = URL.createObjectURL(zipBlob)
+-                const link = document.createElement('a')
+-                link.href = url
+-                link.download = 'interior-design-unity.zip'
+-                document.body.appendChild(link)
+-                link.click()
+-                document.body.removeChild(link)
+-              }}
+-            >
+-              <Download className="w-3.5 h-3.5 mr-2 text-indigo-400" />
+-              Unity
+-            </Button>
+-          </div>
+-        </div>
+-      </header>
+-
+-      {/* Main Content Area */}
+-      <div className="flex-1 flex relative overflow-hidden">
+-        {/* Left Sidebar: Toolbar */}
+-        <div
+-          className={cn(
+-            'transition-all duration-700 ease-in-out h-full',
+-            zenMode ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0'
+-          )}
+-        >
+-          <DomainSidebar
+-            header={null}
+-            position="left"
+-            storageKey="interior-toolbar"
+-            defaultWidth={80}
+-            rawContent
+-          >
+-            <div id={TOUR_STEP_IDS.INTERIOR_TOOLBAR} className="flex-1 py-4">
+-              <Toolbar />
+-            </div>
+-          </DomainSidebar>
+-        </div>
+-
+-        {/* 3D Canvas Area */}
+-        <div className="flex-1 relative bg-black overflow-hidden">
+-          <div
+-            className="absolute inset-0 z-0"
+-            id={TOUR_STEP_IDS.INTERIOR_CANVAS}
+-            data-html2canvas-ignore="true"
+-            onDragOver={e => {
+-              e.preventDefault()
+-              e.dataTransfer.dropEffect = 'copy'
+-            }}
+-            onDrop={e => {
+-              e.preventDefault()
+-              try {
+-                const data = JSON.parse(e.dataTransfer.getData('application/json'))
+-                if (data.type === 'asset' && data.glbUrl) {
+-                  addObject({
+-                    modelUrl: data.glbUrl,
+-                    position: [0, 0, 0],
+-                    rotation: [0, 0, 0],
+-                    scale: [1, 1, 1],
+-                    isLoading: true,
+-                    thumbnailUrl: data.thumbnailUrl,
+-                  })
+-                  console.log('Dropped asset:', data)
+-                }
+-              } catch (err) {
+-                console.error('Drop error:', err)
+-              }
+-            }}
+-          >
+-            <InteriorCanvas />
+-          </div>
+-
+-          {/* Zen Mode Tip */}
+-          {!zenMode && (
+-            <div className="absolute bottom-6 left-6 text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500/40 hover:text-zinc-400 transition-colors cursor-default select-none pointer-events-none z-10">
+-              Press{' '}
+-              <span className="px-1.5 py-0.5 border border-zinc-700/50 rounded bg-zinc-800/50 text-zinc-300">
+-                Tab
+-              </span>{' '}
+-              for Zen Mode
+-            </div>
+-          )}
+-        </div>
+-
+-        {/* Right Sidebar: Properties & Assets */}
+-        <div
+-          className={cn(
+-            'transition-all duration-700 ease-in-out h-full',
+-            zenMode ? 'translate-x-full opacity-0 pointer-events-none' : 'translate-x-0'
+-          )}
+-        >
+-          <DomainSidebar
+-            header={null}
+-            position="right"
+-            storageKey="interior-properties"
+-            defaultWidth={400}
+-            rawContent
+-          >
+-            <InteriorRightSidebar />
+-          </DomainSidebar>
+-        </div>
+-      </div>
+-    </div>
+-  )
++  return <InteriorDesignerWorkspace />
+ }
+diff --git a/src/domains/interior-designer/__tests__/interior-designer.dto.test.ts b/src/domains/interior-designer/__tests__/interior-designer.dto.test.ts
+new file mode 100644
+index 0000000..a1f81da
+--- /dev/null
++++ b/src/domains/interior-designer/__tests__/interior-designer.dto.test.ts
+@@ -0,0 +1,210 @@
++import { describe, expect, it } from 'vitest'
++import {
++  createInteriorDesignRequestSchema,
++  interiorDesignSchema,
++  interiorMaterialRequestSchema,
++  interiorMaterialStatusResponseSchema,
++  interiorRetextureRequestSchema,
++  interiorRetextureStatusResponseSchema,
++  interiorTextTo3DRequestSchema,
++  interiorTextTo3DStatusResponseSchema,
++  interiorTextureRequestSchema,
++  interiorTextureResponseSchema,
++} from '../io/interior-designer.dto'
++
++describe('interior-designer dto schemas', () => {
++  it('parses a persisted interior design payload and normalizes date fields', () => {
++    const parsed = interiorDesignSchema.parse({
++      id: 'design-1',
++      projectId: 'project-1',
++      userId: 'user-1',
++      name: 'My Scene',
++      sceneData: {
++        walls: [
++          {
++            id: 'wall-1',
++            start: [0, 0, 0],
++            end: [1, 0, 0],
++            height: 3,
++            thickness: 0.2,
++          },
++        ],
++        floors: [
++          {
++            id: 'floor-1',
++            points: [
++              [0, 0, 0],
++              [1, 0, 0],
++              [1, 0, 1],
++            ],
++            y: 0,
++          },
++        ],
++        water: [],
++        surfaces: [
++          {
++            id: 'surface-1',
++            type: 'road',
++            points: [
++              [0, 0, 0],
++              [1, 0, 0],
++            ],
++            isPath: true,
++            curved: false,
++            layerIndex: 0,
++          },
++        ],
++        objects: [
++          {
++            id: 'object-1',
++            modelUrl: '/model.glb',
++            position: [0, 0, 0],
++            rotation: [0, 0, 0],
++            scale: [1, 1, 1],
++          },
++        ],
++        activeLevel: 0,
++        terrainSettings: {
++          gridResolution: 'medium',
++          heightmapSize: 64,
++          heightmap: [0, 1, 2],
++          materialMap: [0, 1, 0],
++          heightmapVersion: 3,
++        },
++      },
++      createdAt: new Date('2026-01-01T00:00:00.000Z'),
++      updatedAt: new Date('2026-01-02T00:00:00.000Z'),
++    })
++
++    expect(parsed.createdAt).toBe('2026-01-01T00:00:00.000Z')
++    expect(parsed.updatedAt).toBe('2026-01-02T00:00:00.000Z')
++    expect(parsed.sceneData.terrainSettings?.heightmap).toEqual([0, 1, 2])
++  })
++
++  it('accepts the current design save request shape', () => {
++    const parsed = createInteriorDesignRequestSchema.parse({
++      projectId: 'project-1',
++      name: 'Untitled Design',
++      sceneData: {
++        walls: [],
++        floors: [],
++        water: [],
++        surfaces: [],
++        objects: [],
++        activeLevel: 0,
++        terrainSettings: {
++          baseGroundHeight: 0,
++          waterSurfaceHeight: -3,
++          showWaterPlane: true,
++          gridResolution: 'medium',
++          heightmapSize: 64,
++          heightmap: null,
++          heightmapVersion: 0,
++          materialMap: null,
++        },
++      },
++    })
++
++    expect(parsed.sceneData.activeLevel).toBe(0)
++    expect(parsed.sceneData.terrainSettings?.gridResolution).toBe('medium')
++  })
++
++  it('parses texture and generation request payloads used by the current UI', () => {
++    expect(
++      interiorTextureRequestSchema.parse({
++        prompt: 'mossy stone',
++        apiKey: 'sk-test',
++        style: 'painterly',
++        useSemanticSearch: true,
++        width: 1024,
++        height: 1024,
++      })
++    ).toMatchObject({ style: 'painterly' })
++
++    expect(
++      interiorRetextureRequestSchema.parse({
++        modelUrlOrBase64: 'https://example.com/model.glb',
++        prompt: 'weathered bronze',
++        assetId: 'asset-1',
++        projectId: 'project-1',
++        apiKey: 'meshy-key',
++      })
++    ).toMatchObject({ assetId: 'asset-1' })
++
++    expect(
++      interiorTextTo3DRequestSchema.parse({
++        projectId: 'project-1',
++        prompt: 'ornate sci-fi chair',
++        seed: 123,
++        apiKey: 'meshy-key',
++        enablePbr: true,
++        targetPolycount: 30000,
++        topology: 'triangle',
++      })
++    ).toMatchObject({ seed: 123 })
++
++    expect(
++      interiorMaterialRequestSchema.parse({
++        projectId: 'project-1',
++        surfaceId: 'surface-1',
++        prompt: 'wet asphalt',
++        apiKey: 'meshy-key',
++        artStyle: 'realistic',
++        surfaceBounds: {
++          width: 2,
++          depth: 4,
++          centerX: 10,
++          centerZ: 12,
++        },
++      })
++    ).toMatchObject({ surfaceId: 'surface-1' })
++  })
++
++  it('parses generation status payloads and texture responses', () => {
++    expect(
++      interiorTextureResponseSchema.parse({
++        imageUrl: 'https://cdn.example.com/texture.png',
++      })
++    ).toEqual({
++      imageUrl: 'https://cdn.example.com/texture.png',
++    })
++
++    expect(
++      interiorRetextureStatusResponseSchema.parse({
++        status: 'COMPLETED',
++        output: {
++          success: true,
++          retexturedUrl: 'https://cdn.example.com/retextured.glb',
++        },
++      })
++    ).toMatchObject({
++      status: 'COMPLETED',
++      output: { retexturedUrl: 'https://cdn.example.com/retextured.glb' },
++    })
++
++    expect(
++      interiorTextTo3DStatusResponseSchema.parse({
++        status: 'RUNNING',
++        output: null,
++        error: null,
++        metadata: { progress: 55, stage: 'meshing' },
++      })
++    ).toMatchObject({
++      metadata: { progress: 55, stage: 'meshing' },
++    })
++
++    expect(
++      interiorMaterialStatusResponseSchema.parse({
++        status: 'SUCCESS',
++        output: {
++          success: true,
++          modelUrl: 'https://cdn.example.com/material.glb',
++          thumbnailUrl: 'https://cdn.example.com/material.png',
++        },
++        metadata: { progress: 100, stage: 'completed' },
++      })
++    ).toMatchObject({
++      output: { modelUrl: 'https://cdn.example.com/material.glb' },
++    })
++  })
++})
+diff --git a/src/domains/interior-designer/components/DesignManager.tsx b/src/domains/interior-designer/components/DesignManager.tsx
+index 027097e..440c2f2 100644
+--- a/src/domains/interior-designer/components/DesignManager.tsx
++++ b/src/domains/interior-designer/components/DesignManager.tsx
+@@ -1,4 +1,6 @@
+ import React, { useEffect, useState, useCallback } from 'react'
++import { interiorDesignerApi } from '@/domains/interior-designer/io/interior-designer.api'
++import type { InteriorDesign } from '@/domains/interior-designer/io/interior-designer.dto'
+ import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
+ import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
+ import { Button } from '@/components/ui/button'
+@@ -15,12 +17,6 @@ import {
+   DialogTitle,
+ } from '@/components/ui/dialog'
+ 
+-interface Design {
+-  id: string
+-  name: string
+-  updatedAt: string
+-}
+-
+ export const DesignManager: React.FC = () => {
+   const currentProject = useWorldStore(state => state.currentProject)
+   const currentDesignId = useInteriorStore(state => state.currentDesignId)
+@@ -31,7 +27,7 @@ export const DesignManager: React.FC = () => {
+   const renameDesign = useInteriorStore(state => state.renameDesign)
+   const hasUnsavedChanges = useInteriorStore(state => state.hasUnsavedChanges)
+ 
+-  const [designs, setDesigns] = useState<Design[]>([])
++  const [designs, setDesigns] = useState<InteriorDesign[]>([])
+   const [isOpen, setIsOpen] = useState(false)
+   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
+   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false)
+@@ -43,8 +39,7 @@ export const DesignManager: React.FC = () => {
+     if (!currentProject?.id) return
+ 
+     try {
+-      const res = await fetch(`/api/interior-designer/designs?projectId=${currentProject.id}`)
+-      const data = await res.json()
++      const data = await interiorDesignerApi.designs.list({ projectId: currentProject.id })
+       setDesigns(data)
+     } catch (error) {
+       console.error('Failed to fetch designs:', error)
+diff --git a/src/domains/interior-designer/components/UI/PropertiesPanel.tsx b/src/domains/interior-designer/components/UI/PropertiesPanel.tsx
+index 86bc07b..3801b4b 100644
+--- a/src/domains/interior-designer/components/UI/PropertiesPanel.tsx
++++ b/src/domains/interior-designer/components/UI/PropertiesPanel.tsx
+@@ -1,6 +1,7 @@
+ 'use client'
+ 
+ import React from 'react'
++import { interiorDesignerApi } from '@/domains/interior-designer/io/interior-designer.api'
+ import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
+ import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
+ import { SurfaceProperties } from './SurfaceProperties'
+@@ -35,6 +36,9 @@ import {
+ } from '@/components/ui/domain-sidebar'
+ import { getErrorMessage } from '@/lib/error-utils'
+ 
++const isActiveTaskStatus = (status: string) =>
++  ACTIVE_TASK_STATUSES.includes(status as (typeof ACTIVE_TASK_STATUSES)[number])
++
+ export const PropertiesPanel: React.FC = () => {
+   const selectedId = useInteriorStore(state => state.selectedId)
+   const mode = useInteriorStore(state => state.mode)
+@@ -551,8 +555,8 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
+       console.log(`[Retexture] Checking stale operation ${operationId} with taskId ${taskId}`)
+ 
+       try {
+-        const res = await fetch(`/api/interior-designer/retexture/${taskId}`)
+-        if (!res.ok) {
++        const data = await interiorDesignerApi.retexture.getStatus(taskId)
++        if (!data.status) {
+           updateOperation(operationId, {
+             status: 'failed',
+             details: JSON.stringify({
+@@ -563,14 +567,16 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
+           return
+         }
+ 
+-        const data = await res.json()
+-
+         if (data.status === 'COMPLETED' || data.status === 'SUCCESS') {
+           const output = data.output
+           if (output && output.success) {
+             const retexturedUrl = output.retexturedUrl
+ 
+             // Auto-Apply Preview
++            if (!retexturedUrl) {
++              return
++            }
++
+             previewRetexture(objectId, retexturedUrl)
+ 
+             updateOperation(operationId, {
+@@ -581,7 +587,7 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
+               }),
+             })
+           }
+-        } else if (!ACTIVE_TASK_STATUSES.includes(data.status)) {
++        } else if (!isActiveTaskStatus(data.status)) {
+           updateOperation(operationId, {
+             status: 'failed',
+             details: JSON.stringify({
+@@ -623,9 +629,7 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
+ 
+         if (!taskId) return
+ 
+-        const res = await fetch(`/api/interior-designer/retexture/${taskId}`)
+-        if (!res.ok) return
+-        const data = await res.json()
++        const data = await interiorDesignerApi.retexture.getStatus(taskId)
+ 
+         if (data.status === 'COMPLETED' || data.status === 'SUCCESS') {
+           const output = data.output
+@@ -651,7 +655,7 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
+               }),
+             })
+           }
+-        } else if (!ACTIVE_TASK_STATUSES.includes(data.status)) {
++        } else if (!isActiveTaskStatus(data.status)) {
+           updateOperation(operationId, {
+             status: 'failed',
+             details: JSON.stringify({
+@@ -688,18 +692,14 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
+           { currentProject: currentProject?.name }
+         )
+ 
+-        const res = await fetch('/api/interior-designer/retexture', {
+-          method: 'POST',
+-          headers: { 'Content-Type': 'application/json' },
+-          body: JSON.stringify({
+-            modelUrlOrBase64: urlOrBase64,
+-            prompt,
+-            assetId: objectId,
+-            projectId: currentProjectId,
+-            apiKey, // Send the key to the backend
+-          }),
++        const data = await interiorDesignerApi.retexture.start({
++          modelUrlOrBase64: urlOrBase64,
++          prompt,
++          assetId: objectId,
++          projectId: currentProjectId,
++          apiKey,
+         })
+-        const data = await res.json()
++
+         if (data.runId) {
+           // Prepare metadata with original state for undo
+           const metadata: any = {
+@@ -727,8 +727,6 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
+             status: 'in-progress',
+             details: JSON.stringify(metadata),
+           })
+-        } else {
+-          throw new Error(data.error)
+         }
+       } catch (e: unknown) {
+         toast.error('Failed to start retexture')
+@@ -959,21 +957,7 @@ function TextTo3DControls({
+       console.log(`[TextTo3D] Checking stale operation ${operationId} with taskId ${taskId}`)
+ 
+       try {
+-        const res = await fetch(`/api/interior-designer/text-to-3d/${taskId}`)
+-        if (!res.ok) {
+-          console.warn(`[TextTo3D] Failed to fetch status for ${taskId}, marking as failed`)
+-          updateOperation(operationId, {
+-            status: 'failed',
+-            details: JSON.stringify({
+-              taskId,
+-              error: 'Task not found or API error',
+-              failureStatus: 'NOT_FOUND',
+-            }),
+-          })
+-          return
+-        }
+-
+-        const data = await res.json()
++        const data = await interiorDesignerApi.textTo3D.getStatus(taskId)
+         console.log(`[TextTo3D] Stale check result for ${operationId}:`, data.status)
+ 
+         if (data.status === 'COMPLETED' || data.status === 'SUCCESS') {
+@@ -990,7 +974,7 @@ function TextTo3DControls({
+             })
+             console.log(`[TextTo3D] Stale operation ${operationId} was actually completed`)
+           }
+-        } else if (!ACTIVE_TASK_STATUSES.includes(data.status)) {
++        } else if (!isActiveTaskStatus(data.status)) {
+           console.warn(
+             `[TextTo3D] Stale operation ${operationId} has failed status: ${data.status}`
+           )
+@@ -1050,9 +1034,7 @@ function TextTo3DControls({
+ 
+         if (!taskId) return
+ 
+-        const res = await fetch(`/api/interior-designer/text-to-3d/${taskId}`)
+-        if (!res.ok) return
+-        const data = await res.json()
++        const data = await interiorDesignerApi.textTo3D.getStatus(taskId)
+ 
+         console.log(`[TextTo3D] Poll result for ${operationId}:`, data.status)
+ 
+@@ -1071,7 +1053,7 @@ function TextTo3DControls({
+             })
+             console.log(`[TextTo3D] Marked ${operationId} as completed`)
+           }
+-        } else if (!ACTIVE_TASK_STATUSES.includes(data.status)) {
++        } else if (!isActiveTaskStatus(data.status)) {
+           // Task is no longer active (FAILED, CANCELED, etc.)
+           console.error('Text-to-3D task failed or was terminated:', data.status, data.error)
+           updateOperation(operationId, {
+@@ -1142,27 +1124,19 @@ function TextTo3DControls({
+       // Generate seed from master prompt + object prompt
+       const seed = seedFromString(`${masterPrompt}|${prompt}`)
+ 
+-      const res = await fetch('/api/interior-designer/text-to-3d', {
+-        method: 'POST',
+-        headers: { 'Content-Type': 'application/json' },
+-        body: JSON.stringify({
+-          projectId: currentProjectId || 'default',
+-          prompt,
+-          seed,
+-          apiKey,
+-        }),
++      const data = await interiorDesignerApi.textTo3D.start({
++        projectId: currentProjectId || 'default',
++        prompt,
++        seed,
++        apiKey,
+       })
+-
+-      const data = await res.json()
+       if (data.runId) {
+         // Update operation with task ID
+         updateOperation(operationId, {
+           status: 'in-progress',
+           details: JSON.stringify({ taskId: data.runId, prompt, seed }),
+-        })
+-        toast.success('3D generation started!')
+-      } else {
+-        throw new Error(data.error || 'Failed to start generation')
++          })
++          toast.success('3D generation started!')
+       }
+     } catch (e: unknown) {
+       toast.error('Failed to start text-to-3d: ' + getErrorMessage(e))
+diff --git a/src/domains/interior-designer/components/UI/SurfaceProperties.tsx b/src/domains/interior-designer/components/UI/SurfaceProperties.tsx
+index 0e59bc9..3b88718 100644
+--- a/src/domains/interior-designer/components/UI/SurfaceProperties.tsx
++++ b/src/domains/interior-designer/components/UI/SurfaceProperties.tsx
+@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
+ import { Button } from '@/components/ui/button'
+ import { Input } from '@/components/ui/input'
+ import { Slider } from '@/components/ui/slider'
++import { interiorDesignerApi } from '@/domains/interior-designer/io/interior-designer.api'
+ import { useInteriorStore, SurfaceType } from '@/domains/interior-designer/store/useInteriorStore'
+ import {
+   Loader2,
+@@ -246,10 +247,7 @@ export const SurfaceProperties: React.FC = () => {
+       if (!taskId) return
+ 
+       try {
+-        const res = await fetch(`/api/interior-designer/material/${taskId}`)
+-        if (!res.ok) return
+-
+-        const data = await res.json()
++        const data = await interiorDesignerApi.material.getStatus(taskId)
+         const progress = data.metadata?.progress || 0
+         const stage = data.metadata?.stage || 'processing'
+ 
+@@ -324,25 +322,14 @@ export const SurfaceProperties: React.FC = () => {
+         height = 640
+       }
+ 
+-      const res = await fetch('/api/interior-designer/texture', {
+-        method: 'POST',
+-        headers: { 'Content-Type': 'application/json' },
+-        body: JSON.stringify({
+-          prompt,
+-          apiKey,
+-          style,
+-          useSemanticSearch: true, // Always enhance prompts
+-          width,
+-          height,
+-        }),
++      const data = await interiorDesignerApi.texture.generate({
++        prompt,
++        apiKey,
++        style,
++        useSemanticSearch: true,
++        width,
++        height,
+       })
+-
+-      if (!res.ok) {
+-        const err = await res.json()
+-        throw new Error(err.error || 'Generation failed')
+-      }
+-
+-      const data = await res.json()
+       setPreviewUrl(data.imageUrl)
+     } catch (e: unknown) {
+       setError(getErrorMessage(e))
+@@ -414,20 +401,14 @@ export const SurfaceProperties: React.FC = () => {
+         status: 'pending',
+       })
+ 
+-      const res = await fetch('/api/interior-designer/material', {
+-        method: 'POST',
+-        headers: { 'Content-Type': 'application/json' },
+-        body: JSON.stringify({
+-          projectId: currentProject?.id || 'default',
+-          surfaceId: selectedSurface.id,
+-          prompt,
+-          apiKey,
+-          artStyle: 'realistic',
+-          surfaceBounds,
+-        }),
++      const data = await interiorDesignerApi.material.start({
++        projectId: currentProject?.id || 'default',
++        surfaceId: selectedSurface.id,
++        prompt,
++        apiKey,
++        artStyle: 'realistic',
++        surfaceBounds,
+       })
+-
+-      const data = await res.json()
+       if (data.runId) {
+         updateOperation(operationId, {
+           status: 'in-progress',
+@@ -441,8 +422,6 @@ export const SurfaceProperties: React.FC = () => {
+           }),
+         })
+         toast.success('3D generation started! This may take a few minutes.')
+-      } else {
+-        throw new Error(data.error || 'Failed to start generation')
+       }
+     } catch (e: unknown) {
+       setError(getErrorMessage(e))
+@@ -938,7 +917,7 @@ export const SurfaceProperties: React.FC = () => {
+                 variant="ghost"
+                 size="sm"
+                 className="w-full justify-start text-[10px] font-bold uppercase tracking-widest text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 rounded-lg transition-all"
+-                onClick={() => updateSurface(selectedSurface.id, { texture: null })}
++                onClick={() => updateSurface(selectedSurface.id, { texture: undefined })}
+               >
+                 <Trash2 className="w-3.3 h-3.3 mr-2" />
+                 Remove Material
+diff --git a/src/domains/interior-designer/core/index.ts b/src/domains/interior-designer/core/index.ts
+new file mode 100644
+index 0000000..336ce12
+--- /dev/null
++++ b/src/domains/interior-designer/core/index.ts
+@@ -0,0 +1 @@
++export {}
+diff --git a/src/domains/interior-designer/index.ts b/src/domains/interior-designer/index.ts
+new file mode 100644
+index 0000000..e40bfc2
+--- /dev/null
++++ b/src/domains/interior-designer/index.ts
+@@ -0,0 +1,34 @@
++/**
++ * Interior Designer public module API.
++ *
++ * This is the only supported import target for code outside
++ * src/domains/interior-designer.
++ */
++
++export { InteriorDesignerWorkspace } from './ui'
++
++export {
++  INTERIOR_DESIGNER_API_BASE_PATH,
++  INTERIOR_DESIGNER_MODULE_ID,
++  INTERIOR_DESIGNER_ROUTE_SEGMENT,
++} from './interior-designer.config'
++
++export type {
++  Floor,
++  GridResolution,
++  InteractionMode,
++  InteriorState,
++  ObjectGroup,
++  ObjectType,
++  SceneObject,
++  Surface,
++  SurfaceType,
++  TerrainBrushSettings,
++  TerrainBrushType,
++  TerrainMaterialPaintSettings,
++  TerrainMaterialType,
++  TerrainQuality,
++  TerrainSettings,
++  Wall,
++  Water,
++} from './state'
+diff --git a/src/domains/interior-designer/interior-designer.config.ts b/src/domains/interior-designer/interior-designer.config.ts
+new file mode 100644
+index 0000000..3e8006a
+--- /dev/null
++++ b/src/domains/interior-designer/interior-designer.config.ts
+@@ -0,0 +1,3 @@
++export const INTERIOR_DESIGNER_MODULE_ID = 'interior-designer'
++export const INTERIOR_DESIGNER_API_BASE_PATH = '/api/interior-designer'
++export const INTERIOR_DESIGNER_ROUTE_SEGMENT = 'interior-design'
+diff --git a/src/domains/interior-designer/io/index.ts b/src/domains/interior-designer/io/index.ts
+new file mode 100644
+index 0000000..6cc9f03
+--- /dev/null
++++ b/src/domains/interior-designer/io/index.ts
+@@ -0,0 +1,3 @@
++export * from './interior-designer.api'
++export * from './interior-designer.dto'
++export * from './interior-designer.keys'
+diff --git a/src/domains/interior-designer/io/interior-designer.api.ts b/src/domains/interior-designer/io/interior-designer.api.ts
+new file mode 100644
+index 0000000..5544733
+--- /dev/null
++++ b/src/domains/interior-designer/io/interior-designer.api.ts
+@@ -0,0 +1,242 @@
++import { z } from 'zod'
++import { INTERIOR_DESIGNER_API_BASE_PATH } from '../interior-designer.config'
++import {
++  createInteriorDesignRequestSchema,
++  deleteInteriorDesignQuerySchema,
++  deleteInteriorDesignResponseSchema,
++  interiorDesignListResponseSchema,
++  interiorDesignLookupQuerySchema,
++  interiorDesignResponseSchema,
++  interiorMaterialRequestSchema,
++  interiorMaterialResponseSchema,
++  interiorMaterialStatusResponseSchema,
++  interiorRetextureRequestSchema,
++  interiorRetextureResponseSchema,
++  interiorRetextureStatusResponseSchema,
++  interiorTextTo3DRequestSchema,
++  interiorTextTo3DResponseSchema,
++  interiorTextTo3DStatusResponseSchema,
++  interiorTextureRequestSchema,
++  interiorTextureResponseSchema,
++  interiorTexturesRequestSchema,
++  interiorTexturesResponseSchema,
++  updateInteriorDesignRequestSchema,
++  type CreateInteriorDesignRequest,
++  type InteriorDesign,
++  type InteriorMaterialRequest,
++  type InteriorMaterialResponse,
++  type InteriorMaterialStatusResponse,
++  type InteriorRetextureRequest,
++  type InteriorRetextureResponse,
++  type InteriorRetextureStatusResponse,
++  type InteriorTextTo3DRequest,
++  type InteriorTextTo3DResponse,
++  type InteriorTextTo3DStatusResponse,
++  type InteriorTextureRequest,
++  type InteriorTextureResponse,
++  type InteriorTexturesRequest,
++  type InteriorTexturesResponse,
++  type UpdateInteriorDesignRequest,
++} from './interior-designer.dto'
++
++const apiErrorSchema = z.object({
++  error: z.string(),
++})
++
++function buildUrl(path: string, query?: Record<string, string | undefined>): string {
++  if (!query) {
++    return path
++  }
++
++  const searchParams = new URLSearchParams()
++
++  Object.entries(query).forEach(([key, value]) => {
++    if (value) {
++      searchParams.set(key, value)
++    }
++  })
++
++  const queryString = searchParams.toString()
++  return queryString ? `${path}?${queryString}` : path
++}
++
++async function parseResponse<TSchema extends z.ZodTypeAny>(
++  response: Response,
++  schema: TSchema
++): Promise<z.output<TSchema>> {
++  const json = await response.json().catch(() => null)
++
++  if (!response.ok) {
++    const parsedError = apiErrorSchema.safeParse(json)
++    throw new Error(
++      parsedError.success ? parsedError.data.error : `Request failed with status ${response.status}`
++    )
++  }
++
++  return schema.parse(json)
++}
++
++export const interiorDesignerApi = {
++  designs: {
++    list: async ({ projectId }: { projectId: string }): Promise<InteriorDesign[]> => {
++      const parsed = interiorDesignLookupQuerySchema.parse({ projectId })
++
++      return parseResponse(
++        await fetch(
++          buildUrl(`${INTERIOR_DESIGNER_API_BASE_PATH}/designs`, {
++            projectId: parsed.projectId,
++          })
++        ),
++        interiorDesignListResponseSchema
++      )
++    },
++
++    get: async ({ designId }: { designId: string }): Promise<InteriorDesign | null> => {
++      const parsed = interiorDesignLookupQuerySchema.parse({ designId })
++
++      return parseResponse(
++        await fetch(
++          buildUrl(`${INTERIOR_DESIGNER_API_BASE_PATH}/designs`, {
++            designId: parsed.designId,
++          })
++        ),
++        interiorDesignResponseSchema
++      )
++    },
++
++    create: async (input: CreateInteriorDesignRequest): Promise<InteriorDesign | null> => {
++      const parsed = createInteriorDesignRequestSchema.parse(input)
++
++      return parseResponse(
++        await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/designs`, {
++          method: 'POST',
++          headers: { 'Content-Type': 'application/json' },
++          body: JSON.stringify(parsed),
++        }),
++        interiorDesignResponseSchema
++      )
++    },
++
++    update: async (input: UpdateInteriorDesignRequest): Promise<InteriorDesign | null> => {
++      const parsed = updateInteriorDesignRequestSchema.parse(input)
++
++      return parseResponse(
++        await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/designs`, {
++          method: 'PATCH',
++          headers: { 'Content-Type': 'application/json' },
++          body: JSON.stringify(parsed),
++        }),
++        interiorDesignResponseSchema
++      )
++    },
++
++    delete: async ({ id }: { id: string }) => {
++      const parsed = deleteInteriorDesignQuerySchema.parse({ id })
++
++      return parseResponse(
++        await fetch(
++          buildUrl(`${INTERIOR_DESIGNER_API_BASE_PATH}/designs`, {
++            id: parsed.id,
++          }),
++          {
++            method: 'DELETE',
++          }
++        ),
++        deleteInteriorDesignResponseSchema
++      )
++    },
++  },
++
++  texture: {
++    generate: async (input: InteriorTextureRequest): Promise<InteriorTextureResponse> => {
++      const parsed = interiorTextureRequestSchema.parse(input)
++
++      return parseResponse(
++        await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/texture`, {
++          method: 'POST',
++          headers: { 'Content-Type': 'application/json' },
++          body: JSON.stringify(parsed),
++        }),
++        interiorTextureResponseSchema
++      )
++    },
++  },
++
++  textures: {
++    generate: async (input: InteriorTexturesRequest): Promise<InteriorTexturesResponse> => {
++      const parsed = interiorTexturesRequestSchema.parse(input)
++
++      return parseResponse(
++        await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/textures`, {
++          method: 'POST',
++          headers: { 'Content-Type': 'application/json' },
++          body: JSON.stringify(parsed),
++        }),
++        interiorTexturesResponseSchema
++      )
++    },
++  },
++
++  retexture: {
++    start: async (input: InteriorRetextureRequest): Promise<InteriorRetextureResponse> => {
++      const parsed = interiorRetextureRequestSchema.parse(input)
++
++      return parseResponse(
++        await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/retexture`, {
++          method: 'POST',
++          headers: { 'Content-Type': 'application/json' },
++          body: JSON.stringify(parsed),
++        }),
++        interiorRetextureResponseSchema
++      )
++    },
++
++    getStatus: async (runId: string): Promise<InteriorRetextureStatusResponse> =>
++      parseResponse(
++        await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/retexture/${runId}`),
++        interiorRetextureStatusResponseSchema
++      ),
++  },
++
++  textTo3D: {
++    start: async (input: InteriorTextTo3DRequest): Promise<InteriorTextTo3DResponse> => {
++      const parsed = interiorTextTo3DRequestSchema.parse(input)
++
++      return parseResponse(
++        await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/text-to-3d`, {
++          method: 'POST',
++          headers: { 'Content-Type': 'application/json' },
++          body: JSON.stringify(parsed),
++        }),
++        interiorTextTo3DResponseSchema
++      )
++    },
++
++    getStatus: async (taskId: string): Promise<InteriorTextTo3DStatusResponse> =>
++      parseResponse(
++        await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/text-to-3d/${taskId}`),
++        interiorTextTo3DStatusResponseSchema
++      ),
++  },
++
++  material: {
++    start: async (input: InteriorMaterialRequest): Promise<InteriorMaterialResponse> => {
++      const parsed = interiorMaterialRequestSchema.parse(input)
++
++      return parseResponse(
++        await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/material`, {
++          method: 'POST',
++          headers: { 'Content-Type': 'application/json' },
++          body: JSON.stringify(parsed),
++        }),
++        interiorMaterialResponseSchema
++      )
++    },
++
++    getStatus: async (taskId: string): Promise<InteriorMaterialStatusResponse> =>
++      parseResponse(
++        await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/material/${taskId}`),
++        interiorMaterialStatusResponseSchema
++      ),
++  },
++}
+diff --git a/src/domains/interior-designer/io/interior-designer.dto.ts b/src/domains/interior-designer/io/interior-designer.dto.ts
+new file mode 100644
+index 0000000..6de2db1
+--- /dev/null
++++ b/src/domains/interior-designer/io/interior-designer.dto.ts
+@@ -0,0 +1,314 @@
++import { z } from 'zod'
++
++const dateLikeSchema = z.union([z.string(), z.date()]).transform(value => {
++  if (value instanceof Date) {
++    return value.toISOString()
++  }
++
++  return value
++})
++
++const vector3Schema = z.tuple([z.number(), z.number(), z.number()])
++
++const gridResolutionSchema = z.enum(['low', 'medium', 'high'])
++const terrainQualitySchema = z.enum(['low', 'medium', 'high'])
++const surfaceTypeSchema = z.enum([
++  'grass',
++  'water',
++  'road',
++  'dirt',
++  'pavement',
++  'mars',
++  'sand',
++  'rock',
++  'wall',
++])
++const textureStyleSchema = z.enum([
++  'painterly',
++  'realistic',
++  'sketch',
++  'decay',
++  'metallic',
++  'organic',
++])
++const meshyArtStyleSchema = z.enum(['realistic', 'sculpture'])
++const topologySchema = z.enum(['triangle', 'quad'])
++
++export const interiorWallSchema = z
++  .object({
++    id: z.string(),
++    start: vector3Schema,
++    end: vector3Schema,
++    height: z.number(),
++    thickness: z.number(),
++    texture: z.string().optional(),
++    level: z.number().int().optional(),
++  })
++  .passthrough()
++
++export const interiorFloorSchema = z
++  .object({
++    id: z.string(),
++    points: z.array(vector3Schema),
++    y: z.number(),
++    texture: z.string().optional(),
++    level: z.number().int().optional(),
++  })
++  .passthrough()
++
++export const interiorWaterSchema = z
++  .object({
++    id: z.string(),
++    points: z.array(vector3Schema),
++    y: z.number(),
++  })
++  .passthrough()
++
++export const interiorSurfaceSchema = z
++  .object({
++    id: z.string(),
++    type: surfaceTypeSchema,
++    points: z.array(vector3Schema),
++    isPath: z.boolean(),
++    curved: z.boolean(),
++    width: z.number().optional(),
++    layerIndex: z.number().int(),
++    texture: z.string().optional(),
++    textureScale: z.number().optional(),
++    roughness: z.number().optional(),
++    metalness: z.number().optional(),
++    roundness: z.number().optional(),
++    height: z.number().optional(),
++    isVertical: z.boolean().optional(),
++    rotation: vector3Schema.optional(),
++    level: z.number().int().optional(),
++  })
++  .passthrough()
++
++export const interiorSceneObjectSchema = z
++  .object({
++    id: z.string(),
++    modelUrl: z.string(),
++    position: vector3Schema,
++    rotation: vector3Schema,
++    scale: vector3Schema,
++    objectType: z.enum(['generic', 'window', 'door']).optional(),
++    color: z.string().optional(),
++    groupId: z.string().optional(),
++    isLoading: z.boolean().optional(),
++    thumbnailUrl: z.string().optional(),
++    targetDimensions: vector3Schema.optional(),
++    level: z.number().int().optional(),
++  })
++  .passthrough()
++
++export const interiorTerrainSettingsSchema = z
++  .object({
++    baseGroundHeight: z.number().optional(),
++    waterSurfaceHeight: z.number().optional(),
++    showWaterPlane: z.boolean().optional(),
++    gridResolution: gridResolutionSchema.optional(),
++    quality: terrainQualitySchema.optional(),
++    groundColor: z.string().optional(),
++    waterColor: z.string().optional(),
++    waterOpacity: z.number().optional(),
++    sunAngle: z.number().optional(),
++    heightmapSize: z.number().int().optional(),
++    heightmap: z.array(z.number()).nullable().optional(),
++    heightmapVersion: z.number().int().optional(),
++    materialMap: z.array(z.number().int()).nullable().optional(),
++  })
++  .passthrough()
++
++export const interiorSceneDataSchema = z
++  .object({
++    walls: z.array(interiorWallSchema).default([]),
++    floors: z.array(interiorFloorSchema).default([]),
++    water: z.array(interiorWaterSchema).default([]),
++    surfaces: z.array(interiorSurfaceSchema).default([]),
++    objects: z.array(interiorSceneObjectSchema).default([]),
++    activeLevel: z.number().int().default(0),
++    terrainSettings: interiorTerrainSettingsSchema.nullable().optional(),
++  })
++  .passthrough()
++
++export const interiorDesignSchema = z
++  .object({
++    id: z.string(),
++    projectId: z.string(),
++    userId: z.string(),
++    name: z.string(),
++    sceneData: interiorSceneDataSchema,
++    createdAt: dateLikeSchema,
++    updatedAt: dateLikeSchema,
++  })
++  .passthrough()
++
++export const interiorDesignListResponseSchema = z.array(interiorDesignSchema)
++export const interiorDesignResponseSchema = interiorDesignSchema.nullable()
++
++export const interiorDesignLookupQuerySchema = z
++  .object({
++    projectId: z.string().min(1).optional(),
++    designId: z.string().min(1).optional(),
++  })
++  .refine(data => data.projectId || data.designId, {
++    message: 'Project ID or Design ID is required',
++  })
++
++export const createInteriorDesignRequestSchema = z.object({
++  projectId: z.string().min(1),
++  name: z.string().min(1),
++  sceneData: interiorSceneDataSchema,
++})
++
++export const updateInteriorDesignRequestSchema = z.object({
++  id: z.string().min(1),
++  name: z.string().min(1).optional(),
++  sceneData: interiorSceneDataSchema.optional(),
++})
++
++export const deleteInteriorDesignQuerySchema = z.object({
++  id: z.string().min(1),
++})
++
++export const deleteInteriorDesignResponseSchema = z.object({
++  success: z.literal(true),
++})
++
++export const interiorTextureRequestSchema = z.object({
++  prompt: z.string().min(1),
++  apiKey: z.string().min(1),
++  style: textureStyleSchema.optional(),
++  useSemanticSearch: z.boolean().optional(),
++  width: z.number().int().positive().optional(),
++  height: z.number().int().positive().optional(),
++})
++
++export const interiorTextureResponseSchema = z.object({
++  imageUrl: z.string().min(1),
++})
++
++export const interiorTexturesRequestSchema = z.object({
++  prompt: z.string().min(1),
++})
++
++export const interiorTexturesResponseSchema = z.object({
++  url: z.string().min(1),
++})
++
++export const interiorRetextureRequestSchema = z.object({
++  modelUrlOrBase64: z.string().min(1),
++  prompt: z.string().min(1),
++  assetId: z.string().optional(),
++  projectId: z.string().min(1),
++  apiKey: z.string().optional(),
++})
++
++export const interiorRetextureResponseSchema = z.object({
++  runId: z.string().min(1),
++})
++
++export const interiorRetextureParamsSchema = z.object({
++  runId: z.string().min(1),
++})
++
++export const interiorGenerationMetadataSchema = z
++  .object({
++    progress: z.number().optional(),
++    stage: z.string().optional(),
++  })
++  .passthrough()
++
++export const interiorGenerationOutputSchema = z
++  .object({
++    success: z.boolean().optional(),
++    modelUrl: z.string().optional(),
++    thumbnailUrl: z.string().optional(),
++    retexturedUrl: z.string().optional(),
++    url: z.string().optional(),
++    assetId: z.string().optional(),
++  })
++  .passthrough()
++
++export const interiorRetextureStatusResponseSchema = z.object({
++  status: z.string(),
++  output: interiorGenerationOutputSchema.nullable().optional(),
++  error: z.unknown().optional(),
++})
++
++export const interiorTextTo3DRequestSchema = z.object({
++  projectId: z.string().min(1),
++  prompt: z.string().min(1),
++  seed: z.number().int().optional(),
++  apiKey: z.string().optional(),
++  artStyle: meshyArtStyleSchema.optional(),
++  enablePbr: z.boolean().optional(),
++  targetPolycount: z.number().int().positive().optional(),
++  topology: topologySchema.optional(),
++})
++
++export const interiorTextTo3DResponseSchema = z.object({
++  success: z.literal(true),
++  runId: z.string().min(1),
++  publicAccessToken: z.string().min(1),
++})
++
++export const interiorTaskParamsSchema = z.object({
++  taskId: z.string().min(1),
++})
++
++export const interiorTextTo3DStatusResponseSchema = z.object({
++  status: z.string(),
++  output: interiorGenerationOutputSchema.nullable().optional(),
++  error: z.unknown().optional(),
++  metadata: interiorGenerationMetadataSchema.optional(),
++})
++
++export const interiorMaterialSurfaceBoundsSchema = z.object({
++  width: z.number(),
++  depth: z.number(),
++  centerX: z.number(),
++  centerZ: z.number(),
++})
++
++export const interiorMaterialRequestSchema = z.object({
++  projectId: z.string().min(1),
++  surfaceId: z.string().min(1),
++  prompt: z.string().min(1),
++  apiKey: z.string().optional(),
++  artStyle: meshyArtStyleSchema.optional(),
++  surfaceBounds: interiorMaterialSurfaceBoundsSchema.optional(),
++})
++
++export const interiorMaterialResponseSchema = z.object({
++  success: z.literal(true),
++  runId: z.string().min(1),
++  publicAccessToken: z.string().min(1),
++})
++
++export const interiorMaterialStatusResponseSchema = z.object({
++  status: z.string(),
++  output: interiorGenerationOutputSchema.nullable().optional(),
++  error: z.unknown().optional(),
++  metadata: interiorGenerationMetadataSchema.optional(),
++})
++
++export type InteriorDesign = z.infer<typeof interiorDesignSchema>
++export type InteriorSceneData = z.infer<typeof interiorSceneDataSchema>
++export type CreateInteriorDesignRequest = z.infer<typeof createInteriorDesignRequestSchema>
++export type UpdateInteriorDesignRequest = z.infer<typeof updateInteriorDesignRequestSchema>
++export type DeleteInteriorDesignResponse = z.infer<typeof deleteInteriorDesignResponseSchema>
++export type InteriorTextureRequest = z.infer<typeof interiorTextureRequestSchema>
++export type InteriorTextureResponse = z.infer<typeof interiorTextureResponseSchema>
++export type InteriorTexturesRequest = z.infer<typeof interiorTexturesRequestSchema>
++export type InteriorTexturesResponse = z.infer<typeof interiorTexturesResponseSchema>
++export type InteriorRetextureRequest = z.infer<typeof interiorRetextureRequestSchema>
++export type InteriorRetextureResponse = z.infer<typeof interiorRetextureResponseSchema>
++export type InteriorRetextureStatusResponse = z.infer<typeof interiorRetextureStatusResponseSchema>
++export type InteriorTextTo3DRequest = z.infer<typeof interiorTextTo3DRequestSchema>
++export type InteriorTextTo3DResponse = z.infer<typeof interiorTextTo3DResponseSchema>
++export type InteriorTextTo3DStatusResponse = z.infer<typeof interiorTextTo3DStatusResponseSchema>
++export type InteriorMaterialRequest = z.infer<typeof interiorMaterialRequestSchema>
++export type InteriorMaterialResponse = z.infer<typeof interiorMaterialResponseSchema>
++export type InteriorMaterialStatusResponse = z.infer<typeof interiorMaterialStatusResponseSchema>
+diff --git a/src/domains/interior-designer/io/interior-designer.keys.ts b/src/domains/interior-designer/io/interior-designer.keys.ts
+new file mode 100644
+index 0000000..e283bd2
+--- /dev/null
++++ b/src/domains/interior-designer/io/interior-designer.keys.ts
+@@ -0,0 +1,14 @@
++export const interiorDesignerKeys = {
++  all: ['interior-designer'] as const,
++
++  designs: () => [...interiorDesignerKeys.all, 'designs'] as const,
++  designList: (projectId: string) => [...interiorDesignerKeys.designs(), 'list', projectId] as const,
++  design: (designId: string) => [...interiorDesignerKeys.designs(), 'detail', designId] as const,
++
++  textures: () => [...interiorDesignerKeys.all, 'textures'] as const,
++  textureGeneration: (prompt: string) => [...interiorDesignerKeys.textures(), 'generate', prompt] as const,
++
++  retexture: (runId: string) => [...interiorDesignerKeys.all, 'retexture', runId] as const,
++  textTo3D: (taskId: string) => [...interiorDesignerKeys.all, 'text-to-3d', taskId] as const,
++  material: (taskId: string) => [...interiorDesignerKeys.all, 'material', taskId] as const,
++}
+diff --git a/src/domains/interior-designer/services/index.ts b/src/domains/interior-designer/services/index.ts
+new file mode 100644
+index 0000000..336ce12
+--- /dev/null
++++ b/src/domains/interior-designer/services/index.ts
+@@ -0,0 +1 @@
++export {}
+diff --git a/src/domains/interior-designer/state/index.ts b/src/domains/interior-designer/state/index.ts
+new file mode 100644
+index 0000000..d14a226
+--- /dev/null
++++ b/src/domains/interior-designer/state/index.ts
+@@ -0,0 +1,21 @@
++export { TERRAIN_QUALITY_RESOLUTION, useInteriorStore } from '../store/useInteriorStore'
++
++export type {
++  Floor,
++  GridResolution,
++  InteractionMode,
++  InteriorState,
++  ObjectGroup,
++  ObjectType,
++  SceneObject,
++  Surface,
++  SurfaceType,
++  TerrainBrushSettings,
++  TerrainBrushType,
++  TerrainMaterialPaintSettings,
++  TerrainMaterialType,
++  TerrainQuality,
++  TerrainSettings,
++  Wall,
++  Water,
++} from '../store/useInteriorStore'
+diff --git a/src/domains/interior-designer/state/queries/index.ts b/src/domains/interior-designer/state/queries/index.ts
+new file mode 100644
+index 0000000..336ce12
+--- /dev/null
++++ b/src/domains/interior-designer/state/queries/index.ts
+@@ -0,0 +1 @@
++export {}
+diff --git a/src/domains/interior-designer/store/useInteriorStore.ts b/src/domains/interior-designer/store/useInteriorStore.ts
+index 5cd7b2f..d28850c 100644
+--- a/src/domains/interior-designer/store/useInteriorStore.ts
++++ b/src/domains/interior-designer/store/useInteriorStore.ts
+@@ -1,7 +1,8 @@
+ import { create } from 'zustand'
+-import { useShallow } from 'zustand/shallow'
+ import { persist } from 'zustand/middleware'
+ import { v4 as uuidv4 } from 'uuid'
++import { interiorDesignerApi } from '@/domains/interior-designer/io/interior-designer.api'
++import { interiorSceneDataSchema, type InteriorSceneData } from '@/domains/interior-designer/io'
+ import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
+ import * as THREE from 'three'
+ 
+@@ -1308,10 +1309,12 @@ export const useInteriorStore = create<InteriorState>()(
+             })
+ 
+             // Find a Start Segment (has an endpoint with count 1)
+-            let currentSeg = segments.find(
+-              s => pointCounts.get(coordKey(s.p1)) === 1 || pointCounts.get(coordKey(s.p2)) === 1
+-            )
+-            if (!currentSeg) currentSeg = segments[0] // Loop or complex? Just pick one.
++            const startSeg =
++              segments.find(
++                s => pointCounts.get(coordKey(s.p1)) === 1 || pointCounts.get(coordKey(s.p2)) === 1
++              ) ?? segments[0]
++            if (!startSeg) return {}
++            let currentSeg = startSeg
+ 
+             const orderedPoints: [number, number, number][] = []
+ 
+@@ -1319,8 +1322,6 @@ export const useInteriorStore = create<InteriorState>()(
+             // If p1 is the "dangling" end (count 1), start there.
+             let currentPoint =
+               pointCounts.get(coordKey(currentSeg.p1)) === 1 ? currentSeg.p1 : currentSeg.p2
+-            // If loop (all 2s), just pick p1.
+-            if (!currentSeg) return {} // Should not happen
+             if (
+               pointCounts.get(coordKey(currentSeg.p1)) !== 1 &&
+               pointCounts.get(coordKey(currentSeg.p2)) !== 1
+@@ -1456,7 +1457,7 @@ export const useInteriorStore = create<InteriorState>()(
+           const state = get()
+           set({ isSaving: true })
+ 
+-          const sceneData = {
++          const sceneData: InteriorSceneData = interiorSceneDataSchema.parse({
+             walls: state.walls,
+             floors: state.floors,
+             water: state.water,
+@@ -1477,21 +1478,20 @@ export const useInteriorStore = create<InteriorState>()(
+                 ? Array.from(state.terrainSettings.materialMap)
+                 : null,
+             },
+-          }
++          })
+ 
+           try {
+             if (state.currentDesignId) {
+-              // Update existing
+-              const res = await fetch('/api/interior-designer/designs', {
+-                method: 'PATCH',
+-                headers: { 'Content-Type': 'application/json' },
+-                body: JSON.stringify({
+-                  id: state.currentDesignId,
+-                  name: name || state.currentDesignName,
+-                  sceneData,
+-                }),
++              const updated = await interiorDesignerApi.designs.update({
++                id: state.currentDesignId,
++                name: name || state.currentDesignName || 'Untitled Design',
++                sceneData,
+               })
+-              const updated = await res.json()
++
++              if (!updated) {
++                throw new Error('Failed to update design')
++              }
++
+               set({
+                 currentDesignName: updated.name,
+                 lastSaved: new Date(),
+@@ -1499,17 +1499,16 @@ export const useInteriorStore = create<InteriorState>()(
+                 isSaving: false,
+               })
+             } else {
+-              // Create new
+-              const res = await fetch('/api/interior-designer/designs', {
+-                method: 'POST',
+-                headers: { 'Content-Type': 'application/json' },
+-                body: JSON.stringify({
+-                  projectId,
+-                  name: name || 'Untitled Design',
+-                  sceneData,
+-                }),
++              const newDesign = await interiorDesignerApi.designs.create({
++                projectId,
++                name: name || 'Untitled Design',
++                sceneData,
+               })
+-              const newDesign = await res.json()
++
++              if (!newDesign) {
++                throw new Error('Failed to create design')
++              }
++
+               set({
+                 currentDesignId: newDesign.id,
+                 currentDesignName: newDesign.name,
+@@ -1526,15 +1525,16 @@ export const useInteriorStore = create<InteriorState>()(
+ 
+         loadDesign: async (designId: string) => {
+           try {
+-            const res = await fetch(`/api/interior-designer/designs?designId=${designId}`)
+-            const design = await res.json()
++            const design = await interiorDesignerApi.designs.get({ designId })
+ 
+             if (design && design.sceneData) {
+               const savedTerrain = design.sceneData.terrainSettings
+               // Normalize loaded objects to ensure Y=0 (snapped to bottom of level)
+-              const normalizedObjects = (design.sceneData.objects || []).map((obj: SceneObject) => ({
++              const normalizedObjects: SceneObject[] = (design.sceneData.objects || []).map(obj => ({
+                 ...obj,
+-                position: obj.position ? [obj.position[0], 0, obj.position[2]] : [0, 0, 0],
++                position: obj.position
++                  ? ([obj.position[0], 0, obj.position[2]] as [number, number, number])
++                  : [0, 0, 0],
+               }))
+               set({
+                 currentDesignId: design.id,
+@@ -1577,18 +1577,10 @@ export const useInteriorStore = create<InteriorState>()(
+         },
+ 
+         renameDesign: async (designId: string, newName: string) => {
+-          const supabase = (
+-            await import('@/infrastructure/storage/supabaseClient')
+-          ).getSupabaseClient()
+-          const { error } = await supabase
+-            .from('interior_designs')
+-            .update({ name: newName })
+-            .eq('id', designId)
+-
+-          if (error) {
+-            console.error('Failed to rename design:', error)
+-            throw error
+-          }
++          await interiorDesignerApi.designs.update({
++            id: designId,
++            name: newName,
++          })
+ 
+           // If we are currently editing this design, update local name
+           if (get().currentDesignId === designId) {
+@@ -1598,9 +1590,7 @@ export const useInteriorStore = create<InteriorState>()(
+ 
+         deleteDesign: async (designId: string) => {
+           try {
+-            await fetch(`/api/interior-designer/designs?id=${designId}`, {
+-              method: 'DELETE',
+-            })
++            await interiorDesignerApi.designs.delete({ id: designId })
+ 
+             // If we deleted the current design, reset to new
+             if (get().currentDesignId === designId) {
+diff --git a/src/domains/interior-designer/tasks/index.ts b/src/domains/interior-designer/tasks/index.ts
+new file mode 100644
+index 0000000..336ce12
+--- /dev/null
++++ b/src/domains/interior-designer/tasks/index.ts
+@@ -0,0 +1 @@
++export {}
+diff --git a/src/domains/interior-designer/ui/InteriorDesignerWorkspace/InteriorDesignerWorkspace.tsx b/src/domains/interior-designer/ui/InteriorDesignerWorkspace/InteriorDesignerWorkspace.tsx
+new file mode 100644
+index 0000000..1ad354e
+--- /dev/null
++++ b/src/domains/interior-designer/ui/InteriorDesignerWorkspace/InteriorDesignerWorkspace.tsx
+@@ -0,0 +1,246 @@
++'use client'
++
++import React, { useEffect, useCallback } from 'react'
++import dynamic from 'next/dynamic'
++import { Loader2, Download, Save, Focus } from 'lucide-react'
++import { debounce } from 'lodash'
++import { Button } from '@/components/ui/button'
++import { DomainSidebar } from '@/components/ui/domain-sidebar'
++import { DesignManager } from '@/domains/interior-designer/components/DesignManager'
++import { InteriorRightSidebar } from '@/domains/interior-designer/components/UI/InteriorRightSidebar'
++import { Toolbar } from '@/domains/interior-designer/components/UI/Toolbar'
++import { useInteriorStore } from '@/domains/interior-designer/state'
++import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
++import { TOUR_STEP_IDS } from '@/lib/tour-constants'
++import { cn } from '@/lib/utils'
++import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
++
++// Dynamic import with SSR disabled to avoid React reconciler issues with Three.js
++const InteriorCanvas = dynamic(
++  () =>
++    import('@/domains/interior-designer/components/InteriorCanvas').then(mod => ({
++      default: mod.InteriorCanvas,
++    })),
++  {
++    ssr: false,
++    loading: () => (
++      <div className="w-full h-full flex items-center justify-center bg-slate-900">
++        <Loader2 className="animate-spin text-muted-foreground" size={48} />
++      </div>
++    ),
++  }
++)
++
++export function InteriorDesignerWorkspace() {
++  useProjectFromUrl()
++
++  const setExportRequested = useInteriorStore(state => state.setExportRequested)
++  const saveDesign = useInteriorStore(state => state.saveDesign)
++  const hasUnsavedChanges = useInteriorStore(state => state.hasUnsavedChanges)
++  const isSaving = useInteriorStore(state => state.isSaving)
++  const setCameraResetRequested = useInteriorStore(state => state.setCameraResetRequested)
++  const addObject = useInteriorStore(state => state.addObject)
++  const currentProject = useWorldStore(state => state.currentProject)
++
++  const handleManualSave = async () => {
++    if (currentProject?.id) {
++      await saveDesign(currentProject.id)
++    }
++  }
++
++  // Auto-save debounced (2 seconds after last change)
++  const debouncedSave = useCallback(
++    debounce(() => {
++      if (currentProject?.id && hasUnsavedChanges) {
++        saveDesign(currentProject.id)
++      }
++    }, 2000),
++    [currentProject?.id, hasUnsavedChanges, saveDesign]
++  )
++
++  useEffect(() => {
++    if (hasUnsavedChanges) {
++      debouncedSave()
++    }
++  }, [hasUnsavedChanges, debouncedSave])
++
++  const zenMode = useInteriorStore(state => state.zenMode)
++  const toggleZenMode = useInteriorStore(state => state.toggleZenMode)
++
++  // keyboard shortcuts
++  useEffect(() => {
++    const handleKeyDown = (e: KeyboardEvent) => {
++      if (e.key === 'Tab') {
++        e.preventDefault()
++        toggleZenMode()
++      }
++    }
++    window.addEventListener('keydown', handleKeyDown)
++    return () => window.removeEventListener('keydown', handleKeyDown)
++  }, [toggleZenMode])
++
++  return (
++    <div className="w-full h-screen flex flex-col bg-black text-zinc-200 font-sans selection:bg-indigo-500/30 overflow-hidden">
++      <header
++        className={cn(
++          'h-14 border-b border-border/50 bg-zinc-950/50 backdrop-blur-md flex items-center px-6 justify-between relative z-50 transition-all duration-500',
++          zenMode && '-translate-y-full opacity-0'
++        )}
++      >
++        <div className="flex items-center gap-4">
++          <h1 className="font-mono font-bold text-sm tracking-widest text-zinc-100 uppercase">
++            Interior Designer
++          </h1>
++          <DesignManager />
++        </div>
++        <div className="flex items-center gap-2">
++          {hasUnsavedChanges && !isSaving && (
++            <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-yellow-500/80 flex items-center gap-1.5 mr-2">
++              <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(234,179,8,0.5)]" />
++              Unsaved
++            </div>
++          )}
++          {isSaving && (
++            <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-400 animate-pulse mr-2">
++              Saving...
++            </div>
++          )}
++          <Button
++            size="sm"
++            variant="ghost"
++            className="hover:bg-white/5 font-mono text-[10px] uppercase tracking-widest"
++            onClick={handleManualSave}
++            disabled={!hasUnsavedChanges || !currentProject}
++          >
++            <Save className="w-3.5 h-3.5 mr-2" />
++            Save
++          </Button>
++          <Button
++            size="sm"
++            variant="ghost"
++            className="hover:bg-white/5 font-mono text-[10px] uppercase tracking-widest"
++            onClick={() => setCameraResetRequested(true)}
++          >
++            <Focus className="w-3.5 h-3.5 mr-2" />
++            Reset View
++          </Button>
++          <div id={TOUR_STEP_IDS.INTERIOR_EXPORT} className="flex items-center gap-2">
++            <Button
++              size="sm"
++              variant="ghost"
++              className="hover:bg-white/5 font-mono text-[10px] uppercase tracking-widest"
++              onClick={() => setExportRequested(true)}
++            >
++              <Download className="w-3.5 h-3.5 mr-2 text-indigo-400" />
++              GLTF
++            </Button>
++            <Button
++              size="sm"
++              variant="ghost"
++              className="hover:bg-white/5 font-mono text-[10px] uppercase tracking-widest border border-indigo-500/20"
++              onClick={async () => {
++                const { walls, objects } = useInteriorStore.getState()
++                const zipBlob =
++                  await import('@/domains/interior-designer/utils/UnityExporter').then(m =>
++                    m.UnityExporter.createExportZip({ walls, objects })
++                  )
++
++                const url = URL.createObjectURL(zipBlob)
++                const link = document.createElement('a')
++                link.href = url
++                link.download = 'interior-design-unity.zip'
++                document.body.appendChild(link)
++                link.click()
++                document.body.removeChild(link)
++              }}
++            >
++              <Download className="w-3.5 h-3.5 mr-2 text-indigo-400" />
++              Unity
++            </Button>
++          </div>
++        </div>
++      </header>
++
++      <div className="flex-1 flex relative overflow-hidden">
++        <div
++          className={cn(
++            'transition-all duration-700 ease-in-out h-full',
++            zenMode ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0'
++          )}
++        >
++          <DomainSidebar
++            header={null}
++            position="left"
++            storageKey="interior-toolbar"
++            defaultWidth={80}
++            rawContent
++          >
++            <div id={TOUR_STEP_IDS.INTERIOR_TOOLBAR} className="flex-1 py-4">
++              <Toolbar />
++            </div>
++          </DomainSidebar>
++        </div>
++
++        <div className="flex-1 relative bg-black overflow-hidden">
++          <div
++            className="absolute inset-0 z-0"
++            id={TOUR_STEP_IDS.INTERIOR_CANVAS}
++            data-html2canvas-ignore="true"
++            onDragOver={e => {
++              e.preventDefault()
++              e.dataTransfer.dropEffect = 'copy'
++            }}
++            onDrop={e => {
++              e.preventDefault()
++              try {
++                const data = JSON.parse(e.dataTransfer.getData('application/json'))
++                if (data.type === 'asset' && data.glbUrl) {
++                  addObject({
++                    modelUrl: data.glbUrl,
++                    position: [0, 0, 0],
++                    rotation: [0, 0, 0],
++                    scale: [1, 1, 1],
++                    isLoading: true,
++                    thumbnailUrl: data.thumbnailUrl,
++                  })
++                  console.log('Dropped asset:', data)
++                }
++              } catch (err) {
++                console.error('Drop error:', err)
++              }
++            }}
++          >
++            <InteriorCanvas />
++          </div>
++
++          {!zenMode && (
++            <div className="absolute bottom-6 left-6 text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500/40 hover:text-zinc-400 transition-colors cursor-default select-none pointer-events-none z-10">
++              Press{' '}
++              <span className="px-1.5 py-0.5 border border-zinc-700/50 rounded bg-zinc-800/50 text-zinc-300">
++                Tab
++              </span>{' '}
++              for Zen Mode
++            </div>
++          )}
++        </div>
++
++        <div
++          className={cn(
++            'transition-all duration-700 ease-in-out h-full',
++            zenMode ? 'translate-x-full opacity-0 pointer-events-none' : 'translate-x-0'
++          )}
++        >
++          <DomainSidebar
++            header={null}
++            position="right"
++            storageKey="interior-properties"
++            defaultWidth={400}
++            rawContent
++          >
++            <InteriorRightSidebar />
++          </DomainSidebar>
++        </div>
++      </div>
++    </div>
++  )
++}
+diff --git a/src/domains/interior-designer/ui/InteriorDesignerWorkspace/index.ts b/src/domains/interior-designer/ui/InteriorDesignerWorkspace/index.ts
+new file mode 100644
+index 0000000..6f0f597
+--- /dev/null
++++ b/src/domains/interior-designer/ui/InteriorDesignerWorkspace/index.ts
+@@ -0,0 +1 @@
++export { InteriorDesignerWorkspace } from './InteriorDesignerWorkspace'
+diff --git a/src/domains/interior-designer/ui/index.ts b/src/domains/interior-designer/ui/index.ts
+new file mode 100644
+index 0000000..5f2f1c0
+--- /dev/null
++++ b/src/domains/interior-designer/ui/index.ts
+@@ -0,0 +1 @@
++export * from './InteriorDesignerWorkspace'

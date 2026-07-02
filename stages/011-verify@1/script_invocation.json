@@ -1,0 +1,5 @@
+{
+  "script": "set -euo pipefail; node scripts/fabro-verify.mjs",
+  "command": "exec 2>&1\nset -euo pipefail; node scripts/fabro-verify.mjs",
+  "language": "shell"
+}
