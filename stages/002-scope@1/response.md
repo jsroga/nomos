@@ -1,0 +1,1 @@
+I'll run the scope commands to inventory the current `src/` layout.
