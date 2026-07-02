@@ -1426,7 +1426,7 @@
     "kind": "running"
   },
   "status_updated_at": "2026-07-02T08:38:44.434220Z",
-  "last_event_at": "2026-07-02T08:38:58.271540Z",
+  "last_event_at": "2026-07-02T08:41:43.651438Z",
   "pending_control": null,
   "checkpoints": [
     {
@@ -1471,13 +1471,107 @@
       "diff": {}
     },
     {
-      "seq": 0,
+      "seq": 51,
       "checkpoint": {
-        "timestamp": "2026-07-02T08:38:58.358154Z",
+        "timestamp": "2026-07-02T08:39:01.695369Z",
         "current_node": "scope",
         "completed_nodes": [
           "start",
           "scope"
+        ],
+        "node_retries": {},
+        "context_values": {
+          "internal.thread_id": "review",
+          "graph.stall_timeout": "1800000ms",
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-fable-5; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build          { model: codex;             reasoning_effort: high;   }\n            .buildskilled  { model: claude-sonnet-4-6; reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
+          "internal.retry_count.scope": 0,
+          "internal.work_dir": "/workspace/kurvitza",
+          "graph.goal": "Audit and clean up the **root `src/` layout** — not a single domain module.\n\n**Problem:** `src/` has too many top-level folders (20+). Many predate the unified\narchitecture and overlap with the target `shared/` layer or belong inside\n`domains/<module>/`.\n\n**Target (from `docs/unified/ARCHITECTURE.md` §3):**\n\n```\nsrc/\n├─ domains/<module>/     # vertical slices — unit of ownership\n├─ shared/               # cross-module: agent-kernel, jobs, data, auth, observability, errors\n├─ components/ui/        # Radix design system primitives\n├─ db/                   # Drizzle schema + client\n├─ trigger/              # thin re-export registry only\n└─ app/                  # Next.js routes — thin glue only\n```\n\n**In scope for this plan:**\n\n- Inventory every current top-level folder under `src/` (agent-core, app, components,\n  config, constants, content, db, domains, evaluation, hooks, infrastructure, lib, mcp,\n  pages, prompts, services, store, trigger, types, workflows).\n- For each folder: keep at root, merge into `shared/`, move into a domain, or delete\n  (with evidence: import graph, duplicate responsibility).\n- Propose a **phased migration** — no big-bang; preserve builds between phases.\n- Call out what must stay at root vs what is legacy parallel to `shared/`\n  (`lib`, `agent-core`, `infrastructure`, `services`, `store`, `hooks`, `pages`,\n  `workflows`, `evaluation`, `mcp`, `prompts`, `types`, `constants`, `config`,\n  `content`).\n- Dependency rule: `shared/*` never imports domains; domains import `shared/` + `db` +\n  `components/ui` only.\n\n**Out of scope:**\n\n- Rewriting individual domain internals (separate module runs).\n- Changing locked stack (Mastra, Radix, Supabase, TanStack Query, Trigger.dev).\n\n**Deliverable:** A prioritized `PLAN.md` the human can approve at Verification.\nFirst increment should be **planning + low-risk moves** (barrels, re-exports, lint\nboundaries) before deep refactors. Implement only after human **[A] Approve & build**.\n",
+          "graph.rankdir": "LR",
+          "thread.review.current_node": "scope",
+          "internal.node_visit_count": 1,
+          "failure_class": "",
+          "failure_signature": "",
+          "internal.retry_count.start": 0,
+          "outcome": "succeeded",
+          "response.scope": "I'll run the scope commands to inventory the current `src/` layout.",
+          "graph.label": "Optional Build",
+          "internal.fidelity": "summary:medium",
+          "last_stage": "scope",
+          "last_response": "I'll run the scope commands to inventory the current `src/` layout.",
+          "internal.run_id": "01KWGZNNB1GY50Q5CKFHBFEGH5",
+          "graph.default_max_retries": "1",
+          "current_node": "scope",
+          "graph.default_fidelity": "summary:medium"
+        },
+        "node_outcomes": {
+          "scope": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_response": "I'll run the scope commands to inventory the current `src/` layout.",
+              "last_stage": "scope",
+              "response.scope": "I'll run the scope commands to inventory the current `src/` layout."
+            },
+            "notes": "Stage completed: scope",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "anthropic",
+                    "model_id": "claude-sonnet-4-5"
+                  },
+                  "tokens": {
+                    "input_tokens": 2502,
+                    "output_tokens": 443,
+                    "reasoning_tokens": 0,
+                    "cache_read_tokens": 11983,
+                    "cache_write_tokens": 13293
+                  }
+                },
+                "facts": {
+                  "algorithm": "anthropic",
+                  "cache_write_5m_tokens": 13293,
+                  "cache_write_1h_tokens": 0
+                }
+              },
+              "total_usd_micros": 67593
+            },
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 10700,
+              "tool_time_ms": 114,
+              "active_time_ms": 10814
+            }
+          },
+          "start": {
+            "status": "succeeded",
+            "usage": null
+          }
+        },
+        "next_node_id": "assess",
+        "git_commit_sha": "cd7fd308fbb8fb937cc1996ec3c5922ed7f6e9bf",
+        "node_visits": {
+          "start": 1,
+          "scope": 1
+        }
+      },
+      "diff": {
+        "summary": {
+          "files_changed": 0,
+          "additions": 0,
+          "deletions": 0
+        }
+      }
+    },
+    {
+      "seq": 0,
+      "checkpoint": {
+        "timestamp": "2026-07-02T08:41:43.746701Z",
+        "current_node": "assess",
+        "completed_nodes": [
+          "start",
+          "scope",
+          "assess"
         ],
         "node_retries": {},
         "context_values": {
@@ -1492,16 +1586,18 @@
           "internal.retry_count.scope": 0,
           "graph.stall_timeout": "1800000ms",
           "internal.thread_id": "review",
-          "current_node": "scope",
+          "current_node": "assess",
           "graph.rankdir": "LR",
-          "last_response": "I'll run the scope commands to inventory the current `src/` layout.",
-          "last_stage": "scope",
-          "thread.review.current_node": "scope",
+          "last_response": "## Assessment Complete\n\n**Root `src/` layout is 60% pre-architecture.** 12 of 20 top-level folders predate the unified structure and belong in `shared/`, domains, or should be deleted. The critical ga",
+          "last_stage": "assess",
+          "thread.review.current_node": "assess",
           "graph.default_fidelity": "summary:medium",
           "failure_class": "",
           "internal.run_id": "01KWGZNNB1GY50Q5CKFHBFEGH5",
+          "internal.retry_count.assess": 0,
           "response.scope": "I'll run the scope commands to inventory the current `src/` layout.",
-          "internal.fidelity": "summary:medium",
+          "response.assess": "## Assessment Complete\n\n**Root `src/` layout is 60% pre-architecture.** 12 of 20 top-level folders predate the unified structure and belong in `shared/`, domains, or should be deleted. The critical gap: **no `shared/` folder exists**, blocking module convergence.\n\n### Key Findings\n\n**Critical:** Functionality scattered across 8 parallel folders (`agent-core`, `lib`, `infrastructure`, `services`, `store`, `hooks`, `prompts`, `types`) with no single `shared/` layer — ~2,700 LOC in `agent-core/` duplicates Mastra primitives; cross-module auth/errors/data live in ad-hoc locations.\n\n**High impact, low risk:** Domains already don't import from legacy folders (grep confirmed zero hits), so migration is move-and-re-export, not rewrite. Root `services/` has 3 files that duplicate domain services or belong in `shared/data/`.\n\n**Top 3 gaps:**\n1. Create `shared/` structure (agent-kernel, jobs, data, auth, observability, errors, types)\n2. Move cross-domain primitives (`lib/auth`, `services/entities`, `hooks/useGameEntities`) to `shared/`\n3. Set up ESLint boundary rules blocking `domains/` from importing legacy root folders\n\nFull phased migration plan in `findings/assess.md` — recommend **Phase 1 only** (foundation + low-risk moves) in first increment, then validate before proceeding.",
+          "internal.fidelity": "compact",
           "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-fable-5; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build          { model: codex;             reasoning_effort: high;   }\n            .buildskilled  { model: claude-sonnet-4-6; reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        "
         },
         "node_outcomes": {
@@ -1546,11 +1642,53 @@
               "tool_time_ms": 114,
               "active_time_ms": 10814
             }
+          },
+          "assess": {
+            "status": "succeeded",
+            "context_updates": {
+              "response.assess": "## Assessment Complete\n\n**Root `src/` layout is 60% pre-architecture.** 12 of 20 top-level folders predate the unified structure and belong in `shared/`, domains, or should be deleted. The critical gap: **no `shared/` folder exists**, blocking module convergence.\n\n### Key Findings\n\n**Critical:** Functionality scattered across 8 parallel folders (`agent-core`, `lib`, `infrastructure`, `services`, `store`, `hooks`, `prompts`, `types`) with no single `shared/` layer — ~2,700 LOC in `agent-core/` duplicates Mastra primitives; cross-module auth/errors/data live in ad-hoc locations.\n\n**High impact, low risk:** Domains already don't import from legacy folders (grep confirmed zero hits), so migration is move-and-re-export, not rewrite. Root `services/` has 3 files that duplicate domain services or belong in `shared/data/`.\n\n**Top 3 gaps:**\n1. Create `shared/` structure (agent-kernel, jobs, data, auth, observability, errors, types)\n2. Move cross-domain primitives (`lib/auth`, `services/entities`, `hooks/useGameEntities`) to `shared/`\n3. Set up ESLint boundary rules blocking `domains/` from importing legacy root folders\n\nFull phased migration plan in `findings/assess.md` — recommend **Phase 1 only** (foundation + low-risk moves) in first increment, then validate before proceeding.",
+              "last_stage": "assess",
+              "last_response": "## Assessment Complete\n\n**Root `src/` layout is 60% pre-architecture.** 12 of 20 top-level folders predate the unified structure and belong in `shared/`, domains, or should be deleted. The critical ga"
+            },
+            "notes": "Stage completed: assess",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "anthropic",
+                    "model_id": "claude-sonnet-4-5"
+                  },
+                  "tokens": {
+                    "input_tokens": 30315,
+                    "output_tokens": 8570,
+                    "reasoning_tokens": 0,
+                    "cache_read_tokens": 237097,
+                    "cache_write_tokens": 67984
+                  }
+                },
+                "facts": {
+                  "algorithm": "anthropic",
+                  "cache_write_5m_tokens": 67984,
+                  "cache_write_1h_tokens": 0
+                }
+              },
+              "total_usd_micros": 545564
+            },
+            "files_touched": [
+              "/workspace/kurvitza/findings/assess.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 160422,
+              "tool_time_ms": 903,
+              "active_time_ms": 161325
+            }
           }
         },
-        "next_node_id": "assess",
+        "next_node_id": "clarify_prep",
         "node_visits": {
           "start": 1,
+          "assess": 1,
           "scope": 1
         }
       },
@@ -1588,7 +1726,12 @@
       "first_event_seq": 22,
       "prompt": null,
       "response": null,
-      "completion": null,
+      "completion": {
+        "outcome": "succeeded",
+        "notes": "Stage completed: scope",
+        "failure_reason": null,
+        "timestamp": "2026-07-02T08:38:58.357565Z"
+      },
       "provider_used": {
         "mode": "agent",
         "provider": "anthropic",
@@ -1602,6 +1745,12 @@
       "output": null,
       "started_at": "2026-07-02T08:38:46.754342Z",
       "handler": "agent",
+      "timing": {
+        "wall_time_ms": 11529,
+        "inference_time_ms": 10700,
+        "tool_time_ms": 114,
+        "active_time_ms": 10814
+      },
       "usage": {
         "input_tokens": 2502,
         "output_tokens": 443,
@@ -1806,6 +1955,234 @@
             "category": "other",
             "tokens": 9,
             "usage_percent": 0.0045
+          }
+        ],
+        "warnings": []
+      },
+      "state": "succeeded"
+    },
+    "assess@1": {
+      "first_event_seq": 54,
+      "prompt": null,
+      "response": null,
+      "completion": null,
+      "provider_used": {
+        "mode": "agent",
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "reasoning_effort": "low"
+      },
+      "diff": null,
+      "script_invocation": null,
+      "script_timing": null,
+      "parallel_results": null,
+      "output": null,
+      "started_at": "2026-07-02T08:39:01.695692Z",
+      "handler": "agent",
+      "usage": {
+        "input_tokens": 30315,
+        "output_tokens": 8570,
+        "total_tokens": 343966,
+        "reasoning_tokens": 0,
+        "cache_read_tokens": 237097,
+        "cache_write_tokens": 67984,
+        "total_usd_micros": 545564
+      },
+      "model": {
+        "provider": "anthropic",
+        "model_id": "claude-sonnet-4-5"
+      },
+      "permission_level": "full",
+      "agent_tools": [
+        {
+          "name": "AskUserQuestion",
+          "description": "Ask the human one or more questions and wait for their answers before continuing this stage.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "TaskCreate",
+          "description": "Create pending tasks in the current session. Use concise subjects, descriptions, optional activeForm text, and metadata. Check TaskList first to avoid duplicate tasks.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "TaskGet",
+          "description": "Get one task by taskId, including subject, status, description, owner, blockedBy, and blocks.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "TaskList",
+          "description": "List tasks for the current session, including status, owner, and blocking dependencies. Use TaskGet with a taskId for full description and dependency details.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "TaskUpdate",
+          "description": "Update an existing task's status, text, owner, metadata, or dependencies. Valid statuses are pending, in_progress, completed, and deleted. After completing a task, call TaskList to find newly unblocked work.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "close_agent",
+          "description": "Close a running subagent that is no longer needed.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "edit_file",
+          "description": "Edit a file by replacing an exact string. The old_string must be an exact match and unique unless replace_all is true; include surrounding context when needed. Read the file first and preserve existing indentation.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "write",
+          "invoked": false
+        },
+        {
+          "name": "glob",
+          "description": "Find files by file names using a glob pattern. Use path to choose the search root. Prefer this over shell find or ls when locating repository files.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": false
+        },
+        {
+          "name": "grep",
+          "description": "Search file contents with a regex pattern. Use path to choose the search root, glob_filter to limit matching files, case_insensitive for case folding, and max_results to cap output.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": true
+        },
+        {
+          "name": "read_file",
+          "description": "Read files before editing them. Returns line-numbered text and supports offset/limit for large files. Use this instead of shell cat, head, tail, or sed when inspecting repository files.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": true
+        },
+        {
+          "name": "send_input",
+          "description": "Send a follow-up message to a running subagent when new information or corrected instructions are needed.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "shell",
+          "description": "Execute shell commands for terminal operations, package managers, tests and builds. Use dedicated tools for file reads, file edits, filename searches, and content searches. Provide timeout_ms for long-running commands.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "shell",
+          "invoked": true
+        },
+        {
+          "name": "spawn_agent",
+          "description": "Spawn a subagent for independent work or context isolation. Use it for tasks that can proceed separately, and avoid duplicating the same work in the parent session.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "wait",
+          "description": "Wait for a subagent to complete, then use the result to synthesize the outcome for the user.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "web_fetch",
+          "description": "Fetch content from a URL that starts with http:// or https://. Pass a prompt to extract specific information or summarize the page; omit prompt to return the page content.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "web_search",
+          "description": "Search the web using Brave Search when current external information is needed. Returns result titles, URLs, and descriptions; use web_fetch for a specific URL.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "write_file",
+          "description": "Create new files, or overwrite an existing file only when replacement is explicitly intended. Prefer edit_file for targeted changes to existing files because write_file overwrites the full file content.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "write",
+          "invoked": true
+        }
+      ],
+      "context_window": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "context_window_tokens": 200000,
+        "input_tokens": 42292,
+        "usage_percent": 21.146,
+        "count_method": "response_usage_scaled_breakdown",
+        "staleness": "live",
+        "generated_at": "2026-07-02T08:41:43.650961Z",
+        "event_seq": 166,
+        "breakdown": [
+          {
+            "category": "system_prompt",
+            "tokens": 2001,
+            "usage_percent": 1.0005
+          },
+          {
+            "category": "tools",
+            "tokens": 2289,
+            "usage_percent": 1.1445
+          },
+          {
+            "category": "memory",
+            "tokens": 7355,
+            "usage_percent": 3.6775
+          },
+          {
+            "category": "conversation",
+            "tokens": 30639,
+            "usage_percent": 15.3195
+          },
+          {
+            "category": "other",
+            "tokens": 8,
+            "usage_percent": 0.004
           }
         ],
         "warnings": []
