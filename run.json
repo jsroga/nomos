@@ -1313,7 +1313,7 @@
     "kind": "running"
   },
   "status_updated_at": "2026-07-02T07:37:27.291767Z",
-  "last_event_at": "2026-07-02T07:58:46.737903Z",
+  "last_event_at": "2026-07-02T07:59:06.704859Z",
   "pending_control": null,
   "checkpoints": [
     {
@@ -4184,9 +4184,9 @@
       }
     },
     {
-      "seq": 0,
+      "seq": 817,
       "checkpoint": {
-        "timestamp": "2026-07-02T07:58:46.816739Z",
+        "timestamp": "2026-07-02T07:58:49.586460Z",
         "current_node": "tester",
         "completed_nodes": [
           "start",
@@ -4205,6 +4205,421 @@
         ],
         "node_retries": {},
         "context_values": {
+          "response.clarify_prep": "## Assessment summary\nThe interior-designer module is materially off the target architecture in the places that matter most: it mixes UI state, server state, persistence, and long-running job orchestration inside one large client store, and it still has a browser-side Supabase write path. It also lacks the canonical module shape (`index.ts`, layered folders, typed `io/`, server-only `services/`, module-owned `tasks/`), so cleanup can either be staged or done as a full reshape.\n\n## Key gaps (max 5)\n- Direct browser → Supabase writes in `store/useInteriorStore.ts` violate the required API → auth → service → Drizzle path.\n- The 1661-line Zustand store mixes ephemeral UI state with remote/server state, violating the TanStack Query vs Zustand split.\n- Long-running generation/retexture flows use bespoke polling, global store bookkeeping, and `localStorage` instead of Trigger tasks + shared job observation.\n- The module has no public `index.ts` or target blueprint folders, so internal imports and ownership boundaries cannot be enforced.\n- Interior-designer imports sibling module internals directly, creating coupling that will either need public-barrel exports or `shared/` extraction.\n\n## Pick one scope (buttons are A / B / C — meanings are module-specific below)\n\nThe Fabro dock shows generic **[A] [B] [C]** buttons. Your table defines what each means **for this module**:\n\n| Button | What the plan will assume for **this** module |\n| --- | --- |\n| **[A]** | **Security + architecture foundation.** Plan to remove browser-side Supabase writes first, establish the module’s public barrel and target layer seams, and stage the breakup of `useInteriorStore` into UI-only state + TanStack/`io`/server layers. Also plan the replacement of bespoke job polling, but sequence it to reduce migration risk instead of forcing a one-shot rewrite. |\n| **[B]** | **Minimal containment.** Plan only the smallest safe increment: eliminate the direct browser write path and document follow-on work. The large Zustand store, most manual polling/job orchestration, and most folder restructuring would remain deferred. |\n| **[C]** | **Full blueprint convergence now.** Plan a full reshape of `src/domains/interior-designer` into `index.ts`, `ui/`, `state/`, `io/`, `core/`, `services/`, and `tasks/`; split server state into TanStack Query; replace custom polling/localStorage job flows with Trigger/shared jobs; and resolve sibling-module internal imports in this same increment. |\n\n**Advanced:** type custom constraints in freeform (routes to [F]) · pick [R] only if assess findings are wrong\n\n**Recommendation: [A]** — it addresses the P0 security issue and lays down the architectural seams needed for a safe migration, without forcing the highest-risk full-module rewrite in one pass.\n\nThe [A]/[B]/[C] buttons match this table, not the other way around.",
+          "internal.retry_count.setup": 0,
+          "plan.has_p0_security_issue": "yes",
+          "internal.run_id": "01KWGSZM6PEMNXFEF1Q3NQ3B3N",
+          "command.output": "blob://sha256/5e212ec81fe19ed3442d5e30139c78e7322dbec083269eaa5aa73450d3636691",
+          "internal.retry_count.setup_gate": 0,
+          "internal.retry_count.tester": 0,
+          "human.gate.Verification.question": "Plan is ready. [A] build · [B] plan only · [I] iterate (notes) · [X] abort — do not reuse Clarify's A/B/C here",
+          "human.gate.selected": "A",
+          "last_stage": "tester",
+          "thread.review.current_node": "clarify_prep",
+          "thread.build.current_node": "tester",
+          "thread.planning.current_node": "plan",
+          "internal.retry_count.Verification": 0,
+          "graph.label": "Optional Build",
+          "graph.default_max_retries": "1",
+          "internal.retry_count.developer": 0,
+          "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: interior-designer is still a legacy flat slice and is materially off-target in three places first: direct browser-side persistence, a monolithic Zustand store carrying server state, and bespoke polling/job orchestration in UI components.\n\nTop 3 gaps to fix first:\n1. Remove browser → Supabase writes; route all writes through typed API/service/Drizzle paths.\n2. Split `useInteriorStore` into UI-only Zustand state plus TanStack Query + `io/` for server data.\n3. Replace component-level polling/global job bookkeeping with module-owned Trigger tasks and shared job observation.",
+          "thread.developer.current_node": "verify",
+          "failure_class": "",
+          "plan.has_ui_surface": "no",
+          "internal.retry_count.start": 0,
+          "response.plan": "Plan and decisions written. Verification summary below.\n\n**1. P0 declaration:** `P0 exists` — `store/useInteriorStore.ts:1579-1591` (`renameDesign`) writes `interior_designs.name` directly via the browser Supabase client, bypassing auth (invariant #2). Fix is trivial: the `PATCH /api/interior-designer/designs` route already enforces auth.\n\n**2. Your Clarify decision: [A] Staged migration.**\n- In scope: P0 write removal, public `index.ts` barrel + layer seams, typed `io/` edge, staged store→TanStack split, cross-module import cleanup, AI/prompt server-side move.\n- Explicitly deferred: shared `useJob`/Trigger job cleanup (Item 7 — blocked, `src/shared/` doesn't exist yet), full folder reshape (Item 10), `interior_designs` schema normalization.\n\n**3. First shippable increment: Items 1–3 — P0 Supabase-write removal + public barrel/layer seams + typed `io/` edge (Zod DTOs shared with routes).** Backend/plumbing only; no user-visible UI-flow change.\n\n**4. Item count & effort:** 10 items (P0×1, P1×4, P2×4, P3×1). Increment 1 ≈ 1–1.5 dev days.\n\n**5. Plan highlights (concrete refs):**\n- Item 1: swap browser Supabase call → `PATCH /api/interior-designer/designs` (mirrors existing `deleteDesign`).\n- Item 2: add `index.ts` + seam folders (`io/ state/ core/ services/ tasks/ ui/`); only `storyteller` has a barrel today.\n- Item 3: `io/interior-designer.{dto,api,keys}.ts` over the six existing routes.\n- Items 4–5: move design fetch/save/rename/delete out of the 1661-LOC store into `state/queries/*`; shrink store to UI-only.\n- Item 6: kill reach-ins to `world-building-toolkit/store/useWorldStore`, `AssetsPanel`, `3d-asset-exporter/AssetUploadZone`.\n- Corrections vs assess: **no schema inversion** (`interiorDesigns` in `src/db/schema.ts:133`), **no `z.any()`**, `localStorage` is in UI components not `services/`.\n\n**6. Verification reminder:** pick **[A] Approve & build** to implement, **[B]** for plan-only, **[I]** to request plan changes (type notes), **[X]** to abort. (Clarify's A/B/C are already decided — don't type `A` expecting build; choose gate option **[A]**.)\n\nStopping for Verification. Not implementing.\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"yes\"\n  }\n}\n```",
+          "response.scope": "=== module: interior-designer ===\nsrc/domains/interior-designer/__tests__/terrain-cdt.test.ts\nsrc/domains/interior-designer/__tests__/terrain-quality.test.ts\nsrc/domains/interior-designer/__tests__/unity-export.script.ts\nsrc/domains/interior-designer/__tests__/windows-doors.e2e.test.ts\nsrc/domains/interior-designer/ai/TextureService.ts\nsrc/domains/interior-designer/components/CameraController.tsx\nsrc/domains/interior-designer/components/DesignManager.tsx\nsrc/domains/interior-designer/components/Exporter.tsx\nsrc/domains/interior-designer/components/FloorManager.tsx\nsrc/domains/interior-designer/components/InteriorCanvas.tsx\nsrc/domains/interior-designer/components/KeybindingManager.tsx\nsrc/domains/interior-designer/components/ObjectManager.tsx\nsrc/domains/interior-designer/components/RetextureExporter.tsx\nsrc/domains/interior-designer/components/SculptableSurface.tsx\nsrc/domains/interior-designer/components/SurfaceManager.tsx\nsrc/domains/interior-designer/components/TransformManager.tsx\nsrc/domains/interior-designer/components/UI/AssetLibrary.tsx\nsrc/domains/interior-designer/components/UI/InteriorRightSidebar.tsx\nsrc/domains/interior-designer/components/UI/LayerPanel.tsx\nsrc/domains/interior-designer/components/UI/PropertiesPanel.tsx\nsrc/domains/interior-designer/components/UI/SurfaceProperties.tsx\nsrc/domains/interior-designer/components/UI/TerrainEditorPanel.tsx\nsrc/domains/interior-designer/components/UI/Toolbar.tsx\nsrc/domains/interior-designer/components/VoxelTerrainMesh.tsx\nsrc/domains/interior-designer/components/WallManager.tsx\nsrc/domains/interior-designer/components/meshes/DoorMesh.tsx\nsrc/domains/interior-designer/components/meshes/RoadMesh.tsx\nsrc/domains/interior-designer/components/meshes/WindowMesh.tsx\nsrc/domains/interior-designer/components/terrain/GlobalWaterPlane.tsx\nsrc/domains/interior-designer/components/terrain/TerrainBrushPreview.tsx\nsrc/domains/interior-designer/components/terrain/index.ts\nsrc/domains/interior-designer/components/tools/ObjectTool.tsx\nsrc/domains/interior-designer/components/tools/ScatterTool.tsx\nsrc/domains/interior-designer/components/tools/SurfaceTool.tsx\nsrc/domains/interior-designer/components/tools/TerrainTool.tsx\nsrc/domains/interior-designer/components/tools/WallTool.tsx\nsrc/domains/interior-designer/prompts/index.ts\nsrc/domains/interior-designer/store/useInteriorStore.ts\nsrc/domains/interior-designer/utils/UnityExporter.ts\nsrc/domains/interior-designer/utils/UnityYAML.ts\nsrc/domains/interior-designer/utils/polygonUtils.ts\nsrc/domains/interior-designer/utils/textureCache.ts\n\n=== git status ===\n\n=== architecture contract ===\n-rw-r--r-- 1 root root 38694 Jul  2 06:59 docs/unified/ARCHITECTURE.md\n-rw-r--r-- 1 root root 26993 Jul  2 06:59 docs/unified/SPEC.md",
+          "internal.work_dir": "/workspace/kurvitza",
+          "human.gate.Verification.label": "[A] Approve & build",
+          "response.tester": "Added/changed tests\n- `src/app/api/interior-designer/__tests__/designs-route.test.ts`\n  - Covers the `designs` route contract that changed:\n    - `GET` returns 400 when neither `projectId` nor `designId` is provided\n    - `PATCH` returns 400 when `id` is missing\n    - `PATCH` returns 403 when access verification fails\n    - `PATCH` accepts the new name-only rename path and persists only `name` + `updatedAt`\n- `src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts`\n  - Covers the store behavior that replaced the browser Supabase write:\n    - successful rename routes through the typed API client and updates the current design name\n    - renaming a different design does not overwrite the open design name\n    - API failure is surfaced and local state is preserved\n\nWhat behavior is now pinned down\n- Core happy path:\n  - design rename succeeds through `PATCH /api/interior-designer/designs`\n  - current design title updates in the store after a successful rename\n- Edge/error cases:\n  - missing route params/body fields produce 400s\n  - unauthorized rename attempts produce 403s\n  - failed rename requests do not mutate local state\n- State transitions:\n  - current design rename updates visible state\n  - non-current design rename leaves visible state unchanged\n  - error path preserves prior state\n\nCommands run\n- `npx vitest run src/app/api/interior-designer/__tests__/designs-route.test.ts src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts` ✅\n- `npx vitest run src/domains/interior-designer src/app/api/interior-designer` ✅\n- `node scripts/fabro-verify.mjs` ✅\n- `npm run test:unit` ❌ blocked by unrelated pre-existing repo failures outside interior-designer\n\nNotable edge cases intentionally left untested\n- I did not add UI rendering tests for the new `InteriorDesignerWorkspace` barrel wiring because this increment is plumbing-only and the highest-risk changes were the rename persistence path and typed route validation.\n- I did not add tests for every non-design route (`texture`, `material`, `retexture`, `text-to-3d`) because the approved increment’s highest-risk behavioral change was the rename write-path removal; the DTO parse coverage already added by Developer covers those schemas.\n\nProduct bugs found\n- No interior-designer source defect was exposed by the new tests.\n- The full repo unit suite is still red due to unrelated existing failures outside this feature.\n\nBug: Storyteller config crashes test imports because JSX is used without React in scope\nWhere: `src/domains/storyteller/config/storyteller-agents.tsx:8`\nRepro: `npm run test:unit`\nExpected: Storyteller-related tests import config modules without runtime `React is not defined`\nActual: Multiple unrelated suites fail with `ReferenceError: React is not defined`\nSuspected cause: `storyteller-agents.tsx` contains JSX (`<Brain ... />`) but the test/runtime transform for that file still requires `React` to be in scope.\n\nBug: Chat e2e lucide mock is missing the `Heart` export now used by CharacterPanel\nWhere: `src/domains/chat/components/__tests__/AgentLog.e2e.test.tsx` (failure surfaces via `src/domains/storyteller/components/CharacterPanel/CharacterPanel.tsx:80`)\nRepro: `npm run test:unit`\nExpected: The lucide mock used by the chat e2e test exports all icons needed by imported storyteller components\nActual: Suite fails with `No \"Heart\" export is defined on the \"lucide-react\" mock`\nSuspected cause: An outdated partial `lucide-react` mock in that test no longer matches the current storyteller component imports.\n\nStatus\n- Interior-designer test slice: green\n- Full repo `npm run test:unit`: blocked by unrelated existing failures above",
+          "internal.retry_count.assess": 0,
+          "outcome": "succeeded",
+          "thread.setup.current_node": "setup_gate",
+          "last_response": "Added/changed tests\n- `src/app/api/interior-designer/__tests__/designs-route.test.ts`\n  - Covers the `designs` route contract that changed:\n    - `GET` returns 400 when neither `projectId` nor `design",
+          "internal.retry_count.verify_gate": 0,
+          "internal.thread_id": "build",
+          "thread.clarify_prep.current_node": "Clarify",
+          "internal.node_visit_count": 1,
+          "internal.retry_count.plan": 0,
+          "internal.retry_count.clarify_prep": 0,
+          "thread.Verification.current_node": "setup",
+          "failure_signature": "",
+          "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)",
+          "preferred_label": "[A] Approve & build",
+          "graph.stall_timeout": "1800000ms",
+          "response.developer": "Implemented the approved minimum increment for `interior-designer`.\n\nFiles created\n- `src/domains/interior-designer/index.ts`\n- `src/domains/interior-designer/interior-designer.config.ts`\n- `src/domains/interior-designer/ui/InteriorDesignerWorkspace/InteriorDesignerWorkspace.tsx`\n- `src/domains/interior-designer/ui/InteriorDesignerWorkspace/index.ts`\n- `src/domains/interior-designer/ui/index.ts`\n- `src/domains/interior-designer/state/index.ts`\n- `src/domains/interior-designer/state/queries/index.ts`\n- `src/domains/interior-designer/io/interior-designer.dto.ts`\n- `src/domains/interior-designer/io/interior-designer.api.ts`\n- `src/domains/interior-designer/io/interior-designer.keys.ts`\n- `src/domains/interior-designer/io/index.ts`\n- `src/domains/interior-designer/core/index.ts`\n- `src/domains/interior-designer/services/index.ts`\n- `src/domains/interior-designer/tasks/index.ts`\n- `src/domains/interior-designer/__tests__/interior-designer.dto.test.ts`\n\nFiles modified\n- `src/app/app/[projectId]/interior-design/page.tsx`\n- `src/domains/interior-designer/store/useInteriorStore.ts`\n- `src/domains/interior-designer/components/DesignManager.tsx`\n- `src/domains/interior-designer/components/UI/PropertiesPanel.tsx`\n- `src/domains/interior-designer/components/UI/SurfaceProperties.tsx`\n- `src/app/api/interior-designer/designs/route.ts`\n- `src/app/api/interior-designer/texture/route.ts`\n- `src/app/api/interior-designer/textures/route.ts`\n- `src/app/api/interior-designer/retexture/route.ts`\n- `src/app/api/interior-designer/retexture/[runId]/route.ts`\n- `src/app/api/interior-designer/text-to-3d/route.ts`\n- `src/app/api/interior-designer/text-to-3d/[taskId]/route.ts`\n- `src/app/api/interior-designer/material/route.ts`\n- `src/app/api/interior-designer/material/[taskId]/route.ts`\n\nWhat changed\n- Replaced the browser-side Supabase rename write with the authenticated `PATCH /api/interior-designer/designs` path.\n- Added the module barrel and seam folders/barrels for `ui/`, `io/`, `state/`, `state/queries/`, `core/`, `services/`, and `tasks/`.\n- Extracted the current route shell into `InteriorDesignerWorkspace` so the app route now imports the module through `@/domains/interior-designer`.\n- Added shared Zod DTOs for designs, texture, textures, retexture, text-to-3d, and material routes.\n- Added a typed `interiorDesignerApi` client and query-key factory.\n- Rewired current runtime calls in the store and legacy components to use the typed io client instead of ad hoc `fetch(...)`.\n- Updated the interior-designer API routes to parse requests and shape responses with the shared DTOs.\n- Added DTO parse tests.\n\nVerification\n- `npx vitest run src/domains/interior-designer/__tests__/interior-designer.dto.test.ts` ✅\n- `node scripts/fabro-verify.mjs` ✅\n  - scoped typecheck clean\n  - eslint passes the gate, but there are pre-existing warnings in touched legacy files\n- Quick grep checks:\n  - no `supabaseClient` / `getSupabaseClient` references remain in `src/domains/interior-designer`\n  - no runtime direct `fetch('/api/interior-designer...')` calls remain in the module; only the existing e2e test still hits the route directly\n\nDeviations from plan\n- Small structural extraction: I introduced `InteriorDesignerWorkspace` so the route could consume the new public barrel immediately. This stays within Item 2’s “establish the contract” intent and avoids exposing multiple internals from `app/`.\n\nDeferred work\n- Item 4: TanStack Query hooks for design server-state\n- Item 6: cross-module internal import cleanup\n- All P2/P3 items remain deferred, including store split, AI/task relocation, UI component breakup, and shared job infra migration\n\nNotes\n- The scoped verify script passes, but legacy lint warnings remain in `PropertiesPanel.tsx`, `SurfaceProperties.tsx`, `DesignManager.tsx`, the new workspace wrapper, and a few route handlers. I did not widen scope to clean those since they’re outside the approved minimum increment.",
+          "current_node": "tester",
+          "human.gate.Verification.answer": "A",
+          "graph.default_fidelity": "summary:medium",
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
+          "human.gate.Clarify.answer": "A",
+          "graph.goal": "Clean up and align the interior-designer module (src/domains/interior-designer) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
+          "thread.plan.current_node": "Verification",
+          "graph.rankdir": "LR",
+          "thread.verify.current_node": "verify_gate",
+          "internal.retry_count.scope": 0,
+          "internal.fidelity": "full",
+          "human.gate.Clarify.label": "[A] Staged migration",
+          "internal.retry_count.Clarify": 0,
+          "internal.retry_count.verify": 0,
+          "human.gate.label": "[A] Approve & build"
+        },
+        "node_outcomes": {
+          "Clarify": {
+            "status": "succeeded",
+            "preferred_label": "[A] Staged migration",
+            "suggested_next_ids": [
+              "plan"
+            ],
+            "context_updates": {
+              "human.gate.label": "[A] Staged migration",
+              "human.gate.selected": "A",
+              "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)",
+              "human.gate.Clarify.answer": "A",
+              "human.gate.Clarify.label": "[A] Staged migration"
+            },
+            "usage": null
+          },
+          "developer": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_stage": "developer",
+              "last_response": "Implemented the approved minimum increment for `interior-designer`.\n\nFiles created\n- `src/domains/interior-designer/index.ts`\n- `src/domains/interior-designer/interior-designer.config.ts`\n- `src/domai",
+              "response.developer": "Implemented the approved minimum increment for `interior-designer`.\n\nFiles created\n- `src/domains/interior-designer/index.ts`\n- `src/domains/interior-designer/interior-designer.config.ts`\n- `src/domains/interior-designer/ui/InteriorDesignerWorkspace/InteriorDesignerWorkspace.tsx`\n- `src/domains/interior-designer/ui/InteriorDesignerWorkspace/index.ts`\n- `src/domains/interior-designer/ui/index.ts`\n- `src/domains/interior-designer/state/index.ts`\n- `src/domains/interior-designer/state/queries/index.ts`\n- `src/domains/interior-designer/io/interior-designer.dto.ts`\n- `src/domains/interior-designer/io/interior-designer.api.ts`\n- `src/domains/interior-designer/io/interior-designer.keys.ts`\n- `src/domains/interior-designer/io/index.ts`\n- `src/domains/interior-designer/core/index.ts`\n- `src/domains/interior-designer/services/index.ts`\n- `src/domains/interior-designer/tasks/index.ts`\n- `src/domains/interior-designer/__tests__/interior-designer.dto.test.ts`\n\nFiles modified\n- `src/app/app/[projectId]/interior-design/page.tsx`\n- `src/domains/interior-designer/store/useInteriorStore.ts`\n- `src/domains/interior-designer/components/DesignManager.tsx`\n- `src/domains/interior-designer/components/UI/PropertiesPanel.tsx`\n- `src/domains/interior-designer/components/UI/SurfaceProperties.tsx`\n- `src/app/api/interior-designer/designs/route.ts`\n- `src/app/api/interior-designer/texture/route.ts`\n- `src/app/api/interior-designer/textures/route.ts`\n- `src/app/api/interior-designer/retexture/route.ts`\n- `src/app/api/interior-designer/retexture/[runId]/route.ts`\n- `src/app/api/interior-designer/text-to-3d/route.ts`\n- `src/app/api/interior-designer/text-to-3d/[taskId]/route.ts`\n- `src/app/api/interior-designer/material/route.ts`\n- `src/app/api/interior-designer/material/[taskId]/route.ts`\n\nWhat changed\n- Replaced the browser-side Supabase rename write with the authenticated `PATCH /api/interior-designer/designs` path.\n- Added the module barrel and seam folders/barrels for `ui/`, `io/`, `state/`, `state/queries/`, `core/`, `services/`, and `tasks/`.\n- Extracted the current route shell into `InteriorDesignerWorkspace` so the app route now imports the module through `@/domains/interior-designer`.\n- Added shared Zod DTOs for designs, texture, textures, retexture, text-to-3d, and material routes.\n- Added a typed `interiorDesignerApi` client and query-key factory.\n- Rewired current runtime calls in the store and legacy components to use the typed io client instead of ad hoc `fetch(...)`.\n- Updated the interior-designer API routes to parse requests and shape responses with the shared DTOs.\n- Added DTO parse tests.\n\nVerification\n- `npx vitest run src/domains/interior-designer/__tests__/interior-designer.dto.test.ts` ✅\n- `node scripts/fabro-verify.mjs` ✅\n  - scoped typecheck clean\n  - eslint passes the gate, but there are pre-existing warnings in touched legacy files\n- Quick grep checks:\n  - no `supabaseClient` / `getSupabaseClient` references remain in `src/domains/interior-designer`\n  - no runtime direct `fetch('/api/interior-designer...')` calls remain in the module; only the existing e2e test still hits the route directly\n\nDeviations from plan\n- Small structural extraction: I introduced `InteriorDesignerWorkspace` so the route could consume the new public barrel immediately. This stays within Item 2’s “establish the contract” intent and avoids exposing multiple internals from `app/`.\n\nDeferred work\n- Item 4: TanStack Query hooks for design server-state\n- Item 6: cross-module internal import cleanup\n- All P2/P3 items remain deferred, including store split, AI/task relocation, UI component breakup, and shared job infra migration\n\nNotes\n- The scoped verify script passes, but legacy lint warnings remain in `PropertiesPanel.tsx`, `SurfaceProperties.tsx`, `DesignManager.tsx`, the new workspace wrapper, and a few route handlers. I did not widen scope to clean those since they’re outside the approved minimum increment."
+            },
+            "notes": "Stage completed: developer",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 179489,
+                    "output_tokens": 44158,
+                    "reasoning_tokens": 17584,
+                    "cache_read_tokens": 5634560,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 2783492
+            },
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 621557,
+              "tool_time_ms": 319111,
+              "active_time_ms": 940668
+            }
+          },
+          "Verification": {
+            "status": "succeeded",
+            "preferred_label": "[A] Approve & build",
+            "suggested_next_ids": [
+              "setup"
+            ],
+            "context_updates": {
+              "human.gate.selected": "A",
+              "human.gate.Verification.label": "[A] Approve & build",
+              "human.gate.label": "[A] Approve & build",
+              "human.gate.Verification.answer": "A",
+              "human.gate.Verification.question": "Plan is ready. [A] build · [B] plan only · [I] iterate (notes) · [X] abort — do not reuse Clarify's A/B/C here"
+            },
+            "usage": null
+          },
+          "clarify_prep": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_stage": "clarify_prep",
+              "last_response": "## Assessment summary\nThe interior-designer module is materially off the target architecture in the places that matter most: it mixes UI state, server state, persistence, and long-running job orchestr",
+              "response.clarify_prep": "## Assessment summary\nThe interior-designer module is materially off the target architecture in the places that matter most: it mixes UI state, server state, persistence, and long-running job orchestration inside one large client store, and it still has a browser-side Supabase write path. It also lacks the canonical module shape (`index.ts`, layered folders, typed `io/`, server-only `services/`, module-owned `tasks/`), so cleanup can either be staged or done as a full reshape.\n\n## Key gaps (max 5)\n- Direct browser → Supabase writes in `store/useInteriorStore.ts` violate the required API → auth → service → Drizzle path.\n- The 1661-line Zustand store mixes ephemeral UI state with remote/server state, violating the TanStack Query vs Zustand split.\n- Long-running generation/retexture flows use bespoke polling, global store bookkeeping, and `localStorage` instead of Trigger tasks + shared job observation.\n- The module has no public `index.ts` or target blueprint folders, so internal imports and ownership boundaries cannot be enforced.\n- Interior-designer imports sibling module internals directly, creating coupling that will either need public-barrel exports or `shared/` extraction.\n\n## Pick one scope (buttons are A / B / C — meanings are module-specific below)\n\nThe Fabro dock shows generic **[A] [B] [C]** buttons. Your table defines what each means **for this module**:\n\n| Button | What the plan will assume for **this** module |\n| --- | --- |\n| **[A]** | **Security + architecture foundation.** Plan to remove browser-side Supabase writes first, establish the module’s public barrel and target layer seams, and stage the breakup of `useInteriorStore` into UI-only state + TanStack/`io`/server layers. Also plan the replacement of bespoke job polling, but sequence it to reduce migration risk instead of forcing a one-shot rewrite. |\n| **[B]** | **Minimal containment.** Plan only the smallest safe increment: eliminate the direct browser write path and document follow-on work. The large Zustand store, most manual polling/job orchestration, and most folder restructuring would remain deferred. |\n| **[C]** | **Full blueprint convergence now.** Plan a full reshape of `src/domains/interior-designer` into `index.ts`, `ui/`, `state/`, `io/`, `core/`, `services/`, and `tasks/`; split server state into TanStack Query; replace custom polling/localStorage job flows with Trigger/shared jobs; and resolve sibling-module internal imports in this same increment. |\n\n**Advanced:** type custom constraints in freeform (routes to [F]) · pick [R] only if assess findings are wrong\n\n**Recommendation: [A]** — it addresses the P0 security issue and lays down the architectural seams needed for a safe migration, without forcing the highest-risk full-module rewrite in one pass.\n\nThe [A]/[B]/[C] buttons match this table, not the other way around."
+            },
+            "notes": "Stage completed: clarify_prep",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 20737,
+                    "output_tokens": 1930,
+                    "reasoning_tokens": 267,
+                    "cache_read_tokens": 88064,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 106813
+            },
+            "files_touched": [
+              "/repos/jsroga/kurvitza/CLARIFY.md",
+              "/repos/jsroga/kurvitza/DECISIONS.md",
+              "/repos/jsroga/kurvitza/PLAN.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 27495,
+              "tool_time_ms": 656,
+              "active_time_ms": 28151
+            }
+          },
+          "scope": {
+            "status": "succeeded",
+            "context_updates": {
+              "response.scope": "=== module: interior-designer ===\nsrc/domains/interior-designer/__tests__/terrain-cdt.test.ts\nsrc/domains/interior-designer/__tests__/terrain-quality.test.ts\nsrc/domains/interior-designer/__tests__/unity-export.script.ts\nsrc/domains/interior-designer/__tests__/windows-doors.e2e.test.ts\nsrc/domains/interior-designer/ai/TextureService.ts\nsrc/domains/interior-designer/components/CameraController.tsx\nsrc/domains/interior-designer/components/DesignManager.tsx\nsrc/domains/interior-designer/components/Exporter.tsx\nsrc/domains/interior-designer/components/FloorManager.tsx\nsrc/domains/interior-designer/components/InteriorCanvas.tsx\nsrc/domains/interior-designer/components/KeybindingManager.tsx\nsrc/domains/interior-designer/components/ObjectManager.tsx\nsrc/domains/interior-designer/components/RetextureExporter.tsx\nsrc/domains/interior-designer/components/SculptableSurface.tsx\nsrc/domains/interior-designer/components/SurfaceManager.tsx\nsrc/domains/interior-designer/components/TransformManager.tsx\nsrc/domains/interior-designer/components/UI/AssetLibrary.tsx\nsrc/domains/interior-designer/components/UI/InteriorRightSidebar.tsx\nsrc/domains/interior-designer/components/UI/LayerPanel.tsx\nsrc/domains/interior-designer/components/UI/PropertiesPanel.tsx\nsrc/domains/interior-designer/components/UI/SurfaceProperties.tsx\nsrc/domains/interior-designer/components/UI/TerrainEditorPanel.tsx\nsrc/domains/interior-designer/components/UI/Toolbar.tsx\nsrc/domains/interior-designer/components/VoxelTerrainMesh.tsx\nsrc/domains/interior-designer/components/WallManager.tsx\nsrc/domains/interior-designer/components/meshes/DoorMesh.tsx\nsrc/domains/interior-designer/components/meshes/RoadMesh.tsx\nsrc/domains/interior-designer/components/meshes/WindowMesh.tsx\nsrc/domains/interior-designer/components/terrain/GlobalWaterPlane.tsx\nsrc/domains/interior-designer/components/terrain/TerrainBrushPreview.tsx\nsrc/domains/interior-designer/components/terrain/index.ts\nsrc/domains/interior-designer/components/tools/ObjectTool.tsx\nsrc/domains/interior-designer/components/tools/ScatterTool.tsx\nsrc/domains/interior-designer/components/tools/SurfaceTool.tsx\nsrc/domains/interior-designer/components/tools/TerrainTool.tsx\nsrc/domains/interior-designer/components/tools/WallTool.tsx\nsrc/domains/interior-designer/prompts/index.ts\nsrc/domains/interior-designer/store/useInteriorStore.ts\nsrc/domains/interior-designer/utils/UnityExporter.ts\nsrc/domains/interior-designer/utils/UnityYAML.ts\nsrc/domains/interior-designer/utils/polygonUtils.ts\nsrc/domains/interior-designer/utils/textureCache.ts\n\n=== git status ===\n\n=== architecture contract ===\n-rw-r--r-- 1 root root 38694 Jul  2 06:59 docs/unified/ARCHITECTURE.md\n-rw-r--r-- 1 root root 26993 Jul  2 06:59 docs/unified/SPEC.md",
+              "last_stage": "scope",
+              "last_response": "=== module: interior-designer ===\nsrc/domains/interior-designer/__tests__/terrain-cdt.test.ts\nsrc/domains/interior-designer/__tests__/terrain-quality.test.ts\nsrc/domains/interior-designer/__tests__/un"
+            },
+            "notes": "Stage completed: scope",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 9335,
+                    "output_tokens": 818,
+                    "reasoning_tokens": 22,
+                    "cache_read_tokens": 0,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 35937
+            },
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 8111,
+              "tool_time_ms": 72,
+              "active_time_ms": 8183
+            }
+          },
+          "assess": {
+            "status": "succeeded",
+            "context_updates": {
+              "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: interior-designer is still a legacy flat slice and is materially off-target in three places first: direct browser-side persistence, a monolithic Zustand store carrying server state, and bespoke polling/job orchestration in UI components.\n\nTop 3 gaps to fix first:\n1. Remove browser → Supabase writes; route all writes through typed API/service/Drizzle paths.\n2. Split `useInteriorStore` into UI-only Zustand state plus TanStack Query + `io/` for server data.\n3. Replace component-level polling/global job bookkeeping with module-owned Trigger tasks and shared job observation.",
+              "last_response": "Assessment written to `findings/assess.md`.\n\nVerdict: interior-designer is still a legacy flat slice and is materially off-target in three places first: direct browser-side persistence, a monolithic Z",
+              "last_stage": "assess"
+            },
+            "notes": "Stage completed: assess",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 43973,
+                    "output_tokens": 3759,
+                    "reasoning_tokens": 401,
+                    "cache_read_tokens": 295936,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 246316
+            },
+            "files_touched": [
+              "/repos/jsroga/kurvitza/findings/assess.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 53225,
+              "tool_time_ms": 1028,
+              "active_time_ms": 54253
+            }
+          },
+          "setup": {
+            "status": "succeeded",
+            "context_updates": {
+              "command.output": "blob://sha256/679d512a32845f862780020869851a9c1513944325a8ff7483160c012f14bf25"
+            },
+            "notes": "Script completed: set -euo pipefail; echo '=== sandbox bootstrap ==='; if ! command -v git >/dev/null; then apt-get update && apt-get install -y git ca-certificates; fi; if ! command -v npm >/dev/null; then apt-get update && apt-get install -y nodejs npm; fi; command -v npm >/dev/null || { echo 'ERROR: npm still missing — expected image node:22-bookworm'; exit 1; }; npm ci --prefer-offline --no-audit --no-fund; npm run test:playwright:install; echo '=== bootstrap complete ==='",
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 127937,
+              "active_time_ms": 127937
+            }
+          },
+          "setup_gate": {
+            "status": "succeeded",
+            "notes": "Conditional node evaluated: setup_gate",
+            "usage": null
+          },
+          "start": {
+            "status": "succeeded",
+            "usage": null
+          },
+          "verify": {
+            "status": "succeeded",
+            "context_updates": {
+              "command.output": "blob://sha256/5e212ec81fe19ed3442d5e30139c78e7322dbec083269eaa5aa73450d3636691"
+            },
+            "notes": "Script completed: set -euo pipefail; node scripts/fabro-verify.mjs",
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 10766,
+              "active_time_ms": 10766
+            }
+          },
+          "verify_gate": {
+            "status": "succeeded",
+            "notes": "Conditional node evaluated: verify_gate",
+            "usage": null
+          },
+          "tester": {
+            "status": "succeeded",
+            "context_updates": {
+              "response.tester": "Added/changed tests\n- `src/app/api/interior-designer/__tests__/designs-route.test.ts`\n  - Covers the `designs` route contract that changed:\n    - `GET` returns 400 when neither `projectId` nor `designId` is provided\n    - `PATCH` returns 400 when `id` is missing\n    - `PATCH` returns 403 when access verification fails\n    - `PATCH` accepts the new name-only rename path and persists only `name` + `updatedAt`\n- `src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts`\n  - Covers the store behavior that replaced the browser Supabase write:\n    - successful rename routes through the typed API client and updates the current design name\n    - renaming a different design does not overwrite the open design name\n    - API failure is surfaced and local state is preserved\n\nWhat behavior is now pinned down\n- Core happy path:\n  - design rename succeeds through `PATCH /api/interior-designer/designs`\n  - current design title updates in the store after a successful rename\n- Edge/error cases:\n  - missing route params/body fields produce 400s\n  - unauthorized rename attempts produce 403s\n  - failed rename requests do not mutate local state\n- State transitions:\n  - current design rename updates visible state\n  - non-current design rename leaves visible state unchanged\n  - error path preserves prior state\n\nCommands run\n- `npx vitest run src/app/api/interior-designer/__tests__/designs-route.test.ts src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts` ✅\n- `npx vitest run src/domains/interior-designer src/app/api/interior-designer` ✅\n- `node scripts/fabro-verify.mjs` ✅\n- `npm run test:unit` ❌ blocked by unrelated pre-existing repo failures outside interior-designer\n\nNotable edge cases intentionally left untested\n- I did not add UI rendering tests for the new `InteriorDesignerWorkspace` barrel wiring because this increment is plumbing-only and the highest-risk changes were the rename persistence path and typed route validation.\n- I did not add tests for every non-design route (`texture`, `material`, `retexture`, `text-to-3d`) because the approved increment’s highest-risk behavioral change was the rename write-path removal; the DTO parse coverage already added by Developer covers those schemas.\n\nProduct bugs found\n- No interior-designer source defect was exposed by the new tests.\n- The full repo unit suite is still red due to unrelated existing failures outside this feature.\n\nBug: Storyteller config crashes test imports because JSX is used without React in scope\nWhere: `src/domains/storyteller/config/storyteller-agents.tsx:8`\nRepro: `npm run test:unit`\nExpected: Storyteller-related tests import config modules without runtime `React is not defined`\nActual: Multiple unrelated suites fail with `ReferenceError: React is not defined`\nSuspected cause: `storyteller-agents.tsx` contains JSX (`<Brain ... />`) but the test/runtime transform for that file still requires `React` to be in scope.\n\nBug: Chat e2e lucide mock is missing the `Heart` export now used by CharacterPanel\nWhere: `src/domains/chat/components/__tests__/AgentLog.e2e.test.tsx` (failure surfaces via `src/domains/storyteller/components/CharacterPanel/CharacterPanel.tsx:80`)\nRepro: `npm run test:unit`\nExpected: The lucide mock used by the chat e2e test exports all icons needed by imported storyteller components\nActual: Suite fails with `No \"Heart\" export is defined on the \"lucide-react\" mock`\nSuspected cause: An outdated partial `lucide-react` mock in that test no longer matches the current storyteller component imports.\n\nStatus\n- Interior-designer test slice: green\n- Full repo `npm run test:unit`: blocked by unrelated existing failures above",
+              "last_response": "Added/changed tests\n- `src/app/api/interior-designer/__tests__/designs-route.test.ts`\n  - Covers the `designs` route contract that changed:\n    - `GET` returns 400 when neither `projectId` nor `design",
+              "last_stage": "tester"
+            },
+            "notes": "Stage completed: tester",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 213543,
+                    "output_tokens": 5625,
+                    "reasoning_tokens": 6000,
+                    "cache_read_tokens": 2448896,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 1320456
+            },
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 125073,
+              "tool_time_ms": 36088,
+              "active_time_ms": 161161
+            }
+          },
+          "plan": {
+            "status": "succeeded",
+            "context_updates": {
+              "plan.has_p0_security_issue": "yes",
+              "response.plan": "Plan and decisions written. Verification summary below.\n\n**1. P0 declaration:** `P0 exists` — `store/useInteriorStore.ts:1579-1591` (`renameDesign`) writes `interior_designs.name` directly via the browser Supabase client, bypassing auth (invariant #2). Fix is trivial: the `PATCH /api/interior-designer/designs` route already enforces auth.\n\n**2. Your Clarify decision: [A] Staged migration.**\n- In scope: P0 write removal, public `index.ts` barrel + layer seams, typed `io/` edge, staged store→TanStack split, cross-module import cleanup, AI/prompt server-side move.\n- Explicitly deferred: shared `useJob`/Trigger job cleanup (Item 7 — blocked, `src/shared/` doesn't exist yet), full folder reshape (Item 10), `interior_designs` schema normalization.\n\n**3. First shippable increment: Items 1–3 — P0 Supabase-write removal + public barrel/layer seams + typed `io/` edge (Zod DTOs shared with routes).** Backend/plumbing only; no user-visible UI-flow change.\n\n**4. Item count & effort:** 10 items (P0×1, P1×4, P2×4, P3×1). Increment 1 ≈ 1–1.5 dev days.\n\n**5. Plan highlights (concrete refs):**\n- Item 1: swap browser Supabase call → `PATCH /api/interior-designer/designs` (mirrors existing `deleteDesign`).\n- Item 2: add `index.ts` + seam folders (`io/ state/ core/ services/ tasks/ ui/`); only `storyteller` has a barrel today.\n- Item 3: `io/interior-designer.{dto,api,keys}.ts` over the six existing routes.\n- Items 4–5: move design fetch/save/rename/delete out of the 1661-LOC store into `state/queries/*`; shrink store to UI-only.\n- Item 6: kill reach-ins to `world-building-toolkit/store/useWorldStore`, `AssetsPanel`, `3d-asset-exporter/AssetUploadZone`.\n- Corrections vs assess: **no schema inversion** (`interiorDesigns` in `src/db/schema.ts:133`), **no `z.any()`**, `localStorage` is in UI components not `services/`.\n\n**6. Verification reminder:** pick **[A] Approve & build** to implement, **[B]** for plan-only, **[I]** to request plan changes (type notes), **[X]** to abort. (Clarify's A/B/C are already decided — don't type `A` expecting build; choose gate option **[A]**.)\n\nStopping for Verification. Not implementing.\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"yes\"\n  }\n}\n```",
+              "last_stage": "plan",
+              "plan.has_ui_surface": "no",
+              "last_response": "Plan and decisions written. Verification summary below.\n\n**1. P0 declaration:** `P0 exists` — `store/useInteriorStore.ts:1579-1591` (`renameDesign`) writes `interior_designs.name` directly via the b"
+            },
+            "notes": "Stage completed: plan",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "anthropic",
+                    "model_id": "claude-opus-4-8"
+                  },
+                  "tokens": {
+                    "input_tokens": 33031,
+                    "output_tokens": 12961,
+                    "reasoning_tokens": 0,
+                    "cache_read_tokens": 346185,
+                    "cache_write_tokens": 77922
+                  }
+                },
+                "facts": {
+                  "algorithm": "anthropic",
+                  "cache_write_5m_tokens": 77922,
+                  "cache_write_1h_tokens": 0
+                }
+              },
+              "total_usd_micros": 1149284
+            },
+            "files_touched": [
+              "/workspace/kurvitza/DECISIONS.md",
+              "/workspace/kurvitza/PLAN.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 182976,
+              "tool_time_ms": 940,
+              "active_time_ms": 183916
+            }
+          }
+        },
+        "next_node_id": "run_tests",
+        "git_commit_sha": "a25c7750fa1dde9dc65915475cf7c8b45d93ed67",
+        "node_visits": {
+          "Verification": 1,
+          "assess": 1,
+          "developer": 1,
+          "verify": 1,
+          "scope": 1,
+          "verify_gate": 1,
+          "plan": 1,
+          "setup": 1,
+          "start": 1,
+          "tester": 1,
+          "clarify_prep": 1,
+          "Clarify": 1,
+          "setup_gate": 1
+        }
+      },
+      "diff": {
+        "patch": "diff --git a/src/app/api/interior-designer/__tests__/designs-route.test.ts b/src/app/api/interior-designer/__tests__/designs-route.test.ts\nnew file mode 100644\nindex 0000000..86f9319\n--- /dev/null\n+++ b/src/app/api/interior-designer/__tests__/designs-route.test.ts\n@@ -0,0 +1,176 @@\n+import { NextRequest } from 'next/server'\n+import { beforeEach, describe, expect, it, vi } from 'vitest'\n+\n+const requireAuthMock = vi.fn()\n+const checkRateLimitMock = vi.fn()\n+const verifyProjectAccessMock = vi.fn()\n+\n+let accessQueryResult: Array<{ designId?: string; projectId: string; projectUserId: string }> = []\n+let updatedDesignResult: Array<Record<string, unknown>> = []\n+let capturedUpdateValues: Record<string, unknown> | null = null\n+\n+const selectMock = vi.fn((projection?: unknown) => {\n+  if (!projection) {\n+    throw new Error('Unexpected db.select() call in this test')\n+  }\n+\n+  return {\n+    from: vi.fn(() => ({\n+      innerJoin: vi.fn(() => ({\n+        where: vi.fn(() => ({\n+          limit: vi.fn().mockResolvedValue(accessQueryResult),\n+        })),\n+      })),\n+    })),\n+  }\n+})\n+\n+const updateMock = vi.fn(() => ({\n+  set: vi.fn((updates: Record<string, unknown>) => {\n+    capturedUpdateValues = updates\n+\n+    return {\n+      where: vi.fn(() => ({\n+        returning: vi.fn().mockResolvedValue(updatedDesignResult),\n+      })),\n+    }\n+  }),\n+}))\n+\n+vi.mock('@/lib/api-utils', () => ({\n+  requireAuth: (...args: unknown[]) => requireAuthMock(...args),\n+  checkRateLimit: (...args: unknown[]) => checkRateLimitMock(...args),\n+}))\n+\n+vi.mock('@/domains/storyteller', () => ({\n+  verifyProjectAccess: (...args: unknown[]) => verifyProjectAccessMock(...args),\n+}))\n+\n+vi.mock('@/lib/db', () => ({\n+  db: {\n+    select: (projection?: unknown) => selectMock(projection),\n+    update: () => updateMock(),\n+    insert: vi.fn(),\n+    delete: vi.fn(),\n+  },\n+}))\n+\n+vi.mock('drizzle-orm', async importOriginal => {\n+  const actual = await importOriginal<typeof import('drizzle-orm')>()\n+\n+  return {\n+    ...actual,\n+    eq: vi.fn((...args: unknown[]) => ({ eq: args })),\n+    desc: vi.fn((value: unknown) => ({ desc: value })),\n+  }\n+})\n+\n+import { GET, PATCH } from '../designs/route'\n+\n+function jsonRequest(body: Record<string, unknown>) {\n+  return new NextRequest('http://localhost/api/interior-designer/designs', {\n+    method: 'PATCH',\n+    headers: { 'Content-Type': 'application/json' },\n+    body: JSON.stringify(body),\n+  })\n+}\n+\n+async function responseJson(response: Response) {\n+  return response.json()\n+}\n+\n+describe('interior designer designs route', () => {\n+  beforeEach(() => {\n+    requireAuthMock.mockReset()\n+    checkRateLimitMock.mockReset()\n+    verifyProjectAccessMock.mockReset()\n+    selectMock.mockClear()\n+    updateMock.mockClear()\n+\n+    accessQueryResult = []\n+    updatedDesignResult = []\n+    capturedUpdateValues = null\n+\n+    requireAuthMock.mockResolvedValue({\n+      session: {\n+        user: {\n+          id: 'user-1',\n+        },\n+      },\n+    })\n+    checkRateLimitMock.mockReturnValue({ allowed: true })\n+    verifyProjectAccessMock.mockResolvedValue(true)\n+  })\n+\n+  it('returns 400 when GET is missing both projectId and designId', async () => {\n+    const response = await GET(new NextRequest('http://localhost/api/interior-designer/designs'))\n+\n+    expect(response.status).toBe(400)\n+    await expect(responseJson(response)).resolves.toMatchObject({\n+      error: 'Project ID or Design ID is required',\n+    })\n+  })\n+\n+  it('returns 400 when PATCH is missing the design id', async () => {\n+    const response = await PATCH(jsonRequest({ name: 'Renamed scene' }))\n+\n+    expect(response.status).toBe(400)\n+    await expect(responseJson(response)).resolves.toMatchObject({\n+      error: expect.stringContaining('Required'),\n+    })\n+    expect(selectMock).not.toHaveBeenCalled()\n+    expect(updateMock).not.toHaveBeenCalled()\n+  })\n+\n+  it('returns 403 when PATCH design access check fails', async () => {\n+    accessQueryResult = []\n+\n+    const response = await PATCH(jsonRequest({ id: 'design-1', name: 'Renamed scene' }))\n+\n+    expect(response.status).toBe(403)\n+    await expect(responseJson(response)).resolves.toEqual({ error: 'Unauthorized' })\n+    expect(updateMock).not.toHaveBeenCalled()\n+  })\n+\n+  it('accepts a name-only PATCH rename and persists it through the update path', async () => {\n+    accessQueryResult = [\n+      {\n+        designId: 'design-1',\n+        projectId: 'project-1',\n+        projectUserId: 'user-1',\n+      },\n+    ]\n+    updatedDesignResult = [\n+      {\n+        id: 'design-1',\n+        projectId: 'project-1',\n+        userId: 'user-1',\n+        name: 'Renamed scene',\n+        sceneData: {\n+          walls: [],\n+          floors: [],\n+          water: [],\n+          surfaces: [],\n+          objects: [],\n+          activeLevel: 0,\n+        },\n+        createdAt: '2026-01-01T00:00:00.000Z',\n+        updatedAt: '2026-01-02T00:00:00.000Z',\n+      },\n+    ]\n+\n+    const response = await PATCH(jsonRequest({ id: 'design-1', name: 'Renamed scene' }))\n+    const body = await responseJson(response)\n+\n+    expect(response.status).toBe(200)\n+    expect(body).toMatchObject({\n+      id: 'design-1',\n+      name: 'Renamed scene',\n+    })\n+    expect(capturedUpdateValues).toMatchObject({\n+      name: 'Renamed scene',\n+    })\n+    expect(capturedUpdateValues).not.toHaveProperty('sceneData')\n+    expect(capturedUpdateValues?.updatedAt).toBeInstanceOf(Date)\n+  })\n+})\ndiff --git a/src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts b/src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts\nnew file mode 100644\nindex 0000000..fd046d8\n--- /dev/null\n+++ b/src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts\n@@ -0,0 +1,84 @@\n+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'\n+\n+const updateDesignMock = vi.fn()\n+\n+vi.mock('@/domains/interior-designer/io/interior-designer.api', () => ({\n+  interiorDesignerApi: {\n+    designs: {\n+      update: (...args: unknown[]) => updateDesignMock(...args),\n+      create: vi.fn(),\n+      get: vi.fn(),\n+      delete: vi.fn(),\n+      list: vi.fn(),\n+    },\n+  },\n+}))\n+\n+describe('useInteriorStore.renameDesign', () => {\n+  let useInteriorStore: typeof import('../store/useInteriorStore').useInteriorStore\n+\n+  beforeAll(async () => {\n+    vi.stubGlobal('localStorage', {\n+      getItem: vi.fn(() => null),\n+      setItem: vi.fn(),\n+      removeItem: vi.fn(),\n+    })\n+\n+    ;({ useInteriorStore } = await import('../store/useInteriorStore'))\n+  })\n+\n+  beforeEach(() => {\n+    updateDesignMock.mockReset()\n+    useInteriorStore.setState({\n+      currentDesignId: null,\n+      currentDesignName: null,\n+    })\n+  })\n+\n+  it('routes a successful rename through the typed API client and updates the current design name', async () => {\n+    updateDesignMock.mockResolvedValue({\n+      id: 'design-1',\n+      name: 'Renamed scene',\n+    })\n+    useInteriorStore.setState({\n+      currentDesignId: 'design-1',\n+      currentDesignName: 'Old scene',\n+    })\n+\n+    await useInteriorStore.getState().renameDesign('design-1', 'Renamed scene')\n+\n+    expect(updateDesignMock).toHaveBeenCalledWith({\n+      id: 'design-1',\n+      name: 'Renamed scene',\n+    })\n+    expect(useInteriorStore.getState().currentDesignName).toBe('Renamed scene')\n+  })\n+\n+  it('does not overwrite the currently open design name when renaming a different design', async () => {\n+    updateDesignMock.mockResolvedValue({\n+      id: 'design-1',\n+      name: 'Renamed elsewhere',\n+    })\n+    useInteriorStore.setState({\n+      currentDesignId: 'design-2',\n+      currentDesignName: 'Current scene',\n+    })\n+\n+    await useInteriorStore.getState().renameDesign('design-1', 'Renamed elsewhere')\n+\n+    expect(useInteriorStore.getState().currentDesignName).toBe('Current scene')\n+  })\n+\n+  it('surfaces rename failures and preserves the current design name', async () => {\n+    updateDesignMock.mockRejectedValue(new Error('Rename failed'))\n+    useInteriorStore.setState({\n+      currentDesignId: 'design-1',\n+      currentDesignName: 'Old scene',\n+    })\n+\n+    await expect(\n+      useInteriorStore.getState().renameDesign('design-1', 'Renamed scene')\n+    ).rejects.toThrow('Rename failed')\n+    expect(useInteriorStore.getState().currentDesignName).toBe('Old scene')\n+  })\n+})\n",
+        "summary": {
+          "files_changed": 32,
+          "additions": 1741,
+          "deletions": 611
+        }
+      }
+    },
+    {
+      "seq": 0,
+      "checkpoint": {
+        "timestamp": "2026-07-02T07:59:06.763619Z",
+        "current_node": "run_tests",
+        "completed_nodes": [
+          "start",
+          "scope",
+          "assess",
+          "clarify_prep",
+          "Clarify",
+          "plan",
+          "Verification",
+          "setup",
+          "setup_gate",
+          "developer",
+          "verify",
+          "verify_gate",
+          "tester",
+          "run_tests"
+        ],
+        "node_retries": {},
+        "context_values": {
           "internal.retry_count.tester": 0,
           "human.gate.Verification.question": "Plan is ready. [A] build · [B] plan only · [I] iterate (notes) · [X] abort — do not reuse Clarify's A/B/C here",
           "thread.build.current_node": "tester",
@@ -4216,15 +4631,15 @@
           "internal.retry_count.start": 0,
           "graph.default_fidelity": "summary:medium",
           "human.gate.label": "[A] Approve & build",
-          "internal.fidelity": "full",
-          "current_node": "tester",
+          "internal.fidelity": "summary:medium",
+          "current_node": "run_tests",
           "internal.retry_count.developer": 0,
           "thread.clarify_prep.current_node": "Clarify",
           "last_stage": "tester",
           "last_response": "Added/changed tests\n- `src/app/api/interior-designer/__tests__/designs-route.test.ts`\n  - Covers the `designs` route contract that changed:\n    - `GET` returns 400 when neither `projectId` nor `design",
           "graph.default_max_retries": "1",
           "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
-          "failure_class": "",
+          "failure_class": "deterministic",
           "internal.retry_count.verify": 0,
           "response.plan": "Plan and decisions written. Verification summary below.\n\n**1. P0 declaration:** `P0 exists` — `store/useInteriorStore.ts:1579-1591` (`renameDesign`) writes `interior_designs.name` directly via the browser Supabase client, bypassing auth (invariant #2). Fix is trivial: the `PATCH /api/interior-designer/designs` route already enforces auth.\n\n**2. Your Clarify decision: [A] Staged migration.**\n- In scope: P0 write removal, public `index.ts` barrel + layer seams, typed `io/` edge, staged store→TanStack split, cross-module import cleanup, AI/prompt server-side move.\n- Explicitly deferred: shared `useJob`/Trigger job cleanup (Item 7 — blocked, `src/shared/` doesn't exist yet), full folder reshape (Item 10), `interior_designs` schema normalization.\n\n**3. First shippable increment: Items 1–3 — P0 Supabase-write removal + public barrel/layer seams + typed `io/` edge (Zod DTOs shared with routes).** Backend/plumbing only; no user-visible UI-flow change.\n\n**4. Item count & effort:** 10 items (P0×1, P1×4, P2×4, P3×1). Increment 1 ≈ 1–1.5 dev days.\n\n**5. Plan highlights (concrete refs):**\n- Item 1: swap browser Supabase call → `PATCH /api/interior-designer/designs` (mirrors existing `deleteDesign`).\n- Item 2: add `index.ts` + seam folders (`io/ state/ core/ services/ tasks/ ui/`); only `storyteller` has a barrel today.\n- Item 3: `io/interior-designer.{dto,api,keys}.ts` over the six existing routes.\n- Items 4–5: move design fetch/save/rename/delete out of the 1661-LOC store into `state/queries/*`; shrink store to UI-only.\n- Item 6: kill reach-ins to `world-building-toolkit/store/useWorldStore`, `AssetsPanel`, `3d-asset-exporter/AssetUploadZone`.\n- Corrections vs assess: **no schema inversion** (`interiorDesigns` in `src/db/schema.ts:133`), **no `z.any()`**, `localStorage` is in UI components not `services/`.\n\n**6. Verification reminder:** pick **[A] Approve & build** to implement, **[B]** for plan-only, **[I]** to request plan changes (type notes), **[X]** to abort. (Clarify's A/B/C are already decided — don't type `A` expecting build; choose gate option **[A]**.)\n\nStopping for Verification. Not implementing.\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"yes\"\n  }\n}\n```",
           "internal.retry_count.plan": 0,
@@ -4242,12 +4657,12 @@
           "internal.retry_count.setup_gate": 0,
           "response.scope": "=== module: interior-designer ===\nsrc/domains/interior-designer/__tests__/terrain-cdt.test.ts\nsrc/domains/interior-designer/__tests__/terrain-quality.test.ts\nsrc/domains/interior-designer/__tests__/unity-export.script.ts\nsrc/domains/interior-designer/__tests__/windows-doors.e2e.test.ts\nsrc/domains/interior-designer/ai/TextureService.ts\nsrc/domains/interior-designer/components/CameraController.tsx\nsrc/domains/interior-designer/components/DesignManager.tsx\nsrc/domains/interior-designer/components/Exporter.tsx\nsrc/domains/interior-designer/components/FloorManager.tsx\nsrc/domains/interior-designer/components/InteriorCanvas.tsx\nsrc/domains/interior-designer/components/KeybindingManager.tsx\nsrc/domains/interior-designer/components/ObjectManager.tsx\nsrc/domains/interior-designer/components/RetextureExporter.tsx\nsrc/domains/interior-designer/components/SculptableSurface.tsx\nsrc/domains/interior-designer/components/SurfaceManager.tsx\nsrc/domains/interior-designer/components/TransformManager.tsx\nsrc/domains/interior-designer/components/UI/AssetLibrary.tsx\nsrc/domains/interior-designer/components/UI/InteriorRightSidebar.tsx\nsrc/domains/interior-designer/components/UI/LayerPanel.tsx\nsrc/domains/interior-designer/components/UI/PropertiesPanel.tsx\nsrc/domains/interior-designer/components/UI/SurfaceProperties.tsx\nsrc/domains/interior-designer/components/UI/TerrainEditorPanel.tsx\nsrc/domains/interior-designer/components/UI/Toolbar.tsx\nsrc/domains/interior-designer/components/VoxelTerrainMesh.tsx\nsrc/domains/interior-designer/components/WallManager.tsx\nsrc/domains/interior-designer/components/meshes/DoorMesh.tsx\nsrc/domains/interior-designer/components/meshes/RoadMesh.tsx\nsrc/domains/interior-designer/components/meshes/WindowMesh.tsx\nsrc/domains/interior-designer/components/terrain/GlobalWaterPlane.tsx\nsrc/domains/interior-designer/components/terrain/TerrainBrushPreview.tsx\nsrc/domains/interior-designer/components/terrain/index.ts\nsrc/domains/interior-designer/components/tools/ObjectTool.tsx\nsrc/domains/interior-designer/components/tools/ScatterTool.tsx\nsrc/domains/interior-designer/components/tools/SurfaceTool.tsx\nsrc/domains/interior-designer/components/tools/TerrainTool.tsx\nsrc/domains/interior-designer/components/tools/WallTool.tsx\nsrc/domains/interior-designer/prompts/index.ts\nsrc/domains/interior-designer/store/useInteriorStore.ts\nsrc/domains/interior-designer/utils/UnityExporter.ts\nsrc/domains/interior-designer/utils/UnityYAML.ts\nsrc/domains/interior-designer/utils/polygonUtils.ts\nsrc/domains/interior-designer/utils/textureCache.ts\n\n=== git status ===\n\n=== architecture contract ===\n-rw-r--r-- 1 root root 38694 Jul  2 06:59 docs/unified/ARCHITECTURE.md\n-rw-r--r-- 1 root root 26993 Jul  2 06:59 docs/unified/SPEC.md",
           "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: interior-designer is still a legacy flat slice and is materially off-target in three places first: direct browser-side persistence, a monolithic Zustand store carrying server state, and bespoke polling/job orchestration in UI components.\n\nTop 3 gaps to fix first:\n1. Remove browser → Supabase writes; route all writes through typed API/service/Drizzle paths.\n2. Split `useInteriorStore` into UI-only Zustand state plus TanStack Query + `io/` for server data.\n3. Replace component-level polling/global job bookkeeping with module-owned Trigger tasks and shared job observation.",
-          "internal.thread_id": "build",
-          "outcome": "succeeded",
+          "internal.thread_id": "tester",
+          "outcome": "failed",
           "internal.work_dir": "/workspace/kurvitza",
           "internal.retry_count.Clarify": 0,
           "human.gate.Clarify.answer": "A",
-          "failure_signature": "",
+          "failure_signature": "run_tests|deterministic|script failed with exit code: <n> ## output /domains/storyteller/agents/__tests__/full-flow.e2e.test.ts ]\u001b[22m \u001b[41m\u001b[1m fail \u001b[22m\u001b[49m src/domains/storyteller/agents/__tests__/multiple-intents.e2e.test.ts\u001b[2m [ src/domains/storyteller/age",
           "thread.verify.current_node": "verify_gate",
           "internal.retry_count.clarify_prep": 0,
           "plan.has_p0_security_issue": "yes",
@@ -4255,11 +4670,13 @@
           "internal.retry_count.setup": 0,
           "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)",
           "human.gate.Verification.label": "[A] Approve & build",
-          "command.output": "blob://sha256/5e212ec81fe19ed3442d5e30139c78e7322dbec083269eaa5aa73450d3636691",
+          "command.output": "blob://sha256/fea7c7a542558dda2a4d7f4e790b2d30678b9477ee765c206d97559b543b2a19",
           "thread.setup.current_node": "setup_gate",
           "response.tester": "Added/changed tests\n- `src/app/api/interior-designer/__tests__/designs-route.test.ts`\n  - Covers the `designs` route contract that changed:\n    - `GET` returns 400 when neither `projectId` nor `designId` is provided\n    - `PATCH` returns 400 when `id` is missing\n    - `PATCH` returns 403 when access verification fails\n    - `PATCH` accepts the new name-only rename path and persists only `name` + `updatedAt`\n- `src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts`\n  - Covers the store behavior that replaced the browser Supabase write:\n    - successful rename routes through the typed API client and updates the current design name\n    - renaming a different design does not overwrite the open design name\n    - API failure is surfaced and local state is preserved\n\nWhat behavior is now pinned down\n- Core happy path:\n  - design rename succeeds through `PATCH /api/interior-designer/designs`\n  - current design title updates in the store after a successful rename\n- Edge/error cases:\n  - missing route params/body fields produce 400s\n  - unauthorized rename attempts produce 403s\n  - failed rename requests do not mutate local state\n- State transitions:\n  - current design rename updates visible state\n  - non-current design rename leaves visible state unchanged\n  - error path preserves prior state\n\nCommands run\n- `npx vitest run src/app/api/interior-designer/__tests__/designs-route.test.ts src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts` ✅\n- `npx vitest run src/domains/interior-designer src/app/api/interior-designer` ✅\n- `node scripts/fabro-verify.mjs` ✅\n- `npm run test:unit` ❌ blocked by unrelated pre-existing repo failures outside interior-designer\n\nNotable edge cases intentionally left untested\n- I did not add UI rendering tests for the new `InteriorDesignerWorkspace` barrel wiring because this increment is plumbing-only and the highest-risk changes were the rename persistence path and typed route validation.\n- I did not add tests for every non-design route (`texture`, `material`, `retexture`, `text-to-3d`) because the approved increment’s highest-risk behavioral change was the rename write-path removal; the DTO parse coverage already added by Developer covers those schemas.\n\nProduct bugs found\n- No interior-designer source defect was exposed by the new tests.\n- The full repo unit suite is still red due to unrelated existing failures outside this feature.\n\nBug: Storyteller config crashes test imports because JSX is used without React in scope\nWhere: `src/domains/storyteller/config/storyteller-agents.tsx:8`\nRepro: `npm run test:unit`\nExpected: Storyteller-related tests import config modules without runtime `React is not defined`\nActual: Multiple unrelated suites fail with `ReferenceError: React is not defined`\nSuspected cause: `storyteller-agents.tsx` contains JSX (`<Brain ... />`) but the test/runtime transform for that file still requires `React` to be in scope.\n\nBug: Chat e2e lucide mock is missing the `Heart` export now used by CharacterPanel\nWhere: `src/domains/chat/components/__tests__/AgentLog.e2e.test.tsx` (failure surfaces via `src/domains/storyteller/components/CharacterPanel/CharacterPanel.tsx:80`)\nRepro: `npm run test:unit`\nExpected: The lucide mock used by the chat e2e test exports all icons needed by imported storyteller components\nActual: Suite fails with `No \"Heart\" export is defined on the \"lucide-react\" mock`\nSuspected cause: An outdated partial `lucide-react` mock in that test no longer matches the current storyteller component imports.\n\nStatus\n- Interior-designer test slice: green\n- Full repo `npm run test:unit`: blocked by unrelated existing failures above",
+          "thread.tester.current_node": "run_tests",
           "internal.retry_count.Verification": 0,
           "internal.node_visit_count": 1,
+          "internal.retry_count.run_tests": 0,
           "human.gate.selected": "A",
           "internal.retry_count.assess": 0,
           "graph.goal": "Clean up and align the interior-designer module (src/domains/interior-designer) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification."
@@ -4306,14 +4723,28 @@
               "active_time_ms": 28151
             }
           },
-          "tester": {
+          "setup": {
             "status": "succeeded",
             "context_updates": {
-              "response.tester": "Added/changed tests\n- `src/app/api/interior-designer/__tests__/designs-route.test.ts`\n  - Covers the `designs` route contract that changed:\n    - `GET` returns 400 when neither `projectId` nor `designId` is provided\n    - `PATCH` returns 400 when `id` is missing\n    - `PATCH` returns 403 when access verification fails\n    - `PATCH` accepts the new name-only rename path and persists only `name` + `updatedAt`\n- `src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts`\n  - Covers the store behavior that replaced the browser Supabase write:\n    - successful rename routes through the typed API client and updates the current design name\n    - renaming a different design does not overwrite the open design name\n    - API failure is surfaced and local state is preserved\n\nWhat behavior is now pinned down\n- Core happy path:\n  - design rename succeeds through `PATCH /api/interior-designer/designs`\n  - current design title updates in the store after a successful rename\n- Edge/error cases:\n  - missing route params/body fields produce 400s\n  - unauthorized rename attempts produce 403s\n  - failed rename requests do not mutate local state\n- State transitions:\n  - current design rename updates visible state\n  - non-current design rename leaves visible state unchanged\n  - error path preserves prior state\n\nCommands run\n- `npx vitest run src/app/api/interior-designer/__tests__/designs-route.test.ts src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts` ✅\n- `npx vitest run src/domains/interior-designer src/app/api/interior-designer` ✅\n- `node scripts/fabro-verify.mjs` ✅\n- `npm run test:unit` ❌ blocked by unrelated pre-existing repo failures outside interior-designer\n\nNotable edge cases intentionally left untested\n- I did not add UI rendering tests for the new `InteriorDesignerWorkspace` barrel wiring because this increment is plumbing-only and the highest-risk changes were the rename persistence path and typed route validation.\n- I did not add tests for every non-design route (`texture`, `material`, `retexture`, `text-to-3d`) because the approved increment’s highest-risk behavioral change was the rename write-path removal; the DTO parse coverage already added by Developer covers those schemas.\n\nProduct bugs found\n- No interior-designer source defect was exposed by the new tests.\n- The full repo unit suite is still red due to unrelated existing failures outside this feature.\n\nBug: Storyteller config crashes test imports because JSX is used without React in scope\nWhere: `src/domains/storyteller/config/storyteller-agents.tsx:8`\nRepro: `npm run test:unit`\nExpected: Storyteller-related tests import config modules without runtime `React is not defined`\nActual: Multiple unrelated suites fail with `ReferenceError: React is not defined`\nSuspected cause: `storyteller-agents.tsx` contains JSX (`<Brain ... />`) but the test/runtime transform for that file still requires `React` to be in scope.\n\nBug: Chat e2e lucide mock is missing the `Heart` export now used by CharacterPanel\nWhere: `src/domains/chat/components/__tests__/AgentLog.e2e.test.tsx` (failure surfaces via `src/domains/storyteller/components/CharacterPanel/CharacterPanel.tsx:80`)\nRepro: `npm run test:unit`\nExpected: The lucide mock used by the chat e2e test exports all icons needed by imported storyteller components\nActual: Suite fails with `No \"Heart\" export is defined on the \"lucide-react\" mock`\nSuspected cause: An outdated partial `lucide-react` mock in that test no longer matches the current storyteller component imports.\n\nStatus\n- Interior-designer test slice: green\n- Full repo `npm run test:unit`: blocked by unrelated existing failures above",
-              "last_response": "Added/changed tests\n- `src/app/api/interior-designer/__tests__/designs-route.test.ts`\n  - Covers the `designs` route contract that changed:\n    - `GET` returns 400 when neither `projectId` nor `design",
-              "last_stage": "tester"
+              "command.output": "blob://sha256/679d512a32845f862780020869851a9c1513944325a8ff7483160c012f14bf25"
             },
-            "notes": "Stage completed: tester",
+            "notes": "Script completed: set -euo pipefail; echo '=== sandbox bootstrap ==='; if ! command -v git >/dev/null; then apt-get update && apt-get install -y git ca-certificates; fi; if ! command -v npm >/dev/null; then apt-get update && apt-get install -y nodejs npm; fi; command -v npm >/dev/null || { echo 'ERROR: npm still missing — expected image node:22-bookworm'; exit 1; }; npm ci --prefer-offline --no-audit --no-fund; npm run test:playwright:install; echo '=== bootstrap complete ==='",
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 127937,
+              "active_time_ms": 127937
+            }
+          },
+          "developer": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_stage": "developer",
+              "last_response": "Implemented the approved minimum increment for `interior-designer`.\n\nFiles created\n- `src/domains/interior-designer/index.ts`\n- `src/domains/interior-designer/interior-designer.config.ts`\n- `src/domai",
+              "response.developer": "Implemented the approved minimum increment for `interior-designer`.\n\nFiles created\n- `src/domains/interior-designer/index.ts`\n- `src/domains/interior-designer/interior-designer.config.ts`\n- `src/domains/interior-designer/ui/InteriorDesignerWorkspace/InteriorDesignerWorkspace.tsx`\n- `src/domains/interior-designer/ui/InteriorDesignerWorkspace/index.ts`\n- `src/domains/interior-designer/ui/index.ts`\n- `src/domains/interior-designer/state/index.ts`\n- `src/domains/interior-designer/state/queries/index.ts`\n- `src/domains/interior-designer/io/interior-designer.dto.ts`\n- `src/domains/interior-designer/io/interior-designer.api.ts`\n- `src/domains/interior-designer/io/interior-designer.keys.ts`\n- `src/domains/interior-designer/io/index.ts`\n- `src/domains/interior-designer/core/index.ts`\n- `src/domains/interior-designer/services/index.ts`\n- `src/domains/interior-designer/tasks/index.ts`\n- `src/domains/interior-designer/__tests__/interior-designer.dto.test.ts`\n\nFiles modified\n- `src/app/app/[projectId]/interior-design/page.tsx`\n- `src/domains/interior-designer/store/useInteriorStore.ts`\n- `src/domains/interior-designer/components/DesignManager.tsx`\n- `src/domains/interior-designer/components/UI/PropertiesPanel.tsx`\n- `src/domains/interior-designer/components/UI/SurfaceProperties.tsx`\n- `src/app/api/interior-designer/designs/route.ts`\n- `src/app/api/interior-designer/texture/route.ts`\n- `src/app/api/interior-designer/textures/route.ts`\n- `src/app/api/interior-designer/retexture/route.ts`\n- `src/app/api/interior-designer/retexture/[runId]/route.ts`\n- `src/app/api/interior-designer/text-to-3d/route.ts`\n- `src/app/api/interior-designer/text-to-3d/[taskId]/route.ts`\n- `src/app/api/interior-designer/material/route.ts`\n- `src/app/api/interior-designer/material/[taskId]/route.ts`\n\nWhat changed\n- Replaced the browser-side Supabase rename write with the authenticated `PATCH /api/interior-designer/designs` path.\n- Added the module barrel and seam folders/barrels for `ui/`, `io/`, `state/`, `state/queries/`, `core/`, `services/`, and `tasks/`.\n- Extracted the current route shell into `InteriorDesignerWorkspace` so the app route now imports the module through `@/domains/interior-designer`.\n- Added shared Zod DTOs for designs, texture, textures, retexture, text-to-3d, and material routes.\n- Added a typed `interiorDesignerApi` client and query-key factory.\n- Rewired current runtime calls in the store and legacy components to use the typed io client instead of ad hoc `fetch(...)`.\n- Updated the interior-designer API routes to parse requests and shape responses with the shared DTOs.\n- Added DTO parse tests.\n\nVerification\n- `npx vitest run src/domains/interior-designer/__tests__/interior-designer.dto.test.ts` ✅\n- `node scripts/fabro-verify.mjs` ✅\n  - scoped typecheck clean\n  - eslint passes the gate, but there are pre-existing warnings in touched legacy files\n- Quick grep checks:\n  - no `supabaseClient` / `getSupabaseClient` references remain in `src/domains/interior-designer`\n  - no runtime direct `fetch('/api/interior-designer...')` calls remain in the module; only the existing e2e test still hits the route directly\n\nDeviations from plan\n- Small structural extraction: I introduced `InteriorDesignerWorkspace` so the route could consume the new public barrel immediately. This stays within Item 2’s “establish the contract” intent and avoids exposing multiple internals from `app/`.\n\nDeferred work\n- Item 4: TanStack Query hooks for design server-state\n- Item 6: cross-module internal import cleanup\n- All P2/P3 items remain deferred, including store split, AI/task relocation, UI component breakup, and shared job infra migration\n\nNotes\n- The scoped verify script passes, but legacy lint warnings remain in `PropertiesPanel.tsx`, `SurfaceProperties.tsx`, `DesignManager.tsx`, the new workspace wrapper, and a few route handlers. I did not widen scope to clean those since they’re outside the approved minimum increment."
+            },
+            "notes": "Stage completed: developer",
             "usage": {
               "input": {
                 "usage": {
@@ -4322,10 +4753,10 @@
                     "model_id": "gpt-5.4"
                   },
                   "tokens": {
-                    "input_tokens": 213543,
-                    "output_tokens": 5625,
-                    "reasoning_tokens": 6000,
-                    "cache_read_tokens": 2448896,
+                    "input_tokens": 179489,
+                    "output_tokens": 44158,
+                    "reasoning_tokens": 17584,
+                    "cache_read_tokens": 5634560,
                     "cache_write_tokens": 0
                   }
                 },
@@ -4333,13 +4764,42 @@
                   "algorithm": "openai"
                 }
               },
-              "total_usd_micros": 1320456
+              "total_usd_micros": 2783492
             },
             "timing": {
               "wall_time_ms": 0,
-              "inference_time_ms": 125073,
-              "tool_time_ms": 36088,
-              "active_time_ms": 161161
+              "inference_time_ms": 621557,
+              "tool_time_ms": 319111,
+              "active_time_ms": 940668
+            }
+          },
+          "Clarify": {
+            "status": "succeeded",
+            "preferred_label": "[A] Staged migration",
+            "suggested_next_ids": [
+              "plan"
+            ],
+            "context_updates": {
+              "human.gate.label": "[A] Staged migration",
+              "human.gate.selected": "A",
+              "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)",
+              "human.gate.Clarify.answer": "A",
+              "human.gate.Clarify.label": "[A] Staged migration"
+            },
+            "usage": null
+          },
+          "verify": {
+            "status": "succeeded",
+            "context_updates": {
+              "command.output": "blob://sha256/5e212ec81fe19ed3442d5e30139c78e7322dbec083269eaa5aa73450d3636691"
+            },
+            "notes": "Script completed: set -euo pipefail; node scripts/fabro-verify.mjs",
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 10766,
+              "active_time_ms": 10766
             }
           },
           "Verification": {
@@ -4449,20 +4909,6 @@
               "active_time_ms": 183916
             }
           },
-          "setup": {
-            "status": "succeeded",
-            "context_updates": {
-              "command.output": "blob://sha256/679d512a32845f862780020869851a9c1513944325a8ff7483160c012f14bf25"
-            },
-            "notes": "Script completed: set -euo pipefail; echo '=== sandbox bootstrap ==='; if ! command -v git >/dev/null; then apt-get update && apt-get install -y git ca-certificates; fi; if ! command -v npm >/dev/null; then apt-get update && apt-get install -y nodejs npm; fi; command -v npm >/dev/null || { echo 'ERROR: npm still missing — expected image node:22-bookworm'; exit 1; }; npm ci --prefer-offline --no-audit --no-fund; npm run test:playwright:install; echo '=== bootstrap complete ==='",
-            "usage": null,
-            "timing": {
-              "wall_time_ms": 0,
-              "inference_time_ms": 0,
-              "tool_time_ms": 127937,
-              "active_time_ms": 127937
-            }
-          },
           "scope": {
             "status": "succeeded",
             "context_updates": {
@@ -4499,34 +4945,14 @@
               "active_time_ms": 8183
             }
           },
-          "setup_gate": {
-            "status": "succeeded",
-            "notes": "Conditional node evaluated: setup_gate",
-            "usage": null
-          },
-          "Clarify": {
-            "status": "succeeded",
-            "preferred_label": "[A] Staged migration",
-            "suggested_next_ids": [
-              "plan"
-            ],
-            "context_updates": {
-              "human.gate.label": "[A] Staged migration",
-              "human.gate.selected": "A",
-              "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)",
-              "human.gate.Clarify.answer": "A",
-              "human.gate.Clarify.label": "[A] Staged migration"
-            },
-            "usage": null
-          },
-          "developer": {
+          "tester": {
             "status": "succeeded",
             "context_updates": {
-              "last_stage": "developer",
-              "last_response": "Implemented the approved minimum increment for `interior-designer`.\n\nFiles created\n- `src/domains/interior-designer/index.ts`\n- `src/domains/interior-designer/interior-designer.config.ts`\n- `src/domai",
-              "response.developer": "Implemented the approved minimum increment for `interior-designer`.\n\nFiles created\n- `src/domains/interior-designer/index.ts`\n- `src/domains/interior-designer/interior-designer.config.ts`\n- `src/domains/interior-designer/ui/InteriorDesignerWorkspace/InteriorDesignerWorkspace.tsx`\n- `src/domains/interior-designer/ui/InteriorDesignerWorkspace/index.ts`\n- `src/domains/interior-designer/ui/index.ts`\n- `src/domains/interior-designer/state/index.ts`\n- `src/domains/interior-designer/state/queries/index.ts`\n- `src/domains/interior-designer/io/interior-designer.dto.ts`\n- `src/domains/interior-designer/io/interior-designer.api.ts`\n- `src/domains/interior-designer/io/interior-designer.keys.ts`\n- `src/domains/interior-designer/io/index.ts`\n- `src/domains/interior-designer/core/index.ts`\n- `src/domains/interior-designer/services/index.ts`\n- `src/domains/interior-designer/tasks/index.ts`\n- `src/domains/interior-designer/__tests__/interior-designer.dto.test.ts`\n\nFiles modified\n- `src/app/app/[projectId]/interior-design/page.tsx`\n- `src/domains/interior-designer/store/useInteriorStore.ts`\n- `src/domains/interior-designer/components/DesignManager.tsx`\n- `src/domains/interior-designer/components/UI/PropertiesPanel.tsx`\n- `src/domains/interior-designer/components/UI/SurfaceProperties.tsx`\n- `src/app/api/interior-designer/designs/route.ts`\n- `src/app/api/interior-designer/texture/route.ts`\n- `src/app/api/interior-designer/textures/route.ts`\n- `src/app/api/interior-designer/retexture/route.ts`\n- `src/app/api/interior-designer/retexture/[runId]/route.ts`\n- `src/app/api/interior-designer/text-to-3d/route.ts`\n- `src/app/api/interior-designer/text-to-3d/[taskId]/route.ts`\n- `src/app/api/interior-designer/material/route.ts`\n- `src/app/api/interior-designer/material/[taskId]/route.ts`\n\nWhat changed\n- Replaced the browser-side Supabase rename write with the authenticated `PATCH /api/interior-designer/designs` path.\n- Added the module barrel and seam folders/barrels for `ui/`, `io/`, `state/`, `state/queries/`, `core/`, `services/`, and `tasks/`.\n- Extracted the current route shell into `InteriorDesignerWorkspace` so the app route now imports the module through `@/domains/interior-designer`.\n- Added shared Zod DTOs for designs, texture, textures, retexture, text-to-3d, and material routes.\n- Added a typed `interiorDesignerApi` client and query-key factory.\n- Rewired current runtime calls in the store and legacy components to use the typed io client instead of ad hoc `fetch(...)`.\n- Updated the interior-designer API routes to parse requests and shape responses with the shared DTOs.\n- Added DTO parse tests.\n\nVerification\n- `npx vitest run src/domains/interior-designer/__tests__/interior-designer.dto.test.ts` ✅\n- `node scripts/fabro-verify.mjs` ✅\n  - scoped typecheck clean\n  - eslint passes the gate, but there are pre-existing warnings in touched legacy files\n- Quick grep checks:\n  - no `supabaseClient` / `getSupabaseClient` references remain in `src/domains/interior-designer`\n  - no runtime direct `fetch('/api/interior-designer...')` calls remain in the module; only the existing e2e test still hits the route directly\n\nDeviations from plan\n- Small structural extraction: I introduced `InteriorDesignerWorkspace` so the route could consume the new public barrel immediately. This stays within Item 2’s “establish the contract” intent and avoids exposing multiple internals from `app/`.\n\nDeferred work\n- Item 4: TanStack Query hooks for design server-state\n- Item 6: cross-module internal import cleanup\n- All P2/P3 items remain deferred, including store split, AI/task relocation, UI component breakup, and shared job infra migration\n\nNotes\n- The scoped verify script passes, but legacy lint warnings remain in `PropertiesPanel.tsx`, `SurfaceProperties.tsx`, `DesignManager.tsx`, the new workspace wrapper, and a few route handlers. I did not widen scope to clean those since they’re outside the approved minimum increment."
+              "response.tester": "Added/changed tests\n- `src/app/api/interior-designer/__tests__/designs-route.test.ts`\n  - Covers the `designs` route contract that changed:\n    - `GET` returns 400 when neither `projectId` nor `designId` is provided\n    - `PATCH` returns 400 when `id` is missing\n    - `PATCH` returns 403 when access verification fails\n    - `PATCH` accepts the new name-only rename path and persists only `name` + `updatedAt`\n- `src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts`\n  - Covers the store behavior that replaced the browser Supabase write:\n    - successful rename routes through the typed API client and updates the current design name\n    - renaming a different design does not overwrite the open design name\n    - API failure is surfaced and local state is preserved\n\nWhat behavior is now pinned down\n- Core happy path:\n  - design rename succeeds through `PATCH /api/interior-designer/designs`\n  - current design title updates in the store after a successful rename\n- Edge/error cases:\n  - missing route params/body fields produce 400s\n  - unauthorized rename attempts produce 403s\n  - failed rename requests do not mutate local state\n- State transitions:\n  - current design rename updates visible state\n  - non-current design rename leaves visible state unchanged\n  - error path preserves prior state\n\nCommands run\n- `npx vitest run src/app/api/interior-designer/__tests__/designs-route.test.ts src/domains/interior-designer/__tests__/useInteriorStore.renameDesign.test.ts` ✅\n- `npx vitest run src/domains/interior-designer src/app/api/interior-designer` ✅\n- `node scripts/fabro-verify.mjs` ✅\n- `npm run test:unit` ❌ blocked by unrelated pre-existing repo failures outside interior-designer\n\nNotable edge cases intentionally left untested\n- I did not add UI rendering tests for the new `InteriorDesignerWorkspace` barrel wiring because this increment is plumbing-only and the highest-risk changes were the rename persistence path and typed route validation.\n- I did not add tests for every non-design route (`texture`, `material`, `retexture`, `text-to-3d`) because the approved increment’s highest-risk behavioral change was the rename write-path removal; the DTO parse coverage already added by Developer covers those schemas.\n\nProduct bugs found\n- No interior-designer source defect was exposed by the new tests.\n- The full repo unit suite is still red due to unrelated existing failures outside this feature.\n\nBug: Storyteller config crashes test imports because JSX is used without React in scope\nWhere: `src/domains/storyteller/config/storyteller-agents.tsx:8`\nRepro: `npm run test:unit`\nExpected: Storyteller-related tests import config modules without runtime `React is not defined`\nActual: Multiple unrelated suites fail with `ReferenceError: React is not defined`\nSuspected cause: `storyteller-agents.tsx` contains JSX (`<Brain ... />`) but the test/runtime transform for that file still requires `React` to be in scope.\n\nBug: Chat e2e lucide mock is missing the `Heart` export now used by CharacterPanel\nWhere: `src/domains/chat/components/__tests__/AgentLog.e2e.test.tsx` (failure surfaces via `src/domains/storyteller/components/CharacterPanel/CharacterPanel.tsx:80`)\nRepro: `npm run test:unit`\nExpected: The lucide mock used by the chat e2e test exports all icons needed by imported storyteller components\nActual: Suite fails with `No \"Heart\" export is defined on the \"lucide-react\" mock`\nSuspected cause: An outdated partial `lucide-react` mock in that test no longer matches the current storyteller component imports.\n\nStatus\n- Interior-designer test slice: green\n- Full repo `npm run test:unit`: blocked by unrelated existing failures above",
+              "last_response": "Added/changed tests\n- `src/app/api/interior-designer/__tests__/designs-route.test.ts`\n  - Covers the `designs` route contract that changed:\n    - `GET` returns 400 when neither `projectId` nor `design",
+              "last_stage": "tester"
             },
-            "notes": "Stage completed: developer",
+            "notes": "Stage completed: tester",
             "usage": {
               "input": {
                 "usage": {
@@ -4535,10 +4961,10 @@
                     "model_id": "gpt-5.4"
                   },
                   "tokens": {
-                    "input_tokens": 179489,
-                    "output_tokens": 44158,
-                    "reasoning_tokens": 17584,
-                    "cache_read_tokens": 5634560,
+                    "input_tokens": 213543,
+                    "output_tokens": 5625,
+                    "reasoning_tokens": 6000,
+                    "cache_read_tokens": 2448896,
                     "cache_write_tokens": 0
                   }
                 },
@@ -4546,31 +4972,39 @@
                   "algorithm": "openai"
                 }
               },
-              "total_usd_micros": 2783492
+              "total_usd_micros": 1320456
             },
             "timing": {
               "wall_time_ms": 0,
-              "inference_time_ms": 621557,
-              "tool_time_ms": 319111,
-              "active_time_ms": 940668
+              "inference_time_ms": 125073,
+              "tool_time_ms": 36088,
+              "active_time_ms": 161161
             }
           },
-          "verify": {
-            "status": "succeeded",
+          "run_tests": {
+            "status": "failed",
             "context_updates": {
-              "command.output": "blob://sha256/5e212ec81fe19ed3442d5e30139c78e7322dbec083269eaa5aa73450d3636691"
+              "command.output": "blob://sha256/fea7c7a542558dda2a4d7f4e790b2d30678b9477ee765c206d97559b543b2a19"
             },
-            "notes": "Script completed: set -euo pipefail; node scripts/fabro-verify.mjs",
+            "failure": {
+              "message": "Script failed with exit code: 1\n\n## output\n/domains/storyteller/agents/__tests__/full-flow.e2e.test.ts ]\u001b[22m\n\u001b[41m\u001b[1m FAIL \u001b[22m\u001b[49m src/domains/storyteller/agents/__tests__/multiple-intents.e2e.test.ts\u001b[2m [ src/domains/storyteller/agents/__tests__/multiple-intents.e2e.test.ts ]\u001b[22m\n\u001b[41m\u001b[1m FAIL \u001b[22m\u001b[49m src/domains/storyteller/agents/__tests__/phase-transitions.e2e.test.ts\u001b[2m [ src/domains/storyteller/agents/__tests__/phase-transitions.e2e.test.ts ]\u001b[22m\n\u001b[41m\u001b[1m FAIL \u001b[22m\u001b[49m src/domains/storyteller/agents/__tests__/storyteller-features.e2e.test.ts\u001b[2m [ src/domains/storyteller/agents/__tests__/storyteller-features.e2e.test.ts ]\u001b[22m\n\u001b[31m\u001b[1mReferenceError\u001b[22m: React is not defined\u001b[39m\n\u001b[36m \u001b[2m❯\u001b[22m src/domains/storyteller/config/storyteller-agents.tsx:\u001b[2m8:11\u001b[22m\u001b[39m\n    \u001b[90m  6| \u001b[39m    color\u001b[33m:\u001b[39m \u001b[32m'text-primary'\u001b[39m\u001b[33m,\u001b[39m\n    \u001b[90m  7| \u001b[39m    bgColor\u001b[33m:\u001b[39m \u001b[32m'bg-primary/10 border-primary/30'\u001b[39m\u001b[33m,\u001b[39m\n    \u001b[90m  8| \u001b[39m    icon\u001b[33m:\u001b[39m \u001b[33m<\u001b[39m\u001b[33mBrain\u001b[39m \u001b[33mclassName\u001b[39m\u001b[33m=\u001b[39m\u001b[32m\"w-4 h-4\"\u001b[39m \u001b[33m/\u001b[39m\u001b[33m>\u001b[39m\u001b[33m,\u001b[39m\n    \u001b[90m   | \u001b[39m          \u001b[31m^\u001b[39m\n    \u001b[90m  9| \u001b[39m  }\u001b[33m,\u001b[39m\n    \u001b[90m 10| \u001b[39m  \u001b[33mPlotArchitect\u001b[39m\u001b[33m:\u001b[39m {\n\u001b[90m \u001b[2m❯\u001b[22m src/domains/storyteller/index.ts:\u001b[2m41:1\u001b[22m\u001b[39m\n\u001b[90m \u001b[2m❯\u001b[22m src/infrastructure/ai/rag/hybrid-search.ts:\u001b[2m9:1\u001b[22m\u001b[39m\n\n\u001b[31m\u001b[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/16]⎯\u001b[22m\u001b[39m\n\n\u001b[41m\u001b[1m FAIL \u001b[22m\u001b[49m src/domains/chat/components/__tests__/AgentLog.e2e.test.tsx\u001b[2m [ src/domains/chat/components/__tests__/AgentLog.e2e.test.tsx ]\u001b[22m\n\u001b[31m\u001b[1mError\u001b[22m: [vitest] No \"Heart\" export is defined on the \"lucide-react\" mock. Did you forget to return it from \"vi.mock\"?\nIf you need to partially mock a module, you can use \"importOriginal\" helper inside:\n\u001b[39m\nvi.mock(import(\"lucide-react\"), async (importOriginal) => {\n  const actual = await importOriginal()\n  return {\n    ...actual,\n    // your mocked methods\n  }\n})\n\n\u001b[36m \u001b[2m❯\u001b[22m src/domains/storyteller/components/CharacterPanel/CharacterPanel.tsx:\u001b[2m80:13\u001b[22m\u001b[39m\n    \u001b[90m 78| \u001b[39m      key\u001b[33m:\u001b[39m \u001b[32m'valence'\u001b[39m\u001b[33m,\u001b[39m\n    \u001b[90m 79| \u001b[39m      label\u001b[33m:\u001b[39m \u001b[32m'Mood'\u001b[39m\u001b[33m,\u001b[39m\n    \u001b[90m 80| \u001b[39m      icon\u001b[33m:\u001b[39m \u001b[33mHeart\u001b[39m\u001b[33m,\u001b[39m\n    \u001b[90m   | \u001b[39m            \u001b[31m^\u001b[39m\n    \u001b[90m 81| \u001b[39m      color\u001b[33m:\u001b[39m \u001b[32m'text-pink-400'\u001b[39m\u001b[33m,\u001b[39m\n    \u001b[90m 82| \u001b[39m      lowLabel\u001b[33m:\u001b[39m \u001b[32m'Negative'\u001b[39m\u001b[33m,\u001b[39m\n\u001b[90m \u001b[2m❯\u001b[22m src/domains/storyteller/components/CharacterPanel/index.ts:\u001b[2m1:1\u001b[22m\u001b[39m\n\n\u001b[31m\u001b[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/16]⎯\u001b[22m\u001b[39m\n\n\u001b[41m\u001b[1m FAIL \u001b[22m\u001b[49m tests/unit/api/storyteller/actions/route.test.ts\u001b[2m [ tests/unit/api/storyteller/actions/route.test.ts ]\u001b[22m\n\u001b[31m\u001b[1mReferenceError\u001b[22m: React is not defined\u001b[39m\n\u001b[36m \u001b[2m❯\u001b[22m src/domains/storyteller/config/storyteller-agents.tsx:\u001b[2m8:11\u001b[22m\u001b[39m\n    \u001b[90m  6| \u001b[39m    color\u001b[33m:\u001b[39m \u001b[32m'text-primary'\u001b[39m\u001b[33m,\u001b[39m\n    \u001b[90m  7| \u001b[39m    bgColor\u001b[33m:\u001b[39m \u001b[32m'bg-primary/10 border-primary/30'\u001b[39m\u001b[33m,\u001b[39m\n    \u001b[90m  8| \u001b[39m    icon\u001b[33m:\u001b[39m \u001b[33m<\u001b[39m\u001b[33mBrain\u001b[39m \u001b[33mclassName\u001b[39m\u001b[33m=\u001b[39m\u001b[32m\"w-4 h-4\"\u001b[39m \u001b[33m/\u001b[39m\u001b[33m>\u001b[39m\u001b[33m,\u001b[39m\n    \u001b[90m   | \u001b[39m          \u001b[31m^\u001b[39m\n    \u001b[90m  9| \u001b[39m  }\u001b[33m,\u001b[39m\n    \u001b[90m 10| \u001b[39m  \u001b[33mPlotArchitect\u001b[39m\u001b[33m:\u001b[39m {\n\u001b[90m \u001b[2m❯\u001b[22m src/domains/storyteller/index.ts:\u001b[2m41:1\u001b[22m\u001b[39m\n\u001b[90m \u001b[2m❯\u001b[22m src/app/api/storyteller/actions/route.ts:\u001b[2m3:1\u001b[22m\u001b[39m\n\n\u001b[31m\u001b[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/16]⎯\u001b[22m\u001b[39m\n\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[31m16 failed\u001b[39m\u001b[22m\u001b[2m | \u001b[22m\u001b[1m\u001b[32m36 passed\u001b[39m\u001b[22m\u001b[2m | \u001b[22m\u001b[33m2 skipped\u001b[39m\u001b[90m (54)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m378 passed\u001b[39m\u001b[22m\u001b[2m | \u001b[22m\u001b[33m2 skipped\u001b[39m\u001b[90m (380)\u001b[39m\n\u001b[2m   Start at \u001b[22m 07:58:50\n\u001b[2m   Duration \u001b[22m 16.52s\u001b[2m (transform 4.61s, setup 532ms, import 6.64s, tests 4.28s, environment 1.89s)\u001b[22m\n\n",
+              "category": "deterministic"
+            },
             "usage": null,
             "timing": {
               "wall_time_ms": 0,
               "inference_time_ms": 0,
-              "tool_time_ms": 10766,
-              "active_time_ms": 10766
+              "tool_time_ms": 17107,
+              "active_time_ms": 17107
             }
+          },
+          "setup_gate": {
+            "status": "succeeded",
+            "notes": "Conditional node evaluated: setup_gate",
+            "usage": null
           }
         },
-        "next_node_id": "run_tests",
+        "next_node_id": "test_gate",
         "node_visits": {
           "start": 1,
           "plan": 1,
@@ -4579,6 +5013,7 @@
           "clarify_prep": 1,
           "Clarify": 1,
           "verify_gate": 1,
+          "run_tests": 1,
           "setup": 1,
           "verify": 1,
           "tester": 1,
@@ -6022,7 +6457,12 @@
       "first_event_seq": 682,
       "prompt": null,
       "response": null,
-      "completion": null,
+      "completion": {
+        "outcome": "succeeded",
+        "notes": "Stage completed: tester",
+        "failure_reason": null,
+        "timestamp": "2026-07-02T07:58:46.815950Z"
+      },
       "provider_used": {
         "mode": "agent",
         "provider": "openai",
@@ -6036,6 +6476,12 @@
       "output": null,
       "started_at": "2026-07-02T07:56:05.536686Z",
       "handler": "agent",
+      "timing": {
+        "wall_time_ms": 161209,
+        "inference_time_ms": 125073,
+        "tool_time_ms": 36088,
+        "active_time_ms": 161161
+      },
       "usage": {
         "input_tokens": 213543,
         "output_tokens": 5625,
@@ -6088,6 +6534,43 @@
           }
         ],
         "warnings": []
+      },
+      "state": "succeeded"
+    },
+    "run_tests@1": {
+      "first_event_seq": 820,
+      "prompt": null,
+      "response": null,
+      "completion": null,
+      "provider_used": null,
+      "diff": null,
+      "script_invocation": {
+        "script": "npm run test:unit",
+        "command": "exec 2>&1\nnpm run test:unit",
+        "language": "shell"
+      },
+      "script_timing": {
+        "output": "blob://sha256/fea7c7a542558dda2a4d7f4e790b2d30678b9477ee765c206d97559b543b2a19",
+        "exit_code": 1,
+        "duration_ms": 17107,
+        "termination": "exited",
+        "output_bytes": 122698,
+        "live_streaming": true
+      },
+      "parallel_results": null,
+      "output": null,
+      "output_bytes": 122698,
+      "live_streaming": true,
+      "termination": "exited",
+      "started_at": "2026-07-02T07:58:49.588407Z",
+      "handler": "command",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "reasoning_tokens": 0,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0
       },
       "state": "running"
     }

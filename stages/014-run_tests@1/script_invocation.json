@@ -1,0 +1,5 @@
+{
+  "script": "npm run test:unit",
+  "command": "exec 2>&1\nnpm run test:unit",
+  "language": "shell"
+}
