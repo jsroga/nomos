@@ -1,0 +1,6 @@
+{
+  "mode": "agent",
+  "provider": "anthropic",
+  "model": "claude-sonnet-4-5",
+  "reasoning_effort": "high"
+}
