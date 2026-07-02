@@ -1313,7 +1313,7 @@
     "kind": "running"
   },
   "status_updated_at": "2026-07-02T06:59:31.740341Z",
-  "last_event_at": "2026-07-02T06:59:42.228780Z",
+  "last_event_at": "2026-07-02T07:00:39.606742Z",
   "pending_control": null,
   "checkpoints": [
     {
@@ -1358,9 +1358,9 @@
       "diff": {}
     },
     {
-      "seq": 0,
+      "seq": 40,
       "checkpoint": {
-        "timestamp": "2026-07-02T06:59:42.305851Z",
+        "timestamp": "2026-07-02T06:59:45.057006Z",
         "current_node": "scope",
         "completed_nodes": [
           "start",
@@ -1369,27 +1369,27 @@
         "node_retries": {},
         "context_values": {
           "last_response": "=== module: interior-designer ===\nsrc/domains/interior-designer/__tests__/terrain-cdt.test.ts\nsrc/domains/interior-designer/__tests__/terrain-quality.test.ts\nsrc/domains/interior-designer/__tests__/un",
-          "graph.rankdir": "LR",
-          "internal.retry_count.start": 0,
-          "graph.default_fidelity": "summary:medium",
           "graph.label": "Optional Build",
-          "internal.fidelity": "summary:medium",
-          "current_node": "scope",
-          "internal.retry_count.scope": 0,
+          "last_stage": "scope",
+          "failure_signature": "",
           "response.scope": "=== module: interior-designer ===\nsrc/domains/interior-designer/__tests__/terrain-cdt.test.ts\nsrc/domains/interior-designer/__tests__/terrain-quality.test.ts\nsrc/domains/interior-designer/__tests__/unity-export.script.ts\nsrc/domains/interior-designer/__tests__/windows-doors.e2e.test.ts\nsrc/domains/interior-designer/ai/TextureService.ts\nsrc/domains/interior-designer/components/CameraController.tsx\nsrc/domains/interior-designer/components/DesignManager.tsx\nsrc/domains/interior-designer/components/Exporter.tsx\nsrc/domains/interior-designer/components/FloorManager.tsx\nsrc/domains/interior-designer/components/InteriorCanvas.tsx\nsrc/domains/interior-designer/components/KeybindingManager.tsx\nsrc/domains/interior-designer/components/ObjectManager.tsx\nsrc/domains/interior-designer/components/RetextureExporter.tsx\nsrc/domains/interior-designer/components/SculptableSurface.tsx\nsrc/domains/interior-designer/components/SurfaceManager.tsx\nsrc/domains/interior-designer/components/TransformManager.tsx\nsrc/domains/interior-designer/components/UI/AssetLibrary.tsx\nsrc/domains/interior-designer/components/UI/InteriorRightSidebar.tsx\nsrc/domains/interior-designer/components/UI/LayerPanel.tsx\nsrc/domains/interior-designer/components/UI/PropertiesPanel.tsx\nsrc/domains/interior-designer/components/UI/SurfaceProperties.tsx\nsrc/domains/interior-designer/components/UI/TerrainEditorPanel.tsx\nsrc/domains/interior-designer/components/UI/Toolbar.tsx\nsrc/domains/interior-designer/components/VoxelTerrainMesh.tsx\nsrc/domains/interior-designer/components/WallManager.tsx\nsrc/domains/interior-designer/components/meshes/DoorMesh.tsx\nsrc/domains/interior-designer/components/meshes/RoadMesh.tsx\nsrc/domains/interior-designer/components/meshes/WindowMesh.tsx\nsrc/domains/interior-designer/components/terrain/GlobalWaterPlane.tsx\nsrc/domains/interior-designer/components/terrain/TerrainBrushPreview.tsx\nsrc/domains/interior-designer/components/terrain/index.ts\nsrc/domains/interior-designer/components/tools/ObjectTool.tsx\nsrc/domains/interior-designer/components/tools/ScatterTool.tsx\nsrc/domains/interior-designer/components/tools/SurfaceTool.tsx\nsrc/domains/interior-designer/components/tools/TerrainTool.tsx\nsrc/domains/interior-designer/components/tools/WallTool.tsx\nsrc/domains/interior-designer/prompts/index.ts\nsrc/domains/interior-designer/store/useInteriorStore.ts\nsrc/domains/interior-designer/utils/UnityExporter.ts\nsrc/domains/interior-designer/utils/UnityYAML.ts\nsrc/domains/interior-designer/utils/polygonUtils.ts\nsrc/domains/interior-designer/utils/textureCache.ts\n\n=== git status ===\n\n=== architecture contract ===\n-rw-r--r-- 1 root root 38694 Jul  2 06:59 docs/unified/ARCHITECTURE.md\n-rw-r--r-- 1 root root 26993 Jul  2 06:59 docs/unified/SPEC.md",
-          "thread.review.current_node": "scope",
-          "internal.thread_id": "review",
+          "internal.node_visit_count": 1,
+          "internal.fidelity": "summary:medium",
+          "internal.retry_count.scope": 0,
+          "graph.goal": "Clean up and align the interior-designer module (src/domains/interior-designer) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
+          "outcome": "succeeded",
+          "graph.rankdir": "LR",
+          "internal.work_dir": "/workspace/kurvitza",
           "graph.default_max_retries": "1",
+          "internal.thread_id": "review",
           "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
           "internal.run_id": "01KWGSZM6PEMNXFEF1Q3NQ3B3N",
-          "internal.work_dir": "/workspace/kurvitza",
-          "internal.node_visit_count": 1,
-          "outcome": "succeeded",
+          "graph.stall_timeout": "1800000ms",
+          "internal.retry_count.start": 0,
+          "thread.review.current_node": "scope",
+          "current_node": "scope",
           "failure_class": "",
-          "failure_signature": "",
-          "graph.goal": "Clean up and align the interior-designer module (src/domains/interior-designer) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
-          "last_stage": "scope",
-          "graph.stall_timeout": "1800000ms"
+          "graph.default_fidelity": "summary:medium"
         },
         "node_outcomes": {
           "start": {
@@ -1434,8 +1434,142 @@
           }
         },
         "next_node_id": "assess",
+        "git_commit_sha": "e01300b986981d0eea82f726fbd17e2950683476",
+        "node_visits": {
+          "scope": 1,
+          "start": 1
+        }
+      },
+      "diff": {
+        "summary": {
+          "files_changed": 0,
+          "additions": 0,
+          "deletions": 0
+        }
+      }
+    },
+    {
+      "seq": 0,
+      "checkpoint": {
+        "timestamp": "2026-07-02T07:00:39.685668Z",
+        "current_node": "assess",
+        "completed_nodes": [
+          "start",
+          "scope",
+          "assess"
+        ],
+        "node_retries": {},
+        "context_values": {
+          "last_response": "Assessment written to `findings/assess.md`.\n\nVerdict: interior-designer is still a legacy flat slice and is materially off-target in three places first: direct browser-side persistence, a monolithic Z",
+          "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: interior-designer is still a legacy flat slice and is materially off-target in three places first: direct browser-side persistence, a monolithic Zustand store carrying server state, and bespoke polling/job orchestration in UI components.\n\nTop 3 gaps to fix first:\n1. Remove browser → Supabase writes; route all writes through typed API/service/Drizzle paths.\n2. Split `useInteriorStore` into UI-only Zustand state plus TanStack Query + `io/` for server data.\n3. Replace component-level polling/global job bookkeeping with module-owned Trigger tasks and shared job observation.",
+          "graph.rankdir": "LR",
+          "internal.retry_count.assess": 0,
+          "internal.retry_count.start": 0,
+          "graph.default_fidelity": "summary:medium",
+          "graph.label": "Optional Build",
+          "internal.fidelity": "compact",
+          "current_node": "assess",
+          "internal.retry_count.scope": 0,
+          "response.scope": "=== module: interior-designer ===\nsrc/domains/interior-designer/__tests__/terrain-cdt.test.ts\nsrc/domains/interior-designer/__tests__/terrain-quality.test.ts\nsrc/domains/interior-designer/__tests__/unity-export.script.ts\nsrc/domains/interior-designer/__tests__/windows-doors.e2e.test.ts\nsrc/domains/interior-designer/ai/TextureService.ts\nsrc/domains/interior-designer/components/CameraController.tsx\nsrc/domains/interior-designer/components/DesignManager.tsx\nsrc/domains/interior-designer/components/Exporter.tsx\nsrc/domains/interior-designer/components/FloorManager.tsx\nsrc/domains/interior-designer/components/InteriorCanvas.tsx\nsrc/domains/interior-designer/components/KeybindingManager.tsx\nsrc/domains/interior-designer/components/ObjectManager.tsx\nsrc/domains/interior-designer/components/RetextureExporter.tsx\nsrc/domains/interior-designer/components/SculptableSurface.tsx\nsrc/domains/interior-designer/components/SurfaceManager.tsx\nsrc/domains/interior-designer/components/TransformManager.tsx\nsrc/domains/interior-designer/components/UI/AssetLibrary.tsx\nsrc/domains/interior-designer/components/UI/InteriorRightSidebar.tsx\nsrc/domains/interior-designer/components/UI/LayerPanel.tsx\nsrc/domains/interior-designer/components/UI/PropertiesPanel.tsx\nsrc/domains/interior-designer/components/UI/SurfaceProperties.tsx\nsrc/domains/interior-designer/components/UI/TerrainEditorPanel.tsx\nsrc/domains/interior-designer/components/UI/Toolbar.tsx\nsrc/domains/interior-designer/components/VoxelTerrainMesh.tsx\nsrc/domains/interior-designer/components/WallManager.tsx\nsrc/domains/interior-designer/components/meshes/DoorMesh.tsx\nsrc/domains/interior-designer/components/meshes/RoadMesh.tsx\nsrc/domains/interior-designer/components/meshes/WindowMesh.tsx\nsrc/domains/interior-designer/components/terrain/GlobalWaterPlane.tsx\nsrc/domains/interior-designer/components/terrain/TerrainBrushPreview.tsx\nsrc/domains/interior-designer/components/terrain/index.ts\nsrc/domains/interior-designer/components/tools/ObjectTool.tsx\nsrc/domains/interior-designer/components/tools/ScatterTool.tsx\nsrc/domains/interior-designer/components/tools/SurfaceTool.tsx\nsrc/domains/interior-designer/components/tools/TerrainTool.tsx\nsrc/domains/interior-designer/components/tools/WallTool.tsx\nsrc/domains/interior-designer/prompts/index.ts\nsrc/domains/interior-designer/store/useInteriorStore.ts\nsrc/domains/interior-designer/utils/UnityExporter.ts\nsrc/domains/interior-designer/utils/UnityYAML.ts\nsrc/domains/interior-designer/utils/polygonUtils.ts\nsrc/domains/interior-designer/utils/textureCache.ts\n\n=== git status ===\n\n=== architecture contract ===\n-rw-r--r-- 1 root root 38694 Jul  2 06:59 docs/unified/ARCHITECTURE.md\n-rw-r--r-- 1 root root 26993 Jul  2 06:59 docs/unified/SPEC.md",
+          "thread.review.current_node": "assess",
+          "internal.thread_id": "review",
+          "graph.default_max_retries": "1",
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
+          "internal.run_id": "01KWGSZM6PEMNXFEF1Q3NQ3B3N",
+          "internal.work_dir": "/workspace/kurvitza",
+          "internal.node_visit_count": 1,
+          "outcome": "succeeded",
+          "failure_class": "",
+          "failure_signature": "",
+          "graph.goal": "Clean up and align the interior-designer module (src/domains/interior-designer) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification.",
+          "last_stage": "assess",
+          "graph.stall_timeout": "1800000ms"
+        },
+        "node_outcomes": {
+          "scope": {
+            "status": "succeeded",
+            "context_updates": {
+              "response.scope": "=== module: interior-designer ===\nsrc/domains/interior-designer/__tests__/terrain-cdt.test.ts\nsrc/domains/interior-designer/__tests__/terrain-quality.test.ts\nsrc/domains/interior-designer/__tests__/unity-export.script.ts\nsrc/domains/interior-designer/__tests__/windows-doors.e2e.test.ts\nsrc/domains/interior-designer/ai/TextureService.ts\nsrc/domains/interior-designer/components/CameraController.tsx\nsrc/domains/interior-designer/components/DesignManager.tsx\nsrc/domains/interior-designer/components/Exporter.tsx\nsrc/domains/interior-designer/components/FloorManager.tsx\nsrc/domains/interior-designer/components/InteriorCanvas.tsx\nsrc/domains/interior-designer/components/KeybindingManager.tsx\nsrc/domains/interior-designer/components/ObjectManager.tsx\nsrc/domains/interior-designer/components/RetextureExporter.tsx\nsrc/domains/interior-designer/components/SculptableSurface.tsx\nsrc/domains/interior-designer/components/SurfaceManager.tsx\nsrc/domains/interior-designer/components/TransformManager.tsx\nsrc/domains/interior-designer/components/UI/AssetLibrary.tsx\nsrc/domains/interior-designer/components/UI/InteriorRightSidebar.tsx\nsrc/domains/interior-designer/components/UI/LayerPanel.tsx\nsrc/domains/interior-designer/components/UI/PropertiesPanel.tsx\nsrc/domains/interior-designer/components/UI/SurfaceProperties.tsx\nsrc/domains/interior-designer/components/UI/TerrainEditorPanel.tsx\nsrc/domains/interior-designer/components/UI/Toolbar.tsx\nsrc/domains/interior-designer/components/VoxelTerrainMesh.tsx\nsrc/domains/interior-designer/components/WallManager.tsx\nsrc/domains/interior-designer/components/meshes/DoorMesh.tsx\nsrc/domains/interior-designer/components/meshes/RoadMesh.tsx\nsrc/domains/interior-designer/components/meshes/WindowMesh.tsx\nsrc/domains/interior-designer/components/terrain/GlobalWaterPlane.tsx\nsrc/domains/interior-designer/components/terrain/TerrainBrushPreview.tsx\nsrc/domains/interior-designer/components/terrain/index.ts\nsrc/domains/interior-designer/components/tools/ObjectTool.tsx\nsrc/domains/interior-designer/components/tools/ScatterTool.tsx\nsrc/domains/interior-designer/components/tools/SurfaceTool.tsx\nsrc/domains/interior-designer/components/tools/TerrainTool.tsx\nsrc/domains/interior-designer/components/tools/WallTool.tsx\nsrc/domains/interior-designer/prompts/index.ts\nsrc/domains/interior-designer/store/useInteriorStore.ts\nsrc/domains/interior-designer/utils/UnityExporter.ts\nsrc/domains/interior-designer/utils/UnityYAML.ts\nsrc/domains/interior-designer/utils/polygonUtils.ts\nsrc/domains/interior-designer/utils/textureCache.ts\n\n=== git status ===\n\n=== architecture contract ===\n-rw-r--r-- 1 root root 38694 Jul  2 06:59 docs/unified/ARCHITECTURE.md\n-rw-r--r-- 1 root root 26993 Jul  2 06:59 docs/unified/SPEC.md",
+              "last_stage": "scope",
+              "last_response": "=== module: interior-designer ===\nsrc/domains/interior-designer/__tests__/terrain-cdt.test.ts\nsrc/domains/interior-designer/__tests__/terrain-quality.test.ts\nsrc/domains/interior-designer/__tests__/un"
+            },
+            "notes": "Stage completed: scope",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 9335,
+                    "output_tokens": 818,
+                    "reasoning_tokens": 22,
+                    "cache_read_tokens": 0,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 35937
+            },
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 8111,
+              "tool_time_ms": 72,
+              "active_time_ms": 8183
+            }
+          },
+          "start": {
+            "status": "succeeded",
+            "usage": null
+          },
+          "assess": {
+            "status": "succeeded",
+            "context_updates": {
+              "response.assess": "Assessment written to `findings/assess.md`.\n\nVerdict: interior-designer is still a legacy flat slice and is materially off-target in three places first: direct browser-side persistence, a monolithic Zustand store carrying server state, and bespoke polling/job orchestration in UI components.\n\nTop 3 gaps to fix first:\n1. Remove browser → Supabase writes; route all writes through typed API/service/Drizzle paths.\n2. Split `useInteriorStore` into UI-only Zustand state plus TanStack Query + `io/` for server data.\n3. Replace component-level polling/global job bookkeeping with module-owned Trigger tasks and shared job observation.",
+              "last_response": "Assessment written to `findings/assess.md`.\n\nVerdict: interior-designer is still a legacy flat slice and is materially off-target in three places first: direct browser-side persistence, a monolithic Z",
+              "last_stage": "assess"
+            },
+            "notes": "Stage completed: assess",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "openai",
+                    "model_id": "gpt-5.4"
+                  },
+                  "tokens": {
+                    "input_tokens": 43973,
+                    "output_tokens": 3759,
+                    "reasoning_tokens": 401,
+                    "cache_read_tokens": 295936,
+                    "cache_write_tokens": 0
+                  }
+                },
+                "facts": {
+                  "algorithm": "openai"
+                }
+              },
+              "total_usd_micros": 246316
+            },
+            "files_touched": [
+              "/repos/jsroga/kurvitza/findings/assess.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 53225,
+              "tool_time_ms": 1028,
+              "active_time_ms": 54253
+            }
+          }
+        },
+        "next_node_id": "clarify_prep",
         "node_visits": {
           "start": 1,
+          "assess": 1,
           "scope": 1
         }
       },
@@ -1469,6 +1603,207 @@
   "superseded_by": null,
   "pending_interviews": {},
   "stages": {
+    "assess@1": {
+      "first_event_seq": 43,
+      "prompt": null,
+      "response": null,
+      "completion": null,
+      "provider_used": {
+        "mode": "agent",
+        "provider": "openai",
+        "model": "gpt-5.4",
+        "reasoning_effort": "low"
+      },
+      "diff": null,
+      "script_invocation": null,
+      "script_timing": null,
+      "parallel_results": null,
+      "output": null,
+      "started_at": "2026-07-02T06:59:45.057234Z",
+      "handler": "agent",
+      "usage": {
+        "input_tokens": 43973,
+        "output_tokens": 3759,
+        "total_tokens": 344069,
+        "reasoning_tokens": 401,
+        "cache_read_tokens": 295936,
+        "cache_write_tokens": 0,
+        "total_usd_micros": 246316
+      },
+      "model": {
+        "provider": "openai",
+        "model_id": "gpt-5.4"
+      },
+      "permission_level": "full",
+      "agent_tools": [
+        {
+          "name": "apply_patch",
+          "description": "Use the `apply_patch` tool to edit files. This is a FREEFORM tool, so do not wrap the patch in JSON.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "write",
+          "invoked": false
+        },
+        {
+          "name": "close_agent",
+          "description": "Close a running subagent that is no longer needed.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "glob",
+          "description": "Find files by file names using a glob pattern. Use path to choose the search root. Prefer this over shell find or ls when locating repository files.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": true
+        },
+        {
+          "name": "grep",
+          "description": "Search file contents with a regex pattern. Use path to choose the search root, glob_filter to limit matching files, case_insensitive for case folding, and max_results to cap output.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": true
+        },
+        {
+          "name": "read_file",
+          "description": "Read files before editing them. Returns line-numbered text and supports offset/limit for large files. Use this instead of shell cat, head, tail, or sed when inspecting repository files.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": true
+        },
+        {
+          "name": "request_user_input",
+          "description": "Ask the human one or more questions and wait for their answers before continuing this stage.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "send_input",
+          "description": "Send a follow-up message to a running subagent when new information or corrected instructions are needed.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "shell",
+          "description": "Execute shell commands for terminal operations, package managers, tests and builds. Use dedicated tools for file reads, file edits, filename searches, and content searches. Provide timeout_ms for long-running commands.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "shell",
+          "invoked": true
+        },
+        {
+          "name": "spawn_agent",
+          "description": "Spawn a subagent for independent work or context isolation. Use it for tasks that can proceed separately, and avoid duplicating the same work in the parent session.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "update_plan",
+          "description": "Update the multi-step plan for the current task. Submit the entire plan; existing steps are reconciled by exact step text.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "wait",
+          "description": "Wait for a subagent to complete, then use the result to synthesize the outcome for the user.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "web_fetch",
+          "description": "Fetch content from a URL that starts with http:// or https://. Pass a prompt to extract specific information or summarize the page; omit prompt to return the page content.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "web_search",
+          "description": "Search the web using Brave Search when current external information is needed. Returns result titles, URLs, and descriptions; use web_fetch for a specific URL.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "write_file",
+          "description": "Create new files, or overwrite an existing file only when replacement is explicitly intended. Prefer edit_file for targeted changes to existing files because write_file overwrites the full file content.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "write",
+          "invoked": true
+        }
+      ],
+      "context_window": {
+        "provider": "openai",
+        "model": "gpt-5.4",
+        "context_window_tokens": 272000,
+        "input_tokens": 39860,
+        "usage_percent": 14.654411764705882,
+        "count_method": "response_usage_scaled_breakdown",
+        "staleness": "live",
+        "generated_at": "2026-07-02T07:00:39.606331Z",
+        "event_seq": 138,
+        "breakdown": [
+          {
+            "category": "system_prompt",
+            "tokens": 1020,
+            "usage_percent": 0.375
+          },
+          {
+            "category": "tools",
+            "tokens": 1466,
+            "usage_percent": 0.5389705882352941
+          },
+          {
+            "category": "memory",
+            "tokens": 1303,
+            "usage_percent": 0.47904411764705884
+          },
+          {
+            "category": "conversation",
+            "tokens": 36064,
+            "usage_percent": 13.258823529411766
+          },
+          {
+            "category": "other",
+            "tokens": 7,
+            "usage_percent": 0.002573529411764706
+          }
+        ],
+        "warnings": []
+      },
+      "state": "running"
+    },
     "start@1": {
       "first_event_seq": 17,
       "prompt": null,
@@ -1507,7 +1842,12 @@
       "first_event_seq": 21,
       "prompt": null,
       "response": null,
-      "completion": null,
+      "completion": {
+        "outcome": "succeeded",
+        "notes": "Stage completed: scope",
+        "failure_reason": null,
+        "timestamp": "2026-07-02T06:59:42.305691Z"
+      },
       "provider_used": {
         "mode": "agent",
         "provider": "openai",
@@ -1521,6 +1861,12 @@
       "output": null,
       "started_at": "2026-07-02T06:59:33.511328Z",
       "handler": "agent",
+      "timing": {
+        "wall_time_ms": 8728,
+        "inference_time_ms": 8111,
+        "tool_time_ms": 72,
+        "active_time_ms": 8183
+      },
       "usage": {
         "input_tokens": 9335,
         "output_tokens": 818,
@@ -1702,7 +2048,7 @@
         ],
         "warnings": []
       },
-      "state": "running"
+      "state": "succeeded"
     }
   }
 }
