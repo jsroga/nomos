@@ -184,4 +184,66 @@ module.exports = [
       ],
     },
   },
+  // Boundary rule: domains MAY NOT import legacy root folders (Item 1)
+  {
+    files: ['src/domains/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'warn',
+        {
+          patterns: [
+            {
+              group: ['@/lib/*', '@/lib'],
+              message: 'Import from "@/shared/data" or "@/shared/auth" instead of @/lib.',
+            },
+            {
+              group: ['@/agent-core/*', '@/agent-core'],
+              message: 'Import from "@/shared/agent-kernel" instead of @/agent-core.',
+            },
+            {
+              group: ['@/infrastructure/*', '@/infrastructure'],
+              message: 'Import from "@/shared/data" or "@/shared/agent-kernel" instead of @/infrastructure.',
+            },
+            {
+              group: ['@/services/*', '@/services'],
+              message: 'Import from "@/shared/data" or domain index instead of root @/services.',
+            },
+            {
+              group: ['@/store/*', '@/store'],
+              message: 'Import from "@/shared/auth" or "@/shared/errors" instead of root @/store.',
+            },
+            {
+              group: ['@/hooks/*', '@/hooks'],
+              message: 'Import from "@/shared/data/queries" or "@/shared/data" instead of root @/hooks.',
+            },
+            {
+              group: ['@/prompts/*', '@/prompts'],
+              message: 'Import from "@/shared/agent-kernel/prompts" instead of root @/prompts.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // Boundary rule: shared MAY NOT import domains or app (Item 1)
+  {
+    files: ['src/shared/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/domains/*', '@/domains'],
+              message: 'shared/ MAY NOT import domains — dependency inversion required.',
+            },
+            {
+              group: ['@/app/*', '@/app'],
+              message: 'shared/ MAY NOT import app routes — dependency inversion required.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]

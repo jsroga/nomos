@@ -6,6 +6,7 @@
  */
 
 // Entities service - game entities across all domains
+// Re-export from shared/data/EntitiesService (Item 4)
 export {
   entitiesService,
   EntitiesService,
@@ -19,9 +20,10 @@ export {
   type UpdateEntityInput,
   type GameEntity,
   type ServiceContext as EntitiesServiceContext,
-} from './entities.service'
+} from '@/shared/data/EntitiesService'
 
 // Storyteller service - characters, episodes, beats, chat
+// Re-export from domains/storyteller/services/StorytellerCrudService (Item 4)
 export {
   storytellerService,
   StorytellerService,
@@ -39,9 +41,10 @@ export {
   type ChatMessageInput,
   type ServiceContext as StorytellerServiceContext,
   type LangSmithContext,
-} from './storyteller.service'
+} from '@/domains/storyteller'
 
 // Tiles service - tile generation via Trigger.dev
+// Re-export from shared/data/generation/TilesService (Item 4)
 export {
   tilesService,
   TilesService,
@@ -65,7 +68,7 @@ export {
   type TriggerRunResult,
   type RunStatus,
   type ServiceContext as TilesServiceContext,
-} from './tiles.service'
+} from '@/shared/data/generation/TilesService'
 
 // Re-export common error types
-export { ServiceError, type ServiceErrorCode } from './entities.service'
+export { ServiceError, type ServiceErrorCode } from '@/shared/data/EntitiesService'
