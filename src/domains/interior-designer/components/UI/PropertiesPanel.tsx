@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { interiorDesignerApi } from '@/domains/interior-designer/io/interior-designer.api'
 import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { SurfaceProperties } from './SurfaceProperties'
@@ -34,6 +35,9 @@ import {
   SidebarEmptyState,
 } from '@/components/ui/domain-sidebar'
 import { getErrorMessage } from '@/lib/error-utils'
+
+const isActiveTaskStatus = (status: string) =>
+  ACTIVE_TASK_STATUSES.includes(status as (typeof ACTIVE_TASK_STATUSES)[number])
 
 export const PropertiesPanel: React.FC = () => {
   const selectedId = useInteriorStore(state => state.selectedId)
@@ -551,8 +555,8 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
       console.log(`[Retexture] Checking stale operation ${operationId} with taskId ${taskId}`)
 
       try {
-        const res = await fetch(`/api/interior-designer/retexture/${taskId}`)
-        if (!res.ok) {
+        const data = await interiorDesignerApi.retexture.getStatus(taskId)
+        if (!data.status) {
           updateOperation(operationId, {
             status: 'failed',
             details: JSON.stringify({
@@ -563,14 +567,16 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
           return
         }
 
-        const data = await res.json()
-
         if (data.status === 'COMPLETED' || data.status === 'SUCCESS') {
           const output = data.output
           if (output && output.success) {
             const retexturedUrl = output.retexturedUrl
 
             // Auto-Apply Preview
+            if (!retexturedUrl) {
+              return
+            }
+
             previewRetexture(objectId, retexturedUrl)
 
             updateOperation(operationId, {
@@ -581,7 +587,7 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
               }),
             })
           }
-        } else if (!ACTIVE_TASK_STATUSES.includes(data.status)) {
+        } else if (!isActiveTaskStatus(data.status)) {
           updateOperation(operationId, {
             status: 'failed',
             details: JSON.stringify({
@@ -623,9 +629,7 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
 
         if (!taskId) return
 
-        const res = await fetch(`/api/interior-designer/retexture/${taskId}`)
-        if (!res.ok) return
-        const data = await res.json()
+        const data = await interiorDesignerApi.retexture.getStatus(taskId)
 
         if (data.status === 'COMPLETED' || data.status === 'SUCCESS') {
           const output = data.output
@@ -651,7 +655,7 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
               }),
             })
           }
-        } else if (!ACTIVE_TASK_STATUSES.includes(data.status)) {
+        } else if (!isActiveTaskStatus(data.status)) {
           updateOperation(operationId, {
             status: 'failed',
             details: JSON.stringify({
@@ -688,18 +692,14 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
           { currentProject: currentProject?.name }
         )
 
-        const res = await fetch('/api/interior-designer/retexture', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            modelUrlOrBase64: urlOrBase64,
-            prompt,
-            assetId: objectId,
-            projectId: currentProjectId,
-            apiKey, // Send the key to the backend
-          }),
+        const data = await interiorDesignerApi.retexture.start({
+          modelUrlOrBase64: urlOrBase64,
+          prompt,
+          assetId: objectId,
+          projectId: currentProjectId,
+          apiKey,
         })
-        const data = await res.json()
+
         if (data.runId) {
           // Prepare metadata with original state for undo
           const metadata: any = {
@@ -727,8 +727,6 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
             status: 'in-progress',
             details: JSON.stringify(metadata),
           })
-        } else {
-          throw new Error(data.error)
         }
       } catch (e: unknown) {
         toast.error('Failed to start retexture')
@@ -959,21 +957,7 @@ function TextTo3DControls({
       console.log(`[TextTo3D] Checking stale operation ${operationId} with taskId ${taskId}`)
 
       try {
-        const res = await fetch(`/api/interior-designer/text-to-3d/${taskId}`)
-        if (!res.ok) {
-          console.warn(`[TextTo3D] Failed to fetch status for ${taskId}, marking as failed`)
-          updateOperation(operationId, {
-            status: 'failed',
-            details: JSON.stringify({
-              taskId,
-              error: 'Task not found or API error',
-              failureStatus: 'NOT_FOUND',
-            }),
-          })
-          return
-        }
-
-        const data = await res.json()
+        const data = await interiorDesignerApi.textTo3D.getStatus(taskId)
         console.log(`[TextTo3D] Stale check result for ${operationId}:`, data.status)
 
         if (data.status === 'COMPLETED' || data.status === 'SUCCESS') {
@@ -990,7 +974,7 @@ function TextTo3DControls({
             })
             console.log(`[TextTo3D] Stale operation ${operationId} was actually completed`)
           }
-        } else if (!ACTIVE_TASK_STATUSES.includes(data.status)) {
+        } else if (!isActiveTaskStatus(data.status)) {
           console.warn(
             `[TextTo3D] Stale operation ${operationId} has failed status: ${data.status}`
           )
@@ -1050,9 +1034,7 @@ function TextTo3DControls({
 
         if (!taskId) return
 
-        const res = await fetch(`/api/interior-designer/text-to-3d/${taskId}`)
-        if (!res.ok) return
-        const data = await res.json()
+        const data = await interiorDesignerApi.textTo3D.getStatus(taskId)
 
         console.log(`[TextTo3D] Poll result for ${operationId}:`, data.status)
 
@@ -1071,7 +1053,7 @@ function TextTo3DControls({
             })
             console.log(`[TextTo3D] Marked ${operationId} as completed`)
           }
-        } else if (!ACTIVE_TASK_STATUSES.includes(data.status)) {
+        } else if (!isActiveTaskStatus(data.status)) {
           // Task is no longer active (FAILED, CANCELED, etc.)
           console.error('Text-to-3D task failed or was terminated:', data.status, data.error)
           updateOperation(operationId, {
@@ -1142,27 +1124,19 @@ function TextTo3DControls({
       // Generate seed from master prompt + object prompt
       const seed = seedFromString(`${masterPrompt}|${prompt}`)
 
-      const res = await fetch('/api/interior-designer/text-to-3d', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId: currentProjectId || 'default',
-          prompt,
-          seed,
-          apiKey,
-        }),
+      const data = await interiorDesignerApi.textTo3D.start({
+        projectId: currentProjectId || 'default',
+        prompt,
+        seed,
+        apiKey,
       })
-
-      const data = await res.json()
       if (data.runId) {
         // Update operation with task ID
         updateOperation(operationId, {
           status: 'in-progress',
           details: JSON.stringify({ taskId: data.runId, prompt, seed }),
-        })
-        toast.success('3D generation started!')
-      } else {
-        throw new Error(data.error || 'Failed to start generation')
+          })
+          toast.success('3D generation started!')
       }
     } catch (e: unknown) {
       toast.error('Failed to start text-to-3d: ' + getErrorMessage(e))

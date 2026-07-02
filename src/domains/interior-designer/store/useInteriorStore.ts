@@ -1,7 +1,8 @@
 import { create } from 'zustand'
-import { useShallow } from 'zustand/shallow'
 import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
+import { interiorDesignerApi } from '@/domains/interior-designer/io/interior-designer.api'
+import { interiorSceneDataSchema, type InteriorSceneData } from '@/domains/interior-designer/io'
 import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
 import * as THREE from 'three'
 
@@ -1308,10 +1309,12 @@ export const useInteriorStore = create<InteriorState>()(
             })
 
             // Find a Start Segment (has an endpoint with count 1)
-            let currentSeg = segments.find(
-              s => pointCounts.get(coordKey(s.p1)) === 1 || pointCounts.get(coordKey(s.p2)) === 1
-            )
-            if (!currentSeg) currentSeg = segments[0] // Loop or complex? Just pick one.
+            const startSeg =
+              segments.find(
+                s => pointCounts.get(coordKey(s.p1)) === 1 || pointCounts.get(coordKey(s.p2)) === 1
+              ) ?? segments[0]
+            if (!startSeg) return {}
+            let currentSeg = startSeg
 
             const orderedPoints: [number, number, number][] = []
 
@@ -1319,8 +1322,6 @@ export const useInteriorStore = create<InteriorState>()(
             // If p1 is the "dangling" end (count 1), start there.
             let currentPoint =
               pointCounts.get(coordKey(currentSeg.p1)) === 1 ? currentSeg.p1 : currentSeg.p2
-            // If loop (all 2s), just pick p1.
-            if (!currentSeg) return {} // Should not happen
             if (
               pointCounts.get(coordKey(currentSeg.p1)) !== 1 &&
               pointCounts.get(coordKey(currentSeg.p2)) !== 1
@@ -1456,7 +1457,7 @@ export const useInteriorStore = create<InteriorState>()(
           const state = get()
           set({ isSaving: true })
 
-          const sceneData = {
+          const sceneData: InteriorSceneData = interiorSceneDataSchema.parse({
             walls: state.walls,
             floors: state.floors,
             water: state.water,
@@ -1477,21 +1478,20 @@ export const useInteriorStore = create<InteriorState>()(
                 ? Array.from(state.terrainSettings.materialMap)
                 : null,
             },
-          }
+          })
 
           try {
             if (state.currentDesignId) {
-              // Update existing
-              const res = await fetch('/api/interior-designer/designs', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  id: state.currentDesignId,
-                  name: name || state.currentDesignName,
-                  sceneData,
-                }),
+              const updated = await interiorDesignerApi.designs.update({
+                id: state.currentDesignId,
+                name: name || state.currentDesignName || 'Untitled Design',
+                sceneData,
               })
-              const updated = await res.json()
+
+              if (!updated) {
+                throw new Error('Failed to update design')
+              }
+
               set({
                 currentDesignName: updated.name,
                 lastSaved: new Date(),
@@ -1499,17 +1499,16 @@ export const useInteriorStore = create<InteriorState>()(
                 isSaving: false,
               })
             } else {
-              // Create new
-              const res = await fetch('/api/interior-designer/designs', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  projectId,
-                  name: name || 'Untitled Design',
-                  sceneData,
-                }),
+              const newDesign = await interiorDesignerApi.designs.create({
+                projectId,
+                name: name || 'Untitled Design',
+                sceneData,
               })
-              const newDesign = await res.json()
+
+              if (!newDesign) {
+                throw new Error('Failed to create design')
+              }
+
               set({
                 currentDesignId: newDesign.id,
                 currentDesignName: newDesign.name,
@@ -1526,15 +1525,16 @@ export const useInteriorStore = create<InteriorState>()(
 
         loadDesign: async (designId: string) => {
           try {
-            const res = await fetch(`/api/interior-designer/designs?designId=${designId}`)
-            const design = await res.json()
+            const design = await interiorDesignerApi.designs.get({ designId })
 
             if (design && design.sceneData) {
               const savedTerrain = design.sceneData.terrainSettings
               // Normalize loaded objects to ensure Y=0 (snapped to bottom of level)
-              const normalizedObjects = (design.sceneData.objects || []).map((obj: SceneObject) => ({
+              const normalizedObjects: SceneObject[] = (design.sceneData.objects || []).map(obj => ({
                 ...obj,
-                position: obj.position ? [obj.position[0], 0, obj.position[2]] : [0, 0, 0],
+                position: obj.position
+                  ? ([obj.position[0], 0, obj.position[2]] as [number, number, number])
+                  : [0, 0, 0],
               }))
               set({
                 currentDesignId: design.id,
@@ -1577,18 +1577,10 @@ export const useInteriorStore = create<InteriorState>()(
         },
 
         renameDesign: async (designId: string, newName: string) => {
-          const supabase = (
-            await import('@/infrastructure/storage/supabaseClient')
-          ).getSupabaseClient()
-          const { error } = await supabase
-            .from('interior_designs')
-            .update({ name: newName })
-            .eq('id', designId)
-
-          if (error) {
-            console.error('Failed to rename design:', error)
-            throw error
-          }
+          await interiorDesignerApi.designs.update({
+            id: designId,
+            name: newName,
+          })
 
           // If we are currently editing this design, update local name
           if (get().currentDesignId === designId) {
@@ -1598,9 +1590,7 @@ export const useInteriorStore = create<InteriorState>()(
 
         deleteDesign: async (designId: string) => {
           try {
-            await fetch(`/api/interior-designer/designs?id=${designId}`, {
-              method: 'DELETE',
-            })
+            await interiorDesignerApi.designs.delete({ id: designId })
 
             // If we deleted the current design, reset to new
             if (get().currentDesignId === designId) {

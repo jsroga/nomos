@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react'
+import { interiorDesignerApi } from '@/domains/interior-designer/io/interior-designer.api'
+import type { InteriorDesign } from '@/domains/interior-designer/io/interior-designer.dto'
 import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import { Button } from '@/components/ui/button'
@@ -15,12 +17,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
-interface Design {
-  id: string
-  name: string
-  updatedAt: string
-}
-
 export const DesignManager: React.FC = () => {
   const currentProject = useWorldStore(state => state.currentProject)
   const currentDesignId = useInteriorStore(state => state.currentDesignId)
@@ -31,7 +27,7 @@ export const DesignManager: React.FC = () => {
   const renameDesign = useInteriorStore(state => state.renameDesign)
   const hasUnsavedChanges = useInteriorStore(state => state.hasUnsavedChanges)
 
-  const [designs, setDesigns] = useState<Design[]>([])
+  const [designs, setDesigns] = useState<InteriorDesign[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false)
@@ -43,8 +39,7 @@ export const DesignManager: React.FC = () => {
     if (!currentProject?.id) return
 
     try {
-      const res = await fetch(`/api/interior-designer/designs?projectId=${currentProject.id}`)
-      const data = await res.json()
+      const data = await interiorDesignerApi.designs.list({ projectId: currentProject.id })
       setDesigns(data)
     } catch (error) {
       console.error('Failed to fetch designs:', error)

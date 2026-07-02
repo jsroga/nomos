@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Slider } from '@/components/ui/slider'
+import { interiorDesignerApi } from '@/domains/interior-designer/io/interior-designer.api'
 import { useInteriorStore, SurfaceType } from '@/domains/interior-designer/store/useInteriorStore'
 import {
   Loader2,
@@ -246,10 +247,7 @@ export const SurfaceProperties: React.FC = () => {
       if (!taskId) return
 
       try {
-        const res = await fetch(`/api/interior-designer/material/${taskId}`)
-        if (!res.ok) return
-
-        const data = await res.json()
+        const data = await interiorDesignerApi.material.getStatus(taskId)
         const progress = data.metadata?.progress || 0
         const stage = data.metadata?.stage || 'processing'
 
@@ -324,25 +322,14 @@ export const SurfaceProperties: React.FC = () => {
         height = 640
       }
 
-      const res = await fetch('/api/interior-designer/texture', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt,
-          apiKey,
-          style,
-          useSemanticSearch: true, // Always enhance prompts
-          width,
-          height,
-        }),
+      const data = await interiorDesignerApi.texture.generate({
+        prompt,
+        apiKey,
+        style,
+        useSemanticSearch: true,
+        width,
+        height,
       })
-
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || 'Generation failed')
-      }
-
-      const data = await res.json()
       setPreviewUrl(data.imageUrl)
     } catch (e: unknown) {
       setError(getErrorMessage(e))
@@ -414,20 +401,14 @@ export const SurfaceProperties: React.FC = () => {
         status: 'pending',
       })
 
-      const res = await fetch('/api/interior-designer/material', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId: currentProject?.id || 'default',
-          surfaceId: selectedSurface.id,
-          prompt,
-          apiKey,
-          artStyle: 'realistic',
-          surfaceBounds,
-        }),
+      const data = await interiorDesignerApi.material.start({
+        projectId: currentProject?.id || 'default',
+        surfaceId: selectedSurface.id,
+        prompt,
+        apiKey,
+        artStyle: 'realistic',
+        surfaceBounds,
       })
-
-      const data = await res.json()
       if (data.runId) {
         updateOperation(operationId, {
           status: 'in-progress',
@@ -441,8 +422,6 @@ export const SurfaceProperties: React.FC = () => {
           }),
         })
         toast.success('3D generation started! This may take a few minutes.')
-      } else {
-        throw new Error(data.error || 'Failed to start generation')
       }
     } catch (e: unknown) {
       setError(getErrorMessage(e))
@@ -938,7 +917,7 @@ export const SurfaceProperties: React.FC = () => {
                 variant="ghost"
                 size="sm"
                 className="w-full justify-start text-[10px] font-bold uppercase tracking-widest text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 rounded-lg transition-all"
-                onClick={() => updateSurface(selectedSurface.id, { texture: null })}
+                onClick={() => updateSurface(selectedSurface.id, { texture: undefined })}
               >
                 <Trash2 className="w-3.3 h-3.3 mr-2" />
                 Remove Material
