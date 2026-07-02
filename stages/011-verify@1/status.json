@@ -1,0 +1,6 @@
+{
+  "outcome": "succeeded",
+  "notes": "Script completed: set -euo pipefail; node scripts/fabro-verify.mjs",
+  "failure_reason": null,
+  "timestamp": "2026-07-02T07:55:59.435439Z"
+}

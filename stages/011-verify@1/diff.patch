@@ -1,0 +1,14 @@
+diff --git a/tsconfig.fabro-verify.json b/tsconfig.fabro-verify.json
+deleted file mode 100644
+index e63e15a..0000000
+--- a/tsconfig.fabro-verify.json
++++ /dev/null
+@@ -1,8 +0,0 @@
+-{
+-  "extends": "./tsconfig.json",
+-  "include": [
+-    "src/domains/interior-designer/**/*.ts",
+-    "src/domains/interior-designer/**/*.tsx",
+-    "src/app/api/interior-designer/**/*.ts"
+-  ]
+-}
