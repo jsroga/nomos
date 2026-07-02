@@ -1,0 +1,4222 @@
+diff --git a/eslint.config.js b/eslint.config.js
+index d844a40..4b810bd 100644
+--- a/eslint.config.js
++++ b/eslint.config.js
+@@ -184,4 +184,66 @@ module.exports = [
+       ],
+     },
+   },
++  // Boundary rule: domains MAY NOT import legacy root folders (Item 1)
++  {
++    files: ['src/domains/**/*.{ts,tsx}'],
++    rules: {
++      'no-restricted-imports': [
++        'warn',
++        {
++          patterns: [
++            {
++              group: ['@/lib/*', '@/lib'],
++              message: 'Import from "@/shared/data" or "@/shared/auth" instead of @/lib.',
++            },
++            {
++              group: ['@/agent-core/*', '@/agent-core'],
++              message: 'Import from "@/shared/agent-kernel" instead of @/agent-core.',
++            },
++            {
++              group: ['@/infrastructure/*', '@/infrastructure'],
++              message: 'Import from "@/shared/data" or "@/shared/agent-kernel" instead of @/infrastructure.',
++            },
++            {
++              group: ['@/services/*', '@/services'],
++              message: 'Import from "@/shared/data" or domain index instead of root @/services.',
++            },
++            {
++              group: ['@/store/*', '@/store'],
++              message: 'Import from "@/shared/auth" or "@/shared/errors" instead of root @/store.',
++            },
++            {
++              group: ['@/hooks/*', '@/hooks'],
++              message: 'Import from "@/shared/data/queries" or "@/shared/data" instead of root @/hooks.',
++            },
++            {
++              group: ['@/prompts/*', '@/prompts'],
++              message: 'Import from "@/shared/agent-kernel/prompts" instead of root @/prompts.',
++            },
++          ],
++        },
++      ],
++    },
++  },
++  // Boundary rule: shared MAY NOT import domains or app (Item 1)
++  {
++    files: ['src/shared/**/*.{ts,tsx}'],
++    rules: {
++      'no-restricted-imports': [
++        'error',
++        {
++          patterns: [
++            {
++              group: ['@/domains/*', '@/domains'],
++              message: 'shared/ MAY NOT import domains — dependency inversion required.',
++            },
++            {
++              group: ['@/app/*', '@/app'],
++              message: 'shared/ MAY NOT import app routes — dependency inversion required.',
++            },
++          ],
++        },
++      ],
++    },
++  },
+ ]
+diff --git a/src/db/client.ts b/src/db/client.ts
+new file mode 100644
+index 0000000..e360021
+--- /dev/null
++++ b/src/db/client.ts
+@@ -0,0 +1,16 @@
++import { drizzle } from 'drizzle-orm/node-postgres'
++import { Pool } from 'pg'
++import { storytellerSchema } from '@/domains/storyteller'
++
++const connectionString = process.env.DATABASE_URL!
++
++// SSL disabled for Supabase pooler
++const pool = new Pool({
++  connectionString,
++  ssl: false,
++  max: 20, // Increased for concurrent streams
++  idleTimeoutMillis: 30000,
++  connectionTimeoutMillis: 20000,
++})
++
++export const db = drizzle(pool, { schema: storytellerSchema })
+diff --git a/src/db/index.ts b/src/db/index.ts
+index 7b18e7c..852d78e 100644
+--- a/src/db/index.ts
++++ b/src/db/index.ts
+@@ -1,39 +1,3 @@
+-import { drizzle } from 'drizzle-orm/postgres-js'
+-import postgres from 'postgres'
+-import * as schema from './schema'
+-
+-// For server-side usage (API routes, server components)
+-const connectionString = process.env.DATABASE_URL!
+-
+-// Create postgres client with connection pooling configuration
+-const client = postgres(connectionString, {
+-  // Connection pool settings
+-  max: 20, // Maximum connections in pool
+-  idle_timeout: 20, // Close idle connections after 20 seconds
+-  connect_timeout: 10, // Connection timeout in seconds
+-
+-  // Performance settings
+-  prepare: true, // Enable prepared statements for better performance
+-
+-  // SSL for production
+-  ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+-
+-  // Transform settings for type safety
+-  transform: {
+-    undefined: null, // Transform undefined to null
+-  },
+-
+-  // Debug in development
+-  debug:
+-    process.env.NODE_ENV === 'development' && process.env.DEBUG_SQL === 'true'
+-      ? (connection, query, params) => {
+-          console.log('[SQL]', query.substring(0, 200))
+-        }
+-      : false,
+-})
+-
+-// Create drizzle instance with schema
+-export const db = drizzle(client, { schema })
+-
+-// Re-export schema and types
++// Canonical Drizzle client + schema re-exports (Item 2)
++export * from './client'
+ export * from './schema'
+diff --git a/src/domains/storyteller/index.ts b/src/domains/storyteller/index.ts
+index 0f4b743..d5c517e 100644
+--- a/src/domains/storyteller/index.ts
++++ b/src/domains/storyteller/index.ts
+@@ -77,3 +77,4 @@ export * from './services/RagService'
+ export * from './services/RelationshipEnricherService'
+ export * from './services/ScriptOperationsService'
+ export * from './services/context/SeriesBible'
++export * from './services/StorytellerCrudService'
+diff --git a/src/domains/storyteller/services/ContextAssemblyService.ts b/src/domains/storyteller/services/ContextAssemblyService.ts
+index fdeb2b3..39d67a7 100644
+--- a/src/domains/storyteller/services/ContextAssemblyService.ts
++++ b/src/domains/storyteller/services/ContextAssemblyService.ts
+@@ -105,7 +105,7 @@ export async function assembleStorytellerContext(
+         .from(storyPlans)
+         .where(eq(storyPlans.projectId, projectId))
+         .then(r => r[0]),
+-      import('@/services/storyteller.service').then(async m => {
++      import('./StorytellerCrudService').then(async m => {
+         const [charsReq, beatsReq] = await Promise.all([
+           m.storytellerService
+             .listCharacters({ projectId }, { userId })
+diff --git a/src/domains/storyteller/services/StorytellerCrudService.ts b/src/domains/storyteller/services/StorytellerCrudService.ts
+new file mode 100644
+index 0000000..4e42048
+--- /dev/null
++++ b/src/domains/storyteller/services/StorytellerCrudService.ts
+@@ -0,0 +1,420 @@
++import 'server-only'
++
++/**
++ * Storyteller Service
++ *
++ * Shared business logic for storyteller domain operations.
++ * Used by both REST API and MCP server.
++ */
++
++import { db } from '@/lib/db'
++import { characters, projects, episodes, beats } from '@/domains/storyteller'
++import { eq, desc } from 'drizzle-orm'
++import { z } from 'zod'
++
++type LangsmithTraceConfig = {
++  runName?: string
++  tags?: string[]
++  metadata?: Record<string, unknown>
++  configurable?: Record<string, unknown>
++}
++
++// ============================================
++// SCHEMAS
++// ============================================
++
++export const listCharactersSchema = z.object({
++  projectId: z.string().uuid(),
++})
++
++export const createCharacterSchema = z.object({
++  projectId: z.string().uuid(),
++  name: z.string().min(1),
++  role: z.enum(['Lead', 'Supporting', 'Background']).optional().default('Supporting'),
++  gender: z.string().optional(),
++  characterPrompt: z.string().optional(),
++  description: z.string().optional(),
++  portraitUrl: z.string().url().optional(),
++  stress: z.number().min(0).max(100).optional().default(30),
++  trust: z.number().min(0).max(100).optional().default(50),
++  power: z.number().min(0).max(100).optional().default(30),
++  morality: z.number().min(0).max(100).optional().default(50),
++  hope: z.number().min(0).max(100).optional().default(60),
++  isolation: z.number().min(0).max(100).optional().default(20),
++  transformation: z.number().min(0).max(100).optional().default(0),
++  mbti: z.string().optional(),
++  voiceSignature: z.string().optional(),
++})
++
++export const updateCharacterSchema = z.object({
++  name: z.string().min(1).optional(),
++  role: z.enum(['Lead', 'Supporting', 'Background']).optional(),
++  gender: z.string().optional(),
++  characterPrompt: z.string().optional(),
++  description: z.string().optional(),
++  portraitUrl: z.string().url().optional(),
++  stress: z.number().min(0).max(100).optional(),
++  trust: z.number().min(0).max(100).optional(),
++  power: z.number().min(0).max(100).optional(),
++  morality: z.number().min(0).max(100).optional(),
++  hope: z.number().min(0).max(100).optional(),
++  isolation: z.number().min(0).max(100).optional(),
++  transformation: z.number().min(0).max(100).optional(),
++  mbti: z.string().optional(),
++  voiceSignature: z.string().optional(),
++  psychology: z.string().optional(),
++})
++
++export const listEpisodesSchema = z.object({
++  projectId: z.string().uuid(),
++})
++
++export const listBeatsSchema = z.object({
++  episodeId: z.string().uuid(),
++})
++
++export const chatMessageSchema = z.object({
++  projectId: z.string().uuid(),
++  threadId: z.string().optional(),
++  message: z.string().min(1),
++  episodeId: z.string().uuid().optional(),
++})
++
++// ============================================
++// TYPES
++// ============================================
++
++export type ListCharactersInput = z.infer<typeof listCharactersSchema>
++export type CreateCharacterInput = z.infer<typeof createCharacterSchema>
++export type UpdateCharacterInput = z.infer<typeof updateCharacterSchema>
++export type ListEpisodesInput = z.infer<typeof listEpisodesSchema>
++export type ListBeatsInput = z.infer<typeof listBeatsSchema>
++export type ChatMessageInput = z.infer<typeof chatMessageSchema>
++
++export interface ServiceContext {
++  userId: string
++}
++
++export interface LangSmithContext {
++  runName?: string
++  tags?: string[]
++  metadata?: Record<string, unknown>
++}
++
++// ============================================
++// SERVICE CLASS
++// ============================================
++
++export class StorytellerService {
++  /**
++   * Verify project access for a user
++   */
++  async verifyProjectAccess(projectId: string, userId: string): Promise<boolean> {
++    const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
++    return !!project && project.userId === userId
++  }
++
++  /**
++   * Verify character access for a user
++   */
++  async verifyCharacterAccess(characterId: string, userId: string): Promise<boolean> {
++    const [character] = await db.select().from(characters).where(eq(characters.id, characterId))
++    if (!character) return false
++
++    return this.verifyProjectAccess(character.projectId, userId)
++  }
++
++  /**
++   * List characters for a project
++   */
++  async listCharacters(
++    input: ListCharactersInput,
++    context: ServiceContext
++  ): Promise<{ characters: any[] }> {
++    const validated = listCharactersSchema.parse(input)
++
++    const hasAccess = await this.verifyProjectAccess(validated.projectId, context.userId)
++    if (!hasAccess) {
++      throw new ServiceError('Project not found or access denied', 'NOT_FOUND')
++    }
++
++    const result = await db
++      .select()
++      .from(characters)
++      .where(eq(characters.projectId, validated.projectId))
++      .orderBy(desc(characters.createdAt))
++
++    return { characters: result }
++  }
++
++  /**
++   * Get a single character by ID
++   */
++  async getCharacter(characterId: string, context: ServiceContext): Promise<{ character: any }> {
++    const [character] = await db.select().from(characters).where(eq(characters.id, characterId))
++
++    if (!character) {
++      throw new ServiceError('Character not found', 'NOT_FOUND')
++    }
++
++    const hasAccess = await this.verifyProjectAccess(character.projectId, context.userId)
++    if (!hasAccess) {
++      throw new ServiceError('Character not found or access denied', 'NOT_FOUND')
++    }
++
++    return { character }
++  }
++
++  /**
++   * Create a new character
++   */
++  async createCharacter(
++    input: CreateCharacterInput,
++    context: ServiceContext
++  ): Promise<{ character: any }> {
++    const validated = createCharacterSchema.parse(input)
++
++    const hasAccess = await this.verifyProjectAccess(validated.projectId, context.userId)
++    if (!hasAccess) {
++      throw new ServiceError('Project not found or access denied', 'NOT_FOUND')
++    }
++
++    const [newCharacter] = await db
++      .insert(characters)
++      .values({
++        projectId: validated.projectId,
++        name: validated.name,
++        role: validated.role,
++        gender: validated.gender,
++        characterPrompt: validated.characterPrompt,
++        description: validated.description,
++        portraitUrl: validated.portraitUrl,
++        stressLevel: validated.stress,
++        trustLevel: validated.trust,
++        powerLevel: validated.power,
++        moralityLevel: validated.morality,
++        hopeLevel: validated.hope,
++        isolationLevel: validated.isolation,
++        transformationProgress: validated.transformation,
++        mbti: validated.mbti,
++        voiceSignature: validated.voiceSignature,
++      })
++      .returning()
++
++    return { character: newCharacter }
++  }
++
++  /**
++   * Update an existing character
++   */
++  async updateCharacter(
++    characterId: string,
++    input: UpdateCharacterInput,
++    context: ServiceContext
++  ): Promise<{ character: any }> {
++    const validated = updateCharacterSchema.parse(input)
++
++    const hasAccess = await this.verifyCharacterAccess(characterId, context.userId)
++    if (!hasAccess) {
++      throw new ServiceError('Character not found or access denied', 'NOT_FOUND')
++    }
++
++    const dbUpdates: Record<string, unknown> = {}
++
++    if (validated.name !== undefined) dbUpdates.name = validated.name
++    if (validated.role !== undefined) dbUpdates.role = validated.role
++    if (validated.gender !== undefined) dbUpdates.gender = validated.gender
++    if (validated.characterPrompt !== undefined)
++      dbUpdates.characterPrompt = validated.characterPrompt
++    if (validated.description !== undefined) dbUpdates.description = validated.description
++    if (validated.portraitUrl !== undefined) dbUpdates.portraitUrl = validated.portraitUrl
++    if (validated.mbti !== undefined) dbUpdates.mbti = validated.mbti
++    if (validated.voiceSignature !== undefined) dbUpdates.voiceSignature = validated.voiceSignature
++    if (validated.psychology !== undefined) dbUpdates.psychology = validated.psychology
++    if (validated.stress !== undefined) dbUpdates.stressLevel = validated.stress
++    if (validated.trust !== undefined) dbUpdates.trustLevel = validated.trust
++    if (validated.power !== undefined) dbUpdates.powerLevel = validated.power
++    if (validated.morality !== undefined) dbUpdates.moralityLevel = validated.morality
++    if (validated.hope !== undefined) dbUpdates.hopeLevel = validated.hope
++    if (validated.isolation !== undefined) dbUpdates.isolationLevel = validated.isolation
++    if (validated.transformation !== undefined)
++      dbUpdates.transformationProgress = validated.transformation
++
++    const [updatedCharacter] = await db
++      .update(characters)
++      .set({ ...dbUpdates, updatedAt: new Date() })
++      .where(eq(characters.id, characterId))
++      .returning()
++
++    return { character: updatedCharacter }
++  }
++
++  /**
++   * Delete a character
++   */
++  async deleteCharacter(
++    characterId: string,
++    context: ServiceContext
++  ): Promise<{ success: boolean }> {
++    const hasAccess = await this.verifyCharacterAccess(characterId, context.userId)
++    if (!hasAccess) {
++      throw new ServiceError('Character not found or access denied', 'NOT_FOUND')
++    }
++
++    await db.delete(characters).where(eq(characters.id, characterId))
++
++    return { success: true }
++  }
++
++  /**
++   * List episodes for a project
++   */
++  async listEpisodes(
++    input: ListEpisodesInput,
++    context: ServiceContext
++  ): Promise<{ episodes: any[] }> {
++    const validated = listEpisodesSchema.parse(input)
++
++    const hasAccess = await this.verifyProjectAccess(validated.projectId, context.userId)
++    if (!hasAccess) {
++      throw new ServiceError('Project not found or access denied', 'NOT_FOUND')
++    }
++
++    const result = await db
++      .select()
++      .from(episodes)
++      .where(eq(episodes.projectId, validated.projectId))
++      .orderBy(desc(episodes.createdAt))
++
++    return { episodes: result }
++  }
++
++  /**
++   * List beats for an episode
++   */
++  async listBeats(input: ListBeatsInput, context: ServiceContext): Promise<{ beats: any[] }> {
++    const validated = listBeatsSchema.parse(input)
++
++    // Get episode to verify access
++    const [episode] = await db.select().from(episodes).where(eq(episodes.id, validated.episodeId))
++    if (!episode) {
++      throw new ServiceError('Episode not found', 'NOT_FOUND')
++    }
++
++    const hasAccess = await this.verifyProjectAccess(episode.projectId, context.userId)
++    if (!hasAccess) {
++      throw new ServiceError('Episode not found or access denied', 'NOT_FOUND')
++    }
++
++    const result = await db
++      .select()
++      .from(beats)
++      .where(eq(beats.episodeId, validated.episodeId))
++      .orderBy(beats.order)
++
++    return { beats: result }
++  }
++
++  /**
++   * Get the series bible for a project
++   */
++  async getSeriesBible(projectId: string, context: ServiceContext): Promise<{ seriesBible: any }> {
++    const hasAccess = await this.verifyProjectAccess(projectId, context.userId)
++    if (!hasAccess) {
++      throw new ServiceError('Project not found or access denied', 'NOT_FOUND')
++    }
++
++    const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
++
++    return { seriesBible: project?.seriesBible || {} }
++  }
++
++  /**
++   * Send a message to the writers room and get a response
++   * This invokes the LangGraph workflow
++   */
++  async chat(
++    input: ChatMessageInput,
++    context: ServiceContext,
++    langsmithContext?: LangSmithContext
++  ): Promise<{ response: any; threadId: string }> {
++    const validated = chatMessageSchema.parse(input)
++
++    const hasAccess = await this.verifyProjectAccess(validated.projectId, context.userId)
++    if (!hasAccess) {
++      throw new ServiceError('Project not found or access denied', 'NOT_FOUND')
++    }
++
++    // Import the graph dynamically to avoid circular dependencies
++    const { getWritersRoomGraph } = await import('@/domains/storyteller')
++    const graph = await getWritersRoomGraph()
++
++    // Generate thread ID if not provided
++    const threadId =
++      validated.threadId || `thread_${Date.now()}_${Math.random().toString(36).slice(2)}`
++
++    // Build LangSmith config
++    const langsmithConfig: LangsmithTraceConfig = {
++      runName: langsmithContext?.runName || 'storyteller_chat',
++      tags: langsmithContext?.tags || ['storyteller', 'chat'],
++      metadata: {
++        ...langsmithContext?.metadata,
++        projectId: validated.projectId,
++        threadId,
++        userId: context.userId,
++      },
++      configurable: {
++        thread_id: threadId,
++      },
++    }
++
++    // Get series bible and characters for context
++    const { seriesBible } = await this.getSeriesBible(validated.projectId, context)
++    const { characters: projectCharacters } = await this.listCharacters(
++      { projectId: validated.projectId },
++      context
++    )
++
++    // Invoke the graph
++    const result = await graph.invoke(
++      {
++        messages: [{ role: 'user', content: validated.message }],
++        projectId: validated.projectId,
++        episodeId: validated.episodeId,
++        seriesBible,
++        characters: projectCharacters,
++      },
++      langsmithConfig
++    )
++
++    return { response: result, threadId }
++  }
++}
++
++// ============================================
++// ERROR HANDLING
++// ============================================
++
++export type ServiceErrorCode =
++  | 'NOT_FOUND'
++  | 'UNAUTHORIZED'
++  | 'VALIDATION_ERROR'
++  | 'INTERNAL_ERROR'
++  | 'RATE_LIMITED'
++
++export class ServiceError extends Error {
++  constructor(
++    message: string,
++    public code: ServiceErrorCode,
++    public details?: any
++  ) {
++    super(message)
++    this.name = 'ServiceError'
++  }
++}
++
++// ============================================
++// SINGLETON EXPORT
++// ============================================
++
++export const storytellerService = new StorytellerService()
+diff --git a/src/hooks/useGameEntities.ts b/src/hooks/useGameEntities.ts
+index 332a18c..38e2b04 100644
+--- a/src/hooks/useGameEntities.ts
++++ b/src/hooks/useGameEntities.ts
+@@ -1,304 +1,3 @@
+-import { useState, useEffect, useCallback, useRef } from 'react'
+-
+-export type EntityType = 'character' | 'location' | 'mechanic' | 'faction' | 'item' | 'quest'
+-export type SourceDomain = 'storyteller' | 'loop-creator' | 'interior-designer' | 'world-building'
+-
+-export interface GameEntity {
+-  id: string
+-  projectId: string
+-  userId: string
+-  entityType: EntityType
+-  name: string
+-  description?: string
+-  sourceDomain: SourceDomain
+-  sourceEntityId?: string
+-  usedInDomains: string[]
+-  metadata: Record<string, unknown>
+-  tags: string[]
+-  imageUrl?: string
+-  createdAt: string
+-  updatedAt: string
+-}
+-
+-interface EntityRelationship {
+-  id: string
+-  projectId: string
+-  fromEntityId: string
+-  toEntityId: string
+-  relationshipType: 'uses' | 'located_in' | 'conflicts_with' | 'allies_with' | 'owns' | 'part_of'
+-  metadata: Record<string, unknown>
+-  fromEntity?: GameEntity
+-  toEntity?: GameEntity
+-  createdAt: string
+-}
+-
+-interface UseGameEntitiesOptions {
+-  projectId?: string
+-  entityType?: EntityType
+-  sourceDomain?: SourceDomain
+-  search?: string
+-  autoFetch?: boolean
+-}
+-
+-/**
+- * Hook for managing game entities across all domains
+- */
+-export function useGameEntities(options: UseGameEntitiesOptions = {}) {
+-  const { projectId, entityType, sourceDomain, search, autoFetch = true } = options
+-
+-  const [entities, setEntities] = useState<GameEntity[]>([])
+-  const [loading, setLoading] = useState(false)
+-  const [error, setError] = useState<string | null>(null)
+-
+-  // Track if initial fetch has been done to prevent duplicate fetches
+-  const hasFetchedRef = useRef(false)
+-  const abortControllerRef = useRef<AbortController | null>(null)
+-
+-  // Store previous values to detect actual changes
+-  const prevOptionsRef = useRef<string>('')
+-
+-  const fetchEntities = useCallback(
+-    async (forceRefresh = false) => {
+-      if (!projectId && autoFetch) return
+-
+-      // Create a key for the current options to compare
+-      const optionsKey = JSON.stringify({ projectId, entityType, sourceDomain, search })
+-
+-      // Skip if nothing changed and not forcing refresh
+-      if (!forceRefresh && hasFetchedRef.current && prevOptionsRef.current === optionsKey) {
+-        return
+-      }
+-
+-      // Cancel any in-flight request
+-      if (abortControllerRef.current) {
+-        abortControllerRef.current.abort()
+-      }
+-      abortControllerRef.current = new AbortController()
+-
+-      setLoading(true)
+-      setError(null)
+-
+-      try {
+-        const params = new URLSearchParams()
+-        if (projectId) params.append('projectId', projectId)
+-        if (entityType) params.append('entityType', entityType)
+-        if (sourceDomain) params.append('sourceDomain', sourceDomain)
+-        if (search) params.append('search', search)
+-
+-        const response = await fetch(`/api/entities?${params.toString()}`, {
+-          signal: abortControllerRef.current.signal,
+-        })
+-
+-        if (!response.ok) {
+-          throw new Error('Failed to fetch entities')
+-        }
+-
+-        const data = await response.json()
+-        setEntities(data.entities || [])
+-        hasFetchedRef.current = true
+-        prevOptionsRef.current = optionsKey
+-      } catch (err) {
+-        // Ignore abort errors
+-        if (err instanceof Error && err.name === 'AbortError') {
+-          return
+-        }
+-        setError(err instanceof Error ? err.message : 'Failed to fetch entities')
+-        console.error('[useGameEntities] Error:', err)
+-      } finally {
+-        setLoading(false)
+-      }
+-    },
+-    [projectId, entityType, sourceDomain, search, autoFetch]
+-  )
+-
+-  const createEntity = useCallback(
+-    async (entity: {
+-      projectId: string
+-      userId: string
+-      entityType: EntityType
+-      name: string
+-      description?: string
+-      sourceDomain: SourceDomain
+-      sourceEntityId?: string
+-      metadata?: Record<string, unknown>
+-      tags?: string[]
+-      imageUrl?: string
+-    }): Promise<GameEntity | null> => {
+-      setLoading(true)
+-      setError(null)
+-
+-      try {
+-        const response = await fetch('/api/entities', {
+-          method: 'POST',
+-          headers: { 'Content-Type': 'application/json' },
+-          body: JSON.stringify(entity),
+-        })
+-
+-        if (!response.ok) {
+-          const error = await response.json()
+-          throw new Error(error.error || 'Failed to create entity')
+-        }
+-
+-        const data = await response.json()
+-
+-        // Add to local state
+-        setEntities(prev => [data.entity, ...prev])
+-
+-        return data.entity
+-      } catch (err) {
+-        setError(err instanceof Error ? err.message : 'Failed to create entity')
+-        console.error('[useGameEntities] Create error:', err)
+-        return null
+-      } finally {
+-        setLoading(false)
+-      }
+-    },
+-    []
+-  )
+-
+-  const updateEntity = useCallback(
+-    async (
+-      entityId: string,
+-      updates: {
+-        name?: string
+-        description?: string
+-        metadata?: Record<string, unknown>
+-        tags?: string[]
+-        imageUrl?: string
+-        usedInDomains?: string[]
+-      }
+-    ): Promise<GameEntity | null> => {
+-      setLoading(true)
+-      setError(null)
+-
+-      try {
+-        const response = await fetch(`/api/entities/${entityId}`, {
+-          method: 'PATCH',
+-          headers: { 'Content-Type': 'application/json' },
+-          body: JSON.stringify(updates),
+-        })
+-
+-        if (!response.ok) {
+-          const error = await response.json()
+-          throw new Error(error.error || 'Failed to update entity')
+-        }
+-
+-        const data = await response.json()
+-
+-        // Update local state
+-        setEntities(prev => prev.map(e => (e.id === entityId ? data.entity : e)))
+-
+-        return data.entity
+-      } catch (err) {
+-        setError(err instanceof Error ? err.message : 'Failed to update entity')
+-        console.error('[useGameEntities] Update error:', err)
+-        return null
+-      } finally {
+-        setLoading(false)
+-      }
+-    },
+-    []
+-  )
+-
+-  const deleteEntity = useCallback(async (entityId: string): Promise<boolean> => {
+-    setLoading(true)
+-    setError(null)
+-
+-    try {
+-      const response = await fetch(`/api/entities/${entityId}`, {
+-        method: 'DELETE',
+-      })
+-
+-      if (!response.ok) {
+-        throw new Error('Failed to delete entity')
+-      }
+-
+-      // Remove from local state
+-      setEntities(prev => prev.filter(e => e.id !== entityId))
+-
+-      return true
+-    } catch (err) {
+-      setError(err instanceof Error ? err.message : 'Failed to delete entity')
+-      console.error('[useGameEntities] Delete error:', err)
+-      return false
+-    } finally {
+-      setLoading(false)
+-    }
+-  }, [])
+-
+-  const markUsedInDomain = useCallback(
+-    async (entityId: string, domain: SourceDomain): Promise<boolean> => {
+-      const entity = entities.find(e => e.id === entityId)
+-      if (!entity) return false
+-
+-      const usedInDomains = Array.from(new Set([...entity.usedInDomains, domain]))
+-      const updated = await updateEntity(entityId, { usedInDomains })
+-      return !!updated
+-    },
+-    [entities, updateEntity]
+-  )
+-
+-  const getEntity = useCallback(
+-    (entityId: string): GameEntity | undefined => {
+-      return entities.find(e => e.id === entityId)
+-    },
+-    [entities]
+-  )
+-
+-  const getEntitiesByType = useCallback(
+-    (type: EntityType): GameEntity[] => {
+-      return entities.filter(e => e.entityType === type)
+-    },
+-    [entities]
+-  )
+-
+-  const getEntitiesByDomain = useCallback(
+-    (domain: SourceDomain): GameEntity[] => {
+-      return entities.filter(e => e.sourceDomain === domain || e.usedInDomains.includes(domain))
+-    },
+-    [entities]
+-  )
+-
+-  // Initial fetch - only run once when projectId is available
+-  useEffect(() => {
+-    if (autoFetch && projectId) {
+-      fetchEntities()
+-    }
+-
+-    // Cleanup on unmount
+-    return () => {
+-      if (abortControllerRef.current) {
+-        abortControllerRef.current.abort()
+-      }
+-    }
+-  }, []) // Empty deps - only run on mount
+-
+-  // Re-fetch when options change (with debounce for search)
+-  useEffect(() => {
+-    if (!autoFetch || !projectId) return
+-
+-    // Debounce search changes
+-    const timeoutId = setTimeout(
+-      () => {
+-        fetchEntities()
+-      },
+-      search !== undefined ? 300 : 0
+-    ) // Debounce only for search
+-
+-    return () => clearTimeout(timeoutId)
+-  }, [projectId, entityType, sourceDomain, search, autoFetch, fetchEntities])
+-
+-  return {
+-    entities,
+-    loading,
+-    error,
+-    fetchEntities: () => fetchEntities(true), // Force refresh when called manually
+-    createEntity,
+-    updateEntity,
+-    deleteEntity,
+-    markUsedInDomain,
+-    getEntity,
+-    getEntitiesByType,
+-    getEntitiesByDomain,
+-  }
+-}
+\ No newline at end of file
++// Re-export shim — preserves importers during Increment 1.
++// Codemod in Increment 2 (Item 11), then delete this file.
++export * from '@/shared/data/queries/useGameEntities'
+diff --git a/src/hooks/useProjectFromUrl.ts b/src/hooks/useProjectFromUrl.ts
+index 81c4b97..3f53282 100644
+--- a/src/hooks/useProjectFromUrl.ts
++++ b/src/hooks/useProjectFromUrl.ts
+@@ -1,78 +1,3 @@
+-'use client'
+-
+-import { useParams, useRouter, usePathname } from 'next/navigation'
+-import { useEffect, useState, useRef } from 'react'
+-import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
+-
+-export function useProjectFromUrl() {
+-  const params = useParams()
+-  const router = useRouter()
+-  const pathname = usePathname()
+-
+-  // Handle both single projectId and catch-all array
+-  const rawProjectId = params?.projectId
+-  const projectId = Array.isArray(rawProjectId) ? rawProjectId[0] : rawProjectId
+-
+-  const currentProject = useWorldStore(state => state.currentProject)
+-  const loadProject = useWorldStore(state => state.loadProject)
+-
+-  const [isLoading, setIsLoading] = useState(false)
+-  const [error, setError] = useState<string | null>(null)
+-
+-  // Track if we've already loaded this project to prevent re-fetches
+-  const loadedProjectIdRef = useRef<string | null>(null)
+-
+-  useEffect(() => {
+-    // Only load if:
+-    // 1. We have a projectId in URL
+-    // 2. currentProject doesn't match (or doesn't exist)
+-    // 3. We haven't already loaded this project in this session
+-    const shouldLoad =
+-      projectId && currentProject?.id !== projectId && loadedProjectIdRef.current !== projectId
+-
+-    if (shouldLoad) {
+-      console.log('🔄 [DEBUG] useProjectFromUrl: starting load for', projectId)
+-      setIsLoading(true)
+-      setError(null)
+-      loadedProjectIdRef.current = projectId // Mark as loading
+-
+-      loadProject(projectId)
+-        .then(() => {
+-          // Check if project was actually loaded
+-          const loadedProject = useWorldStore.getState().currentProject
+-          console.log('✅ [DEBUG] useProjectFromUrl: load complete. Result:', !!loadedProject)
+-          if (!loadedProject) {
+-            // Project doesn't exist - redirect to base path
+-            console.warn(
+-              '⚠️ [DEBUG] useProjectFromUrl: project not found, redirecting to base path'
+-            )
+-            setError('Project not found')
+-            loadedProjectIdRef.current = null // Reset on error
+-            const basePath = '/' + (pathname?.split('/')[1] || '')
+-            router.replace(basePath)
+-          }
+-        })
+-        .catch(err => {
+-          console.error('Failed to load project:', err)
+-          setError('Failed to load project')
+-          loadedProjectIdRef.current = null // Reset on error
+-          // Redirect to base path
+-          const basePath = '/' + (pathname?.split('/')[1] || '')
+-          router.replace(basePath)
+-        })
+-        .finally(() => setIsLoading(false))
+-    } else if (!projectId && currentProject) {
+-      // Clear project if no projectId in URL
+-      useWorldStore.setState({ currentProject: null, tiles: {} })
+-      loadedProjectIdRef.current = null
+-    }
+-  }, [projectId, currentProject?.id, loadProject, router, pathname])
+-
+-  return {
+-    projectId,
+-    currentProject,
+-    isLoading,
+-    error,
+-    hasProject: !!projectId,
+-  }
+-}
++// Re-export shim — preserves importers during Increment 1.
++// Codemod in Increment 2 (Item 11), then delete this file.
++export * from '@/shared/data/useProjectFromUrl'
+diff --git a/src/lib/api-utils.ts b/src/lib/api-utils.ts
+index a50c46e..bee91dc 100644
+--- a/src/lib/api-utils.ts
++++ b/src/lib/api-utils.ts
+@@ -1,200 +1,3 @@
+-/**
+- * API Utilities - Authentication, Rate Limiting, CSRF Protection
+- *
+- * Provides middleware-like utilities for API routes
+- */
+-
+-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+-import { NextRequest, NextResponse } from 'next/server'
+-import { getUserSession } from './auth'
+-
+-// Re-exported so existing `@/lib/api-utils` importers keep working.
+-// Canonical implementation (incl. E2E bypass) lives in ./auth.
+-export { getUserSession }
+-
+-// ============================================
+-// TYPES
+-// ============================================
+-
+-export interface AuthenticatedRequest {
+-  session: {
+-    user: {
+-      id: string
+-      email?: string
+-    }
+-  }
+-  supabase: ReturnType<typeof createRouteHandlerClient>
+-}
+-
+-export type ApiHandler<T = any> = (
+-  request: NextRequest,
+-  auth: AuthenticatedRequest,
+-  context?: { params: Record<string, string> }
+-) => Promise<NextResponse<T>>
+-
+-// ============================================
+-// AUTHENTICATION
+-// ============================================
+-
+-/**
+- * Require authentication - returns session or throws
+- */
+-export async function requireAuth() {
+-  const { session, supabase, error } = await getUserSession()
+-
+-  if (error || !session) {
+-    return { session: null, supabase: null, error: error || new Error('Unauthorized') }
+-  }
+-
+-  return { session, supabase, error: null }
+-}
+-
+-/**
+- * Wrapper for authenticated API routes
+- * Usage:
+- * export const POST = withAuth(async (request, { session, supabase }) => {
+- *   // Your handler logic here
+- *   return NextResponse.json({ userId: session.user.id })
+- * })
+- */
+-export function withAuth<T = any>(handler: ApiHandler<T>) {
+-  return async (request: NextRequest, context?: { params: Record<string, string> }) => {
+-    const { session, supabase, error } = await getUserSession()
+-
+-    if (error || !session) {
+-      return NextResponse.json(
+-        { error: 'Unauthorized', message: 'Authentication required' },
+-        { status: 401 }
+-      )
+-    }
+-
+-    try {
+-      return await handler(request, { session, supabase }, context)
+-    } catch (err) {
+-      console.error('API Error:', err)
+-      return NextResponse.json(
+-        {
+-          error: 'Internal Server Error',
+-          message: err instanceof Error ? err.message : 'Unknown error',
+-        },
+-        { status: 500 }
+-      )
+-    }
+-  }
+-}
+-
+-// ============================================
+-// RATE LIMITING
+-// ============================================
+-
+-// In-memory rate limit store (for single instance)
+-// For production, use Redis/Upstash KV
+-const rateLimitStore = new Map<string, { count: number; resetAt: number }>()
+-
+-interface RateLimitConfig {
+-  windowMs?: number // Time window in milliseconds (default: 60000 = 1 minute)
+-  maxRequests?: number // Max requests per window (default: 60)
+-  keyPrefix?: string // Prefix for rate limit keys
+-}
+-
+-/**
+- * Check rate limit for a given key
+- * Returns true if request is allowed, false if rate limited
+- */
+-export function checkRateLimit(
+-  key: string,
+-  config: RateLimitConfig = {}
+-): { allowed: boolean; remaining: number; resetAt: number } {
+-  const { windowMs = 60000, maxRequests = 60, keyPrefix = 'rl' } = config
+-  const fullKey = `${keyPrefix}:${key}`
+-  const now = Date.now()
+-
+-  // Clean up expired entries periodically
+-  if (Math.random() < 0.01) {
+-    for (const [k, v] of rateLimitStore.entries()) {
+-      if (v.resetAt < now) rateLimitStore.delete(k)
+-    }
+-  }
+-
+-  const entry = rateLimitStore.get(fullKey)
+-
+-  if (!entry || entry.resetAt < now) {
+-    // New window
+-    rateLimitStore.set(fullKey, { count: 1, resetAt: now + windowMs })
+-    return { allowed: true, remaining: maxRequests - 1, resetAt: now + windowMs }
+-  }
+-
+-  if (entry.count >= maxRequests) {
+-    return { allowed: false, remaining: 0, resetAt: entry.resetAt }
+-  }
+-
+-  entry.count++
+-  return { allowed: true, remaining: maxRequests - entry.count, resetAt: entry.resetAt }
+-}
+-
+-/**
+- * Rate limiting wrapper for API routes
+- */
+-export function withRateLimit<T = any>(
+-  handler: ApiHandler<T> | ((request: NextRequest, context?: any) => Promise<NextResponse<T>>),
+-  config: RateLimitConfig & { getKey?: (request: NextRequest) => string } = {}
+-) {
+-  return async (request: NextRequest, context?: any) => {
+-    const {
+-      getKey = req => req.ip || req.headers.get('x-forwarded-for') || 'anonymous',
+-      ...rateLimitConfig
+-    } = config
+-    const key = getKey(request)
+-    const { allowed, remaining, resetAt } = checkRateLimit(key, rateLimitConfig)
+-
+-    if (!allowed) {
+-      return NextResponse.json(
+-        { error: 'Too Many Requests', message: 'Rate limit exceeded' },
+-        {
+-          status: 429,
+-          headers: {
+-            'X-RateLimit-Remaining': '0',
+-            'X-RateLimit-Reset': String(Math.ceil(resetAt / 1000)),
+-            'Retry-After': String(Math.ceil((resetAt - Date.now()) / 1000)),
+-          },
+-        }
+-      )
+-    }
+-
+-    const response = await handler(request, context)
+-
+-    // Add rate limit headers to successful response
+-    response.headers.set('X-RateLimit-Remaining', String(remaining))
+-    response.headers.set('X-RateLimit-Reset', String(Math.ceil(resetAt / 1000)))
+-
+-    return response
+-  }
+-}
+-
+-// ============================================
+-// CSRF PROTECTION
+-// ============================================
+-
+-const ALLOWED_ORIGINS = [
+-  process.env.NEXT_PUBLIC_APP_URL,
+-  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+-  'http://localhost:3000',
+-  'http://localhost:3001',
+-].filter(Boolean) as string[]
+-// ============================================
+-// PROJECT ACCESS VERIFICATION
+-// ============================================
+-
+-/**
+- * Verify user has access to a project
+- * Uses authenticated Supabase client (RLS enforced)
+- */
+-export async function verifyProjectAccess(
+-  supabase: ReturnType<typeof createRouteHandlerClient>,
+-  projectId: string
+-): Promise<boolean> {
+-  const { data, error } = await supabase.from('projects').select('id').eq('id', projectId).single()
+-
+-  return !error && !!data
+-}
+-
++// Re-export shim — preserves importers during Increment 1.
++// Codemod in Increment 2 (Item 11), then delete this file.
++export * from '@/shared/data/api-utils'
+diff --git a/src/lib/auth.ts b/src/lib/auth.ts
+index ca57987..f94dfbc 100644
+--- a/src/lib/auth.ts
++++ b/src/lib/auth.ts
+@@ -1,62 +1,3 @@
+-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+-import { cookies, headers } from 'next/headers'
+-
+-import { Session } from '@supabase/supabase-js'
+-
+-// Mock session for E2E tests in development
+-const DEV_MOCK_SESSION: Session = {
+-  user: {
+-    id: 'e2e-test-user-id',
+-    email: 'e2e-test@example.com',
+-    app_metadata: {},
+-    user_metadata: {},
+-    aud: 'authenticated',
+-    created_at: new Date().toISOString(),
+-    phone: '',
+-    confirmed_at: new Date().toISOString(),
+-    email_confirmed_at: new Date().toISOString(),
+-    last_sign_in_at: new Date().toISOString(),
+-    role: 'authenticated',
+-    updated_at: new Date().toISOString(),
+-  },
+-  access_token: 'e2e-mock-token',
+-  token_type: 'bearer',
+-  expires_in: 3600,
+-  expires_at: Math.floor(Date.now() / 1000) + 3600,
+-  refresh_token: 'e2e-mock-refresh',
+-}
+-
+-export async function getUserSession() {
+-  // Check for E2E test bypass in development or test environments
+-  if (['development', 'test'].includes(process.env.NODE_ENV || '')) {
+-    const headersList = await headers()
+-    const e2eHeader = headersList.get('x-bypass-auth')
+-    if (e2eHeader === 'true') {
+-      return { session: DEV_MOCK_SESSION, supabase: null as any, error: null }
+-    }
+-  }
+-
+-  /*
+-   * Next.js 15+ requires awaiting cookies(), but @supabase/auth-helpers-nextjs
+-   * expects the `cookies` option to return the store synchronously (or it doesn't await it).
+-   * Since we've already awaited `cookies()` above, we should pass it directly.
+-   */
+-  const cookieStore = await cookies()
+-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
+-  const {
+-    data: { session },
+-    error,
+-  } = await supabase.auth.getSession()
+-
+-  return { session, supabase, error }
+-}
+-
+-export async function requireAuth() {
+-  const { session, error } = await getUserSession()
+-
+-  if (error || !session) {
+-    return { session: null, error: error || new Error('Unauthorized') }
+-  }
+-
+-  return { session, error: null }
+-}
++// Re-export shim — preserves importers during Increment 1.
++// Codemod in Increment 2 (Item 11), then delete this file.
++export * from '@/shared/auth/auth'
+diff --git a/src/lib/db.ts b/src/lib/db.ts
+index e360021..7032915 100644
+--- a/src/lib/db.ts
++++ b/src/lib/db.ts
+@@ -1,16 +1,3 @@
+-import { drizzle } from 'drizzle-orm/node-postgres'
+-import { Pool } from 'pg'
+-import { storytellerSchema } from '@/domains/storyteller'
+-
+-const connectionString = process.env.DATABASE_URL!
+-
+-// SSL disabled for Supabase pooler
+-const pool = new Pool({
+-  connectionString,
+-  ssl: false,
+-  max: 20, // Increased for concurrent streams
+-  idleTimeoutMillis: 30000,
+-  connectionTimeoutMillis: 20000,
+-})
+-
+-export const db = drizzle(pool, { schema: storytellerSchema })
++// Re-export shim — preserves 41 importers during Increment 1.
++// Codemod in Increment 2 (Item 11), then delete this file.
++export * from '@/db/client'
+diff --git a/src/lib/error-utils.ts b/src/lib/error-utils.ts
+index 1685775..d57c1af 100644
+--- a/src/lib/error-utils.ts
++++ b/src/lib/error-utils.ts
+@@ -1,13 +1,3 @@
+-export function getErrorMessage(error: unknown): string {
+-  if (error instanceof Error) return error.message
+-  if (typeof error === 'string') return error
+-  if (error && typeof error === 'object' && 'message' in error) {
+-    return String((error as { message: unknown }).message)
+-  }
+-  return String(error)
+-}
+-
+-export function toError(error: unknown): Error {
+-  if (error instanceof Error) return error
+-  return new Error(getErrorMessage(error))
+-}
++// Re-export shim — preserves importers during Increment 1.
++// Codemod in Increment 2 (Item 11), then delete this file.
++export * from '@/shared/errors/error-utils'
+diff --git a/src/lib/security.ts b/src/lib/security.ts
+index bdfef98..6646326 100644
+--- a/src/lib/security.ts
++++ b/src/lib/security.ts
+@@ -1,320 +1,3 @@
+-/**
+- * Security Utilities
+- *
+- * Critical security functions for:
+- * - Path traversal prevention
+- * - SSRF protection
+- * - Input sanitization
+- * - Secure logging
+- */
+-
+-import path from 'path'
+-import { z } from 'zod'
+-
+-// ============================================
+-// PATH TRAVERSAL PROTECTION
+-// ============================================
+-
+-/**
+- * Validate and sanitize a file path to prevent directory traversal attacks
+- * @param userInput - The user-provided path/filename
+- * @param allowedBaseDir - The allowed base directory (e.g., 'projects')
+- * @returns Sanitized path or null if invalid
+- */
+-export function sanitizePath(
+-  userInput: string,
+-  allowedBaseDir: string = 'projects'
+-): { safe: boolean; sanitizedPath: string | null; error?: string } {
+-  if (!userInput || typeof userInput !== 'string') {
+-    return { safe: false, sanitizedPath: null, error: 'Invalid input' }
+-  }
+-
+-  // Remove null bytes (can bypass some path checks)
+-  const cleaned = userInput.replace(/\0/g, '')
+-
+-  // Check for obvious traversal attempts
+-  if (cleaned.includes('..') || cleaned.includes('\0')) {
+-    return { safe: false, sanitizedPath: null, error: 'Path traversal detected' }
+-  }
+-
+-  // Normalize the path to resolve any . or redundant separators
+-  const normalized = path.normalize(cleaned)
+-
+-  // After normalization, check again for traversal
+-  if (normalized.includes('..') || normalized.startsWith('/') || normalized.startsWith('\\')) {
+-    return {
+-      safe: false,
+-      sanitizedPath: null,
+-      error: 'Path traversal detected after normalization',
+-    }
+-  }
+-
+-  // Build the full path and verify it's within the allowed directory
+-  const baseDir = path.join(process.cwd(), 'public', allowedBaseDir)
+-  const fullPath = path.join(baseDir, normalized)
+-
+-  // Ensure the resolved path is within the allowed base directory
+-  if (!fullPath.startsWith(baseDir)) {
+-    return { safe: false, sanitizedPath: null, error: 'Path escapes allowed directory' }
+-  }
+-
+-  return { safe: true, sanitizedPath: fullPath }
+-}
+-
+-/**
+- * Validate a project ID format (UUID)
+- */
+-export function isValidProjectId(projectId: string): boolean {
+-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+-  return uuidRegex.test(projectId)
+-}
+-
+-/**
+- * Sanitize filename - only allow alphanumeric, dash, underscore, dot
+- */
+-export function sanitizeFilename(filename: string): string | null {
+-  if (!filename || typeof filename !== 'string') return null
+-
+-  // Remove path separators and null bytes
+-  const cleaned = filename.replace(/[/\\:*?"<>|\0]/g, '')
+-
+-  // Only allow safe characters
+-  const safeFilename = cleaned.replace(/[^a-zA-Z0-9._-]/g, '_')
+-
+-  // Prevent hidden files and double extensions that could be exploits
+-  if (safeFilename.startsWith('.') || safeFilename.includes('..')) {
+-    return null
+-  }
+-
+-  // Limit length
+-  if (safeFilename.length > 255 || safeFilename.length === 0) {
+-    return null
+-  }
+-
+-  return safeFilename
+-}
+-
+-// ============================================
+-// SSRF PROTECTION
+-// ============================================
+-
+-/**
+- * Allowed domains for external fetches
+- * Add domains that your application legitimately needs to access
+- */
+-const ALLOWED_EXTERNAL_DOMAINS = [
+-  // 3D Model APIs
+-  'api.meshy.ai',
+-  'assets.meshy.ai',
+-  'cdn.meshy.ai',
+-  'api.hyper3d.ai',
+-  // AI APIs
+-  'api.openai.com',
+-  'generativelanguage.googleapis.com',
+-  'api.stability.ai',
+-  'api.replicate.com',
+-  'api.cometapi.com', // Midjourney proxy
+-  'fal.run',
+-  'queue.fal.run',
+-  // Storage
+-  'storage.googleapis.com',
+-  'supabase.co',
+-  // Vercel Blob
+-  'blob.vercel-storage.com',
+-  'public.blob.vercel-storage.com',
+-] as const
+-
+-/**
+- * Check if a URL is safe to fetch (SSRF protection)
+- */
+-export function isAllowedUrl(url: string): { allowed: boolean; reason?: string } {
+-  try {
+-    const parsed = new URL(url)
+-
+-    // Only allow http/https
+-    if (!['http:', 'https:'].includes(parsed.protocol)) {
+-      return { allowed: false, reason: 'Invalid protocol - only HTTP/HTTPS allowed' }
+-    }
+-
+-    // Block local/private IPs
+-    const hostname = parsed.hostname.toLowerCase()
+-
+-    // Block localhost
+-    if (
+-      hostname === 'localhost' ||
+-      hostname === '127.0.0.1' ||
+-      hostname === '::1' ||
+-      hostname === '0.0.0.0'
+-    ) {
+-      return { allowed: false, reason: 'Localhost access blocked' }
+-    }
+-
+-    // Block private IP ranges
+-    const ipv4Pattern = /^(\d{1,3}\.){3}\d{1,3}$/
+-    if (ipv4Pattern.test(hostname)) {
+-      const octets = hostname.split('.').map(Number)
+-      // 10.x.x.x
+-      if (octets[0] === 10) {
+-        return { allowed: false, reason: 'Private IP range blocked' }
+-      }
+-      // 172.16.x.x - 172.31.x.x
+-      if (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) {
+-        return { allowed: false, reason: 'Private IP range blocked' }
+-      }
+-      // 192.168.x.x
+-      if (octets[0] === 192 && octets[1] === 168) {
+-        return { allowed: false, reason: 'Private IP range blocked' }
+-      }
+-      // 169.254.x.x (link-local)
+-      if (octets[0] === 169 && octets[1] === 254) {
+-        return { allowed: false, reason: 'Link-local IP blocked' }
+-      }
+-    }
+-
+-    // Block metadata endpoints (cloud provider SSRF targets)
+-    if (
+-      hostname === '169.254.169.254' || // AWS/GCP metadata
+-      hostname === 'metadata.google.internal' ||
+-      hostname.endsWith('.internal')
+-    ) {
+-      return { allowed: false, reason: 'Cloud metadata endpoint blocked' }
+-    }
+-
+-    // Check against whitelist
+-    const isWhitelisted = ALLOWED_EXTERNAL_DOMAINS.some(
+-      domain => hostname === domain || hostname.endsWith('.' + domain)
+-    )
+-
+-    if (!isWhitelisted) {
+-      return { allowed: false, reason: `Domain not in allowlist: ${hostname}` }
+-    }
+-
+-    return { allowed: true }
+-  } catch {
+-    return { allowed: false, reason: 'Invalid URL format' }
+-  }
+-}
+-
+-/**
+- * Safe fetch wrapper with SSRF protection
+- */
+-export async function safeFetch(url: string, options?: RequestInit): Promise<Response> {
+-  const check = isAllowedUrl(url)
+-  if (!check.allowed) {
+-    throw new Error(`SSRF Protection: ${check.reason}`)
+-  }
+-
+-  // Add timeout to prevent slow loris attacks
+-  const controller = new AbortController()
+-  const timeout = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+-
+-  try {
+-    return await fetch(url, {
+-      ...options,
+-      signal: controller.signal,
+-    })
+-  } finally {
+-    clearTimeout(timeout)
+-  }
+-}
+-
+-// ============================================
+-// INPUT VALIDATION SCHEMAS
+-// ============================================
+-
+-const schemas = {
+-  uuid: z.string().uuid(),
+-  projectId: z.string().uuid(),
+-  email: z.string().email(),
+-  url: z.string().url(),
+-  filename: z
+-    .string()
+-    .min(1)
+-    .max(255)
+-    .regex(/^[a-zA-Z0-9._-]+$/),
+-
+-  // Coordinate validation
+-  coordinate: z.number().int().min(-1000).max(1000),
+-
+-  // Common API payloads
+-  createTile: z.object({
+-    projectId: z.string().uuid(),
+-    x: z.number().int().min(-1000).max(1000),
+-    y: z.number().int().min(-1000).max(1000),
+-    prompt: z.string().min(1).max(5000),
+-  }),
+-
+-  imageBase64: z.string().regex(/^data:image\/(png|jpeg|jpg|webp|gif);base64,/),
+-}
+-
+-// ============================================
+-// SECURE LOGGING
+-// ============================================
+-
+-const SENSITIVE_KEYS = [
+-  'password',
+-  'apiKey',
+-  'api_key',
+-  'apikey',
+-  'secret',
+-  'token',
+-  'authorization',
+-  'auth',
+-  'credential',
+-  'private',
+-  'accessToken',
+-  'access_token',
+-  'refreshToken',
+-  'refresh_token',
+-  'sessionToken',
+-  'session_token',
+-  'jwt',
+-  'bearer',
+-]
+-
+-/**
+- * Redact sensitive data from objects before logging
+- */
+-export function redactSensitive(obj: any, depth = 0): any {
+-  if (depth > 10) return '[MAX_DEPTH]' // Prevent infinite recursion
+-  if (obj === null || obj === undefined) return obj
+-  if (typeof obj !== 'object') return obj
+-
+-  if (Array.isArray(obj)) {
+-    return obj.map(item => redactSensitive(item, depth + 1))
+-  }
+-
+-  const redacted: any = {}
+-  for (const [key, value] of Object.entries(obj)) {
+-    const lowerKey = key.toLowerCase()
+-    if (SENSITIVE_KEYS.some(sensitive => lowerKey.includes(sensitive))) {
+-      redacted[key] = '[REDACTED]'
+-    } else if (typeof value === 'object') {
+-      redacted[key] = redactSensitive(value, depth + 1)
+-    } else {
+-      redacted[key] = value
+-    }
+-  }
+-
+-  return redacted
+-}
+-
+-/**
+- * Secure logger that automatically redacts sensitive data
+- */
+-export const secureLog = {
+-  info: (message: string, data?: any) => {
+-    console.log(message, data ? redactSensitive(data) : '')
+-  },
+-  warn: (message: string, data?: any) => {
+-    console.warn(message, data ? redactSensitive(data) : '')
+-  },
+-  error: (message: string, data?: any) => {
+-    console.error(message, data ? redactSensitive(data) : '')
+-  },
+-  debug: (message: string, data?: any) => {
+-    if (process.env.NODE_ENV === 'development') {
+-      console.debug(message, data ? redactSensitive(data) : '')
+-    }
+-  },
+-}
++// Re-export shim — preserves importers during Increment 1.
++// Codemod in Increment 2 (Item 11), then delete this file.
++export * from '@/shared/auth/security'
+diff --git a/src/lib/utils.ts b/src/lib/utils.ts
+index fed2fe9..9151f1c 100644
+--- a/src/lib/utils.ts
++++ b/src/lib/utils.ts
+@@ -1,6 +1,3 @@
+-import { clsx, type ClassValue } from 'clsx'
+-import { twMerge } from 'tailwind-merge'
+-
+-export function cn(...inputs: ClassValue[]) {
+-  return twMerge(clsx(inputs))
+-}
++// Re-export shim — preserves importers during Increment 1.
++// Codemod in Increment 2 (Item 11), then delete this file.
++export * from '@/shared/data/utils'
+diff --git a/src/lib/validation/auth.ts b/src/lib/validation/auth.ts
+index 0d13f99..7b07a2c 100644
+--- a/src/lib/validation/auth.ts
++++ b/src/lib/validation/auth.ts
+@@ -1,28 +1,3 @@
+-import * as yup from 'yup'
+-
+-const email = yup.string().email('Please enter a valid email address').required('Email is required')
+-
+-const password = yup
+-  .string()
+-  .min(8, 'Password must be at least 8 characters')
+-  .matches(/[A-Z]/, 'Password must contain at least one uppercase letter')
+-  .matches(/[0-9]/, 'Password must contain at least one number')
+-  .required('Password is required')
+-
+-const passwordSignIn = yup
+-  .string()
+-  .min(8, 'Password must be at least 8 characters')
+-  .required('Password is required')
+-
+-const confirmPassword = yup
+-  .string()
+-  .oneOf([yup.ref('password')], 'Passwords must match')
+-  .required('Please confirm your password')
+-
+-export const signInSchema = yup.object({ email, password: passwordSignIn })
+-
+-export const signUpSchema = yup.object({ email, password, confirmPassword })
+-
+-export const forgotPasswordSchema = yup.object({ email })
+-
+-export const resetPasswordSchema = yup.object({ password, confirmPassword })
++// Re-export shim — preserves importers during Increment 1.
++// Codemod in Increment 2 (Item 11), then delete this file.
++export * from '@/shared/auth/validation'
+diff --git a/src/mcp/core/auth.js b/src/mcp/core/auth.js
+new file mode 100644
+index 0000000..9ae0aa8
+--- /dev/null
++++ b/src/mcp/core/auth.js
+@@ -0,0 +1,251 @@
++"use strict";
++/**
++ * MCP Authentication
++ *
++ * API key validation and service context creation for MCP server.
++ */
++var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
++    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
++    return new (P || (P = Promise))(function (resolve, reject) {
++        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
++        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
++        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
++        step((generator = generator.apply(thisArg, _arguments || [])).next());
++    });
++};
++var __generator = (this && this.__generator) || function (thisArg, body) {
++    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
++    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
++    function verb(n) { return function (v) { return step([n, v]); }; }
++    function step(op) {
++        if (f) throw new TypeError("Generator is already executing.");
++        while (g && (g = 0, op[0] && (_ = 0)), _) try {
++            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
++            if (y = 0, t) op = [op[0] & 2, t.value];
++            switch (op[0]) {
++                case 0: case 1: t = op; break;
++                case 4: _.label++; return { value: op[1], done: false };
++                case 5: _.label++; y = op[1]; op = [0]; continue;
++                case 7: op = _.ops.pop(); _.trys.pop(); continue;
++                default:
++                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
++                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
++                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
++                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
++                    if (t[2]) _.ops.pop();
++                    _.trys.pop(); continue;
++            }
++            op = body.call(thisArg, _);
++        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
++        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
++    }
++};
++Object.defineProperty(exports, "__esModule", { value: true });
++exports.validateApiKey = validateApiKey;
++exports.getServiceContext = getServiceContext;
++exports.hashApiKey = hashApiKey;
++exports.generateApiKey = generateApiKey;
++var supabase_js_1 = require("@supabase/supabase-js");
++// ============================================
++// SUPABASE CLIENT
++// ============================================
++function getSupabaseServiceClient() {
++    var supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
++    var supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
++    if (!supabaseUrl || !supabaseServiceKey) {
++        throw new Error('Missing Supabase configuration');
++    }
++    return (0, supabase_js_1.createClient)(supabaseUrl, supabaseServiceKey, {
++        auth: {
++            autoRefreshToken: false,
++            persistSession: false,
++        },
++    });
++}
++// ============================================
++// API KEY VALIDATION
++// ============================================
++/**
++ * Validate an API key against the database
++ */
++function validateApiKey(apiKey) {
++    return __awaiter(this, void 0, void 0, function () {
++        var supabase, keyHash, _a, data, error, error_1;
++        return __generator(this, function (_b) {
++            switch (_b.label) {
++                case 0:
++                    if (!apiKey) {
++                        return [2 /*return*/, { valid: false, error: 'No API key provided' }];
++                    }
++                    // For development, allow a bypass key
++                    if (process.env.NODE_ENV === 'development' && apiKey === 'dev-test-key') {
++                        return [2 /*return*/, {
++                                valid: true,
++                                keyId: 'dev-key',
++                                keyName: 'Development Key',
++                                userId: process.env.DEV_USER_ID || 'dev-user',
++                                scopes: ['*'],
++                            }];
++                    }
++                    _b.label = 1;
++                case 1:
++                    _b.trys.push([1, 5, , 6]);
++                    supabase = getSupabaseServiceClient();
++                    return [4 /*yield*/, hashApiKey(apiKey)];
++                case 2:
++                    keyHash = _b.sent();
++                    return [4 /*yield*/, supabase
++                            .from('mcp_api_keys')
++                            .select('id, name, user_id, scopes, is_active, expires_at')
++                            .eq('key_hash', keyHash)
++                            .single()];
++                case 3:
++                    _a = _b.sent(), data = _a.data, error = _a.error;
++                    if (error || !data) {
++                        return [2 /*return*/, { valid: false, error: 'Invalid API key' }];
++                    }
++                    // Check if key is active
++                    if (!data.is_active) {
++                        return [2 /*return*/, { valid: false, error: 'API key is disabled' }];
++                    }
++                    // Check if key has expired
++                    if (data.expires_at && new Date(data.expires_at) < new Date()) {
++                        return [2 /*return*/, { valid: false, error: 'API key has expired' }];
++                    }
++                    // Update last used timestamp
++                    return [4 /*yield*/, supabase
++                            .from('mcp_api_keys')
++                            .update({ last_used_at: new Date().toISOString() })
++                            .eq('id', data.id)];
++                case 4:
++                    // Update last used timestamp
++                    _b.sent();
++                    return [2 /*return*/, {
++                            valid: true,
++                            keyId: data.id,
++                            keyName: data.name,
++                            userId: data.user_id,
++                            scopes: data.scopes || ['*'],
++                        }];
++                case 5:
++                    error_1 = _b.sent();
++                    console.error('[MCP Auth] Error validating API key:', error_1);
++                    return [2 /*return*/, { valid: false, error: 'Authentication error' }];
++                case 6: return [2 /*return*/];
++            }
++        });
++    });
++}
++/**
++ * Create a service context for authenticated requests
++ */
++function getServiceContext(authResult) {
++    return __awaiter(this, void 0, void 0, function () {
++        var supabase;
++        return __generator(this, function (_a) {
++            if (!authResult.valid || !authResult.userId) {
++                throw new Error('Invalid authentication result');
++            }
++            supabase = getSupabaseServiceClient();
++            return [2 /*return*/, {
++                    userId: authResult.userId,
++                    supabase: supabase,
++                    apiKeyId: authResult.keyId,
++                    apiKeyName: authResult.keyName,
++                    scopes: authResult.scopes || [],
++                }];
++        });
++    });
++}
++/**
++ * Check if a scope is allowed for the API key
++ */
++function hasScope(context, requiredScope) {
++    // Wildcard allows all scopes
++    if (context.scopes.includes('*')) {
++        return true;
++    }
++    // Check for exact match or prefix match (e.g., 'entities:*' matches 'entities:read')
++    return context.scopes.some(function (scope) {
++        if (scope === requiredScope)
++            return true;
++        if (scope.endsWith(':*')) {
++            var prefix = scope.slice(0, -1); // Remove '*'
++            return requiredScope.startsWith(prefix);
++        }
++        return false;
++    });
++}
++// ============================================
++// UTILITIES
++// ============================================
++/**
++ * Hash an API key for storage/lookup
++ * Uses SHA-256 for consistent hashing
++ */
++function hashApiKey(apiKey) {
++    return __awaiter(this, void 0, void 0, function () {
++        var encoder, data, hashBuffer, hashArray;
++        return __generator(this, function (_a) {
++            switch (_a.label) {
++                case 0:
++                    encoder = new TextEncoder();
++                    data = encoder.encode(apiKey);
++                    return [4 /*yield*/, crypto.subtle.digest('SHA-256', data)];
++                case 1:
++                    hashBuffer = _a.sent();
++                    hashArray = Array.from(new Uint8Array(hashBuffer));
++                    return [2 /*return*/, hashArray.map(function (b) { return b.toString(16).padStart(2, '0'); }).join('')];
++            }
++        });
++    });
++}
++/**
++ * Generate a new API key
++ */
++function generateApiKey() {
++    var bytes = new Uint8Array(32);
++    crypto.getRandomValues(bytes);
++    var key = Array.from(bytes)
++        .map(function (b) { return b.toString(16).padStart(2, '0'); })
++        .join('');
++    return "wbk_".concat(key); // Prefix for identification
++}
++/**
++ * Create a new API key in the database
++ */
++function createApiKey(userId_1, name_1) {
++    return __awaiter(this, arguments, void 0, function (userId, name, scopes, expiresAt) {
++        var supabase, apiKey, keyHash, _a, data, error;
++        if (scopes === void 0) { scopes = ['*']; }
++        return __generator(this, function (_b) {
++            switch (_b.label) {
++                case 0:
++                    supabase = getSupabaseServiceClient();
++                    apiKey = generateApiKey();
++                    return [4 /*yield*/, hashApiKey(apiKey)];
++                case 1:
++                    keyHash = _b.sent();
++                    return [4 /*yield*/, supabase
++                            .from('mcp_api_keys')
++                            .insert({
++                            user_id: userId,
++                            name: name,
++                            key_hash: keyHash,
++                            scopes: scopes,
++                            expires_at: expiresAt === null || expiresAt === void 0 ? void 0 : expiresAt.toISOString(),
++                            is_active: true,
++                        })
++                            .select('id')
++                            .single()];
++                case 2:
++                    _a = _b.sent(), data = _a.data, error = _a.error;
++                    if (error) {
++                        throw new Error("Failed to create API key: ".concat(error.message));
++                    }
++                    // Return the plain text key - this is the only time it's visible
++                    return [2 /*return*/, { apiKey: apiKey, keyId: data.id }];
++            }
++        });
++    });
++}
+diff --git a/src/mcp/core/types.js b/src/mcp/core/types.js
+new file mode 100644
+index 0000000..c889ca6
+--- /dev/null
++++ b/src/mcp/core/types.js
+@@ -0,0 +1,7 @@
++"use strict";
++/**
++ * MCP Core Types
++ *
++ * Shared types used across all MCP domains.
++ */
++Object.defineProperty(exports, "__esModule", { value: true });
+diff --git a/src/mcp/resources/index.js b/src/mcp/resources/index.js
+new file mode 100644
+index 0000000..3e678c3
+--- /dev/null
++++ b/src/mcp/resources/index.js
+@@ -0,0 +1,203 @@
++"use strict";
++/**
++ * MCP Resources Registry
++ *
++ * Resources provide read-only access to data.
++ * Unlike tools, resources are for data retrieval only.
++ */
++var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
++    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
++    return new (P || (P = Promise))(function (resolve, reject) {
++        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
++        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
++        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
++        step((generator = generator.apply(thisArg, _arguments || [])).next());
++    });
++};
++var __generator = (this && this.__generator) || function (thisArg, body) {
++    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
++    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
++    function verb(n) { return function (v) { return step([n, v]); }; }
++    function step(op) {
++        if (f) throw new TypeError("Generator is already executing.");
++        while (g && (g = 0, op[0] && (_ = 0)), _) try {
++            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
++            if (y = 0, t) op = [op[0] & 2, t.value];
++            switch (op[0]) {
++                case 0: case 1: t = op; break;
++                case 4: _.label++; return { value: op[1], done: false };
++                case 5: _.label++; y = op[1]; op = [0]; continue;
++                case 7: op = _.ops.pop(); _.trys.pop(); continue;
++                default:
++                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
++                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
++                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
++                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
++                    if (t[2]) _.ops.pop();
++                    _.trys.pop(); continue;
++            }
++            op = body.call(thisArg, _);
++        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
++        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
++    }
++};
++Object.defineProperty(exports, "__esModule", { value: true });
++exports.mcpResources = void 0;
++var services_1 = require("@/services");
++var auth_1 = require("../core/auth");
++// ============================================
++// HELPERS
++// ============================================
++/**
++ * Parse a resource URI and extract parameters
++ */
++function parseResourceUri(uri) {
++    // wbk://projects
++    if (uri === 'wbk://projects') {
++        return { type: 'projects', params: {} };
++    }
++    // wbk://project/{projectId}/entities
++    var entitiesMatch = uri.match(/^wbk:\/\/project\/([^/]+)\/entities$/);
++    if (entitiesMatch) {
++        return { type: 'project-entities', params: { projectId: entitiesMatch[1] } };
++    }
++    // wbk://project/{projectId}/characters
++    var charactersMatch = uri.match(/^wbk:\/\/project\/([^/]+)\/characters$/);
++    if (charactersMatch) {
++        return { type: 'project-characters', params: { projectId: charactersMatch[1] } };
++    }
++    // wbk://project/{projectId}/episodes
++    var episodesMatch = uri.match(/^wbk:\/\/project\/([^/]+)\/episodes$/);
++    if (episodesMatch) {
++        return { type: 'project-episodes', params: { projectId: episodesMatch[1] } };
++    }
++    // wbk://project/{projectId}/series-bible
++    var bibleMatch = uri.match(/^wbk:\/\/project\/([^/]+)\/series-bible$/);
++    if (bibleMatch) {
++        return { type: 'series-bible', params: { projectId: bibleMatch[1] } };
++    }
++    // wbk://episode/{episodeId}/beats
++    var beatsMatch = uri.match(/^wbk:\/\/episode\/([^/]+)\/beats$/);
++    if (beatsMatch) {
++        return { type: 'episode-beats', params: { episodeId: beatsMatch[1] } };
++    }
++    throw new Error("Unknown resource URI: ".concat(uri));
++}
++// ============================================
++// RESOURCE IMPLEMENTATION
++// ============================================
++exports.mcpResources = {
++    listResources: function () { return __awaiter(void 0, void 0, void 0, function () {
++        return __generator(this, function (_a) {
++            // Auth check optional for listing? Let's check env var presence at least
++            // But listResources usually doesn't take args, so passing API key is hard unless global or env.
++            // In stdio, env var is the way.
++            return [2 /*return*/, [
++                    {
++                        uri: 'wbk://projects',
++                        name: 'Projects List',
++                        description: 'List of all projects accessible to the current user',
++                        mimeType: 'application/json',
++                    },
++                    {
++                        uri: 'wbk://project/{projectId}/entities',
++                        name: 'Project Entities',
++                        description: 'All game entities in a project',
++                        mimeType: 'application/json',
++                    },
++                    {
++                        uri: 'wbk://project/{projectId}/characters',
++                        name: 'Project Characters',
++                        description: 'All characters in a project',
++                        mimeType: 'application/json',
++                    },
++                    {
++                        uri: 'wbk://project/{projectId}/episodes',
++                        name: 'Project Episodes',
++                        description: 'All episodes in a project',
++                        mimeType: 'application/json',
++                    },
++                    {
++                        uri: 'wbk://project/{projectId}/series-bible',
++                        name: 'Series Bible',
++                        description: 'The series bible for a project containing world description, characters, factions, and story plan',
++                        mimeType: 'application/json',
++                    },
++                    {
++                        uri: 'wbk://episode/{episodeId}/beats',
++                        name: 'Episode Beats',
++                        description: 'All beats in an episode',
++                        mimeType: 'application/json',
++                    },
++                ]];
++        });
++    }); },
++    getResourceContent: function (_a) { return __awaiter(void 0, [_a], void 0, function (_b) {
++        var apiKey, authResult, context, _c, type, params, result, _d, _e, data, error;
++        var uri = _b.uri;
++        return __generator(this, function (_f) {
++            switch (_f.label) {
++                case 0:
++                    apiKey = process.env.MCP_API_KEY;
++                    if (!apiKey)
++                        throw new Error('MCP_API_KEY environment variable not set');
++                    return [4 /*yield*/, (0, auth_1.validateApiKey)(apiKey)];
++                case 1:
++                    authResult = _f.sent();
++                    if (!authResult.valid)
++                        throw new Error('Invalid API key');
++                    return [4 /*yield*/, (0, auth_1.getServiceContext)(authResult)];
++                case 2:
++                    context = _f.sent();
++                    _c = parseResourceUri(uri), type = _c.type, params = _c.params;
++                    _d = type;
++                    switch (_d) {
++                        case 'projects': return [3 /*break*/, 3];
++                        case 'project-entities': return [3 /*break*/, 5];
++                        case 'project-characters': return [3 /*break*/, 7];
++                        case 'project-episodes': return [3 /*break*/, 9];
++                        case 'series-bible': return [3 /*break*/, 11];
++                        case 'episode-beats': return [3 /*break*/, 13];
++                    }
++                    return [3 /*break*/, 15];
++                case 3: return [4 /*yield*/, context.supabase
++                        .from('projects')
++                        .select('id, name, description, created_at, updated_at')
++                        .eq('user_id', context.userId)
++                        .order('updated_at', { ascending: false })];
++                case 4:
++                    _e = _f.sent(), data = _e.data, error = _e.error;
++                    if (error)
++                        throw new Error("Failed to fetch projects: ".concat(error.message));
++                    result = { projects: data };
++                    return [3 /*break*/, 16];
++                case 5: return [4 /*yield*/, services_1.entitiesService.list({ projectId: params.projectId }, { userId: context.userId, supabase: context.supabase })];
++                case 6:
++                    result = _f.sent();
++                    return [3 /*break*/, 16];
++                case 7: return [4 /*yield*/, services_1.storytellerService.listCharacters({ projectId: params.projectId }, { userId: context.userId })];
++                case 8:
++                    result = _f.sent();
++                    return [3 /*break*/, 16];
++                case 9: return [4 /*yield*/, services_1.storytellerService.listEpisodes({ projectId: params.projectId }, { userId: context.userId })];
++                case 10:
++                    result = _f.sent();
++                    return [3 /*break*/, 16];
++                case 11: return [4 /*yield*/, services_1.storytellerService.getSeriesBible(params.projectId, {
++                        userId: context.userId,
++                    })];
++                case 12:
++                    result = _f.sent();
++                    return [3 /*break*/, 16];
++                case 13: return [4 /*yield*/, services_1.storytellerService.listBeats({ episodeId: params.episodeId }, { userId: context.userId })];
++                case 14:
++                    result = _f.sent();
++                    return [3 /*break*/, 16];
++                case 15: throw new Error("Unknown resource type: ".concat(type));
++                case 16: return [2 /*return*/, {
++                        text: JSON.stringify(result, null, 2),
++                    }];
++            }
++        });
++    }); },
++};
+diff --git a/src/services/index.ts b/src/services/index.ts
+index 137e174..f515042 100644
+--- a/src/services/index.ts
++++ b/src/services/index.ts
+@@ -6,6 +6,7 @@
+  */
+ 
+ // Entities service - game entities across all domains
++// Re-export from shared/data/EntitiesService (Item 4)
+ export {
+   entitiesService,
+   EntitiesService,
+@@ -19,9 +20,10 @@ export {
+   type UpdateEntityInput,
+   type GameEntity,
+   type ServiceContext as EntitiesServiceContext,
+-} from './entities.service'
++} from '@/shared/data/EntitiesService'
+ 
+ // Storyteller service - characters, episodes, beats, chat
++// Re-export from domains/storyteller/services/StorytellerCrudService (Item 4)
+ export {
+   storytellerService,
+   StorytellerService,
+@@ -39,9 +41,10 @@ export {
+   type ChatMessageInput,
+   type ServiceContext as StorytellerServiceContext,
+   type LangSmithContext,
+-} from './storyteller.service'
++} from '@/domains/storyteller'
+ 
+ // Tiles service - tile generation via Trigger.dev
++// Re-export from shared/data/generation/TilesService (Item 4)
+ export {
+   tilesService,
+   TilesService,
+@@ -65,7 +68,7 @@ export {
+   type TriggerRunResult,
+   type RunStatus,
+   type ServiceContext as TilesServiceContext,
+-} from './tiles.service'
++} from '@/shared/data/generation/TilesService'
+ 
+ // Re-export common error types
+-export { ServiceError, type ServiceErrorCode } from './entities.service'
++export { ServiceError, type ServiceErrorCode } from '@/shared/data/EntitiesService'
+diff --git a/src/shared/agent-kernel/index.ts b/src/shared/agent-kernel/index.ts
+new file mode 100644
+index 0000000..c4a7602
+--- /dev/null
++++ b/src/shared/agent-kernel/index.ts
+@@ -0,0 +1,12 @@
++/**
++ * @module shared/agent-kernel
++ * 
++ * Cross-module AI agent primitives — Mastra wiring, memory, skills, judging, workspace.
++ * 
++ * Layer contract:
++ * - MAY import: @/db, shared/* (not other agent-kernel modules)
++ * - MAY NOT import: @/domains/*, @/app/*
++ * - Consumers: domains/*/agents, shared/observability
++ */
++
++// Empty barrel — populated in Increment 2 (Items 5-6)
+diff --git a/src/shared/auth/auth.ts b/src/shared/auth/auth.ts
+new file mode 100644
+index 0000000..ca57987
+--- /dev/null
++++ b/src/shared/auth/auth.ts
+@@ -0,0 +1,62 @@
++import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
++import { cookies, headers } from 'next/headers'
++
++import { Session } from '@supabase/supabase-js'
++
++// Mock session for E2E tests in development
++const DEV_MOCK_SESSION: Session = {
++  user: {
++    id: 'e2e-test-user-id',
++    email: 'e2e-test@example.com',
++    app_metadata: {},
++    user_metadata: {},
++    aud: 'authenticated',
++    created_at: new Date().toISOString(),
++    phone: '',
++    confirmed_at: new Date().toISOString(),
++    email_confirmed_at: new Date().toISOString(),
++    last_sign_in_at: new Date().toISOString(),
++    role: 'authenticated',
++    updated_at: new Date().toISOString(),
++  },
++  access_token: 'e2e-mock-token',
++  token_type: 'bearer',
++  expires_in: 3600,
++  expires_at: Math.floor(Date.now() / 1000) + 3600,
++  refresh_token: 'e2e-mock-refresh',
++}
++
++export async function getUserSession() {
++  // Check for E2E test bypass in development or test environments
++  if (['development', 'test'].includes(process.env.NODE_ENV || '')) {
++    const headersList = await headers()
++    const e2eHeader = headersList.get('x-bypass-auth')
++    if (e2eHeader === 'true') {
++      return { session: DEV_MOCK_SESSION, supabase: null as any, error: null }
++    }
++  }
++
++  /*
++   * Next.js 15+ requires awaiting cookies(), but @supabase/auth-helpers-nextjs
++   * expects the `cookies` option to return the store synchronously (or it doesn't await it).
++   * Since we've already awaited `cookies()` above, we should pass it directly.
++   */
++  const cookieStore = await cookies()
++  const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
++  const {
++    data: { session },
++    error,
++  } = await supabase.auth.getSession()
++
++  return { session, supabase, error }
++}
++
++export async function requireAuth() {
++  const { session, error } = await getUserSession()
++
++  if (error || !session) {
++    return { session: null, error: error || new Error('Unauthorized') }
++  }
++
++  return { session, error: null }
++}
+diff --git a/src/shared/auth/index.ts b/src/shared/auth/index.ts
+new file mode 100644
+index 0000000..b3a75ca
+--- /dev/null
++++ b/src/shared/auth/index.ts
+@@ -0,0 +1,18 @@
++/**
++ * @module shared/auth
++ * 
++ * Cross-module authentication and authorization utilities.
++ * 
++ * Layer contract:
++ * - MAY import: @/db, shared/errors, shared/types
++ * - MAY NOT import: @/domains/*, @/app/*
++ * - Consumers: domains/*/services, app/api, app/middleware
++ * 
++ * Contents:
++ * - auth.ts — session management, JWT utilities
++ * - validation.ts — auth Zod schemas
++ * - security.ts — encryption, hashing, CSRF protection
++ * - useAuthStore.ts — client auth state (Zustand)
++ */
++
++export * from './auth'
+diff --git a/src/shared/auth/security.ts b/src/shared/auth/security.ts
+new file mode 100644
+index 0000000..bdfef98
+--- /dev/null
++++ b/src/shared/auth/security.ts
+@@ -0,0 +1,320 @@
++/**
++ * Security Utilities
++ *
++ * Critical security functions for:
++ * - Path traversal prevention
++ * - SSRF protection
++ * - Input sanitization
++ * - Secure logging
++ */
++
++import path from 'path'
++import { z } from 'zod'
++
++// ============================================
++// PATH TRAVERSAL PROTECTION
++// ============================================
++
++/**
++ * Validate and sanitize a file path to prevent directory traversal attacks
++ * @param userInput - The user-provided path/filename
++ * @param allowedBaseDir - The allowed base directory (e.g., 'projects')
++ * @returns Sanitized path or null if invalid
++ */
++export function sanitizePath(
++  userInput: string,
++  allowedBaseDir: string = 'projects'
++): { safe: boolean; sanitizedPath: string | null; error?: string } {
++  if (!userInput || typeof userInput !== 'string') {
++    return { safe: false, sanitizedPath: null, error: 'Invalid input' }
++  }
++
++  // Remove null bytes (can bypass some path checks)
++  const cleaned = userInput.replace(/\0/g, '')
++
++  // Check for obvious traversal attempts
++  if (cleaned.includes('..') || cleaned.includes('\0')) {
++    return { safe: false, sanitizedPath: null, error: 'Path traversal detected' }
++  }
++
++  // Normalize the path to resolve any . or redundant separators
++  const normalized = path.normalize(cleaned)
++
++  // After normalization, check again for traversal
++  if (normalized.includes('..') || normalized.startsWith('/') || normalized.startsWith('\\')) {
++    return {
++      safe: false,
++      sanitizedPath: null,
++      error: 'Path traversal detected after normalization',
++    }
++  }
++
++  // Build the full path and verify it's within the allowed directory
++  const baseDir = path.join(process.cwd(), 'public', allowedBaseDir)
++  const fullPath = path.join(baseDir, normalized)
++
++  // Ensure the resolved path is within the allowed base directory
++  if (!fullPath.startsWith(baseDir)) {
++    return { safe: false, sanitizedPath: null, error: 'Path escapes allowed directory' }
++  }
++
++  return { safe: true, sanitizedPath: fullPath }
++}
++
++/**
++ * Validate a project ID format (UUID)
++ */
++export function isValidProjectId(projectId: string): boolean {
++  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
++  return uuidRegex.test(projectId)
++}
++
++/**
++ * Sanitize filename - only allow alphanumeric, dash, underscore, dot
++ */
++export function sanitizeFilename(filename: string): string | null {
++  if (!filename || typeof filename !== 'string') return null
++
++  // Remove path separators and null bytes
++  const cleaned = filename.replace(/[/\\:*?"<>|\0]/g, '')
++
++  // Only allow safe characters
++  const safeFilename = cleaned.replace(/[^a-zA-Z0-9._-]/g, '_')
++
++  // Prevent hidden files and double extensions that could be exploits
++  if (safeFilename.startsWith('.') || safeFilename.includes('..')) {
++    return null
++  }
++
++  // Limit length
++  if (safeFilename.length > 255 || safeFilename.length === 0) {
++    return null
++  }
++
++  return safeFilename
++}
++
++// ============================================
++// SSRF PROTECTION
++// ============================================
++
++/**
++ * Allowed domains for external fetches
++ * Add domains that your application legitimately needs to access
++ */
++const ALLOWED_EXTERNAL_DOMAINS = [
++  // 3D Model APIs
++  'api.meshy.ai',
++  'assets.meshy.ai',
++  'cdn.meshy.ai',
++  'api.hyper3d.ai',
++  // AI APIs
++  'api.openai.com',
++  'generativelanguage.googleapis.com',
++  'api.stability.ai',
++  'api.replicate.com',
++  'api.cometapi.com', // Midjourney proxy
++  'fal.run',
++  'queue.fal.run',
++  // Storage
++  'storage.googleapis.com',
++  'supabase.co',
++  // Vercel Blob
++  'blob.vercel-storage.com',
++  'public.blob.vercel-storage.com',
++] as const
++
++/**
++ * Check if a URL is safe to fetch (SSRF protection)
++ */
++export function isAllowedUrl(url: string): { allowed: boolean; reason?: string } {
++  try {
++    const parsed = new URL(url)
++
++    // Only allow http/https
++    if (!['http:', 'https:'].includes(parsed.protocol)) {
++      return { allowed: false, reason: 'Invalid protocol - only HTTP/HTTPS allowed' }
++    }
++
++    // Block local/private IPs
++    const hostname = parsed.hostname.toLowerCase()
++
++    // Block localhost
++    if (
++      hostname === 'localhost' ||
++      hostname === '127.0.0.1' ||
++      hostname === '::1' ||
++      hostname === '0.0.0.0'
++    ) {
++      return { allowed: false, reason: 'Localhost access blocked' }
++    }
++
++    // Block private IP ranges
++    const ipv4Pattern = /^(\d{1,3}\.){3}\d{1,3}$/
++    if (ipv4Pattern.test(hostname)) {
++      const octets = hostname.split('.').map(Number)
++      // 10.x.x.x
++      if (octets[0] === 10) {
++        return { allowed: false, reason: 'Private IP range blocked' }
++      }
++      // 172.16.x.x - 172.31.x.x
++      if (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) {
++        return { allowed: false, reason: 'Private IP range blocked' }
++      }
++      // 192.168.x.x
++      if (octets[0] === 192 && octets[1] === 168) {
++        return { allowed: false, reason: 'Private IP range blocked' }
++      }
++      // 169.254.x.x (link-local)
++      if (octets[0] === 169 && octets[1] === 254) {
++        return { allowed: false, reason: 'Link-local IP blocked' }
++      }
++    }
++
++    // Block metadata endpoints (cloud provider SSRF targets)
++    if (
++      hostname === '169.254.169.254' || // AWS/GCP metadata
++      hostname === 'metadata.google.internal' ||
++      hostname.endsWith('.internal')
++    ) {
++      return { allowed: false, reason: 'Cloud metadata endpoint blocked' }
++    }
++
++    // Check against whitelist
++    const isWhitelisted = ALLOWED_EXTERNAL_DOMAINS.some(
++      domain => hostname === domain || hostname.endsWith('.' + domain)
++    )
++
++    if (!isWhitelisted) {
++      return { allowed: false, reason: `Domain not in allowlist: ${hostname}` }
++    }
++
++    return { allowed: true }
++  } catch {
++    return { allowed: false, reason: 'Invalid URL format' }
++  }
++}
++
++/**
++ * Safe fetch wrapper with SSRF protection
++ */
++export async function safeFetch(url: string, options?: RequestInit): Promise<Response> {
++  const check = isAllowedUrl(url)
++  if (!check.allowed) {
++    throw new Error(`SSRF Protection: ${check.reason}`)
++  }
++
++  // Add timeout to prevent slow loris attacks
++  const controller = new AbortController()
++  const timeout = setTimeout(() => controller.abort(), 30000) // 30 second timeout
++
++  try {
++    return await fetch(url, {
++      ...options,
++      signal: controller.signal,
++    })
++  } finally {
++    clearTimeout(timeout)
++  }
++}
++
++// ============================================
++// INPUT VALIDATION SCHEMAS
++// ============================================
++
++const schemas = {
++  uuid: z.string().uuid(),
++  projectId: z.string().uuid(),
++  email: z.string().email(),
++  url: z.string().url(),
++  filename: z
++    .string()
++    .min(1)
++    .max(255)
++    .regex(/^[a-zA-Z0-9._-]+$/),
++
++  // Coordinate validation
++  coordinate: z.number().int().min(-1000).max(1000),
++
++  // Common API payloads
++  createTile: z.object({
++    projectId: z.string().uuid(),
++    x: z.number().int().min(-1000).max(1000),
++    y: z.number().int().min(-1000).max(1000),
++    prompt: z.string().min(1).max(5000),
++  }),
++
++  imageBase64: z.string().regex(/^data:image\/(png|jpeg|jpg|webp|gif);base64,/),
++}
++
++// ============================================
++// SECURE LOGGING
++// ============================================
++
++const SENSITIVE_KEYS = [
++  'password',
++  'apiKey',
++  'api_key',
++  'apikey',
++  'secret',
++  'token',
++  'authorization',
++  'auth',
++  'credential',
++  'private',
++  'accessToken',
++  'access_token',
++  'refreshToken',
++  'refresh_token',
++  'sessionToken',
++  'session_token',
++  'jwt',
++  'bearer',
++]
++
++/**
++ * Redact sensitive data from objects before logging
++ */
++export function redactSensitive(obj: any, depth = 0): any {
++  if (depth > 10) return '[MAX_DEPTH]' // Prevent infinite recursion
++  if (obj === null || obj === undefined) return obj
++  if (typeof obj !== 'object') return obj
++
++  if (Array.isArray(obj)) {
++    return obj.map(item => redactSensitive(item, depth + 1))
++  }
++
++  const redacted: any = {}
++  for (const [key, value] of Object.entries(obj)) {
++    const lowerKey = key.toLowerCase()
++    if (SENSITIVE_KEYS.some(sensitive => lowerKey.includes(sensitive))) {
++      redacted[key] = '[REDACTED]'
++    } else if (typeof value === 'object') {
++      redacted[key] = redactSensitive(value, depth + 1)
++    } else {
++      redacted[key] = value
++    }
++  }
++
++  return redacted
++}
++
++/**
++ * Secure logger that automatically redacts sensitive data
++ */
++export const secureLog = {
++  info: (message: string, data?: any) => {
++    console.log(message, data ? redactSensitive(data) : '')
++  },
++  warn: (message: string, data?: any) => {
++    console.warn(message, data ? redactSensitive(data) : '')
++  },
++  error: (message: string, data?: any) => {
++    console.error(message, data ? redactSensitive(data) : '')
++  },
++  debug: (message: string, data?: any) => {
++    if (process.env.NODE_ENV === 'development') {
++      console.debug(message, data ? redactSensitive(data) : '')
++    }
++  },
++}
+diff --git a/src/shared/auth/useAuthStore.ts b/src/shared/auth/useAuthStore.ts
+new file mode 100644
+index 0000000..ed8b5e4
+--- /dev/null
++++ b/src/shared/auth/useAuthStore.ts
+@@ -0,0 +1,12 @@
++import { create } from 'zustand'
++import type { User } from '@supabase/supabase-js'
++
++interface AuthState {
++  user: User | null
++  setUser: (user: User | null) => void
++}
++
++export const useAuthStore = create<AuthState>(set => ({
++  user: null,
++  setUser: user => set({ user }),
++}))
+diff --git a/src/shared/auth/validation.ts b/src/shared/auth/validation.ts
+new file mode 100644
+index 0000000..0d13f99
+--- /dev/null
++++ b/src/shared/auth/validation.ts
+@@ -0,0 +1,28 @@
++import * as yup from 'yup'
++
++const email = yup.string().email('Please enter a valid email address').required('Email is required')
++
++const password = yup
++  .string()
++  .min(8, 'Password must be at least 8 characters')
++  .matches(/[A-Z]/, 'Password must contain at least one uppercase letter')
++  .matches(/[0-9]/, 'Password must contain at least one number')
++  .required('Password is required')
++
++const passwordSignIn = yup
++  .string()
++  .min(8, 'Password must be at least 8 characters')
++  .required('Password is required')
++
++const confirmPassword = yup
++  .string()
++  .oneOf([yup.ref('password')], 'Passwords must match')
++  .required('Please confirm your password')
++
++export const signInSchema = yup.object({ email, password: passwordSignIn })
++
++export const signUpSchema = yup.object({ email, password, confirmPassword })
++
++export const forgotPasswordSchema = yup.object({ email })
++
++export const resetPasswordSchema = yup.object({ password, confirmPassword })
+diff --git a/src/shared/data/EntitiesService.ts b/src/shared/data/EntitiesService.ts
+new file mode 100644
+index 0000000..c13ae50
+--- /dev/null
++++ b/src/shared/data/EntitiesService.ts
+@@ -0,0 +1,291 @@
++/**
++ * Entities Service
++ *
++ * Shared business logic for game entities operations.
++ * Used by both REST API and MCP server.
++ */
++
++import { SupabaseClient } from '@supabase/supabase-js'
++import { z } from 'zod'
++
++// ============================================
++// SCHEMAS
++// ============================================
++
++export const entityTypeSchema = z.enum([
++  'character',
++  'location',
++  'mechanic',
++  'faction',
++  'item',
++  'quest',
++])
++
++export const sourceDomainSchema = z.enum([
++  'storyteller',
++  'loop-creator',
++  'interior-designer',
++  'world-building',
++])
++
++export const listEntitiesSchema = z.object({
++  projectId: z.string().uuid(),
++  entityType: entityTypeSchema.optional(),
++  sourceDomain: sourceDomainSchema.optional(),
++  search: z.string().optional(),
++})
++
++export const createEntitySchema = z.object({
++  projectId: z.string().uuid(),
++  entityType: entityTypeSchema,
++  name: z.string().min(1),
++  description: z.string().optional(),
++  sourceDomain: sourceDomainSchema,
++  sourceEntityId: z.string().uuid().optional(),
++  metadata: z.record(z.any()).optional(),
++  tags: z.array(z.string()).optional(),
++  imageUrl: z.string().url().optional(),
++})
++
++export const updateEntitySchema = z.object({
++  name: z.string().min(1).optional(),
++  description: z.string().optional(),
++  metadata: z.record(z.any()).optional(),
++  tags: z.array(z.string()).optional(),
++  imageUrl: z.string().url().optional(),
++  usedInDomains: z.array(sourceDomainSchema).optional(),
++})
++
++// ============================================
++// TYPES
++// ============================================
++
++export type ListEntitiesInput = z.infer<typeof listEntitiesSchema>
++export type CreateEntityInput = z.infer<typeof createEntitySchema>
++export type UpdateEntityInput = z.infer<typeof updateEntitySchema>
++
++export interface GameEntity {
++  id: string
++  project_id: string
++  user_id: string
++  entity_type: string
++  name: string
++  description: string | null
++  source_domain: string
++  source_entity_id: string | null
++  metadata: Record<string, unknown>
++  tags: string[]
++  image_url: string | null
++  used_in_domains: string[]
++  created_at: string
++  updated_at: string
++}
++
++export interface ServiceContext {
++  userId: string
++  supabase: SupabaseClient
++}
++
++// ============================================
++// SERVICE CLASS
++// ============================================
++
++export class EntitiesService {
++  /**
++   * List entities for a project with optional filtering
++   */
++  async list(
++    input: ListEntitiesInput,
++    context: ServiceContext
++  ): Promise<{ entities: GameEntity[] }> {
++    const validated = listEntitiesSchema.parse(input)
++
++    // Verify project access via RLS
++    const hasAccess = await this.verifyProjectAccess(context.supabase, validated.projectId)
++    if (!hasAccess) {
++      throw new ServiceError('Project not found or access denied', 'NOT_FOUND')
++    }
++
++    let query = context.supabase
++      .from('game_entities')
++      .select('*')
++      .eq('project_id', validated.projectId)
++      .order('created_at', { ascending: false })
++
++    if (validated.entityType) {
++      query = query.eq('entity_type', validated.entityType)
++    }
++
++    if (validated.sourceDomain) {
++      query = query.eq('source_domain', validated.sourceDomain)
++    }
++
++    if (validated.search) {
++      query = query.or(`name.ilike.%${validated.search}%,description.ilike.%${validated.search}%`)
++    }
++
++    const { data, error } = await query
++
++    if (error) {
++      console.error('[EntitiesService] Error fetching entities:', error)
++      throw new ServiceError('Failed to fetch entities', 'INTERNAL_ERROR')
++    }
++
++    return { entities: data || [] }
++  }
++
++  /**
++   * Get a single entity by ID
++   */
++  async get(entityId: string, context: ServiceContext): Promise<{ entity: GameEntity }> {
++    const { data, error } = await context.supabase
++      .from('game_entities')
++      .select('*')
++      .eq('id', entityId)
++      .single()
++
++    if (error || !data) {
++      throw new ServiceError('Entity not found', 'NOT_FOUND')
++    }
++
++    // Verify project access
++    const hasAccess = await this.verifyProjectAccess(context.supabase, data.project_id)
++    if (!hasAccess) {
++      throw new ServiceError('Entity not found or access denied', 'NOT_FOUND')
++    }
++
++    return { entity: data }
++  }
++
++  /**
++   * Create a new entity
++   */
++  async create(input: CreateEntityInput, context: ServiceContext): Promise<{ entity: GameEntity }> {
++    const validated = createEntitySchema.parse(input)
++
++    // Verify project access via RLS
++    const hasAccess = await this.verifyProjectAccess(context.supabase, validated.projectId)
++    if (!hasAccess) {
++      throw new ServiceError('Project not found or access denied', 'NOT_FOUND')
++    }
++
++    const { data, error } = await context.supabase
++      .from('game_entities')
++      .insert({
++        project_id: validated.projectId,
++        user_id: context.userId,
++        entity_type: validated.entityType,
++        name: validated.name,
++        description: validated.description,
++        source_domain: validated.sourceDomain,
++        source_entity_id: validated.sourceEntityId,
++        metadata: validated.metadata || {},
++        tags: validated.tags || [],
++        image_url: validated.imageUrl,
++        used_in_domains: [validated.sourceDomain],
++      })
++      .select()
++      .single()
++
++    if (error) {
++      console.error('[EntitiesService] Error creating entity:', error)
++      throw new ServiceError('Failed to create entity', 'INTERNAL_ERROR')
++    }
++
++    return { entity: data }
++  }
++
++  /**
++   * Update an existing entity
++   */
++  async update(
++    entityId: string,
++    input: UpdateEntityInput,
++    context: ServiceContext
++  ): Promise<{ entity: GameEntity }> {
++    const validated = updateEntitySchema.parse(input)
++
++    // First verify the entity exists and user has access
++    await this.get(entityId, context)
++
++    const updateData: Record<string, unknown> = {}
++    if (validated.name !== undefined) updateData.name = validated.name
++    if (validated.description !== undefined) updateData.description = validated.description
++    if (validated.metadata !== undefined) updateData.metadata = validated.metadata
++    if (validated.tags !== undefined) updateData.tags = validated.tags
++    if (validated.imageUrl !== undefined) updateData.image_url = validated.imageUrl
++    if (validated.usedInDomains !== undefined) updateData.used_in_domains = validated.usedInDomains
++
++    const { data, error } = await context.supabase
++      .from('game_entities')
++      .update(updateData)
++      .eq('id', entityId)
++      .select()
++      .single()
++
++    if (error) {
++      console.error('[EntitiesService] Error updating entity:', error)
++      throw new ServiceError('Failed to update entity', 'INTERNAL_ERROR')
++    }
++
++    return { entity: data }
++  }
++
++  /**
++   * Delete an entity
++   */
++  async delete(entityId: string, context: ServiceContext): Promise<{ success: boolean }> {
++    // First verify the entity exists and user has access
++    await this.get(entityId, context)
++
++    const { error } = await context.supabase.from('game_entities').delete().eq('id', entityId)
++
++    if (error) {
++      console.error('[EntitiesService] Error deleting entity:', error)
++      throw new ServiceError('Failed to delete entity', 'INTERNAL_ERROR')
++    }
++
++    return { success: true }
++  }
++
++  /**
++   * Verify project access via RLS
++   */
++  private async verifyProjectAccess(supabase: SupabaseClient, projectId: string): Promise<boolean> {
++    const { data, error } = await supabase
++      .from('projects')
++      .select('id')
++      .eq('id', projectId)
++      .single()
++
++    return !error && !!data
++  }
++}
++
++// ============================================
++// ERROR HANDLING
++// ============================================
++
++export type ServiceErrorCode =
++  | 'NOT_FOUND'
++  | 'UNAUTHORIZED'
++  | 'VALIDATION_ERROR'
++  | 'INTERNAL_ERROR'
++  | 'RATE_LIMITED'
++
++export class ServiceError extends Error {
++  constructor(
++    message: string,
++    public code: ServiceErrorCode,
++    public details?: any
++  ) {
++    super(message)
++    this.name = 'ServiceError'
++  }
++}
++
++// ============================================
++// SINGLETON EXPORT
++// ============================================
++
++export const entitiesService = new EntitiesService()
+diff --git a/src/shared/data/api-utils.ts b/src/shared/data/api-utils.ts
+new file mode 100644
+index 0000000..b8aa85a
+--- /dev/null
++++ b/src/shared/data/api-utils.ts
+@@ -0,0 +1,199 @@
++/**
++ * API Utilities - Authentication, Rate Limiting, CSRF Protection
++ *
++ * Provides middleware-like utilities for API routes
++ */
++
++import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
++import { NextRequest, NextResponse } from 'next/server'
++import { getUserSession } from '@/shared/auth/auth'
++
++// Re-exported so existing `@/lib/api-utils` importers keep working.
++// Canonical implementation (incl. E2E bypass) lives in @/shared/auth/auth.
++export { getUserSession }
++
++// ============================================
++// TYPES
++// ============================================
++
++export interface AuthenticatedRequest {
++  session: {
++    user: {
++      id: string
++      email?: string
++    }
++  }
++  supabase: ReturnType<typeof createRouteHandlerClient>
++}
++
++export type ApiHandler<T = any> = (
++  request: NextRequest,
++  auth: AuthenticatedRequest,
++  context?: { params: Record<string, string> }
++) => Promise<NextResponse<T>>
++
++// ============================================
++// AUTHENTICATION
++// ============================================
++
++/**
++ * Require authentication - returns session or throws
++ */
++export async function requireAuth() {
++  const { session, supabase, error } = await getUserSession()
++
++  if (error || !session) {
++    return { session: null, supabase: null, error: error || new Error('Unauthorized') }
++  }
++
++  return { session, supabase, error: null }
++}
++
++/**
++ * Wrapper for authenticated API routes
++ * Usage:
++ * export const POST = withAuth(async (request, { session, supabase }) => {
++ *   // Your handler logic here
++ *   return NextResponse.json({ userId: session.user.id })
++ * })
++ */
++export function withAuth<T = any>(handler: ApiHandler<T>) {
++  return async (request: NextRequest, context?: { params: Record<string, string> }) => {
++    const { session, supabase, error } = await getUserSession()
++
++    if (error || !session) {
++      return NextResponse.json(
++        { error: 'Unauthorized', message: 'Authentication required' },
++        { status: 401 }
++      )
++    }
++
++    try {
++      return await handler(request, { session, supabase }, context)
++    } catch (err) {
++      console.error('API Error:', err)
++      return NextResponse.json(
++        {
++          error: 'Internal Server Error',
++          message: err instanceof Error ? err.message : 'Unknown error',
++        },
++        { status: 500 }
++      )
++    }
++  }
++}
++
++// ============================================
++// RATE LIMITING
++// ============================================
++
++// In-memory rate limit store (for single instance)
++// For production, use Redis/Upstash KV
++const rateLimitStore = new Map<string, { count: number; resetAt: number }>()
++
++interface RateLimitConfig {
++  windowMs?: number // Time window in milliseconds (default: 60000 = 1 minute)
++  maxRequests?: number // Max requests per window (default: 60)
++  keyPrefix?: string // Prefix for rate limit keys
++}
++
++/**
++ * Check rate limit for a given key
++ * Returns true if request is allowed, false if rate limited
++ */
++export function checkRateLimit(
++  key: string,
++  config: RateLimitConfig = {}
++): { allowed: boolean; remaining: number; resetAt: number } {
++  const { windowMs = 60000, maxRequests = 60, keyPrefix = 'rl' } = config
++  const fullKey = `${keyPrefix}:${key}`
++  const now = Date.now()
++
++  // Clean up expired entries periodically
++  if (Math.random() < 0.01) {
++    for (const [k, v] of rateLimitStore.entries()) {
++      if (v.resetAt < now) rateLimitStore.delete(k)
++    }
++  }
++
++  const entry = rateLimitStore.get(fullKey)
++
++  if (!entry || entry.resetAt < now) {
++    // New window
++    rateLimitStore.set(fullKey, { count: 1, resetAt: now + windowMs })
++    return { allowed: true, remaining: maxRequests - 1, resetAt: now + windowMs }
++  }
++
++  if (entry.count >= maxRequests) {
++    return { allowed: false, remaining: 0, resetAt: entry.resetAt }
++  }
++
++  entry.count++
++  return { allowed: true, remaining: maxRequests - entry.count, resetAt: entry.resetAt }
++}
++
++/**
++ * Rate limiting wrapper for API routes
++ */
++export function withRateLimit<T = any>(
++  handler: ApiHandler<T> | ((request: NextRequest, context?: any) => Promise<NextResponse<T>>),
++  config: RateLimitConfig & { getKey?: (request: NextRequest) => string } = {}
++) {
++  return async (request: NextRequest, context?: any) => {
++    const {
++      getKey = req => req.ip || req.headers.get('x-forwarded-for') || 'anonymous',
++      ...rateLimitConfig
++    } = config
++    const key = getKey(request)
++    const { allowed, remaining, resetAt } = checkRateLimit(key, rateLimitConfig)
++
++    if (!allowed) {
++      return NextResponse.json(
++        { error: 'Too Many Requests', message: 'Rate limit exceeded' },
++        {
++          status: 429,
++          headers: {
++            'X-RateLimit-Remaining': '0',
++            'X-RateLimit-Reset': String(Math.ceil(resetAt / 1000)),
++            'Retry-After': String(Math.ceil((resetAt - Date.now()) / 1000)),
++          },
++        }
++      )
++    }
++
++    const response = await handler(request, context)
++
++    // Add rate limit headers to successful response
++    response.headers.set('X-RateLimit-Remaining', String(remaining))
++    response.headers.set('X-RateLimit-Reset', String(Math.ceil(resetAt / 1000)))
++
++    return response
++  }
++}
++
++// ============================================
++// CSRF PROTECTION
++// ============================================
++
++const ALLOWED_ORIGINS = [
++  process.env.NEXT_PUBLIC_APP_URL,
++  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
++  'http://localhost:3000',
++  'http://localhost:3001',
++].filter(Boolean) as string[]
++// ============================================
++// PROJECT ACCESS VERIFICATION
++// ============================================
++
++/**
++ * Verify user has access to a project
++ * Uses authenticated Supabase client (RLS enforced)
++ */
++export async function verifyProjectAccess(
++  supabase: ReturnType<typeof createRouteHandlerClient>,
++  projectId: string
++): Promise<boolean> {
++  const { data, error } = await supabase.from('projects').select('id').eq('id', projectId).single()
++
++  return !error && !!data
++}
+diff --git a/src/shared/data/generation/TilesService.ts b/src/shared/data/generation/TilesService.ts
+new file mode 100644
+index 0000000..a7d661e
+--- /dev/null
++++ b/src/shared/data/generation/TilesService.ts
+@@ -0,0 +1,312 @@
++/**
++ * Tiles Service
++ *
++ * Shared business logic for tile generation operations.
++ * Wraps Trigger.dev tasks for both REST API and MCP server.
++ */
++
++import { tasks, runs } from '@trigger.dev/sdk/v3'
++import { z } from 'zod'
++
++// ============================================
++// SCHEMAS
++// ============================================
++
++export const aiProviderSchema = z.enum(['gemini', 'openai', 'stability', 'midjourney'])
++
++export const generateTileSchema = z.object({
++  projectId: z.string().uuid(),
++  x: z.number().int(),
++  y: z.number().int(),
++  prompt: z.string().min(1),
++  aiProvider: aiProviderSchema,
++  aiConfig: z.record(z.any()).optional().default({}),
++  isFirstTile: z.boolean().optional().default(true),
++  styleReferenceUrls: z.array(z.string().url()).optional(),
++})
++
++export const upscaleTileSchema = z.object({
++  projectId: z.string().uuid(),
++  tileId: z.string().uuid(),
++  upscaleProvider: z.enum(['midjourney', 'stability', 'topaz']).optional().default('midjourney'),
++})
++
++export const getRunStatusSchema = z.object({
++  runId: z.string(),
++})
++
++// ============================================
++// TYPES
++// ============================================
++
++export type GenerateTileInput = z.infer<typeof generateTileSchema>
++export type UpscaleTileInput = z.infer<typeof upscaleTileSchema>
++export type GetRunStatusInput = z.infer<typeof getRunStatusSchema>
++
++export interface TriggerRunResult {
++  runId: string
++  status: 'triggered' | 'queued'
++  message: string
++  publicAccessToken?: string
++}
++
++export interface RunStatus {
++  runId: string
++  status: string
++  output?: any
++  error?: string
++  metadata?: Record<string, unknown>
++  createdAt?: string
++  updatedAt?: string
++}
++
++export interface ServiceContext {
++  userId: string
++}
++
++// ============================================
++// SERVICE CLASS
++// ============================================
++
++export class TilesService {
++  /**
++   * Generate a tile using AI
++   * Returns immediately with a run ID - use getRunStatus to track progress
++   */
++  async generateTile(input: GenerateTileInput, context: ServiceContext): Promise<TriggerRunResult> {
++    const validated = generateTileSchema.parse(input)
++
++    try {
++      // Trigger the Trigger.dev task
++      const handle = await tasks.trigger('generate-tile', {
++        projectId: validated.projectId,
++        x: validated.x,
++        y: validated.y,
++        prompt: validated.prompt,
++        aiProvider: validated.aiProvider,
++        aiConfig: validated.aiConfig,
++        isFirstTile: validated.isFirstTile,
++        styleReferenceUrls: validated.styleReferenceUrls,
++      })
++
++      return {
++        runId: handle.id,
++        status: 'triggered',
++        message: `Tile generation started at (${validated.x}, ${validated.y}). Use get_run_status to track progress.`,
++      }
++    } catch (error) {
++      console.error('[TilesService] Error triggering tile generation:', error)
++      throw new ServiceError('Failed to trigger tile generation', 'INTERNAL_ERROR')
++    }
++  }
++
++  /**
++   * Upscale an existing tile
++   * Returns immediately with a run ID - use getRunStatus to track progress
++   */
++  async upscaleTile(input: UpscaleTileInput, context: ServiceContext): Promise<TriggerRunResult> {
++    const validated = upscaleTileSchema.parse(input)
++
++    try {
++      const handle = await tasks.trigger('upscale-tile', {
++        projectId: validated.projectId,
++        tileId: validated.tileId,
++        upscaleProvider: validated.upscaleProvider,
++      })
++
++      return {
++        runId: handle.id,
++        status: 'triggered',
++        message: 'Tile upscale started. Use get_run_status to track progress.',
++      }
++    } catch (error) {
++      console.error('[TilesService] Error triggering tile upscale:', error)
++      throw new ServiceError('Failed to trigger tile upscale', 'INTERNAL_ERROR')
++    }
++  }
++
++  /**
++   * Get the status of a Trigger.dev run
++   */
++  async getRunStatus(input: GetRunStatusInput): Promise<RunStatus> {
++    const validated = getRunStatusSchema.parse(input)
++
++    try {
++      const run = await runs.retrieve(validated.runId)
++
++      return {
++        runId: run.id,
++        status: run.status,
++        output: run.output,
++        error: run.error?.message,
++        metadata: run.metadata as Record<string, unknown> | undefined,
++        createdAt: run.createdAt?.toISOString(),
++        updatedAt: run.updatedAt?.toISOString(),
++      }
++    } catch (error) {
++      console.error('[TilesService] Error retrieving run status:', error)
++      throw new ServiceError('Failed to retrieve run status', 'NOT_FOUND')
++    }
++  }
++
++  /**
++   * Cancel a running Trigger.dev task
++   */
++  async cancelRun(runId: string): Promise<{ success: boolean }> {
++    try {
++      await runs.cancel(runId)
++      return { success: true }
++    } catch (error) {
++      console.error('[TilesService] Error canceling run:', error)
++      throw new ServiceError('Failed to cancel run', 'INTERNAL_ERROR')
++    }
++  }
++}
++
++// ============================================
++// 3D MODEL SERVICE
++// ============================================
++
++export const generate3DModelSchema = z.object({
++  projectId: z.string().uuid(),
++  assetId: z.string().uuid(),
++  prompt: z.string().min(1),
++})
++
++export const remesh3DModelSchema = z.object({
++  projectId: z.string().uuid(),
++  assetId: z.string().uuid(),
++  targetPolycount: z.number().int().min(100).max(100000).optional(),
++})
++
++export type Generate3DModelInput = z.infer<typeof generate3DModelSchema>
++export type Remesh3DModelInput = z.infer<typeof remesh3DModelSchema>
++
++export class ThreeDService {
++  /**
++   * Generate a 3D model from text
++   */
++  async generate3DModel(
++    input: Generate3DModelInput,
++    context: ServiceContext
++  ): Promise<TriggerRunResult> {
++    const validated = generate3DModelSchema.parse(input)
++
++    try {
++      const handle = await tasks.trigger('generate-3d-model', {
++        projectId: validated.projectId,
++        assetId: validated.assetId,
++        prompt: validated.prompt,
++      })
++
++      return {
++        runId: handle.id,
++        status: 'triggered',
++        message: '3D model generation started. Use get_run_status to track progress.',
++      }
++    } catch (error) {
++      console.error('[ThreeDService] Error triggering 3D model generation:', error)
++      throw new ServiceError('Failed to trigger 3D model generation', 'INTERNAL_ERROR')
++    }
++  }
++
++  /**
++   * Remesh a 3D model to reduce polygon count
++   */
++  async remesh3DModel(
++    input: Remesh3DModelInput,
++    context: ServiceContext
++  ): Promise<TriggerRunResult> {
++    const validated = remesh3DModelSchema.parse(input)
++
++    try {
++      const handle = await tasks.trigger('remesh-3d-model', {
++        projectId: validated.projectId,
++        assetId: validated.assetId,
++        targetPolycount: validated.targetPolycount,
++      })
++
++      return {
++        runId: handle.id,
++        status: 'triggered',
++        message: '3D model remesh started. Use get_run_status to track progress.',
++      }
++    } catch (error) {
++      console.error('[ThreeDService] Error triggering 3D model remesh:', error)
++      throw new ServiceError('Failed to trigger 3D model remesh', 'INTERNAL_ERROR')
++    }
++  }
++}
++
++// ============================================
++// PORTRAIT SERVICE
++// ============================================
++
++export const generatePortraitSchema = z.object({
++  projectId: z.string().uuid(),
++  characterId: z.string().uuid(),
++  prompt: z.string().optional(),
++  style: z.string().optional(),
++})
++
++export type GeneratePortraitInput = z.infer<typeof generatePortraitSchema>
++
++export class PortraitService {
++  /**
++   * Generate a character portrait
++   */
++  async generatePortrait(
++    input: GeneratePortraitInput,
++    context: ServiceContext
++  ): Promise<TriggerRunResult> {
++    const validated = generatePortraitSchema.parse(input)
++
++    try {
++      const handle = await tasks.trigger('generate-portrait', {
++        projectId: validated.projectId,
++        characterId: validated.characterId,
++        prompt: validated.prompt,
++        style: validated.style,
++      })
++
++      return {
++        runId: handle.id,
++        status: 'triggered',
++        message: 'Portrait generation started. Use get_run_status to track progress.',
++      }
++    } catch (error) {
++      console.error('[PortraitService] Error triggering portrait generation:', error)
++      throw new ServiceError('Failed to trigger portrait generation', 'INTERNAL_ERROR')
++    }
++  }
++}
++
++// ============================================
++// ERROR HANDLING
++// ============================================
++
++export type ServiceErrorCode =
++  | 'NOT_FOUND'
++  | 'UNAUTHORIZED'
++  | 'VALIDATION_ERROR'
++  | 'INTERNAL_ERROR'
++  | 'RATE_LIMITED'
++
++export class ServiceError extends Error {
++  constructor(
++    message: string,
++    public code: ServiceErrorCode,
++    public details?: any
++  ) {
++    super(message)
++    this.name = 'ServiceError'
++  }
++}
++
++// ============================================
++// SINGLETON EXPORTS
++// ============================================
++
++export const tilesService = new TilesService()
++export const threeDService = new ThreeDService()
++export const portraitService = new PortraitService()
+diff --git a/src/shared/data/index.ts b/src/shared/data/index.ts
+new file mode 100644
+index 0000000..3da7fca
+--- /dev/null
++++ b/src/shared/data/index.ts
+@@ -0,0 +1,17 @@
++/**
++ * @module shared/data
++ * 
++ * Cross-module data utilities, services, hooks, and external API clients.
++ * 
++ * Layer contract:
++ * - MAY import: @/db, shared/errors, shared/types
++ * - MAY NOT import: @/domains/*, @/app/*
++ * - Consumers: domains/*/services, domains/*/ui, app/api
++ * 
++ * Subdirectories:
++ * - queries/ — TanStack Query hooks for cross-module data
++ * - generation/ — Asset generation services (tiles, 3D, portraits)
++ * - external-apis/ — Third-party API clients (Replicate, Meshy, etc.)
++ */
++
++export * from './utils'
+diff --git a/src/shared/data/queries/useGameEntities.ts b/src/shared/data/queries/useGameEntities.ts
+new file mode 100644
+index 0000000..6cbaeba
+--- /dev/null
++++ b/src/shared/data/queries/useGameEntities.ts
+@@ -0,0 +1,304 @@
++import { useState, useEffect, useCallback, useRef } from 'react'
++
++export type EntityType = 'character' | 'location' | 'mechanic' | 'faction' | 'item' | 'quest'
++export type SourceDomain = 'storyteller' | 'loop-creator' | 'interior-designer' | 'world-building'
++
++export interface GameEntity {
++  id: string
++  projectId: string
++  userId: string
++  entityType: EntityType
++  name: string
++  description?: string
++  sourceDomain: SourceDomain
++  sourceEntityId?: string
++  usedInDomains: string[]
++  metadata: Record<string, unknown>
++  tags: string[]
++  imageUrl?: string
++  createdAt: string
++  updatedAt: string
++}
++
++interface EntityRelationship {
++  id: string
++  projectId: string
++  fromEntityId: string
++  toEntityId: string
++  relationshipType: 'uses' | 'located_in' | 'conflicts_with' | 'allies_with' | 'owns' | 'part_of'
++  metadata: Record<string, unknown>
++  fromEntity?: GameEntity
++  toEntity?: GameEntity
++  createdAt: string
++}
++
++interface UseGameEntitiesOptions {
++  projectId?: string
++  entityType?: EntityType
++  sourceDomain?: SourceDomain
++  search?: string
++  autoFetch?: boolean
++}
++
++/**
++ * Hook for managing game entities across all domains
++ */
++export function useGameEntities(options: UseGameEntitiesOptions = {}) {
++  const { projectId, entityType, sourceDomain, search, autoFetch = true } = options
++
++  const [entities, setEntities] = useState<GameEntity[]>([])
++  const [loading, setLoading] = useState(false)
++  const [error, setError] = useState<string | null>(null)
++
++  // Track if initial fetch has been done to prevent duplicate fetches
++  const hasFetchedRef = useRef(false)
++  const abortControllerRef = useRef<AbortController | null>(null)
++
++  // Store previous values to detect actual changes
++  const prevOptionsRef = useRef<string>('')
++
++  const fetchEntities = useCallback(
++    async (forceRefresh = false) => {
++      if (!projectId && autoFetch) return
++
++      // Create a key for the current options to compare
++      const optionsKey = JSON.stringify({ projectId, entityType, sourceDomain, search })
++
++      // Skip if nothing changed and not forcing refresh
++      if (!forceRefresh && hasFetchedRef.current && prevOptionsRef.current === optionsKey) {
++        return
++      }
++
++      // Cancel any in-flight request
++      if (abortControllerRef.current) {
++        abortControllerRef.current.abort()
++      }
++      abortControllerRef.current = new AbortController()
++
++      setLoading(true)
++      setError(null)
++
++      try {
++        const params = new URLSearchParams()
++        if (projectId) params.append('projectId', projectId)
++        if (entityType) params.append('entityType', entityType)
++        if (sourceDomain) params.append('sourceDomain', sourceDomain)
++        if (search) params.append('search', search)
++
++        const response = await fetch(`/api/entities?${params.toString()}`, {
++          signal: abortControllerRef.current.signal,
++        })
++
++        if (!response.ok) {
++          throw new Error('Failed to fetch entities')
++        }
++
++        const data = await response.json()
++        setEntities(data.entities || [])
++        hasFetchedRef.current = true
++        prevOptionsRef.current = optionsKey
++      } catch (err) {
++        // Ignore abort errors
++        if (err instanceof Error && err.name === 'AbortError') {
++          return
++        }
++        setError(err instanceof Error ? err.message : 'Failed to fetch entities')
++        console.error('[useGameEntities] Error:', err)
++      } finally {
++        setLoading(false)
++      }
++    },
++    [projectId, entityType, sourceDomain, search, autoFetch]
++  )
++
++  const createEntity = useCallback(
++    async (entity: {
++      projectId: string
++      userId: string
++      entityType: EntityType
++      name: string
++      description?: string
++      sourceDomain: SourceDomain
++      sourceEntityId?: string
++      metadata?: Record<string, unknown>
++      tags?: string[]
++      imageUrl?: string
++    }): Promise<GameEntity | null> => {
++      setLoading(true)
++      setError(null)
++
++      try {
++        const response = await fetch('/api/entities', {
++          method: 'POST',
++          headers: { 'Content-Type': 'application/json' },
++          body: JSON.stringify(entity),
++        })
++
++        if (!response.ok) {
++          const error = await response.json()
++          throw new Error(error.error || 'Failed to create entity')
++        }
++
++        const data = await response.json()
++
++        // Add to local state
++        setEntities(prev => [data.entity, ...prev])
++
++        return data.entity
++      } catch (err) {
++        setError(err instanceof Error ? err.message : 'Failed to create entity')
++        console.error('[useGameEntities] Create error:', err)
++        return null
++      } finally {
++        setLoading(false)
++      }
++    },
++    []
++  )
++
++  const updateEntity = useCallback(
++    async (
++      entityId: string,
++      updates: {
++        name?: string
++        description?: string
++        metadata?: Record<string, unknown>
++        tags?: string[]
++        imageUrl?: string
++        usedInDomains?: string[]
++      }
++    ): Promise<GameEntity | null> => {
++      setLoading(true)
++      setError(null)
++
++      try {
++        const response = await fetch(`/api/entities/${entityId}`, {
++          method: 'PATCH',
++          headers: { 'Content-Type': 'application/json' },
++          body: JSON.stringify(updates),
++        })
++
++        if (!response.ok) {
++          const error = await response.json()
++          throw new Error(error.error || 'Failed to update entity')
++        }
++
++        const data = await response.json()
++
++        // Update local state
++        setEntities(prev => prev.map(e => (e.id === entityId ? data.entity : e)))
++
++        return data.entity
++      } catch (err) {
++        setError(err instanceof Error ? err.message : 'Failed to update entity')
++        console.error('[useGameEntities] Update error:', err)
++        return null
++      } finally {
++        setLoading(false)
++      }
++    },
++    []
++  )
++
++  const deleteEntity = useCallback(async (entityId: string): Promise<boolean> => {
++    setLoading(true)
++    setError(null)
++
++    try {
++      const response = await fetch(`/api/entities/${entityId}`, {
++        method: 'DELETE',
++      })
++
++      if (!response.ok) {
++        throw new Error('Failed to delete entity')
++      }
++
++      // Remove from local state
++      setEntities(prev => prev.filter(e => e.id !== entityId))
++
++      return true
++    } catch (err) {
++      setError(err instanceof Error ? err.message : 'Failed to delete entity')
++      console.error('[useGameEntities] Delete error:', err)
++      return false
++    } finally {
++      setLoading(false)
++    }
++  }, [])
++
++  const markUsedInDomain = useCallback(
++    async (entityId: string, domain: SourceDomain): Promise<boolean> => {
++      const entity = entities.find(e => e.id === entityId)
++      if (!entity) return false
++
++      const usedInDomains = Array.from(new Set([...entity.usedInDomains, domain]))
++      const updated = await updateEntity(entityId, { usedInDomains })
++      return !!updated
++    },
++    [entities, updateEntity]
++  )
++
++  const getEntity = useCallback(
++    (entityId: string): GameEntity | undefined => {
++      return entities.find(e => e.id === entityId)
++    },
++    [entities]
++  )
++
++  const getEntitiesByType = useCallback(
++    (type: EntityType): GameEntity[] => {
++      return entities.filter(e => e.entityType === type)
++    },
++    [entities]
++  )
++
++  const getEntitiesByDomain = useCallback(
++    (domain: SourceDomain): GameEntity[] => {
++      return entities.filter(e => e.sourceDomain === domain || e.usedInDomains.includes(domain))
++    },
++    [entities]
++  )
++
++  // Initial fetch - only run once when projectId is available
++  useEffect(() => {
++    if (autoFetch && projectId) {
++      fetchEntities()
++    }
++
++    // Cleanup on unmount
++    return () => {
++      if (abortControllerRef.current) {
++        abortControllerRef.current.abort()
++      }
++    }
++  }, []) // Empty deps - only run on mount
++
++  // Re-fetch when options change (with debounce for search)
++  useEffect(() => {
++    if (!autoFetch || !projectId) return
++
++    // Debounce search changes
++    const timeoutId = setTimeout(
++      () => {
++        fetchEntities()
++      },
++      search !== undefined ? 300 : 0
++    ) // Debounce only for search
++
++    return () => clearTimeout(timeoutId)
++  }, [projectId, entityType, sourceDomain, search, autoFetch, fetchEntities])
++
++  return {
++    entities,
++    loading,
++    error,
++    fetchEntities: () => fetchEntities(true), // Force refresh when called manually
++    createEntity,
++    updateEntity,
++    deleteEntity,
++    markUsedInDomain,
++    getEntity,
++    getEntitiesByType,
++    getEntitiesByDomain,
++  }
++}
+diff --git a/src/shared/data/useProjectFromUrl.ts b/src/shared/data/useProjectFromUrl.ts
+new file mode 100644
+index 0000000..81c4b97
+--- /dev/null
++++ b/src/shared/data/useProjectFromUrl.ts
+@@ -0,0 +1,78 @@
++'use client'
++
++import { useParams, useRouter, usePathname } from 'next/navigation'
++import { useEffect, useState, useRef } from 'react'
++import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
++
++export function useProjectFromUrl() {
++  const params = useParams()
++  const router = useRouter()
++  const pathname = usePathname()
++
++  // Handle both single projectId and catch-all array
++  const rawProjectId = params?.projectId
++  const projectId = Array.isArray(rawProjectId) ? rawProjectId[0] : rawProjectId
++
++  const currentProject = useWorldStore(state => state.currentProject)
++  const loadProject = useWorldStore(state => state.loadProject)
++
++  const [isLoading, setIsLoading] = useState(false)
++  const [error, setError] = useState<string | null>(null)
++
++  // Track if we've already loaded this project to prevent re-fetches
++  const loadedProjectIdRef = useRef<string | null>(null)
++
++  useEffect(() => {
++    // Only load if:
++    // 1. We have a projectId in URL
++    // 2. currentProject doesn't match (or doesn't exist)
++    // 3. We haven't already loaded this project in this session
++    const shouldLoad =
++      projectId && currentProject?.id !== projectId && loadedProjectIdRef.current !== projectId
++
++    if (shouldLoad) {
++      console.log('🔄 [DEBUG] useProjectFromUrl: starting load for', projectId)
++      setIsLoading(true)
++      setError(null)
++      loadedProjectIdRef.current = projectId // Mark as loading
++
++      loadProject(projectId)
++        .then(() => {
++          // Check if project was actually loaded
++          const loadedProject = useWorldStore.getState().currentProject
++          console.log('✅ [DEBUG] useProjectFromUrl: load complete. Result:', !!loadedProject)
++          if (!loadedProject) {
++            // Project doesn't exist - redirect to base path
++            console.warn(
++              '⚠️ [DEBUG] useProjectFromUrl: project not found, redirecting to base path'
++            )
++            setError('Project not found')
++            loadedProjectIdRef.current = null // Reset on error
++            const basePath = '/' + (pathname?.split('/')[1] || '')
++            router.replace(basePath)
++          }
++        })
++        .catch(err => {
++          console.error('Failed to load project:', err)
++          setError('Failed to load project')
++          loadedProjectIdRef.current = null // Reset on error
++          // Redirect to base path
++          const basePath = '/' + (pathname?.split('/')[1] || '')
++          router.replace(basePath)
++        })
++        .finally(() => setIsLoading(false))
++    } else if (!projectId && currentProject) {
++      // Clear project if no projectId in URL
++      useWorldStore.setState({ currentProject: null, tiles: {} })
++      loadedProjectIdRef.current = null
++    }
++  }, [projectId, currentProject?.id, loadProject, router, pathname])
++
++  return {
++    projectId,
++    currentProject,
++    isLoading,
++    error,
++    hasProject: !!projectId,
++  }
++}
+diff --git a/src/shared/data/utils.ts b/src/shared/data/utils.ts
+new file mode 100644
+index 0000000..fed2fe9
+--- /dev/null
++++ b/src/shared/data/utils.ts
+@@ -0,0 +1,6 @@
++import { clsx, type ClassValue } from 'clsx'
++import { twMerge } from 'tailwind-merge'
++
++export function cn(...inputs: ClassValue[]) {
++  return twMerge(clsx(inputs))
++}
+diff --git a/src/shared/errors/error-utils.ts b/src/shared/errors/error-utils.ts
+new file mode 100644
+index 0000000..1685775
+--- /dev/null
++++ b/src/shared/errors/error-utils.ts
+@@ -0,0 +1,13 @@
++export function getErrorMessage(error: unknown): string {
++  if (error instanceof Error) return error.message
++  if (typeof error === 'string') return error
++  if (error && typeof error === 'object' && 'message' in error) {
++    return String((error as { message: unknown }).message)
++  }
++  return String(error)
++}
++
++export function toError(error: unknown): Error {
++  if (error instanceof Error) return error
++  return new Error(getErrorMessage(error))
++}
+diff --git a/src/shared/errors/index.ts b/src/shared/errors/index.ts
+new file mode 100644
+index 0000000..0f532e6
+--- /dev/null
++++ b/src/shared/errors/index.ts
+@@ -0,0 +1,16 @@
++/**
++ * @module shared/errors
++ * 
++ * Cross-module error utilities and stores.
++ * 
++ * Layer contract:
++ * - MAY import: shared/types
++ * - MAY NOT import: @/domains/*, @/app/*, @/db
++ * - Consumers: all layers
++ * 
++ * Contents:
++ * - error-utils.ts — error handling, serialization, logging
++ * - useErrorStore.ts — client error UI state (Zustand)
++ */
++
++export * from './error-utils'
+diff --git a/src/shared/errors/useErrorStore.ts b/src/shared/errors/useErrorStore.ts
+new file mode 100644
+index 0000000..c4aea67
+--- /dev/null
++++ b/src/shared/errors/useErrorStore.ts
+@@ -0,0 +1,60 @@
++import { create } from 'zustand'
++
++export interface CapturedError {
++  id: string
++  message: string
++  stack?: string
++  timestamp: Date
++  source?: string
++}
++
++interface ErrorState {
++  errors: CapturedError[]
++  isPanelOpen: boolean
++  hasUnviewedErrors: boolean
++
++  // Actions
++  addError: (error: Omit<CapturedError, 'id' | 'timestamp'>) => void
++  clearErrors: () => void
++  markErrorsAsViewed: () => void
++  openPanel: () => void
++  closePanel: () => void
++  togglePanel: () => void
++}
++
++export const useErrorStore = create<ErrorState>()(set => ({
++  errors: [],
++  isPanelOpen: false,
++  hasUnviewedErrors: false,
++
++  addError: error =>
++    set(state => ({
++      errors: [
++        {
++          ...error,
++          id: `error-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
++          timestamp: new Date(),
++        },
++        ...state.errors,
++      ].slice(0, 50), // Keep last 50 errors max
++      hasUnviewedErrors: true,
++    })),
++
++  clearErrors: () => set({ errors: [], hasUnviewedErrors: false }),
++
++  markErrorsAsViewed: () => set({ hasUnviewedErrors: false }),
++
++  openPanel: () =>
++    set(state => ({
++      isPanelOpen: true,
++      hasUnviewedErrors: false,
++    })),
++
++  closePanel: () => set({ isPanelOpen: false }),
++
++  togglePanel: () =>
++    set(state => ({
++      isPanelOpen: !state.isPanelOpen,
++      hasUnviewedErrors: state.isPanelOpen ? state.hasUnviewedErrors : false,
++    })),
++}))
+diff --git a/src/shared/jobs/index.ts b/src/shared/jobs/index.ts
+new file mode 100644
+index 0000000..fd4062d
+--- /dev/null
++++ b/src/shared/jobs/index.ts
+@@ -0,0 +1,12 @@
++/**
++ * @module shared/jobs
++ * 
++ * Cross-module job status types, hooks, and Trigger.dev utilities.
++ * 
++ * Layer contract:
++ * - MAY import: @/db, shared/errors, shared/types
++ * - MAY NOT import: @/domains/*, @/app/*
++ * - Consumers: domains/*/ui (useJob), app/api
++ */
++
++// Empty barrel — populated in future increments
+diff --git a/src/shared/observability/index.ts b/src/shared/observability/index.ts
+new file mode 100644
+index 0000000..a61ce0f
+--- /dev/null
++++ b/src/shared/observability/index.ts
+@@ -0,0 +1,16 @@
++/**
++ * @module shared/observability
++ * 
++ * Cross-module tracing, logging, and monitoring.
++ * 
++ * Layer contract:
++ * - MAY import: shared/types
++ * - MAY NOT import: @/domains/*, @/app/*, @/db
++ * - Consumers: all layers (instrumentation)
++ * 
++ * Contents (from Increment 2):
++ * - observability.ts — Langfuse + OpenTelemetry wiring (from agent-core/)
++ * - langfuse-sync.ts — prompt sync utilities (from prompts/)
++ */
++
++// Empty barrel — populated in Increment 2 (Item 5)
+diff --git a/src/shared/types/index.ts b/src/shared/types/index.ts
+new file mode 100644
+index 0000000..9d1b601
+--- /dev/null
++++ b/src/shared/types/index.ts
+@@ -0,0 +1,16 @@
++/**
++ * @module shared/types
++ * 
++ * Cross-module shared type definitions.
++ * 
++ * Layer contract:
++ * - MAY import: nothing (pure types)
++ * - MAY NOT import: @/domains/*, @/app/*, @/db
++ * - Consumers: all layers
++ * 
++ * Contents (from Increment 2):
++ * - enums.ts, onboarding.ts (from src/types/)
++ * - Domain-agnostic type utilities
++ */
++
++// Empty barrel — populated in Increment 2 (Item 8)
+diff --git a/src/store/useAuthStore.ts b/src/store/useAuthStore.ts
+index ed8b5e4..eba6e01 100644
+--- a/src/store/useAuthStore.ts
++++ b/src/store/useAuthStore.ts
+@@ -1,12 +1,3 @@
+-import { create } from 'zustand'
+-import type { User } from '@supabase/supabase-js'
+-
+-interface AuthState {
+-  user: User | null
+-  setUser: (user: User | null) => void
+-}
+-
+-export const useAuthStore = create<AuthState>(set => ({
+-  user: null,
+-  setUser: user => set({ user }),
+-}))
++// Re-export shim — preserves importers during Increment 1.
++// Codemod in Increment 2 (Item 11), then delete this file.
++export * from '@/shared/auth/useAuthStore'
+diff --git a/src/store/useErrorStore.ts b/src/store/useErrorStore.ts
+index c4aea67..1b00f4f 100644
+--- a/src/store/useErrorStore.ts
++++ b/src/store/useErrorStore.ts
+@@ -1,60 +1,3 @@
+-import { create } from 'zustand'
+-
+-export interface CapturedError {
+-  id: string
+-  message: string
+-  stack?: string
+-  timestamp: Date
+-  source?: string
+-}
+-
+-interface ErrorState {
+-  errors: CapturedError[]
+-  isPanelOpen: boolean
+-  hasUnviewedErrors: boolean
+-
+-  // Actions
+-  addError: (error: Omit<CapturedError, 'id' | 'timestamp'>) => void
+-  clearErrors: () => void
+-  markErrorsAsViewed: () => void
+-  openPanel: () => void
+-  closePanel: () => void
+-  togglePanel: () => void
+-}
+-
+-export const useErrorStore = create<ErrorState>()(set => ({
+-  errors: [],
+-  isPanelOpen: false,
+-  hasUnviewedErrors: false,
+-
+-  addError: error =>
+-    set(state => ({
+-      errors: [
+-        {
+-          ...error,
+-          id: `error-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+-          timestamp: new Date(),
+-        },
+-        ...state.errors,
+-      ].slice(0, 50), // Keep last 50 errors max
+-      hasUnviewedErrors: true,
+-    })),
+-
+-  clearErrors: () => set({ errors: [], hasUnviewedErrors: false }),
+-
+-  markErrorsAsViewed: () => set({ hasUnviewedErrors: false }),
+-
+-  openPanel: () =>
+-    set(state => ({
+-      isPanelOpen: true,
+-      hasUnviewedErrors: false,
+-    })),
+-
+-  closePanel: () => set({ isPanelOpen: false }),
+-
+-  togglePanel: () =>
+-    set(state => ({
+-      isPanelOpen: !state.isPanelOpen,
+-      hasUnviewedErrors: state.isPanelOpen ? state.hasUnviewedErrors : false,
+-    })),
+-}))
++// Re-export shim — preserves importers during Increment 1.
++// Codemod in Increment 2 (Item 11), then delete this file.
++export * from '@/shared/errors/useErrorStore'
+diff --git a/tsconfig.fabro-verify.json b/tsconfig.fabro-verify.json
+index e63e15a..f81a3e3 100644
+--- a/tsconfig.fabro-verify.json
++++ b/tsconfig.fabro-verify.json
+@@ -1,8 +1,8 @@
+ {
+   "extends": "./tsconfig.json",
+   "include": [
+-    "src/domains/interior-designer/**/*.ts",
+-    "src/domains/interior-designer/**/*.tsx",
+-    "src/app/api/interior-designer/**/*.ts"
++    "src/domains/storyteller/index.ts",
++    "src/domains/storyteller/services/ContextAssemblyService.ts",
++    "src/domains/storyteller/services/StorytellerCrudService.ts"
+   ]
+ }
