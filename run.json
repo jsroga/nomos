@@ -1426,7 +1426,7 @@
     "kind": "running"
   },
   "status_updated_at": "2026-07-02T08:55:38.083532Z",
-  "last_event_at": "2026-07-02T08:58:09.425933Z",
+  "last_event_at": "2026-07-02T08:58:13.070412Z",
   "pending_control": null,
   "checkpoints": [
     {
@@ -2641,9 +2641,9 @@
       }
     },
     {
-      "seq": 0,
+      "seq": 320,
       "checkpoint": {
-        "timestamp": "2026-07-02T08:58:09.500415Z",
+        "timestamp": "2026-07-02T08:58:13.067399Z",
         "current_node": "setup",
         "completed_nodes": [
           "start",
@@ -2654,6 +2654,309 @@
           "plan",
           "Verification",
           "setup"
+        ],
+        "node_retries": {},
+        "context_values": {
+          "human.gate.Verification.label": "[A] Approve & build",
+          "internal.retry_count.setup": 0,
+          "internal.retry_count.start": 0,
+          "internal.run_id": "01KWGZNNB1GY50Q5CKFHBFEGH5",
+          "internal.thread_id": "Verification",
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-fable-5; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build          { model: codex;             reasoning_effort: high;   }\n            .buildskilled  { model: claude-sonnet-4-6; reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
+          "internal.work_dir": "/workspace/kurvitza",
+          "graph.stall_timeout": "1800000ms",
+          "last_response": "`PLAN.md` and `DECISIONS.md` are updated. Stopping for Verification.\n\n---\n\n1. **P0 declaration:** **No P0** — no security/correctness defect found; worst finding is structural (dual Drizzle connecti",
+          "human.gate.selected": "A",
+          "internal.retry_count.Clarify": 0,
+          "internal.retry_count.assess": 0,
+          "plan.has_p0_security_issue": "no",
+          "response.assess": "## Assessment Complete\n\n**Root `src/` layout is 60% pre-architecture.** 12 of 20 top-level folders predate the unified structure and belong in `shared/`, domains, or should be deleted. The critical gap: **no `shared/` folder exists**, blocking module convergence.\n\n### Key Findings\n\n**Critical:** Functionality scattered across 8 parallel folders (`agent-core`, `lib`, `infrastructure`, `services`, `store`, `hooks`, `prompts`, `types`) with no single `shared/` layer — ~2,700 LOC in `agent-core/` duplicates Mastra primitives; cross-module auth/errors/data live in ad-hoc locations.\n\n**High impact, low risk:** Domains already don't import from legacy folders (grep confirmed zero hits), so migration is move-and-re-export, not rewrite. Root `services/` has 3 files that duplicate domain services or belong in `shared/data/`.\n\n**Top 3 gaps:**\n1. Create `shared/` structure (agent-kernel, jobs, data, auth, observability, errors, types)\n2. Move cross-domain primitives (`lib/auth`, `services/entities`, `hooks/useGameEntities`) to `shared/`\n3. Set up ESLint boundary rules blocking `domains/` from importing legacy root folders\n\nFull phased migration plan in `findings/assess.md` — recommend **Phase 1 only** (foundation + low-risk moves) in first increment, then validate before proceeding.",
+          "preferred_label": "[A] Approve & build",
+          "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)",
+          "current_node": "setup",
+          "graph.label": "Optional Build",
+          "response.plan": "`PLAN.md` and `DECISIONS.md` are updated. Stopping for Verification.\n\n---\n\n1. **P0 declaration:** **No P0** — no security/correctness defect found; worst finding is structural (dual Drizzle connection pools, `src/lib/db.ts` vs `src/db/index.ts`), filed as P1 Item 2.\n\n2. **Your Clarify decision: [C] Full blueprint.** In scope: complete convergence plan for all 20 root folders — `shared/` creation, migration/deletion of 12 legacy roots, `mcp`/`evaluation`/`workflows` relocation, components redistribution, services reconciliation. Explicitly deferred: schema inversion fix (`src/db/schema.ts:21`), gateway delete-vs-Mastra decision, `pages/api/mcp.ts` App Router migration, trigger task body rewrites, domain internals.\n\n3. **First shippable increment: Items 1–4** — `shared/` skeleton + ESLint boundary rules, Drizzle client consolidation into `src/db/client.ts`, seeding `shared/auth|errors|data` from `lib/`/`store/`/`hooks/` via move+shim, and dissolving root `services/` (24 developer substeps, build stays green throughout).\n\n4. **14 items total; increment 1 ≈ 1–2 dev days; full blueprint ≈ 2 weeks across 4 increments.**\n\n5. Plan summary:\n   - **Corrections to assess** (spot-checked): domains import legacy roots **170 times** (not zero) → strategy is *move + re-export shim → codemod → delete shims*; `services/storyteller.service.ts` (418 LOC) is an MCP adapter to **move**, not a duplicate to delete; `pages/api/mcp.ts` (MCP SSE) makes `pages/` non-deletable; `src/trigger/` holds 4,877 LOC of task bodies (not a thin registry).\n   - **P1:** `shared/` skeleton + `no-restricted-imports` in `eslint.config.js` (Items 1); db client → `src/db/client.ts` (Item 2); `lib/auth|security|error-utils|utils|api-utils`, stores, hooks → `shared/*` (Item 3); root `services/` → `domains/storyteller/services/StorytellerCrudService.ts` + `shared/data/` (Item 4).\n   - **P2:** `agent-core/` → `shared/agent-kernel` + `shared/observability` (Item 5); `prompts/` split (Item 6); `infrastructure/` dissolution incl. gateway kept as `shared/agent-kernel/gateway/` (Item 7); misc roots (Item 8); `workflows/` (Item 9); components redistribution (Item 10); codemod + shim deletion + lint→error (Item 11).\n   - **P3:** `evaluation/` → `scripts/` (Item 12); trigger thinning via pure moves + re-exports (Item 13); `pages/` documented-minimal (Item 14).\n\n6. **Verification reminder:** pick **[A] Approve & build** to implement, **[B]** for plan-only, **[I]** only if you want plan changes (type notes), **[X]** to abort. Clarify's A/B/C are already decided — don't type `A` expecting build unless choosing option **[A]** on this gate.\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"no\"\n  }\n}\n```",
+          "response.scope": "I'll run the scope commands to inventory the current `src/` layout.",
+          "thread.Verification.current_node": "setup",
+          "internal.fidelity": "summary:medium",
+          "graph.default_max_retries": "1",
+          "failure_signature": "",
+          "human.gate.Verification.question": "Plan is ready. [A] build · [B] plan only · [I] iterate (notes) · [X] abort — do not reuse Clarify's A/B/C here",
+          "human.gate.label": "[A] Approve & build",
+          "internal.retry_count.scope": 0,
+          "thread.planning.current_node": "plan",
+          "thread.review.current_node": "clarify_prep",
+          "outcome": "succeeded",
+          "last_stage": "plan",
+          "human.gate.Verification.answer": "A",
+          "thread.plan.current_node": "Verification",
+          "graph.goal": "Audit and clean up the **root `src/` layout** — not a single domain module.\n\n**Problem:** `src/` has too many top-level folders (20+). Many predate the unified\narchitecture and overlap with the target `shared/` layer or belong inside\n`domains/<module>/`.\n\n**Target (from `docs/unified/ARCHITECTURE.md` §3):**\n\n```\nsrc/\n├─ domains/<module>/     # vertical slices — unit of ownership\n├─ shared/               # cross-module: agent-kernel, jobs, data, auth, observability, errors\n├─ components/ui/        # Radix design system primitives\n├─ db/                   # Drizzle schema + client\n├─ trigger/              # thin re-export registry only\n└─ app/                  # Next.js routes — thin glue only\n```\n\n**In scope for this plan:**\n\n- Inventory every current top-level folder under `src/` (agent-core, app, components,\n  config, constants, content, db, domains, evaluation, hooks, infrastructure, lib, mcp,\n  pages, prompts, services, store, trigger, types, workflows).\n- For each folder: keep at root, merge into `shared/`, move into a domain, or delete\n  (with evidence: import graph, duplicate responsibility).\n- Propose a **phased migration** — no big-bang; preserve builds between phases.\n- Call out what must stay at root vs what is legacy parallel to `shared/`\n  (`lib`, `agent-core`, `infrastructure`, `services`, `store`, `hooks`, `pages`,\n  `workflows`, `evaluation`, `mcp`, `prompts`, `types`, `constants`, `config`,\n  `content`).\n- Dependency rule: `shared/*` never imports domains; domains import `shared/` + `db` +\n  `components/ui` only.\n\n**Out of scope:**\n\n- Rewriting individual domain internals (separate module runs).\n- Changing locked stack (Mastra, Radix, Supabase, TanStack Query, Trigger.dev).\n\n**Deliverable:** A prioritized `PLAN.md` the human can approve at Verification.\nFirst increment should be **planning + low-risk moves** (barrels, re-exports, lint\nboundaries) before deep refactors. Implement only after human **[A] Approve & build**.\n",
+          "graph.default_fidelity": "summary:medium",
+          "human.gate.Clarify.answer": "C",
+          "response.clarify_prep": "---\n\n## Assessment summary\nThe root `src/` has 20+ top-level folders; 12 predate the unified architecture and belong in `shared/`, domains, or should be deleted. **No `shared/` folder exists** — ~2,700 LOC of cross-module concerns are scattered across `agent-core/`, `lib/`, `infrastructure/`, `services/`, `store/`, `hooks/`, `prompts/`, `types/`. Domains don't import from these legacy folders, so migration is primarily move-and-re-export work, not rewrites.\n\n## Key gaps (max 5)\n- **No `shared/` layer** — blocking foundation; need 7 sub-folders (agent-kernel, jobs, data, auth, observability, errors, types)\n- **8 parallel root folders** replace `shared/` (`agent-core/` has 2,700 LOC; `lib/`, `infrastructure/`, `services/`, `store/`, `hooks/`, `prompts/`, `types/`)\n- **Root `services/` duplication** — `storyteller.service.ts` (277 LOC) exists both at root and in `domains/storyteller/`; need reconciliation\n- **Dev-time tools in runtime `src/`** — `evaluation/` (16 subfolders), `mcp/` (protocol server), `workflows/` should move or stay for imports\n- **16 app components at root** — GameHubDashboard, GlobalHeader, GlobalSidebar belong in `app/components/`, not root `components/`\n\n## Pick one scope (buttons are A / B / C — meanings are module-specific below)\n\n| Button | What the plan will assume for **this** module |\n| --- | --- |\n| **[A]** | **Phased (3 increments):** First, create `shared/` structure + move tiny files (`lib/auth`, `lib/error-utils`, 2 stores) + ESLint rules; validate build. Second, move cross-domain services (`services/entities`, `hooks/useGameEntities`). Third, consolidate `agent-core/` + `prompts/`. Defers `infrastructure/`, `mcp/`, `evaluation/`, `components/` cleanup to follow-up. ~15 file moves total. |\n| **[B]** | **Foundation only (1 increment):** Create `shared/` structure (7 folders + barrels), move 4 tiny files (`lib/auth`, `lib/error-utils`, `store/useAuthStore`, `store/useErrorStore`), add ESLint boundary rules. **Stop and validate** before touching services, agent-core, or prompts. ~4 file moves; safe first step. |\n| **[C]** | **Full convergence (1 big increment):** Execute all 5 phases — create `shared/`, move all 12 legacy folders (`agent-core`, `lib`, `infrastructure`, `services`, `store`, `hooks`, `prompts`, `types`, `constants`, `config`, `content`, `pages`), delete roots, move `mcp/` + `evaluation/`, redistribute `components/`. ~50 file moves; reconcile `services/storyteller` duplication; handle `infrastructure/ai/gateway` delete-vs-port decision. High-risk, high-reward. |\n\n**Advanced:** type custom constraints in freeform (routes to [F]) · pick [R] only if assess findings are wrong\n\n**Recommendation: [B]** — Start with foundation only: the current build works (no imports from legacy folders), so establish `shared/` + ESLint rules first, validate builds + tests pass, then commit to larger moves after proving the structure.",
+          "internal.retry_count.plan": 0,
+          "internal.retry_count.Verification": 0,
+          "internal.retry_count.clarify_prep": 0,
+          "command.output": "blob://sha256/d4ac8615254a4a2b23e9bf66aca300faa68fa5ebb1cdf0d062415556e18a3afd",
+          "graph.rankdir": "LR",
+          "failure_class": "",
+          "human.gate.Clarify.label": "[C] Full blueprint",
+          "plan.has_ui_surface": "no",
+          "thread.clarify_prep.current_node": "Clarify",
+          "internal.node_visit_count": 1
+        },
+        "node_outcomes": {
+          "Verification": {
+            "status": "succeeded",
+            "preferred_label": "[A] Approve & build",
+            "suggested_next_ids": [
+              "setup"
+            ],
+            "context_updates": {
+              "human.gate.Verification.label": "[A] Approve & build",
+              "human.gate.Verification.question": "Plan is ready. [A] build · [B] plan only · [I] iterate (notes) · [X] abort — do not reuse Clarify's A/B/C here",
+              "human.gate.selected": "A",
+              "human.gate.label": "[A] Approve & build",
+              "human.gate.Verification.answer": "A"
+            },
+            "usage": null
+          },
+          "clarify_prep": {
+            "status": "succeeded",
+            "context_updates": {
+              "response.clarify_prep": "---\n\n## Assessment summary\nThe root `src/` has 20+ top-level folders; 12 predate the unified architecture and belong in `shared/`, domains, or should be deleted. **No `shared/` folder exists** — ~2,700 LOC of cross-module concerns are scattered across `agent-core/`, `lib/`, `infrastructure/`, `services/`, `store/`, `hooks/`, `prompts/`, `types/`. Domains don't import from these legacy folders, so migration is primarily move-and-re-export work, not rewrites.\n\n## Key gaps (max 5)\n- **No `shared/` layer** — blocking foundation; need 7 sub-folders (agent-kernel, jobs, data, auth, observability, errors, types)\n- **8 parallel root folders** replace `shared/` (`agent-core/` has 2,700 LOC; `lib/`, `infrastructure/`, `services/`, `store/`, `hooks/`, `prompts/`, `types/`)\n- **Root `services/` duplication** — `storyteller.service.ts` (277 LOC) exists both at root and in `domains/storyteller/`; need reconciliation\n- **Dev-time tools in runtime `src/`** — `evaluation/` (16 subfolders), `mcp/` (protocol server), `workflows/` should move or stay for imports\n- **16 app components at root** — GameHubDashboard, GlobalHeader, GlobalSidebar belong in `app/components/`, not root `components/`\n\n## Pick one scope (buttons are A / B / C — meanings are module-specific below)\n\n| Button | What the plan will assume for **this** module |\n| --- | --- |\n| **[A]** | **Phased (3 increments):** First, create `shared/` structure + move tiny files (`lib/auth`, `lib/error-utils`, 2 stores) + ESLint rules; validate build. Second, move cross-domain services (`services/entities`, `hooks/useGameEntities`). Third, consolidate `agent-core/` + `prompts/`. Defers `infrastructure/`, `mcp/`, `evaluation/`, `components/` cleanup to follow-up. ~15 file moves total. |\n| **[B]** | **Foundation only (1 increment):** Create `shared/` structure (7 folders + barrels), move 4 tiny files (`lib/auth`, `lib/error-utils`, `store/useAuthStore`, `store/useErrorStore`), add ESLint boundary rules. **Stop and validate** before touching services, agent-core, or prompts. ~4 file moves; safe first step. |\n| **[C]** | **Full convergence (1 big increment):** Execute all 5 phases — create `shared/`, move all 12 legacy folders (`agent-core`, `lib`, `infrastructure`, `services`, `store`, `hooks`, `prompts`, `types`, `constants`, `config`, `content`, `pages`), delete roots, move `mcp/` + `evaluation/`, redistribute `components/`. ~50 file moves; reconcile `services/storyteller` duplication; handle `infrastructure/ai/gateway` delete-vs-port decision. High-risk, high-reward. |\n\n**Advanced:** type custom constraints in freeform (routes to [F]) · pick [R] only if assess findings are wrong\n\n**Recommendation: [B]** — Start with foundation only: the current build works (no imports from legacy folders), so establish `shared/` + ESLint rules first, validate builds + tests pass, then commit to larger moves after proving the structure.",
+              "last_stage": "clarify_prep",
+              "last_response": "---\n\n## Assessment summary\nThe root `src/` has 20+ top-level folders; 12 predate the unified architecture and belong in `shared/`, domains, or should be deleted. **No `shared/` folder exists** — ~2,"
+            },
+            "notes": "Stage completed: clarify_prep",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "anthropic",
+                    "model_id": "claude-sonnet-4-5"
+                  },
+                  "tokens": {
+                    "input_tokens": 12146,
+                    "output_tokens": 2149,
+                    "reasoning_tokens": 0,
+                    "cache_read_tokens": 29088,
+                    "cache_write_tokens": 23200
+                  }
+                },
+                "facts": {
+                  "algorithm": "anthropic",
+                  "cache_write_5m_tokens": 23200,
+                  "cache_write_1h_tokens": 0
+                }
+              },
+              "total_usd_micros": 164399
+            },
+            "files_touched": [
+              "/workspace/kurvitza/CLARIFY.md",
+              "/workspace/kurvitza/DECISIONS.md",
+              "/workspace/kurvitza/PLAN.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 48772,
+              "tool_time_ms": 196,
+              "active_time_ms": 48968
+            }
+          },
+          "plan": {
+            "status": "succeeded",
+            "context_updates": {
+              "plan.has_ui_surface": "no",
+              "plan.has_p0_security_issue": "no",
+              "last_response": "`PLAN.md` and `DECISIONS.md` are updated. Stopping for Verification.\n\n---\n\n1. **P0 declaration:** **No P0** — no security/correctness defect found; worst finding is structural (dual Drizzle connecti",
+              "last_stage": "plan",
+              "response.plan": "`PLAN.md` and `DECISIONS.md` are updated. Stopping for Verification.\n\n---\n\n1. **P0 declaration:** **No P0** — no security/correctness defect found; worst finding is structural (dual Drizzle connection pools, `src/lib/db.ts` vs `src/db/index.ts`), filed as P1 Item 2.\n\n2. **Your Clarify decision: [C] Full blueprint.** In scope: complete convergence plan for all 20 root folders — `shared/` creation, migration/deletion of 12 legacy roots, `mcp`/`evaluation`/`workflows` relocation, components redistribution, services reconciliation. Explicitly deferred: schema inversion fix (`src/db/schema.ts:21`), gateway delete-vs-Mastra decision, `pages/api/mcp.ts` App Router migration, trigger task body rewrites, domain internals.\n\n3. **First shippable increment: Items 1–4** — `shared/` skeleton + ESLint boundary rules, Drizzle client consolidation into `src/db/client.ts`, seeding `shared/auth|errors|data` from `lib/`/`store/`/`hooks/` via move+shim, and dissolving root `services/` (24 developer substeps, build stays green throughout).\n\n4. **14 items total; increment 1 ≈ 1–2 dev days; full blueprint ≈ 2 weeks across 4 increments.**\n\n5. Plan summary:\n   - **Corrections to assess** (spot-checked): domains import legacy roots **170 times** (not zero) → strategy is *move + re-export shim → codemod → delete shims*; `services/storyteller.service.ts` (418 LOC) is an MCP adapter to **move**, not a duplicate to delete; `pages/api/mcp.ts` (MCP SSE) makes `pages/` non-deletable; `src/trigger/` holds 4,877 LOC of task bodies (not a thin registry).\n   - **P1:** `shared/` skeleton + `no-restricted-imports` in `eslint.config.js` (Items 1); db client → `src/db/client.ts` (Item 2); `lib/auth|security|error-utils|utils|api-utils`, stores, hooks → `shared/*` (Item 3); root `services/` → `domains/storyteller/services/StorytellerCrudService.ts` + `shared/data/` (Item 4).\n   - **P2:** `agent-core/` → `shared/agent-kernel` + `shared/observability` (Item 5); `prompts/` split (Item 6); `infrastructure/` dissolution incl. gateway kept as `shared/agent-kernel/gateway/` (Item 7); misc roots (Item 8); `workflows/` (Item 9); components redistribution (Item 10); codemod + shim deletion + lint→error (Item 11).\n   - **P3:** `evaluation/` → `scripts/` (Item 12); trigger thinning via pure moves + re-exports (Item 13); `pages/` documented-minimal (Item 14).\n\n6. **Verification reminder:** pick **[A] Approve & build** to implement, **[B]** for plan-only, **[I]** only if you want plan changes (type notes), **[X]** to abort. Clarify's A/B/C are already decided — don't type `A` expecting build unless choosing option **[A]** on this gate.\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"no\"\n  }\n}\n```"
+            },
+            "notes": "Stage completed: plan",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "anthropic",
+                    "model_id": "claude-fable-5"
+                  },
+                  "tokens": {
+                    "input_tokens": 48140,
+                    "output_tokens": 25989,
+                    "reasoning_tokens": 0,
+                    "cache_read_tokens": 362357,
+                    "cache_write_tokens": 97078
+                  }
+                },
+                "facts": {
+                  "algorithm": "anthropic",
+                  "cache_write_5m_tokens": 97078,
+                  "cache_write_1h_tokens": 0
+                }
+              },
+              "total_usd_micros": 3356682
+            },
+            "files_touched": [
+              "/workspace/kurvitza/DECISIONS.md",
+              "/workspace/kurvitza/PLAN.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 321207,
+              "tool_time_ms": 1148,
+              "active_time_ms": 322355
+            }
+          },
+          "setup": {
+            "status": "succeeded",
+            "context_updates": {
+              "command.output": "blob://sha256/d4ac8615254a4a2b23e9bf66aca300faa68fa5ebb1cdf0d062415556e18a3afd"
+            },
+            "notes": "Script completed: set -euo pipefail; echo '=== sandbox bootstrap ==='; if ! command -v git >/dev/null; then apt-get update && apt-get install -y git ca-certificates; fi; if ! command -v npm >/dev/null; then apt-get update && apt-get install -y nodejs npm; fi; command -v npm >/dev/null || { echo 'ERROR: npm still missing — expected image node:22-bookworm'; exit 1; }; npm ci --prefer-offline --no-audit --no-fund; npm run test:playwright:install; echo '=== bootstrap complete ==='",
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 147790,
+              "active_time_ms": 147790
+            }
+          },
+          "scope": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_response": "I'll run the scope commands to inventory the current `src/` layout.",
+              "last_stage": "scope",
+              "response.scope": "I'll run the scope commands to inventory the current `src/` layout."
+            },
+            "notes": "Stage completed: scope",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "anthropic",
+                    "model_id": "claude-sonnet-4-5"
+                  },
+                  "tokens": {
+                    "input_tokens": 2502,
+                    "output_tokens": 443,
+                    "reasoning_tokens": 0,
+                    "cache_read_tokens": 11983,
+                    "cache_write_tokens": 13293
+                  }
+                },
+                "facts": {
+                  "algorithm": "anthropic",
+                  "cache_write_5m_tokens": 13293,
+                  "cache_write_1h_tokens": 0
+                }
+              },
+              "total_usd_micros": 67593
+            },
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 10700,
+              "tool_time_ms": 114,
+              "active_time_ms": 10814
+            }
+          },
+          "assess": {
+            "status": "succeeded",
+            "context_updates": {
+              "response.assess": "## Assessment Complete\n\n**Root `src/` layout is 60% pre-architecture.** 12 of 20 top-level folders predate the unified structure and belong in `shared/`, domains, or should be deleted. The critical gap: **no `shared/` folder exists**, blocking module convergence.\n\n### Key Findings\n\n**Critical:** Functionality scattered across 8 parallel folders (`agent-core`, `lib`, `infrastructure`, `services`, `store`, `hooks`, `prompts`, `types`) with no single `shared/` layer — ~2,700 LOC in `agent-core/` duplicates Mastra primitives; cross-module auth/errors/data live in ad-hoc locations.\n\n**High impact, low risk:** Domains already don't import from legacy folders (grep confirmed zero hits), so migration is move-and-re-export, not rewrite. Root `services/` has 3 files that duplicate domain services or belong in `shared/data/`.\n\n**Top 3 gaps:**\n1. Create `shared/` structure (agent-kernel, jobs, data, auth, observability, errors, types)\n2. Move cross-domain primitives (`lib/auth`, `services/entities`, `hooks/useGameEntities`) to `shared/`\n3. Set up ESLint boundary rules blocking `domains/` from importing legacy root folders\n\nFull phased migration plan in `findings/assess.md` — recommend **Phase 1 only** (foundation + low-risk moves) in first increment, then validate before proceeding.",
+              "last_stage": "assess",
+              "last_response": "## Assessment Complete\n\n**Root `src/` layout is 60% pre-architecture.** 12 of 20 top-level folders predate the unified structure and belong in `shared/`, domains, or should be deleted. The critical ga"
+            },
+            "notes": "Stage completed: assess",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "anthropic",
+                    "model_id": "claude-sonnet-4-5"
+                  },
+                  "tokens": {
+                    "input_tokens": 30315,
+                    "output_tokens": 8570,
+                    "reasoning_tokens": 0,
+                    "cache_read_tokens": 237097,
+                    "cache_write_tokens": 67984
+                  }
+                },
+                "facts": {
+                  "algorithm": "anthropic",
+                  "cache_write_5m_tokens": 67984,
+                  "cache_write_1h_tokens": 0
+                }
+              },
+              "total_usd_micros": 545564
+            },
+            "files_touched": [
+              "/workspace/kurvitza/findings/assess.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 160422,
+              "tool_time_ms": 903,
+              "active_time_ms": 161325
+            }
+          },
+          "start": {
+            "status": "succeeded",
+            "usage": null
+          },
+          "Clarify": {
+            "status": "succeeded",
+            "preferred_label": "[C] Full blueprint",
+            "suggested_next_ids": [
+              "plan"
+            ],
+            "context_updates": {
+              "human.gate.selected": "C",
+              "human.gate.Clarify.label": "[C] Full blueprint",
+              "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)",
+              "human.gate.label": "[C] Full blueprint",
+              "human.gate.Clarify.answer": "C"
+            },
+            "usage": null
+          }
+        },
+        "next_node_id": "setup_gate",
+        "git_commit_sha": "f794be97e20c8ed09128d2c2dcaaa4931c28d6cf",
+        "node_visits": {
+          "scope": 1,
+          "clarify_prep": 1,
+          "Verification": 1,
+          "Clarify": 1,
+          "assess": 1,
+          "plan": 1,
+          "start": 1,
+          "setup": 1
+        }
+      },
+      "diff": {
+        "summary": {
+          "files_changed": 0,
+          "additions": 0,
+          "deletions": 0
+        }
+      }
+    },
+    {
+      "seq": 0,
+      "checkpoint": {
+        "timestamp": "2026-07-02T08:58:13.128508Z",
+        "current_node": "setup_gate",
+        "completed_nodes": [
+          "start",
+          "scope",
+          "assess",
+          "clarify_prep",
+          "Clarify",
+          "plan",
+          "Verification",
+          "setup",
+          "setup_gate"
         ],
         "node_retries": {},
         "context_values": {
@@ -2668,7 +2971,7 @@
           "internal.retry_count.clarify_prep": 0,
           "thread.plan.current_node": "Verification",
           "graph.stall_timeout": "1800000ms",
-          "internal.thread_id": "Verification",
+          "internal.thread_id": "setup",
           "graph.rankdir": "LR",
           "last_stage": "plan",
           "internal.retry_count.Clarify": 0,
@@ -2685,13 +2988,15 @@
           "response.plan": "`PLAN.md` and `DECISIONS.md` are updated. Stopping for Verification.\n\n---\n\n1. **P0 declaration:** **No P0** — no security/correctness defect found; worst finding is structural (dual Drizzle connection pools, `src/lib/db.ts` vs `src/db/index.ts`), filed as P1 Item 2.\n\n2. **Your Clarify decision: [C] Full blueprint.** In scope: complete convergence plan for all 20 root folders — `shared/` creation, migration/deletion of 12 legacy roots, `mcp`/`evaluation`/`workflows` relocation, components redistribution, services reconciliation. Explicitly deferred: schema inversion fix (`src/db/schema.ts:21`), gateway delete-vs-Mastra decision, `pages/api/mcp.ts` App Router migration, trigger task body rewrites, domain internals.\n\n3. **First shippable increment: Items 1–4** — `shared/` skeleton + ESLint boundary rules, Drizzle client consolidation into `src/db/client.ts`, seeding `shared/auth|errors|data` from `lib/`/`store/`/`hooks/` via move+shim, and dissolving root `services/` (24 developer substeps, build stays green throughout).\n\n4. **14 items total; increment 1 ≈ 1–2 dev days; full blueprint ≈ 2 weeks across 4 increments.**\n\n5. Plan summary:\n   - **Corrections to assess** (spot-checked): domains import legacy roots **170 times** (not zero) → strategy is *move + re-export shim → codemod → delete shims*; `services/storyteller.service.ts` (418 LOC) is an MCP adapter to **move**, not a duplicate to delete; `pages/api/mcp.ts` (MCP SSE) makes `pages/` non-deletable; `src/trigger/` holds 4,877 LOC of task bodies (not a thin registry).\n   - **P1:** `shared/` skeleton + `no-restricted-imports` in `eslint.config.js` (Items 1); db client → `src/db/client.ts` (Item 2); `lib/auth|security|error-utils|utils|api-utils`, stores, hooks → `shared/*` (Item 3); root `services/` → `domains/storyteller/services/StorytellerCrudService.ts` + `shared/data/` (Item 4).\n   - **P2:** `agent-core/` → `shared/agent-kernel` + `shared/observability` (Item 5); `prompts/` split (Item 6); `infrastructure/` dissolution incl. gateway kept as `shared/agent-kernel/gateway/` (Item 7); misc roots (Item 8); `workflows/` (Item 9); components redistribution (Item 10); codemod + shim deletion + lint→error (Item 11).\n   - **P3:** `evaluation/` → `scripts/` (Item 12); trigger thinning via pure moves + re-exports (Item 13); `pages/` documented-minimal (Item 14).\n\n6. **Verification reminder:** pick **[A] Approve & build** to implement, **[B]** for plan-only, **[I]** only if you want plan changes (type notes), **[X]** to abort. Clarify's A/B/C are already decided — don't type `A` expecting build unless choosing option **[A]** on this gate.\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"no\"\n  }\n}\n```",
           "human.gate.Verification.question": "Plan is ready. [A] build · [B] plan only · [I] iterate (notes) · [X] abort — do not reuse Clarify's A/B/C here",
           "internal.retry_count.setup": 0,
+          "internal.retry_count.setup_gate": 0,
           "internal.node_visit_count": 1,
           "response.clarify_prep": "---\n\n## Assessment summary\nThe root `src/` has 20+ top-level folders; 12 predate the unified architecture and belong in `shared/`, domains, or should be deleted. **No `shared/` folder exists** — ~2,700 LOC of cross-module concerns are scattered across `agent-core/`, `lib/`, `infrastructure/`, `services/`, `store/`, `hooks/`, `prompts/`, `types/`. Domains don't import from these legacy folders, so migration is primarily move-and-re-export work, not rewrites.\n\n## Key gaps (max 5)\n- **No `shared/` layer** — blocking foundation; need 7 sub-folders (agent-kernel, jobs, data, auth, observability, errors, types)\n- **8 parallel root folders** replace `shared/` (`agent-core/` has 2,700 LOC; `lib/`, `infrastructure/`, `services/`, `store/`, `hooks/`, `prompts/`, `types/`)\n- **Root `services/` duplication** — `storyteller.service.ts` (277 LOC) exists both at root and in `domains/storyteller/`; need reconciliation\n- **Dev-time tools in runtime `src/`** — `evaluation/` (16 subfolders), `mcp/` (protocol server), `workflows/` should move or stay for imports\n- **16 app components at root** — GameHubDashboard, GlobalHeader, GlobalSidebar belong in `app/components/`, not root `components/`\n\n## Pick one scope (buttons are A / B / C — meanings are module-specific below)\n\n| Button | What the plan will assume for **this** module |\n| --- | --- |\n| **[A]** | **Phased (3 increments):** First, create `shared/` structure + move tiny files (`lib/auth`, `lib/error-utils`, 2 stores) + ESLint rules; validate build. Second, move cross-domain services (`services/entities`, `hooks/useGameEntities`). Third, consolidate `agent-core/` + `prompts/`. Defers `infrastructure/`, `mcp/`, `evaluation/`, `components/` cleanup to follow-up. ~15 file moves total. |\n| **[B]** | **Foundation only (1 increment):** Create `shared/` structure (7 folders + barrels), move 4 tiny files (`lib/auth`, `lib/error-utils`, `store/useAuthStore`, `store/useErrorStore`), add ESLint boundary rules. **Stop and validate** before touching services, agent-core, or prompts. ~4 file moves; safe first step. |\n| **[C]** | **Full convergence (1 big increment):** Execute all 5 phases — create `shared/`, move all 12 legacy folders (`agent-core`, `lib`, `infrastructure`, `services`, `store`, `hooks`, `prompts`, `types`, `constants`, `config`, `content`, `pages`), delete roots, move `mcp/` + `evaluation/`, redistribute `components/`. ~50 file moves; reconcile `services/storyteller` duplication; handle `infrastructure/ai/gateway` delete-vs-port decision. High-risk, high-reward. |\n\n**Advanced:** type custom constraints in freeform (routes to [F]) · pick [R] only if assess findings are wrong\n\n**Recommendation: [B]** — Start with foundation only: the current build works (no imports from legacy folders), so establish `shared/` + ESLint rules first, validate builds + tests pass, then commit to larger moves after proving the structure.",
           "command.output": "blob://sha256/d4ac8615254a4a2b23e9bf66aca300faa68fa5ebb1cdf0d062415556e18a3afd",
           "thread.planning.current_node": "plan",
           "failure_signature": "",
           "internal.retry_count.scope": 0,
-          "current_node": "setup",
+          "current_node": "setup_gate",
+          "thread.setup.current_node": "setup_gate",
           "last_response": "`PLAN.md` and `DECISIONS.md` are updated. Stopping for Verification.\n\n---\n\n1. **P0 declaration:** **No P0** — no security/correctness defect found; worst finding is structural (dual Drizzle connecti",
           "plan.has_p0_security_issue": "no",
           "thread.review.current_node": "clarify_prep",
@@ -2779,6 +3084,11 @@
               "tool_time_ms": 147790,
               "active_time_ms": 147790
             }
+          },
+          "setup_gate": {
+            "status": "succeeded",
+            "notes": "Conditional node evaluated: setup_gate",
+            "usage": null
           },
           "plan": {
             "status": "succeeded",
@@ -2921,8 +3231,9 @@
             }
           }
         },
-        "next_node_id": "setup_gate",
+        "next_node_id": "developer",
         "node_visits": {
+          "setup_gate": 1,
           "scope": 1,
           "start": 1,
           "Clarify": 1,
@@ -3748,11 +4059,39 @@
       },
       "state": "succeeded"
     },
+    "setup_gate@1": {
+      "first_event_seq": 323,
+      "prompt": null,
+      "response": null,
+      "completion": null,
+      "provider_used": null,
+      "diff": null,
+      "script_invocation": null,
+      "script_timing": null,
+      "parallel_results": null,
+      "output": null,
+      "started_at": "2026-07-02T08:58:13.070412Z",
+      "handler": "conditional",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "reasoning_tokens": 0,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0
+      },
+      "state": "running"
+    },
     "setup@1": {
       "first_event_seq": 313,
       "prompt": null,
       "response": null,
-      "completion": null,
+      "completion": {
+        "outcome": "succeeded",
+        "notes": "Script completed: set -euo pipefail; echo '=== sandbox bootstrap ==='; if ! command -v git >/dev/null; then apt-get update && apt-get install -y git ca-certificates; fi; if ! command -v npm >/dev/null; then apt-get update && apt-get install -y nodejs npm; fi; command -v npm >/dev/null || { echo 'ERROR: npm still missing — expected image node:22-bookworm'; exit 1; }; npm ci --prefer-offline --no-audit --no-fund; npm run test:playwright:install; echo '=== bootstrap complete ==='",
+        "failure_reason": null,
+        "timestamp": "2026-07-02T08:58:09.498366Z"
+      },
       "provider_used": null,
       "diff": null,
       "script_invocation": {
@@ -3775,6 +4114,12 @@
       "termination": "exited",
       "started_at": "2026-07-02T08:55:41.628277Z",
       "handler": "command",
+      "timing": {
+        "wall_time_ms": 147800,
+        "inference_time_ms": 0,
+        "tool_time_ms": 147790,
+        "active_time_ms": 147790
+      },
       "usage": {
         "input_tokens": 0,
         "output_tokens": 0,
@@ -3783,7 +4128,7 @@
         "cache_read_tokens": 0,
         "cache_write_tokens": 0
       },
-      "state": "running"
+      "state": "succeeded"
     },
     "Clarify@1": {
       "first_event_seq": 221,
