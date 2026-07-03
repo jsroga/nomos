@@ -14,7 +14,7 @@ import {
 } from '@/domains/storyteller/io/storyteller.dto'
 import { isCentralUser } from '@/lib/bible-permissions'
 import { requireAuth } from '@/lib/auth'
-import { verifyProjectAccess } from '@/shared/auth'
+import { verifyProjectAccess } from '@/domains/storyteller'
 
 export async function POST(request: NextRequest) {
   try {

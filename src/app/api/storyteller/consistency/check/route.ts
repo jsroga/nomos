@@ -12,7 +12,7 @@ import {
   runConsistencyCheck,
   type ConsistencyCheckRequest,
 } from '@/domains/storyteller'
-import { verifyProjectAccess } from '@/shared/auth'
+import { verifyProjectAccess } from '@/domains/storyteller'
 import { requireAuth } from '@/lib/auth'
 
 export const runtime = 'nodejs'

@@ -4,7 +4,7 @@ You run **after** the architecture assessment and **before** the Plan (Architect
 Your job is to turn assessment findings into **one scope decision** the human can
 make at the Clarify gate — without reading any file.
 
-You do **not** write `PLAN.md`. You do **not** implement anything.
+You do **not** write the full `PLAN.md`. You do **not** implement anything.
 
 ## The goal / target
 
@@ -14,63 +14,112 @@ You do **not** write `PLAN.md`. You do **not** implement anything.
 
 ## Inputs — read first
 
-1. `findings/assess.md` — assessment output (required).
+1. `findings/assess.md` — assessment output (required), including the `## Metadata`
+   block (`has_ui_surface`, etc.).
 2. The Scope stage output in context (module tree, git status).
+3. **Run context** — check `human.gate.Clarify.*` and `human.gate.Clarify.answer`.
+
+**Read before write.** `CLARIFY.md`, `DECISIONS.md`, and `PLAN.md` usually already
+exist (prior runs / this repo). Fabro blocks `write_file` on an unread existing file,
+so read each one before you overwrite it — otherwise the write fails and wastes a turn.
+
+## If Clarify was already answered (re-run / plan retry loop)
+
+Skip re-prompting **only** when Fabro run context already has `human.gate.Clarify.answer`
+or `human.gate.Clarify.label` set (plan retry / checkpoint resume).
+
+**Never** skip because `DECISIONS.md` or `CLARIFY.md` on disk say "resolved" — those files
+may be **stale artifacts from a prior module or run** (they must not be committed; this
+run overwrites them). If the files mention a different module than `{{ goal }}`, ignore
+them entirely and regenerate from `findings/assess.md`.
+
+If `human.gate.Clarify.answer` or `human.gate.Clarify.label` **is** set in run context:
+
+- Write a one-line note to `CLARIFY.md`: "Clarify already resolved — see DECISIONS.md."
+- Skip the human gate brief in your final response; say "Clarify already answered:
+  {label}. Proceeding to Plan."
+- Stop.
+
+This prevents plan `goal_gate` retries from wiping a resolved decision.
 
 ## What to look for
 
-Summarize the **biggest gaps** the assessment found (max 5 bullets). Note any
-trade-offs where picking the wrong scope would waste time or break imports — but
-do **not** ask the human five separate questions. They pick **one** scope level
-(A/B/C/F/R) that sets the architect's posture across all dimensions.
+Target module is in the run goal (`src/domains/<name>/`). **Only** use
+`findings/assess.md` and Scope output for this run — not stale `CLARIFY.md` /
+`DECISIONS.md` text from another module.
 
-## Output files (for the architect — NOT for the human at the gate)
+Summarize the **biggest gaps for this module** (max 5 bullets). The human picks
+**one** scope level (A/B/C) via the gate buttons. **Do not** invent a multi-question
+Q1–Q5 survey — one decision, three module-specific scope postures.
 
-Write **`CLARIFY.md`** at the repository root with `write_file`. This is
-**reference material for the Plan stage**, not instructions for the human.
-Include: summary, key gaps, how each scope option (A/B/C) would resolve the
-trade-offs, and any module-specific risks.
+## Output files
 
-Write a stub **`DECISIONS.md`**:
+**`CLARIFY.md`** — short architect reference only (max ~40 lines):
+
+```markdown
+# Clarify reference
+
+## Summary
+<2 sentences>
+
+## Key risks (max 5)
+- …
+
+## Scope mapping
+| Option | Posture for this module |
+| A | … |
+| B | … |
+| C | … |
+```
+
+**`DECISIONS.md`** — only if Clarify is still pending:
 
 ```markdown
 # Decisions log
 
 ## Clarify gate (pending)
-- Status: awaiting human selection at Clarify gate
+- Status: awaiting human selection
 ```
+
+**`PLAN.md`** — clear stale plans so Plan Author starts clean (avoids read-before-write
+detour on an unread 300-line file):
+
+```markdown
+# Plan (pending)
+
+Awaiting Plan Author — previous plan cleared at Clarify prep.
+```
+
+Use `write_file` for all three when Clarify is pending.
 
 ## Your final response — THIS is what the human sees in the Fabro dock
 
-The human gate shows **only your final response** plus the button labels below.
-Do **not** tell them to read `CLARIFY.md` or any other file. Put everything
-they need to decide **inline in this message**.
-
-Use exactly this structure:
+Do **not** tell them to read `CLARIFY.md`. Put everything inline:
 
 ```markdown
 ## Assessment summary
-<2–3 sentences: what is wrong today and why planning needs a scope call>
+<2–3 sentences>
 
 ## Key gaps (max 5)
 - …
-- …
 
-## Pick one scope for the architect
+## Pick one scope (buttons are A / B / C — meanings are module-specific below)
 
-| Option | What the plan will assume |
+The Fabro dock shows generic **[A] [B] [C]** buttons. Your table defines what each
+means **for this module** (from assess findings — not a generic migration template):
+
+| Button | What the plan will assume for **this** module |
 | --- | --- |
-| **[A] Staged migration** | <module-specific: boundaries/index.ts first; how jobs, schema, Mastra get sequenced> |
-| **[B] Minimal first step** | <module-specific: smallest shippable slice; what is explicitly deferred> |
-| **[C] Full blueprint** | <module-specific: comprehensive end-state reshape; what that includes> |
-| **[F] Custom** | Type your own constraints in freeform |
-| **[R] Re-assess** | Only if findings are wrong or code changed since assessment |
+| **[A]** | <staged posture — cite actual gaps: files, layers, risks> |
+| **[B]** | <minimal first step — cite what is in vs deferred for this module> |
+| **[C]** | <full blueprint — cite end-state reshape for this module> |
 
-**Recommendation: [A/B/C]** — <one sentence why, for this module>
+**Advanced:** type custom constraints in freeform (routes to [F]) · pick [R] only if
+assess findings are wrong
 
-The buttons below match this table. Pick the option that fits.
+**Recommendation: [A/B/C]** — <one sentence tied to this module's P0/P1 findings>
+
+The [A]/[B]/[C] buttons match this table, not the other way around.
 ```
 
-Tailor every row to **this** module and assessment. No generic placeholders.
-
-Then stop. The human answers at the Clarify gate next.
+Tailor every row to **this** module. Then stop.

@@ -1,7 +1,18 @@
-import { eq } from 'drizzle-orm'
+/**
+ * Storyteller Access Verification - Optimized with JOINs
+ *
+ * Fixes N+1 query patterns by using single JOIN queries
+ * instead of multiple sequential queries.
+ */
 
 import { db } from '@/lib/db'
-import { beats, characters, episodes, gameLoops, projects } from '@/db'
+import { beats, episodes, projects, characters } from '@/domains/storyteller/db/schema'
+import { gameLoops } from '@/db/schema'
+import { eq } from 'drizzle-orm'
+
+// ============================================
+// TYPES
+// ============================================
 
 export interface AccessResult {
   hasAccess: boolean
@@ -12,6 +23,14 @@ export interface BeatAccessResult extends AccessResult {
   episodeId?: string
 }
 
+// ============================================
+// PROJECT ACCESS
+// ============================================
+
+/**
+ * Verify user has access to a project
+ * Single query - most basic check
+ */
 export async function verifyProjectAccess(projectId: string, userId: string): Promise<boolean> {
   const [project] = await db
     .select({ userId: projects.userId })
@@ -21,6 +40,7 @@ export async function verifyProjectAccess(projectId: string, userId: string): Pr
 
   if (!project) return false
 
+  // Allow E2E test user to bypass access checks in dev/test
   if (
     userId === 'e2e-test-user-id' &&
     ['development', 'test'].includes(process.env.NODE_ENV || '')
@@ -31,6 +51,14 @@ export async function verifyProjectAccess(projectId: string, userId: string): Pr
   return project.userId === userId
 }
 
+// ============================================
+// EPISODE ACCESS
+// ============================================
+
+/**
+ * Verify user has access to an episode through project ownership
+ * Uses single JOIN query instead of 2 sequential queries
+ */
 export async function verifyEpisodeAccess(
   episodeId: string,
   userId: string
@@ -61,6 +89,14 @@ export async function verifyEpisodeAccess(
   }
 }
 
+// ============================================
+// BEAT ACCESS
+// ============================================
+
+/**
+ * Verify user has access to a beat through episode -> project ownership
+ * Uses single JOIN query instead of 3 sequential queries
+ */
 export async function verifyBeatAccess(beatId: string, userId: string): Promise<BeatAccessResult> {
   const result = await db
     .select({
@@ -91,6 +127,14 @@ export async function verifyBeatAccess(beatId: string, userId: string): Promise<
   }
 }
 
+// ============================================
+// CHARACTER ACCESS
+// ============================================
+
+/**
+ * Verify user has access to a character through project ownership
+ * Uses single JOIN query instead of 2 sequential queries
+ */
 export async function verifyCharacterAccess(
   characterId: string,
   userId: string
@@ -121,6 +165,14 @@ export async function verifyCharacterAccess(
   }
 }
 
+// ============================================
+// GAME LOOP ACCESS
+// ============================================
+
+/**
+ * Verify user has access to a game loop through project ownership
+ * Uses single JOIN query instead of 2 sequential queries
+ */
 export async function verifyGameLoopAccess(loopId: string, userId: string): Promise<AccessResult> {
   const result = await db
     .select({
@@ -147,3 +199,22 @@ export async function verifyGameLoopAccess(loopId: string, userId: string): Prom
     projectId: row.projectId,
   }
 }
+
+// ============================================
+// BULK ACCESS (for lists)
+// ============================================
+
+/**
+ * Get all projects accessible by a user
+ * Returns list of project IDs
+ */
+async function getUserProjects(userId: string): Promise<string[]> {
+  const result = await db
+    .select({ id: projects.id })
+    .from(projects)
+    .where(eq(projects.userId, userId))
+
+  return result.map(r => r.id)
+}
+
+

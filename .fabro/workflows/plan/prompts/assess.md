@@ -13,11 +13,20 @@ you do **not** modify code.
 
 ## How to work (stay under ~2 minutes)
 
-- The `Scope` stage already printed the module's file tree and git status — use it.
-  Do **not** re-list the tree.
+- The **`Scope` stage output already contains the full module file tree and git
+  status** — use that tree directly. Do **NOT** re-glob the module root
+  (`glob("src/domains/*")`, `glob("**/index.ts")`, etc.) — it wastes tool calls
+  and returns empty when the sandbox cwd differs.
 - Read **only** what you need to judge alignment: the module's `index.ts` (if any),
   its top-level folders, and a *small* representative sample (2-4 files) per concern
   below. Skim, don't deep-read every file.
+- **Search with `grep`, not `rg`.** `ripgrep` is NOT installed on this stage
+  (it runs before Bootstrap). Use `grep -rn "text" src/domains/<module>`; for literal
+  strings that contain regex chars (`.`, `(`, `'`, `@`, `/`) use `grep -rnF`. Keep
+  patterns simple — a bad regex wastes a whole tool call.
+- **Read before write.** `findings/assess.md` may already exist from a prior run;
+  Fabro blocks `write_file` on an unread existing file. Read it first (or just
+  overwrite after reading) — don't burn a turn on a blocked write.
 - Judge against the **target** state, but be fair: modules are mid-migration, so
   distinguish "not yet migrated" from "actively moving the wrong way".
 - Do not modify code. Do not run builds or tests.
@@ -33,6 +42,11 @@ you do **not** modify code.
 4. **Write path & schema** — browser→Supabase writes; manual snake_case remapping.
 5. **Framework-once** — hand-rolled parallels to Mastra primitives.
 6. **Typed boundaries & size** — `any` at edges; god files over the size limits.
+
+**Asset modules** (`interior-designer`, `world-building-toolkit`, `3d-asset-exporter`):
+lean on `tasks/` not `agents/`; flag browser→Supabase writes, bespoke job polling in
+`components/`, and monolithic Zustand stores (`useInteriorStore`, etc.) as high-leverage
+findings.
 
 ## Output
 
@@ -50,7 +64,22 @@ summary. For each finding use:
 Severity: **Critical / High / Medium / Low**. Keep it to the ~6-10 findings that
 matter most — this feeds Clarify prep and Plan, which need signal, not a catalog.
 
-End with:
+**End `findings/assess.md` with this required metadata block** (downstream agents
+and the graph condition on it):
+
+```markdown
+## Metadata
+- has_ui_surface: yes|no
+- has_p0_security_issue: yes|no
+- top_violation_layer: barrel|state|schema|ai|jobs|other
+```
+
+- `has_ui_surface: no` when the work is internal structure (imports, schema, layers,
+  Mastra wiring) with no meaningful user-visible UI change in this increment.
+- `has_p0_security_issue: yes` only for active security/correctness holes (client
+  writes, auth bypass, data loss).
+
+Then:
 
 ## Open questions for Clarify
 List 0–5 items where a human decision is needed before planning (scope, trade-offs,

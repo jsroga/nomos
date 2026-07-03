@@ -11,7 +11,7 @@ vi.mock('@/lib/auth', () => ({
   requireAuth: () => requireAuthMock(),
 }))
 
-vi.mock('@/shared/auth', () => ({
+vi.mock('@/domains/storyteller', () => ({
   verifyProjectAccess: (...args: unknown[]) => verifyProjectAccessMock(...args),
 }))
 

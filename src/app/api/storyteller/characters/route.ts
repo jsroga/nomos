@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { characters } from '@/db'
-import { verifyCharacterAccess, verifyProjectAccess } from '@/shared/auth'
+import { verifyCharacterAccess, verifyProjectAccess } from '@/domains/storyteller'
 import { eq, desc, and, sql } from 'drizzle-orm'
 import { requireAuth } from '@/lib/auth'
 

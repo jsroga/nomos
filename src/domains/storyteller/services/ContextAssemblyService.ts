@@ -105,7 +105,7 @@ export async function assembleStorytellerContext(
         .from(storyPlans)
         .where(eq(storyPlans.projectId, projectId))
         .then(r => r[0]),
-      import('@/services/storyteller.service').then(async m => {
+      import('./StorytellerCrudService').then(async m => {
         const [charsReq, beatsReq] = await Promise.all([
           m.storytellerService
             .listCharacters({ projectId }, { userId })

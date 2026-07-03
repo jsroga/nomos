@@ -1,16 +1,3 @@
-import { drizzle } from 'drizzle-orm/node-postgres'
-import { Pool } from 'pg'
-import * as storytellerSchema from '@/db'
-
-const connectionString = process.env.DATABASE_URL!
-
-// SSL disabled for Supabase pooler
-const pool = new Pool({
-  connectionString,
-  ssl: false,
-  max: 20, // Increased for concurrent streams
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 20000,
-})
-
-export const db = drizzle(pool, { schema: storytellerSchema })
+// Re-export shim — preserves 41 importers during Increment 1.
+// Codemod in Increment 2 (Item 11), then delete this file.
+export * from '@/db/client'

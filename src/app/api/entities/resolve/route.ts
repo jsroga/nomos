@@ -291,7 +291,7 @@ export async function GET(request: NextRequest) {
   try {
     // Security: Require authentication
     const { requireAuth } = await import('@/lib/auth')
-    const { verifyProjectAccess } = await import('@/shared/auth')
+    const { verifyProjectAccess } = await import('@/domains/storyteller')
 
     const { session } = await requireAuth()
     if (!session) {

@@ -16,68 +16,104 @@ touch a dependency-rule boundary or an invariant as a risk.
 
 ## Inputs — read them first
 
-1. `findings/assess.md` — the assessment output. This is your primary input.
-2. **`CLARIFY.md`** — open questions and how each gate option was framed.
-3. **`DECISIONS.md`** — you MUST update this file with the human's Clarify gate
-   choice before drafting the plan. Read run context for `human.gate.Clarify.*` and
-   `human.gate.text` (freeform). Record:
-   - Selected option ([A]/[B]/[C]/[F]/[R] and label)
-   - Freeform text if any
-   - How that constrains scope and prioritization
-4. If re-invoked after **Verification** iterate ([I]), the human's notes are in
-   context (`human.gate.Verification.*`, `human.gate.text`). Update `DECISIONS.md`
-   and `PLAN.md`; their judgment overrides raw severities.
-5. Spot-check referenced code — verify specific files each step names; do not
-   deep-read the whole module.
+1. `findings/assess.md` — primary input, including `## Metadata`.
+2. `CLARIFY.md` — short scope framing (if present).
+3. **`DECISIONS.md`** — update with the human's Clarify choice **before** drafting.
+   Read `human.gate.Clarify.*` and `human.gate.text`. Record option, freeform text,
+   in-scope vs deferred.
+4. If re-invoked after Verification **[I] Iterate**, human notes are in
+   `human.gate.Verification.*` / `human.gate.text`. Update both files only when the
+   note is **substantive** (concrete changes requested). If the note is empty, a lone
+   letter (`A`, `B`, `P`), or generic approval ("looks good", "approve", "LGTM"), do
+   **not** rewrite the plan — respond: "No iteration notes. At Verification pick
+   **[A] Approve & build** to implement (Clarify is already done)." Then stop.
+
+## Mandatory spot-checks (before writing PLAN.md)
+
+Run these **once** — do not exploratory re-discover what assess already found.
+**Use `grep`, not `rg`** (ripgrep isn't installed on this stage); for literal
+strings with regex chars use `grep -rnF`. Keep patterns simple to avoid failed
+tool calls:
+
+1. `index.ts` — does `src/domains/{{ inputs.module }}/index.ts` exist? Read it; note
+   what it exports (barrel leak vs missing).
+2. **Largest files** — `wc -l` on the 3 largest `.ts`/`.tsx` files in the module.
+3. **`z.any()`** — `grep -n 'z\.any()' src/domains/{{ inputs.module }}/` (especially
+   workflow/agent files).
+4. **`localStorage`** — `grep -rn localStorage src/domains/{{ inputs.module }}/services/`
+   or job-related paths.
+5. **Schema inversion** — does `src/db/schema.ts` import from the module's local
+   `db/schema.ts`? Read both if assess flagged it.
+
+Correct any stale assess claim you find; note corrections in the plan.
 
 ## Build the plan
 
-Group findings into concrete **improvement items**. For each item:
+Group findings into concrete **improvement items**:
 
 ```
 ### [Priority] Title
-- Problem: what's wrong today (cite the finding + location)
-- Impact: why it matters (risk / cost / who it affects)
-- Change: the concrete work — files/layers to create/modify/delete, the shape of the fix
-- Effort: rough size (S / M / L)
-- Verification: how we'll know it's fixed (test, typecheck, lint, manual check)
-- Depends on: other items that must land first (if any)
+- Problem: what's wrong today (cite finding + location)
+- Impact: why it matters
+- Change: files/layers to create/modify/delete
+- Effort: S / M / L
+- Verification: typecheck, lint, test, manual
+- Depends on: other items first (if any)
 ```
 
-**Prioritization** (order by risk-adjusted value):
+Prioritization: **P0** security/correctness · **P1** structural unblockers · **P2**
+maintainability · **P3** nits.
 
-- **P0 — do first:** security/correctness issues that can bite now (data loss,
-  auth gaps, client writes, broken types on a hot path).
-- **P1 — high value:** structural fixes that unblock others or kill a class of
-  bugs (e.g. move server state to TanStack, establish the `index.ts` barrel).
-- **P2 — worthwhile:** maintainability, dead code, test gaps.
-- **P3 — nits:** style/polish; batch them.
+## Output files
 
-## Output
+**`PLAN.md`** — if it exists, you may overwrite after your spot-checks (you will have
+read the paths above). Structure:
 
-Write the plan to `PLAN.md` at the repository root with `write_file`, and summarize
-it in your final response. Structure:
+1. **Summary** — 2-4 sentences.
+2. **Prioritized items** — P0…P3.
+3. **Suggested sequence** — order + **Minimum first increment** (bold the item numbers,
+   e.g. Items 1–3 only for first developer visit).
+4. **Deferred / out of scope** — explicit list.
 
-1. **Summary** — 2-4 sentences: the module's state and the thrust of the plan.
-2. **Prioritized items** — the P0…P3 list above.
-3. **Suggested sequence** — the recommended execution order / first shippable increment.
-4. **Deferred / out of scope** — what the assessment surfaced but the plan leaves
-   for later, with reasons.
+**`DECISIONS.md`** — Clarify + any Verification notes.
 
-## Quality bar
+## Context for downstream build routing
 
-- Every item traces to a real finding — do not invent new issues here.
-- Steps are concrete (files, layers, the fix shape), not vague ("improve X").
-- Grounded: every file/type/API you name exists (or is a step that creates it).
-- Honest effort/impact; don't inflate. Prefer a first increment that is
-  independently shippable and low-risk.
+At the end of your work, emit this JSON block in your final response (required for
+the workflow graph to skip UX Designer on backend-only plans):
 
-This node is a **goal gate**: the run only succeeds if a real, grounded plan is
-written. If the module is already clean, say so and produce a minimal plan rather
-than fabricating work.
+```json
+{
+  "context_updates": {
+    "plan.has_ui_surface": "yes|no",
+    "plan.has_p0_security_issue": "yes|no"
+  }
+}
+```
+
+Set `plan.has_ui_surface` from `findings/assess.md` metadata and the planned increment:
+- `"no"` when the minimum first increment is imports/schema/layers/Mastra only.
+- `"yes"` when the increment changes user-visible UI flows or needs `UX.md`.
+
+## Final response format (Verification gate — keep under 400 words)
+
+Your final response **must** include:
+
+1. **P0 declaration** — `No P0` or `P0 exists` with one-line evidence.
+2. **Your Clarify decision recap** — e.g. "**Your Clarify decision: [A] Staged
+   migration.** In scope: … Explicitly deferred: …" (3 lines from DECISIONS.md).
+3. **First shippable increment** in bold.
+4. **Item count** and rough effort (e.g. "8 items, ~2–3 dev days for increment 1").
+5. Bulleted plan summary with concrete file references.
+
+6. **Verification reminder:** pick **[A] Approve & build** to implement, **[B]** for
+   plan-only, **[I]** only if you want plan changes (type notes), **[X]** to abort.
+   (Clarify's A/B/C are already decided — do not type `A` expecting build unless you
+   choose option **[A]** on this gate.)
+
+Then stop for **Verification**. Do not implement.
 
 ## Handoff
 
-When `PLAN.md` and `DECISIONS.md` are updated and summarized, stop. The human
-reviews at **Verification** next. If re-invoked to iterate ([I]), update both files
-and note what changed.
+When `PLAN.md` and `DECISIONS.md` are updated, stop. Human reviews at Verification.
+On **[I] iterate**, update both files and note what changed.

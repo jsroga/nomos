@@ -3,62 +3,76 @@ _version = 1
 [workflow]
 graph = "workflow.fabro"
 
-# Run (module is parameterized — override per module):
-#   fabro run .fabro/workflows/plan/workflow.toml
+# Run (module is REQUIRED — pass on every run):
+#   fabro run .fabro/workflows/plan/workflow.toml -I module=interior-designer
+#   fabro run .fabro/workflows/plan/workflow.toml -I module=storyteller
 #   fabro run .fabro/workflows/plan/workflow.toml -I module=chat
-#   fabro run .fabro/workflows/plan/workflow.toml --goal "…custom goal…"
 [run]
 goal = "Clean up and align the {{ inputs.module }} module (src/domains/{{ inputs.module }}) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification."
 
-# Typed inputs — https://docs.fabro.sh/workflows/variables
-# Available as {{ inputs.module }} in the goal and every node prompt.
 [run.inputs]
-module = "storyteller"
+# No default — always pass `-I module=<domain-folder-name>` (under src/domains/).
 
-# Model fallback chain — https://docs.fabro.sh/execution/failures
-# codex + gpt-5.4 share ONE usage-limited OpenAI account; when it hits
-# `usage_limit_reached`, Fabro falls back to Anthropic (separate metered account
-# with credits), auto-selecting the closest model per node by capability/cost.
-# openai is listed last so Anthropic-primary nodes (opus Plan) still have a net.
 [run.model]
 name = "codex"
 provider = "openai"
 fallbacks = ["anthropic", "openai"]
 
-# Docker sandbox: git-checkpoints the run so PLAN.md / DECISIONS.md show in
-# "Files Changed". Clone-based — clones origin/<branch>; commit + push before
-# running. Switch back to working-tree runs with id = "local".
+# Agent defaults — skills load from the GLOBAL ~/.fabro/skills (Fabro runs skill
+# discovery on the local server, so the sandbox {git_root}/.fabro/skills path is not
+# found — symlink once: `ln -s "$PWD/.fabro/skills" ~/.fabro/skills`). full
+# permissions so developer can run shell (grep, typecheck) and use_skill w/o prompts.
+[run.agent]
+permissions = "full"
+
+# Docker sandbox: git-checkpoints PLAN.md / DECISIONS.md for Files Changed diffs.
+# Use pre-built node image (cache key includes Node); Dockerfile adds git only.
 [run.environment]
-id = "docker"
+id = "plan-docker"
 
 [environments.local]
 provider = "local"
 
-[environments.docker]
+[environments.plan-docker]
 provider = "docker"
 
-[environments.docker.image]
-# node:22-slim + git; Playwright `install --with-deps` pulls browser OS libs at bootstrap.
-dockerfile = "FROM node:22-slim\nRUN apt-get update && apt-get install -y git ca-certificates curl && rm -rf /var/lib/apt/lists/*"
+[environments.plan-docker.image]
+# Slim image lacks git (Fabro requires git for clone). Full bookworm has git + node + npm.
+docker = "node:22-bookworm"
 
-# Browser automation for the UI Screenshot stage — https://docs.fabro.sh/agents/mcp
-# Playwright MCP exposes browser_navigate/click/type/snapshot/take_screenshot.
-# The `sandbox` transport starts the MCP server inside the sandbox — works best
-# in Docker/Daytona (which you're now on). The screenshot stage is best-effort
-# and never blocks the run. The agent calls browser_install first in a fresh box.
-[run.agent.mcps.playwright]
-type = "sandbox"
-protocol = "sse"
-command = ["npx", "@playwright/mcp@latest", "--port", "3100", "--headless", "--browser", "chromium"]
-port = 3100
-startup_timeout = "90s"
-tool_timeout = "3m"
+# tsc on this monorepo exceeds Node's default ~2GB old-space heap (OOM in `verify`).
+# Give the container headroom and raise the heap for all sandbox commands (verify,
+# test hooks, e2e).
+[environments.plan-docker.resources]
+cpu = 4
+memory = "8GB"
 
-# Collect screenshots as run artifacts (in addition to auto-scanned test-results/).
+[environments.plan-docker.env]
+NODE_OPTIONS = "--max-old-space-size=6144"
+
+# Preview URLs (fabro sandbox preview / Preview button) require the Daytona provider —
+# local/docker sandboxes cannot serve previews. Run UI increments you want to preview
+# with: fabro run … --environment plan-daytona --preserve-sandbox
+[environments.plan-daytona]
+provider = "daytona"
+
+[environments.plan-daytona.image]
+docker = "node:22-bookworm"
+
+[environments.plan-daytona.resources]
+cpu = 4
+memory = "8GB"
+
+[environments.plan-daytona.env]
+NODE_OPTIONS = "--max-old-space-size=6144"
+
+# Playwright MCP is NOT configured at run level — it starts before bootstrap and
+# burns ~30s per plan-path stage (npx missing). Screenshot stage uses Playwright
+# CLI after npm ci instead (see prompts/screenshot.md).
+
 [run.artifacts]
 include = ["screenshots/**", "SCREENSHOTS.md"]
 
-# Hooks — https://docs.fabro.sh/agents/hooks
 [[run.hooks]]
 id = "unit-tests-after-implement"
 name = "unit-tests-after-implement"

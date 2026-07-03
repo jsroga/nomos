@@ -2,7 +2,8 @@
  * Storyteller public module API.
  *
  * This is the only supported storyteller import target for code outside
- * src/domains/storyteller.
+ * src/domains/storyteller. A few server-side re-exports remain as an interim
+ * seam until later shared-layer/schema cleanup work lands.
  */
 
 // Agents
@@ -55,8 +56,6 @@ export * from './hooks/useEpisodeData'
 export * from './hooks/useLoadingStates'
 export * from './hooks/useStorytellerActions'
 export * from './hooks/useStorytellerHydration'
-export * from './state/queries/useBibleLock'
-export * from './state/queries/useEpisodes'
 
 // Mentions
 export * from './mentions/MentionsProvider'
@@ -64,11 +63,18 @@ export * from './mentions/MentionsProvider'
 // Prompt types/schemas
 export * from './prompts/schemas/agent-schemas'
 
-// Public server-side entry points consumed outside the module
-export { assembleStorytellerContext } from './services/ContextAssemblyService'
-export { contextualSummaryService } from './services/ContextualSummaryService'
-export { entityRegistry } from './services/EntityRegistryService'
-export { ragService } from './services/RagService'
-export { relationshipEnricher } from './services/RelationshipEnricherService'
-export { regenerateText } from './services/ScriptOperationsService'
-export { bibleToPrompt, bibleToVisualPrompt, type BibleSection, type SeriesBible } from './services/context/SeriesBible'
+// Interim server-side compatibility re-exports (scheduled for later cleanup)
+export * from './db/schema'
+export * as storytellerSchema from './db/schema'
+export * from './lib/access-verification'
+export * from './services/ContextAssemblyService'
+export * from './services/ContextualSummaryService'
+export * from './services/EntityAutoLinkerService'
+export * from './services/EntityRegistryService'
+export * from './services/MoodboardGenerationService'
+export * from './services/PosterGenerationService'
+export * from './services/RagService'
+export * from './services/RelationshipEnricherService'
+export * from './services/ScriptOperationsService'
+export * from './services/context/SeriesBible'
+export * from './services/StorytellerCrudService'

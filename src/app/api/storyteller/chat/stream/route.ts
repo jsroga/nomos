@@ -36,7 +36,7 @@ export async function POST(req: Request) {
   try {
     // Security: Require authentication
     const { requireAuth } = await import('@/lib/auth')
-    const { verifyProjectAccess, verifyEpisodeAccess } = await import('@/shared/auth')
+    const { verifyProjectAccess, verifyEpisodeAccess } = await import('@/domains/storyteller')
 
     const { session } = await requireAuth()
     if (!session) {

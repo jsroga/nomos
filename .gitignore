@@ -61,3 +61,13 @@ mastra-memory.db-wal
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Fabro plan workflow run artifacts (generated per run — do not commit)
+/CLARIFY.md
+/DECISIONS.md
+/PLAN.md
+/RETRO.md
+/UX.md
+/SCREENSHOTS.md
+/findings/assess.md
+/screenshots/

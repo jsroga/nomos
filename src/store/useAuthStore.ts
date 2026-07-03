@@ -1,12 +1,3 @@
-import { create } from 'zustand'
-import type { User } from '@supabase/supabase-js'
-
-interface AuthState {
-  user: User | null
-  setUser: (user: User | null) => void
-}
-
-export const useAuthStore = create<AuthState>(set => ({
-  user: null,
-  setUser: user => set({ user }),
-}))
+// Re-export shim — preserves importers during Increment 1.
+// Codemod in Increment 2 (Item 11), then delete this file.
+export * from '@/shared/auth/useAuthStore'

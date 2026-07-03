@@ -7,7 +7,7 @@ import {
   ragService,
   type SeriesBible,
 } from '@/domains/storyteller'
-import { verifyProjectAccess } from '@/shared/auth'
+import { verifyProjectAccess } from '@/domains/storyteller'
 import { eq } from 'drizzle-orm'
 import { createOpenAI } from '@ai-sdk/openai'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'

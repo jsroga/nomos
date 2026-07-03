@@ -3,7 +3,7 @@ import { db } from '@/lib/db'
 import { gameLoops } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
 import { requireAuth, checkRateLimit } from '@/lib/api-utils'
-import { verifyGameLoopAccess, verifyProjectAccess } from '@/shared/auth'
+import { verifyGameLoopAccess, verifyProjectAccess } from '@/domains/storyteller'
 
 /**
  * GET - Fetch game loops
