@@ -1,0 +1,555 @@
+diff --git a/src/domains/storyteller/tools/__tests__/research.test.ts b/src/domains/storyteller/agents/tools/__tests__/research.test.ts
+similarity index 100%
+rename from src/domains/storyteller/tools/__tests__/research.test.ts
+rename to src/domains/storyteller/agents/tools/__tests__/research.test.ts
+diff --git a/src/domains/storyteller/tools/__tests__/storytelling.test.ts b/src/domains/storyteller/agents/tools/__tests__/storytelling.test.ts
+similarity index 100%
+rename from src/domains/storyteller/tools/__tests__/storytelling.test.ts
+rename to src/domains/storyteller/agents/tools/__tests__/storytelling.test.ts
+diff --git a/src/domains/storyteller/tools/__tests__/tool-execution.test.ts b/src/domains/storyteller/agents/tools/__tests__/tool-execution.test.ts
+similarity index 100%
+rename from src/domains/storyteller/tools/__tests__/tool-execution.test.ts
+rename to src/domains/storyteller/agents/tools/__tests__/tool-execution.test.ts
+diff --git a/src/domains/storyteller/tools/agent-tools.ts b/src/domains/storyteller/agents/tools/agent-tools.ts
+similarity index 100%
+rename from src/domains/storyteller/tools/agent-tools.ts
+rename to src/domains/storyteller/agents/tools/agent-tools.ts
+diff --git a/src/domains/storyteller/tools/beat-tools.ts b/src/domains/storyteller/agents/tools/beat-tools.ts
+similarity index 100%
+rename from src/domains/storyteller/tools/beat-tools.ts
+rename to src/domains/storyteller/agents/tools/beat-tools.ts
+diff --git a/src/domains/storyteller/tools/character-creation-tools.ts b/src/domains/storyteller/agents/tools/character-creation-tools.ts
+similarity index 100%
+rename from src/domains/storyteller/tools/character-creation-tools.ts
+rename to src/domains/storyteller/agents/tools/character-creation-tools.ts
+diff --git a/src/domains/storyteller/tools/character-tools.ts b/src/domains/storyteller/agents/tools/character-tools.ts
+similarity index 100%
+rename from src/domains/storyteller/tools/character-tools.ts
+rename to src/domains/storyteller/agents/tools/character-tools.ts
+diff --git a/src/domains/storyteller/tools/continuity-tools.ts b/src/domains/storyteller/agents/tools/continuity-tools.ts
+similarity index 100%
+rename from src/domains/storyteller/tools/continuity-tools.ts
+rename to src/domains/storyteller/agents/tools/continuity-tools.ts
+diff --git a/src/domains/storyteller/tools/episode-creation-tools.ts b/src/domains/storyteller/agents/tools/episode-creation-tools.ts
+similarity index 100%
+rename from src/domains/storyteller/tools/episode-creation-tools.ts
+rename to src/domains/storyteller/agents/tools/episode-creation-tools.ts
+diff --git a/src/domains/storyteller/tools/index.ts b/src/domains/storyteller/agents/tools/index.ts
+similarity index 100%
+rename from src/domains/storyteller/tools/index.ts
+rename to src/domains/storyteller/agents/tools/index.ts
+diff --git a/src/domains/storyteller/tools/psychologist-tools.ts b/src/domains/storyteller/agents/tools/psychologist-tools.ts
+similarity index 100%
+rename from src/domains/storyteller/tools/psychologist-tools.ts
+rename to src/domains/storyteller/agents/tools/psychologist-tools.ts
+diff --git a/src/domains/storyteller/tools/rag-tools.ts b/src/domains/storyteller/agents/tools/rag-tools.ts
+similarity index 100%
+rename from src/domains/storyteller/tools/rag-tools.ts
+rename to src/domains/storyteller/agents/tools/rag-tools.ts
+diff --git a/src/domains/storyteller/tools/research-adapter.ts b/src/domains/storyteller/agents/tools/research-adapter.ts
+similarity index 100%
+rename from src/domains/storyteller/tools/research-adapter.ts
+rename to src/domains/storyteller/agents/tools/research-adapter.ts
+diff --git a/src/domains/storyteller/tools/schemas.ts b/src/domains/storyteller/agents/tools/schemas.ts
+similarity index 100%
+rename from src/domains/storyteller/tools/schemas.ts
+rename to src/domains/storyteller/agents/tools/schemas.ts
+diff --git a/src/domains/storyteller/tools/script-tools.ts b/src/domains/storyteller/agents/tools/script-tools.ts
+similarity index 100%
+rename from src/domains/storyteller/tools/script-tools.ts
+rename to src/domains/storyteller/agents/tools/script-tools.ts
+diff --git a/src/domains/storyteller/tools/self-critique-tool.ts b/src/domains/storyteller/agents/tools/self-critique-tool.ts
+similarity index 100%
+rename from src/domains/storyteller/tools/self-critique-tool.ts
+rename to src/domains/storyteller/agents/tools/self-critique-tool.ts
+diff --git a/src/domains/storyteller/tools/storytelling-adapter.ts b/src/domains/storyteller/agents/tools/storytelling-adapter.ts
+similarity index 100%
+rename from src/domains/storyteller/tools/storytelling-adapter.ts
+rename to src/domains/storyteller/agents/tools/storytelling-adapter.ts
+diff --git a/src/domains/storyteller/tools/workflow-tools.ts b/src/domains/storyteller/agents/tools/workflow-tools.ts
+similarity index 100%
+rename from src/domains/storyteller/tools/workflow-tools.ts
+rename to src/domains/storyteller/agents/tools/workflow-tools.ts
+diff --git a/src/domains/storyteller/tools/world-building-tools.ts b/src/domains/storyteller/agents/tools/world-building-tools.ts
+similarity index 100%
+rename from src/domains/storyteller/tools/world-building-tools.ts
+rename to src/domains/storyteller/agents/tools/world-building-tools.ts
+diff --git a/src/domains/storyteller/index.ts b/src/domains/storyteller/index.ts
+index d5c517e..2725990 100644
+--- a/src/domains/storyteller/index.ts
++++ b/src/domains/storyteller/index.ts
+@@ -13,28 +13,28 @@ export * from './agents/ScriptReviewAgent'
+ export * from './agents/StorytellerWorkflow'
+ export * from './agents/WritersRoomGraph'
+ 
+-// Client-facing components
+-export * from './components/ActionApprovalModal'
+-export * from './components/ActionToast'
+-export * from './components/CharacterPanel'
+-export * from './components/CharacterWeb'
+-export type { CharacterWebProps } from './components/CharacterWeb/CharacterWeb'
+-export * from './components/ConsistencyMessage'
+-export * from './components/CorkBoard'
+-export * from './components/EpisodeManager'
+-export * from './components/MasterPromptEditor'
+-export * from './components/PhaseNavigator'
+-export * from './components/QuestionCard'
+-export * from './components/ReferenceText'
+-export * from './components/StorytellerEmptyState'
+-export { default as ScriptEditor } from './components/ScriptEditor'
+-export type { ScriptEditorProps } from './components/ScriptEditor'
+-export { default as StoryPlanBoard } from './components/StoryPlanBoard'
+-export type { StoryPlanBoardProps } from './components/StoryPlanBoard'
+-export { default as Timeline } from './components/Timeline'
+-export type { TimelineProps } from './components/Timeline'
+-export { default as WorldBiblePanel } from './components/WorldBiblePanel'
+-export type { WorldBiblePanelProps } from './components/WorldBiblePanel'
++// Client-facing components (ui/)
++export * from './ui/ActionApprovalModal'
++export * from './ui/ActionToast'
++export * from './ui/CharacterPanel'
++export * from './ui/CharacterWeb'
++export type { CharacterWebProps } from './ui/CharacterWeb/CharacterWeb'
++export * from './ui/ConsistencyMessage'
++export * from './ui/CorkBoard'
++export * from './ui/EpisodeManager'
++export * from './ui/MasterPromptEditor'
++export * from './ui/PhaseNavigator'
++export * from './ui/QuestionCard'
++export * from './ui/ReferenceText'
++export * from './ui/StorytellerEmptyState'
++export { default as ScriptEditor } from './ui/ScriptEditor'
++export type { ScriptEditorProps } from './ui/ScriptEditor'
++export { default as StoryPlanBoard } from './ui/StoryPlanBoard'
++export type { StoryPlanBoardProps } from './ui/StoryPlanBoard'
++export { default as Timeline } from './ui/Timeline'
++export type { TimelineProps } from './ui/Timeline'
++export { default as WorldBiblePanel } from './ui/WorldBiblePanel'
++export type { WorldBiblePanelProps } from './ui/WorldBiblePanel'
+ 
+ // Config
+ export * from './config/action-config'
+@@ -50,15 +50,15 @@ export * from './core/ReferenceParser'
+ export * from './core/UndoManager'
+ export * from './core/WorkflowContext'
+ 
+-// Hooks
+-export * from './hooks/useBibleState'
+-export * from './hooks/useEpisodeData'
+-export * from './hooks/useLoadingStates'
+-export * from './hooks/useStorytellerActions'
+-export * from './hooks/useStorytellerHydration'
++// State hooks
++export * from './state/queries/useBibleState'
++export * from './state/queries/useEpisodeData'
++export * from './state/hooks/useLoadingStates'
++export * from './state/queries/useStorytellerActions'
++export * from './state/hooks/useStorytellerHydration'
+ 
+-// Mentions
+-export * from './mentions/MentionsProvider'
++// Mentions (ui/)
++export * from './ui/MentionsProvider'
+ 
+ // Prompt types/schemas
+ export * from './prompts/schemas/agent-schemas'
+@@ -66,7 +66,7 @@ export * from './prompts/schemas/agent-schemas'
+ // Interim server-side compatibility re-exports (scheduled for later cleanup)
+ export * from './db/schema'
+ export * as storytellerSchema from './db/schema'
+-export * from './lib/access-verification'
++export * from './services/AccessVerificationService'
+ export * from './services/ContextAssemblyService'
+ export * from './services/ContextualSummaryService'
+ export * from './services/EntityAutoLinkerService'
+diff --git a/src/domains/storyteller/lib/access-verification.ts b/src/domains/storyteller/services/AccessVerificationService.ts
+similarity index 100%
+rename from src/domains/storyteller/lib/access-verification.ts
+rename to src/domains/storyteller/services/AccessVerificationService.ts
+diff --git a/src/domains/storyteller/lib/entity-loader.ts b/src/domains/storyteller/services/EntityLoaderService.ts
+similarity index 100%
+rename from src/domains/storyteller/lib/entity-loader.ts
+rename to src/domains/storyteller/services/EntityLoaderService.ts
+diff --git a/src/domains/storyteller/hooks/__tests__/useBibleState.test.ts b/src/domains/storyteller/state/__tests__/useBibleState.test.ts
+similarity index 100%
+rename from src/domains/storyteller/hooks/__tests__/useBibleState.test.ts
+rename to src/domains/storyteller/state/__tests__/useBibleState.test.ts
+diff --git a/src/domains/storyteller/hooks/__tests__/useEpisodeData.test.ts b/src/domains/storyteller/state/__tests__/useEpisodeData.test.ts
+similarity index 100%
+rename from src/domains/storyteller/hooks/__tests__/useEpisodeData.test.ts
+rename to src/domains/storyteller/state/__tests__/useEpisodeData.test.ts
+diff --git a/src/domains/storyteller/hooks/useLoadingStates.ts b/src/domains/storyteller/state/hooks/useLoadingStates.ts
+similarity index 100%
+rename from src/domains/storyteller/hooks/useLoadingStates.ts
+rename to src/domains/storyteller/state/hooks/useLoadingStates.ts
+diff --git a/src/domains/storyteller/hooks/useStorytellerHydration.ts b/src/domains/storyteller/state/hooks/useStorytellerHydration.ts
+similarity index 100%
+rename from src/domains/storyteller/hooks/useStorytellerHydration.ts
+rename to src/domains/storyteller/state/hooks/useStorytellerHydration.ts
+diff --git a/src/domains/storyteller/hooks/useBibleState.ts b/src/domains/storyteller/state/queries/useBibleState.ts
+similarity index 100%
+rename from src/domains/storyteller/hooks/useBibleState.ts
+rename to src/domains/storyteller/state/queries/useBibleState.ts
+diff --git a/src/domains/storyteller/hooks/useEntity.ts b/src/domains/storyteller/state/queries/useEntity.ts
+similarity index 87%
+rename from src/domains/storyteller/hooks/useEntity.ts
+rename to src/domains/storyteller/state/queries/useEntity.ts
+index cc8e4cc..af12247 100644
+--- a/src/domains/storyteller/hooks/useEntity.ts
++++ b/src/domains/storyteller/state/queries/useEntity.ts
+@@ -1,5 +1,5 @@
+ import { useQueries } from '@tanstack/react-query'
+-import { entityLoader } from '@/domains/storyteller/lib/entity-loader'
++import { entityLoader } from '@/domains/storyteller/services/EntityLoaderService'
+ import { storytellerKeys } from '@/domains/storyteller/io/storyteller.keys'
+ 
+ export function useEntities(ids: string[], projectId: string | null | undefined, context?: string) {
+diff --git a/src/domains/storyteller/hooks/useEpisodeData.ts b/src/domains/storyteller/state/queries/useEpisodeData.ts
+similarity index 100%
+rename from src/domains/storyteller/hooks/useEpisodeData.ts
+rename to src/domains/storyteller/state/queries/useEpisodeData.ts
+diff --git a/src/domains/storyteller/hooks/useStorytellerActions.ts b/src/domains/storyteller/state/queries/useStorytellerActions.ts
+similarity index 100%
+rename from src/domains/storyteller/hooks/useStorytellerActions.ts
+rename to src/domains/storyteller/state/queries/useStorytellerActions.ts
+diff --git a/src/domains/storyteller/components/ActionApprovalModal/ActionApprovalModal.tsx b/src/domains/storyteller/ui/ActionApprovalModal/ActionApprovalModal.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/ActionApprovalModal/ActionApprovalModal.tsx
+rename to src/domains/storyteller/ui/ActionApprovalModal/ActionApprovalModal.tsx
+diff --git a/src/domains/storyteller/components/ActionApprovalModal/index.ts b/src/domains/storyteller/ui/ActionApprovalModal/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/ActionApprovalModal/index.ts
+rename to src/domains/storyteller/ui/ActionApprovalModal/index.ts
+diff --git a/src/domains/storyteller/components/ActionToast/ActionToast.tsx b/src/domains/storyteller/ui/ActionToast/ActionToast.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/ActionToast/ActionToast.tsx
+rename to src/domains/storyteller/ui/ActionToast/ActionToast.tsx
+diff --git a/src/domains/storyteller/components/ActionToast/index.ts b/src/domains/storyteller/ui/ActionToast/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/ActionToast/index.ts
+rename to src/domains/storyteller/ui/ActionToast/index.ts
+diff --git a/src/domains/storyteller/components/AgentLog/AgentLog.tsx b/src/domains/storyteller/ui/AgentLog/AgentLog.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/AgentLog/AgentLog.tsx
+rename to src/domains/storyteller/ui/AgentLog/AgentLog.tsx
+diff --git a/src/domains/storyteller/components/AgentLog/index.ts b/src/domains/storyteller/ui/AgentLog/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/AgentLog/index.ts
+rename to src/domains/storyteller/ui/AgentLog/index.ts
+diff --git a/src/domains/storyteller/components/BeatCard/BeatCard.tsx b/src/domains/storyteller/ui/BeatCard/BeatCard.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/BeatCard/BeatCard.tsx
+rename to src/domains/storyteller/ui/BeatCard/BeatCard.tsx
+diff --git a/src/domains/storyteller/components/BeatCard/index.ts b/src/domains/storyteller/ui/BeatCard/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/BeatCard/index.ts
+rename to src/domains/storyteller/ui/BeatCard/index.ts
+diff --git a/src/domains/storyteller/components/CharacterCreationDialog/CharacterCreationDialog.tsx b/src/domains/storyteller/ui/CharacterCreationDialog/CharacterCreationDialog.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/CharacterCreationDialog/CharacterCreationDialog.tsx
+rename to src/domains/storyteller/ui/CharacterCreationDialog/CharacterCreationDialog.tsx
+diff --git a/src/domains/storyteller/components/CharacterCreationDialog/index.ts b/src/domains/storyteller/ui/CharacterCreationDialog/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/CharacterCreationDialog/index.ts
+rename to src/domains/storyteller/ui/CharacterCreationDialog/index.ts
+diff --git a/src/domains/storyteller/components/CharacterPanel/CharacterPanel.tsx b/src/domains/storyteller/ui/CharacterPanel/CharacterPanel.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/CharacterPanel/CharacterPanel.tsx
+rename to src/domains/storyteller/ui/CharacterPanel/CharacterPanel.tsx
+diff --git a/src/domains/storyteller/components/CharacterPanel/index.ts b/src/domains/storyteller/ui/CharacterPanel/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/CharacterPanel/index.ts
+rename to src/domains/storyteller/ui/CharacterPanel/index.ts
+diff --git a/src/domains/storyteller/components/CharacterWeb/CharacterNode.tsx b/src/domains/storyteller/ui/CharacterWeb/CharacterNode.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/CharacterWeb/CharacterNode.tsx
+rename to src/domains/storyteller/ui/CharacterWeb/CharacterNode.tsx
+diff --git a/src/domains/storyteller/components/CharacterWeb/CharacterWeb.tsx b/src/domains/storyteller/ui/CharacterWeb/CharacterWeb.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/CharacterWeb/CharacterWeb.tsx
+rename to src/domains/storyteller/ui/CharacterWeb/CharacterWeb.tsx
+diff --git a/src/domains/storyteller/components/CharacterWeb/index.ts b/src/domains/storyteller/ui/CharacterWeb/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/CharacterWeb/index.ts
+rename to src/domains/storyteller/ui/CharacterWeb/index.ts
+diff --git a/src/domains/storyteller/components/CharacterWeb/types.ts b/src/domains/storyteller/ui/CharacterWeb/types.ts
+similarity index 100%
+rename from src/domains/storyteller/components/CharacterWeb/types.ts
+rename to src/domains/storyteller/ui/CharacterWeb/types.ts
+diff --git a/src/domains/storyteller/components/ConsistencyMessage/ConsistencyMessage.tsx b/src/domains/storyteller/ui/ConsistencyMessage/ConsistencyMessage.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/ConsistencyMessage/ConsistencyMessage.tsx
+rename to src/domains/storyteller/ui/ConsistencyMessage/ConsistencyMessage.tsx
+diff --git a/src/domains/storyteller/components/ConsistencyMessage/index.ts b/src/domains/storyteller/ui/ConsistencyMessage/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/ConsistencyMessage/index.ts
+rename to src/domains/storyteller/ui/ConsistencyMessage/index.ts
+diff --git a/src/domains/storyteller/components/CorkBoard/CorkBoard.tsx b/src/domains/storyteller/ui/CorkBoard/CorkBoard.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/CorkBoard/CorkBoard.tsx
+rename to src/domains/storyteller/ui/CorkBoard/CorkBoard.tsx
+diff --git a/src/domains/storyteller/components/CorkBoard/index.ts b/src/domains/storyteller/ui/CorkBoard/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/CorkBoard/index.ts
+rename to src/domains/storyteller/ui/CorkBoard/index.ts
+diff --git a/src/domains/storyteller/components/EpisodeManager/EpisodeManager.tsx b/src/domains/storyteller/ui/EpisodeManager/EpisodeManager.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/EpisodeManager/EpisodeManager.tsx
+rename to src/domains/storyteller/ui/EpisodeManager/EpisodeManager.tsx
+diff --git a/src/domains/storyteller/components/EpisodeManager/index.ts b/src/domains/storyteller/ui/EpisodeManager/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/EpisodeManager/index.ts
+rename to src/domains/storyteller/ui/EpisodeManager/index.ts
+diff --git a/src/domains/storyteller/components/EpisodePremisePanel/EpisodePremisePanel.tsx b/src/domains/storyteller/ui/EpisodePremisePanel/EpisodePremisePanel.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/EpisodePremisePanel/EpisodePremisePanel.tsx
+rename to src/domains/storyteller/ui/EpisodePremisePanel/EpisodePremisePanel.tsx
+diff --git a/src/domains/storyteller/components/EpisodePremisePanel/index.ts b/src/domains/storyteller/ui/EpisodePremisePanel/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/EpisodePremisePanel/index.ts
+rename to src/domains/storyteller/ui/EpisodePremisePanel/index.ts
+diff --git a/src/domains/storyteller/components/EpisodeRoadmapCard/EpisodeRoadmapCard.tsx b/src/domains/storyteller/ui/EpisodeRoadmapCard/EpisodeRoadmapCard.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/EpisodeRoadmapCard/EpisodeRoadmapCard.tsx
+rename to src/domains/storyteller/ui/EpisodeRoadmapCard/EpisodeRoadmapCard.tsx
+diff --git a/src/domains/storyteller/components/EpisodeRoadmapCard/index.ts b/src/domains/storyteller/ui/EpisodeRoadmapCard/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/EpisodeRoadmapCard/index.ts
+rename to src/domains/storyteller/ui/EpisodeRoadmapCard/index.ts
+diff --git a/src/domains/storyteller/components/FactionCard/FactionCard.tsx b/src/domains/storyteller/ui/FactionCard/FactionCard.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/FactionCard/FactionCard.tsx
+rename to src/domains/storyteller/ui/FactionCard/FactionCard.tsx
+diff --git a/src/domains/storyteller/components/FactionCard/index.ts b/src/domains/storyteller/ui/FactionCard/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/FactionCard/index.ts
+rename to src/domains/storyteller/ui/FactionCard/index.ts
+diff --git a/src/domains/storyteller/components/ImageVariantSelector/ImageVariantSelector.tsx b/src/domains/storyteller/ui/ImageVariantSelector/ImageVariantSelector.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/ImageVariantSelector/ImageVariantSelector.tsx
+rename to src/domains/storyteller/ui/ImageVariantSelector/ImageVariantSelector.tsx
+diff --git a/src/domains/storyteller/components/ImageVariantSelector/index.ts b/src/domains/storyteller/ui/ImageVariantSelector/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/ImageVariantSelector/index.ts
+rename to src/domains/storyteller/ui/ImageVariantSelector/index.ts
+diff --git a/src/domains/storyteller/components/JSONDiffViewer/JSONDiffViewer.tsx b/src/domains/storyteller/ui/JSONDiffViewer/JSONDiffViewer.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/JSONDiffViewer/JSONDiffViewer.tsx
+rename to src/domains/storyteller/ui/JSONDiffViewer/JSONDiffViewer.tsx
+diff --git a/src/domains/storyteller/components/JSONDiffViewer/index.ts b/src/domains/storyteller/ui/JSONDiffViewer/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/JSONDiffViewer/index.ts
+rename to src/domains/storyteller/ui/JSONDiffViewer/index.ts
+diff --git a/src/domains/storyteller/components/MasterPromptEditor/MasterPromptEditor.tsx b/src/domains/storyteller/ui/MasterPromptEditor/MasterPromptEditor.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/MasterPromptEditor/MasterPromptEditor.tsx
+rename to src/domains/storyteller/ui/MasterPromptEditor/MasterPromptEditor.tsx
+diff --git a/src/domains/storyteller/components/MasterPromptEditor/index.ts b/src/domains/storyteller/ui/MasterPromptEditor/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/MasterPromptEditor/index.ts
+rename to src/domains/storyteller/ui/MasterPromptEditor/index.ts
+diff --git a/src/domains/storyteller/mentions/MentionsProvider/MentionsProvider.tsx b/src/domains/storyteller/ui/MentionsProvider/MentionsProvider.tsx
+similarity index 97%
+rename from src/domains/storyteller/mentions/MentionsProvider/MentionsProvider.tsx
+rename to src/domains/storyteller/ui/MentionsProvider/MentionsProvider.tsx
+index 0640866..0dc1b2a 100644
+--- a/src/domains/storyteller/mentions/MentionsProvider/MentionsProvider.tsx
++++ b/src/domains/storyteller/ui/MentionsProvider/MentionsProvider.tsx
+@@ -7,7 +7,7 @@ import type { MentionProvider, ProjectContext } from '@/domains/chat/mentions/ty
+ import {
+   buildStorytellerProjectContext,
+   getStorytellerMentionProviders,
+-} from '@/domains/storyteller/mentions/providers'
++} from './providers'
+ 
+ interface MentionsContextValue {
+   mentionProviders: MentionProvider[]
+diff --git a/src/domains/storyteller/mentions/MentionsProvider/index.ts b/src/domains/storyteller/ui/MentionsProvider/index.ts
+similarity index 100%
+rename from src/domains/storyteller/mentions/MentionsProvider/index.ts
+rename to src/domains/storyteller/ui/MentionsProvider/index.ts
+diff --git a/src/domains/storyteller/mentions/providers.ts b/src/domains/storyteller/ui/MentionsProvider/providers.ts
+similarity index 100%
+rename from src/domains/storyteller/mentions/providers.ts
+rename to src/domains/storyteller/ui/MentionsProvider/providers.ts
+diff --git a/src/domains/storyteller/components/PhaseNavigator/PhaseNavigator.tsx b/src/domains/storyteller/ui/PhaseNavigator/PhaseNavigator.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/PhaseNavigator/PhaseNavigator.tsx
+rename to src/domains/storyteller/ui/PhaseNavigator/PhaseNavigator.tsx
+diff --git a/src/domains/storyteller/components/PhaseNavigator/index.ts b/src/domains/storyteller/ui/PhaseNavigator/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/PhaseNavigator/index.ts
+rename to src/domains/storyteller/ui/PhaseNavigator/index.ts
+diff --git a/src/domains/storyteller/components/QuestionCard/QuestionCard.tsx b/src/domains/storyteller/ui/QuestionCard/QuestionCard.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/QuestionCard/QuestionCard.tsx
+rename to src/domains/storyteller/ui/QuestionCard/QuestionCard.tsx
+diff --git a/src/domains/storyteller/components/QuestionCard/index.ts b/src/domains/storyteller/ui/QuestionCard/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/QuestionCard/index.ts
+rename to src/domains/storyteller/ui/QuestionCard/index.ts
+diff --git a/src/domains/storyteller/components/ReferenceText/ReferenceText.tsx b/src/domains/storyteller/ui/ReferenceText/ReferenceText.tsx
+similarity index 99%
+rename from src/domains/storyteller/components/ReferenceText/ReferenceText.tsx
+rename to src/domains/storyteller/ui/ReferenceText/ReferenceText.tsx
+index de00e71..dfd526b 100644
+--- a/src/domains/storyteller/components/ReferenceText/ReferenceText.tsx
++++ b/src/domains/storyteller/ui/ReferenceText/ReferenceText.tsx
+@@ -18,7 +18,7 @@
+  */
+ 
+ import React, { useMemo, useState, useEffect } from 'react'
+-import { useEntities } from '@/domains/storyteller/hooks/useEntity'
++import { useEntities } from '@/domains/storyteller/state/queries/useEntity'
+ import { cn } from '@/lib/utils'
+ import * as TooltipPrimitive from '@radix-ui/react-tooltip'
+ import { splitIntoSegments, ParsedReference, TextSegment, stripReferences } from '@/domains/storyteller/core/ReferenceParser'
+diff --git a/src/domains/storyteller/components/ReferenceText/index.ts b/src/domains/storyteller/ui/ReferenceText/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/ReferenceText/index.ts
+rename to src/domains/storyteller/ui/ReferenceText/index.ts
+diff --git a/src/domains/storyteller/components/RichText/RichText.tsx b/src/domains/storyteller/ui/RichText/RichText.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/RichText/RichText.tsx
+rename to src/domains/storyteller/ui/RichText/RichText.tsx
+diff --git a/src/domains/storyteller/components/RichText/index.ts b/src/domains/storyteller/ui/RichText/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/RichText/index.ts
+rename to src/domains/storyteller/ui/RichText/index.ts
+diff --git a/src/domains/storyteller/components/ScriptEditor/ScriptEditor.tsx b/src/domains/storyteller/ui/ScriptEditor/ScriptEditor.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/ScriptEditor/ScriptEditor.tsx
+rename to src/domains/storyteller/ui/ScriptEditor/ScriptEditor.tsx
+diff --git a/src/domains/storyteller/components/ScriptEditor/index.ts b/src/domains/storyteller/ui/ScriptEditor/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/ScriptEditor/index.ts
+rename to src/domains/storyteller/ui/ScriptEditor/index.ts
+diff --git a/src/domains/storyteller/components/SeasonOverviewCard/SeasonOverviewCard.tsx b/src/domains/storyteller/ui/SeasonOverviewCard/SeasonOverviewCard.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/SeasonOverviewCard/SeasonOverviewCard.tsx
+rename to src/domains/storyteller/ui/SeasonOverviewCard/SeasonOverviewCard.tsx
+diff --git a/src/domains/storyteller/components/SeasonOverviewCard/index.ts b/src/domains/storyteller/ui/SeasonOverviewCard/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/SeasonOverviewCard/index.ts
+rename to src/domains/storyteller/ui/SeasonOverviewCard/index.ts
+diff --git a/src/domains/storyteller/components/StoryPlanBoard/StoryPlanBoard.tsx b/src/domains/storyteller/ui/StoryPlanBoard/StoryPlanBoard.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/StoryPlanBoard/StoryPlanBoard.tsx
+rename to src/domains/storyteller/ui/StoryPlanBoard/StoryPlanBoard.tsx
+diff --git a/src/domains/storyteller/components/StoryPlanBoard/index.ts b/src/domains/storyteller/ui/StoryPlanBoard/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/StoryPlanBoard/index.ts
+rename to src/domains/storyteller/ui/StoryPlanBoard/index.ts
+diff --git a/src/domains/storyteller/components/StorytellerEmptyState/StorytellerEmptyState.tsx b/src/domains/storyteller/ui/StorytellerEmptyState/StorytellerEmptyState.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/StorytellerEmptyState/StorytellerEmptyState.tsx
+rename to src/domains/storyteller/ui/StorytellerEmptyState/StorytellerEmptyState.tsx
+diff --git a/src/domains/storyteller/components/StorytellerEmptyState/index.ts b/src/domains/storyteller/ui/StorytellerEmptyState/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/StorytellerEmptyState/index.ts
+rename to src/domains/storyteller/ui/StorytellerEmptyState/index.ts
+diff --git a/src/domains/storyteller/components/StorytellerImage/StorytellerImage.tsx b/src/domains/storyteller/ui/StorytellerImage/StorytellerImage.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/StorytellerImage/StorytellerImage.tsx
+rename to src/domains/storyteller/ui/StorytellerImage/StorytellerImage.tsx
+diff --git a/src/domains/storyteller/components/StorytellerImage/index.ts b/src/domains/storyteller/ui/StorytellerImage/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/StorytellerImage/index.ts
+rename to src/domains/storyteller/ui/StorytellerImage/index.ts
+diff --git a/src/domains/storyteller/components/Timeline/Timeline.tsx b/src/domains/storyteller/ui/Timeline/Timeline.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/Timeline/Timeline.tsx
+rename to src/domains/storyteller/ui/Timeline/Timeline.tsx
+diff --git a/src/domains/storyteller/components/Timeline/index.ts b/src/domains/storyteller/ui/Timeline/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/Timeline/index.ts
+rename to src/domains/storyteller/ui/Timeline/index.ts
+diff --git a/src/domains/storyteller/components/WorldBible/BibleContext.tsx b/src/domains/storyteller/ui/WorldBible/BibleContext.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/WorldBible/BibleContext.tsx
+rename to src/domains/storyteller/ui/WorldBible/BibleContext.tsx
+diff --git a/src/domains/storyteller/components/WorldBible/BibleEvents.tsx b/src/domains/storyteller/ui/WorldBible/BibleEvents.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/WorldBible/BibleEvents.tsx
+rename to src/domains/storyteller/ui/WorldBible/BibleEvents.tsx
+diff --git a/src/domains/storyteller/components/WorldBible/BibleFactions.tsx b/src/domains/storyteller/ui/WorldBible/BibleFactions.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/WorldBible/BibleFactions.tsx
+rename to src/domains/storyteller/ui/WorldBible/BibleFactions.tsx
+diff --git a/src/domains/storyteller/components/WorldBible/BibleInspirations.tsx b/src/domains/storyteller/ui/WorldBible/BibleInspirations.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/WorldBible/BibleInspirations.tsx
+rename to src/domains/storyteller/ui/WorldBible/BibleInspirations.tsx
+diff --git a/src/domains/storyteller/components/WorldBible/BibleItems.tsx b/src/domains/storyteller/ui/WorldBible/BibleItems.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/WorldBible/BibleItems.tsx
+rename to src/domains/storyteller/ui/WorldBible/BibleItems.tsx
+diff --git a/src/domains/storyteller/components/WorldBible/BibleOverview.tsx b/src/domains/storyteller/ui/WorldBible/BibleOverview.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/WorldBible/BibleOverview.tsx
+rename to src/domains/storyteller/ui/WorldBible/BibleOverview.tsx
+diff --git a/src/domains/storyteller/components/WorldBible/BibleRoadmap.tsx b/src/domains/storyteller/ui/WorldBible/BibleRoadmap.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/WorldBible/BibleRoadmap.tsx
+rename to src/domains/storyteller/ui/WorldBible/BibleRoadmap.tsx
+diff --git a/src/domains/storyteller/components/WorldBible/BibleSoundtracks.tsx b/src/domains/storyteller/ui/WorldBible/BibleSoundtracks.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/WorldBible/BibleSoundtracks.tsx
+rename to src/domains/storyteller/ui/WorldBible/BibleSoundtracks.tsx
+diff --git a/src/domains/storyteller/components/WorldBible/BibleWorldLogic.tsx b/src/domains/storyteller/ui/WorldBible/BibleWorldLogic.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/WorldBible/BibleWorldLogic.tsx
+rename to src/domains/storyteller/ui/WorldBible/BibleWorldLogic.tsx
+diff --git a/src/domains/storyteller/components/WorldBible/SectionPendingOverlay.tsx b/src/domains/storyteller/ui/WorldBible/SectionPendingOverlay.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/WorldBible/SectionPendingOverlay.tsx
+rename to src/domains/storyteller/ui/WorldBible/SectionPendingOverlay.tsx
+diff --git a/src/domains/storyteller/components/WorldBiblePanel/WorldBiblePanel.tsx b/src/domains/storyteller/ui/WorldBiblePanel/WorldBiblePanel.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/WorldBiblePanel/WorldBiblePanel.tsx
+rename to src/domains/storyteller/ui/WorldBiblePanel/WorldBiblePanel.tsx
+diff --git a/src/domains/storyteller/components/WorldBiblePanel/index.ts b/src/domains/storyteller/ui/WorldBiblePanel/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/WorldBiblePanel/index.ts
+rename to src/domains/storyteller/ui/WorldBiblePanel/index.ts
+diff --git a/src/domains/storyteller/components/WorldRuleCard/WorldRuleCard.tsx b/src/domains/storyteller/ui/WorldRuleCard/WorldRuleCard.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/WorldRuleCard/WorldRuleCard.tsx
+rename to src/domains/storyteller/ui/WorldRuleCard/WorldRuleCard.tsx
+diff --git a/src/domains/storyteller/components/WorldRuleCard/index.ts b/src/domains/storyteller/ui/WorldRuleCard/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/WorldRuleCard/index.ts
+rename to src/domains/storyteller/ui/WorldRuleCard/index.ts
+diff --git a/src/domains/storyteller/components/YouTubePlayer/YouTubePlayer.tsx b/src/domains/storyteller/ui/YouTubePlayer/YouTubePlayer.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/YouTubePlayer/YouTubePlayer.tsx
+rename to src/domains/storyteller/ui/YouTubePlayer/YouTubePlayer.tsx
+diff --git a/src/domains/storyteller/components/YouTubePlayer/index.ts b/src/domains/storyteller/ui/YouTubePlayer/index.ts
+similarity index 100%
+rename from src/domains/storyteller/components/YouTubePlayer/index.ts
+rename to src/domains/storyteller/ui/YouTubePlayer/index.ts
+diff --git a/src/domains/storyteller/components/__tests__/agent-log-features.e2e.test.tsx b/src/domains/storyteller/ui/__tests__/agent-log-features.e2e.test.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/__tests__/agent-log-features.e2e.test.tsx
+rename to src/domains/storyteller/ui/__tests__/agent-log-features.e2e.test.tsx
+diff --git a/src/domains/storyteller/components/__tests__/chat-persistence.e2e.test.tsx b/src/domains/storyteller/ui/__tests__/chat-persistence.e2e.test.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/__tests__/chat-persistence.e2e.test.tsx
+rename to src/domains/storyteller/ui/__tests__/chat-persistence.e2e.test.tsx
+diff --git a/src/domains/storyteller/components/__tests__/youtube-player.e2e.test.tsx b/src/domains/storyteller/ui/__tests__/youtube-player.e2e.test.tsx
+similarity index 100%
+rename from src/domains/storyteller/components/__tests__/youtube-player.e2e.test.tsx
+rename to src/domains/storyteller/ui/__tests__/youtube-player.e2e.test.tsx
+diff --git a/tests/unit/api/storyteller/actions/route.test.ts b/tests/unit/api/storyteller/actions/route.test.ts
+index 35a3e70..66ab956 100644
+--- a/tests/unit/api/storyteller/actions/route.test.ts
++++ b/tests/unit/api/storyteller/actions/route.test.ts
+@@ -29,7 +29,7 @@ vi.mock('@/lib/auth', () => ({
+     requireAuth: vi.fn().mockResolvedValue({ session: { user: { id: 'test-user' } } })
+ }))
+ 
+-vi.mock('@/domains/storyteller/lib/access-verification', () => ({
++vi.mock('@/domains/storyteller/services/AccessVerificationService', () => ({
+     verifyProjectAccess: vi.fn().mockResolvedValue(true),
+     verifyEpisodeAccess: vi.fn().mockResolvedValue(true),
+ }))

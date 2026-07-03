@@ -1313,7 +1313,7 @@
     "kind": "running"
   },
   "status_updated_at": "2026-07-03T09:24:52.444998Z",
-  "last_event_at": "2026-07-03T09:35:40.824528Z",
+  "last_event_at": "2026-07-03T09:37:20.572478Z",
   "pending_control": null,
   "checkpoints": [
     {
@@ -3146,9 +3146,9 @@
       }
     },
     {
-      "seq": 0,
+      "seq": 799,
       "checkpoint": {
-        "timestamp": "2026-07-03T09:35:40.919219Z",
+        "timestamp": "2026-07-03T09:35:44.615122Z",
         "current_node": "developer",
         "completed_nodes": [
           "start",
@@ -3164,6 +3164,336 @@
         ],
         "node_retries": {},
         "context_values": {
+          "internal.run_id": "01KWKKV6DTZ1ACNMMR63YH8M0J",
+          "internal.work_dir": "/workspace/kurvitza",
+          "response.plan": "All three deliverables are written. Here is the Verification summary.\n\n**1. P0 declaration:** `P0 exists` — browser Supabase writes in world-building-toolkit: `store/useWorldStore.ts:356` (`projects.delete()`) and `components/AssetsPanel.tsx:61` (`assets.delete()`) bypass auth/RLS. Fixed in Wave 2 (items 27–29, 40).\n\n**2. Your Clarify decision: [C] Full catalog.** In scope: `STRUCTURE.md` for all 9 modules **and** `PLAN.md` implementing **all 7 waves + every referrer update** — storyteller collapse, WBT P0 + god-store split, interior 1651-LOC store split, loop/chat/thin reshapes, 8 barrels, F-1 shared+lint, D-1 schema fold. Explicitly deferred: new features, Mastra behavior rewrites, skills flattening, wider `src/lib` migration.\n\n**3. First shippable increment: Items 1–26 (Wave 0 foundations + full storyteller reshape with its complete 50-file referrer sweep).**\n\n**4. Item count / effort:** 76 numbered todos across 8 waves. Increment 1 ≈ 3–4 dev days; full catalog ≈ 3–5 weeks with 8 verification loops.\n\n**Plan summary (concrete refs):**\n- `STRUCTURE.md` §1: storyteller 104→~55 dirs; `core/` 15→8 units; delete `hooks/`/`lib/`/`mentions/`/`tools/`/`config/` at root; `components/→ui/`; curated `index.ts` (~30 exports, drop the `db/schema` + `agents` firehose).\n- §2: WBT §4 worked-example reshape + write-path fix + 864-LOC store split.\n- §3: interior `store/useInteriorStore.ts` (**1651 LOC**, corrected from assess's ~500) → TanStack + `useInteriorUiStore`.\n- §10: `src/shared/*` + boundary lint (F-1), `src/db/schema.ts` fold (D-1); update `tsconfig.fabro-verify.json` (3 scoped paths), `knip.json`, eslint bans.\n- Corrections logged in `DECISIONS.md` (referrer files 50 not 250; WBT writes are `.delete()` not `insert:332`; interior 1651 LOC; marketing has 8 referrers).\n\n**6. Verification reminder:** pick **[A] Approve & build** to implement, **[B]** for plan-only, **[I]** to request plan changes (type notes), **[X]** to abort. (Clarify's C is already decided — this gate's A/B/I/X is separate.)\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"yes\"\n  }\n}\n```",
+          "internal.retry_count.plan": 0,
+          "graph.label": "Optional Build",
+          "last_response": "All three deliverables are written. Here is the Verification summary.\n\n**1. P0 declaration:** `P0 exists` — browser Supabase writes in world-building-toolkit: `store/useWorldStore.ts:356` (`projects",
+          "internal.node_visit_count": 1,
+          "internal.retry_count.setup_gate": 0,
+          "last_stage": "plan",
+          "plan.has_ui_surface": "no",
+          "response.assess": "## Assessment Complete\n\nI've written a comprehensive catalog assessment covering all 9 domains. Here's what I found:\n\n### Critical Issues\n\n1. **Storyteller has 104 subdirectories** — 5x the §4 target. The `core/` layer alone has 17 type-per-folder units that should collapse to 8. Additional sprawl from `hooks/`, `lib/`, `mentions/` feature silos at root.\n\n2. **World-Building-Toolkit has P0 security issues** — browser writes directly to Supabase (`useWorldStore.ts:332`) + 864-LOC god store mixing UI/data/jobs. Violates §2 principle 4 and §5 state-split rule.\n\n3. **5/9 modules have no public barrel** — loop-creator, WBT, deduction-puzzle, chat, and the three thin modules. Storyteller has a barrel but leaks 80+ internals, enabling ~250 deep import sites.\n\n### Catalog Overview\n\nCreated a table showing all 9 modules' current state vs §4 target:\n- Only **interior-designer** is close to §4 compliance (but has dual state systems)\n- **Storyteller** is partially compliant but massively over-foldered\n- Other 7 modules need full §4 reshaping\n\n### Storyteller Deep Dive\n\nProvided:\n- Current 14 top-level folders breakdown\n- Core sprawl analysis (17 folders → target 8)\n- Ideal target tree reducing 104 dirs → ~50-60\n- Top 10 folders to eliminate with specific merge targets\n\n### Referrer Heat Map\n\nStoryteller dominates with **~250+ external import sites** across `src/app` (80), `src/evaluation` (8), tests (150+). Other modules have 1-12 each.\n\n**Recommendation:** Option A (finalize structures for all modules, implement storyteller Wave 1 only after human approval).",
+          "response.clarify_prep": "## Assessment summary\n\nThe catalog reveals **severe folder sprawl** in storyteller (104 subdirectories vs §4 target of ~12-15), **missing public barrels** in 5/9 modules (deep imports bypass encapsulation), **god stores** mixing server/client state in 2 modules (WBT: 864 LOC; interior: ~500 LOC), and a **P0 security issue** (browser→Supabase writes in WBT). Only interior-designer partially follows §4; the other 8 modules need structural reshaping.\n\n## Key gaps (max 5)\n\n1. **Storyteller folder sprawl (104 dirs):** 17 `core/` type folders (ActionFormatters, CascadeEditor, EntityExtractor, etc.) should merge into 8 units; `hooks/`, `lib/`, `mentions/` feature silos violate layer discipline; `tools/` at root instead of `agents/tools/`. Target: ~50-60 dirs (50% reduction).\n\n2. **Reference sweep scope (storyteller alone: 250+ files):** ~80 files in `src/app/api/storyteller/`, ~10 in `src/services`, ~8 in `src/evaluation`, ~150+ test files import storyteller internals 3-4 levels deep. Every folder move requires paired \"update referrers\" todo with grep patterns.\n\n3. **Missing barrels (5/9 modules):** `loop-creator`, `world-building-toolkit`, `deduction-puzzle-designer`, `chat`, `game-design`, `3d-asset-exporter`, `marketing` have no `index.ts`. Cross-module imports reach internal layers directly. Need curated public APIs (~10-30 exports per module).\n\n4. **God stores kill separation of concerns:** WBT `useWorldStore.ts` (864 LOC) mixes viewport state, tiles/projects/assets data, job polling, and manual snake_case mapping. Interior similar. Target: split server state (TanStack Query) from ephemeral UI (Zustand ~150 LOC).\n\n5. **P0 security + manual state hacks:** WBT has browser writes (`supabase.from('projects').insert()` at `:332`), bypassing auth/RLS validation. Also: hand-rolled polling, `localStorage` recovery, `window.dispatchEvent` side-effects instead of Trigger Realtime + `useJob`.\n\n## Pick one scope (buttons are A / B / C — meanings are module-specific below)\n\n| Button | What the plan will assume for **this catalog effort** |\n|--------|------------------------------------------------------|\n| **[A] Staged** | Finalize `STRUCTURE.md` for **all 9 modules** (full ideal trees + move maps for storyteller, loop-creator, WBT, interior, chat, deduction-puzzle, game-design, 3d-asset-exporter, marketing). **Implement Wave 1 only:** storyteller folder collapse (17→8 core units, delete hooks/lib/mentions, move tools→agents/, rename components→ui) + **full referrer update** (~80 app routes, ~10 services, ~8 evaluation, ~150+ tests — grep-driven file lists). Verification gates after moves. **Deferred:** WBT state split (P0 but complex), 5-module barrel creation, interior cleanup, loop-creator reshape, schema consolidation (saves 200+ referrer updates for later waves). |\n| **[B] Plan-only** | Write `STRUCTURE.md` for all 9 modules (current tree at top 2 levels, ideal target grounded in §4, move map `old→new` for every file that moves, public barrel contract, deferred items). **No code moves this run** — design artifacts only. Also: grep-based referrer inventory (patterns + estimated counts per module: \"expect ~250 storyteller, ~10 WBT, ~12 chat…\"). Delivers: approved structure contract + implementation roadmap. Zero verification loops, zero import breakage risk. Human reviews structures, approves, triggers separate implementation run. |\n| **[C] Full catalog** | `STRUCTURE.md` + **implement all waves across all 9 modules:** storyteller collapse, WBT state split + write path fix (security P0), interior store deletion, loop-creator reshape (create ui/state/io/core/services layers), create 5 missing barrels (loop/WBT/deduction/chat/game-design/3d/marketing), schema consolidation (fold storyteller db/ into src/db/), **all referrer updates** (400+ files: app routes, services, evaluation, trigger, tests, shared, docs). Requires 8-10 verification loops (typecheck/unit/fabro-verify per wave), high coordination cost, 3-5 day effort. Delivers: entire catalog §4-compliant, all barrels curated, no deep imports, unified schema. |\n\n**Advanced:** type custom constraints in freeform (routes to [F]) · pick [R] only if assess findings are wrong\n\n**Recommendation: [A]** — Storyteller's 104-dir sprawl is the operator's stated pain; Wave 1 (collapse + referrers) proves the structure/move/update pattern on the hardest module. Finalize all 9 structures now (design is cheap), but defer WBT security P0 and other modules to avoid context-switch thrash — each verification loop adds 20-30 min latency. Option B (plan-only) doesn't validate the moves work; Option C (full catalog) is 5x scope with 10x verification overhead.",
+          "graph.default_max_retries": "1",
+          "thread.plan.current_node": "Verification",
+          "thread.planning.current_node": "plan",
+          "failure_signature": "developer|deterministic|api_deterministic|anthropic|invalid_request",
+          "plan.has_p0_security_issue": "yes",
+          "human.gate.label": "[A] Approve & build",
+          "response.scope": "I'll run the scope assessment commands exactly as specified.",
+          "thread.Verification.current_node": "setup",
+          "internal.retry_count.developer": 0,
+          "thread.review.current_node": "clarify_prep",
+          "internal.retry_count.start": 0,
+          "internal.retry_count.Verification": 0,
+          "graph.rankdir": "LR",
+          "internal.retry_count.clarify_prep": 0,
+          "thread.clarify_prep.current_node": "Clarify",
+          "preferred_label": "[A] Approve & build",
+          "thread.setup.current_node": "setup_gate",
+          "graph.default_fidelity": "summary:medium",
+          "human.gate.Verification.question": "Plan is ready. [A] build · [B] plan only · [I] iterate (notes) · [X] abort — do not reuse Clarify's A/B/C here",
+          "graph.stall_timeout": "1800000ms",
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
+          "human.gate.selected": "A",
+          "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)",
+          "internal.fidelity": "full",
+          "failure_class": "deterministic",
+          "human.gate.Verification.label": "[A] Approve & build",
+          "human.gate.Clarify.label": "[C] Full blueprint",
+          "command.output": "blob://sha256/174c4565abdac516a2991b2466961716675c3e0932e3f5cf8331abef27f8dcf4",
+          "internal.retry_count.scope": 0,
+          "graph.goal": "# Domains catalog cleanup — ideal structure + full reference update\n\n## Mission\n\nDesign the **ideal folder structure** for every module under `src/domains/`, then\n**update every file in the repo that references old paths** (imports, re-exports,\ntests, API routes, shared shims, docs, Fabro verify scopes). Behavior-preserving;\nno new product features.\n\nThis is a **large, multi-sprint** effort — the plan may contain **50–100 todos**.\nDo **not** under-scope the reference sweep: a move without updating all referrers\nis a failed increment.\n\n**Primary pain (operator):** `storyteller` has **~104 subdirectories** — far too\nmany top-level and nested folders. The operator wants Fabro to **propose** a\nconcrete target tree (fewer folders, §4-aligned), get human approval, then **execute\nthe moves and fix every import**.\n\n**Scope:** all 9 domain modules:\n\n| Module | ~dirs today | Notes |\n|--------|-------------|--------|\n| `storyteller` | 104 | **Worst sprawl** — design target tree first |\n| `interior-designer` | 19 | Partial §4 skeleton |\n| `loop-creator` | 12 | Agents + market-analyst subtree |\n| `deduction-puzzle-designer` | 7 | Smaller |\n| `world-building-toolkit` | 7 | Flat legacy → reshape per ARCHITECTURE worked example |\n| `chat` | 6 | Cross-cutting UI |\n| `game-design` | 3 | Thin |\n| `3d-asset-exporter` | 3 | Asset module |\n| `marketing` | 3 | Thin |\n\n## Required deliverable: ideal structure (before code moves)\n\n**Plan Author MUST write `STRUCTURE.md`** at repo root (overwrite stale copies).\nThis is the contract for implementation — not optional prose in `PLAN.md` alone.\n\nFor **each** module, `STRUCTURE.md` contains:\n\n1. **Current tree** (top 2 levels + note on worst sprawl).\n2. **Ideal target tree** (ASCII) — grounded in `docs/unified/ARCHITECTURE.md` §4.\n   - Module root: only `index.ts`, `ui/`, `state/`, `io/`, `core/`, `services/`,\n     `agents/`, `tasks/`, `prompts/`, `<module>.config.ts` (omit empty layers).\n   - **Collapse rules** for storyteller: merge `core/*` one-folder-per-type into\n     fewer `core/` units; fold `mentions/`, `hooks/`, `lib/`, `db/` into correct\n     layers; keep `agents/` but reduce per-agent folder noise where sensible.\n3. **Move map** — table `old_path → new_path` for every file that moves.\n4. **Public barrel** — what `index.ts` exports after the reshape.\n5. **Out of scope for this wave** — folders/files that stay put until a later wave.\n\n**Storyteller gets the most detail** (full before/after). Other modules: at least\ntarget tree + move map for files that move in the approved wave.\n\n## Required deliverable: reference update (every referrer)\n\nAfter the structure is approved, implementation MUST update **all referrers**, not\nonly files inside the module:\n\n| Referrer class | Examples | Action |\n|----------------|----------|--------|\n| Intra-module imports | `../../core/Foo` | Rewrite to new paths |\n| Cross-module deep imports | `@/domains/storyteller/agents/...` | Route through `index.ts` or new public path |\n| App API routes | `src/app/api/storyteller/**` | Update imports to services/io/barrel |\n| Shared shims | `src/shared/**`, `src/lib/**` | Update re-exports |\n| DB layer | `src/db/**`, `src/domains/*/db/schema` | Align with unified schema plan |\n| Hooks outside domain | `src/hooks/**` | Move or update imports per STRUCTURE |\n| Tests | `**/__tests__/**`, `tests/**` | Fix paths + mocks |\n| Config | `tsconfig.fabro-verify.json`, `knip`, `eslint` boundaries | Update include paths |\n| Docs | `docs/internal/*.md`, `AGENTS.md` paths cited in code comments | Update when paths change |\n\n**Plan Author** must include todos that run, per module/wave:\n\n```bash\ngrep -rn \"from '@/domains/<module>\" src/ tests/\ngrep -rn \"domains/<module>/\" src/ tests/\n```\n\n…and assign **one todo per referrer batch** (or per directory of callers) so nothing\nis missed. Expect **dozens of files** outside `src/domains/storyteller/` for\nstoryteller alone.\n\n## Plan shape (`PLAN.md`)\n\n1. **Executive summary**\n2. **Pointer to `STRUCTURE.md`** — \"implementation follows move map\"\n3. **Global prerequisites** (F-1…F-3 from SPEC)\n4. **Per-module sections** with prioritized items\n5. **Master todo list** (numbered 1…N, N may be 80–100):\n   - Structure design todos (write/iterate `STRUCTURE.md`)\n   - Move todos (git mv / codemod batches)\n   - **Reference-update todos** (grep-driven, list affected files)\n   - Barrel + boundary lint todos\n   - Verification per wave\n6. **Suggested waves**\n7. **Deferred**\n\n## Clarify gate (catalog-wide)\n\n| Option | Posture |\n|--------|---------|\n| **A — Staged** | Finalize `STRUCTURE.md` for **all** modules; **implement Wave 1** only (storyteller ideal tree + full referrer update) after Verification. |\n| **B — Plan-only** | `STRUCTURE.md` + `PLAN.md` + referrer inventory; **no moves** this run. |\n| **C — Full catalog** | Structure for all; implement all waves + all referrers (many verify loops). |\n\nRecommend **A**.\n\n## Non-negotiables\n\n- Ground ideal trees in `docs/unified/ARCHITECTURE.md` §4 + worked examples (§4 WBT).\n- **No move without referrer audit** — every `PLAN.md` move item has a paired\n  \"update referrers\" item listing grep patterns.\n- Behavior-preserving; `npm run typecheck`, `npm run test:unit`, `node scripts/fabro-verify.mjs`.\n- Use `refactor` skill for layer moves; codemod import paths in batches.\n- Orchestration/agent logic: **move files first**; do not rewrite Mastra behavior in\n  the same increment as folder collapse unless the plan explicitly says so.\n\n## Assess focus\n\n- Catalog table (9 modules vs §4)\n- **Storyteller**: current vs ideal folder count estimate; top 10 folders to eliminate\n- **Referrer heat map**: which modules have the most external deep imports\n- `## Metadata` (`has_ui_surface: no` for structure-only Wave 1)\n",
+          "internal.retry_count.setup": 0,
+          "current_node": "developer",
+          "internal.retry_count.Clarify": 0,
+          "human.gate.Clarify.answer": "C",
+          "outcome": "failed",
+          "internal.retry_count.assess": 0,
+          "thread.build.current_node": "developer",
+          "human.gate.Verification.answer": "A",
+          "internal.thread_id": "build"
+        },
+        "node_outcomes": {
+          "clarify_prep": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_stage": "clarify_prep",
+              "last_response": "## Assessment summary\n\nThe catalog reveals **severe folder sprawl** in storyteller (104 subdirectories vs §4 target of ~12-15), **missing public barrels** in 5/9 modules (deep imports bypass encapsul",
+              "response.clarify_prep": "## Assessment summary\n\nThe catalog reveals **severe folder sprawl** in storyteller (104 subdirectories vs §4 target of ~12-15), **missing public barrels** in 5/9 modules (deep imports bypass encapsulation), **god stores** mixing server/client state in 2 modules (WBT: 864 LOC; interior: ~500 LOC), and a **P0 security issue** (browser→Supabase writes in WBT). Only interior-designer partially follows §4; the other 8 modules need structural reshaping.\n\n## Key gaps (max 5)\n\n1. **Storyteller folder sprawl (104 dirs):** 17 `core/` type folders (ActionFormatters, CascadeEditor, EntityExtractor, etc.) should merge into 8 units; `hooks/`, `lib/`, `mentions/` feature silos violate layer discipline; `tools/` at root instead of `agents/tools/`. Target: ~50-60 dirs (50% reduction).\n\n2. **Reference sweep scope (storyteller alone: 250+ files):** ~80 files in `src/app/api/storyteller/`, ~10 in `src/services`, ~8 in `src/evaluation`, ~150+ test files import storyteller internals 3-4 levels deep. Every folder move requires paired \"update referrers\" todo with grep patterns.\n\n3. **Missing barrels (5/9 modules):** `loop-creator`, `world-building-toolkit`, `deduction-puzzle-designer`, `chat`, `game-design`, `3d-asset-exporter`, `marketing` have no `index.ts`. Cross-module imports reach internal layers directly. Need curated public APIs (~10-30 exports per module).\n\n4. **God stores kill separation of concerns:** WBT `useWorldStore.ts` (864 LOC) mixes viewport state, tiles/projects/assets data, job polling, and manual snake_case mapping. Interior similar. Target: split server state (TanStack Query) from ephemeral UI (Zustand ~150 LOC).\n\n5. **P0 security + manual state hacks:** WBT has browser writes (`supabase.from('projects').insert()` at `:332`), bypassing auth/RLS validation. Also: hand-rolled polling, `localStorage` recovery, `window.dispatchEvent` side-effects instead of Trigger Realtime + `useJob`.\n\n## Pick one scope (buttons are A / B / C — meanings are module-specific below)\n\n| Button | What the plan will assume for **this catalog effort** |\n|--------|------------------------------------------------------|\n| **[A] Staged** | Finalize `STRUCTURE.md` for **all 9 modules** (full ideal trees + move maps for storyteller, loop-creator, WBT, interior, chat, deduction-puzzle, game-design, 3d-asset-exporter, marketing). **Implement Wave 1 only:** storyteller folder collapse (17→8 core units, delete hooks/lib/mentions, move tools→agents/, rename components→ui) + **full referrer update** (~80 app routes, ~10 services, ~8 evaluation, ~150+ tests — grep-driven file lists). Verification gates after moves. **Deferred:** WBT state split (P0 but complex), 5-module barrel creation, interior cleanup, loop-creator reshape, schema consolidation (saves 200+ referrer updates for later waves). |\n| **[B] Plan-only** | Write `STRUCTURE.md` for all 9 modules (current tree at top 2 levels, ideal target grounded in §4, move map `old→new` for every file that moves, public barrel contract, deferred items). **No code moves this run** — design artifacts only. Also: grep-based referrer inventory (patterns + estimated counts per module: \"expect ~250 storyteller, ~10 WBT, ~12 chat…\"). Delivers: approved structure contract + implementation roadmap. Zero verification loops, zero import breakage risk. Human reviews structures, approves, triggers separate implementation run. |\n| **[C] Full catalog** | `STRUCTURE.md` + **implement all waves across all 9 modules:** storyteller collapse, WBT state split + write path fix (security P0), interior store deletion, loop-creator reshape (create ui/state/io/core/services layers), create 5 missing barrels (loop/WBT/deduction/chat/game-design/3d/marketing), schema consolidation (fold storyteller db/ into src/db/), **all referrer updates** (400+ files: app routes, services, evaluation, trigger, tests, shared, docs). Requires 8-10 verification loops (typecheck/unit/fabro-verify per wave), high coordination cost, 3-5 day effort. Delivers: entire catalog §4-compliant, all barrels curated, no deep imports, unified schema. |\n\n**Advanced:** type custom constraints in freeform (routes to [F]) · pick [R] only if assess findings are wrong\n\n**Recommendation: [A]** — Storyteller's 104-dir sprawl is the operator's stated pain; Wave 1 (collapse + referrers) proves the structure/move/update pattern on the hardest module. Finalize all 9 structures now (design is cheap), but defer WBT security P0 and other modules to avoid context-switch thrash — each verification loop adds 20-30 min latency. Option B (plan-only) doesn't validate the moves work; Option C (full catalog) is 5x scope with 10x verification overhead."
+            },
+            "notes": "Stage completed: clarify_prep",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "anthropic",
+                    "model_id": "claude-sonnet-4-5"
+                  },
+                  "tokens": {
+                    "input_tokens": 21254,
+                    "output_tokens": 2987,
+                    "reasoning_tokens": 0,
+                    "cache_read_tokens": 32747,
+                    "cache_write_tokens": 32159
+                  }
+                },
+                "facts": {
+                  "algorithm": "anthropic",
+                  "cache_write_5m_tokens": 32159,
+                  "cache_write_1h_tokens": 0
+                }
+              },
+              "total_usd_micros": 238987
+            },
+            "files_touched": [
+              "/workspace/kurvitza/CLARIFY.md",
+              "/workspace/kurvitza/DECISIONS.md",
+              "/workspace/kurvitza/PLAN.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 72745,
+              "tool_time_ms": 208,
+              "active_time_ms": 72953
+            }
+          },
+          "Verification": {
+            "status": "succeeded",
+            "preferred_label": "[A] Approve & build",
+            "suggested_next_ids": [
+              "setup"
+            ],
+            "context_updates": {
+              "human.gate.label": "[A] Approve & build",
+              "human.gate.Verification.answer": "A",
+              "human.gate.Verification.question": "Plan is ready. [A] build · [B] plan only · [I] iterate (notes) · [X] abort — do not reuse Clarify's A/B/C here",
+              "human.gate.selected": "A",
+              "human.gate.Verification.label": "[A] Approve & build"
+            },
+            "usage": null
+          },
+          "setup_gate": {
+            "status": "succeeded",
+            "notes": "Conditional node evaluated: setup_gate",
+            "usage": null
+          },
+          "setup": {
+            "status": "succeeded",
+            "context_updates": {
+              "command.output": "blob://sha256/174c4565abdac516a2991b2466961716675c3e0932e3f5cf8331abef27f8dcf4"
+            },
+            "notes": "Script completed: set -euo pipefail; echo '=== sandbox bootstrap ==='; if ! command -v git >/dev/null; then apt-get update && apt-get install -y git ca-certificates; fi; if ! command -v npm >/dev/null; then apt-get update && apt-get install -y nodejs npm; fi; command -v npm >/dev/null || { echo 'ERROR: npm still missing — expected image node:22-bookworm'; exit 1; }; npm ci --prefer-offline --no-audit --no-fund; npm run test:playwright:install; echo '=== bootstrap complete ==='",
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 119453,
+              "active_time_ms": 119453
+            }
+          },
+          "scope": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_response": "I'll run the scope assessment commands exactly as specified.",
+              "last_stage": "scope",
+              "response.scope": "I'll run the scope assessment commands exactly as specified."
+            },
+            "notes": "Stage completed: scope",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "anthropic",
+                    "model_id": "claude-sonnet-4-5"
+                  },
+                  "tokens": {
+                    "input_tokens": 4462,
+                    "output_tokens": 809,
+                    "reasoning_tokens": 0,
+                    "cache_read_tokens": 42639,
+                    "cache_write_tokens": 16387
+                  }
+                },
+                "facts": {
+                  "algorithm": "anthropic",
+                  "cache_write_5m_tokens": 16387,
+                  "cache_write_1h_tokens": 0
+                }
+              },
+              "total_usd_micros": 99763
+            },
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 18970,
+              "tool_time_ms": 260,
+              "active_time_ms": 19230
+            }
+          },
+          "start": {
+            "status": "succeeded",
+            "usage": null
+          },
+          "assess": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_response": "## Assessment Complete\n\nI've written a comprehensive catalog assessment covering all 9 domains. Here's what I found:\n\n### Critical Issues\n\n1. **Storyteller has 104 subdirectories** — 5x the §4 targ",
+              "response.assess": "## Assessment Complete\n\nI've written a comprehensive catalog assessment covering all 9 domains. Here's what I found:\n\n### Critical Issues\n\n1. **Storyteller has 104 subdirectories** — 5x the §4 target. The `core/` layer alone has 17 type-per-folder units that should collapse to 8. Additional sprawl from `hooks/`, `lib/`, `mentions/` feature silos at root.\n\n2. **World-Building-Toolkit has P0 security issues** — browser writes directly to Supabase (`useWorldStore.ts:332`) + 864-LOC god store mixing UI/data/jobs. Violates §2 principle 4 and §5 state-split rule.\n\n3. **5/9 modules have no public barrel** — loop-creator, WBT, deduction-puzzle, chat, and the three thin modules. Storyteller has a barrel but leaks 80+ internals, enabling ~250 deep import sites.\n\n### Catalog Overview\n\nCreated a table showing all 9 modules' current state vs §4 target:\n- Only **interior-designer** is close to §4 compliance (but has dual state systems)\n- **Storyteller** is partially compliant but massively over-foldered\n- Other 7 modules need full §4 reshaping\n\n### Storyteller Deep Dive\n\nProvided:\n- Current 14 top-level folders breakdown\n- Core sprawl analysis (17 folders → target 8)\n- Ideal target tree reducing 104 dirs → ~50-60\n- Top 10 folders to eliminate with specific merge targets\n\n### Referrer Heat Map\n\nStoryteller dominates with **~250+ external import sites** across `src/app` (80), `src/evaluation` (8), tests (150+). Other modules have 1-12 each.\n\n**Recommendation:** Option A (finalize structures for all modules, implement storyteller Wave 1 only after human approval).",
+              "last_stage": "assess"
+            },
+            "notes": "Stage completed: assess",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "anthropic",
+                    "model_id": "claude-sonnet-4-5"
+                  },
+                  "tokens": {
+                    "input_tokens": 40618,
+                    "output_tokens": 11504,
+                    "reasoning_tokens": 0,
+                    "cache_read_tokens": 273600,
+                    "cache_write_tokens": 44006
+                  }
+                },
+                "facts": {
+                  "algorithm": "anthropic",
+                  "cache_write_5m_tokens": 44006,
+                  "cache_write_1h_tokens": 0
+                }
+              },
+              "total_usd_micros": 541516
+            },
+            "files_touched": [
+              "/workspace/kurvitza/findings/assess.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 244098,
+              "tool_time_ms": 729,
+              "active_time_ms": 244827
+            }
+          },
+          "developer": {
+            "status": "failed",
+            "failure": {
+              "message": "LLM error: Invalid request to anthropic: You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC.",
+              "category": "deterministic",
+              "signature": "api_deterministic|anthropic|invalid_request"
+            },
+            "usage": null
+          },
+          "plan": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_response": "All three deliverables are written. Here is the Verification summary.\n\n**1. P0 declaration:** `P0 exists` — browser Supabase writes in world-building-toolkit: `store/useWorldStore.ts:356` (`projects",
+              "plan.has_p0_security_issue": "yes",
+              "last_stage": "plan",
+              "response.plan": "All three deliverables are written. Here is the Verification summary.\n\n**1. P0 declaration:** `P0 exists` — browser Supabase writes in world-building-toolkit: `store/useWorldStore.ts:356` (`projects.delete()`) and `components/AssetsPanel.tsx:61` (`assets.delete()`) bypass auth/RLS. Fixed in Wave 2 (items 27–29, 40).\n\n**2. Your Clarify decision: [C] Full catalog.** In scope: `STRUCTURE.md` for all 9 modules **and** `PLAN.md` implementing **all 7 waves + every referrer update** — storyteller collapse, WBT P0 + god-store split, interior 1651-LOC store split, loop/chat/thin reshapes, 8 barrels, F-1 shared+lint, D-1 schema fold. Explicitly deferred: new features, Mastra behavior rewrites, skills flattening, wider `src/lib` migration.\n\n**3. First shippable increment: Items 1–26 (Wave 0 foundations + full storyteller reshape with its complete 50-file referrer sweep).**\n\n**4. Item count / effort:** 76 numbered todos across 8 waves. Increment 1 ≈ 3–4 dev days; full catalog ≈ 3–5 weeks with 8 verification loops.\n\n**Plan summary (concrete refs):**\n- `STRUCTURE.md` §1: storyteller 104→~55 dirs; `core/` 15→8 units; delete `hooks/`/`lib/`/`mentions/`/`tools/`/`config/` at root; `components/→ui/`; curated `index.ts` (~30 exports, drop the `db/schema` + `agents` firehose).\n- §2: WBT §4 worked-example reshape + write-path fix + 864-LOC store split.\n- §3: interior `store/useInteriorStore.ts` (**1651 LOC**, corrected from assess's ~500) → TanStack + `useInteriorUiStore`.\n- §10: `src/shared/*` + boundary lint (F-1), `src/db/schema.ts` fold (D-1); update `tsconfig.fabro-verify.json` (3 scoped paths), `knip.json`, eslint bans.\n- Corrections logged in `DECISIONS.md` (referrer files 50 not 250; WBT writes are `.delete()` not `insert:332`; interior 1651 LOC; marketing has 8 referrers).\n\n**6. Verification reminder:** pick **[A] Approve & build** to implement, **[B]** for plan-only, **[I]** to request plan changes (type notes), **[X]** to abort. (Clarify's C is already decided — this gate's A/B/I/X is separate.)\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"yes\"\n  }\n}\n```",
+              "plan.has_ui_surface": "no"
+            },
+            "notes": "Stage completed: plan",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "anthropic",
+                    "model_id": "claude-opus-4-8"
+                  },
+                  "tokens": {
+                    "input_tokens": 68874,
+                    "output_tokens": 32214,
+                    "reasoning_tokens": 0,
+                    "cache_read_tokens": 600225,
+                    "cache_write_tokens": 133693
+                  }
+                },
+                "facts": {
+                  "algorithm": "anthropic",
+                  "cache_write_5m_tokens": 133693,
+                  "cache_write_1h_tokens": 0
+                }
+              },
+              "total_usd_micros": 2285413
+            },
+            "files_touched": [
+              "/workspace/kurvitza/DECISIONS.md",
+              "/workspace/kurvitza/PLAN.md",
+              "/workspace/kurvitza/STRUCTURE.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 384969,
+              "tool_time_ms": 1527,
+              "active_time_ms": 386496
+            }
+          },
+          "Clarify": {
+            "status": "succeeded",
+            "preferred_label": "[C] Full blueprint",
+            "suggested_next_ids": [
+              "plan"
+            ],
+            "context_updates": {
+              "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)",
+              "human.gate.Clarify.answer": "C",
+              "human.gate.label": "[C] Full blueprint",
+              "human.gate.selected": "C",
+              "human.gate.Clarify.label": "[C] Full blueprint"
+            },
+            "usage": null
+          }
+        },
+        "next_node_id": "verify",
+        "git_commit_sha": "24e848a9c297ebc546403a32c7a5f104a43b3b91",
+        "loop_failure_signatures": {
+          "developer|deterministic|api_deterministic|anthropic|invalid_request": 1
+        },
+        "node_visits": {
+          "setup": 1,
+          "scope": 1,
+          "developer": 1,
+          "plan": 1,
+          "clarify_prep": 1,
+          "start": 1,
+          "Clarify": 1,
+          "Verification": 1,
+          "assess": 1,
+          "setup_gate": 1
+        }
+      },
+      "diff": {
+        "patch": "diff --git a/src/domains/storyteller/tools/__tests__/research.test.ts b/src/domains/storyteller/agents/tools/__tests__/research.test.ts\nsimilarity index 100%\nrename from src/domains/storyteller/tools/__tests__/research.test.ts\nrename to src/domains/storyteller/agents/tools/__tests__/research.test.ts\ndiff --git a/src/domains/storyteller/tools/__tests__/storytelling.test.ts b/src/domains/storyteller/agents/tools/__tests__/storytelling.test.ts\nsimilarity index 100%\nrename from src/domains/storyteller/tools/__tests__/storytelling.test.ts\nrename to src/domains/storyteller/agents/tools/__tests__/storytelling.test.ts\ndiff --git a/src/domains/storyteller/tools/__tests__/tool-execution.test.ts b/src/domains/storyteller/agents/tools/__tests__/tool-execution.test.ts\nsimilarity index 100%\nrename from src/domains/storyteller/tools/__tests__/tool-execution.test.ts\nrename to src/domains/storyteller/agents/tools/__tests__/tool-execution.test.ts\ndiff --git a/src/domains/storyteller/tools/agent-tools.ts b/src/domains/storyteller/agents/tools/agent-tools.ts\nsimilarity index 100%\nrename from src/domains/storyteller/tools/agent-tools.ts\nrename to src/domains/storyteller/agents/tools/agent-tools.ts\ndiff --git a/src/domains/storyteller/tools/beat-tools.ts b/src/domains/storyteller/agents/tools/beat-tools.ts\nsimilarity index 100%\nrename from src/domains/storyteller/tools/beat-tools.ts\nrename to src/domains/storyteller/agents/tools/beat-tools.ts\ndiff --git a/src/domains/storyteller/tools/character-creation-tools.ts b/src/domains/storyteller/agents/tools/character-creation-tools.ts\nsimilarity index 100%\nrename from src/domains/storyteller/tools/character-creation-tools.ts\nrename to src/domains/storyteller/agents/tools/character-creation-tools.ts\ndiff --git a/src/domains/storyteller/tools/character-tools.ts b/src/domains/storyteller/agents/tools/character-tools.ts\nsimilarity index 100%\nrename from src/domains/storyteller/tools/character-tools.ts\nrename to src/domains/storyteller/agents/tools/character-tools.ts\ndiff --git a/src/domains/storyteller/tools/continuity-tools.ts b/src/domains/storyteller/agents/tools/continuity-tools.ts\nsimilarity index 100%\nrename from src/domains/storyteller/tools/continuity-tools.ts\nrename to src/domains/storyteller/agents/tools/continuity-tools.ts\ndiff --git a/src/domains/storyteller/tools/episode-creation-tools.ts b/src/domains/storyteller/agents/tools/episode-creation-tools.ts\nsimilarity index 100%\nrename from src/domains/storyteller/tools/episode-creation-tools.ts\nrename to src/domains/storyteller/agents/tools/episode-creation-tools.ts\ndiff --git a/src/domains/storyteller/tools/index.ts b/src/domains/storyteller/agents/tools/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/tools/index.ts\nrename to src/domains/storyteller/agents/tools/index.ts\ndiff --git a/src/domains/storyteller/tools/psychologist-tools.ts b/src/domains/storyteller/agents/tools/psychologist-tools.ts\nsimilarity index 100%\nrename from src/domains/storyteller/tools/psychologist-tools.ts\nrename to src/domains/storyteller/agents/tools/psychologist-tools.ts\ndiff --git a/src/domains/storyteller/tools/rag-tools.ts b/src/domains/storyteller/agents/tools/rag-tools.ts\nsimilarity index 100%\nrename from src/domains/storyteller/tools/rag-tools.ts\nrename to src/domains/storyteller/agents/tools/rag-tools.ts\ndiff --git a/src/domains/storyteller/tools/research-adapter.ts b/src/domains/storyteller/agents/tools/research-adapter.ts\nsimilarity index 100%\nrename from src/domains/storyteller/tools/research-adapter.ts\nrename to src/domains/storyteller/agents/tools/research-adapter.ts\ndiff --git a/src/domains/storyteller/tools/schemas.ts b/src/domains/storyteller/agents/tools/schemas.ts\nsimilarity index 100%\nrename from src/domains/storyteller/tools/schemas.ts\nrename to src/domains/storyteller/agents/tools/schemas.ts\ndiff --git a/src/domains/storyteller/tools/script-tools.ts b/src/domains/storyteller/agents/tools/script-tools.ts\nsimilarity index 100%\nrename from src/domains/storyteller/tools/script-tools.ts\nrename to src/domains/storyteller/agents/tools/script-tools.ts\ndiff --git a/src/domains/storyteller/tools/self-critique-tool.ts b/src/domains/storyteller/agents/tools/self-critique-tool.ts\nsimilarity index 100%\nrename from src/domains/storyteller/tools/self-critique-tool.ts\nrename to src/domains/storyteller/agents/tools/self-critique-tool.ts\ndiff --git a/src/domains/storyteller/tools/storytelling-adapter.ts b/src/domains/storyteller/agents/tools/storytelling-adapter.ts\nsimilarity index 100%\nrename from src/domains/storyteller/tools/storytelling-adapter.ts\nrename to src/domains/storyteller/agents/tools/storytelling-adapter.ts\ndiff --git a/src/domains/storyteller/tools/workflow-tools.ts b/src/domains/storyteller/agents/tools/workflow-tools.ts\nsimilarity index 100%\nrename from src/domains/storyteller/tools/workflow-tools.ts\nrename to src/domains/storyteller/agents/tools/workflow-tools.ts\ndiff --git a/src/domains/storyteller/tools/world-building-tools.ts b/src/domains/storyteller/agents/tools/world-building-tools.ts\nsimilarity index 100%\nrename from src/domains/storyteller/tools/world-building-tools.ts\nrename to src/domains/storyteller/agents/tools/world-building-tools.ts\ndiff --git a/src/domains/storyteller/index.ts b/src/domains/storyteller/index.ts\nindex d5c517e..2725990 100644\n--- a/src/domains/storyteller/index.ts\n+++ b/src/domains/storyteller/index.ts\n@@ -13,28 +13,28 @@ export * from './agents/ScriptReviewAgent'\n export * from './agents/StorytellerWorkflow'\n export * from './agents/WritersRoomGraph'\n \n-// Client-facing components\n-export * from './components/ActionApprovalModal'\n-export * from './components/ActionToast'\n-export * from './components/CharacterPanel'\n-export * from './components/CharacterWeb'\n-export type { CharacterWebProps } from './components/CharacterWeb/CharacterWeb'\n-export * from './components/ConsistencyMessage'\n-export * from './components/CorkBoard'\n-export * from './components/EpisodeManager'\n-export * from './components/MasterPromptEditor'\n-export * from './components/PhaseNavigator'\n-export * from './components/QuestionCard'\n-export * from './components/ReferenceText'\n-export * from './components/StorytellerEmptyState'\n-export { default as ScriptEditor } from './components/ScriptEditor'\n-export type { ScriptEditorProps } from './components/ScriptEditor'\n-export { default as StoryPlanBoard } from './components/StoryPlanBoard'\n-export type { StoryPlanBoardProps } from './components/StoryPlanBoard'\n-export { default as Timeline } from './components/Timeline'\n-export type { TimelineProps } from './components/Timeline'\n-export { default as WorldBiblePanel } from './components/WorldBiblePanel'\n-export type { WorldBiblePanelProps } from './components/WorldBiblePanel'\n+// Client-facing components (ui/)\n+export * from './ui/ActionApprovalModal'\n+export * from './ui/ActionToast'\n+export * from './ui/CharacterPanel'\n+export * from './ui/CharacterWeb'\n+export type { CharacterWebProps } from './ui/CharacterWeb/CharacterWeb'\n+export * from './ui/ConsistencyMessage'\n+export * from './ui/CorkBoard'\n+export * from './ui/EpisodeManager'\n+export * from './ui/MasterPromptEditor'\n+export * from './ui/PhaseNavigator'\n+export * from './ui/QuestionCard'\n+export * from './ui/ReferenceText'\n+export * from './ui/StorytellerEmptyState'\n+export { default as ScriptEditor } from './ui/ScriptEditor'\n+export type { ScriptEditorProps } from './ui/ScriptEditor'\n+export { default as StoryPlanBoard } from './ui/StoryPlanBoard'\n+export type { StoryPlanBoardProps } from './ui/StoryPlanBoard'\n+export { default as Timeline } from './ui/Timeline'\n+export type { TimelineProps } from './ui/Timeline'\n+export { default as WorldBiblePanel } from './ui/WorldBiblePanel'\n+export type { WorldBiblePanelProps } from './ui/WorldBiblePanel'\n \n // Config\n export * from './config/action-config'\n@@ -50,15 +50,15 @@ export * from './core/ReferenceParser'\n export * from './core/UndoManager'\n export * from './core/WorkflowContext'\n \n-// Hooks\n-export * from './hooks/useBibleState'\n-export * from './hooks/useEpisodeData'\n-export * from './hooks/useLoadingStates'\n-export * from './hooks/useStorytellerActions'\n-export * from './hooks/useStorytellerHydration'\n+// State hooks\n+export * from './state/queries/useBibleState'\n+export * from './state/queries/useEpisodeData'\n+export * from './state/hooks/useLoadingStates'\n+export * from './state/queries/useStorytellerActions'\n+export * from './state/hooks/useStorytellerHydration'\n \n-// Mentions\n-export * from './mentions/MentionsProvider'\n+// Mentions (ui/)\n+export * from './ui/MentionsProvider'\n \n // Prompt types/schemas\n export * from './prompts/schemas/agent-schemas'\n@@ -66,7 +66,7 @@ export * from './prompts/schemas/agent-schemas'\n // Interim server-side compatibility re-exports (scheduled for later cleanup)\n export * from './db/schema'\n export * as storytellerSchema from './db/schema'\n-export * from './lib/access-verification'\n+export * from './services/AccessVerificationService'\n export * from './services/ContextAssemblyService'\n export * from './services/ContextualSummaryService'\n export * from './services/EntityAutoLinkerService'\ndiff --git a/src/domains/storyteller/lib/access-verification.ts b/src/domains/storyteller/services/AccessVerificationService.ts\nsimilarity index 100%\nrename from src/domains/storyteller/lib/access-verification.ts\nrename to src/domains/storyteller/services/AccessVerificationService.ts\ndiff --git a/src/domains/storyteller/lib/entity-loader.ts b/src/domains/storyteller/services/EntityLoaderService.ts\nsimilarity index 100%\nrename from src/domains/storyteller/lib/entity-loader.ts\nrename to src/domains/storyteller/services/EntityLoaderService.ts\ndiff --git a/src/domains/storyteller/hooks/__tests__/useBibleState.test.ts b/src/domains/storyteller/state/__tests__/useBibleState.test.ts\nsimilarity index 100%\nrename from src/domains/storyteller/hooks/__tests__/useBibleState.test.ts\nrename to src/domains/storyteller/state/__tests__/useBibleState.test.ts\ndiff --git a/src/domains/storyteller/hooks/__tests__/useEpisodeData.test.ts b/src/domains/storyteller/state/__tests__/useEpisodeData.test.ts\nsimilarity index 100%\nrename from src/domains/storyteller/hooks/__tests__/useEpisodeData.test.ts\nrename to src/domains/storyteller/state/__tests__/useEpisodeData.test.ts\ndiff --git a/src/domains/storyteller/hooks/useLoadingStates.ts b/src/domains/storyteller/state/hooks/useLoadingStates.ts\nsimilarity index 100%\nrename from src/domains/storyteller/hooks/useLoadingStates.ts\nrename to src/domains/storyteller/state/hooks/useLoadingStates.ts\ndiff --git a/src/domains/storyteller/hooks/useStorytellerHydration.ts b/src/domains/storyteller/state/hooks/useStorytellerHydration.ts\nsimilarity index 100%\nrename from src/domains/storyteller/hooks/useStorytellerHydration.ts\nrename to src/domains/storyteller/state/hooks/useStorytellerHydration.ts\ndiff --git a/src/domains/storyteller/hooks/useBibleState.ts b/src/domains/storyteller/state/queries/useBibleState.ts\nsimilarity index 100%\nrename from src/domains/storyteller/hooks/useBibleState.ts\nrename to src/domains/storyteller/state/queries/useBibleState.ts\ndiff --git a/src/domains/storyteller/hooks/useEntity.ts b/src/domains/storyteller/state/queries/useEntity.ts\nsimilarity index 87%\nrename from src/domains/storyteller/hooks/useEntity.ts\nrename to src/domains/storyteller/state/queries/useEntity.ts\nindex cc8e4cc..af12247 100644\n--- a/src/domains/storyteller/hooks/useEntity.ts\n+++ b/src/domains/storyteller/state/queries/useEntity.ts\n@@ -1,5 +1,5 @@\n import { useQueries } from '@tanstack/react-query'\n-import { entityLoader } from '@/domains/storyteller/lib/entity-loader'\n+import { entityLoader } from '@/domains/storyteller/services/EntityLoaderService'\n import { storytellerKeys } from '@/domains/storyteller/io/storyteller.keys'\n \n export function useEntities(ids: string[], projectId: string | null | undefined, context?: string) {\ndiff --git a/src/domains/storyteller/hooks/useEpisodeData.ts b/src/domains/storyteller/state/queries/useEpisodeData.ts\nsimilarity index 100%\nrename from src/domains/storyteller/hooks/useEpisodeData.ts\nrename to src/domains/storyteller/state/queries/useEpisodeData.ts\ndiff --git a/src/domains/storyteller/hooks/useStorytellerActions.ts b/src/domains/storyteller/state/queries/useStorytellerActions.ts\nsimilarity index 100%\nrename from src/domains/storyteller/hooks/useStorytellerActions.ts\nrename to src/domains/storyteller/state/queries/useStorytellerActions.ts\ndiff --git a/src/domains/storyteller/components/ActionApprovalModal/ActionApprovalModal.tsx b/src/domains/storyteller/ui/ActionApprovalModal/ActionApprovalModal.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/ActionApprovalModal/ActionApprovalModal.tsx\nrename to src/domains/storyteller/ui/ActionApprovalModal/ActionApprovalModal.tsx\ndiff --git a/src/domains/storyteller/components/ActionApprovalModal/index.ts b/src/domains/storyteller/ui/ActionApprovalModal/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/ActionApprovalModal/index.ts\nrename to src/domains/storyteller/ui/ActionApprovalModal/index.ts\ndiff --git a/src/domains/storyteller/components/ActionToast/ActionToast.tsx b/src/domains/storyteller/ui/ActionToast/ActionToast.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/ActionToast/ActionToast.tsx\nrename to src/domains/storyteller/ui/ActionToast/ActionToast.tsx\ndiff --git a/src/domains/storyteller/components/ActionToast/index.ts b/src/domains/storyteller/ui/ActionToast/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/ActionToast/index.ts\nrename to src/domains/storyteller/ui/ActionToast/index.ts\ndiff --git a/src/domains/storyteller/components/AgentLog/AgentLog.tsx b/src/domains/storyteller/ui/AgentLog/AgentLog.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/AgentLog/AgentLog.tsx\nrename to src/domains/storyteller/ui/AgentLog/AgentLog.tsx\ndiff --git a/src/domains/storyteller/components/AgentLog/index.ts b/src/domains/storyteller/ui/AgentLog/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/AgentLog/index.ts\nrename to src/domains/storyteller/ui/AgentLog/index.ts\ndiff --git a/src/domains/storyteller/components/BeatCard/BeatCard.tsx b/src/domains/storyteller/ui/BeatCard/BeatCard.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/BeatCard/BeatCard.tsx\nrename to src/domains/storyteller/ui/BeatCard/BeatCard.tsx\ndiff --git a/src/domains/storyteller/components/BeatCard/index.ts b/src/domains/storyteller/ui/BeatCard/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/BeatCard/index.ts\nrename to src/domains/storyteller/ui/BeatCard/index.ts\ndiff --git a/src/domains/storyteller/components/CharacterCreationDialog/CharacterCreationDialog.tsx b/src/domains/storyteller/ui/CharacterCreationDialog/CharacterCreationDialog.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/CharacterCreationDialog/CharacterCreationDialog.tsx\nrename to src/domains/storyteller/ui/CharacterCreationDialog/CharacterCreationDialog.tsx\ndiff --git a/src/domains/storyteller/components/CharacterCreationDialog/index.ts b/src/domains/storyteller/ui/CharacterCreationDialog/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/CharacterCreationDialog/index.ts\nrename to src/domains/storyteller/ui/CharacterCreationDialog/index.ts\ndiff --git a/src/domains/storyteller/components/CharacterPanel/CharacterPanel.tsx b/src/domains/storyteller/ui/CharacterPanel/CharacterPanel.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/CharacterPanel/CharacterPanel.tsx\nrename to src/domains/storyteller/ui/CharacterPanel/CharacterPanel.tsx\ndiff --git a/src/domains/storyteller/components/CharacterPanel/index.ts b/src/domains/storyteller/ui/CharacterPanel/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/CharacterPanel/index.ts\nrename to src/domains/storyteller/ui/CharacterPanel/index.ts\ndiff --git a/src/domains/storyteller/components/CharacterWeb/CharacterNode.tsx b/src/domains/storyteller/ui/CharacterWeb/CharacterNode.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/CharacterWeb/CharacterNode.tsx\nrename to src/domains/storyteller/ui/CharacterWeb/CharacterNode.tsx\ndiff --git a/src/domains/storyteller/components/CharacterWeb/CharacterWeb.tsx b/src/domains/storyteller/ui/CharacterWeb/CharacterWeb.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/CharacterWeb/CharacterWeb.tsx\nrename to src/domains/storyteller/ui/CharacterWeb/CharacterWeb.tsx\ndiff --git a/src/domains/storyteller/components/CharacterWeb/index.ts b/src/domains/storyteller/ui/CharacterWeb/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/CharacterWeb/index.ts\nrename to src/domains/storyteller/ui/CharacterWeb/index.ts\ndiff --git a/src/domains/storyteller/components/CharacterWeb/types.ts b/src/domains/storyteller/ui/CharacterWeb/types.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/CharacterWeb/types.ts\nrename to src/domains/storyteller/ui/CharacterWeb/types.ts\ndiff --git a/src/domains/storyteller/components/ConsistencyMessage/ConsistencyMessage.tsx b/src/domains/storyteller/ui/ConsistencyMessage/ConsistencyMessage.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/ConsistencyMessage/ConsistencyMessage.tsx\nrename to src/domains/storyteller/ui/ConsistencyMessage/ConsistencyMessage.tsx\ndiff --git a/src/domains/storyteller/components/ConsistencyMessage/index.ts b/src/domains/storyteller/ui/ConsistencyMessage/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/ConsistencyMessage/index.ts\nrename to src/domains/storyteller/ui/ConsistencyMessage/index.ts\ndiff --git a/src/domains/storyteller/components/CorkBoard/CorkBoard.tsx b/src/domains/storyteller/ui/CorkBoard/CorkBoard.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/CorkBoard/CorkBoard.tsx\nrename to src/domains/storyteller/ui/CorkBoard/CorkBoard.tsx\ndiff --git a/src/domains/storyteller/components/CorkBoard/index.ts b/src/domains/storyteller/ui/CorkBoard/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/CorkBoard/index.ts\nrename to src/domains/storyteller/ui/CorkBoard/index.ts\ndiff --git a/src/domains/storyteller/components/EpisodeManager/EpisodeManager.tsx b/src/domains/storyteller/ui/EpisodeManager/EpisodeManager.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/EpisodeManager/EpisodeManager.tsx\nrename to src/domains/storyteller/ui/EpisodeManager/EpisodeManager.tsx\ndiff --git a/src/domains/storyteller/components/EpisodeManager/index.ts b/src/domains/storyteller/ui/EpisodeManager/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/EpisodeManager/index.ts\nrename to src/domains/storyteller/ui/EpisodeManager/index.ts\ndiff --git a/src/domains/storyteller/components/EpisodePremisePanel/EpisodePremisePanel.tsx b/src/domains/storyteller/ui/EpisodePremisePanel/EpisodePremisePanel.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/EpisodePremisePanel/EpisodePremisePanel.tsx\nrename to src/domains/storyteller/ui/EpisodePremisePanel/EpisodePremisePanel.tsx\ndiff --git a/src/domains/storyteller/components/EpisodePremisePanel/index.ts b/src/domains/storyteller/ui/EpisodePremisePanel/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/EpisodePremisePanel/index.ts\nrename to src/domains/storyteller/ui/EpisodePremisePanel/index.ts\ndiff --git a/src/domains/storyteller/components/EpisodeRoadmapCard/EpisodeRoadmapCard.tsx b/src/domains/storyteller/ui/EpisodeRoadmapCard/EpisodeRoadmapCard.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/EpisodeRoadmapCard/EpisodeRoadmapCard.tsx\nrename to src/domains/storyteller/ui/EpisodeRoadmapCard/EpisodeRoadmapCard.tsx\ndiff --git a/src/domains/storyteller/components/EpisodeRoadmapCard/index.ts b/src/domains/storyteller/ui/EpisodeRoadmapCard/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/EpisodeRoadmapCard/index.ts\nrename to src/domains/storyteller/ui/EpisodeRoadmapCard/index.ts\ndiff --git a/src/domains/storyteller/components/FactionCard/FactionCard.tsx b/src/domains/storyteller/ui/FactionCard/FactionCard.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/FactionCard/FactionCard.tsx\nrename to src/domains/storyteller/ui/FactionCard/FactionCard.tsx\ndiff --git a/src/domains/storyteller/components/FactionCard/index.ts b/src/domains/storyteller/ui/FactionCard/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/FactionCard/index.ts\nrename to src/domains/storyteller/ui/FactionCard/index.ts\ndiff --git a/src/domains/storyteller/components/ImageVariantSelector/ImageVariantSelector.tsx b/src/domains/storyteller/ui/ImageVariantSelector/ImageVariantSelector.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/ImageVariantSelector/ImageVariantSelector.tsx\nrename to src/domains/storyteller/ui/ImageVariantSelector/ImageVariantSelector.tsx\ndiff --git a/src/domains/storyteller/components/ImageVariantSelector/index.ts b/src/domains/storyteller/ui/ImageVariantSelector/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/ImageVariantSelector/index.ts\nrename to src/domains/storyteller/ui/ImageVariantSelector/index.ts\ndiff --git a/src/domains/storyteller/components/JSONDiffViewer/JSONDiffViewer.tsx b/src/domains/storyteller/ui/JSONDiffViewer/JSONDiffViewer.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/JSONDiffViewer/JSONDiffViewer.tsx\nrename to src/domains/storyteller/ui/JSONDiffViewer/JSONDiffViewer.tsx\ndiff --git a/src/domains/storyteller/components/JSONDiffViewer/index.ts b/src/domains/storyteller/ui/JSONDiffViewer/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/JSONDiffViewer/index.ts\nrename to src/domains/storyteller/ui/JSONDiffViewer/index.ts\ndiff --git a/src/domains/storyteller/components/MasterPromptEditor/MasterPromptEditor.tsx b/src/domains/storyteller/ui/MasterPromptEditor/MasterPromptEditor.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/MasterPromptEditor/MasterPromptEditor.tsx\nrename to src/domains/storyteller/ui/MasterPromptEditor/MasterPromptEditor.tsx\ndiff --git a/src/domains/storyteller/components/MasterPromptEditor/index.ts b/src/domains/storyteller/ui/MasterPromptEditor/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/MasterPromptEditor/index.ts\nrename to src/domains/storyteller/ui/MasterPromptEditor/index.ts\ndiff --git a/src/domains/storyteller/mentions/MentionsProvider/MentionsProvider.tsx b/src/domains/storyteller/ui/MentionsProvider/MentionsProvider.tsx\nsimilarity index 97%\nrename from src/domains/storyteller/mentions/MentionsProvider/MentionsProvider.tsx\nrename to src/domains/storyteller/ui/MentionsProvider/MentionsProvider.tsx\nindex 0640866..0dc1b2a 100644\n--- a/src/domains/storyteller/mentions/MentionsProvider/MentionsProvider.tsx\n+++ b/src/domains/storyteller/ui/MentionsProvider/MentionsProvider.tsx\n@@ -7,7 +7,7 @@ import type { MentionProvider, ProjectContext } from '@/domains/chat/mentions/ty\n import {\n   buildStorytellerProjectContext,\n   getStorytellerMentionProviders,\n-} from '@/domains/storyteller/mentions/providers'\n+} from './providers'\n \n interface MentionsContextValue {\n   mentionProviders: MentionProvider[]\ndiff --git a/src/domains/storyteller/mentions/MentionsProvider/index.ts b/src/domains/storyteller/ui/MentionsProvider/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/mentions/MentionsProvider/index.ts\nrename to src/domains/storyteller/ui/MentionsProvider/index.ts\ndiff --git a/src/domains/storyteller/mentions/providers.ts b/src/domains/storyteller/ui/MentionsProvider/providers.ts\nsimilarity index 100%\nrename from src/domains/storyteller/mentions/providers.ts\nrename to src/domains/storyteller/ui/MentionsProvider/providers.ts\ndiff --git a/src/domains/storyteller/components/PhaseNavigator/PhaseNavigator.tsx b/src/domains/storyteller/ui/PhaseNavigator/PhaseNavigator.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/PhaseNavigator/PhaseNavigator.tsx\nrename to src/domains/storyteller/ui/PhaseNavigator/PhaseNavigator.tsx\ndiff --git a/src/domains/storyteller/components/PhaseNavigator/index.ts b/src/domains/storyteller/ui/PhaseNavigator/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/PhaseNavigator/index.ts\nrename to src/domains/storyteller/ui/PhaseNavigator/index.ts\ndiff --git a/src/domains/storyteller/components/QuestionCard/QuestionCard.tsx b/src/domains/storyteller/ui/QuestionCard/QuestionCard.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/QuestionCard/QuestionCard.tsx\nrename to src/domains/storyteller/ui/QuestionCard/QuestionCard.tsx\ndiff --git a/src/domains/storyteller/components/QuestionCard/index.ts b/src/domains/storyteller/ui/QuestionCard/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/QuestionCard/index.ts\nrename to src/domains/storyteller/ui/QuestionCard/index.ts\ndiff --git a/src/domains/storyteller/components/ReferenceText/ReferenceText.tsx b/src/domains/storyteller/ui/ReferenceText/ReferenceText.tsx\nsimilarity index 99%\nrename from src/domains/storyteller/components/ReferenceText/ReferenceText.tsx\nrename to src/domains/storyteller/ui/ReferenceText/ReferenceText.tsx\nindex de00e71..dfd526b 100644\n--- a/src/domains/storyteller/components/ReferenceText/ReferenceText.tsx\n+++ b/src/domains/storyteller/ui/ReferenceText/ReferenceText.tsx\n@@ -18,7 +18,7 @@\n  */\n \n import React, { useMemo, useState, useEffect } from 'react'\n-import { useEntities } from '@/domains/storyteller/hooks/useEntity'\n+import { useEntities } from '@/domains/storyteller/state/queries/useEntity'\n import { cn } from '@/lib/utils'\n import * as TooltipPrimitive from '@radix-ui/react-tooltip'\n import { splitIntoSegments, ParsedReference, TextSegment, stripReferences } from '@/domains/storyteller/core/ReferenceParser'\ndiff --git a/src/domains/storyteller/components/ReferenceText/index.ts b/src/domains/storyteller/ui/ReferenceText/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/ReferenceText/index.ts\nrename to src/domains/storyteller/ui/ReferenceText/index.ts\ndiff --git a/src/domains/storyteller/components/RichText/RichText.tsx b/src/domains/storyteller/ui/RichText/RichText.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/RichText/RichText.tsx\nrename to src/domains/storyteller/ui/RichText/RichText.tsx\ndiff --git a/src/domains/storyteller/components/RichText/index.ts b/src/domains/storyteller/ui/RichText/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/RichText/index.ts\nrename to src/domains/storyteller/ui/RichText/index.ts\ndiff --git a/src/domains/storyteller/components/ScriptEditor/ScriptEditor.tsx b/src/domains/storyteller/ui/ScriptEditor/ScriptEditor.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/ScriptEditor/ScriptEditor.tsx\nrename to src/domains/storyteller/ui/ScriptEditor/ScriptEditor.tsx\ndiff --git a/src/domains/storyteller/components/ScriptEditor/index.ts b/src/domains/storyteller/ui/ScriptEditor/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/ScriptEditor/index.ts\nrename to src/domains/storyteller/ui/ScriptEditor/index.ts\ndiff --git a/src/domains/storyteller/components/SeasonOverviewCard/SeasonOverviewCard.tsx b/src/domains/storyteller/ui/SeasonOverviewCard/SeasonOverviewCard.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/SeasonOverviewCard/SeasonOverviewCard.tsx\nrename to src/domains/storyteller/ui/SeasonOverviewCard/SeasonOverviewCard.tsx\ndiff --git a/src/domains/storyteller/components/SeasonOverviewCard/index.ts b/src/domains/storyteller/ui/SeasonOverviewCard/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/SeasonOverviewCard/index.ts\nrename to src/domains/storyteller/ui/SeasonOverviewCard/index.ts\ndiff --git a/src/domains/storyteller/components/StoryPlanBoard/StoryPlanBoard.tsx b/src/domains/storyteller/ui/StoryPlanBoard/StoryPlanBoard.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/StoryPlanBoard/StoryPlanBoard.tsx\nrename to src/domains/storyteller/ui/StoryPlanBoard/StoryPlanBoard.tsx\ndiff --git a/src/domains/storyteller/components/StoryPlanBoard/index.ts b/src/domains/storyteller/ui/StoryPlanBoard/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/StoryPlanBoard/index.ts\nrename to src/domains/storyteller/ui/StoryPlanBoard/index.ts\ndiff --git a/src/domains/storyteller/components/StorytellerEmptyState/StorytellerEmptyState.tsx b/src/domains/storyteller/ui/StorytellerEmptyState/StorytellerEmptyState.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/StorytellerEmptyState/StorytellerEmptyState.tsx\nrename to src/domains/storyteller/ui/StorytellerEmptyState/StorytellerEmptyState.tsx\ndiff --git a/src/domains/storyteller/components/StorytellerEmptyState/index.ts b/src/domains/storyteller/ui/StorytellerEmptyState/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/StorytellerEmptyState/index.ts\nrename to src/domains/storyteller/ui/StorytellerEmptyState/index.ts\ndiff --git a/src/domains/storyteller/components/StorytellerImage/StorytellerImage.tsx b/src/domains/storyteller/ui/StorytellerImage/StorytellerImage.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/StorytellerImage/StorytellerImage.tsx\nrename to src/domains/storyteller/ui/StorytellerImage/StorytellerImage.tsx\ndiff --git a/src/domains/storyteller/components/StorytellerImage/index.ts b/src/domains/storyteller/ui/StorytellerImage/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/StorytellerImage/index.ts\nrename to src/domains/storyteller/ui/StorytellerImage/index.ts\ndiff --git a/src/domains/storyteller/components/Timeline/Timeline.tsx b/src/domains/storyteller/ui/Timeline/Timeline.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/Timeline/Timeline.tsx\nrename to src/domains/storyteller/ui/Timeline/Timeline.tsx\ndiff --git a/src/domains/storyteller/components/Timeline/index.ts b/src/domains/storyteller/ui/Timeline/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/Timeline/index.ts\nrename to src/domains/storyteller/ui/Timeline/index.ts\ndiff --git a/src/domains/storyteller/components/WorldBible/BibleContext.tsx b/src/domains/storyteller/ui/WorldBible/BibleContext.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/WorldBible/BibleContext.tsx\nrename to src/domains/storyteller/ui/WorldBible/BibleContext.tsx\ndiff --git a/src/domains/storyteller/components/WorldBible/BibleEvents.tsx b/src/domains/storyteller/ui/WorldBible/BibleEvents.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/WorldBible/BibleEvents.tsx\nrename to src/domains/storyteller/ui/WorldBible/BibleEvents.tsx\ndiff --git a/src/domains/storyteller/components/WorldBible/BibleFactions.tsx b/src/domains/storyteller/ui/WorldBible/BibleFactions.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/WorldBible/BibleFactions.tsx\nrename to src/domains/storyteller/ui/WorldBible/BibleFactions.tsx\ndiff --git a/src/domains/storyteller/components/WorldBible/BibleInspirations.tsx b/src/domains/storyteller/ui/WorldBible/BibleInspirations.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/WorldBible/BibleInspirations.tsx\nrename to src/domains/storyteller/ui/WorldBible/BibleInspirations.tsx\ndiff --git a/src/domains/storyteller/components/WorldBible/BibleItems.tsx b/src/domains/storyteller/ui/WorldBible/BibleItems.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/WorldBible/BibleItems.tsx\nrename to src/domains/storyteller/ui/WorldBible/BibleItems.tsx\ndiff --git a/src/domains/storyteller/components/WorldBible/BibleOverview.tsx b/src/domains/storyteller/ui/WorldBible/BibleOverview.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/WorldBible/BibleOverview.tsx\nrename to src/domains/storyteller/ui/WorldBible/BibleOverview.tsx\ndiff --git a/src/domains/storyteller/components/WorldBible/BibleRoadmap.tsx b/src/domains/storyteller/ui/WorldBible/BibleRoadmap.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/WorldBible/BibleRoadmap.tsx\nrename to src/domains/storyteller/ui/WorldBible/BibleRoadmap.tsx\ndiff --git a/src/domains/storyteller/components/WorldBible/BibleSoundtracks.tsx b/src/domains/storyteller/ui/WorldBible/BibleSoundtracks.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/WorldBible/BibleSoundtracks.tsx\nrename to src/domains/storyteller/ui/WorldBible/BibleSoundtracks.tsx\ndiff --git a/src/domains/storyteller/components/WorldBible/BibleWorldLogic.tsx b/src/domains/storyteller/ui/WorldBible/BibleWorldLogic.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/WorldBible/BibleWorldLogic.tsx\nrename to src/domains/storyteller/ui/WorldBible/BibleWorldLogic.tsx\ndiff --git a/src/domains/storyteller/components/WorldBible/SectionPendingOverlay.tsx b/src/domains/storyteller/ui/WorldBible/SectionPendingOverlay.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/WorldBible/SectionPendingOverlay.tsx\nrename to src/domains/storyteller/ui/WorldBible/SectionPendingOverlay.tsx\ndiff --git a/src/domains/storyteller/components/WorldBiblePanel/WorldBiblePanel.tsx b/src/domains/storyteller/ui/WorldBiblePanel/WorldBiblePanel.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/WorldBiblePanel/WorldBiblePanel.tsx\nrename to src/domains/storyteller/ui/WorldBiblePanel/WorldBiblePanel.tsx\ndiff --git a/src/domains/storyteller/components/WorldBiblePanel/index.ts b/src/domains/storyteller/ui/WorldBiblePanel/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/WorldBiblePanel/index.ts\nrename to src/domains/storyteller/ui/WorldBiblePanel/index.ts\ndiff --git a/src/domains/storyteller/components/WorldRuleCard/WorldRuleCard.tsx b/src/domains/storyteller/ui/WorldRuleCard/WorldRuleCard.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/WorldRuleCard/WorldRuleCard.tsx\nrename to src/domains/storyteller/ui/WorldRuleCard/WorldRuleCard.tsx\ndiff --git a/src/domains/storyteller/components/WorldRuleCard/index.ts b/src/domains/storyteller/ui/WorldRuleCard/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/WorldRuleCard/index.ts\nrename to src/domains/storyteller/ui/WorldRuleCard/index.ts\ndiff --git a/src/domains/storyteller/components/YouTubePlayer/YouTubePlayer.tsx b/src/domains/storyteller/ui/YouTubePlayer/YouTubePlayer.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/YouTubePlayer/YouTubePlayer.tsx\nrename to src/domains/storyteller/ui/YouTubePlayer/YouTubePlayer.tsx\ndiff --git a/src/domains/storyteller/components/YouTubePlayer/index.ts b/src/domains/storyteller/ui/YouTubePlayer/index.ts\nsimilarity index 100%\nrename from src/domains/storyteller/components/YouTubePlayer/index.ts\nrename to src/domains/storyteller/ui/YouTubePlayer/index.ts\ndiff --git a/src/domains/storyteller/components/__tests__/agent-log-features.e2e.test.tsx b/src/domains/storyteller/ui/__tests__/agent-log-features.e2e.test.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/__tests__/agent-log-features.e2e.test.tsx\nrename to src/domains/storyteller/ui/__tests__/agent-log-features.e2e.test.tsx\ndiff --git a/src/domains/storyteller/components/__tests__/chat-persistence.e2e.test.tsx b/src/domains/storyteller/ui/__tests__/chat-persistence.e2e.test.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/__tests__/chat-persistence.e2e.test.tsx\nrename to src/domains/storyteller/ui/__tests__/chat-persistence.e2e.test.tsx\ndiff --git a/src/domains/storyteller/components/__tests__/youtube-player.e2e.test.tsx b/src/domains/storyteller/ui/__tests__/youtube-player.e2e.test.tsx\nsimilarity index 100%\nrename from src/domains/storyteller/components/__tests__/youtube-player.e2e.test.tsx\nrename to src/domains/storyteller/ui/__tests__/youtube-player.e2e.test.tsx\ndiff --git a/tests/unit/api/storyteller/actions/route.test.ts b/tests/unit/api/storyteller/actions/route.test.ts\nindex 35a3e70..66ab956 100644\n--- a/tests/unit/api/storyteller/actions/route.test.ts\n+++ b/tests/unit/api/storyteller/actions/route.test.ts\n@@ -29,7 +29,7 @@ vi.mock('@/lib/auth', () => ({\n     requireAuth: vi.fn().mockResolvedValue({ session: { user: { id: 'test-user' } } })\n }))\n \n-vi.mock('@/domains/storyteller/lib/access-verification', () => ({\n+vi.mock('@/domains/storyteller/services/AccessVerificationService', () => ({\n     verifyProjectAccess: vi.fn().mockResolvedValue(true),\n     verifyEpisodeAccess: vi.fn().mockResolvedValue(true),\n }))\n",
+        "summary": {
+          "files_changed": 108,
+          "additions": 450,
+          "deletions": 35
+        }
+      }
+    },
+    {
+      "seq": 0,
+      "checkpoint": {
+        "timestamp": "2026-07-03T09:37:20.647492Z",
+        "current_node": "verify",
+        "completed_nodes": [
+          "start",
+          "scope",
+          "assess",
+          "clarify_prep",
+          "Clarify",
+          "plan",
+          "Verification",
+          "setup",
+          "setup_gate",
+          "developer",
+          "verify"
+        ],
+        "node_retries": {},
+        "context_values": {
           "thread.Verification.current_node": "setup",
           "internal.retry_count.plan": 0,
           "thread.review.current_node": "clarify_prep",
@@ -3173,7 +3503,7 @@
           "response.assess": "## Assessment Complete\n\nI've written a comprehensive catalog assessment covering all 9 domains. Here's what I found:\n\n### Critical Issues\n\n1. **Storyteller has 104 subdirectories** — 5x the §4 target. The `core/` layer alone has 17 type-per-folder units that should collapse to 8. Additional sprawl from `hooks/`, `lib/`, `mentions/` feature silos at root.\n\n2. **World-Building-Toolkit has P0 security issues** — browser writes directly to Supabase (`useWorldStore.ts:332`) + 864-LOC god store mixing UI/data/jobs. Violates §2 principle 4 and §5 state-split rule.\n\n3. **5/9 modules have no public barrel** — loop-creator, WBT, deduction-puzzle, chat, and the three thin modules. Storyteller has a barrel but leaks 80+ internals, enabling ~250 deep import sites.\n\n### Catalog Overview\n\nCreated a table showing all 9 modules' current state vs §4 target:\n- Only **interior-designer** is close to §4 compliance (but has dual state systems)\n- **Storyteller** is partially compliant but massively over-foldered\n- Other 7 modules need full §4 reshaping\n\n### Storyteller Deep Dive\n\nProvided:\n- Current 14 top-level folders breakdown\n- Core sprawl analysis (17 folders → target 8)\n- Ideal target tree reducing 104 dirs → ~50-60\n- Top 10 folders to eliminate with specific merge targets\n\n### Referrer Heat Map\n\nStoryteller dominates with **~250+ external import sites** across `src/app` (80), `src/evaluation` (8), tests (150+). Other modules have 1-12 each.\n\n**Recommendation:** Option A (finalize structures for all modules, implement storyteller Wave 1 only after human approval).",
           "response.plan": "All three deliverables are written. Here is the Verification summary.\n\n**1. P0 declaration:** `P0 exists` — browser Supabase writes in world-building-toolkit: `store/useWorldStore.ts:356` (`projects.delete()`) and `components/AssetsPanel.tsx:61` (`assets.delete()`) bypass auth/RLS. Fixed in Wave 2 (items 27–29, 40).\n\n**2. Your Clarify decision: [C] Full catalog.** In scope: `STRUCTURE.md` for all 9 modules **and** `PLAN.md` implementing **all 7 waves + every referrer update** — storyteller collapse, WBT P0 + god-store split, interior 1651-LOC store split, loop/chat/thin reshapes, 8 barrels, F-1 shared+lint, D-1 schema fold. Explicitly deferred: new features, Mastra behavior rewrites, skills flattening, wider `src/lib` migration.\n\n**3. First shippable increment: Items 1–26 (Wave 0 foundations + full storyteller reshape with its complete 50-file referrer sweep).**\n\n**4. Item count / effort:** 76 numbered todos across 8 waves. Increment 1 ≈ 3–4 dev days; full catalog ≈ 3–5 weeks with 8 verification loops.\n\n**Plan summary (concrete refs):**\n- `STRUCTURE.md` §1: storyteller 104→~55 dirs; `core/` 15→8 units; delete `hooks/`/`lib/`/`mentions/`/`tools/`/`config/` at root; `components/→ui/`; curated `index.ts` (~30 exports, drop the `db/schema` + `agents` firehose).\n- §2: WBT §4 worked-example reshape + write-path fix + 864-LOC store split.\n- §3: interior `store/useInteriorStore.ts` (**1651 LOC**, corrected from assess's ~500) → TanStack + `useInteriorUiStore`.\n- §10: `src/shared/*` + boundary lint (F-1), `src/db/schema.ts` fold (D-1); update `tsconfig.fabro-verify.json` (3 scoped paths), `knip.json`, eslint bans.\n- Corrections logged in `DECISIONS.md` (referrer files 50 not 250; WBT writes are `.delete()` not `insert:332`; interior 1651 LOC; marketing has 8 referrers).\n\n**6. Verification reminder:** pick **[A] Approve & build** to implement, **[B]** for plan-only, **[I]** to request plan changes (type notes), **[X]** to abort. (Clarify's C is already decided — this gate's A/B/I/X is separate.)\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"yes\"\n  }\n}\n```",
           "thread.plan.current_node": "Verification",
-          "command.output": "blob://sha256/174c4565abdac516a2991b2466961716675c3e0932e3f5cf8331abef27f8dcf4",
+          "command.output": "blob://sha256/a4af451558aeef93e2d44cb951247a2c1ce98ee1d549fbae2670353ecaddcac6",
           "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
           "graph.rankdir": "LR",
           "internal.retry_count.start": 0,
@@ -3184,26 +3514,28 @@
           "thread.build.current_node": "developer",
           "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)",
           "internal.work_dir": "/workspace/kurvitza",
-          "internal.fidelity": "full",
+          "internal.fidelity": "summary:medium",
           "graph.goal": "# Domains catalog cleanup — ideal structure + full reference update\n\n## Mission\n\nDesign the **ideal folder structure** for every module under `src/domains/`, then\n**update every file in the repo that references old paths** (imports, re-exports,\ntests, API routes, shared shims, docs, Fabro verify scopes). Behavior-preserving;\nno new product features.\n\nThis is a **large, multi-sprint** effort — the plan may contain **50–100 todos**.\nDo **not** under-scope the reference sweep: a move without updating all referrers\nis a failed increment.\n\n**Primary pain (operator):** `storyteller` has **~104 subdirectories** — far too\nmany top-level and nested folders. The operator wants Fabro to **propose** a\nconcrete target tree (fewer folders, §4-aligned), get human approval, then **execute\nthe moves and fix every import**.\n\n**Scope:** all 9 domain modules:\n\n| Module | ~dirs today | Notes |\n|--------|-------------|--------|\n| `storyteller` | 104 | **Worst sprawl** — design target tree first |\n| `interior-designer` | 19 | Partial §4 skeleton |\n| `loop-creator` | 12 | Agents + market-analyst subtree |\n| `deduction-puzzle-designer` | 7 | Smaller |\n| `world-building-toolkit` | 7 | Flat legacy → reshape per ARCHITECTURE worked example |\n| `chat` | 6 | Cross-cutting UI |\n| `game-design` | 3 | Thin |\n| `3d-asset-exporter` | 3 | Asset module |\n| `marketing` | 3 | Thin |\n\n## Required deliverable: ideal structure (before code moves)\n\n**Plan Author MUST write `STRUCTURE.md`** at repo root (overwrite stale copies).\nThis is the contract for implementation — not optional prose in `PLAN.md` alone.\n\nFor **each** module, `STRUCTURE.md` contains:\n\n1. **Current tree** (top 2 levels + note on worst sprawl).\n2. **Ideal target tree** (ASCII) — grounded in `docs/unified/ARCHITECTURE.md` §4.\n   - Module root: only `index.ts`, `ui/`, `state/`, `io/`, `core/`, `services/`,\n     `agents/`, `tasks/`, `prompts/`, `<module>.config.ts` (omit empty layers).\n   - **Collapse rules** for storyteller: merge `core/*` one-folder-per-type into\n     fewer `core/` units; fold `mentions/`, `hooks/`, `lib/`, `db/` into correct\n     layers; keep `agents/` but reduce per-agent folder noise where sensible.\n3. **Move map** — table `old_path → new_path` for every file that moves.\n4. **Public barrel** — what `index.ts` exports after the reshape.\n5. **Out of scope for this wave** — folders/files that stay put until a later wave.\n\n**Storyteller gets the most detail** (full before/after). Other modules: at least\ntarget tree + move map for files that move in the approved wave.\n\n## Required deliverable: reference update (every referrer)\n\nAfter the structure is approved, implementation MUST update **all referrers**, not\nonly files inside the module:\n\n| Referrer class | Examples | Action |\n|----------------|----------|--------|\n| Intra-module imports | `../../core/Foo` | Rewrite to new paths |\n| Cross-module deep imports | `@/domains/storyteller/agents/...` | Route through `index.ts` or new public path |\n| App API routes | `src/app/api/storyteller/**` | Update imports to services/io/barrel |\n| Shared shims | `src/shared/**`, `src/lib/**` | Update re-exports |\n| DB layer | `src/db/**`, `src/domains/*/db/schema` | Align with unified schema plan |\n| Hooks outside domain | `src/hooks/**` | Move or update imports per STRUCTURE |\n| Tests | `**/__tests__/**`, `tests/**` | Fix paths + mocks |\n| Config | `tsconfig.fabro-verify.json`, `knip`, `eslint` boundaries | Update include paths |\n| Docs | `docs/internal/*.md`, `AGENTS.md` paths cited in code comments | Update when paths change |\n\n**Plan Author** must include todos that run, per module/wave:\n\n```bash\ngrep -rn \"from '@/domains/<module>\" src/ tests/\ngrep -rn \"domains/<module>/\" src/ tests/\n```\n\n…and assign **one todo per referrer batch** (or per directory of callers) so nothing\nis missed. Expect **dozens of files** outside `src/domains/storyteller/` for\nstoryteller alone.\n\n## Plan shape (`PLAN.md`)\n\n1. **Executive summary**\n2. **Pointer to `STRUCTURE.md`** — \"implementation follows move map\"\n3. **Global prerequisites** (F-1…F-3 from SPEC)\n4. **Per-module sections** with prioritized items\n5. **Master todo list** (numbered 1…N, N may be 80–100):\n   - Structure design todos (write/iterate `STRUCTURE.md`)\n   - Move todos (git mv / codemod batches)\n   - **Reference-update todos** (grep-driven, list affected files)\n   - Barrel + boundary lint todos\n   - Verification per wave\n6. **Suggested waves**\n7. **Deferred**\n\n## Clarify gate (catalog-wide)\n\n| Option | Posture |\n|--------|---------|\n| **A — Staged** | Finalize `STRUCTURE.md` for **all** modules; **implement Wave 1** only (storyteller ideal tree + full referrer update) after Verification. |\n| **B — Plan-only** | `STRUCTURE.md` + `PLAN.md` + referrer inventory; **no moves** this run. |\n| **C — Full catalog** | Structure for all; implement all waves + all referrers (many verify loops). |\n\nRecommend **A**.\n\n## Non-negotiables\n\n- Ground ideal trees in `docs/unified/ARCHITECTURE.md` §4 + worked examples (§4 WBT).\n- **No move without referrer audit** — every `PLAN.md` move item has a paired\n  \"update referrers\" item listing grep patterns.\n- Behavior-preserving; `npm run typecheck`, `npm run test:unit`, `node scripts/fabro-verify.mjs`.\n- Use `refactor` skill for layer moves; codemod import paths in batches.\n- Orchestration/agent logic: **move files first**; do not rewrite Mastra behavior in\n  the same increment as folder collapse unless the plan explicitly says so.\n\n## Assess focus\n\n- Catalog table (9 modules vs §4)\n- **Storyteller**: current vs ideal folder count estimate; top 10 folders to eliminate\n- **Referrer heat map**: which modules have the most external deep imports\n- `## Metadata` (`has_ui_surface: no` for structure-only Wave 1)\n",
           "last_stage": "plan",
           "human.gate.Clarify.label": "[C] Full blueprint",
           "internal.node_visit_count": 1,
-          "failure_signature": "developer|deterministic|api_deterministic|anthropic|invalid_request",
+          "failure_signature": "verify|deterministic|script failed with exit code: <n> ## output typecheck: module scope (chat) typecheck: ignoring <n> error(s) outside the verify scope typecheck: errors in scope: src/domains/chat/components/__tests__/agentlog.e2e.test.tsx(<n>,<n>): error ts2",
           "internal.retry_count.scope": 0,
           "thread.planning.current_node": "plan",
           "thread.setup.current_node": "setup_gate",
           "internal.retry_count.developer": 0,
-          "internal.thread_id": "build",
+          "internal.thread_id": "developer",
           "internal.retry_count.Verification": 0,
           "graph.default_max_retries": "1",
           "outcome": "failed",
+          "internal.retry_count.verify": 0,
           "internal.retry_count.assess": 0,
+          "thread.developer.current_node": "verify",
           "preferred_label": "[A] Approve & build",
           "human.gate.Verification.label": "[A] Approve & build",
           "internal.run_id": "01KWKKV6DTZ1ACNMMR63YH8M0J",
           "internal.retry_count.clarify_prep": 0,
-          "current_node": "developer",
+          "current_node": "verify",
           "failure_class": "deterministic",
           "last_response": "All three deliverables are written. Here is the Verification summary.\n\n**1. P0 declaration:** `P0 exists` — browser Supabase writes in world-building-toolkit: `store/useWorldStore.ts:356` (`projects",
           "plan.has_p0_security_issue": "yes",
@@ -3396,6 +3728,23 @@
               "active_time_ms": 119453
             }
           },
+          "verify": {
+            "status": "failed",
+            "context_updates": {
+              "command.output": "blob://sha256/a4af451558aeef93e2d44cb951247a2c1ce98ee1d549fbae2670353ecaddcac6"
+            },
+            "failure": {
+              "message": "Script failed with exit code: 2\n\n## output\ntypecheck: module scope (chat)\ntypecheck: ignoring 77 error(s) outside the verify scope\ntypecheck: errors in scope:\nsrc/domains/chat/components/__tests__/AgentLog.e2e.test.tsx(30,5): error TS2304: Cannot find name 'beforeAll'.\nsrc/domains/chat/mentions/game-entity-provider.ts(53,3): error TS2322: Type '(filter: string, context: ProjectContext) => Promise<MentionItem[]>' is not assignable to type '(filter: string, projectContext: ProjectContext) => MentionItem[]'.\n",
+              "category": "deterministic"
+            },
+            "usage": null,
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 0,
+              "tool_time_ms": 95983,
+              "active_time_ms": 95983
+            }
+          },
           "start": {
             "status": "succeeded",
             "usage": null
@@ -3447,13 +3796,14 @@
             "usage": null
           }
         },
-        "next_node_id": "verify",
+        "next_node_id": "verify_gate",
         "node_visits": {
           "Verification": 1,
           "start": 1,
           "assess": 1,
           "setup": 1,
           "developer": 1,
+          "verify": 1,
           "setup_gate": 1,
           "plan": 1,
           "scope": 1,
@@ -3563,7 +3913,12 @@
       "first_event_seq": 310,
       "prompt": null,
       "response": null,
-      "completion": null,
+      "completion": {
+        "outcome": "failed",
+        "notes": null,
+        "failure_reason": "LLM error: Invalid request to anthropic: You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC.",
+        "timestamp": "2026-07-03T09:35:40.917305Z"
+      },
       "provider_used": {
         "mode": "agent",
         "provider": "anthropic",
@@ -3577,6 +3932,12 @@
       "output": null,
       "started_at": "2026-07-03T09:27:02.726378Z",
       "handler": "agent",
+      "timing": {
+        "wall_time_ms": 518097,
+        "inference_time_ms": 0,
+        "tool_time_ms": 0,
+        "active_time_ms": 0
+      },
       "usage": {
         "input_tokens": 86875,
         "output_tokens": 19830,
@@ -3986,7 +4347,7 @@
         ],
         "warnings": []
       },
-      "state": "running"
+      "state": "failed"
     },
     "Verification@1": {
       "first_event_seq": 280,
@@ -4499,6 +4860,43 @@
         "warnings": []
       },
       "state": "succeeded"
+    },
+    "verify@1": {
+      "first_event_seq": 802,
+      "prompt": null,
+      "response": null,
+      "completion": null,
+      "provider_used": null,
+      "diff": null,
+      "script_invocation": {
+        "script": "set -euo pipefail; node scripts/fabro-verify.mjs",
+        "command": "exec 2>&1\nset -euo pipefail; node scripts/fabro-verify.mjs",
+        "language": "shell"
+      },
+      "script_timing": {
+        "output": "blob://sha256/a4af451558aeef93e2d44cb951247a2c1ce98ee1d549fbae2670353ecaddcac6",
+        "exit_code": 2,
+        "duration_ms": 95983,
+        "termination": "exited",
+        "output_bytes": 468,
+        "live_streaming": true
+      },
+      "parallel_results": null,
+      "output": null,
+      "output_bytes": 468,
+      "live_streaming": true,
+      "termination": "exited",
+      "started_at": "2026-07-03T09:35:44.617828Z",
+      "handler": "command",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "reasoning_tokens": 0,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0
+      },
+      "state": "running"
     },
     "plan@1": {
       "first_event_seq": 206,

@@ -1,0 +1,6 @@
+{
+  "outcome": "failed",
+  "notes": null,
+  "failure_reason": "LLM error: Invalid request to anthropic: You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC.",
+  "timestamp": "2026-07-03T09:35:40.917305Z"
+}
