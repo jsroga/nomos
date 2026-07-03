@@ -7,10 +7,10 @@
 
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
+import { beats } from '@/db'
 import { BeatType, BeatStatus } from '@/domains/storyteller/core/Enums'
 import { v4 as uuidv4 } from 'uuid'
 import { db } from '@/lib/db'
-import { beats } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'
 import { getErrorMessage } from '@/lib/error-utils'
 

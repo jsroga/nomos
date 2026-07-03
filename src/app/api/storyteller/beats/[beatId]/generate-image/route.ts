@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { beats, projects, episodes } from '@/domains/storyteller'
+import { beats, episodes, projects } from '@/db'
 import { eq } from 'drizzle-orm'
 import { generateStoryboard } from '@/trigger/generate-storyboard'
 

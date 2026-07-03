@@ -8,6 +8,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
+import {
+  storytellerBibleLockQuerySchema,
+  storytellerBibleLockResponseSchema,
+} from '@/domains/storyteller/io/storyteller.dto'
 import { isCentralUser } from '@/lib/bible-permissions'
 import { requireAuth } from '@/lib/auth'
 import { verifyProjectAccess } from '@/domains/storyteller'
@@ -91,11 +95,15 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
-    const projectId = searchParams.get('projectId')
+    const parsedQuery = storytellerBibleLockQuerySchema.safeParse({
+      projectId: searchParams.get('projectId'),
+    })
 
-    if (!projectId) {
+    if (!parsedQuery.success) {
       return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
     }
+
+    const { projectId } = parsedQuery.data
 
     // Verify project access
     if (!(await verifyProjectAccess(projectId, session.user.id))) {
@@ -113,14 +121,19 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('[Bible Lock API] Fetch error:', error)
-      return NextResponse.json({ isLocked: false, lockedBy: null, lockedAt: null }, { status: 200 })
+      return NextResponse.json(
+        storytellerBibleLockResponseSchema.parse({ isLocked: false, lockedBy: null, lockedAt: null }),
+        { status: 200 }
+      )
     }
 
-    return NextResponse.json({
-      isLocked: data?.is_locked || false,
-      lockedBy: data?.locked_by || null,
-      lockedAt: data?.locked_at || null,
-    })
+    return NextResponse.json(
+      storytellerBibleLockResponseSchema.parse({
+        isLocked: data?.is_locked || false,
+        lockedBy: data?.locked_by || null,
+        lockedAt: data?.locked_at || null,
+      })
+    )
   } catch (error) {
     console.error('[Bible Lock API] Error:', error)
     return NextResponse.json(

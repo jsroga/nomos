@@ -1,6 +1,6 @@
 # 1. Overview
 
-This cleanup does **not** introduce a new storyteller feature or a new route. The user-facing goal is to keep the existing storyteller workspace at `/app/[projectId]/storyteller` feeling stable while its internals move toward the target architecture: the same left navigation, same main writing/planning canvas, same Storybible panel, and same approval/edit flows, but with more reliable loading, error, lock, and disabled states once data is sourced through `io/` + TanStack Query and UI state is isolated in `state/`. The shape of the solution is therefore a **behavior-preserving refresh of existing panels and dialogs**, not a redesign.
+This cleanup is mostly architectural, not a net-new feature. The user-facing goal is to keep the existing storyteller workspace at `/app/[projectId]/storyteller` feeling familiar while its internals move toward the target architecture: the same left navigation, same main writing/planning canvas, same Storybible overlay, and same approval/edit flows, but with more trustworthy loading, error, lock, and long-running generation states once episodes and Bible lock state move to `io/` + TanStack Query and poster/moodboard work moves onto Trigger jobs. The shape of the solution is therefore a **behavior-preserving hardening pass on existing surfaces**, not a redesign.
 
 # 2. User flow
 
@@ -10,11 +10,13 @@ This cleanup does **not** introduce a new storyteller feature or a new route. Th
 4. If the project has a Storybible but no episode is selected, the user sees the current empty/starting guidance and can either select an existing episode or draft the first one with AI.
 5. In the left sidebar, the user browses episodes, creates a new episode, renames one inline, or deletes one with confirmation.
 6. After selecting an episode, the main panel shows the current phase content (premise / beats / script) and the user can continue editing or request AI help.
-7. The user opens the Storybible panel from the workspace. Storybible content loads by section, not as a single blocking spinner.
-8. If the Storybible is locked by another user, the user can read but not edit; the UI explains why actions are disabled.
-9. If the AI proposes changes for a Storybible section or other structured content, the user sees the same review-first pattern: inline pending overlay for section-level changes, and the existing approval modal for detailed review.
-10. When the user saves, edits, approves, rejects, or triggers generation, feedback appears immediately: controls disable appropriately, inline status is visible in context, and non-blocking success uses toast feedback.
-11. If a request fails, the affected panel stays visible, shows an inline error, and offers a clear retry path without forcing a full page refresh.
+7. If the user triggers poster or moodboard generation, the current card stays in place and shows inline progress where the artwork lives, plus lightweight background feedback in the existing status/toast pattern.
+8. If the user refreshes or navigates away and back while artwork is generating, the same episode or Storybible section rehydrates into a subscribed progress state instead of silently forgetting the job.
+9. The user opens the Storybible panel from the workspace. Storybible content loads by section, not as a single blocking spinner.
+10. If the Storybible is locked by another user, the user can read but not edit; the UI explains why actions are disabled.
+11. If the AI proposes changes for a Storybible section or other structured content, the user sees the same review-first pattern: inline pending overlay for section-level changes, and the existing approval modal for detailed review.
+12. When the user saves, edits, approves, rejects, or triggers generation, feedback appears immediately: controls disable appropriately, inline status is visible in context, and non-blocking success uses toast feedback.
+13. If a request fails, the affected panel stays visible, shows an inline error, and offers a clear retry path without forcing a full page refresh.
 
 # 3. Screens & components
 
@@ -23,7 +25,7 @@ This cleanup does **not** introduce a new storyteller feature or a new route. Th
 - **Purpose:** Orchestrates the left sidebar, main panel, optional Storybible panel, chat/agent output, and action-review surfaces.
 - **Composition:** existing `DomainSidebar`, `Button`, `Tooltip`, `StorytellerEmptyState`, `PhaseNavigator`, `StoryPlanBoard`, `Timeline`, `ScriptEditor`, `WorldBiblePanel`, `ActionApprovalModal`, toast feedback.
 - **Props/inputs:** current project, current episode id/title, query hook results, mutation callbacks, ephemeral UI state from `useStorytellerUiStore`, streaming/chat state, section loading state, pending action state.
-- **Layout notes:** Preserve the current three-zone mental model: left navigation rail, central work surface, optional right Storybible panel. Loading should resolve per zone so the shell appears quickly and individual panels can skeleton independently.
+- **Layout notes:** Preserve the current three-zone mental model: left navigation rail, central work surface, right writers-room rail, plus the existing Storybible overlay that opens over the center work surface. Loading should resolve per zone so the shell appears quickly and individual panels can skeleton independently.
 
 ## B. EpisodeManager
 - **Lives in:** `src/domains/storyteller/ui/EpisodeManager/`; rendered inside the left `DomainSidebar` on the storyteller route.
@@ -50,24 +52,31 @@ This cleanup does **not** introduce a new storyteller feature or a new route. Th
 - **Lives in:** `src/domains/storyteller/ui/StoryPlanBoard/` and `src/domains/storyteller/ui/EpisodePremisePanel/`; rendered in the main panel for premise/breaking work.
 - **Purpose:** Let the user generate, review, edit, and approve the episode premise before moving to beats.
 - **Composition:** existing `Button`, `Skeleton`, `StorytellerImage`, `ImageVariantSelector`, `ReferenceText`, phase navigation, inline section generation actions.
-- **Props/inputs:** story plan / premise data, loading state, generation state, generating section id, poster/storyboard state, update callback, generate callbacks, approve callback.
-- **Layout notes:** Keep the main content area scrollable and content-first. Section-level regenerate actions should remain near each editable field rather than moving to a global toolbar.
+- **Props/inputs:** story plan / premise data, loading state, generation state, generating section id, poster/storyboard state, poster job status (`idle | queued | running | succeeded | failed` + optional percentage/message), update callback, generate callbacks, approve callback.
+- **Layout notes:** Keep the main content area scrollable and content-first. Section-level regenerate actions should remain near each editable field rather than moving to a global toolbar. Poster progress belongs inside the poster card, not in a separate modal or detached status view.
 
 ## F. WorldBiblePanel
-- **Lives in:** `src/domains/storyteller/ui/WorldBiblePanel/`; rendered as the right-hand panel when the Storybible is open.
+- **Lives in:** `src/domains/storyteller/ui/WorldBiblePanel/`; rendered as the full-height overlay over the center storyteller workspace when the Storybible is open.
 - **Purpose:** Read and edit Storybible content, view relationships, manage lock status, and review AI-proposed section changes.
-- **Composition:** existing `DomainSidebar`-style panel chrome, `Button`, `Tooltip`, `Tabs` pattern already implied by content/relationships switch, `Skeleton`, `CharacterWeb`, Bible section components, `SectionPendingOverlay`.
-- **Props/inputs:** Storybible data, per-section loading map, lock state, current user permission state, update/save/cancel callbacks, section mutation callbacks, pending section action map, retry callbacks for data/lock refresh.
+- **Composition:** existing panel chrome, `Button`, `Tooltip`, existing content/relationships toggle pattern, `Skeleton`, `CharacterWeb`, Bible section components, `SectionPendingOverlay`.
+- **Props/inputs:** Storybible data, per-section loading map, lock state, current user permission state, update/save/cancel callbacks, section mutation callbacks, pending section action map, retry callbacks for data/lock refresh, close callback.
 - **Layout notes:** Preserve the current split between content and relationships. Header stays action-oriented: lock status, edit/save/cancel, close. Section loading, pending review, and read-only state must appear inline per section so the user understands exactly what is blocked.
 
-## G. SectionPendingOverlay
+## G. BibleOverview
+- **Lives in:** `src/domains/storyteller/ui/WorldBible/BibleOverview/` (or equivalent co-located folder under `ui/WorldBible/`); rendered inside `WorldBiblePanel` content mode.
+- **Purpose:** Show the top-level Storybible overview and moodboard, including long-running moodboard generation progress.
+- **Composition:** existing `IconButton`, `StorytellerImage`, `Button`, `ConfirmDialog`, `RichText`, `Progress`, `Skeleton`, `SectionPendingOverlay`, Lucide icons.
+- **Props/inputs:** overview text, moodboard image list, `primaryImageIndex`, `onSetPrimaryImage`, `onRefetchMoodboardData`, `isReadOnly`, `isEditing`, section loading state, pending action, moodboard job state (`idle | queued | running | succeeded | failed` + optional percentage/message), provider-availability state.
+- **Layout notes:** Keep the current stack: overview section first, moodboard section second. Moodboard progress stays inline above the grid and inside any actively generating tile/add-tile card. Do not create a separate “jobs” page or drawer for this flow.
+
+## H. SectionPendingOverlay
 - **Lives in:** `src/domains/storyteller/ui/WorldBible/SectionPendingOverlay.tsx` (or equivalent co-located folder under `ui/WorldBible/`).
 - **Purpose:** Pause a single Storybible section for accept/reject/review before changes are applied.
 - **Composition:** existing `Button` variants with Lucide `Check`, `X`, `Eye`, `Loader2`.
 - **Props/inputs:** pending action object, `isProcessing`, callbacks for accept/reject/review.
 - **Layout notes:** Overlay only the affected section, not the whole panel. Background blur is acceptable; underlying content should remain partially visible for context.
 
-## H. ActionApprovalModal
+## I. ActionApprovalModal
 - **Lives in:** `src/domains/storyteller/ui/ActionApprovalModal/`; rendered from the workspace shell.
 - **Purpose:** Let users inspect higher-detail AI-proposed changes before approving or rejecting them.
 - **Composition:** existing dialog/modal treatment, `Button`, diff viewer, summary/diff toggle controls, keyboard shortcuts.
@@ -126,6 +135,7 @@ This cleanup does **not** introduce a new storyteller feature or a new route. Th
   - Section regeneration updates the section in place.
   - Premise approval reveals the next phase and/or navigates exactly as current behavior already does.
   - Background artwork generation uses non-blocking progress and completion feedback.
+  - If the poster job reconnects after refresh, the poster card should resume the last known queued/running state instead of flickering back to “No Poster.”
 - **Disabled / read-only:**
   - Disable premise editing buttons while save/generate is in flight.
   - Disable `Plan Ready — Proceed to Beats` until required fields are present.
@@ -150,6 +160,27 @@ This cleanup does **not** introduce a new storyteller feature or a new route. Th
   - If locked by another user, all edit controls are disabled and helper text explains who holds the lock.
   - If the user lacks edit permission, show read-only state without implying it is a loading problem.
   - While save/lock mutation is in flight, disable only the relevant header actions.
+
+## BibleOverview
+- **Default / idle:** Overview text is readable/editable per mode. Moodboard grid shows existing images, primary-image affordance, regenerate/remove controls, and add-image tile when editable.
+- **Loading:**
+  - World description section load uses the current inline veil/skeleton treatment on that section only.
+  - Moodboard job queued/running state shows inline progress text plus `Progress` bar above the grid, and loading treatment inside the specific image tile or add-image tile that is in flight.
+  - On refresh during an in-flight job, show a reconnecting/loading-progress state rather than briefly restoring active generate buttons.
+- **Empty:**
+  - No overview text: keep the existing empty placeholder in the rich-text area.
+  - No moodboard images: show the existing dashed empty card with one clear CTA to generate moodboard images.
+- **Error:**
+  - Missing provider/API configuration: inline toast error, keep controls visible.
+  - Failed moodboard start: toast `Couldn't start moodboard generation. Try again.`
+  - Failed job after queueing: inline status above the grid changes to an error state with `Retry` action, and the previously generated images stay visible.
+- **Success / confirmation:**
+  - Starting generation shows non-blocking toast and immediate inline progress state.
+  - Finishing generation updates the grid in place and announces completion.
+  - Removing an image removes the tile and confirms with toast.
+- **Disabled / read-only:**
+  - When Storybible is read-only, hide or disable moodboard mutate actions but keep image browsing and primary-image indicator visible.
+  - While a moodboard job is running, disable only conflicting moodboard actions for that project; do not freeze unrelated Storybible sections.
 
 ## SectionPendingOverlay
 - **Default / idle:** Overlay shows `Pending review` with `Reject`, `Review`, and `Accept` actions.
@@ -223,6 +254,8 @@ This cleanup does **not** introduce a new storyteller feature or a new route. Th
 - Approval CTA: `Plan ready — proceed to beats`
 - Error message: `Couldn't load this episode plan.`
 - Error toast: `Couldn't update the premise. Try again.`
+- Poster queued toast: `Poster generation started.`
+- Poster reconnecting label: `Reconnecting to poster generation…`
 - Poster error toast: `Couldn't generate artwork. Try again.`
 
 ## WorldBiblePanel
@@ -237,6 +270,18 @@ This cleanup does **not** introduce a new storyteller feature or a new route. Th
 - Save error toast: `Couldn't save the Storybible. Try again.`
 - Retry action: `Retry`
 - Refresh action: `Refresh`
+
+## BibleOverview
+- Moodboard empty body: `No mood visuals generated yet.`
+- Moodboard primary CTA: `Generate moodboard`
+- Add-image tile label: `Add image`
+- Queued/running label: `Generating…`
+- Reconnecting label: `Reconnecting to moodboard generation…`
+- Start toast: `Moodboard generation started.`
+- Add-image toast: `Generating new moodboard image…`
+- Remove success toast: `Image removed.`
+- Missing-config error: `Missing image provider setup. Check Settings and try again.`
+- Start error toast: `Couldn't start moodboard generation. Try again.`
 
 ## SectionPendingOverlay
 - Idle badge: `Pending review`
@@ -274,6 +319,7 @@ This cleanup does **not** introduce a new storyteller feature or a new route. Th
   - Storybible lock indicator needs a text label, not color alone.
   - Section pending overlays should expose an accessible heading or label so screen-reader users know which section is awaiting review.
   - Loading regions should use `aria-busy="true"` on the affected panel or section.
+  - Any visible percent-complete bar for poster/moodboard work should expose `role="progressbar"` with an accessible name like `Moodboard generation progress`.
   - Error summaries should use `role="alert"`; non-blocking status updates should use `aria-live="polite"`.
 
 - **Color contrast and non-color status**
@@ -283,7 +329,7 @@ This cleanup does **not** introduce a new storyteller feature or a new route. Th
 
 - **Screen-reader announcements**
   - Announce async transitions via a polite live region: `Episodes loaded`, `Storybible saved`, `Changes ready for review`, `Couldn't load episodes`, `Lock acquired`, `Lock released`.
-  - For long-running section generation, announce start and completion for the affected section only.
+  - For long-running poster/moodboard generation, announce start, reconnect-after-refresh, failure, and completion for the affected surface only.
 
 # 7. Responsive behavior
 
@@ -312,19 +358,24 @@ This route is effectively **desktop-first** and that should remain true for this
    - Bible open/close state, selected beat, active tab, activity-panel visibility, and other ephemeral toggles belong in `useStorytellerUiStore`, not in server-state query data.
 4. **Preserve the existing route layout and mental model.** The route should still feel like storyteller, not like a new tool.
 5. **Add missing explicit states while rewiring data:**
-   - EpisodeManager currently needs a real empty state and explicit inline error state.
-   - CharacterPanel needs an explicit inline error state.
-   - WorldBiblePanel needs a top-level query error treatment and lock-refresh warning state.
-   - ActionApprovalModal needs an inline failure state if apply fails.
+    - EpisodeManager currently needs a real empty state and explicit inline error state.
+    - CharacterPanel needs an explicit inline error state.
+    - WorldBiblePanel needs a top-level query error treatment and lock-refresh warning state.
+    - BibleOverview needs a reconnecting/running/error state for moodboard jobs.
+    - EpisodePremisePanel needs a reconnecting/running/error state for poster jobs.
+    - ActionApprovalModal needs an inline failure state if apply fails.
 6. **Prefer shared primitives already in the repo:** `Button`, `Dialog`, `ConfirmDialog`, `Tooltip`, `Input`, `ScrollArea`, `Skeleton`, `Tabs`, `Badge` where useful. Do not invent custom button styles unless an existing variant cannot cover the need.
 7. **Easy-to-miss edge cases:**
-   - Preserve unsaved local edits during background refetches.
-   - Do not flash the whole Storybible panel back to loading during a refetch if existing data is present.
-   - Keep hover-revealed episode actions reachable by keyboard focus.
-   - Distinguish `empty` from `error` from `locked/read-only`; users should never have to guess which one they are seeing.
-   - If a section-level AI action is pending review and the panel refetches, the pending overlay must remain anchored to the correct section.
-   - When an item is deleted or selection becomes invalid, move focus to the next sensible target rather than dropping it on `body`.
+    - Preserve unsaved local edits during background refetches.
+    - Do not flash the whole Storybible panel back to loading during a refetch if existing data is present.
+    - Persist only the job identifier needed to resubscribe after refresh; do not recreate the old `localStorage` scan / custom-event UX.
+    - Keep hover-revealed episode actions reachable by keyboard focus.
+    - Distinguish `empty` from `error` from `locked/read-only`; users should never have to guess which one they are seeing.
+    - If a section-level AI action is pending review and the panel refetches, the pending overlay must remain anchored to the correct section.
+    - When an item is deleted or selection becomes invalid, move focus to the next sensible target rather than dropping it on `body`.
+    - While a poster or moodboard job is in flight, disable only the controls that would create a duplicate run for the same asset; unrelated editing should stay available.
 8. **Priority order for implementation:**
-   - First preserve layout and existing flows while moving components behind the barrel.
-   - Then rewire episodes/Storybible to query hooks with skeleton + error states.
-   - Then clean up approval/lock/read-only states and accessibility gaps.
+    - First preserve layout and existing flows while moving components behind the barrel.
+    - Then rewire episodes/Storybible to query hooks with skeleton + error states.
+    - Then wire poster/moodboard surfaces to shared job observation with the same visible affordances.
+    - Then clean up approval/lock/read-only states and accessibility gaps.
