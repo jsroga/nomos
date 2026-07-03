@@ -16,7 +16,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { projects, characters, entityReferences, relationshipEdges } from '@/domains/storyteller'
+import { characters, entityReferences, projects, relationshipEdges } from '@/db'
 import { eq, sql, and, gt } from 'drizzle-orm'
 import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
 

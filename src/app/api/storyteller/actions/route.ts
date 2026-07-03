@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { beats, characters, episodes, projects, seriesBibles, storyPlans } from '@/db'
 import { db } from '@/lib/db'
-import {
-  seriesBibles,
-  storyPlans,
-  projects,
-  beats,
-  characters,
-  episodes,
-  verifyEpisodeAccess,
-  verifyProjectAccess,
-} from '@/domains/storyteller'
+import { verifyEpisodeAccess, verifyProjectAccess } from '@/domains/storyteller'
 import { eq, and } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 import { requireAuth } from '@/lib/auth'

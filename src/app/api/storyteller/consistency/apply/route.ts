@@ -11,8 +11,8 @@ import {
   applyCascadingFixes,
   getUndoManager,
   type ConsistencyFix,
-  verifyProjectAccess,
 } from '@/domains/storyteller'
+import { verifyProjectAccess } from '@/domains/storyteller'
 import { requireAuth } from '@/lib/auth'
 
 export const runtime = 'nodejs'

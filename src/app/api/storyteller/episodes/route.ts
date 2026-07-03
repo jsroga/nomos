@@ -1,16 +1,30 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase-admin'
-import { requireAuth } from '@/lib/auth'
+import { asc, eq } from 'drizzle-orm'
+import { ZodError } from 'zod'
 
+import { episodes } from '@/db'
+import { requireAuth } from '@/lib/auth'
+import { db } from '@/lib/db'
+import {
+  parseCreateStorytellerEpisodeRequest,
+} from '@/domains/storyteller/io/storyteller.api'
+import {
+  storytellerEpisodesQuerySchema,
+  storytellerEpisodesResponseSchema,
+} from '@/domains/storyteller/io/storyteller.dto'
 import { verifyProjectAccess } from '@/domains/storyteller'
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
-  const projectId = searchParams.get('projectId')
+  const parsedQuery = storytellerEpisodesQuerySchema.safeParse({
+    projectId: searchParams.get('projectId'),
+  })
 
-  if (!projectId) {
+  if (!parsedQuery.success) {
     return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
   }
+
+  const { projectId } = parsedQuery.data
 
   try {
     const { session } = await requireAuth()
@@ -23,15 +37,13 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Unauthorized access to project' }, { status: 403 })
     }
 
-    const { data: projectEpisodes, error } = await supabaseAdmin
-      .from('episodes')
-      .select('*')
-      .eq('project_id', projectId)
-      .order('sequence', { ascending: true })
+    const projectEpisodes = await db
+      .select()
+      .from(episodes)
+      .where(eq(episodes.projectId, projectId))
+      .orderBy(asc(episodes.sequence))
 
-    if (error) throw error
-
-    return NextResponse.json(projectEpisodes)
+    return NextResponse.json(storytellerEpisodesResponseSchema.parse(projectEpisodes))
   } catch (error) {
     console.error('Error fetching episodes:', error)
     return NextResponse.json({ error: 'Failed to fetch episodes' }, { status: 500 })
@@ -52,8 +64,8 @@ export async function POST(req: Request) {
       }
     }
 
-    const body = await req.json()
-    const { projectId, title, sequence, masterPrompt, summary } = body
+    const { projectId, title, sequence, masterPrompt, summary } =
+      parseCreateStorytellerEpisodeRequest(await req.json())
 
     if (!isSystem && session) {
       const hasAccess = await verifyProjectAccess(projectId, session.user.id)
@@ -62,23 +74,27 @@ export async function POST(req: Request) {
       }
     }
 
-    const { data: newEpisode, error } = await supabaseAdmin
-      .from('episodes')
-      .insert({
-        project_id: projectId,
+    const [newEpisode] = await db
+      .insert(episodes)
+      .values({
+        projectId,
         title,
         sequence,
-        master_prompt: masterPrompt,
+        masterPrompt,
         summary,
         status: 'planning',
       })
-      .select()
-      .single()
-
-    if (error) throw error
+      .returning()
 
     return NextResponse.json(newEpisode)
   } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid episode payload', details: error.flatten() },
+        { status: 400 }
+      )
+    }
+
     console.error('Error creating episode:', error)
     return NextResponse.json({ error: 'Failed to create episode' }, { status: 500 })
   }

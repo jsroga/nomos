@@ -16,12 +16,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { characters, projects } from '@/db'
 import {
   contextualSummaryService,
   entityRegistry,
   getEntityTypeFromId,
-  projects,
-  characters,
   relationshipEnricher,
 } from '@/domains/storyteller'
 import { db } from '@/lib/db'

@@ -7,8 +7,8 @@
  */
 
 import { eq } from 'drizzle-orm'
+import { projects, storyPlans } from '@/db'
 import { db } from '@/lib/db'
-import { projects, storyPlans } from '@/domains/storyteller/db/schema'
 import { budgetContext, type RawContextParts } from '@/domains/storyteller/services/context/token-budget'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
 
@@ -105,7 +105,7 @@ export async function assembleStorytellerContext(
         .from(storyPlans)
         .where(eq(storyPlans.projectId, projectId))
         .then(r => r[0]),
-      import('@/services/storyteller.service').then(async m => {
+      import('./StorytellerCrudService').then(async m => {
         const [charsReq, beatsReq] = await Promise.all([
           m.storytellerService
             .listCharacters({ projectId }, { userId })

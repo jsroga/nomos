@@ -1,7 +1,7 @@
 import { createTool } from '@mastra/core/tools'
 import { GetPlotPhaseInputSchema, ValidateConsistencyInputSchema } from './schemas'
+import { episodes } from '@/db'
 import { db } from '@/lib/db'
-import { episodes } from '@/domains/storyteller/db/schema'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 

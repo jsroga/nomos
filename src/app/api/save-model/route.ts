@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import { requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { projects } from '@/domains/storyteller'
+import { projects } from '@/db'
 import { eq } from 'drizzle-orm'
 import {
   sanitizePath,

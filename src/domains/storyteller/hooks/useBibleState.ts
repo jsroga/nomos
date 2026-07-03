@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
-import { cachedFetch } from '@/lib/fetch-cache'
+import { useBibleLock } from '@/domains/storyteller/state/queries/useBibleLock'
 
 export function useBibleState(projectId: string | undefined) {
   const searchParams = useSearchParams()
@@ -11,6 +11,7 @@ export function useBibleState(projectId: string | undefined) {
 
   const bibleParamValue = searchParams?.get('bible') ?? null
   const [optimisticBibleOpen, setOptimisticBibleOpen] = useState<boolean | null>(null)
+  const bibleLockQuery = useBibleLock(projectId)
 
   useEffect(() => {
     if (optimisticBibleOpen === null) return
@@ -22,8 +23,6 @@ export function useBibleState(projectId: string | undefined) {
 
   const isWorldBibleOpen = optimisticBibleOpen ?? (bibleParamValue === 'open')
 
-  const [isBibleLocked, setIsBibleLocked] = useState(false)
-  const [bibleLockedBy, setBibleLockedBy] = useState<string | null>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
 
   useEffect(() => {
@@ -36,39 +35,6 @@ export function useBibleState(projectId: string | undefined) {
     }
     fetchUser()
   }, [])
-
-  useEffect(() => {
-    let isMounted = true
-    if (!projectId) return
-
-    cachedFetch(
-      `bible-lock:${projectId}`,
-      async () => {
-        const response = await fetch(`/api/storyteller/bible/lock?projectId=${projectId}`)
-        if (response.ok) {
-          return response.json()
-        }
-        return { isLocked: false, lockedBy: null }
-      },
-      { ttlMs: 60_000 }
-    )
-      .then(data => {
-        if (isMounted) {
-          setIsBibleLocked(data.isLocked || false)
-          setBibleLockedBy(data.lockedBy || null)
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setIsBibleLocked(false)
-          setBibleLockedBy(null)
-        }
-      })
-
-    return () => {
-      isMounted = false
-    }
-  }, [projectId])
 
   // Default to bible=open on first visit
   useEffect(() => {
@@ -123,11 +89,12 @@ export function useBibleState(projectId: string | undefined) {
 
   return {
     isWorldBibleOpen,
-    isBibleLocked,
-    bibleLockedBy,
+    isBibleLocked: bibleLockQuery.data?.isLocked ?? false,
+    bibleLockedBy: bibleLockQuery.data?.lockedBy ?? null,
     userEmail,
     setOptimisticBibleOpen,
     toggleBible,
     closeBible,
+    bibleLockQuery,
   }
 }

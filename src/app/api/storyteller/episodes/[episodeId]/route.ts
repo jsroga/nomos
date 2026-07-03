@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { episodes } from '@/domains/storyteller'
+import { episodes } from '@/db'
 import { eq } from 'drizzle-orm'
 
 export async function GET(req: Request, props: { params: Promise<{ episodeId: string }> }) {

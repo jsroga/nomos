@@ -7,6 +7,13 @@ export default defineConfig({
     environment: 'node',
     setupFiles: ['dotenv/config'],
     dangerouslyIgnoreUnhandledErrors: true,
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      'tests/integration/**',
+      'tests/system/**',
+      '**/*.e2e.test.{ts,tsx}',
+    ],
     env: {
       DOTENV_CONFIG_PATH: '.env.local',
     },

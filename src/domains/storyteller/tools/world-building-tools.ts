@@ -6,8 +6,8 @@
 
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
+import { characters, projects } from '@/db'
 import { db } from '@/lib/db'
-import { projects, characters } from '@/domains/storyteller/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { deepMerge } from '@/domains/storyteller/config/action-config'
 import { getErrorMessage } from '@/lib/error-utils'
