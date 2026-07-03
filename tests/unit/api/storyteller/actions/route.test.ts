@@ -1,6 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { POST } from '@/app/api/storyteller/actions/route'
 import { NextRequest } from 'next/server'
+
+vi.mock('@/domains/storyteller', () => ({
+  seriesBibles: { id: 'seriesBibles' },
+  storyPlans: { id: 'storyPlans' },
+  projects: { id: 'projects' },
+  beats: { id: 'beats' },
+  characters: { id: 'characters' },
+  episodes: { id: 'episodes' },
+  verifyEpisodeAccess: vi.fn().mockResolvedValue(true),
+  verifyProjectAccess: vi.fn().mockResolvedValue(true),
+}))
+
+import { POST } from '@/app/api/storyteller/actions/route'
 import { db } from '@/lib/db'
 
 // Mock dependencies

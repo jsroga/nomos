@@ -18,7 +18,7 @@ import {
   entityReferences,
   seriesBiblesRelations,
   storyPlansRelations,
-} from '@/domains/storyteller'
+} from '@/domains/storyteller/db/schema'
 
 // Projects table (world-building + storyteller)
 export const projects = pgTable('projects', {
