@@ -1,9 +1,9 @@
 /**
- * Import Resolution Tests
+ * Import Resolution Tests (Wave 1 Complete)
  *
- * Verifies that the Increment 1 refactoring (Items 1-4) preserved import paths:
+ * Verifies that the Wave 1 refactoring correctly migrated all imports:
  * - New shared/ paths resolve correctly
- * - Legacy shim paths still resolve (for backward compatibility until Increment 2 codemod)
+ * - Legacy shim paths have been removed (all imports codemoded)
  * - Re-exported modules maintain their public API
  */
 
@@ -16,20 +16,8 @@ describe('shared/auth imports', () => {
     expect(authModule.requireAuth).toBeDefined()
   })
 
-  it('resolves from legacy @/lib/auth shim', async () => {
-    const authModule = await import('@/lib/auth')
-    expect(authModule.getUserSession).toBeDefined()
-    expect(authModule.requireAuth).toBeDefined()
-  })
-
   it('resolves validation from new @/shared/auth/validation path', async () => {
     const validationModule = await import('@/shared/auth/validation')
-    expect(validationModule.signInSchema).toBeDefined()
-    expect(validationModule.signUpSchema).toBeDefined()
-  })
-
-  it('resolves validation from legacy @/lib/validation/auth shim', async () => {
-    const validationModule = await import('@/lib/validation/auth')
     expect(validationModule.signInSchema).toBeDefined()
     expect(validationModule.signUpSchema).toBeDefined()
   })
@@ -41,19 +29,8 @@ describe('shared/auth imports', () => {
     expect(securityModule.safeFetch).toBeDefined()
   })
 
-  it('resolves security from legacy @/lib/security shim', async () => {
-    const securityModule = await import('@/lib/security')
-    expect(securityModule.sanitizePath).toBeDefined()
-    expect(securityModule.isAllowedUrl).toBeDefined()
-  })
-
   it('resolves useAuthStore from new @/shared/auth/useAuthStore path', async () => {
     const storeModule = await import('@/shared/auth/useAuthStore')
-    expect(storeModule.useAuthStore).toBeDefined()
-  })
-
-  it('resolves useAuthStore from legacy @/store/useAuthStore shim', async () => {
-    const storeModule = await import('@/store/useAuthStore')
     expect(storeModule.useAuthStore).toBeDefined()
   })
 })
@@ -65,19 +42,8 @@ describe('shared/errors imports', () => {
     expect(errorModule.toError).toBeDefined()
   })
 
-  it('resolves from legacy @/lib/error-utils shim', async () => {
-    const errorModule = await import('@/lib/error-utils')
-    expect(errorModule.getErrorMessage).toBeDefined()
-    expect(errorModule.toError).toBeDefined()
-  })
-
   it('resolves useErrorStore from new @/shared/errors/useErrorStore path', async () => {
     const storeModule = await import('@/shared/errors/useErrorStore')
-    expect(storeModule.useErrorStore).toBeDefined()
-  })
-
-  it('resolves useErrorStore from legacy @/store/useErrorStore shim', async () => {
-    const storeModule = await import('@/store/useErrorStore')
     expect(storeModule.useErrorStore).toBeDefined()
   })
 })
@@ -85,11 +51,6 @@ describe('shared/errors imports', () => {
 describe('shared/data imports', () => {
   it('resolves utils from new @/shared/data/utils path', async () => {
     const utilsModule = await import('@/shared/data/utils')
-    expect(utilsModule.cn).toBeDefined()
-  })
-
-  it('resolves utils from legacy @/lib/utils shim', async () => {
-    const utilsModule = await import('@/lib/utils')
     expect(utilsModule.cn).toBeDefined()
   })
 
@@ -101,29 +62,13 @@ describe('shared/data imports', () => {
     expect(apiModule.checkRateLimit).toBeDefined()
   })
 
-  it('resolves api-utils from legacy @/lib/api-utils shim', async () => {
-    const apiModule = await import('@/lib/api-utils')
-    expect(apiModule.getUserSession).toBeDefined()
-    expect(apiModule.withAuth).toBeDefined()
-  })
-
   it('resolves useGameEntities from new @/shared/data/queries path', async () => {
     const hookModule = await import('@/shared/data/queries/useGameEntities')
     expect(hookModule.useGameEntities).toBeDefined()
   })
 
-  it('resolves useGameEntities from legacy @/hooks/useGameEntities shim', async () => {
-    const hookModule = await import('@/hooks/useGameEntities')
-    expect(hookModule.useGameEntities).toBeDefined()
-  })
-
   it('resolves useProjectFromUrl from new @/shared/data path', async () => {
     const hookModule = await import('@/shared/data/useProjectFromUrl')
-    expect(hookModule.useProjectFromUrl).toBeDefined()
-  })
-
-  it('resolves useProjectFromUrl from legacy @/hooks/useProjectFromUrl shim', async () => {
-    const hookModule = await import('@/hooks/useProjectFromUrl')
     expect(hookModule.useProjectFromUrl).toBeDefined()
   })
 

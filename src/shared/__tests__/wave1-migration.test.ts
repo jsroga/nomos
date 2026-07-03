@@ -1,0 +1,157 @@
+/**
+ * Wave 1 Migration Verification Tests
+ *
+ * Verifies that Wave 1 of the src-root cleanup successfully:
+ * - Deleted all legacy folders (hooks/, store/, services/, lib/validation/)
+ * - Deleted all shim files
+ * - All imports now use the new @/shared/* paths
+ * - No broken import references remain
+ */
+
+import { describe, it, expect } from 'vitest'
+import { existsSync } from 'fs'
+import { resolve } from 'path'
+
+const SRC_ROOT = resolve(__dirname, '../../')
+
+describe('Wave 1: Folder cleanup verification', () => {
+  it('deleted src/hooks/ folder', () => {
+    const hooksPath = resolve(SRC_ROOT, 'hooks')
+    expect(existsSync(hooksPath)).toBe(false)
+  })
+
+  it('deleted src/store/ folder', () => {
+    const storePath = resolve(SRC_ROOT, 'store')
+    expect(existsSync(storePath)).toBe(false)
+  })
+
+  it('deleted src/services/ folder', () => {
+    const servicesPath = resolve(SRC_ROOT, 'services')
+    expect(existsSync(servicesPath)).toBe(false)
+  })
+
+  it('deleted src/lib/validation/ folder', () => {
+    const validationPath = resolve(SRC_ROOT, 'lib/validation')
+    expect(existsSync(validationPath)).toBe(false)
+  })
+})
+
+describe('Wave 1: Shim file cleanup verification', () => {
+  const shimFiles = [
+    'lib/auth.ts',
+    'lib/api-utils.ts',
+    'lib/db.ts',
+    'lib/error-utils.ts',
+    'lib/security.ts',
+    'lib/utils.ts',
+  ]
+
+  shimFiles.forEach((shimFile) => {
+    it(`deleted ${shimFile} shim file`, () => {
+      const shimPath = resolve(SRC_ROOT, shimFile)
+      expect(existsSync(shimPath)).toBe(false)
+    })
+  })
+})
+
+describe('Wave 1: New shared/ structure exists', () => {
+  const newFolders = [
+    'shared/auth',
+    'shared/errors',
+    'shared/data',
+    'shared/data/queries',
+    'shared/data/generation',
+    'shared/jobs',
+    'shared/observability',
+    'shared/types',
+    'shared/agent-kernel',
+  ]
+
+  newFolders.forEach((folder) => {
+    it(`created ${folder} folder`, () => {
+      const folderPath = resolve(SRC_ROOT, folder)
+      expect(existsSync(folderPath)).toBe(true)
+    })
+  })
+})
+
+describe('Wave 1: Critical files moved to correct locations', () => {
+  const movedFiles = [
+    { file: 'shared/auth/auth.ts', description: 'auth moved from lib/' },
+    { file: 'shared/auth/validation.ts', description: 'validation moved from lib/validation/' },
+    { file: 'shared/auth/security.ts', description: 'security moved from lib/' },
+    { file: 'shared/auth/useAuthStore.ts', description: 'useAuthStore moved from store/' },
+    { file: 'shared/errors/error-utils.ts', description: 'error-utils moved from lib/' },
+    { file: 'shared/errors/useErrorStore.ts', description: 'useErrorStore moved from store/' },
+    { file: 'shared/data/utils.ts', description: 'utils moved from lib/' },
+    { file: 'shared/data/api-utils.ts', description: 'api-utils moved from lib/' },
+    { file: 'shared/data/EntitiesService.ts', description: 'EntitiesService in shared/data' },
+    { file: 'shared/data/generation/TilesService.ts', description: 'TilesService in shared/data/generation' },
+    { file: 'shared/jobs/useGlobalStatusStore.ts', description: 'useGlobalStatusStore moved from store/' },
+    { file: 'db/client.ts', description: 'db client exists' },
+  ]
+
+  movedFiles.forEach(({ file, description }) => {
+    it(description, () => {
+      const filePath = resolve(SRC_ROOT, file)
+      expect(existsSync(filePath)).toBe(true)
+    })
+  })
+})
+
+describe('Wave 1: Public API exports are preserved', () => {
+  it('auth module exports getUserSession and requireAuth', async () => {
+    const authModule = await import('@/shared/auth/auth')
+    expect(typeof authModule.getUserSession).toBe('function')
+    expect(typeof authModule.requireAuth).toBe('function')
+  })
+
+  it('validation module exports sign-in/up schemas', async () => {
+    const validationModule = await import('@/shared/auth/validation')
+    expect(validationModule.signInSchema).toBeDefined()
+    expect(validationModule.signUpSchema).toBeDefined()
+  })
+
+  it('error-utils module exports getErrorMessage and toError', async () => {
+    const errorModule = await import('@/shared/errors/error-utils')
+    expect(typeof errorModule.getErrorMessage).toBe('function')
+    expect(typeof errorModule.toError).toBe('function')
+  })
+
+  it('api-utils module exports withAuth and requireAuth', async () => {
+    const apiModule = await import('@/shared/data/api-utils')
+    expect(typeof apiModule.withAuth).toBe('function')
+    expect(typeof apiModule.requireAuth).toBe('function')
+    expect(typeof apiModule.checkRateLimit).toBe('function')
+  })
+
+  it('useAuthStore hook is exported', async () => {
+    const storeModule = await import('@/shared/auth/useAuthStore')
+    expect(typeof storeModule.useAuthStore).toBe('function')
+  })
+
+  it('useErrorStore hook is exported', async () => {
+    const storeModule = await import('@/shared/errors/useErrorStore')
+    expect(typeof storeModule.useErrorStore).toBe('function')
+  })
+
+  it('useGlobalStatusStore hook is exported', async () => {
+    const storeModule = await import('@/shared/jobs/useGlobalStatusStore')
+    expect(typeof storeModule.useGlobalStatusStore).toBe('function')
+  })
+
+  it('EntitiesService is exported with class and singleton', async () => {
+    const serviceModule = await import('@/shared/data/EntitiesService')
+    expect(serviceModule.EntitiesService).toBeDefined()
+    expect(serviceModule.entitiesService).toBeDefined()
+    expect(serviceModule.listEntitiesSchema).toBeDefined()
+  })
+
+  it('TilesService modules are exported', async () => {
+    const serviceModule = await import('@/shared/data/generation/TilesService')
+    expect(serviceModule.TilesService).toBeDefined()
+    expect(serviceModule.tilesService).toBeDefined()
+    expect(serviceModule.threeDService).toBeDefined()
+    expect(serviceModule.portraitService).toBeDefined()
+  })
+})
