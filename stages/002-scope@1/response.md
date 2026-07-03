@@ -1,0 +1,1 @@
+I'll run the scope command for `src-root` exactly as specified.

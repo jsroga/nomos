@@ -1314,14 +1314,146 @@
     }
   },
   "web_url": "http://127.0.0.1:32276/runs/01KWKYBW7C2H8WQ8FH7YMTGG6N",
-  "start": null,
-  "status": {
-    "kind": "starting"
+  "start": {
+    "start_time": "2026-07-03T12:13:53.555701Z",
+    "run_branch": "fabro/run/01KWKYBW7C2H8WQ8FH7YMTGG6N",
+    "base_sha": "ebbf096736d6353472b301b58e2dab3c7308c467"
   },
-  "status_updated_at": "2026-07-03T12:13:29.242448Z",
-  "last_event_at": "2026-07-03T12:13:52.993872Z",
+  "status": {
+    "kind": "running"
+  },
+  "status_updated_at": "2026-07-03T12:13:53.555728Z",
+  "last_event_at": "2026-07-03T12:14:14.772544Z",
   "pending_control": null,
-  "checkpoints": [],
+  "checkpoints": [
+    {
+      "seq": 22,
+      "checkpoint": {
+        "timestamp": "2026-07-03T12:13:56.093216Z",
+        "current_node": "start",
+        "completed_nodes": [
+          "start"
+        ],
+        "node_retries": {},
+        "context_values": {
+          "internal.fidelity": "summary:medium",
+          "graph.label": "Optional Build",
+          "internal.node_visit_count": 1,
+          "internal.run_id": "01KWKYBW7C2H8WQ8FH7YMTGG6N",
+          "failure_class": "",
+          "current_node": "start",
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-fable-5; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
+          "graph.rankdir": "LR",
+          "graph.default_fidelity": "summary:medium",
+          "graph.stall_timeout": "1800000ms",
+          "internal.work_dir": "/workspace/kurvitza",
+          "internal.thread_id": null,
+          "graph.default_max_retries": "1",
+          "internal.retry_count.start": 0,
+          "failure_signature": "",
+          "graph.goal": "# src-root cleanup — ideal top-level `src/` layout + full reference update\n\n## Mission\n\nDesign the **ideal top-level `src/` folder structure** per\n`docs/unified/ARCHITECTURE.md` §3 (Repository topology), then **update every file\nthat references old paths** (imports, re-exports, tests, API routes, Next.js config,\nFabro verify scopes). Behavior-preserving; no new product features.\n\nThis is a **large, multi-sprint** effort — the plan may contain **40–80 todos**.\nDo **not** under-scope the reference sweep: a move without updating all referrers\nis a failed increment.\n\n**Primary pain (operator):** `src/` has **~20+ top-level folders** outside the\ntarget topology. Legacy homes (`agent-core`, `lib`, `infrastructure`, `hooks`,\n`store`, `services`, `prompts`, `evaluation`, `mcp`, `workflows`, `types`,\n`config`, `constants`, `content`, `pages`) duplicate or prefigure what must live\nin `shared/`, `domains/<module>/`, `db/`, `trigger/`, `components/ui/`, or `app/`.\nThe operator wants Fabro to **propose** a concrete target tree, get human approval,\nthen **execute moves and fix every import**.\n\n**Out of scope for this run's default posture:** reshaping `src/domains/*` internals\n(that is `module=domains-catalog`). This run focuses on **top-level `src/`** only,\nbut must still **grep and fix referrers** in `domains/`, `app/`, and `tests/` when\npaths change.\n\n## Target topology (contract)\n\nFrom `docs/unified/ARCHITECTURE.md` §3 — the **only** legal top-level `src/` layout\nafter migration:\n\n```\nsrc/\n├─ domains/<module>/     # vertical slices (see domains-catalog for module internals)\n├─ shared/               # cross-module: agent-kernel, jobs, data, auth, observability, errors\n├─ components/ui/        # Radix + CVA design system primitives\n├─ db/                   # Drizzle schema + client (single source of truth)\n├─ trigger/              # thin re-export registry for Trigger.dev tasks\n├─ app/                  # Next.js App Router — routes + API glue only\n├─ middleware.ts         # Next.js middleware (if present — stays at src root)\n└─ instrumentation*.ts   # Next.js instrumentation (if present — stays at src root)\n```\n\n**Rule:** anything imported by 2+ modules lives in `shared/`, never in a domain or\nlegacy top-level folder. `shared/` supersedes `lib/`, `agent-core/`, `infrastructure/`,\n`store/`, and ad-hoc `services/` at `src/` root.\n\n## Current inventory (operator snapshot — Scope re-validates)\n\n| Top-level path | Role today | Target disposition |\n|----------------|------------|-------------------|\n| `agent-core/` | Mastra kernel, models, observability dupes | → `shared/agent-kernel/` (+ `shared/observability/`) |\n| `lib/` | auth, utils, API helpers | → `shared/auth/`, `shared/data/`, delete dupes |\n| `infrastructure/` | legacy wiring | → `shared/*` or delete |\n| `hooks/` | cross-cutting React hooks | → `shared/` or owning `domains/*/state/` |\n| `store/` | global Zustand | → `shared/` or module `state/` |\n| `services/` | orphan server helpers | → `domains/*/services/` or `shared/` |\n| `prompts/` | prompt builders | → `domains/*/prompts/` or `shared/agent-kernel/` |\n| `evaluation/` | offline eval harness | → keep slim or `shared/agent-kernel/scorers/` |\n| `mcp/` | MCP servers | → `src/mcp` ok if single entry; or `shared/` |\n| `workflows/` | hand-rolled orchestration | → Mastra workflows in `domains/*/agents/` |\n| `types/` | global TS types | → `shared/data/` or colocate |\n| `config/`, `constants/`, `content/` | misc | → colocate or `shared/` |\n| `pages/` | legacy Pages router? | → migrate to `app/` or delete |\n| `components/` | UI | → `components/ui/` only at top level |\n| `domains/` | product modules | **keep** — do not reshape internals this run |\n| `db/`, `trigger/`, `app/`, `shared/` | already target-aligned | **keep** — extend, don't replace |\n\nScope stage prints live counts; Plan Author updates this table if reality differs.\n\n## Required deliverable: ideal structure (before code moves)\n\n**Plan Author MUST write `STRUCTURE.md`** at repo root (overwrite stale domain-catalog\ncopies). For **src-root** runs the file has a dedicated section:\n\n### `STRUCTURE.md` — src-root section (mandatory)\n\n1. **Current top-level tree** — `ls -1 src/` + one-line role per folder.\n2. **Ideal target tree** (ASCII) — §3 topology above; note what stays at root\n   (`middleware.ts`, `instrumentation.ts`).\n3. **Disposition table** — every legacy top-level folder: `keep` | `merge → shared/X` |\n   `move → domains/<m>/Y` | `delete` (with evidence: importers = 0).\n4. **Move map** — `old_path → new_path` for every file that moves in the approved wave.\n5. **Re-export shim plan** — which old paths get temporary `index.ts` re-exports\n   (SPEC F-1 staged migration).\n6. **Out of scope for this wave** — explicit list (usually: full `domains/` reshape,\n   full `evaluation/` rewrite).\n\n## Required deliverable: reference update (every referrer)\n\nImplementation MUST update **all referrers**, not only files inside the moved folder:\n\n| Referrer class | Examples | Action |\n|----------------|----------|--------|\n| `@/lib/*`, `@/agent-core/*` | app routes, domains, tests | Rewrite to `@/shared/*` |\n| Deep imports | `@/hooks/useX`, `@/services/Foo` | Route through new public path |\n| `tsconfig` paths | `paths` in `tsconfig.json` | Update aliases |\n| Next config | `next.config.js` transpile/includes | Update if paths change |\n| Tests | `tests/**`, `**/__tests__/**` | Fix mocks + imports |\n| Docs | `AGENTS.md`, `docs/**` | Update cited paths |\n| Knip / ESLint boundaries | boundary rules | Update globs |\n\n**Plan Author** must include grep-driven todos:\n\n```bash\ngrep -rn \"from '@/lib\" src/ tests/\ngrep -rn \"from '@/agent-core\" src/ tests/\ngrep -rn \"from '@/hooks\" src/ tests/\ngrep -rn \"from '@/infrastructure\" src/ tests/\ngrep -rn \"from '@/store\" src/ tests/\n```\n\n…one todo per batch with expected file counts.\n\n## Plan shape (`PLAN.md`)\n\nFirst lines must include: **`Fabro module: src-root`** (for `fabro-verify.mjs`).\n\n1. **Executive summary**\n2. **Pointer to `STRUCTURE.md`** — src-root section is the move contract\n3. **Global prerequisites** — SPEC F-1 (shared stubs + re-exports), F-2, F-3\n4. **Per-folder sections** (agent-core, lib, hooks, …) with prioritized items\n5. **Master todo list** (numbered 1…N, N may be 40–80):\n   - Structure design todos\n   - Stub + re-export todos (no big-bang)\n   - Move todos (`git mv` batches)\n   - **Reference-update todos** (grep-driven)\n   - Boundary lint / knip todos\n   - Verification per wave\n6. **Suggested waves**\n7. **Deferred** (domains-catalog, evaluation overhaul, etc.)\n\n## Clarify gate (src-root)\n\n| Option | Posture |\n|--------|---------|\n| **A — Staged** | Finalize `STRUCTURE.md` for **all** top-level folders; **implement Wave 1** only (`shared/` stubs + highest-traffic `lib/`/`agent-core` re-exports + referrer sweep) after Verification. |\n| **B — Plan-only** | `STRUCTURE.md` + `PLAN.md` + referrer inventory; **no moves** this run. |\n| **C — Full src-root** | Structure for all; implement all waves + all referrers (many verify loops). |\n\nRecommend **A**.\n\n## Non-negotiables\n\n- Ground ideal tree in `docs/unified/ARCHITECTURE.md` §3 + `docs/unified/SPEC.md` F-1…F-3.\n- **No move without referrer audit** — paired move + grep todos.\n- Behavior-preserving; `npm run typecheck`, `npm run test:unit`, `node scripts/fabro-verify.mjs`.\n- Use `refactor` skill for moves; staged re-exports before deleting old paths.\n- Do **not** reshape `src/domains/*` internals in Wave 1 unless a top-level move\n  forces a one-line import fix in a domain barrel.\n\n## Assess focus\n\n- Top-level folder inventory vs §3 target (table)\n- **Duplication map**: `agent-core` vs `shared/agent-kernel` vs `domains/*/agents`\n- **Import heat map**: grep counts for `@/lib`, `@/agent-core`, `@/hooks` from `app/` and `domains/`\n- **SPEC F-1 readiness**: does `shared/` exist with stubs?\n- `## Metadata` (`has_ui_surface: no` for structure-only Wave 1)\n",
+          "outcome": "succeeded"
+        },
+        "node_outcomes": {
+          "start": {
+            "status": "succeeded",
+            "usage": null
+          }
+        },
+        "next_node_id": "scope",
+        "node_visits": {
+          "start": 1
+        }
+      },
+      "diff": {}
+    },
+    {
+      "seq": 0,
+      "checkpoint": {
+        "timestamp": "2026-07-03T12:14:14.859955Z",
+        "current_node": "scope",
+        "completed_nodes": [
+          "start",
+          "scope"
+        ],
+        "node_retries": {},
+        "context_values": {
+          "failure_class": "",
+          "last_response": "I'll run the scope command for `src-root` exactly as specified.",
+          "outcome": "succeeded",
+          "graph.stall_timeout": "1800000ms",
+          "graph.default_fidelity": "summary:medium",
+          "failure_signature": "",
+          "last_stage": "scope",
+          "graph.rankdir": "LR",
+          "graph.default_max_retries": "1",
+          "internal.fidelity": "summary:medium",
+          "current_node": "scope",
+          "internal.retry_count.start": 0,
+          "internal.node_visit_count": 1,
+          "internal.work_dir": "/workspace/kurvitza",
+          "response.scope": "I'll run the scope command for `src-root` exactly as specified.",
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-fable-5; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
+          "thread.review.current_node": "scope",
+          "internal.retry_count.scope": 0,
+          "graph.goal": "# src-root cleanup — ideal top-level `src/` layout + full reference update\n\n## Mission\n\nDesign the **ideal top-level `src/` folder structure** per\n`docs/unified/ARCHITECTURE.md` §3 (Repository topology), then **update every file\nthat references old paths** (imports, re-exports, tests, API routes, Next.js config,\nFabro verify scopes). Behavior-preserving; no new product features.\n\nThis is a **large, multi-sprint** effort — the plan may contain **40–80 todos**.\nDo **not** under-scope the reference sweep: a move without updating all referrers\nis a failed increment.\n\n**Primary pain (operator):** `src/` has **~20+ top-level folders** outside the\ntarget topology. Legacy homes (`agent-core`, `lib`, `infrastructure`, `hooks`,\n`store`, `services`, `prompts`, `evaluation`, `mcp`, `workflows`, `types`,\n`config`, `constants`, `content`, `pages`) duplicate or prefigure what must live\nin `shared/`, `domains/<module>/`, `db/`, `trigger/`, `components/ui/`, or `app/`.\nThe operator wants Fabro to **propose** a concrete target tree, get human approval,\nthen **execute moves and fix every import**.\n\n**Out of scope for this run's default posture:** reshaping `src/domains/*` internals\n(that is `module=domains-catalog`). This run focuses on **top-level `src/`** only,\nbut must still **grep and fix referrers** in `domains/`, `app/`, and `tests/` when\npaths change.\n\n## Target topology (contract)\n\nFrom `docs/unified/ARCHITECTURE.md` §3 — the **only** legal top-level `src/` layout\nafter migration:\n\n```\nsrc/\n├─ domains/<module>/     # vertical slices (see domains-catalog for module internals)\n├─ shared/               # cross-module: agent-kernel, jobs, data, auth, observability, errors\n├─ components/ui/        # Radix + CVA design system primitives\n├─ db/                   # Drizzle schema + client (single source of truth)\n├─ trigger/              # thin re-export registry for Trigger.dev tasks\n├─ app/                  # Next.js App Router — routes + API glue only\n├─ middleware.ts         # Next.js middleware (if present — stays at src root)\n└─ instrumentation*.ts   # Next.js instrumentation (if present — stays at src root)\n```\n\n**Rule:** anything imported by 2+ modules lives in `shared/`, never in a domain or\nlegacy top-level folder. `shared/` supersedes `lib/`, `agent-core/`, `infrastructure/`,\n`store/`, and ad-hoc `services/` at `src/` root.\n\n## Current inventory (operator snapshot — Scope re-validates)\n\n| Top-level path | Role today | Target disposition |\n|----------------|------------|-------------------|\n| `agent-core/` | Mastra kernel, models, observability dupes | → `shared/agent-kernel/` (+ `shared/observability/`) |\n| `lib/` | auth, utils, API helpers | → `shared/auth/`, `shared/data/`, delete dupes |\n| `infrastructure/` | legacy wiring | → `shared/*` or delete |\n| `hooks/` | cross-cutting React hooks | → `shared/` or owning `domains/*/state/` |\n| `store/` | global Zustand | → `shared/` or module `state/` |\n| `services/` | orphan server helpers | → `domains/*/services/` or `shared/` |\n| `prompts/` | prompt builders | → `domains/*/prompts/` or `shared/agent-kernel/` |\n| `evaluation/` | offline eval harness | → keep slim or `shared/agent-kernel/scorers/` |\n| `mcp/` | MCP servers | → `src/mcp` ok if single entry; or `shared/` |\n| `workflows/` | hand-rolled orchestration | → Mastra workflows in `domains/*/agents/` |\n| `types/` | global TS types | → `shared/data/` or colocate |\n| `config/`, `constants/`, `content/` | misc | → colocate or `shared/` |\n| `pages/` | legacy Pages router? | → migrate to `app/` or delete |\n| `components/` | UI | → `components/ui/` only at top level |\n| `domains/` | product modules | **keep** — do not reshape internals this run |\n| `db/`, `trigger/`, `app/`, `shared/` | already target-aligned | **keep** — extend, don't replace |\n\nScope stage prints live counts; Plan Author updates this table if reality differs.\n\n## Required deliverable: ideal structure (before code moves)\n\n**Plan Author MUST write `STRUCTURE.md`** at repo root (overwrite stale domain-catalog\ncopies). For **src-root** runs the file has a dedicated section:\n\n### `STRUCTURE.md` — src-root section (mandatory)\n\n1. **Current top-level tree** — `ls -1 src/` + one-line role per folder.\n2. **Ideal target tree** (ASCII) — §3 topology above; note what stays at root\n   (`middleware.ts`, `instrumentation.ts`).\n3. **Disposition table** — every legacy top-level folder: `keep` | `merge → shared/X` |\n   `move → domains/<m>/Y` | `delete` (with evidence: importers = 0).\n4. **Move map** — `old_path → new_path` for every file that moves in the approved wave.\n5. **Re-export shim plan** — which old paths get temporary `index.ts` re-exports\n   (SPEC F-1 staged migration).\n6. **Out of scope for this wave** — explicit list (usually: full `domains/` reshape,\n   full `evaluation/` rewrite).\n\n## Required deliverable: reference update (every referrer)\n\nImplementation MUST update **all referrers**, not only files inside the moved folder:\n\n| Referrer class | Examples | Action |\n|----------------|----------|--------|\n| `@/lib/*`, `@/agent-core/*` | app routes, domains, tests | Rewrite to `@/shared/*` |\n| Deep imports | `@/hooks/useX`, `@/services/Foo` | Route through new public path |\n| `tsconfig` paths | `paths` in `tsconfig.json` | Update aliases |\n| Next config | `next.config.js` transpile/includes | Update if paths change |\n| Tests | `tests/**`, `**/__tests__/**` | Fix mocks + imports |\n| Docs | `AGENTS.md`, `docs/**` | Update cited paths |\n| Knip / ESLint boundaries | boundary rules | Update globs |\n\n**Plan Author** must include grep-driven todos:\n\n```bash\ngrep -rn \"from '@/lib\" src/ tests/\ngrep -rn \"from '@/agent-core\" src/ tests/\ngrep -rn \"from '@/hooks\" src/ tests/\ngrep -rn \"from '@/infrastructure\" src/ tests/\ngrep -rn \"from '@/store\" src/ tests/\n```\n\n…one todo per batch with expected file counts.\n\n## Plan shape (`PLAN.md`)\n\nFirst lines must include: **`Fabro module: src-root`** (for `fabro-verify.mjs`).\n\n1. **Executive summary**\n2. **Pointer to `STRUCTURE.md`** — src-root section is the move contract\n3. **Global prerequisites** — SPEC F-1 (shared stubs + re-exports), F-2, F-3\n4. **Per-folder sections** (agent-core, lib, hooks, …) with prioritized items\n5. **Master todo list** (numbered 1…N, N may be 40–80):\n   - Structure design todos\n   - Stub + re-export todos (no big-bang)\n   - Move todos (`git mv` batches)\n   - **Reference-update todos** (grep-driven)\n   - Boundary lint / knip todos\n   - Verification per wave\n6. **Suggested waves**\n7. **Deferred** (domains-catalog, evaluation overhaul, etc.)\n\n## Clarify gate (src-root)\n\n| Option | Posture |\n|--------|---------|\n| **A — Staged** | Finalize `STRUCTURE.md` for **all** top-level folders; **implement Wave 1** only (`shared/` stubs + highest-traffic `lib/`/`agent-core` re-exports + referrer sweep) after Verification. |\n| **B — Plan-only** | `STRUCTURE.md` + `PLAN.md` + referrer inventory; **no moves** this run. |\n| **C — Full src-root** | Structure for all; implement all waves + all referrers (many verify loops). |\n\nRecommend **A**.\n\n## Non-negotiables\n\n- Ground ideal tree in `docs/unified/ARCHITECTURE.md` §3 + `docs/unified/SPEC.md` F-1…F-3.\n- **No move without referrer audit** — paired move + grep todos.\n- Behavior-preserving; `npm run typecheck`, `npm run test:unit`, `node scripts/fabro-verify.mjs`.\n- Use `refactor` skill for moves; staged re-exports before deleting old paths.\n- Do **not** reshape `src/domains/*` internals in Wave 1 unless a top-level move\n  forces a one-line import fix in a domain barrel.\n\n## Assess focus\n\n- Top-level folder inventory vs §3 target (table)\n- **Duplication map**: `agent-core` vs `shared/agent-kernel` vs `domains/*/agents`\n- **Import heat map**: grep counts for `@/lib`, `@/agent-core`, `@/hooks` from `app/` and `domains/`\n- **SPEC F-1 readiness**: does `shared/` exist with stubs?\n- `## Metadata` (`has_ui_surface: no` for structure-only Wave 1)\n",
+          "graph.label": "Optional Build",
+          "internal.thread_id": "review",
+          "internal.run_id": "01KWKYBW7C2H8WQ8FH7YMTGG6N"
+        },
+        "node_outcomes": {
+          "scope": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_response": "I'll run the scope command for `src-root` exactly as specified.",
+              "response.scope": "I'll run the scope command for `src-root` exactly as specified.",
+              "last_stage": "scope"
+            },
+            "notes": "Stage completed: scope",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "anthropic",
+                    "model_id": "claude-sonnet-4-5"
+                  },
+                  "tokens": {
+                    "input_tokens": 5358,
+                    "output_tokens": 929,
+                    "reasoning_tokens": 0,
+                    "cache_read_tokens": 12075,
+                    "cache_write_tokens": 15880
+                  }
+                },
+                "facts": {
+                  "algorithm": "anthropic",
+                  "cache_write_5m_tokens": 15880,
+                  "cache_write_1h_tokens": 0
+                }
+              },
+              "total_usd_micros": 93181
+            },
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 17852,
+              "tool_time_ms": 208,
+              "active_time_ms": 18060
+            }
+          },
+          "start": {
+            "status": "succeeded",
+            "usage": null
+          }
+        },
+        "next_node_id": "assess",
+        "node_visits": {
+          "scope": 1,
+          "start": 1
+        }
+      },
+      "diff": {}
+    }
+  ],
   "conclusion": null,
   "sandbox": {
     "kind": "ready",
@@ -1348,5 +1480,268 @@
   "pull_request": null,
   "superseded_by": null,
   "pending_interviews": {},
-  "stages": {}
+  "stages": {
+    "start@1": {
+      "first_event_seq": 18,
+      "prompt": null,
+      "response": null,
+      "completion": {
+        "outcome": "succeeded",
+        "notes": null,
+        "failure_reason": null,
+        "timestamp": "2026-07-03T12:13:56.093129Z"
+      },
+      "provider_used": null,
+      "diff": null,
+      "script_invocation": null,
+      "script_timing": null,
+      "parallel_results": null,
+      "output": null,
+      "started_at": "2026-07-03T12:13:55.987950Z",
+      "handler": "start",
+      "timing": {
+        "wall_time_ms": 0,
+        "inference_time_ms": 0,
+        "tool_time_ms": 0,
+        "active_time_ms": 0
+      },
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "reasoning_tokens": 0,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0
+      },
+      "state": "succeeded"
+    },
+    "scope@1": {
+      "first_event_seq": 23,
+      "prompt": null,
+      "response": null,
+      "completion": null,
+      "provider_used": {
+        "mode": "agent",
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "reasoning_effort": "low"
+      },
+      "diff": null,
+      "script_invocation": null,
+      "script_timing": null,
+      "parallel_results": null,
+      "output": null,
+      "started_at": "2026-07-03T12:13:56.093287Z",
+      "handler": "agent",
+      "usage": {
+        "input_tokens": 5358,
+        "output_tokens": 929,
+        "total_tokens": 34242,
+        "reasoning_tokens": 0,
+        "cache_read_tokens": 12075,
+        "cache_write_tokens": 15880,
+        "total_usd_micros": 93181
+      },
+      "model": {
+        "provider": "anthropic",
+        "model_id": "claude-sonnet-4-5"
+      },
+      "permission_level": "full",
+      "agent_tools": [
+        {
+          "name": "AskUserQuestion",
+          "description": "Ask the human one or more questions and wait for their answers before continuing this stage.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "TaskCreate",
+          "description": "Create pending tasks in the current session. Use concise subjects, descriptions, optional activeForm text, and metadata. Check TaskList first to avoid duplicate tasks.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "TaskGet",
+          "description": "Get one task by taskId, including subject, status, description, owner, blockedBy, and blocks.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "TaskList",
+          "description": "List tasks for the current session, including status, owner, and blocking dependencies. Use TaskGet with a taskId for full description and dependency details.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "TaskUpdate",
+          "description": "Update an existing task's status, text, owner, metadata, or dependencies. Valid statuses are pending, in_progress, completed, and deleted. After completing a task, call TaskList to find newly unblocked work.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "close_agent",
+          "description": "Close a running subagent that is no longer needed.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "edit_file",
+          "description": "Edit a file by replacing an exact string. The old_string must be an exact match and unique unless replace_all is true; include surrounding context when needed. Read the file first and preserve existing indentation.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "write",
+          "invoked": false
+        },
+        {
+          "name": "glob",
+          "description": "Find files by file names using a glob pattern. Use path to choose the search root. Prefer this over shell find or ls when locating repository files.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": false
+        },
+        {
+          "name": "grep",
+          "description": "Search file contents with a regex pattern. Use path to choose the search root, glob_filter to limit matching files, case_insensitive for case folding, and max_results to cap output.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": false
+        },
+        {
+          "name": "read_file",
+          "description": "Read files before editing them. Returns line-numbered text and supports offset/limit for large files. Use this instead of shell cat, head, tail, or sed when inspecting repository files.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": false
+        },
+        {
+          "name": "send_input",
+          "description": "Send a follow-up message to a running subagent when new information or corrected instructions are needed.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "shell",
+          "description": "Execute shell commands for terminal operations, package managers, tests and builds. Use dedicated tools for file reads, file edits, filename searches, and content searches. Provide timeout_ms for long-running commands.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "shell",
+          "invoked": true
+        },
+        {
+          "name": "spawn_agent",
+          "description": "Spawn a subagent for independent work or context isolation. Use it for tasks that can proceed separately, and avoid duplicating the same work in the parent session.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "wait",
+          "description": "Wait for a subagent to complete, then use the result to synthesize the outcome for the user.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "web_fetch",
+          "description": "Fetch content from a URL that starts with http:// or https://. Pass a prompt to extract specific information or summarize the page; omit prompt to return the page content.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "web_search",
+          "description": "Search the web using Brave Search when current external information is needed. Returns result titles, URLs, and descriptions; use web_fetch for a specific URL.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "write_file",
+          "description": "Create new files, or overwrite an existing file only when replacement is explicitly intended. Prefer edit_file for targeted changes to existing files because write_file overwrites the full file content.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "write",
+          "invoked": false
+        }
+      ],
+      "context_window": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "context_window_tokens": 200000,
+        "input_tokens": 17424,
+        "usage_percent": 8.712,
+        "count_method": "response_usage_scaled_breakdown",
+        "staleness": "live",
+        "generated_at": "2026-07-03T12:14:14.771876Z",
+        "event_seq": 44,
+        "breakdown": [
+          {
+            "category": "system_prompt",
+            "tokens": 2058,
+            "usage_percent": 1.029
+          },
+          {
+            "category": "tools",
+            "tokens": 2357,
+            "usage_percent": 1.1785
+          },
+          {
+            "category": "memory",
+            "tokens": 7572,
+            "usage_percent": 3.786
+          },
+          {
+            "category": "conversation",
+            "tokens": 5429,
+            "usage_percent": 2.7145
+          },
+          {
+            "category": "other",
+            "tokens": 8,
+            "usage_percent": 0.004
+          }
+        ],
+        "warnings": []
+      },
+      "state": "running"
+    }
+  }
 }
