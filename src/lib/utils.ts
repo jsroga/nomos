@@ -1,6 +1,3 @@
-import { clsx, type ClassValue } from 'clsx'
-import { twMerge } from 'tailwind-merge'
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
+// Re-export shim — preserves importers during Increment 1.
+// Codemod in Increment 2 (Item 11), then delete this file.
+export * from '@/shared/data/utils'
