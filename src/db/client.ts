@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
-import { storytellerSchema } from '@/domains/storyteller'
+import * as storytellerSchema from '@/domains/storyteller/db/schema'
 
 const connectionString = process.env.DATABASE_URL!
 
