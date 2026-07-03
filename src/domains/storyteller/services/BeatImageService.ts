@@ -1,4 +1,4 @@
-import { BeatCard } from '@/domains/storyteller/core/StoryTypes'
+import { BeatCard } from '@/domains/storyteller/core/types/StoryTypes'
 import { LocalStorageKeys } from '@/constants/localStorage'
 
 class BeatImageService {

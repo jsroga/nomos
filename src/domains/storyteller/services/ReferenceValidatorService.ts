@@ -1,5 +1,5 @@
 import { entityRegistry } from './EntityRegistryService'
-import { parseReferences } from '@/domains/storyteller/core/ReferenceParser'
+import { parseReferences } from '@/domains/storyteller/core/entities/ReferenceParser'
 
 export class ReferenceValidator {
     /**

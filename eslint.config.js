@@ -168,16 +168,16 @@ module.exports = [
     },
   },
   {
-    files: ['src/**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}', 'tests/**/*.{ts,tsx}'],
     ignores: ['src/domains/storyteller/**'],
     rules: {
       'no-restricted-imports': [
-        'warn',
+        'error',  // Flipped from 'warn' after Wave 1 referrer cleanup
         {
           patterns: [
             {
-              group: ['@/domains/storyteller/*'],
-              message: 'Import from "@/domains/storyteller" instead of storyteller internals.',
+              group: ['@/domains/storyteller/*', '!@/domains/storyteller/io/*'],
+              message: 'Import from "@/domains/storyteller" instead of storyteller internals. Only io/ is allowed for deep imports.',
             },
           ],
         },

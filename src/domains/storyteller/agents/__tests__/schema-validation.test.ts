@@ -33,12 +33,12 @@ import {
   EpisodePremiseSchema,
   PremiseArchitectResponseSchema,
   PremiseActionSchema,
-} from '@/domains/storyteller/agents/PremiseArchitectAgent'
+} from '@/domains/storyteller/agents/council/PremiseArchitectAgent'
 import {
   ConsistencyAgentResponseSchema,
   InconsistencySchema,
   ConsistencyFixSchema,
-} from '@/domains/storyteller/agents/ConsistencyAgent'
+} from '@/domains/storyteller/agents/judges/ConsistencyAgent'
 import { getErrorMessage } from '@/lib/error-utils'
 
 /**

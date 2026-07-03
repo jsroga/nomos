@@ -15,8 +15,8 @@ import { promptRepository } from '@/prompts/repository'
 import { registerCorePrompts } from '@/prompts/registry'
 import { withSpan } from '@/agent-core/observability'
 import { v4 as uuidv4 } from 'uuid'
-import { getMastraInstance, getStorageInstance } from '@/domains/storyteller/agents/MastraInstance'
-import { GLOBAL_AGENT_MODEL, AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/agents/ModelConfig'
+import { getMastraInstance, getStorageInstance } from '@/shared/agent-kernel'
+import { GLOBAL_AGENT_MODEL, AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/config/ModelConfig'
 
 // Import all v2 tools
 import {
@@ -47,7 +47,7 @@ import {
   researchTool,
   factCheckTool,
   referenceLookupTool,
-} from '@/domains/storyteller/tools'
+} from '@/domains/storyteller/agents/tools'
 import { runStoryCreationWorkflowTool } from '@/domains/storyteller/tools/workflow-tools'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
 

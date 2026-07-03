@@ -8,16 +8,16 @@
  * - Payload extraction logic
  */
 
-import { ActionType, BibleSection } from '@/domains/storyteller/core/Enums'
-import { deepMerge, smartMergeArray } from '@/domains/storyteller/core/DeepMerge'
+import { ActionType, BibleSection } from '@/domains/storyteller/core/types/Enums'
+import { deepMerge, smartMergeArray } from '@/domains/storyteller/core/editing/DeepMerge'
 import {
   extractCastFromUpdates,
   normalizeCastInUpdates,
   readCastFromPlan,
-} from '@/domains/storyteller/core/StoryPlanFields'
+} from '@/domains/storyteller/core/formatting/StoryPlanFields'
 
 // Re-export merge helpers for callers and tests
-export { deepMerge, smartMergeArray } from '@/domains/storyteller/core/DeepMerge'
+export { deepMerge, smartMergeArray } from '@/domains/storyteller/core/editing/DeepMerge'
 
 // ============================================
 // Section Configuration
