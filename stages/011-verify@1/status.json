@@ -1,0 +1,6 @@
+{
+  "outcome": "failed",
+  "notes": null,
+  "failure_reason": "Script failed with exit code: 2\n\n## output\ntypecheck: module scope (chat)\ntypecheck: ignoring 77 error(s) outside the verify scope\ntypecheck: errors in scope:\nsrc/domains/chat/components/__tests__/AgentLog.e2e.test.tsx(30,5): error TS2304: Cannot find name 'beforeAll'.\nsrc/domains/chat/mentions/game-entity-provider.ts(53,3): error TS2322: Type '(filter: string, context: ProjectContext) => Promise<MentionItem[]>' is not assignable to type '(filter: string, projectContext: ProjectContext) => MentionItem[]'.\n",
+  "timestamp": "2026-07-03T09:37:20.645826Z"
+}

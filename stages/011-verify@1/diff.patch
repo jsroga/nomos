@@ -1,0 +1,16 @@
+diff --git a/tsconfig.fabro-verify.json b/tsconfig.fabro-verify.json
+index f81a3e3..c848423 100644
+--- a/tsconfig.fabro-verify.json
++++ b/tsconfig.fabro-verify.json
+@@ -1,8 +1,8 @@
+ {
+   "extends": "./tsconfig.json",
+   "include": [
+-    "src/domains/storyteller/index.ts",
+-    "src/domains/storyteller/services/ContextAssemblyService.ts",
+-    "src/domains/storyteller/services/StorytellerCrudService.ts"
++    "src/domains/chat/**/*.ts",
++    "src/domains/chat/**/*.tsx",
++    "src/app/api/chat/**/*.ts"
+   ]
+ }
