@@ -1313,15 +1313,92 @@
     }
   },
   "web_url": "http://127.0.0.1:32276/runs/01KWM39XR77X28YMP2847ZK7YQ",
-  "start": null,
-  "status": {
-    "kind": "starting"
+  "start": {
+    "start_time": "2026-07-03T13:40:08.479897Z",
+    "run_branch": "fabro/run/01KWM39XR77X28YMP2847ZK7YQ",
+    "base_sha": "ebbf096736d6353472b301b58e2dab3c7308c467"
   },
-  "status_updated_at": "2026-07-03T13:39:47.665883Z",
-  "last_event_at": "2026-07-03T13:40:07.925123Z",
+  "status": {
+    "kind": "running"
+  },
+  "status_updated_at": "2026-07-03T13:40:08.479922Z",
+  "last_event_at": "2026-07-03T13:40:14.158042Z",
   "pending_control": null,
-  "checkpoints": [],
-  "conclusion": null,
+  "checkpoints": [
+    {
+      "seq": 21,
+      "checkpoint": {
+        "timestamp": "2026-07-03T13:40:10.920748Z",
+        "current_node": "start",
+        "completed_nodes": [
+          "start"
+        ],
+        "node_retries": {},
+        "context_values": {
+          "outcome": "succeeded",
+          "internal.run_id": "01KWM39XR77X28YMP2847ZK7YQ",
+          "graph.label": "Optional Build",
+          "internal.thread_id": null,
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-fable-5; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
+          "internal.node_visit_count": 1,
+          "internal.work_dir": "/workspace/kurvitza",
+          "graph.rankdir": "LR",
+          "graph.default_max_retries": "1",
+          "current_node": "start",
+          "graph.goal": "# src-root cleanup — ideal top-level `src/` layout + full reference update\n\n## Mission\n\nDesign the **ideal top-level `src/` folder structure** per\n`docs/unified/ARCHITECTURE.md` §3 (Repository topology), then **update every file\nthat references old paths** (imports, re-exports, tests, API routes, Next.js config,\nFabro verify scopes). Behavior-preserving; no new product features.\n\nThis is a **large, multi-sprint** effort — the plan may contain **40–80 todos**.\nDo **not** under-scope the reference sweep: a move without updating all referrers\nis a failed increment.\n\n**Primary pain (operator):** `src/` has **~20+ top-level folders** outside the\ntarget topology. Legacy homes (`agent-core`, `lib`, `infrastructure`, `hooks`,\n`store`, `services`, `prompts`, `evaluation`, `mcp`, `workflows`, `types`,\n`config`, `constants`, `content`, `pages`) duplicate or prefigure what must live\nin `shared/`, `domains/<module>/`, `db/`, `trigger/`, `components/ui/`, or `app/`.\nThe operator wants Fabro to **propose** a concrete target tree, get human approval,\nthen **execute moves and fix every import**.\n\n**Out of scope for this run's default posture:** reshaping `src/domains/*` internals\n(that is `module=domains-catalog`). This run focuses on **top-level `src/`** only,\nbut must still **grep and fix referrers** in `domains/`, `app/`, and `tests/` when\npaths change.\n\n## Target topology (contract)\n\nFrom `docs/unified/ARCHITECTURE.md` §3 — the **only** legal top-level `src/` layout\nafter migration:\n\n```\nsrc/\n├─ domains/<module>/     # vertical slices (see domains-catalog for module internals)\n├─ shared/               # cross-module: agent-kernel, jobs, data, auth, observability, errors\n├─ components/ui/        # Radix + CVA design system primitives\n├─ db/                   # Drizzle schema + client (single source of truth)\n├─ trigger/              # thin re-export registry for Trigger.dev tasks\n├─ app/                  # Next.js App Router — routes + API glue only\n├─ middleware.ts         # Next.js middleware (if present — stays at src root)\n└─ instrumentation*.ts   # Next.js instrumentation (if present — stays at src root)\n```\n\n**Rule:** anything imported by 2+ modules lives in `shared/`, never in a domain or\nlegacy top-level folder. `shared/` supersedes `lib/`, `agent-core/`, `infrastructure/`,\n`store/`, and ad-hoc `services/` at `src/` root.\n\n## Current inventory (operator snapshot — Scope re-validates)\n\n| Top-level path | Role today | Target disposition |\n|----------------|------------|-------------------|\n| `agent-core/` | Mastra kernel, models, observability dupes | → `shared/agent-kernel/` (+ `shared/observability/`) |\n| `lib/` | auth, utils, API helpers | → `shared/auth/`, `shared/data/`, delete dupes |\n| `infrastructure/` | legacy wiring | → `shared/*` or delete |\n| `hooks/` | cross-cutting React hooks | → `shared/` or owning `domains/*/state/` |\n| `store/` | global Zustand | → `shared/` or module `state/` |\n| `services/` | orphan server helpers | → `domains/*/services/` or `shared/` |\n| `prompts/` | prompt builders | → `domains/*/prompts/` or `shared/agent-kernel/` |\n| `evaluation/` | offline eval harness | → keep slim or `shared/agent-kernel/scorers/` |\n| `mcp/` | MCP servers | → `src/mcp` ok if single entry; or `shared/` |\n| `workflows/` | hand-rolled orchestration | → Mastra workflows in `domains/*/agents/` |\n| `types/` | global TS types | → `shared/data/` or colocate |\n| `config/`, `constants/`, `content/` | misc | → colocate or `shared/` |\n| `pages/` | legacy Pages router? | → migrate to `app/` or delete |\n| `components/` | UI | → `components/ui/` only at top level |\n| `domains/` | product modules | **keep** — do not reshape internals this run |\n| `db/`, `trigger/`, `app/`, `shared/` | already target-aligned | **keep** — extend, don't replace |\n\nScope stage prints live counts; Plan Author updates this table if reality differs.\n\n## Required deliverable: ideal structure (before code moves)\n\n**Plan Author MUST write `STRUCTURE.md`** at repo root (overwrite stale domain-catalog\ncopies). For **src-root** runs the file has a dedicated section:\n\n### `STRUCTURE.md` — src-root section (mandatory)\n\n1. **Current top-level tree** — `ls -1 src/` + one-line role per folder.\n2. **Ideal target tree** (ASCII) — §3 topology above; note what stays at root\n   (`middleware.ts`, `instrumentation.ts`).\n3. **Disposition table** — every legacy top-level folder: `keep` | `merge → shared/X` |\n   `move → domains/<m>/Y` | `delete` (with evidence: importers = 0).\n4. **Move map** — `old_path → new_path` for every file that moves in the approved wave.\n5. **Re-export shim plan** — which old paths get temporary `index.ts` re-exports\n   (SPEC F-1 staged migration).\n6. **Out of scope for this wave** — explicit list (usually: full `domains/` reshape,\n   full `evaluation/` rewrite).\n\n## Required deliverable: reference update (every referrer)\n\nImplementation MUST update **all referrers**, not only files inside the moved folder:\n\n| Referrer class | Examples | Action |\n|----------------|----------|--------|\n| `@/lib/*`, `@/agent-core/*` | app routes, domains, tests | Rewrite to `@/shared/*` |\n| Deep imports | `@/hooks/useX`, `@/services/Foo` | Route through new public path |\n| `tsconfig` paths | `paths` in `tsconfig.json` | Update aliases |\n| Next config | `next.config.js` transpile/includes | Update if paths change |\n| Tests | `tests/**`, `**/__tests__/**` | Fix mocks + imports |\n| Docs | `AGENTS.md`, `docs/**` | Update cited paths |\n| Knip / ESLint boundaries | boundary rules | Update globs |\n\n**Plan Author** must include grep-driven todos:\n\n```bash\ngrep -rn \"from '@/lib\" src/ tests/\ngrep -rn \"from '@/agent-core\" src/ tests/\ngrep -rn \"from '@/hooks\" src/ tests/\ngrep -rn \"from '@/infrastructure\" src/ tests/\ngrep -rn \"from '@/store\" src/ tests/\n```\n\n…one todo per batch with expected file counts.\n\n## Plan shape (`PLAN.md`)\n\nFirst lines must include: **`Fabro module: src-root`** (for `fabro-verify.mjs`).\n\n1. **Executive summary**\n2. **Pointer to `STRUCTURE.md`** — src-root section is the move contract\n3. **Global prerequisites** — SPEC F-1 (shared stubs + re-exports), F-2, F-3\n4. **Per-folder sections** (agent-core, lib, hooks, …) with prioritized items\n5. **Master todo list** (numbered 1…N, N may be 40–80):\n   - Structure design todos\n   - Stub + re-export todos (no big-bang)\n   - Move todos (`git mv` batches)\n   - **Reference-update todos** (grep-driven)\n   - Boundary lint / knip todos\n   - Verification per wave\n6. **Suggested waves**\n7. **Deferred** (domains-catalog, evaluation overhaul, etc.)\n\n## Clarify gate (src-root)\n\n| Option | Posture |\n|--------|---------|\n| **A — Staged** | Finalize `STRUCTURE.md` for **all** top-level folders; **implement Wave 1** only (`shared/` stubs + highest-traffic `lib/`/`agent-core` re-exports + referrer sweep) after Verification. |\n| **B — Plan-only** | `STRUCTURE.md` + `PLAN.md` + referrer inventory; **no moves** this run. |\n| **C — Full src-root** | Structure for all; implement all waves + all referrers (many verify loops). |\n\nRecommend **A**.\n\n## Non-negotiables\n\n- Ground ideal tree in `docs/unified/ARCHITECTURE.md` §3 + `docs/unified/SPEC.md` F-1…F-3.\n- **No move without referrer audit** — paired move + grep todos.\n- Behavior-preserving; `npm run typecheck`, `npm run test:unit`, `node scripts/fabro-verify.mjs`.\n- Use `refactor` skill for moves; staged re-exports before deleting old paths.\n- Do **not** reshape `src/domains/*` internals in Wave 1 unless a top-level move\n  forces a one-line import fix in a domain barrel.\n\n## Assess focus\n\n- Top-level folder inventory vs §3 target (table)\n- **Duplication map**: `agent-core` vs `shared/agent-kernel` vs `domains/*/agents`\n- **Import heat map**: grep counts for `@/lib`, `@/agent-core`, `@/hooks` from `app/` and `domains/`\n- **SPEC F-1 readiness**: does `shared/` exist with stubs?\n- `## Metadata` (`has_ui_surface: no` for structure-only Wave 1)\n",
+          "failure_class": "",
+          "internal.fidelity": "summary:medium",
+          "graph.stall_timeout": "1800000ms",
+          "failure_signature": "",
+          "graph.default_fidelity": "summary:medium",
+          "internal.retry_count.start": 0
+        },
+        "node_outcomes": {
+          "start": {
+            "status": "succeeded",
+            "usage": null
+          }
+        },
+        "next_node_id": "scope",
+        "node_visits": {
+          "start": 1
+        }
+      },
+      "diff": {}
+    }
+  ],
+  "conclusion": {
+    "timestamp": "2026-07-03T13:40:14.168743Z",
+    "status": "failed",
+    "timing": {
+      "wall_time_ms": 5681,
+      "inference_time_ms": 0,
+      "tool_time_ms": 0,
+      "active_time_ms": 0
+    },
+    "failure": {
+      "reason": "cancelled",
+      "detail": {
+        "message": "Pipeline cancelled",
+        "category": "canceled"
+      }
+    },
+    "stages": [
+      {
+        "stage_id": "start",
+        "stage_label": "start",
+        "timing": {
+          "wall_time_ms": 0,
+          "inference_time_ms": 0,
+          "tool_time_ms": 0,
+          "active_time_ms": 0
+        },
+        "retries": 0
+      }
+    ],
+    "total_retries": 0,
+    "diff": {}
+  },
   "sandbox": {
     "kind": "ready",
     "plan": {
@@ -1348,5 +1425,197 @@
   "superseded_by": null,
   "retried_from": "01KWKYBW7C2H8WQ8FH7YMTGG6N",
   "pending_interviews": {},
-  "stages": {}
+  "stages": {
+    "start@1": {
+      "first_event_seq": 17,
+      "prompt": null,
+      "response": null,
+      "completion": {
+        "outcome": "succeeded",
+        "notes": null,
+        "failure_reason": null,
+        "timestamp": "2026-07-03T13:40:10.920667Z"
+      },
+      "provider_used": null,
+      "diff": null,
+      "script_invocation": null,
+      "script_timing": null,
+      "parallel_results": null,
+      "output": null,
+      "started_at": "2026-07-03T13:40:10.835610Z",
+      "handler": "start",
+      "timing": {
+        "wall_time_ms": 0,
+        "inference_time_ms": 0,
+        "tool_time_ms": 0,
+        "active_time_ms": 0
+      },
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "reasoning_tokens": 0,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0
+      },
+      "state": "succeeded"
+    },
+    "scope@1": {
+      "first_event_seq": 22,
+      "prompt": null,
+      "response": null,
+      "completion": null,
+      "provider_used": {
+        "mode": "agent",
+        "provider": "openai",
+        "model": "gpt-5.4",
+        "reasoning_effort": "low"
+      },
+      "diff": null,
+      "script_invocation": null,
+      "script_timing": null,
+      "parallel_results": null,
+      "output": null,
+      "started_at": "2026-07-03T13:40:10.920817Z",
+      "handler": "agent",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "reasoning_tokens": 0,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0
+      },
+      "permission_level": "full",
+      "agent_tools": [
+        {
+          "name": "apply_patch",
+          "description": "Use the `apply_patch` tool to edit files. This is a FREEFORM tool, so do not wrap the patch in JSON.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "write",
+          "invoked": false
+        },
+        {
+          "name": "close_agent",
+          "description": "Close a running subagent that is no longer needed.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "glob",
+          "description": "Find files by file names using a glob pattern. Use path to choose the search root. Prefer this over shell find or ls when locating repository files.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": false
+        },
+        {
+          "name": "grep",
+          "description": "Search file contents with a regex pattern. Use path to choose the search root, glob_filter to limit matching files, case_insensitive for case folding, and max_results to cap output.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": false
+        },
+        {
+          "name": "read_file",
+          "description": "Read files before editing them. Returns line-numbered text and supports offset/limit for large files. Use this instead of shell cat, head, tail, or sed when inspecting repository files.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "read",
+          "invoked": false
+        },
+        {
+          "name": "request_user_input",
+          "description": "Ask the human one or more questions and wait for their answers before continuing this stage.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "send_input",
+          "description": "Send a follow-up message to a running subagent when new information or corrected instructions are needed.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "shell",
+          "description": "Execute shell commands for terminal operations, package managers, tests and builds. Use dedicated tools for file reads, file edits, filename searches, and content searches. Provide timeout_ms for long-running commands.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "shell",
+          "invoked": false
+        },
+        {
+          "name": "spawn_agent",
+          "description": "Spawn a subagent for independent work or context isolation. Use it for tasks that can proceed separately, and avoid duplicating the same work in the parent session.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "update_plan",
+          "description": "Update the multi-step plan for the current task. Submit the entire plan; existing steps are reconciled by exact step text.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "wait",
+          "description": "Wait for a subagent to complete, then use the result to synthesize the outcome for the user.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "subagent",
+          "invoked": false
+        },
+        {
+          "name": "web_fetch",
+          "description": "Fetch content from a URL that starts with http:// or https://. Pass a prompt to extract specific information or summarize the page; omit prompt to return the page content.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "web_search",
+          "description": "Search the web using Brave Search when current external information is needed. Returns result titles, URLs, and descriptions; use web_fetch for a specific URL.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "other",
+          "invoked": false
+        },
+        {
+          "name": "write_file",
+          "description": "Create new files, or overwrite an existing file only when replacement is explicitly intended. Prefer edit_file for targeted changes to existing files because write_file overwrites the full file content.",
+          "source": {
+            "kind": "native"
+          },
+          "category": "write",
+          "invoked": false
+        }
+      ],
+      "state": "running"
+    }
+  }
 }
