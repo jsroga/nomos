@@ -3,6 +3,15 @@ import { db } from '@/lib/db'
 import { interiorDesigns, projects } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
 import { requireAuth, checkRateLimit } from '@/lib/api-utils'
+import {
+  createInteriorDesignRequestSchema,
+  deleteInteriorDesignQuerySchema,
+  deleteInteriorDesignResponseSchema,
+  interiorDesignListResponseSchema,
+  interiorDesignLookupQuerySchema,
+  interiorDesignResponseSchema,
+  updateInteriorDesignRequestSchema,
+} from '@/domains/interior-designer/io/interior-designer.dto'
 import { verifyProjectAccess } from '@/domains/storyteller'
 
 /**
@@ -36,16 +45,20 @@ async function verifyDesignAccess(
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const projectId = searchParams.get('projectId')
-  const designId = searchParams.get('designId')
+  const parsedQuery = interiorDesignLookupQuerySchema.safeParse({
+    projectId: searchParams.get('projectId') ?? undefined,
+    designId: searchParams.get('designId') ?? undefined,
+  })
 
-  if (!projectId && !designId) {
-    return NextResponse.json({ error: 'Project ID or Design ID is required' }, { status: 400 })
+  if (!parsedQuery.success) {
+    return NextResponse.json({ error: parsedQuery.error.issues[0]?.message }, { status: 400 })
   }
 
   try {
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { projectId, designId } = parsedQuery.data
 
     if (designId) {
       const { hasAccess } = await verifyDesignAccess(designId, session.user.id)
@@ -57,7 +70,8 @@ export async function GET(req: NextRequest) {
         .select()
         .from(interiorDesigns)
         .where(eq(interiorDesigns.id, designId))
-      return NextResponse.json(design || null)
+
+      return NextResponse.json(interiorDesignResponseSchema.parse(design || null))
     } else {
       if (!(await verifyProjectAccess(projectId!, session.user.id))) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
@@ -68,7 +82,8 @@ export async function GET(req: NextRequest) {
         .from(interiorDesigns)
         .where(eq(interiorDesigns.projectId, projectId!))
         .orderBy(desc(interiorDesigns.updatedAt))
-      return NextResponse.json(designs)
+
+      return NextResponse.json(interiorDesignListResponseSchema.parse(designs))
     }
   } catch (error) {
     console.error('Failed to fetch interior designs:', error)
@@ -87,15 +102,12 @@ export async function POST(req: NextRequest) {
     })
     if (!allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
 
-    const body = await req.json()
-    const { projectId, name, sceneData } = body
-
-    if (!projectId || !name || !sceneData) {
-      return NextResponse.json(
-        { error: 'Project ID, name, and scene data are required' },
-        { status: 400 }
-      )
+    const parsedBody = createInteriorDesignRequestSchema.safeParse(await req.json())
+    if (!parsedBody.success) {
+      return NextResponse.json({ error: parsedBody.error.issues[0]?.message }, { status: 400 })
     }
+
+    const { projectId, name, sceneData } = parsedBody.data
 
     if (!(await verifyProjectAccess(projectId, session.user.id))) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
@@ -106,7 +118,7 @@ export async function POST(req: NextRequest) {
       .values({ projectId, userId: session.user.id, name, sceneData })
       .returning()
 
-    return NextResponse.json(newDesign)
+    return NextResponse.json(interiorDesignResponseSchema.parse(newDesign))
   } catch (error) {
     console.error('Failed to create interior design:', error)
     return NextResponse.json({ error: 'Failed to create design' }, { status: 500 })
@@ -118,10 +130,12 @@ export async function PATCH(req: NextRequest) {
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const body = await req.json()
-    const { id, name, sceneData } = body
+    const parsedBody = updateInteriorDesignRequestSchema.safeParse(await req.json())
+    if (!parsedBody.success) {
+      return NextResponse.json({ error: parsedBody.error.issues[0]?.message }, { status: 400 })
+    }
 
-    if (!id) return NextResponse.json({ error: 'Design ID is required' }, { status: 400 })
+    const { id, name, sceneData } = parsedBody.data
 
     const { hasAccess } = await verifyDesignAccess(id, session.user.id)
     if (!hasAccess) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
@@ -136,7 +150,7 @@ export async function PATCH(req: NextRequest) {
       .where(eq(interiorDesigns.id, id))
       .returning()
 
-    return NextResponse.json(updatedDesign)
+    return NextResponse.json(interiorDesignResponseSchema.parse(updatedDesign))
   } catch (error) {
     console.error('Failed to update interior design:', error)
     return NextResponse.json({ error: 'Failed to update design' }, { status: 500 })
@@ -145,19 +159,25 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const id = searchParams.get('id')
+  const parsedQuery = deleteInteriorDesignQuerySchema.safeParse({
+    id: searchParams.get('id') ?? undefined,
+  })
 
-  if (!id) return NextResponse.json({ error: 'Design ID is required' }, { status: 400 })
+  if (!parsedQuery.success) {
+    return NextResponse.json({ error: parsedQuery.error.issues[0]?.message }, { status: 400 })
+  }
 
   try {
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const { id } = parsedQuery.data
+
     const { hasAccess } = await verifyDesignAccess(id, session.user.id)
     if (!hasAccess) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
 
     await db.delete(interiorDesigns).where(eq(interiorDesigns.id, id))
-    return NextResponse.json({ success: true })
+    return NextResponse.json(deleteInteriorDesignResponseSchema.parse({ success: true }))
   } catch (error) {
     console.error('Failed to delete interior design:', error)
     return NextResponse.json({ error: 'Failed to delete design' }, { status: 500 })
