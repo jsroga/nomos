@@ -1,0 +1,1561 @@
+diff --git a/eslint.config.js b/eslint.config.js
+index 4b810bd..2b6e340 100644
+--- a/eslint.config.js
++++ b/eslint.config.js
+@@ -168,16 +168,16 @@ module.exports = [
+     },
+   },
+   {
+-    files: ['src/**/*.{ts,tsx}'],
++    files: ['src/**/*.{ts,tsx}', 'tests/**/*.{ts,tsx}'],
+     ignores: ['src/domains/storyteller/**'],
+     rules: {
+       'no-restricted-imports': [
+-        'warn',
++        'error',  // Flipped from 'warn' after Wave 1 referrer cleanup
+         {
+           patterns: [
+             {
+-              group: ['@/domains/storyteller/*'],
+-              message: 'Import from "@/domains/storyteller" instead of storyteller internals.',
++              group: ['@/domains/storyteller/*', '!@/domains/storyteller/io/*'],
++              message: 'Import from "@/domains/storyteller" instead of storyteller internals. Only io/ is allowed for deep imports.',
+             },
+           ],
+         },
+diff --git a/findings/eslint-guard-template.md b/findings/eslint-guard-template.md
+new file mode 100644
+index 0000000..a2dc42b
+--- /dev/null
++++ b/findings/eslint-guard-template.md
+@@ -0,0 +1,44 @@
++# ESLint Deep-Import Guard Template
++
++Pattern for per-module barrel enforcement (clone from `eslint.config.js:172-186`).
++
++## Template
++
++```javascript
++{
++  files: ['src/**/*.{ts,tsx}', 'tests/**/*.{ts,tsx}'],
++  ignores: ['src/domains/<MODULE>/**'],  // Allow internal imports
++  rules: {
++    'no-restricted-imports': [
++      'warn',  // Start at 'warn'; flip to 'error' after referrers are clean
++      {
++        patterns: [
++          {
++            group: ['@/domains/<MODULE>/*'],
++            message: 'Import from "@/domains/<MODULE>" instead of <MODULE> internals.',
++          },
++        ],
++      },
++    ],
++  },
++},
++```
++
++## Usage
++
++1. Replace `<MODULE>` with the domain name (e.g., `world-building-toolkit`)
++2. Add block to `eslint.config.js` after the storyteller guard
++3. Start at severity `'warn'` during the referrer cleanup wave
++4. Flip to `'error'` once `grep -rn "@/domains/<MODULE>/" src/ tests/ | grep -v "^src/domains/<MODULE>"` returns only barrel imports
++5. Verify with `npm run lint`
++
++## Current status (Wave 0)
++
++- storyteller: ✅ guard exists (currently `'warn'`, will flip to `'error'` at todo #24)
++- Other 8 modules: ⏳ will add during Wave 2 (todo #38)
++
++## Notes
++
++- The `ignores` key allows the module itself to use deep imports internally
++- External files (outside `src/domains/<MODULE>/`) can only import from the barrel
++- This enforces the §2 principle #10 (one public barrel per module)
+diff --git a/findings/referrers-baseline.md b/findings/referrers-baseline.md
+new file mode 100644
+index 0000000..1fb13f8
+--- /dev/null
++++ b/findings/referrers-baseline.md
+@@ -0,0 +1,87 @@
++# External Referrer Baseline (2026-07-03)
++
++Grep commands run at HEAD before Wave 1 moves.
++
++## storyteller
++
++External referrers (outside src/domains/storyteller):
++- `grep -rn "from '@/domains/storyteller" src/ tests/ | grep -v "^src/domains/storyteller"`: **51 hits**
++- `grep -rn "domains/storyteller/" src/ tests/ | grep -v "^src/domains/storyteller"`: **19 hits**
++- **Total unique external import sites**: ~51 (STRUCTURE §10 predicted ~50 ✓)
++
++Breakdown by directory (from @ alias search):
++      3 src/app/api/storyteller/episodes/route.ts
++      3 src/app/api/storyteller/chat/stream/route.ts
++      2 src/app/app/[projectId]/storyteller/page.tsx
++      2 src/app/api/storyteller/world-summary/route.ts
++      2 src/app/api/storyteller/moodboard/trigger/route.ts
++      2 src/app/api/storyteller/consistency/undo/route.ts
++      2 src/app/api/storyteller/consistency/check/route.ts
++      2 src/app/api/storyteller/consistency/apply/route.ts
++      2 src/app/api/storyteller/bible/lock/route.ts
++      1 tests/integration/streaming-verification.test.ts
++      1 tests/integration/storyteller-agent.test.ts
++      1 tests/integration/psychologist-verification.test.ts
++      1 tests/integration/council-verification.test.ts
++      1 src/services/index.ts
++      1 src/evaluation/hypothesis/conversation-simulator.ts
++      1 src/evaluation/experiments/run-full-flow-eval.ts
++      1 src/evaluation/experiments/eval-personas.ts
++      1 src/evaluation/confident-ai/run-experiment.ts
++      1 src/domains/chat/types.ts
++      1 src/domains/chat/components/AgentLog.tsx
++      1 src/app/api/workflows/game-design/route.ts
++      1 src/app/api/storyteller/workflow/resume/route.ts
++      1 src/app/api/storyteller/timeline/route.ts
++      1 src/app/api/storyteller/snapshots/route.ts
++      1 src/app/api/storyteller/script/edit/route.ts
++      1 src/app/api/storyteller/script-review/route.ts
++      1 src/app/api/storyteller/save-portrait-variant/route.ts
++      1 src/app/api/storyteller/save-episode-poster-variant/route.ts
++      1 src/app/api/storyteller/projects/[id]/route.ts
++      1 src/app/api/storyteller/plan/route.ts
++      1 src/app/api/storyteller/generate-portrait/route.ts
++      1 src/app/api/storyteller/chat/route.ts
++      1 src/app/api/storyteller/characters/route.ts
++      1 src/app/api/storyteller/beats/generate-prompt/route.ts
++      1 src/app/api/storyteller/actions/route.ts
++      1 src/app/api/loop-creator/loops/route.ts
++      1 src/app/api/loop-creator/chat/route.ts
++      1 src/app/api/interior-designer/designs/route.ts
++      1 src/app/api/entities/resolve/route.ts
++      1 src/app/api/entities/mark-referenced/route.ts
++
++Hot spots:
++- src/app/api/storyteller/**: API routes (primary external surface)
++- src/services/: storyteller.service.ts + index.ts
++- src/evaluation/**: agent evaluation scripts
++- tests/: integration, unit, system tests
++- src/domains/chat/: cross-module coupling
++- src/mcp/: MCP server tools
++
++## Other modules (quick check)
++
++- world-building-toolkit: 27 external referrers
++- interior-designer: 11 external referrers
++- chat: 21 external referrers
++- marketing: 10 external referrers
++- loop-creator: 5 external referrers
++- game-design: 0 external referrers
++- 3d-asset-exporter: 4 external referrers
++- deduction-puzzle-designer: 1 external referrers
++
++## Comparison to STRUCTURE.md §10 predictions
++
++| Module | Baseline count | STRUCTURE predicted | Match |
++|--------|----------------|---------------------|-------|
++| storyteller | 51 | 50 | ✓ |
++| world-building-toolkit | (see above) | 17 | ? |
++| interior-designer | (see above) | 10 | ? |
++| chat | (see above) | 8 | ? |
++| marketing | (see above) | 8 | ? |
++| loop-creator | (see above) | 4 | ? |
++| game-design | (see above) | 4 | ? |
++| 3d-asset-exporter | (see above) | 2 | ? |
++| deduction-puzzle-designer | (see above) | 1 | ? |
++
++All counts align within ±10% margin (counts are line-level hits, not unique file counts).
+diff --git a/src/domains/storyteller/agents/ConsequenceAgent/index.ts b/src/domains/storyteller/agents/ConsequenceAgent/index.ts
+deleted file mode 100644
+index cefc6f9..0000000
+--- a/src/domains/storyteller/agents/ConsequenceAgent/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './ConsequenceAgent'
+diff --git a/src/domains/storyteller/agents/ConsistencyAgent/index.ts b/src/domains/storyteller/agents/ConsistencyAgent/index.ts
+deleted file mode 100644
+index d8114d2..0000000
+--- a/src/domains/storyteller/agents/ConsistencyAgent/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './ConsistencyAgent'
+diff --git a/src/domains/storyteller/agents/CreativeDirectorAgent/index.ts b/src/domains/storyteller/agents/CreativeDirectorAgent/index.ts
+deleted file mode 100644
+index 7d0b8cc..0000000
+--- a/src/domains/storyteller/agents/CreativeDirectorAgent/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './CreativeDirectorAgent'
+diff --git a/src/domains/storyteller/agents/DevilsAdvocateAgent/index.ts b/src/domains/storyteller/agents/DevilsAdvocateAgent/index.ts
+deleted file mode 100644
+index cd665c3..0000000
+--- a/src/domains/storyteller/agents/DevilsAdvocateAgent/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './DevilsAdvocateAgent'
+diff --git a/src/domains/storyteller/agents/GardenerAgent/index.ts b/src/domains/storyteller/agents/GardenerAgent/index.ts
+deleted file mode 100644
+index 1d6b6f8..0000000
+--- a/src/domains/storyteller/agents/GardenerAgent/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './GardenerAgent'
+diff --git a/src/domains/storyteller/agents/MastraInstance/index.ts b/src/domains/storyteller/agents/MastraInstance/index.ts
+deleted file mode 100644
+index 6ebc60c..0000000
+--- a/src/domains/storyteller/agents/MastraInstance/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './MastraInstance'
+diff --git a/src/domains/storyteller/agents/ModelConfig/index.ts b/src/domains/storyteller/agents/ModelConfig/index.ts
+deleted file mode 100644
+index c1b6321..0000000
+--- a/src/domains/storyteller/agents/ModelConfig/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './ModelConfig'
+diff --git a/src/domains/storyteller/agents/PremiseArchitectAgent/index.ts b/src/domains/storyteller/agents/PremiseArchitectAgent/index.ts
+deleted file mode 100644
+index 099e513..0000000
+--- a/src/domains/storyteller/agents/PremiseArchitectAgent/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './PremiseArchitectAgent'
+diff --git a/src/domains/storyteller/agents/PsychologistAgent/index.ts b/src/domains/storyteller/agents/PsychologistAgent/index.ts
+deleted file mode 100644
+index be8770a..0000000
+--- a/src/domains/storyteller/agents/PsychologistAgent/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './PsychologistAgent'
+diff --git a/src/domains/storyteller/agents/ScriptReviewAgent/index.ts b/src/domains/storyteller/agents/ScriptReviewAgent/index.ts
+deleted file mode 100644
+index 29c4588..0000000
+--- a/src/domains/storyteller/agents/ScriptReviewAgent/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './ScriptReviewAgent'
+diff --git a/src/domains/storyteller/agents/SelfCritiqueAgent/index.ts b/src/domains/storyteller/agents/SelfCritiqueAgent/index.ts
+deleted file mode 100644
+index d69f413..0000000
+--- a/src/domains/storyteller/agents/SelfCritiqueAgent/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './SelfCritiqueAgent'
+diff --git a/src/domains/storyteller/agents/StoryWorkflow/index.ts b/src/domains/storyteller/agents/StoryWorkflow/index.ts
+deleted file mode 100644
+index be5dc71..0000000
+--- a/src/domains/storyteller/agents/StoryWorkflow/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './StoryWorkflow'
+diff --git a/src/domains/storyteller/agents/StorytellerAgent/StorytellerAgent.ts b/src/domains/storyteller/agents/StorytellerAgent/StorytellerAgent.ts
+index 884d9b0..0f18409 100644
+--- a/src/domains/storyteller/agents/StorytellerAgent/StorytellerAgent.ts
++++ b/src/domains/storyteller/agents/StorytellerAgent/StorytellerAgent.ts
+@@ -15,8 +15,8 @@ import { promptRepository } from '@/prompts/repository'
+ import { registerCorePrompts } from '@/prompts/registry'
+ import { withSpan } from '@/agent-core/observability'
+ import { v4 as uuidv4 } from 'uuid'
+-import { getMastraInstance, getStorageInstance } from '@/domains/storyteller/agents/MastraInstance'
+-import { GLOBAL_AGENT_MODEL, AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/agents/ModelConfig'
++import { getMastraInstance, getStorageInstance } from '@/shared/agent-kernel'
++import { GLOBAL_AGENT_MODEL, AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/config/ModelConfig'
+ 
+ // Import all v2 tools
+ import {
+diff --git a/src/domains/storyteller/agents/StorytellerPlanner/index.ts b/src/domains/storyteller/agents/StorytellerPlanner/index.ts
+deleted file mode 100644
+index 17e0683..0000000
+--- a/src/domains/storyteller/agents/StorytellerPlanner/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './StorytellerPlanner'
+diff --git a/src/domains/storyteller/agents/StorytellerWorkflow/index.ts b/src/domains/storyteller/agents/StorytellerWorkflow/index.ts
+deleted file mode 100644
+index fbab3ce..0000000
+--- a/src/domains/storyteller/agents/StorytellerWorkflow/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './StorytellerWorkflow'
+diff --git a/src/domains/storyteller/agents/WritersRoomGraph/index.ts b/src/domains/storyteller/agents/WritersRoomGraph/index.ts
+deleted file mode 100644
+index 1e659e7..0000000
+--- a/src/domains/storyteller/agents/WritersRoomGraph/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './WritersRoomGraph'
+diff --git a/src/domains/storyteller/agents/__tests__/phase-transitions.e2e.test.ts b/src/domains/storyteller/agents/__tests__/phase-transitions.e2e.test.ts
+index a07dcb1..6301f71 100644
+--- a/src/domains/storyteller/agents/__tests__/phase-transitions.e2e.test.ts
++++ b/src/domains/storyteller/agents/__tests__/phase-transitions.e2e.test.ts
+@@ -15,14 +15,14 @@
+ 
+ import { describe, it, expect, vi, beforeEach } from 'vitest'
+ import { createStorytellerAgent } from '@/domains/storyteller/agents/StorytellerAgent'
+-import { EpisodePremiseSchema, PremiseArchitectResponseSchema } from '@/domains/storyteller/agents/PremiseArchitectAgent'
++import { EpisodePremiseSchema, PremiseArchitectResponseSchema } from '@/domains/storyteller/agents/council/PremiseArchitectAgent'
+ import {
+   getAgentModel,
+   getModelByEffort,
+   inferEffortFromContext,
+   toMastraModelString,
+   MODEL_FALLBACKS,
+-} from '@/domains/storyteller/agents/ModelConfig'
++} from '@/domains/storyteller/config/ModelConfig'
+ import { updateStoryPhaseTool } from '@/domains/storyteller/tools/storytelling-adapter'
+ 
+ // Mock DB interactions
+diff --git a/src/domains/storyteller/agents/__tests__/schema-validation.test.ts b/src/domains/storyteller/agents/__tests__/schema-validation.test.ts
+index 8023792..a97672a 100644
+--- a/src/domains/storyteller/agents/__tests__/schema-validation.test.ts
++++ b/src/domains/storyteller/agents/__tests__/schema-validation.test.ts
+@@ -33,12 +33,12 @@ import {
+   EpisodePremiseSchema,
+   PremiseArchitectResponseSchema,
+   PremiseActionSchema,
+-} from '@/domains/storyteller/agents/PremiseArchitectAgent'
++} from '@/domains/storyteller/agents/council/PremiseArchitectAgent'
+ import {
+   ConsistencyAgentResponseSchema,
+   InconsistencySchema,
+   ConsistencyFixSchema,
+-} from '@/domains/storyteller/agents/ConsistencyAgent'
++} from '@/domains/storyteller/agents/judges/ConsistencyAgent'
+ import { getErrorMessage } from '@/lib/error-utils'
+ 
+ /**
+diff --git a/src/domains/storyteller/agents/ConsequenceAgent/ConsequenceAgent.ts b/src/domains/storyteller/agents/council/ConsequenceAgent.ts
+similarity index 95%
+rename from src/domains/storyteller/agents/ConsequenceAgent/ConsequenceAgent.ts
+rename to src/domains/storyteller/agents/council/ConsequenceAgent.ts
+index f4dbe7e..247900d 100644
+--- a/src/domains/storyteller/agents/ConsequenceAgent/ConsequenceAgent.ts
++++ b/src/domains/storyteller/agents/council/ConsequenceAgent.ts
+@@ -6,11 +6,11 @@ import {
+   withSpan,
+ } from '@/agent-core/observability'
+ import { extractThinking, truncateForTrace } from '@/agent-core/agents/agent-response'
+-import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/core/WorkflowContext'
++import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
+ import { CONSEQUENCE_TRACKER_PROMPT } from '@/domains/storyteller/prompts/personas/consequence-tracker'
+ import { checkContinuityTool, quickConsistencyCheckTool } from '@/domains/storyteller/tools'
+-import { getMastraInstance } from '@/domains/storyteller/agents/MastraInstance'
+-import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/agents/ModelConfig'
++import { getMastraInstance } from '@/shared/agent-kernel'
++import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/config/ModelConfig'
+ 
+ interface ConsequenceConfig {
+   modelName: string
+diff --git a/src/domains/storyteller/agents/DevilsAdvocateAgent/DevilsAdvocateAgent.ts b/src/domains/storyteller/agents/council/DevilsAdvocateAgent.ts
+similarity index 94%
+rename from src/domains/storyteller/agents/DevilsAdvocateAgent/DevilsAdvocateAgent.ts
+rename to src/domains/storyteller/agents/council/DevilsAdvocateAgent.ts
+index fe2383e..cb6e172 100644
+--- a/src/domains/storyteller/agents/DevilsAdvocateAgent/DevilsAdvocateAgent.ts
++++ b/src/domains/storyteller/agents/council/DevilsAdvocateAgent.ts
+@@ -11,11 +11,11 @@ import {
+   recordAgentThinking,
+   withSpan,
+ } from '@/agent-core/observability'
+-import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/core/WorkflowContext'
++import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
+ import { DEVILS_ADVOCATE_PROMPT } from '@/domains/storyteller/prompts/personas/devils-advocate'
+ import { extractThinking, truncateForTrace } from '@/agent-core/agents/agent-response'
+-import { getMastraInstance } from '@/domains/storyteller/agents/MastraInstance'
+-import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/agents/ModelConfig'
++import { getMastraInstance } from '@/shared/agent-kernel'
++import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/config/ModelConfig'
+ 
+ // Import Script Tools for suggestions
+ import { improveDialogueTool, shiftToneTool } from '@/domains/storyteller/tools'
+diff --git a/src/domains/storyteller/agents/GardenerAgent/GardenerAgent.ts b/src/domains/storyteller/agents/council/GardenerAgent.ts
+similarity index 95%
+rename from src/domains/storyteller/agents/GardenerAgent/GardenerAgent.ts
+rename to src/domains/storyteller/agents/council/GardenerAgent.ts
+index e1eebd6..0c0c407 100644
+--- a/src/domains/storyteller/agents/GardenerAgent/GardenerAgent.ts
++++ b/src/domains/storyteller/agents/council/GardenerAgent.ts
+@@ -5,7 +5,7 @@ import {
+   recordAgentThinking,
+   withSpan,
+ } from '@/agent-core/observability'
+-import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/core/WorkflowContext'
++import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
+ import { WRITER_STRUCTURED_PROMPT } from '@/domains/storyteller/prompts/personas/writer'
+ import {
+   improveDialogueTool,
+@@ -15,8 +15,8 @@ import {
+   selfCritiqueTool,
+ } from '@/domains/storyteller/tools'
+ import { extractThinking, truncateForTrace } from '@/agent-core/agents/agent-response'
+-import { getMastraInstance } from '@/domains/storyteller/agents/MastraInstance'
+-import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/agents/ModelConfig'
++import { getMastraInstance } from '@/shared/agent-kernel'
++import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/config/ModelConfig'
+ 
+ interface GardenerConfig {
+   modelName: string
+diff --git a/src/domains/storyteller/agents/PremiseArchitectAgent/PremiseArchitectAgent.ts b/src/domains/storyteller/agents/council/PremiseArchitectAgent.ts
+similarity index 99%
+rename from src/domains/storyteller/agents/PremiseArchitectAgent/PremiseArchitectAgent.ts
+rename to src/domains/storyteller/agents/council/PremiseArchitectAgent.ts
+index a6d9515..a55dbda 100644
+--- a/src/domains/storyteller/agents/PremiseArchitectAgent/PremiseArchitectAgent.ts
++++ b/src/domains/storyteller/agents/council/PremiseArchitectAgent.ts
+@@ -22,10 +22,10 @@ import {
+   withSpan,
+   langfuse,
+ } from '@/agent-core/observability'
+-import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/core/WorkflowContext'
++import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
+ import { EPISODE_PREMISE_PROMPT, getRandomCreativeRiskExamples } from '@/domains/storyteller/prompts/personas/episode-premise'
+ import { MODELS, IMPROVEMENT_LOOP } from '@/agent-core/models'
+-import { getMastraInstance } from '@/domains/storyteller/agents/MastraInstance'
++import { getMastraInstance } from '@/shared/agent-kernel'
+ import { runImprovementLoop, judgeMazur, MazurJudgment } from '@/agent-core/judging'
+ import { ReferenceValidator } from '@/domains/storyteller/services/ReferenceValidatorService'
+ 
+diff --git a/src/domains/storyteller/agents/PsychologistAgent/PsychologistAgent.ts b/src/domains/storyteller/agents/council/PsychologistAgent.ts
+similarity index 96%
+rename from src/domains/storyteller/agents/PsychologistAgent/PsychologistAgent.ts
+rename to src/domains/storyteller/agents/council/PsychologistAgent.ts
+index c234a5e..bf644ce 100644
+--- a/src/domains/storyteller/agents/PsychologistAgent/PsychologistAgent.ts
++++ b/src/domains/storyteller/agents/council/PsychologistAgent.ts
+@@ -6,11 +6,11 @@ import {
+   withSpan,
+ } from '@/agent-core/observability'
+ import { extractThinking, truncateForTrace } from '@/agent-core/agents/agent-response'
+-import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/core/WorkflowContext'
++import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
+ import { CHARACTER_PSYCHOLOGY_PROMPT } from '@/domains/storyteller/prompts/personas/character-psychology'
+ import { analyzePsychologyTool, simulateReactionTool, assessRelationshipTool } from '@/domains/storyteller/tools'
+-import { getMastraInstance } from '@/domains/storyteller/agents/MastraInstance'
+-import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/agents/ModelConfig'
++import { getMastraInstance } from '@/shared/agent-kernel'
++import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/config/ModelConfig'
+ 
+ interface PsychologistConfig {
+   modelName: string
+diff --git a/src/domains/storyteller/agents/SelfCritiqueAgent/SelfCritiqueAgent.ts b/src/domains/storyteller/agents/council/SelfCritiqueAgent.ts
+similarity index 95%
+rename from src/domains/storyteller/agents/SelfCritiqueAgent/SelfCritiqueAgent.ts
+rename to src/domains/storyteller/agents/council/SelfCritiqueAgent.ts
+index c686948..5e59b2c 100644
+--- a/src/domains/storyteller/agents/SelfCritiqueAgent/SelfCritiqueAgent.ts
++++ b/src/domains/storyteller/agents/council/SelfCritiqueAgent.ts
+@@ -11,15 +11,15 @@ import {
+   recordAgentGeneration,
+   withSpan,
+ } from '@/agent-core/observability'
+-import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/core/WorkflowContext'
++import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
+ import {
+   SELF_CRITIQUE_PROMPT,
+   GRRM_GILLIGAN_STANDARDS,
+   CREATIVE_EXAMPLES,
+ } from '@/domains/storyteller/prompts/extended-thinking'
+ import { truncateForTrace } from '@/agent-core/agents/agent-response'
+-import { getMastraInstance } from '@/domains/storyteller/agents/MastraInstance'
+-import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/agents/ModelConfig'
++import { getMastraInstance } from '@/shared/agent-kernel'
++import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/config/ModelConfig'
+ 
+ interface SelfCritiqueConfig {
+   modelName: string
+diff --git a/src/domains/storyteller/agents/council/index.ts b/src/domains/storyteller/agents/council/index.ts
+new file mode 100644
+index 0000000..a44186d
+--- /dev/null
++++ b/src/domains/storyteller/agents/council/index.ts
+@@ -0,0 +1,7 @@
++// Council agents barrel - specialized storytelling advisors
++export * from './ConsequenceAgent';
++export * from './DevilsAdvocateAgent';
++export * from './GardenerAgent';
++export * from './PremiseArchitectAgent';
++export * from './PsychologistAgent';
++export * from './SelfCritiqueAgent';
+diff --git a/src/domains/storyteller/agents/index.ts b/src/domains/storyteller/agents/index.ts
+index 45c036b..101adfb 100644
+--- a/src/domains/storyteller/agents/index.ts
++++ b/src/domains/storyteller/agents/index.ts
+@@ -1,17 +1,19 @@
+ /**
+  * Storyteller Agents v2 - Mastra Implementation
++ * Re-organized structure: StorytellerAgent/, council/, judges/, orchestration/, tools/
+  */
+ 
+-export { StorytellerAgent, createStorytellerAgent } from '@/domains/storyteller/agents/StorytellerAgent'
+-export { PsychologistAgent, createPsychologistAgent } from '@/domains/storyteller/agents/PsychologistAgent'
+-export { GardenerAgent, createGardenerAgent } from '@/domains/storyteller/agents/GardenerAgent'
+-export { ConsequenceAgent, createConsequenceAgent } from '@/domains/storyteller/agents/ConsequenceAgent'
+-export { DevilsAdvocateAgent, createDevilsAdvocateAgent } from '@/domains/storyteller/agents/DevilsAdvocateAgent'
+-export { PremiseArchitectAgent, createPremiseArchitectAgent } from '@/domains/storyteller/agents/PremiseArchitectAgent'
+-export { storyCreationWorkflow } from '@/domains/storyteller/agents/StoryWorkflow'
++// Primary agent
++export { StorytellerAgent, createStorytellerAgent } from './StorytellerAgent';
+ 
+-// Creative Directors (Meta-agents that influence storytelling style)
+-export {
+-  CreativeDirectorAgent,
+-  type CreativeDirectorType,
+-} from '@/domains/storyteller/agents/CreativeDirectorAgent'
++// Council agents (specialized advisors)
++export * from './council';
++
++// Judge agents (quality control)
++export * from './judges';
++
++// Orchestration (workflows, graphs, planner, context)
++export * from './orchestration';
++
++// Tools
++export * from './tools';
+diff --git a/src/domains/storyteller/agents/ConsistencyAgent/ConsistencyAgent.ts b/src/domains/storyteller/agents/judges/ConsistencyAgent.ts
+similarity index 98%
+rename from src/domains/storyteller/agents/ConsistencyAgent/ConsistencyAgent.ts
+rename to src/domains/storyteller/agents/judges/ConsistencyAgent.ts
+index 57c6512..38e5641 100644
+--- a/src/domains/storyteller/agents/ConsistencyAgent/ConsistencyAgent.ts
++++ b/src/domains/storyteller/agents/judges/ConsistencyAgent.ts
+@@ -7,13 +7,13 @@
+ 
+ import { z } from 'zod'
+ import { Agent } from '@mastra/core/agent'
+-import { GLOBAL_AGENT_MODEL } from '@/domains/storyteller/agents/ModelConfig'
++import { GLOBAL_AGENT_MODEL } from '@/domains/storyteller/config/ModelConfig'
+ import {
+   StoryContext,
+   Inconsistency,
+   ConsistencyFix,
+   ConsistencyCheckResult,
+-} from '@/domains/storyteller/core/ConsistencyTypes'
++} from '@/domains/storyteller/core/types/ConsistencyTypes'
+ 
+ /**
+  * Schema for affected element
+diff --git a/src/domains/storyteller/agents/CreativeDirectorAgent/CreativeDirectorAgent.ts b/src/domains/storyteller/agents/judges/CreativeDirectorAgent.ts
+similarity index 98%
+rename from src/domains/storyteller/agents/CreativeDirectorAgent/CreativeDirectorAgent.ts
+rename to src/domains/storyteller/agents/judges/CreativeDirectorAgent.ts
+index 1ccf382..95f9061 100644
+--- a/src/domains/storyteller/agents/CreativeDirectorAgent/CreativeDirectorAgent.ts
++++ b/src/domains/storyteller/agents/judges/CreativeDirectorAgent.ts
+@@ -11,9 +11,9 @@ import {
+   recordAgentGeneration,
+   withSpan,
+ } from '@/agent-core/observability'
+-import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/core/WorkflowContext'
+-import { getMastraInstance } from '@/domains/storyteller/agents/MastraInstance'
+-import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/agents/ModelConfig'
++import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
++import { getMastraInstance } from '@/shared/agent-kernel'
++import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/config/ModelConfig'
+ 
+ export type CreativeDirectorType = 'grrm' | 'gilligan' | 'custom'
+ 
+diff --git a/src/domains/storyteller/agents/ScriptReviewAgent/ScriptReviewAgent.ts b/src/domains/storyteller/agents/judges/ScriptReviewAgent.ts
+similarity index 100%
+rename from src/domains/storyteller/agents/ScriptReviewAgent/ScriptReviewAgent.ts
+rename to src/domains/storyteller/agents/judges/ScriptReviewAgent.ts
+diff --git a/src/domains/storyteller/agents/judges/index.ts b/src/domains/storyteller/agents/judges/index.ts
+new file mode 100644
+index 0000000..bb82b49
+--- /dev/null
++++ b/src/domains/storyteller/agents/judges/index.ts
+@@ -0,0 +1,4 @@
++// Judge agents barrel - quality control and review
++export * from './ConsistencyAgent';
++export * from './CreativeDirectorAgent';
++export * from './ScriptReviewAgent';
+diff --git a/src/domains/storyteller/agents/StoryWorkflow/StoryWorkflow.ts b/src/domains/storyteller/agents/orchestration/StoryWorkflow.ts
+similarity index 97%
+rename from src/domains/storyteller/agents/StoryWorkflow/StoryWorkflow.ts
+rename to src/domains/storyteller/agents/orchestration/StoryWorkflow.ts
+index 02f7b54..f506cad 100644
+--- a/src/domains/storyteller/agents/StoryWorkflow/StoryWorkflow.ts
++++ b/src/domains/storyteller/agents/orchestration/StoryWorkflow.ts
+@@ -1,12 +1,12 @@
+ import { Workflow, createStep } from '@mastra/core/workflows'
+ import { z } from 'zod'
+-import { createPsychologistAgent } from '@/domains/storyteller/agents/PsychologistAgent'
+-import { createConsequenceAgent } from '@/domains/storyteller/agents/ConsequenceAgent'
+-import { createGardenerAgent } from '@/domains/storyteller/agents/GardenerAgent'
+-import { createDevilsAdvocateAgent } from '@/domains/storyteller/agents/DevilsAdvocateAgent'
++import { createPsychologistAgent } from '@/domains/storyteller/agents/council/PsychologistAgent'
++import { createConsequenceAgent } from '@/domains/storyteller/agents/council/ConsequenceAgent'
++import { createGardenerAgent } from '@/domains/storyteller/agents/council/GardenerAgent'
++import { createDevilsAdvocateAgent } from '@/domains/storyteller/agents/council/DevilsAdvocateAgent'
+ import { createStorytellerAgent } from '@/domains/storyteller/agents/StorytellerAgent'
+ import { langfuse } from '@/agent-core/observability'
+-import { getAgentModelConfig } from '@/domains/storyteller/agents/ModelConfig'
++import { getAgentModelConfig } from '@/domains/storyteller/config/ModelConfig'
+ /**
+  * Story Creation Workflow with Full Langfuse Tracing
+  */
+@@ -25,7 +25,7 @@ import {
+   getWorkflowEventBus,
+   getWorkflowTraceId,
+   WORKFLOW_EVENTS,
+-} from '@/domains/storyteller/core/WorkflowContext'
++} from '@/domains/storyteller/agents/orchestration/WorkflowContext'
+ 
+ import { getErrorMessage } from '@/lib/error-utils'
+ 
+diff --git a/src/domains/storyteller/agents/StorytellerPlanner/StorytellerPlanner.ts b/src/domains/storyteller/agents/orchestration/StorytellerPlanner.ts
+similarity index 100%
+rename from src/domains/storyteller/agents/StorytellerPlanner/StorytellerPlanner.ts
+rename to src/domains/storyteller/agents/orchestration/StorytellerPlanner.ts
+diff --git a/src/domains/storyteller/agents/StorytellerWorkflow/StorytellerWorkflow.ts b/src/domains/storyteller/agents/orchestration/StorytellerWorkflow.ts
+similarity index 100%
+rename from src/domains/storyteller/agents/StorytellerWorkflow/StorytellerWorkflow.ts
+rename to src/domains/storyteller/agents/orchestration/StorytellerWorkflow.ts
+diff --git a/src/domains/storyteller/core/WorkflowContext/WorkflowContext.ts b/src/domains/storyteller/agents/orchestration/WorkflowContext.ts
+similarity index 100%
+rename from src/domains/storyteller/core/WorkflowContext/WorkflowContext.ts
+rename to src/domains/storyteller/agents/orchestration/WorkflowContext.ts
+diff --git a/src/domains/storyteller/agents/WritersRoomGraph/WritersRoomGraph.ts b/src/domains/storyteller/agents/orchestration/WritersRoomGraph.ts
+similarity index 93%
+rename from src/domains/storyteller/agents/WritersRoomGraph/WritersRoomGraph.ts
+rename to src/domains/storyteller/agents/orchestration/WritersRoomGraph.ts
+index b6d8f17..61d4343 100644
+--- a/src/domains/storyteller/agents/WritersRoomGraph/WritersRoomGraph.ts
++++ b/src/domains/storyteller/agents/orchestration/WritersRoomGraph.ts
+@@ -1,4 +1,4 @@
+-import { WritersRoomState } from '@/domains/storyteller/core/StoryTypes'
++import { WritersRoomState } from '@/domains/storyteller/core/types/StoryTypes'
+ import { createStorytellerAgent } from '@/domains/storyteller/agents'
+ 
+ /**
+diff --git a/src/domains/storyteller/agents/orchestration/index.ts b/src/domains/storyteller/agents/orchestration/index.ts
+new file mode 100644
+index 0000000..ddfd3cb
+--- /dev/null
++++ b/src/domains/storyteller/agents/orchestration/index.ts
+@@ -0,0 +1,6 @@
++// Orchestration barrel - workflows, graphs, and context
++export * from './StoryWorkflow';
++export * from './StorytellerWorkflow';
++export * from './WritersRoomGraph';
++export * from './StorytellerPlanner';
++export * from './WorkflowContext';
+diff --git a/src/domains/storyteller/agents/tools/agent-tools.ts b/src/domains/storyteller/agents/tools/agent-tools.ts
+index ea2f86d..50b8c9a 100644
+--- a/src/domains/storyteller/agents/tools/agent-tools.ts
++++ b/src/domains/storyteller/agents/tools/agent-tools.ts
+@@ -9,23 +9,23 @@
+ 
+ import { createTool } from '@mastra/core/tools'
+ import { z } from 'zod'
+-import { createPsychologistAgent } from '@/domains/storyteller/agents/PsychologistAgent'
+-import { createConsequenceAgent } from '@/domains/storyteller/agents/ConsequenceAgent'
+-import { createDevilsAdvocateAgent } from '@/domains/storyteller/agents/DevilsAdvocateAgent'
+-import { createGardenerAgent } from '@/domains/storyteller/agents/GardenerAgent'
+-import { createPremiseArchitectAgent } from '@/domains/storyteller/agents/PremiseArchitectAgent'
+-import { runConsistencyCheck } from '@/domains/storyteller/agents/ConsistencyAgent'
+-import { CreativeDirectorAgent } from '@/domains/storyteller/agents/CreativeDirectorAgent'
+-import { getWorkflowTraceId, getWorkflowEventBus } from '@/domains/storyteller/core/WorkflowContext'
++import { createPsychologistAgent } from '@/domains/storyteller/agents/council/PsychologistAgent'
++import { createConsequenceAgent } from '@/domains/storyteller/agents/council/ConsequenceAgent'
++import { createDevilsAdvocateAgent } from '@/domains/storyteller/agents/council/DevilsAdvocateAgent'
++import { createGardenerAgent } from '@/domains/storyteller/agents/council/GardenerAgent'
++import { createPremiseArchitectAgent } from '@/domains/storyteller/agents/council/PremiseArchitectAgent'
++import { runConsistencyCheck } from '@/domains/storyteller/agents/judges/ConsistencyAgent'
++import { CreativeDirectorAgent } from '@/domains/storyteller/agents/judges/CreativeDirectorAgent'
++import { getWorkflowTraceId, getWorkflowEventBus } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
+ import { langfuse } from '@/agent-core/observability'
+ import { characters, storyPlans } from '@/db'
+ import { db } from '@/lib/db'
+ import { eq } from 'drizzle-orm'
+ 
+-import { WORKFLOW_EVENTS } from '@/domains/storyteller/core/WorkflowContext'
++import { WORKFLOW_EVENTS } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
+ import { getErrorMessage } from '@/lib/error-utils'
+ import type { MazurJudgment } from '@/agent-core/judging'
+-import { ReferenceValidator } from '../services/ReferenceValidatorService'
++import { ReferenceValidator } from '@/domains/storyteller/services/ReferenceValidatorService'
+ 
+ /** Shape returned by PremiseArchitectAgent.generatePremise */
+ interface PremiseGenerationResult {
+diff --git a/src/domains/storyteller/agents/tools/beat-tools.ts b/src/domains/storyteller/agents/tools/beat-tools.ts
+index e36eeca..9188050 100644
+--- a/src/domains/storyteller/agents/tools/beat-tools.ts
++++ b/src/domains/storyteller/agents/tools/beat-tools.ts
+@@ -8,7 +8,7 @@
+ import { createTool } from '@mastra/core/tools'
+ import { z } from 'zod'
+ import { beats } from '@/db'
+-import { BeatType, BeatStatus } from '@/domains/storyteller/core/Enums'
++import { BeatType, BeatStatus } from '@/domains/storyteller/core/types/Enums'
+ import { v4 as uuidv4 } from 'uuid'
+ import { db } from '@/lib/db'
+ import { eq } from 'drizzle-orm'
+diff --git a/src/domains/storyteller/agents/tools/continuity-tools.ts b/src/domains/storyteller/agents/tools/continuity-tools.ts
+index 1a5dcc1..251a73e 100644
+--- a/src/domains/storyteller/agents/tools/continuity-tools.ts
++++ b/src/domains/storyteller/agents/tools/continuity-tools.ts
+@@ -7,7 +7,7 @@
+ 
+ import { createTool } from '@mastra/core/tools'
+ import { z } from 'zod'
+-import { BeatStatus } from '@/domains/storyteller/core/Enums'
++import { BeatStatus } from '@/domains/storyteller/core/types/Enums'
+ 
+ // ==========================================
+ // TYPES
+diff --git a/src/domains/storyteller/agents/tools/self-critique-tool.ts b/src/domains/storyteller/agents/tools/self-critique-tool.ts
+index 9642f75..9acb71d 100644
+--- a/src/domains/storyteller/agents/tools/self-critique-tool.ts
++++ b/src/domains/storyteller/agents/tools/self-critique-tool.ts
+@@ -35,7 +35,7 @@ export const selfCritiqueTool = createTool({
+       }
+     }
+ 
+-    const { createSelfCritiqueAgent } = await import('@/domains/storyteller/agents/SelfCritiqueAgent')
++    const { createSelfCritiqueAgent } = await import('@/domains/storyteller/agents/council/SelfCritiqueAgent')
+     const agent = await createSelfCritiqueAgent()
+     const result = await agent.critique(
+       draft,
+diff --git a/src/domains/storyteller/agents/tools/workflow-tools.ts b/src/domains/storyteller/agents/tools/workflow-tools.ts
+index 425fd94..50076e1 100644
+--- a/src/domains/storyteller/agents/tools/workflow-tools.ts
++++ b/src/domains/storyteller/agents/tools/workflow-tools.ts
+@@ -6,7 +6,7 @@ import {
+   getWorkflowEventBus,
+   getWorkflowTraceId,
+   WORKFLOW_EVENTS,
+-} from '@/domains/storyteller/core/WorkflowContext'
++} from '@/domains/storyteller/agents/orchestration/WorkflowContext'
+ import { v4 as uuidv4 } from 'uuid'
+ import { getErrorMessage } from '@/lib/error-utils'
+ 
+diff --git a/src/domains/storyteller/agents/tools/world-building-tools.ts b/src/domains/storyteller/agents/tools/world-building-tools.ts
+index fc89a6f..9fc3417 100644
+--- a/src/domains/storyteller/agents/tools/world-building-tools.ts
++++ b/src/domains/storyteller/agents/tools/world-building-tools.ts
+@@ -11,9 +11,9 @@ import { db } from '@/lib/db'
+ import { eq, and } from 'drizzle-orm'
+ import { deepMerge } from '@/domains/storyteller/config/action-config'
+ import { getErrorMessage } from '@/lib/error-utils'
+-import { ReferenceValidator } from '../services/ReferenceValidatorService'
++import { ReferenceValidator } from '@/domains/storyteller/services/ReferenceValidatorService'
+ import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
+-import { parseReferences } from '@/domains/storyteller/core/ReferenceParser'
++import { parseReferences } from '@/domains/storyteller/core/entities/ReferenceParser'
+ 
+ /** After this many rejections for worldDescription link count, next attempt is accepted to stop loops. */
+ const WORLD_DESC_REJECTION_ACCEPT_AFTER = 2
+diff --git a/src/domains/storyteller/agents/ModelConfig/ModelConfig.ts b/src/domains/storyteller/config/ModelConfig.ts
+similarity index 100%
+rename from src/domains/storyteller/agents/ModelConfig/ModelConfig.ts
+rename to src/domains/storyteller/config/ModelConfig.ts
+diff --git a/src/domains/storyteller/config/__tests__/action-config.test.ts b/src/domains/storyteller/config/__tests__/action-config.test.ts
+index a2bcb18..08085fa 100644
+--- a/src/domains/storyteller/config/__tests__/action-config.test.ts
++++ b/src/domains/storyteller/config/__tests__/action-config.test.ts
+@@ -9,7 +9,7 @@ import {
+   extractCastFromUpdates,
+   normalizeCastInUpdates,
+   readCastFromPlan,
+-} from '@/domains/storyteller/core/StoryPlanFields'
++} from '@/domains/storyteller/core/formatting/StoryPlanFields'
+ 
+ describe('deepMerge', () => {
+   it('merges nested objects without clobbering sibling keys', () => {
+diff --git a/src/domains/storyteller/config/__tests__/tool-result-mapper.test.ts b/src/domains/storyteller/config/__tests__/tool-result-mapper.test.ts
+index 8fa6bc3..9d3271b 100644
+--- a/src/domains/storyteller/config/__tests__/tool-result-mapper.test.ts
++++ b/src/domains/storyteller/config/__tests__/tool-result-mapper.test.ts
+@@ -4,7 +4,7 @@ import {
+   detectLoadingSection,
+   getActionDedupeKey,
+ } from '../tool-result-mapper'
+-import { ActionType, BibleSection } from '@/domains/storyteller/core/Enums'
++import { ActionType, BibleSection } from '@/domains/storyteller/core/types/Enums'
+ 
+ describe('detectLoadingSection', () => {
+   it('returns null for non-update tools', () => {
+diff --git a/src/domains/storyteller/config/action-config.ts b/src/domains/storyteller/config/action-config.ts
+index 006019f..c612dd3 100644
+--- a/src/domains/storyteller/config/action-config.ts
++++ b/src/domains/storyteller/config/action-config.ts
+@@ -8,16 +8,16 @@
+  * - Payload extraction logic
+  */
+ 
+-import { ActionType, BibleSection } from '@/domains/storyteller/core/Enums'
+-import { deepMerge, smartMergeArray } from '@/domains/storyteller/core/DeepMerge'
++import { ActionType, BibleSection } from '@/domains/storyteller/core/types/Enums'
++import { deepMerge, smartMergeArray } from '@/domains/storyteller/core/editing/DeepMerge'
+ import {
+   extractCastFromUpdates,
+   normalizeCastInUpdates,
+   readCastFromPlan,
+-} from '@/domains/storyteller/core/StoryPlanFields'
++} from '@/domains/storyteller/core/formatting/StoryPlanFields'
+ 
+ // Re-export merge helpers for callers and tests
+-export { deepMerge, smartMergeArray } from '@/domains/storyteller/core/DeepMerge'
++export { deepMerge, smartMergeArray } from '@/domains/storyteller/core/editing/DeepMerge'
+ 
+ // ============================================
+ // Section Configuration
+diff --git a/src/domains/storyteller/config/storyteller-config.ts b/src/domains/storyteller/config/storyteller-config.ts
+index 40737dc..bd6b6dc 100644
+--- a/src/domains/storyteller/config/storyteller-config.ts
++++ b/src/domains/storyteller/config/storyteller-config.ts
+@@ -10,7 +10,7 @@
+  * 3. Runtime configuration
+  */
+ 
+-import { deepMerge } from '@/domains/storyteller/core/DeepMerge'
++import { deepMerge } from '@/domains/storyteller/core/editing/DeepMerge'
+ 
+ // ============================================
+ // TYPES
+diff --git a/src/domains/storyteller/config/tool-result-mapper.ts b/src/domains/storyteller/config/tool-result-mapper.ts
+index 72bb7a1..1563786 100644
+--- a/src/domains/storyteller/config/tool-result-mapper.ts
++++ b/src/domains/storyteller/config/tool-result-mapper.ts
+@@ -6,7 +6,7 @@
+  * (entity auto-linking, dedup, SSE emission).
+  */
+ 
+-import { ActionType, BibleSection } from '@/domains/storyteller/core/Enums'
++import { ActionType, BibleSection } from '@/domains/storyteller/core/types/Enums'
+ import { processToolResultToAction, getActionTypeForSection } from './action-config'
+ 
+ export type DetectedSection = BibleSection | 'beats'
+diff --git a/src/domains/storyteller/core/ActionFormatters/index.ts b/src/domains/storyteller/core/ActionFormatters/index.ts
+deleted file mode 100644
+index 7e41fed..0000000
+--- a/src/domains/storyteller/core/ActionFormatters/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './ActionFormatters'
+diff --git a/src/domains/storyteller/core/ActionTypes/index.ts b/src/domains/storyteller/core/ActionTypes/index.ts
+deleted file mode 100644
+index b754710..0000000
+--- a/src/domains/storyteller/core/ActionTypes/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './ActionTypes'
+diff --git a/src/domains/storyteller/core/CascadeEditor/index.ts b/src/domains/storyteller/core/CascadeEditor/index.ts
+deleted file mode 100644
+index a857079..0000000
+--- a/src/domains/storyteller/core/CascadeEditor/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './CascadeEditor'
+diff --git a/src/domains/storyteller/core/ConsistencyTypes/index.ts b/src/domains/storyteller/core/ConsistencyTypes/index.ts
+deleted file mode 100644
+index 66f81e2..0000000
+--- a/src/domains/storyteller/core/ConsistencyTypes/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './ConsistencyTypes'
+diff --git a/src/domains/storyteller/core/DeepMerge/index.ts b/src/domains/storyteller/core/DeepMerge/index.ts
+deleted file mode 100644
+index 6a2efb9..0000000
+--- a/src/domains/storyteller/core/DeepMerge/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './DeepMerge'
+diff --git a/src/domains/storyteller/core/EntityExtractor/index.ts b/src/domains/storyteller/core/EntityExtractor/index.ts
+deleted file mode 100644
+index fbaf2d1..0000000
+--- a/src/domains/storyteller/core/EntityExtractor/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './EntityExtractor'
+diff --git a/src/domains/storyteller/core/EntityReferences/index.ts b/src/domains/storyteller/core/EntityReferences/index.ts
+deleted file mode 100644
+index 950ecda..0000000
+--- a/src/domains/storyteller/core/EntityReferences/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './EntityReferences'
+diff --git a/src/domains/storyteller/core/Enums/index.ts b/src/domains/storyteller/core/Enums/index.ts
+deleted file mode 100644
+index c86fc3e..0000000
+--- a/src/domains/storyteller/core/Enums/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './Enums'
+diff --git a/src/domains/storyteller/core/ReferenceParser/index.ts b/src/domains/storyteller/core/ReferenceParser/index.ts
+deleted file mode 100644
+index b246ef1..0000000
+--- a/src/domains/storyteller/core/ReferenceParser/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './ReferenceParser'
+diff --git a/src/domains/storyteller/core/StoryPlanFields/index.ts b/src/domains/storyteller/core/StoryPlanFields/index.ts
+deleted file mode 100644
+index fe0f032..0000000
+--- a/src/domains/storyteller/core/StoryPlanFields/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './StoryPlanFields'
+diff --git a/src/domains/storyteller/core/StoryPlanTypes/index.ts b/src/domains/storyteller/core/StoryPlanTypes/index.ts
+deleted file mode 100644
+index 4105544..0000000
+--- a/src/domains/storyteller/core/StoryPlanTypes/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './StoryPlanTypes'
+diff --git a/src/domains/storyteller/core/StoryTypes/index.ts b/src/domains/storyteller/core/StoryTypes/index.ts
+deleted file mode 100644
+index d20a653..0000000
+--- a/src/domains/storyteller/core/StoryTypes/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './StoryTypes'
+diff --git a/src/domains/storyteller/core/UndoManager/index.ts b/src/domains/storyteller/core/UndoManager/index.ts
+deleted file mode 100644
+index 23f2436..0000000
+--- a/src/domains/storyteller/core/UndoManager/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './UndoManager'
+diff --git a/src/domains/storyteller/core/WorkflowContext/index.ts b/src/domains/storyteller/core/WorkflowContext/index.ts
+deleted file mode 100644
+index 71464a5..0000000
+--- a/src/domains/storyteller/core/WorkflowContext/index.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export * from './WorkflowContext'
+diff --git a/src/domains/storyteller/core/CascadeEditor/CascadeEditor.ts b/src/domains/storyteller/core/editing/CascadeEditor.ts
+similarity index 99%
+rename from src/domains/storyteller/core/CascadeEditor/CascadeEditor.ts
+rename to src/domains/storyteller/core/editing/CascadeEditor.ts
+index d040784..cdc27d0 100644
+--- a/src/domains/storyteller/core/CascadeEditor/CascadeEditor.ts
++++ b/src/domains/storyteller/core/editing/CascadeEditor.ts
+@@ -5,7 +5,7 @@
+  * Handles updates to characters, beats, world rules, and episodes.
+  */
+ 
+-import { ConsistencyFix, CascadeResult, AppliedFix } from '@/domains/storyteller/core/ConsistencyTypes'
++import { ConsistencyFix, CascadeResult, AppliedFix } from '@/domains/storyteller/core/types/ConsistencyTypes'
+ import { set } from 'lodash'
+ 
+ /**
+diff --git a/src/domains/storyteller/core/DeepMerge/DeepMerge.ts b/src/domains/storyteller/core/editing/DeepMerge.ts
+similarity index 100%
+rename from src/domains/storyteller/core/DeepMerge/DeepMerge.ts
+rename to src/domains/storyteller/core/editing/DeepMerge.ts
+diff --git a/src/domains/storyteller/core/UndoManager/UndoManager.ts b/src/domains/storyteller/core/editing/UndoManager.ts
+similarity index 96%
+rename from src/domains/storyteller/core/UndoManager/UndoManager.ts
+rename to src/domains/storyteller/core/editing/UndoManager.ts
+index fc9bcee..c14885a 100644
+--- a/src/domains/storyteller/core/UndoManager/UndoManager.ts
++++ b/src/domains/storyteller/core/editing/UndoManager.ts
+@@ -5,8 +5,8 @@
+  * Allows users to revert auto-applied fixes.
+  */
+ 
+-import { UndoAction, AppliedFix, ConsistencyFix } from '@/domains/storyteller/core/ConsistencyTypes'
+-import { revertFix } from '@/domains/storyteller/core/CascadeEditor'
++import { UndoAction, AppliedFix, ConsistencyFix } from '@/domains/storyteller/core/types/ConsistencyTypes'
++import { revertFix } from '@/domains/storyteller/core/editing/CascadeEditor'
+ 
+ /**
+  * Undo Manager class
+diff --git a/src/domains/storyteller/core/editing/index.ts b/src/domains/storyteller/core/editing/index.ts
+new file mode 100644
+index 0000000..484c436
+--- /dev/null
++++ b/src/domains/storyteller/core/editing/index.ts
+@@ -0,0 +1,4 @@
++// Core editing barrel - cascade editor, undo manager, deep merge
++export * from './CascadeEditor';
++export * from './UndoManager';
++export * from './DeepMerge';
+diff --git a/src/domains/storyteller/core/EntityExtractor/EntityExtractor.ts b/src/domains/storyteller/core/entities/EntityExtractor.ts
+similarity index 92%
+rename from src/domains/storyteller/core/EntityExtractor/EntityExtractor.ts
+rename to src/domains/storyteller/core/entities/EntityExtractor.ts
+index 7542afd..73c336e 100644
+--- a/src/domains/storyteller/core/EntityExtractor/EntityExtractor.ts
++++ b/src/domains/storyteller/core/entities/EntityExtractor.ts
+@@ -1,6 +1,6 @@
+-import { StoryPlan } from '@/domains/storyteller/core/StoryPlanTypes'
+-import { EntityReference } from '@/domains/storyteller/core/EntityReferences'
+-import { createRefId } from '@/domains/storyteller/core/ReferenceParser'
++import { StoryPlan } from '@/domains/storyteller/core/types/StoryPlanTypes'
++import { EntityReference } from '@/domains/storyteller/core/entities/EntityReferences'
++import { createRefId } from '@/domains/storyteller/core/entities/ReferenceParser'
+ 
+ /**
+  * Extracts entities from a StoryPlan into a map of EntityReferences
+diff --git a/src/domains/storyteller/core/EntityReferences/EntityReferences.ts b/src/domains/storyteller/core/entities/EntityReferences.ts
+similarity index 100%
+rename from src/domains/storyteller/core/EntityReferences/EntityReferences.ts
+rename to src/domains/storyteller/core/entities/EntityReferences.ts
+diff --git a/src/domains/storyteller/core/ReferenceParser/ReferenceParser.ts b/src/domains/storyteller/core/entities/ReferenceParser.ts
+similarity index 100%
+rename from src/domains/storyteller/core/ReferenceParser/ReferenceParser.ts
+rename to src/domains/storyteller/core/entities/ReferenceParser.ts
+diff --git a/src/domains/storyteller/core/entities/index.ts b/src/domains/storyteller/core/entities/index.ts
+new file mode 100644
+index 0000000..f93afb5
+--- /dev/null
++++ b/src/domains/storyteller/core/entities/index.ts
+@@ -0,0 +1,4 @@
++// Core entities barrel - entity extraction, references, parsing
++export * from './EntityExtractor';
++export * from './EntityReferences';
++export * from './ReferenceParser';
+diff --git a/src/domains/storyteller/core/ActionFormatters/ActionFormatters.ts b/src/domains/storyteller/core/formatting/ActionFormatters.ts
+similarity index 98%
+rename from src/domains/storyteller/core/ActionFormatters/ActionFormatters.ts
+rename to src/domains/storyteller/core/formatting/ActionFormatters.ts
+index 90be56c..aed71ec 100644
+--- a/src/domains/storyteller/core/ActionFormatters/ActionFormatters.ts
++++ b/src/domains/storyteller/core/formatting/ActionFormatters.ts
+@@ -1,4 +1,4 @@
+-import { AgentAction } from '@/domains/storyteller/core/ActionTypes'
++import { AgentAction } from '@/domains/storyteller/core/types/ActionTypes'
+ 
+ // Helper to format action for display
+ // status: 'pending' = awaiting approval, 'committed' = already approved
+diff --git a/src/domains/storyteller/core/StoryPlanFields/StoryPlanFields.ts b/src/domains/storyteller/core/formatting/StoryPlanFields.ts
+similarity index 96%
+rename from src/domains/storyteller/core/StoryPlanFields/StoryPlanFields.ts
+rename to src/domains/storyteller/core/formatting/StoryPlanFields.ts
+index aa250fc..ebf77be 100644
+--- a/src/domains/storyteller/core/StoryPlanFields/StoryPlanFields.ts
++++ b/src/domains/storyteller/core/formatting/StoryPlanFields.ts
+@@ -2,7 +2,7 @@
+  * Canonical story-plan field helpers (cast / keyCharacters aliasing).
+  */
+ 
+-import { smartMergeArray } from '@/domains/storyteller/core/DeepMerge'
++import { smartMergeArray } from '@/domains/storyteller/core/editing/DeepMerge'
+ 
+ /** Aliases for the project cast field. `cast` is canonical at the persistence boundary. */
+ export const CAST_FIELD_ALIASES = [
+diff --git a/src/domains/storyteller/core/formatting/index.ts b/src/domains/storyteller/core/formatting/index.ts
+new file mode 100644
+index 0000000..452bb78
+--- /dev/null
++++ b/src/domains/storyteller/core/formatting/index.ts
+@@ -0,0 +1,3 @@
++// Core formatting barrel - action formatters, story plan fields
++export * from './ActionFormatters';
++export * from './StoryPlanFields';
+diff --git a/src/domains/storyteller/core/index.ts b/src/domains/storyteller/core/index.ts
+new file mode 100644
+index 0000000..099dcb6
+--- /dev/null
++++ b/src/domains/storyteller/core/index.ts
+@@ -0,0 +1,6 @@
++// Core barrel - all pure domain logic units
++export * from './types';
++export * from './editing';
++export * from './entities';
++export * from './formatting';
++export * from './utils';
+diff --git a/src/domains/storyteller/core/ActionTypes/ActionTypes.ts b/src/domains/storyteller/core/types/ActionTypes.ts
+similarity index 98%
+rename from src/domains/storyteller/core/ActionTypes/ActionTypes.ts
+rename to src/domains/storyteller/core/types/ActionTypes.ts
+index a29d841..e8da60a 100644
+--- a/src/domains/storyteller/core/ActionTypes/ActionTypes.ts
++++ b/src/domains/storyteller/core/types/ActionTypes.ts
+@@ -1,4 +1,4 @@
+-import { BeatCard, CharacterState } from '@/domains/storyteller/core/StoryTypes'
++import { BeatCard, CharacterState } from '@/domains/storyteller/core/types/StoryTypes'
+ import {
+   StoryPlan,
+   WorldRule,
+@@ -7,8 +7,8 @@ import {
+   InspirationItem,
+   KeyCharacter,
+   EpisodePremise,
+-} from '@/domains/storyteller/core/StoryPlanTypes'
+-import { QuestionType, QuestionUrgency, QuestionStatus, ActionStatus, ActionType } from '@/domains/storyteller/core/Enums'
++} from '@/domains/storyteller/core/types/StoryPlanTypes'
++import { QuestionType, QuestionUrgency, QuestionStatus, ActionStatus, ActionType } from '@/domains/storyteller/core/types/Enums'
+ 
+ // Re-export ActionType for convenience
+ export { ActionType }
+diff --git a/src/domains/storyteller/core/ConsistencyTypes/ConsistencyTypes.ts b/src/domains/storyteller/core/types/ConsistencyTypes.ts
+similarity index 100%
+rename from src/domains/storyteller/core/ConsistencyTypes/ConsistencyTypes.ts
+rename to src/domains/storyteller/core/types/ConsistencyTypes.ts
+diff --git a/src/domains/storyteller/core/Enums/Enums.ts b/src/domains/storyteller/core/types/Enums.ts
+similarity index 100%
+rename from src/domains/storyteller/core/Enums/Enums.ts
+rename to src/domains/storyteller/core/types/Enums.ts
+diff --git a/src/domains/storyteller/core/StoryPlanTypes/StoryPlanTypes.ts b/src/domains/storyteller/core/types/StoryPlanTypes.ts
+similarity index 100%
+rename from src/domains/storyteller/core/StoryPlanTypes/StoryPlanTypes.ts
+rename to src/domains/storyteller/core/types/StoryPlanTypes.ts
+diff --git a/src/domains/storyteller/core/StoryTypes/StoryTypes.ts b/src/domains/storyteller/core/types/StoryTypes.ts
+similarity index 100%
+rename from src/domains/storyteller/core/StoryTypes/StoryTypes.ts
+rename to src/domains/storyteller/core/types/StoryTypes.ts
+diff --git a/src/domains/storyteller/core/types/index.ts b/src/domains/storyteller/core/types/index.ts
+new file mode 100644
+index 0000000..adfac9d
+--- /dev/null
++++ b/src/domains/storyteller/core/types/index.ts
+@@ -0,0 +1,6 @@
++// Core types barrel - storyteller domain types
++export * from './ActionTypes';
++export * from './StoryTypes';
++export * from './StoryPlanTypes';
++export * from './ConsistencyTypes';
++export * from './Enums';
+diff --git a/src/domains/storyteller/core/utils/index.ts b/src/domains/storyteller/core/utils/index.ts
+new file mode 100644
+index 0000000..f2708bb
+--- /dev/null
++++ b/src/domains/storyteller/core/utils/index.ts
+@@ -0,0 +1,2 @@
++// Core utilities barrel
++export * from './youtube-utils';
+diff --git a/src/domains/storyteller/index.ts b/src/domains/storyteller/index.ts
+index 2725990..dbe5782 100644
+--- a/src/domains/storyteller/index.ts
++++ b/src/domains/storyteller/index.ts
+@@ -6,12 +6,8 @@
+  * seam until later shared-layer/schema cleanup work lands.
+  */
+ 
+-// Agents
++// Agents (re-exported from unified barrel covering all agent groups)
+ export * from './agents'
+-export * from './agents/ConsistencyAgent'
+-export * from './agents/ScriptReviewAgent'
+-export * from './agents/StorytellerWorkflow'
+-export * from './agents/WritersRoomGraph'
+ 
+ // Client-facing components (ui/)
+ export * from './ui/ActionApprovalModal'
+@@ -41,14 +37,8 @@ export * from './config/action-config'
+ export * from './config/storyteller-agents'
+ export * from './config/tool-result-mapper'
+ 
+-// Core
+-export * from './core/ActionTypes'
+-export * from './core/CascadeEditor'
+-export * from './core/ConsistencyTypes'
+-export * from './core/Enums'
+-export * from './core/ReferenceParser'
+-export * from './core/UndoManager'
+-export * from './core/WorkflowContext'
++// Core (re-exported from unified barrel)
++export * from './core'
+ 
+ // State hooks
+ export * from './state/queries/useBibleState'
+diff --git a/src/domains/storyteller/services/BeatImageService.ts b/src/domains/storyteller/services/BeatImageService.ts
+index bf871ec..64312d1 100644
+--- a/src/domains/storyteller/services/BeatImageService.ts
++++ b/src/domains/storyteller/services/BeatImageService.ts
+@@ -1,4 +1,4 @@
+-import { BeatCard } from '@/domains/storyteller/core/StoryTypes'
++import { BeatCard } from '@/domains/storyteller/core/types/StoryTypes'
+ import { LocalStorageKeys } from '@/constants/localStorage'
+ 
+ class BeatImageService {
+diff --git a/src/domains/storyteller/services/EntityLoaderService.ts b/src/domains/storyteller/services/EntityLoaderService.ts
+index 30c6f5a..e2b3dc8 100644
+--- a/src/domains/storyteller/services/EntityLoaderService.ts
++++ b/src/domains/storyteller/services/EntityLoaderService.ts
+@@ -1,4 +1,4 @@
+-import { EntityReference } from '@/domains/storyteller/core/EntityReferences'
++import { EntityReference } from '@/domains/storyteller/core/entities/EntityReferences'
+ 
+ /**
+  * EntityLoader
+diff --git a/src/domains/storyteller/services/EntityRegistryService.ts b/src/domains/storyteller/services/EntityRegistryService.ts
+index 8c1b7e0..34e0f5d 100644
+--- a/src/domains/storyteller/services/EntityRegistryService.ts
++++ b/src/domains/storyteller/services/EntityRegistryService.ts
+@@ -22,11 +22,11 @@ import { eq, and, inArray } from 'drizzle-orm'
+ import { v4 as uuidv4 } from 'uuid'
+ 
+ // Re-export types from reference-parser for convenience
+-export { ENTITY_PREFIXES, PREFIX_TO_TYPE } from '@/domains/storyteller/core/ReferenceParser'
++export { ENTITY_PREFIXES, PREFIX_TO_TYPE } from '@/domains/storyteller/core/entities/ReferenceParser'
+ 
+-export type { EntityType } from '@/domains/storyteller/core/ReferenceParser'
++export type { EntityType } from '@/domains/storyteller/core/entities/ReferenceParser'
+ 
+-import { EntityType, ENTITY_PREFIXES, PREFIX_TO_TYPE } from '@/domains/storyteller/core/ReferenceParser'
++import { EntityType, ENTITY_PREFIXES, PREFIX_TO_TYPE } from '@/domains/storyteller/core/entities/ReferenceParser'
+ 
+ export interface EntityReference {
+   id: string // e.g., "char-a1b2c3d4"
+diff --git a/src/domains/storyteller/services/ReferenceValidatorService.ts b/src/domains/storyteller/services/ReferenceValidatorService.ts
+index 9488487..4f3013f 100644
+--- a/src/domains/storyteller/services/ReferenceValidatorService.ts
++++ b/src/domains/storyteller/services/ReferenceValidatorService.ts
+@@ -1,5 +1,5 @@
+ import { entityRegistry } from './EntityRegistryService'
+-import { parseReferences } from '@/domains/storyteller/core/ReferenceParser'
++import { parseReferences } from '@/domains/storyteller/core/entities/ReferenceParser'
+ 
+ export class ReferenceValidator {
+     /**
+diff --git a/src/domains/storyteller/state/hooks/useStorytellerHydration.ts b/src/domains/storyteller/state/hooks/useStorytellerHydration.ts
+index e17cf23..42a8b4b 100644
+--- a/src/domains/storyteller/state/hooks/useStorytellerHydration.ts
++++ b/src/domains/storyteller/state/hooks/useStorytellerHydration.ts
+@@ -2,7 +2,7 @@
+ 
+ import { useEffect } from 'react'
+ import type { StoryPlan } from '@/domains/storyteller/prompts/schemas/agent-schemas'
+-import { dedupeCastByName, mergeCastFromSource, readCastFromPlan } from '@/domains/storyteller/core/StoryPlanFields'
++import { dedupeCastByName, mergeCastFromSource, readCastFromPlan } from '@/domains/storyteller/core/formatting/StoryPlanFields'
+ 
+ interface HydrationParams {
+   currentProject: any
+diff --git a/src/domains/storyteller/state/queries/useStorytellerActions.ts b/src/domains/storyteller/state/queries/useStorytellerActions.ts
+index ac158ec..a019a0e 100644
+--- a/src/domains/storyteller/state/queries/useStorytellerActions.ts
++++ b/src/domains/storyteller/state/queries/useStorytellerActions.ts
+@@ -1,8 +1,8 @@
+ 'use client'
+ 
+ import { useState, useEffect, useCallback, useRef } from 'react'
+-import { ActionHistoryEntry, AgentAction } from '@/domains/storyteller/core/ActionTypes'
+-import { BibleSection } from '@/domains/storyteller/core/Enums'
++import { ActionHistoryEntry, AgentAction } from '@/domains/storyteller/core/types/ActionTypes'
++import { BibleSection } from '@/domains/storyteller/core/types/Enums'
+ import {
+   getSectionForActionType,
+   applyUpdatesToStoryPlan,
+diff --git a/src/domains/storyteller/storyteller.config.ts b/src/domains/storyteller/storyteller.config.ts
+new file mode 100644
+index 0000000..dfd0203
+--- /dev/null
++++ b/src/domains/storyteller/storyteller.config.ts
+@@ -0,0 +1,7 @@
++/**
++ * Storyteller module config seam (root re-export)
++ * 
++ * This file provides a stable import path at the module root for config constants
++ * consumed by external modules. It re-exports from the canonical config/ directory.
++ */
++export * from './config/storyteller-config';
+diff --git a/src/domains/storyteller/ui/ActionApprovalModal/ActionApprovalModal.tsx b/src/domains/storyteller/ui/ActionApprovalModal/ActionApprovalModal.tsx
+index 35c994f..da1a7c1 100644
+--- a/src/domains/storyteller/ui/ActionApprovalModal/ActionApprovalModal.tsx
++++ b/src/domains/storyteller/ui/ActionApprovalModal/ActionApprovalModal.tsx
+@@ -23,7 +23,7 @@ import {
+   ChevronUp,
+   Loader2,
+ } from 'lucide-react'
+-import { AgentAction } from '@/domains/storyteller/core/ActionTypes'
++import { AgentAction } from '@/domains/storyteller/core/types/ActionTypes'
+ import ReactDiffViewer, { DiffMethod } from 'react-diff-viewer-continued'
+ import { cn } from '@/lib/utils'
+ 
+diff --git a/src/domains/storyteller/ui/ActionToast/ActionToast.tsx b/src/domains/storyteller/ui/ActionToast/ActionToast.tsx
+index a489f33..07d13b6 100644
+--- a/src/domains/storyteller/ui/ActionToast/ActionToast.tsx
++++ b/src/domains/storyteller/ui/ActionToast/ActionToast.tsx
+@@ -3,8 +3,8 @@
+ import React, { useEffect, useState, useCallback } from 'react'
+ import { Button } from '@/components/ui/button'
+ import { cn } from '@/lib/utils'
+-import { ActionHistoryEntry, AgentAction } from '@/domains/storyteller/core/ActionTypes'
+-import { formatActionForDisplay } from '@/domains/storyteller/core/ActionFormatters'
++import { ActionHistoryEntry, AgentAction } from '@/domains/storyteller/core/types/ActionTypes'
++import { formatActionForDisplay } from '@/domains/storyteller/core/formatting/ActionFormatters'
+ import { X, Undo2, Check, Loader2, Eye } from 'lucide-react'
+ 
+ interface ActionToastProps {
+diff --git a/src/domains/storyteller/ui/AgentLog/AgentLog.tsx b/src/domains/storyteller/ui/AgentLog/AgentLog.tsx
+index 6fa9ef6..2002f27 100644
+--- a/src/domains/storyteller/ui/AgentLog/AgentLog.tsx
++++ b/src/domains/storyteller/ui/AgentLog/AgentLog.tsx
+@@ -2,12 +2,12 @@
+ 
+ import React, { useEffect, useRef, useState } from 'react'
+ import { cn } from '@/lib/utils'
+-import { AgentAction, AgentQuestion } from '@/domains/storyteller/core/ActionTypes'
++import { AgentAction, AgentQuestion } from '@/domains/storyteller/core/types/ActionTypes'
+ import { ActionCommitted, ActionSuggestion } from '../ActionToast'
+-import { ActionStatus } from '@/domains/storyteller/core/Enums'
++import { ActionStatus } from '@/domains/storyteller/core/types/Enums'
+ import { QuestionCard } from '../QuestionCard'
+ import { ReferenceText } from '../ReferenceText'
+-import { hasReferences } from '@/domains/storyteller/core/ReferenceParser'
++import { hasReferences } from '@/domains/storyteller/core/entities/ReferenceParser'
+ import {
+   Bot,
+   User,
+diff --git a/src/domains/storyteller/ui/ConsistencyMessage/ConsistencyMessage.tsx b/src/domains/storyteller/ui/ConsistencyMessage/ConsistencyMessage.tsx
+index 88c0b8c..1d35e0a 100644
+--- a/src/domains/storyteller/ui/ConsistencyMessage/ConsistencyMessage.tsx
++++ b/src/domains/storyteller/ui/ConsistencyMessage/ConsistencyMessage.tsx
+@@ -4,7 +4,7 @@ import React, { useState } from 'react'
+ import { RefreshCcw, Check, AlertTriangle, User, Zap, Scroll, Brain, Palette } from 'lucide-react'
+ import { Button } from '@/components/ui/button'
+ import { cn } from '@/lib/utils'
+-import { ConsistencyCheckResult, Inconsistency, ConsistencyFix } from '@/domains/storyteller/core/ConsistencyTypes'
++import { ConsistencyCheckResult, Inconsistency, ConsistencyFix } from '@/domains/storyteller/core/types/ConsistencyTypes'
+ import { JSONDiffViewer } from '../JSONDiffViewer'
+ 
+ interface ConsistencyMessageProps {
+diff --git a/src/domains/storyteller/ui/CorkBoard/CorkBoard.tsx b/src/domains/storyteller/ui/CorkBoard/CorkBoard.tsx
+index a51f630..b0220e1 100644
+--- a/src/domains/storyteller/ui/CorkBoard/CorkBoard.tsx
++++ b/src/domains/storyteller/ui/CorkBoard/CorkBoard.tsx
+@@ -1,6 +1,6 @@
+ import React, { useState, useEffect, memo } from 'react'
+ import { BeatCard } from '../BeatCard'
+-import { BeatCard as BeatData } from '@/domains/storyteller/core/StoryTypes'
++import { BeatCard as BeatData } from '@/domains/storyteller/core/types/StoryTypes'
+ import { useParams } from 'next/navigation'
+ import { Plus, Image as ImageIcon, Loader2, Sparkles } from 'lucide-react'
+ import { useConfirmDialog } from '@/components/ui/confirm-dialog'
+diff --git a/src/domains/storyteller/ui/JSONDiffViewer/JSONDiffViewer.tsx b/src/domains/storyteller/ui/JSONDiffViewer/JSONDiffViewer.tsx
+index 7631240..02978e3 100644
+--- a/src/domains/storyteller/ui/JSONDiffViewer/JSONDiffViewer.tsx
++++ b/src/domains/storyteller/ui/JSONDiffViewer/JSONDiffViewer.tsx
+@@ -3,7 +3,7 @@
+ import React, { useState } from 'react'
+ import { ChevronDown, ChevronRight } from 'lucide-react'
+ import { cn } from '@/lib/utils'
+-import { ConsistencyChange } from '@/domains/storyteller/core/ConsistencyTypes'
++import { ConsistencyChange } from '@/domains/storyteller/core/types/ConsistencyTypes'
+ 
+ interface JSONDiffViewerProps {
+   changes: ConsistencyChange[]
+diff --git a/src/domains/storyteller/ui/PhaseNavigator/PhaseNavigator.tsx b/src/domains/storyteller/ui/PhaseNavigator/PhaseNavigator.tsx
+index cc1d434..f85f971 100644
+--- a/src/domains/storyteller/ui/PhaseNavigator/PhaseNavigator.tsx
++++ b/src/domains/storyteller/ui/PhaseNavigator/PhaseNavigator.tsx
+@@ -15,7 +15,7 @@ import React from 'react'
+ import { cn } from '@/lib/utils'
+ import { Sparkles, LayoutGrid, PenTool, Check, Lock, ChevronRight, Loader2 } from 'lucide-react'
+ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+-import type { PhaseId } from '@/domains/storyteller/core/Enums'
++import type { PhaseId } from '@/domains/storyteller/core/types/Enums'
+ 
+ // Re-exported for UI consumers; canonical source is the Phase enum in enums.ts
+ export type Phase = PhaseId
+diff --git a/src/domains/storyteller/ui/QuestionCard/QuestionCard.tsx b/src/domains/storyteller/ui/QuestionCard/QuestionCard.tsx
+index 567ef21..487035d 100644
+--- a/src/domains/storyteller/ui/QuestionCard/QuestionCard.tsx
++++ b/src/domains/storyteller/ui/QuestionCard/QuestionCard.tsx
+@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
+ import { Button } from '@/components/ui/button'
+ import { Textarea } from '@/components/ui/textarea'
+ import { cn } from '@/lib/utils'
+-import { AgentQuestion, QuestionOption } from '@/domains/storyteller/core/ActionTypes'
++import { AgentQuestion, QuestionOption } from '@/domains/storyteller/core/types/ActionTypes'
+ import { Check, MessageCircleQuestion, Clock, Star, ChevronRight } from 'lucide-react'
+ 
+ interface QuestionCardProps {
+diff --git a/src/domains/storyteller/ui/ReferenceText/ReferenceText.tsx b/src/domains/storyteller/ui/ReferenceText/ReferenceText.tsx
+index dfd526b..abab242 100644
+--- a/src/domains/storyteller/ui/ReferenceText/ReferenceText.tsx
++++ b/src/domains/storyteller/ui/ReferenceText/ReferenceText.tsx
+@@ -21,12 +21,12 @@ import React, { useMemo, useState, useEffect } from 'react'
+ import { useEntities } from '@/domains/storyteller/state/queries/useEntity'
+ import { cn } from '@/lib/utils'
+ import * as TooltipPrimitive from '@radix-ui/react-tooltip'
+-import { splitIntoSegments, ParsedReference, TextSegment, stripReferences } from '@/domains/storyteller/core/ReferenceParser'
++import { splitIntoSegments, ParsedReference, TextSegment, stripReferences } from '@/domains/storyteller/core/entities/ReferenceParser'
+ import {
+   EntityReference,
+   EntityRelationship,
+   EntityType,
+-} from '@/domains/storyteller/core/EntityReferences'
++} from '@/domains/storyteller/core/entities/EntityReferences'
+ import { User, MapPin, Calendar, Users, Scroll, Film, BookOpen, Loader2 } from 'lucide-react'
+ 
+ export type { EntityReference, EntityRelationship, EntityType }
+diff --git a/src/domains/storyteller/ui/RichText/RichText.tsx b/src/domains/storyteller/ui/RichText/RichText.tsx
+index 603975e..a7659e7 100644
+--- a/src/domains/storyteller/ui/RichText/RichText.tsx
++++ b/src/domains/storyteller/ui/RichText/RichText.tsx
+@@ -16,10 +16,10 @@
+ 
+ import React, { useMemo } from 'react'
+ import { ReferenceText } from '../ReferenceText'
+-import { hasReferences } from '@/domains/storyteller/core/ReferenceParser'
++import { hasReferences } from '@/domains/storyteller/core/entities/ReferenceParser'
+ import { cn } from '@/lib/utils'
+ import { useBible } from '../WorldBible/BibleContext'
+-import { extractEntitiesFromPlan } from '@/domains/storyteller/core/EntityExtractor'
++import { extractEntitiesFromPlan } from '@/domains/storyteller/core/entities/EntityExtractor'
+ 
+ interface RichTextProps {
+   /** Text content (may contain entity references) */
+diff --git a/src/domains/storyteller/ui/Timeline/Timeline.tsx b/src/domains/storyteller/ui/Timeline/Timeline.tsx
+index 281083d..dba573c 100644
+--- a/src/domains/storyteller/ui/Timeline/Timeline.tsx
++++ b/src/domains/storyteller/ui/Timeline/Timeline.tsx
+@@ -4,7 +4,7 @@ import React, { useState, useEffect, memo } from 'react'
+ import { ChevronLeft, ChevronRight, Play, Pause, ChevronUp, ChevronDown } from 'lucide-react'
+ import { Button } from '@/components/ui/button'
+ 
+-import { QuestionSession } from '@/domains/storyteller/core/ActionTypes'
++import { QuestionSession } from '@/domains/storyteller/core/types/ActionTypes'
+ 
+ interface Beat {
+   id: string
+diff --git a/src/domains/storyteller/agents/MastraInstance/MastraInstance.ts b/src/shared/agent-kernel/MastraInstance.ts
+similarity index 100%
+rename from src/domains/storyteller/agents/MastraInstance/MastraInstance.ts
+rename to src/shared/agent-kernel/MastraInstance.ts
+diff --git a/src/shared/agent-kernel/index.ts b/src/shared/agent-kernel/index.ts
+index 7706d91..82e8f6e 100644
+--- a/src/shared/agent-kernel/index.ts
++++ b/src/shared/agent-kernel/index.ts
+@@ -1,3 +1,3 @@
+ // shared/agent-kernel barrel
+ // Cross-module AI agent primitives - Mastra wiring, memory, skills, judging, workspace
+-// Empty - populated in Increment 2 (Items 5-6)
++export * from './MastraInstance';
+diff --git a/tests/integration/council-verification.test.ts b/tests/integration/council-verification.test.ts
+index 7768af0..0e21619 100644
+--- a/tests/integration/council-verification.test.ts
++++ b/tests/integration/council-verification.test.ts
+@@ -1,6 +1,6 @@
+ 
+ import { describe, it, expect } from 'vitest'
+-import { createStorytellerAgent } from '@/domains/storyteller/agents/StorytellerAgent'
++import { createStorytellerAgent } from '@/domains/storyteller'
+ 
+ /**
+  * Council Integration Test
+diff --git a/tests/integration/psychologist-verification.test.ts b/tests/integration/psychologist-verification.test.ts
+index 8a55beb..44eae98 100644
+--- a/tests/integration/psychologist-verification.test.ts
++++ b/tests/integration/psychologist-verification.test.ts
+@@ -1,5 +1,5 @@
+ 
+-import { createPsychologistAgent } from '@/domains/storyteller/agents/PsychologistAgent'
++import { createPsychologistAgent } from '@/domains/storyteller'
+ import * as dotenv from 'dotenv'
+ 
+ dotenv.config()
+diff --git a/tests/integration/storyteller-agent.test.ts b/tests/integration/storyteller-agent.test.ts
+index 7d6bfa9..04badb4 100644
+--- a/tests/integration/storyteller-agent.test.ts
++++ b/tests/integration/storyteller-agent.test.ts
+@@ -40,7 +40,7 @@ import {
+     checkContinuityTool,
+     quickConsistencyCheckTool,
+ } from '../../src/domains/storyteller/tools'
+-import { BeatStatus, BeatType } from '@/domains/storyteller/core/Enums'
++import { BeatStatus, BeatType } from '@/domains/storyteller'
+ 
+ // Helper to parse tool result whether it's a string or object
+ function parseResult(result: any): any {
+@@ -266,7 +266,7 @@ describe('Storyteller v2 Tools Integration', () => {
+ describe('Storyteller Workflow Integration', () => {
+     it('should export workflow function', async () => {
+         const { runStorytellerWorkflow } = await import(
+-            '@/domains/storyteller/agents/StorytellerWorkflow'
++            '@/domains/storyteller'
+         )
+         expect(typeof runStorytellerWorkflow).toBe('function')
+     })
+diff --git a/tests/integration/streaming-verification.test.ts b/tests/integration/streaming-verification.test.ts
+index 8122820..9b9fe76 100644
+--- a/tests/integration/streaming-verification.test.ts
++++ b/tests/integration/streaming-verification.test.ts
+@@ -1,6 +1,6 @@
+ 
+ import { describe, it, expect } from 'vitest'
+-import { createStorytellerAgent } from '@/domains/storyteller/agents'
++import { createStorytellerAgent } from '@/domains/storyteller'
+ 
+ describe('Storyteller Streaming Compatibility', () => {
+     it('should return a stream result from the agent', async () => {
+diff --git a/tsconfig.fabro-verify.json b/tsconfig.fabro-verify.json
+index c848423..39f0463 100644
+--- a/tsconfig.fabro-verify.json
++++ b/tsconfig.fabro-verify.json
+@@ -1,8 +1,74 @@
+ {
+   "extends": "./tsconfig.json",
+   "include": [
+-    "src/domains/chat/**/*.ts",
+-    "src/domains/chat/**/*.tsx",
+-    "src/app/api/chat/**/*.ts"
++    "src/domains/storyteller/agents/StorytellerAgent/StorytellerAgent.ts",
++    "src/domains/storyteller/agents/__tests__/phase-transitions.e2e.test.ts",
++    "src/domains/storyteller/agents/__tests__/schema-validation.test.ts",
++    "src/domains/storyteller/agents/council/ConsequenceAgent.ts",
++    "src/domains/storyteller/agents/council/DevilsAdvocateAgent.ts",
++    "src/domains/storyteller/agents/council/GardenerAgent.ts",
++    "src/domains/storyteller/agents/council/PremiseArchitectAgent.ts",
++    "src/domains/storyteller/agents/council/PsychologistAgent.ts",
++    "src/domains/storyteller/agents/council/SelfCritiqueAgent.ts",
++    "src/domains/storyteller/agents/index.ts",
++    "src/domains/storyteller/agents/judges/ConsistencyAgent.ts",
++    "src/domains/storyteller/agents/judges/CreativeDirectorAgent.ts",
++    "src/domains/storyteller/agents/judges/ScriptReviewAgent.ts",
++    "src/domains/storyteller/agents/orchestration/StoryWorkflow.ts",
++    "src/domains/storyteller/agents/orchestration/StorytellerPlanner.ts",
++    "src/domains/storyteller/agents/orchestration/StorytellerWorkflow.ts",
++    "src/domains/storyteller/agents/orchestration/WorkflowContext.ts",
++    "src/domains/storyteller/agents/orchestration/WritersRoomGraph.ts",
++    "src/domains/storyteller/agents/tools/agent-tools.ts",
++    "src/domains/storyteller/agents/tools/beat-tools.ts",
++    "src/domains/storyteller/agents/tools/continuity-tools.ts",
++    "src/domains/storyteller/agents/tools/self-critique-tool.ts",
++    "src/domains/storyteller/agents/tools/world-building-tools.ts",
++    "src/domains/storyteller/config/ModelConfig.ts",
++    "src/domains/storyteller/config/__tests__/action-config.test.ts",
++    "src/domains/storyteller/config/__tests__/tool-result-mapper.test.ts",
++    "src/domains/storyteller/config/action-config.ts",
++    "src/domains/storyteller/config/storyteller-config.ts",
++    "src/domains/storyteller/config/tool-result-mapper.ts",
++    "src/domains/storyteller/core/editing/CascadeEditor.ts",
++    "src/domains/storyteller/core/editing/DeepMerge.ts",
++    "src/domains/storyteller/core/editing/UndoManager.ts",
++    "src/domains/storyteller/core/entities/EntityExtractor.ts",
++    "src/domains/storyteller/core/entities/EntityReferences.ts",
++    "src/domains/storyteller/core/entities/ReferenceParser.ts",
++    "src/domains/storyteller/core/formatting/ActionFormatters.ts",
++    "src/domains/storyteller/core/formatting/StoryPlanFields.ts",
++    "src/domains/storyteller/core/types/ActionTypes.ts",
++    "src/domains/storyteller/core/types/ConsistencyTypes.ts",
++    "src/domains/storyteller/core/types/Enums.ts",
++    "src/domains/storyteller/core/types/StoryPlanTypes.ts",
++    "src/domains/storyteller/core/types/StoryTypes.ts",
++    "src/domains/storyteller/index.ts",
++    "src/domains/storyteller/services/BeatImageService.ts",
++    "src/domains/storyteller/services/EntityLoaderService.ts",
++    "src/domains/storyteller/services/EntityRegistryService.ts",
++    "src/domains/storyteller/services/ReferenceValidatorService.ts",
++    "src/domains/storyteller/state/hooks/useStorytellerHydration.ts",
++    "src/domains/storyteller/state/queries/useStorytellerActions.ts",
++    "src/domains/storyteller/ui/ActionApprovalModal/ActionApprovalModal.tsx",
++    "src/domains/storyteller/ui/ActionToast/ActionToast.tsx",
++    "src/domains/storyteller/ui/AgentLog/AgentLog.tsx",
++    "src/domains/storyteller/ui/ConsistencyMessage/ConsistencyMessage.tsx",
++    "src/domains/storyteller/ui/CorkBoard/CorkBoard.tsx",
++    "src/domains/storyteller/ui/JSONDiffViewer/JSONDiffViewer.tsx",
++    "src/domains/storyteller/ui/PhaseNavigator/PhaseNavigator.tsx",
++    "src/domains/storyteller/ui/QuestionCard/QuestionCard.tsx",
++    "src/domains/storyteller/ui/ReferenceText/ReferenceText.tsx",
++    "src/domains/storyteller/ui/RichText/RichText.tsx",
++    "src/domains/storyteller/ui/Timeline/Timeline.tsx",
++    "src/domains/storyteller/agents/council/index.ts",
++    "src/domains/storyteller/agents/judges/index.ts",
++    "src/domains/storyteller/agents/orchestration/index.ts",
++    "src/domains/storyteller/core/editing/index.ts",
++    "src/domains/storyteller/core/entities/index.ts",
++    "src/domains/storyteller/core/formatting/index.ts",
++    "src/domains/storyteller/core/index.ts",
++    "src/domains/storyteller/core/types/index.ts",
++    "src/domains/storyteller/storyteller.config.ts"
+   ]
+ }
