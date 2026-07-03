@@ -1322,8 +1322,8 @@
   "status": {
     "kind": "running"
   },
-  "status_updated_at": "2026-07-03T12:30:55.089671Z",
-  "last_event_at": "2026-07-03T12:38:55.586806Z",
+  "status_updated_at": "2026-07-03T13:13:53.596430Z",
+  "last_event_at": "2026-07-03T13:13:53.597537Z",
   "pending_control": null,
   "checkpoints": [
     {
@@ -1994,9 +1994,9 @@
       }
     },
     {
-      "seq": 0,
+      "seq": 271,
       "checkpoint": {
-        "timestamp": "2026-07-03T12:38:55.696104Z",
+        "timestamp": "2026-07-03T12:38:59.163705Z",
         "current_node": "plan",
         "completed_nodes": [
           "start",
@@ -2008,47 +2008,103 @@
         ],
         "node_retries": {},
         "context_values": {
-          "plan.has_p0_security_issue": "no",
-          "last_response": "All three deliverables are written. Summary for the Verification gate:\n\n**1. P0 declaration:** `No P0` — no security/correctness defects; one near-miss caught: assess marked `src/workflows/` dead, b",
-          "graph.stall_timeout": "1800000ms",
-          "last_stage": "plan",
-          "internal.retry_count.clarify_prep": 0,
           "graph.rankdir": "LR",
-          "human.gate.Clarify.answer": "C",
-          "response.scope": "I'll run the scope command for `src-root` exactly as specified.",
-          "response.plan": "All three deliverables are written. Summary for the Verification gate:\n\n**1. P0 declaration:** `No P0` — no security/correctness defects; one near-miss caught: assess marked `src/workflows/` dead, but it's live via `src/app/api/workflows/game-design/route.ts:6` (disposition changed delete → move).\n\n**2. Your Clarify decision: [C] Full src-root.**\n- In scope: all 5 waves this run — ~460 import rewrites, all 16 legacy folders merged/moved/deleted, `pages/` migration, lint flips, docs/knip sweep.\n- Explicitly deferred: `domains/*` internals, `evaluation/` overhaul, Mastra-tracing rewrite of `observability.ts`, `useAuthStore`→TanStack refactor.\n\n**3. First shippable increment:** **Items 1–20 (Waves 0–1)** — fabro-verify src-root patch + codemod of the 6 existing `lib/` shims (252 sites) + retire `hooks/`, `store/`, `services/` (~35 more sites) + first lint flip to `error`.\n\n**4. Item count / effort:** **58 items** across 5 waves; increment 1 ≈ 1–2 dev days; full run ≈ 5–7 dev days with 6 verify gates.\n\n**5. Plan highlights:**\n- `STRUCTURE.md` (rewritten for src-root): current 23-entry tree, ideal 8-entry tree, disposition for every folder, full move map (§4a codemod-only vs §4b git-mv), shim plan, out-of-scope list.\n- Corrected counts vs assess: `@/lib` = 304 (not 168), `@/agent-core` = 30, `@/infrastructure` = 23; `components/ui/` already exists (170 imports) — no rename needed, just relocate 18 loose shell components.\n- New homes: `shared/ai/` (ex-`infrastructure/ai`), `shared/tours/` (tour system scattered across 3 folders, ~32 imports — documented taxonomy extension), `app/_shell/` (chrome), `db/types.ts` (ex-`database.types.ts`).\n- Infra fix: `scripts/fabro-verify.mjs` needs a small `src-root` mode (Item 1) — its module regex only handles `src/domains/<m>` scopes.\n- Risk-flagged: `pages/api/mcp.ts` → app route (Item 53 has documented-exception fallback), agent-core move touches storyteller import lines only.\n- Every move todo pairs with a grep-driven codemod + `[G]` zero-hit guard; lint groups flip `warn→error` per wave, never before.\n\n**6. Verification reminder:** pick **[A] Approve & build** to implement, **[B]** for plan-only, **[I]** only if you want plan changes (type notes), **[X]** to abort.\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"no\"\n  }\n}\n```",
-          "current_node": "plan",
-          "internal.retry_count.assess": 0,
-          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-fable-5; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
-          "thread.review.current_node": "clarify_prep",
-          "response.clarify_prep": "Now I'll present the inline summary for the human:\n\n---\n\n## Assessment summary\nThe repository has **23 top-level `src/` folders** where only **7** align with the target topology. Good news: Increment 1 already completed **F-1** (shared stubs + re-exports) with working shims for `lib/auth`, `lib/api-utils`, etc. The remaining **16 legacy folders** need consolidation into `shared/`, domains, or deletion. Import heat map shows **~240 total import sites** to update across waves: 168+ `@/lib` (mostly shims), 25 `@/agent-core`, 20 `@/store`, 18 `@/infrastructure`, plus smaller folders.\n\n## Key gaps (max 5)\n1. **Duplication pyramid** — `agent-core/observability` (459 LOC manual spans) vs `shared/agent-kernel/` (102 LOC Mastra wiring) vs domain agents; parallel observability trees violate \"use framework once\"\n2. **Shim codemod volume** — Wave 1 shims exist but 140+ import sites still use old `@/lib/*` paths; batch codemod errors = broken builds\n3. **Boundary enforcement gap** — lint at `warn` level; premature flip to `error` before codemods land blocks iteration\n4. **Cross-domain referrer sweep** — top-level moves force import updates in `domains/*/` files; missed grep batches = import failures at runtime\n5. **Legacy folder sprawl** — 16 folders outside target (12 to merge, 2 to delete, 2 keep slim); no disposition plan = drift continues\n\n## Pick one scope (buttons are A / B / C — meanings are module-specific below)\n\n| Button | What the plan will assume for **src-root cleanup** |\n|--------|-----------------------------------------------------|\n| **[A] Staged (Wave 1)** | Finalize `STRUCTURE.md` with **all 23 folders mapped** (disposition table + move map). **Implement Wave 1 only**: codemod existing shims (`@/lib`, `@/hooks` = ~140 sites) + add new shims (`@/store` = 20 sites) + grep-driven referrer updates + verify green + flip boundary lint to `error` for completed scopes. **Defer to Wave 2**: merge `agent-core/` → `shared/agent-kernel/`, consolidate `infrastructure/`, `services/`, `prompts/`, delete `workflows/`/`pages/`, rename `components/` → `components/ui/`. Low risk, high leverage (~170 imports fixed, unlocks enforcement). |\n| **[B] Plan-only** | Write **complete** `STRUCTURE.md` (current tree, ideal tree, disposition for all 16 legacy folders, full move map for all waves) + `PLAN.md` (40–80 numbered todos: structure design, shim setup, move batches, grep-driven referrer sweeps for all 240+ import sites, boundary lint config, verification per wave). **No moves, no codemods this run** — next Fabro run executes Wave 1 from the plan. Pure architecture design + referrer inventory. |\n| **[C] Full src-root** | Structure + implement **all waves** in this run: codemod all shims (~170 sites) + merge `agent-core/`, `infrastructure/`, `services/`, `prompts/`, `types/` into `shared/` or domain folders (60+ additional imports) + delete `workflows/`, `pages/` + rename `components/` → `components/ui/` + update all referrers in `domains/`, `app/`, `tests/` + flip all boundary lint to `error`. Complete src-root convergence (est. 6–8 verification cycles, 40–80 todos executed). |\n\n**Advanced:** type custom constraints in freeform (routes to [F]) · pick [R] only if assess findings are wrong\n\n**Recommendation: [A] Staged (Wave 1)** — Assessment shows F-1 foundation ready (shims exist), Wave 1 codemods are high-leverage/low-risk (~170 imports, unlocks enforcement), and deferring Wave 2 merges reduces blast radius. Full src-root (option C) is viable but requires 6–8 verify loops; staged approach ships enforcement increment sooner.",
-          "internal.retry_count.Clarify": 0,
-          "preferred_label": "[C] Full blueprint",
-          "failure_class": "",
-          "thread.clarify_prep.current_node": "Clarify",
-          "human.gate.selected": "C",
-          "outcome": "succeeded",
-          "response.assess": "## Assessment Complete\n\nI've analyzed the src-root structure against the target topology and written findings to `findings/assess.md`.\n\n**Key discoveries:**\n\n1. **Good progress:** F-1 (staged migration) already 85% done from Increment 1 — `shared/` stubs exist, `lib/auth` and `lib/api-utils` are now 3-line re-export shims\n\n2. **Scope:** 23 top-level folders, only 7 aligned with target → 16 legacy folders to migrate/delete\n\n3. **Import chaos quantified:**\n   - 168+ `@/lib` imports (140 via shims, 28 real files unmigrated)\n   - 25 `@/agent-core` imports (duplication with `shared/agent-kernel`)\n   - 20 `@/store` imports (global state sprawl)\n   - 18 `@/infrastructure` imports (AI clients scattered)\n   - 9 `@/hooks` imports (already moved to `shared/data/`, shims missing)\n\n4. **Critical duplication:** `agent-core/observability.ts` (459 LOC manual Langfuse spans) duplicates Mastra AI Tracing — ARCHITECTURE §1.1 violation\n\n5. **Staged execution:** Wave 1 = codemod shims (~170 imports), Wave 2 = merge sources (~60 imports + folder moves)\n\n**Top 3 priorities:**\n1. Codemod `@/lib` shim users (140 sites) → `@/shared/*`\n2. Add + codemod `@/hooks` shims (9 sites) → `@/shared/data/*`\n3. Add `@/store` shims (20 sites) → `shared/errors|jobs|auth`\n\nThe findings include a full disposition table, heat map, and SPEC F-1 readiness check. Ready for Clarify stage to choose Wave 1 (recommended) vs. full execution.",
-          "graph.default_fidelity": "summary:medium",
-          "failure_signature": "",
-          "thread.planning.current_node": "plan",
-          "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)",
-          "plan.has_ui_surface": "no",
           "internal.retry_count.plan": 0,
           "graph.default_max_retries": "1",
-          "internal.fidelity": "summary:high",
+          "internal.retry_count.Clarify": 0,
           "internal.retry_count.start": 0,
-          "human.gate.label": "[C] Full blueprint",
+          "graph.default_fidelity": "summary:medium",
+          "last_response": "All three deliverables are written. Summary for the Verification gate:\n\n**1. P0 declaration:** `No P0` — no security/correctness defects; one near-miss caught: assess marked `src/workflows/` dead, b",
+          "response.plan": "All three deliverables are written. Summary for the Verification gate:\n\n**1. P0 declaration:** `No P0` — no security/correctness defects; one near-miss caught: assess marked `src/workflows/` dead, but it's live via `src/app/api/workflows/game-design/route.ts:6` (disposition changed delete → move).\n\n**2. Your Clarify decision: [C] Full src-root.**\n- In scope: all 5 waves this run — ~460 import rewrites, all 16 legacy folders merged/moved/deleted, `pages/` migration, lint flips, docs/knip sweep.\n- Explicitly deferred: `domains/*` internals, `evaluation/` overhaul, Mastra-tracing rewrite of `observability.ts`, `useAuthStore`→TanStack refactor.\n\n**3. First shippable increment:** **Items 1–20 (Waves 0–1)** — fabro-verify src-root patch + codemod of the 6 existing `lib/` shims (252 sites) + retire `hooks/`, `store/`, `services/` (~35 more sites) + first lint flip to `error`.\n\n**4. Item count / effort:** **58 items** across 5 waves; increment 1 ≈ 1–2 dev days; full run ≈ 5–7 dev days with 6 verify gates.\n\n**5. Plan highlights:**\n- `STRUCTURE.md` (rewritten for src-root): current 23-entry tree, ideal 8-entry tree, disposition for every folder, full move map (§4a codemod-only vs §4b git-mv), shim plan, out-of-scope list.\n- Corrected counts vs assess: `@/lib` = 304 (not 168), `@/agent-core` = 30, `@/infrastructure` = 23; `components/ui/` already exists (170 imports) — no rename needed, just relocate 18 loose shell components.\n- New homes: `shared/ai/` (ex-`infrastructure/ai`), `shared/tours/` (tour system scattered across 3 folders, ~32 imports — documented taxonomy extension), `app/_shell/` (chrome), `db/types.ts` (ex-`database.types.ts`).\n- Infra fix: `scripts/fabro-verify.mjs` needs a small `src-root` mode (Item 1) — its module regex only handles `src/domains/<m>` scopes.\n- Risk-flagged: `pages/api/mcp.ts` → app route (Item 53 has documented-exception fallback), agent-core move touches storyteller import lines only.\n- Every move todo pairs with a grep-driven codemod + `[G]` zero-hit guard; lint groups flip `warn→error` per wave, never before.\n\n**6. Verification reminder:** pick **[A] Approve & build** to implement, **[B]** for plan-only, **[I]** only if you want plan changes (type notes), **[X]** to abort.\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"no\"\n  }\n}\n```",
+          "human.gate.Clarify.answer": "C",
+          "internal.retry_count.clarify_prep": 0,
+          "response.clarify_prep": "Now I'll present the inline summary for the human:\n\n---\n\n## Assessment summary\nThe repository has **23 top-level `src/` folders** where only **7** align with the target topology. Good news: Increment 1 already completed **F-1** (shared stubs + re-exports) with working shims for `lib/auth`, `lib/api-utils`, etc. The remaining **16 legacy folders** need consolidation into `shared/`, domains, or deletion. Import heat map shows **~240 total import sites** to update across waves: 168+ `@/lib` (mostly shims), 25 `@/agent-core`, 20 `@/store`, 18 `@/infrastructure`, plus smaller folders.\n\n## Key gaps (max 5)\n1. **Duplication pyramid** — `agent-core/observability` (459 LOC manual spans) vs `shared/agent-kernel/` (102 LOC Mastra wiring) vs domain agents; parallel observability trees violate \"use framework once\"\n2. **Shim codemod volume** — Wave 1 shims exist but 140+ import sites still use old `@/lib/*` paths; batch codemod errors = broken builds\n3. **Boundary enforcement gap** — lint at `warn` level; premature flip to `error` before codemods land blocks iteration\n4. **Cross-domain referrer sweep** — top-level moves force import updates in `domains/*/` files; missed grep batches = import failures at runtime\n5. **Legacy folder sprawl** — 16 folders outside target (12 to merge, 2 to delete, 2 keep slim); no disposition plan = drift continues\n\n## Pick one scope (buttons are A / B / C — meanings are module-specific below)\n\n| Button | What the plan will assume for **src-root cleanup** |\n|--------|-----------------------------------------------------|\n| **[A] Staged (Wave 1)** | Finalize `STRUCTURE.md` with **all 23 folders mapped** (disposition table + move map). **Implement Wave 1 only**: codemod existing shims (`@/lib`, `@/hooks` = ~140 sites) + add new shims (`@/store` = 20 sites) + grep-driven referrer updates + verify green + flip boundary lint to `error` for completed scopes. **Defer to Wave 2**: merge `agent-core/` → `shared/agent-kernel/`, consolidate `infrastructure/`, `services/`, `prompts/`, delete `workflows/`/`pages/`, rename `components/` → `components/ui/`. Low risk, high leverage (~170 imports fixed, unlocks enforcement). |\n| **[B] Plan-only** | Write **complete** `STRUCTURE.md` (current tree, ideal tree, disposition for all 16 legacy folders, full move map for all waves) + `PLAN.md` (40–80 numbered todos: structure design, shim setup, move batches, grep-driven referrer sweeps for all 240+ import sites, boundary lint config, verification per wave). **No moves, no codemods this run** — next Fabro run executes Wave 1 from the plan. Pure architecture design + referrer inventory. |\n| **[C] Full src-root** | Structure + implement **all waves** in this run: codemod all shims (~170 sites) + merge `agent-core/`, `infrastructure/`, `services/`, `prompts/`, `types/` into `shared/` or domain folders (60+ additional imports) + delete `workflows/`, `pages/` + rename `components/` → `components/ui/` + update all referrers in `domains/`, `app/`, `tests/` + flip all boundary lint to `error`. Complete src-root convergence (est. 6–8 verification cycles, 40–80 todos executed). |\n\n**Advanced:** type custom constraints in freeform (routes to [F]) · pick [R] only if assess findings are wrong\n\n**Recommendation: [A] Staged (Wave 1)** — Assessment shows F-1 foundation ready (shims exist), Wave 1 codemods are high-leverage/low-risk (~170 imports, unlocks enforcement), and deferring Wave 2 merges reduces blast radius. Full src-root (option C) is viable but requires 6–8 verify loops; staged approach ships enforcement increment sooner.",
+          "thread.review.current_node": "clarify_prep",
+          "internal.run_id": "01KWKYBW7C2H8WQ8FH7YMTGG6N",
+          "plan.has_p0_security_issue": "no",
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-fable-5; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
           "internal.node_visit_count": 1,
-          "internal.work_dir": "/workspace/kurvitza",
-          "human.gate.Clarify.label": "[C] Full blueprint",
-          "internal.retry_count.scope": 0,
+          "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)",
+          "response.assess": "## Assessment Complete\n\nI've analyzed the src-root structure against the target topology and written findings to `findings/assess.md`.\n\n**Key discoveries:**\n\n1. **Good progress:** F-1 (staged migration) already 85% done from Increment 1 — `shared/` stubs exist, `lib/auth` and `lib/api-utils` are now 3-line re-export shims\n\n2. **Scope:** 23 top-level folders, only 7 aligned with target → 16 legacy folders to migrate/delete\n\n3. **Import chaos quantified:**\n   - 168+ `@/lib` imports (140 via shims, 28 real files unmigrated)\n   - 25 `@/agent-core` imports (duplication with `shared/agent-kernel`)\n   - 20 `@/store` imports (global state sprawl)\n   - 18 `@/infrastructure` imports (AI clients scattered)\n   - 9 `@/hooks` imports (already moved to `shared/data/`, shims missing)\n\n4. **Critical duplication:** `agent-core/observability.ts` (459 LOC manual Langfuse spans) duplicates Mastra AI Tracing — ARCHITECTURE §1.1 violation\n\n5. **Staged execution:** Wave 1 = codemod shims (~170 imports), Wave 2 = merge sources (~60 imports + folder moves)\n\n**Top 3 priorities:**\n1. Codemod `@/lib` shim users (140 sites) → `@/shared/*`\n2. Add + codemod `@/hooks` shims (9 sites) → `@/shared/data/*`\n3. Add `@/store` shims (20 sites) → `shared/errors|jobs|auth`\n\nThe findings include a full disposition table, heat map, and SPEC F-1 readiness check. Ready for Clarify stage to choose Wave 1 (recommended) vs. full execution.",
+          "failure_class": "",
           "graph.goal": "# src-root cleanup — ideal top-level `src/` layout + full reference update\n\n## Mission\n\nDesign the **ideal top-level `src/` folder structure** per\n`docs/unified/ARCHITECTURE.md` §3 (Repository topology), then **update every file\nthat references old paths** (imports, re-exports, tests, API routes, Next.js config,\nFabro verify scopes). Behavior-preserving; no new product features.\n\nThis is a **large, multi-sprint** effort — the plan may contain **40–80 todos**.\nDo **not** under-scope the reference sweep: a move without updating all referrers\nis a failed increment.\n\n**Primary pain (operator):** `src/` has **~20+ top-level folders** outside the\ntarget topology. Legacy homes (`agent-core`, `lib`, `infrastructure`, `hooks`,\n`store`, `services`, `prompts`, `evaluation`, `mcp`, `workflows`, `types`,\n`config`, `constants`, `content`, `pages`) duplicate or prefigure what must live\nin `shared/`, `domains/<module>/`, `db/`, `trigger/`, `components/ui/`, or `app/`.\nThe operator wants Fabro to **propose** a concrete target tree, get human approval,\nthen **execute moves and fix every import**.\n\n**Out of scope for this run's default posture:** reshaping `src/domains/*` internals\n(that is `module=domains-catalog`). This run focuses on **top-level `src/`** only,\nbut must still **grep and fix referrers** in `domains/`, `app/`, and `tests/` when\npaths change.\n\n## Target topology (contract)\n\nFrom `docs/unified/ARCHITECTURE.md` §3 — the **only** legal top-level `src/` layout\nafter migration:\n\n```\nsrc/\n├─ domains/<module>/     # vertical slices (see domains-catalog for module internals)\n├─ shared/               # cross-module: agent-kernel, jobs, data, auth, observability, errors\n├─ components/ui/        # Radix + CVA design system primitives\n├─ db/                   # Drizzle schema + client (single source of truth)\n├─ trigger/              # thin re-export registry for Trigger.dev tasks\n├─ app/                  # Next.js App Router — routes + API glue only\n├─ middleware.ts         # Next.js middleware (if present — stays at src root)\n└─ instrumentation*.ts   # Next.js instrumentation (if present — stays at src root)\n```\n\n**Rule:** anything imported by 2+ modules lives in `shared/`, never in a domain or\nlegacy top-level folder. `shared/` supersedes `lib/`, `agent-core/`, `infrastructure/`,\n`store/`, and ad-hoc `services/` at `src/` root.\n\n## Current inventory (operator snapshot — Scope re-validates)\n\n| Top-level path | Role today | Target disposition |\n|----------------|------------|-------------------|\n| `agent-core/` | Mastra kernel, models, observability dupes | → `shared/agent-kernel/` (+ `shared/observability/`) |\n| `lib/` | auth, utils, API helpers | → `shared/auth/`, `shared/data/`, delete dupes |\n| `infrastructure/` | legacy wiring | → `shared/*` or delete |\n| `hooks/` | cross-cutting React hooks | → `shared/` or owning `domains/*/state/` |\n| `store/` | global Zustand | → `shared/` or module `state/` |\n| `services/` | orphan server helpers | → `domains/*/services/` or `shared/` |\n| `prompts/` | prompt builders | → `domains/*/prompts/` or `shared/agent-kernel/` |\n| `evaluation/` | offline eval harness | → keep slim or `shared/agent-kernel/scorers/` |\n| `mcp/` | MCP servers | → `src/mcp` ok if single entry; or `shared/` |\n| `workflows/` | hand-rolled orchestration | → Mastra workflows in `domains/*/agents/` |\n| `types/` | global TS types | → `shared/data/` or colocate |\n| `config/`, `constants/`, `content/` | misc | → colocate or `shared/` |\n| `pages/` | legacy Pages router? | → migrate to `app/` or delete |\n| `components/` | UI | → `components/ui/` only at top level |\n| `domains/` | product modules | **keep** — do not reshape internals this run |\n| `db/`, `trigger/`, `app/`, `shared/` | already target-aligned | **keep** — extend, don't replace |\n\nScope stage prints live counts; Plan Author updates this table if reality differs.\n\n## Required deliverable: ideal structure (before code moves)\n\n**Plan Author MUST write `STRUCTURE.md`** at repo root (overwrite stale domain-catalog\ncopies). For **src-root** runs the file has a dedicated section:\n\n### `STRUCTURE.md` — src-root section (mandatory)\n\n1. **Current top-level tree** — `ls -1 src/` + one-line role per folder.\n2. **Ideal target tree** (ASCII) — §3 topology above; note what stays at root\n   (`middleware.ts`, `instrumentation.ts`).\n3. **Disposition table** — every legacy top-level folder: `keep` | `merge → shared/X` |\n   `move → domains/<m>/Y` | `delete` (with evidence: importers = 0).\n4. **Move map** — `old_path → new_path` for every file that moves in the approved wave.\n5. **Re-export shim plan** — which old paths get temporary `index.ts` re-exports\n   (SPEC F-1 staged migration).\n6. **Out of scope for this wave** — explicit list (usually: full `domains/` reshape,\n   full `evaluation/` rewrite).\n\n## Required deliverable: reference update (every referrer)\n\nImplementation MUST update **all referrers**, not only files inside the moved folder:\n\n| Referrer class | Examples | Action |\n|----------------|----------|--------|\n| `@/lib/*`, `@/agent-core/*` | app routes, domains, tests | Rewrite to `@/shared/*` |\n| Deep imports | `@/hooks/useX`, `@/services/Foo` | Route through new public path |\n| `tsconfig` paths | `paths` in `tsconfig.json` | Update aliases |\n| Next config | `next.config.js` transpile/includes | Update if paths change |\n| Tests | `tests/**`, `**/__tests__/**` | Fix mocks + imports |\n| Docs | `AGENTS.md`, `docs/**` | Update cited paths |\n| Knip / ESLint boundaries | boundary rules | Update globs |\n\n**Plan Author** must include grep-driven todos:\n\n```bash\ngrep -rn \"from '@/lib\" src/ tests/\ngrep -rn \"from '@/agent-core\" src/ tests/\ngrep -rn \"from '@/hooks\" src/ tests/\ngrep -rn \"from '@/infrastructure\" src/ tests/\ngrep -rn \"from '@/store\" src/ tests/\n```\n\n…one todo per batch with expected file counts.\n\n## Plan shape (`PLAN.md`)\n\nFirst lines must include: **`Fabro module: src-root`** (for `fabro-verify.mjs`).\n\n1. **Executive summary**\n2. **Pointer to `STRUCTURE.md`** — src-root section is the move contract\n3. **Global prerequisites** — SPEC F-1 (shared stubs + re-exports), F-2, F-3\n4. **Per-folder sections** (agent-core, lib, hooks, …) with prioritized items\n5. **Master todo list** (numbered 1…N, N may be 40–80):\n   - Structure design todos\n   - Stub + re-export todos (no big-bang)\n   - Move todos (`git mv` batches)\n   - **Reference-update todos** (grep-driven)\n   - Boundary lint / knip todos\n   - Verification per wave\n6. **Suggested waves**\n7. **Deferred** (domains-catalog, evaluation overhaul, etc.)\n\n## Clarify gate (src-root)\n\n| Option | Posture |\n|--------|---------|\n| **A — Staged** | Finalize `STRUCTURE.md` for **all** top-level folders; **implement Wave 1** only (`shared/` stubs + highest-traffic `lib/`/`agent-core` re-exports + referrer sweep) after Verification. |\n| **B — Plan-only** | `STRUCTURE.md` + `PLAN.md` + referrer inventory; **no moves** this run. |\n| **C — Full src-root** | Structure for all; implement all waves + all referrers (many verify loops). |\n\nRecommend **A**.\n\n## Non-negotiables\n\n- Ground ideal tree in `docs/unified/ARCHITECTURE.md` §3 + `docs/unified/SPEC.md` F-1…F-3.\n- **No move without referrer audit** — paired move + grep todos.\n- Behavior-preserving; `npm run typecheck`, `npm run test:unit`, `node scripts/fabro-verify.mjs`.\n- Use `refactor` skill for moves; staged re-exports before deleting old paths.\n- Do **not** reshape `src/domains/*` internals in Wave 1 unless a top-level move\n  forces a one-line import fix in a domain barrel.\n\n## Assess focus\n\n- Top-level folder inventory vs §3 target (table)\n- **Duplication map**: `agent-core` vs `shared/agent-kernel` vs `domains/*/agents`\n- **Import heat map**: grep counts for `@/lib`, `@/agent-core`, `@/hooks` from `app/` and `domains/`\n- **SPEC F-1 readiness**: does `shared/` exist with stubs?\n- `## Metadata` (`has_ui_surface: no` for structure-only Wave 1)\n",
-          "graph.label": "Optional Build",
+          "human.gate.selected": "C",
+          "failure_signature": "",
+          "internal.fidelity": "summary:high",
+          "response.scope": "I'll run the scope command for `src-root` exactly as specified.",
+          "thread.clarify_prep.current_node": "Clarify",
           "internal.thread_id": "planning",
-          "internal.run_id": "01KWKYBW7C2H8WQ8FH7YMTGG6N"
+          "graph.stall_timeout": "1800000ms",
+          "internal.retry_count.scope": 0,
+          "plan.has_ui_surface": "no",
+          "human.gate.label": "[C] Full blueprint",
+          "current_node": "plan",
+          "internal.work_dir": "/workspace/kurvitza",
+          "outcome": "succeeded",
+          "thread.planning.current_node": "plan",
+          "human.gate.Clarify.label": "[C] Full blueprint",
+          "internal.retry_count.assess": 0,
+          "last_stage": "plan",
+          "preferred_label": "[C] Full blueprint",
+          "graph.label": "Optional Build"
         },
         "node_outcomes": {
+          "Clarify": {
+            "status": "succeeded",
+            "preferred_label": "[C] Full blueprint",
+            "suggested_next_ids": [
+              "plan"
+            ],
+            "context_updates": {
+              "human.gate.selected": "C",
+              "human.gate.label": "[C] Full blueprint",
+              "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)",
+              "human.gate.Clarify.answer": "C",
+              "human.gate.Clarify.label": "[C] Full blueprint"
+            },
+            "usage": null
+          },
+          "assess": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_stage": "assess",
+              "last_response": "## Assessment Complete\n\nI've analyzed the src-root structure against the target topology and written findings to `findings/assess.md`.\n\n**Key discoveries:**\n\n1. **Good progress:** F-1 (staged migratio",
+              "response.assess": "## Assessment Complete\n\nI've analyzed the src-root structure against the target topology and written findings to `findings/assess.md`.\n\n**Key discoveries:**\n\n1. **Good progress:** F-1 (staged migration) already 85% done from Increment 1 — `shared/` stubs exist, `lib/auth` and `lib/api-utils` are now 3-line re-export shims\n\n2. **Scope:** 23 top-level folders, only 7 aligned with target → 16 legacy folders to migrate/delete\n\n3. **Import chaos quantified:**\n   - 168+ `@/lib` imports (140 via shims, 28 real files unmigrated)\n   - 25 `@/agent-core` imports (duplication with `shared/agent-kernel`)\n   - 20 `@/store` imports (global state sprawl)\n   - 18 `@/infrastructure` imports (AI clients scattered)\n   - 9 `@/hooks` imports (already moved to `shared/data/`, shims missing)\n\n4. **Critical duplication:** `agent-core/observability.ts` (459 LOC manual Langfuse spans) duplicates Mastra AI Tracing — ARCHITECTURE §1.1 violation\n\n5. **Staged execution:** Wave 1 = codemod shims (~170 imports), Wave 2 = merge sources (~60 imports + folder moves)\n\n**Top 3 priorities:**\n1. Codemod `@/lib` shim users (140 sites) → `@/shared/*`\n2. Add + codemod `@/hooks` shims (9 sites) → `@/shared/data/*`\n3. Add `@/store` shims (20 sites) → `shared/errors|jobs|auth`\n\nThe findings include a full disposition table, heat map, and SPEC F-1 readiness check. Ready for Clarify stage to choose Wave 1 (recommended) vs. full execution."
+            },
+            "notes": "Stage completed: assess",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "anthropic",
+                    "model_id": "claude-sonnet-4-5"
+                  },
+                  "tokens": {
+                    "input_tokens": 40765,
+                    "output_tokens": 9481,
+                    "reasoning_tokens": 0,
+                    "cache_read_tokens": 221585,
+                    "cache_write_tokens": 45826
+                  }
+                },
+                "facts": {
+                  "algorithm": "anthropic",
+                  "cache_write_5m_tokens": 45826,
+                  "cache_write_1h_tokens": 0
+                }
+              },
+              "total_usd_micros": 502832
+            },
+            "files_touched": [
+              "findings/assess.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 199973,
+              "tool_time_ms": 618,
+              "active_time_ms": 200591
+            }
+          },
           "scope": {
             "status": "succeeded",
             "context_updates": {
@@ -2130,46 +2186,9 @@
               "active_time_ms": 58293
             }
           },
-          "assess": {
+          "start": {
             "status": "succeeded",
-            "context_updates": {
-              "last_stage": "assess",
-              "last_response": "## Assessment Complete\n\nI've analyzed the src-root structure against the target topology and written findings to `findings/assess.md`.\n\n**Key discoveries:**\n\n1. **Good progress:** F-1 (staged migratio",
-              "response.assess": "## Assessment Complete\n\nI've analyzed the src-root structure against the target topology and written findings to `findings/assess.md`.\n\n**Key discoveries:**\n\n1. **Good progress:** F-1 (staged migration) already 85% done from Increment 1 — `shared/` stubs exist, `lib/auth` and `lib/api-utils` are now 3-line re-export shims\n\n2. **Scope:** 23 top-level folders, only 7 aligned with target → 16 legacy folders to migrate/delete\n\n3. **Import chaos quantified:**\n   - 168+ `@/lib` imports (140 via shims, 28 real files unmigrated)\n   - 25 `@/agent-core` imports (duplication with `shared/agent-kernel`)\n   - 20 `@/store` imports (global state sprawl)\n   - 18 `@/infrastructure` imports (AI clients scattered)\n   - 9 `@/hooks` imports (already moved to `shared/data/`, shims missing)\n\n4. **Critical duplication:** `agent-core/observability.ts` (459 LOC manual Langfuse spans) duplicates Mastra AI Tracing — ARCHITECTURE §1.1 violation\n\n5. **Staged execution:** Wave 1 = codemod shims (~170 imports), Wave 2 = merge sources (~60 imports + folder moves)\n\n**Top 3 priorities:**\n1. Codemod `@/lib` shim users (140 sites) → `@/shared/*`\n2. Add + codemod `@/hooks` shims (9 sites) → `@/shared/data/*`\n3. Add `@/store` shims (20 sites) → `shared/errors|jobs|auth`\n\nThe findings include a full disposition table, heat map, and SPEC F-1 readiness check. Ready for Clarify stage to choose Wave 1 (recommended) vs. full execution."
-            },
-            "notes": "Stage completed: assess",
-            "usage": {
-              "input": {
-                "usage": {
-                  "model": {
-                    "provider": "anthropic",
-                    "model_id": "claude-sonnet-4-5"
-                  },
-                  "tokens": {
-                    "input_tokens": 40765,
-                    "output_tokens": 9481,
-                    "reasoning_tokens": 0,
-                    "cache_read_tokens": 221585,
-                    "cache_write_tokens": 45826
-                  }
-                },
-                "facts": {
-                  "algorithm": "anthropic",
-                  "cache_write_5m_tokens": 45826,
-                  "cache_write_1h_tokens": 0
-                }
-              },
-              "total_usd_micros": 502832
-            },
-            "files_touched": [
-              "findings/assess.md"
-            ],
-            "timing": {
-              "wall_time_ms": 0,
-              "inference_time_ms": 199973,
-              "tool_time_ms": 618,
-              "active_time_ms": 200591
-            }
+            "usage": null
           },
           "plan": {
             "status": "succeeded",
@@ -2215,41 +2234,130 @@
               "tool_time_ms": 1881,
               "active_time_ms": 476648
             }
-          },
-          "Clarify": {
-            "status": "succeeded",
-            "preferred_label": "[C] Full blueprint",
-            "suggested_next_ids": [
-              "plan"
-            ],
-            "context_updates": {
-              "human.gate.selected": "C",
-              "human.gate.label": "[C] Full blueprint",
-              "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)",
-              "human.gate.Clarify.answer": "C",
-              "human.gate.Clarify.label": "[C] Full blueprint"
-            },
-            "usage": null
-          },
-          "start": {
-            "status": "succeeded",
-            "usage": null
           }
         },
         "next_node_id": "Verification",
+        "git_commit_sha": "c4c316ca01d70906ad1676b07936dab133c4bdc6",
         "node_visits": {
           "assess": 1,
-          "clarify_prep": 1,
+          "scope": 1,
           "start": 1,
-          "Clarify": 1,
           "plan": 1,
-          "scope": 1
+          "clarify_prep": 1,
+          "Clarify": 1
         }
       },
-      "diff": {}
+      "diff": {
+        "patch": "diff --git a/STRUCTURE.md b/STRUCTURE.md\nindex 727ddfa..09ddf05 100644\n--- a/STRUCTURE.md\n+++ b/STRUCTURE.md\n@@ -1,577 +1,175 @@\n-# STRUCTURE.md — Ideal folder structure for `src/domains/*` (contract for implementation)\n+# STRUCTURE.md — src-root ideal layout (move contract)\n \n-> **Status:** Approved scope **[C] Full catalog** (see `DECISIONS.md`).\n-> Grounded in `docs/unified/ARCHITECTURE.md` §4 (module blueprint), §4 worked\n-> example (world-building-toolkit), §3 (topology), §8 (task co-location).\n-> `PLAN.md` implements these move maps — every move item there references a row here.\n->\n-> **This file supersedes the previous STRUCTURE.md**, which described a pre-migration\n-> storyteller (root `components/`, `hooks/`, `lib/`, `mentions/`, `tools/`). Those\n-> migrations have already landed; this contract is grounded in the tree as of\n-> 2026-07-03 (fresh `find`/`grep` inventory, see PLAN §0 spot-checks).\n->\n-> Conventions:\n-> - `→` = `git mv` (behavior-preserving; import specifiers rewritten by codemod).\n-> - *(split)* = file dissolves into several new files (only god-store rows).\n-> - Per-unit `index.ts` barrels made redundant by a collapse are **deleted**, their\n->   exports folded into the new group barrel.\n-> - Anything not listed in a module's move map **stays put** this run.\n+**Module:** src-root · **Scope decision:** C — Full src-root (see `DECISIONS.md`)\n+**Authority:** `docs/unified/ARCHITECTURE.md` §3 + `docs/unified/SPEC.md` F-1…F-3.\n+This file is the **move contract**: `PLAN.md` todos reference rows here by section.\n \n-## Catalog summary (current → target)\n-\n-| Module | dirs now | dirs target | barrel today | worst sprawl / top violation |\n-|--------|:--------:|:-----------:|:------------:|------------------------------|\n-| storyteller | 102 | ~60 | exists (re-exports deep agent paths) | `core/` 15 one-type folders; `agents/` 17 folders |\n-| interior-designer | 19 | ~13 | exists | dual skeleton: legacy `components/ store/ ai/ utils/` beside empty §4 stubs; `useInteriorStore.ts` **1,651 LOC** |\n-| loop-creator | 12 | ~9 | **missing** | flat `components/`; `graph/ hooks/ lib/ mentions/` at root |\n-| world-building-toolkit | 7 | ~10 | **missing** | **P0**: browser→Supabase writes; 864-LOC god `useWorldStore` |\n-| deduction-puzzle-designer | 7 | ~7 | **missing** | flat `components/` + `store/` |\n-| chat | 6 | ~14 | **missing** (only `components/index.ts`) | flat `components/`; `mentions/` at root |\n-| game-design | 3 | ~5 | **missing** | `agent.ts`/`memory.ts`/`schemas.ts` at module root |\n-| 3d-asset-exporter | 3 | ~7 | **missing** | `components/` only; tasks live in `src/trigger/` |\n-| marketing | 3 | ~10 | **missing** | `components/` + `context/` |\n-\n-External referrer files (in `src/` + `tests/`, outside the module — sized by grep):\n-storyteller **50**, WBT **17**, interior-designer **10**, chat **8**, marketing **8**,\n-loop-creator **4**, game-design **4**, 3d-asset-exporter **2**, deduction **1**.\n-\n----\n-\n-# 1. storyteller — 102 subdirs → ~60 (primary pain; full before/after)\n-\n-## 1.1 Current tree (top 2 levels)\n-\n-```\n-storyteller/\n-├── index.ts                # barrel EXISTS — but re-exports deep agent paths ('./agents/ConsistencyAgent' …)\n-├── agents/                 # 17 subdirs: 11 agent folders (each <Agent>/{<Agent>.ts,index.ts})\n-│   │                       #   + StoryWorkflow/ StorytellerWorkflow/ WritersRoomGraph/ StorytellerPlanner/\n-│   │                       #   + MastraInstance/ (infra) + ModelConfig/ (config) + tools/ + __tests__/\n-├── config/                 # action-config.ts storyteller-agents.tsx storyteller-config.ts tool-result-mapper.ts\n-├── core/                   # 15 subdirs, ONE FOLDER PER TYPE (worst sprawl root):\n-│   │                       #   ActionFormatters/ ActionTypes/ CascadeEditor/ ConsistencyTypes/ DeepMerge/\n-│   │                       #   EntityExtractor/ EntityReferences/ Enums/ ReferenceParser/ StoryPlanFields/\n-│   │                       #   StoryPlanTypes/ StoryTypes/ UndoManager/ WorkflowContext/ utils/\n-├── db/schema.ts            # local Drizzle schema — PARALLEL to src/db/schema.ts (fragmentation, NOT inversion)\n-├── io/                     # storyteller.{api,dto,keys}.ts ✅\n-├── prompts/                # guardrails/ personas/ schemas/ + extended-thinking.ts push-to-hub.ts ✅\n-├── services/               # 16 *Service.ts + context/ ✅\n-├── state/                  # hooks/ queries/ ✅\n-└── ui/                     # 31 component folders ✅ (correct §4 pattern — keep)\n-```\n-\n-Sprawl: `core/` = 15 folders × (file + `index.ts`) for ~15 files; `agents/` = 17\n-folders for 11 agents + 4 orchestration units + 2 misplaced infra/config units.\n-\n-## 1.2 Ideal target tree\n-\n-```\n-storyteller/\n-├── index.ts                     # curated public barrel (§1.4)\n-├── storyteller.config.ts        # NEW root config seam → re-exports config/storyteller-config.ts\n-├── ui/                          # UNCHANGED (31 folders)\n-├── state/                       # UNCHANGED (hooks/ queries/)\n-├── io/                          # UNCHANGED\n-├── core/                        # 15 → 5 units, all pure\n-│   ├── index.ts                 # NEW core barrel\n-│   ├── types/                   # ActionTypes.ts StoryTypes.ts StoryPlanTypes.ts ConsistencyTypes.ts Enums.ts\n-│   ├── editing/                 # CascadeEditor.ts UndoManager.ts DeepMerge.ts\n-│   ├── entities/                # EntityExtractor.ts EntityReferences.ts ReferenceParser.ts\n-│   ├── formatting/              # ActionFormatters.ts StoryPlanFields.ts\n-│   └── utils/                   # youtube-utils.ts (unchanged)\n-├── services/                    # UNCHANGED (16 services + context/)\n-├── agents/                      # 17 → 5 subdirs (+ __tests__)\n-│   ├── index.ts                 # rewritten agent barrel\n-│   ├── StorytellerAgent/        # keep as folder (primary agent, large)\n-│   ├── council/                 # ConsequenceAgent.ts DevilsAdvocateAgent.ts GardenerAgent.ts\n-│   │                            # PremiseArchitectAgent.ts PsychologistAgent.ts SelfCritiqueAgent.ts\n-│   ├── judges/                  # ConsistencyAgent.ts CreativeDirectorAgent.ts ScriptReviewAgent.ts\n-│   ├── orchestration/           # StoryWorkflow.ts StorytellerWorkflow.ts WritersRoomGraph.ts\n-│   │                            # StorytellerPlanner.ts WorkflowContext.ts (← from core/)\n-│   ├── tools/                   # UNCHANGED\n-│   └── __tests__/               # UNCHANGED (import paths updated)\n-├── tasks/                       # NEW (Wave 6): 7 storyteller tasks from src/trigger/ (S31–S37)\n-├── prompts/                     # UNCHANGED\n-├── config/                      # + ModelConfig.ts (← agents/ModelConfig/)\n-└── db/schema.ts                 # stays this run (content merge into src/db = deferred, SPEC D-1)\n-```\n-\n-Folder-count effect: agents 17→5(+tests), core 15→5 ⇒ **102 → ~60 subdirs (~42% cut)**.\n-\n-## 1.3 Move map\n-\n-| # | Old path (under `src/domains/storyteller/`) | New path |\n-|---|----------|----------|\n-| S1 | `agents/ConsequenceAgent/ConsequenceAgent.ts` | `agents/council/ConsequenceAgent.ts` |\n-| S2 | `agents/DevilsAdvocateAgent/DevilsAdvocateAgent.ts` | `agents/council/DevilsAdvocateAgent.ts` |\n-| S3 | `agents/GardenerAgent/GardenerAgent.ts` | `agents/council/GardenerAgent.ts` |\n-| S4 | `agents/PremiseArchitectAgent/PremiseArchitectAgent.ts` | `agents/council/PremiseArchitectAgent.ts` |\n-| S5 | `agents/PsychologistAgent/PsychologistAgent.ts` | `agents/council/PsychologistAgent.ts` |\n-| S6 | `agents/SelfCritiqueAgent/SelfCritiqueAgent.ts` | `agents/council/SelfCritiqueAgent.ts` |\n-| S7 | `agents/ConsistencyAgent/ConsistencyAgent.ts` | `agents/judges/ConsistencyAgent.ts` |\n-| S8 | `agents/CreativeDirectorAgent/CreativeDirectorAgent.ts` | `agents/judges/CreativeDirectorAgent.ts` |\n-| S9 | `agents/ScriptReviewAgent/ScriptReviewAgent.ts` | `agents/judges/ScriptReviewAgent.ts` |\n-| S10 | `agents/StoryWorkflow/StoryWorkflow.ts` | `agents/orchestration/StoryWorkflow.ts` |\n-| S11 | `agents/StorytellerWorkflow/StorytellerWorkflow.ts` | `agents/orchestration/StorytellerWorkflow.ts` |\n-| S12 | `agents/WritersRoomGraph/WritersRoomGraph.ts` | `agents/orchestration/WritersRoomGraph.ts` |\n-| S13 | `agents/StorytellerPlanner/StorytellerPlanner.ts` | `agents/orchestration/StorytellerPlanner.ts` |\n-| S14 | `core/WorkflowContext/WorkflowContext.ts` | `agents/orchestration/WorkflowContext.ts` (ALS/event-bus is not pure core) |\n-| S15 | `agents/MastraInstance/MastraInstance.ts` | `src/shared/agent-kernel/MastraInstance.ts` (shared/ already exists) |\n-| S16 | `agents/ModelConfig/ModelConfig.ts` | `config/ModelConfig.ts` |\n-| S17 | `core/ActionTypes/ActionTypes.ts` | `core/types/ActionTypes.ts` |\n-| S18 | `core/StoryTypes/StoryTypes.ts` | `core/types/StoryTypes.ts` |\n-| S19 | `core/StoryPlanTypes/StoryPlanTypes.ts` | `core/types/StoryPlanTypes.ts` |\n-| S20 | `core/ConsistencyTypes/ConsistencyTypes.ts` | `core/types/ConsistencyTypes.ts` |\n-| S21 | `core/Enums/Enums.ts` | `core/types/Enums.ts` |\n-| S22 | `core/CascadeEditor/CascadeEditor.ts` | `core/editing/CascadeEditor.ts` |\n-| S23 | `core/UndoManager/UndoManager.ts` | `core/editing/UndoManager.ts` |\n-| S24 | `core/DeepMerge/DeepMerge.ts` | `core/editing/DeepMerge.ts` |\n-| S25 | `core/EntityExtractor/EntityExtractor.ts` | `core/entities/EntityExtractor.ts` |\n-| S26 | `core/EntityReferences/EntityReferences.ts` | `core/entities/EntityReferences.ts` |\n-| S27 | `core/ReferenceParser/ReferenceParser.ts` | `core/entities/ReferenceParser.ts` |\n-| S28 | `core/ActionFormatters/ActionFormatters.ts` | `core/formatting/ActionFormatters.ts` |\n-| S29 | `core/StoryPlanFields/StoryPlanFields.ts` | `core/formatting/StoryPlanFields.ts` |\n-| S30 | 26 × per-unit `index.ts` in collapsed `agents/*/` + `core/*/` folders | **deleted**; exports folded into NEW `agents/{council,judges,orchestration}/index.ts`, `core/{types,editing,entities,formatting}/index.ts`, `core/index.ts` |\n-| S31 *(W6)* | `src/trigger/generate-portrait.ts` | `tasks/generate-portrait.task.ts` |\n-| S32 *(W6)* | `src/trigger/select-portrait-variant.ts` | `tasks/select-portrait-variant.task.ts` |\n-| S33 *(W6)* | `src/trigger/generate-poster.ts` | `tasks/generate-poster.task.ts` |\n-| S34 *(W6)* | `src/trigger/generate-episode-poster.ts` | `tasks/generate-episode-poster.task.ts` |\n-| S35 *(W6)* | `src/trigger/generate-moodboard.ts` | `tasks/generate-moodboard.task.ts` |\n-| S36 *(W6)* | `src/trigger/generate-storyboard.ts` | `tasks/generate-storyboard.task.ts` |\n-| S37 *(W6)* | `src/trigger/generate-combined-storyboard.ts` | `tasks/generate-combined-storyboard.task.ts` |\n-\n-## 1.4 Public barrel (`storyteller/index.ts`) after reshape\n-\n-Same exported **symbols** as today (contract-preserving); internal paths change:\n-\n-- **Agents:** `export * from './agents'`, where `agents/index.ts` re-exports\n-  `StorytellerAgent/`, `council/`, `judges/`, `orchestration/` — covers today's\n-  deep root-barrel exports (`ConsistencyAgent`, `ScriptReviewAgent`,\n-  `StorytellerWorkflow`, `WritersRoomGraph`).\n-- **UI:** unchanged (31 component re-exports).\n-- **Core:** single `export * from './core'` replacing today's per-folder exports.\n-- **State/io:** unchanged.\n-- **Server seam (interim):** keep re-exporting `db/schema` + service entry points\n-  consumed by `src/app/api/storyteller/**`, `src/services/storyteller.service.ts`,\n-  `src/mcp`, `src/evaluation/**` until the schema/shared wave.\n-- **Removed:** `MastraInstance` (import from `@/shared/agent-kernel`), `ModelConfig`\n-  (via `config/`).\n-\n-## 1.5 Out of scope this wave (storyteller)\n-\n-- `db/schema.ts` **content** merge into `src/db/schema.ts` (SPEC D-1 — deferred).\n-- Mastra behavior changes: `z.any()` in `StoryWorkflow.ts:112,143,168`, manual\n-  `withSpan` spans, `AgentMemory`, skill-loader (SPEC A-stream — separate effort;\n-  non-negotiable \"move files first\").\n-- God-component splits (`ActionApprovalModal` ~978 LOC, `CharacterWeb` ~922 LOC).\n-- `ui/WorldBible/` loose-file re-organization (add local barrel only, no moves).\n-- SSE route decomposition (`quality-improvement-spec` ST-2).\n-\n----\n-\n-# 2. world-building-toolkit — flat legacy → §4 worked example\n-\n-## 2.1 Current tree\n-\n-```\n-world-building-toolkit/            # NO index.ts\n-├── components/                    # 8 loose + Canvas/{WorldCanvas,Tile,RepaintCanvas} + Sidebar/Sidebar\n-├── services/                      # CLIENT-side (misnamed layer): FidelityService RepaintService\n-│                                  #   SelectModeService TileGenerationService (polling, window events)\n-│                                  #   UpscaleService (localStorage recovery — confirmed :46,:113,:281,:363)\n-├── store/useWorldStore.ts         # 864 LOC god store: server data + UI + jobs + browser→Supabase writes (P0)\n-└── utils/rle.ts\n-```\n-\n-## 2.2 Ideal target tree (= ARCHITECTURE §4 worked example)\n-\n-```\n-world-building-toolkit/\n-├── index.ts                          # NEW (§2.4)\n-├── ui/                               # folder-per-component\n-│   ├── WorldCanvas/ Tile/ RepaintCanvas/ Sidebar/ AssetsPanel/ TileReviewDialog/\n-│   └── MjVariantPicker/ RepaintToolbar/ SelectModeToolbar/ SettingsDialog/ WorldGenToolbar/\n-├── state/\n-│   ├── useWorldUiStore.ts            # ~150 LOC: viewport selection modes brush debug flags ONLY\n-│   ├── hooks/                        # client orchestration hooks (ex-\"services\", W14–W18)\n-│   └── queries/                      # useTiles.ts useProjects.ts useAssets.ts useTileMutation.ts\n-├── io/                               # world.api.ts world.keys.ts world.dto.ts — NO browser→Supabase\n-├── core/                             # TileGrid.ts (← utils/rle.ts) + ContextAssembly.ts (← store debug blob)\n-├── services/                         # SERVER-only (`import 'server-only'`): TileService.ts ProjectService.ts (NEW)\n-├── tasks/                            # Wave 6: generate-tile / upscale-tile / enhance-fidelity /\n-│                                     #   select-mj-variant / upload-asset .task.ts\n-└── world-building-toolkit.config.ts  # NEW\n-```\n-\n-## 2.3 Move map\n-\n-| # | Old path | New path |\n-|---|----------|----------|\n-| W1 | `components/Canvas/WorldCanvas.tsx` | `ui/WorldCanvas/WorldCanvas.tsx` (+ local `index.ts`; same for all ui moves) |\n-| W2 | `components/Canvas/Tile.tsx` | `ui/Tile/Tile.tsx` |\n-| W3 | `components/Canvas/RepaintCanvas.tsx` | `ui/RepaintCanvas/RepaintCanvas.tsx` |\n-| W4 | `components/Sidebar/Sidebar.tsx` | `ui/Sidebar/Sidebar.tsx` |\n-| W5 | `components/AssetsPanel.tsx` | `ui/AssetsPanel/AssetsPanel.tsx` |\n-| W6 | `components/MjVariantPicker.tsx` | `ui/MjVariantPicker/MjVariantPicker.tsx` |\n-| W7 | `components/RepaintToolbar.tsx` | `ui/RepaintToolbar/RepaintToolbar.tsx` |\n-| W8 | `components/SelectModeToolbar.tsx` | `ui/SelectModeToolbar/SelectModeToolbar.tsx` |\n-| W9 | `components/SettingsDialog.tsx` | `ui/SettingsDialog/SettingsDialog.tsx` |\n-| W10 | `components/TileReviewDialog.tsx` | `ui/TileReviewDialog/TileReviewDialog.tsx` |\n-| W11 | `components/WorldGenToolbar.tsx` | `ui/WorldGenToolbar/WorldGenToolbar.tsx` |\n-| W12 | `utils/rle.ts` | `core/TileGrid.ts` (pure; renamed per §4 example) |\n-| W13 | `store/useWorldStore.ts` *(split — P0)* | `state/useWorldUiStore.ts` + `state/queries/{useTiles,useProjects,useAssets,useTileMutation}.ts` + `io/{world.api,world.keys,world.dto}.ts` + `services/{ProjectService,TileService}.ts` behind `/api` routes (kills browser→Supabase writes + snake_case remap hacks) |\n-| W14 | `services/FidelityService.ts` | `state/hooks/useFidelity.ts` *(refactor: client orchestration → hook; server calls via io/)* |\n-| W15 | `services/RepaintService.ts` | `state/hooks/useRepaint.ts` *(refactor)* |\n-| W16 | `services/SelectModeService.ts` | `state/hooks/useSelectMode.ts` *(refactor)* |\n-| W17 | `services/TileGenerationService.ts` | `state/hooks/useTileGeneration.ts` *(refactor: polling + `window` events → `shared/jobs` `useJob`)* |\n-| W18 | `services/UpscaleService.ts` | `state/hooks/useUpscale.ts` *(refactor: localStorage recovery → runId re-subscribe)* |\n-| W19 *(W6)* | `src/trigger/generate-tile.ts` | `tasks/generate-tile.task.ts` (also: `schemaTask`, kill `neighbors?: any`) |\n-| W20 *(W6)* | `src/trigger/upscale-tile.ts` | `tasks/upscale-tile.task.ts` |\n-| W21 *(W6)* | `src/trigger/enhance-fidelity.ts` | `tasks/enhance-fidelity.task.ts` |\n-| W22 *(W6)* | `src/trigger/select-mj-variant.ts` | `tasks/select-mj-variant.task.ts` |\n-| W23 *(W6)* | `src/trigger/upload-asset.ts` | `tasks/upload-asset.task.ts` |\n-\n-W13–W18 are **refactors, not pure moves** — sequenced after the ui/core moves,\n-each its own PLAN item with paired tests. Everything else is `git mv` + codemod.\n-\n-## 2.4 Public barrel (`index.ts`)\n-\n-Phase 1 (referrer lockdown, before any move): re-export `useWorldStore`,\n-`WorldCanvas`, `Sidebar`, `AssetsPanel`, `TileReviewDialog`, `WorldGenToolbar`,\n-public tile/project types — then rewrite all 17 external referrers to the barrel.\n-Phase 2 (after W13): barrel swaps to `useWorldUiStore` + `useTiles`/`useProjects`/\n-`useAssets` + DTO types; legacy `useWorldStore` export deleted.\n-\n-## 2.5 Out of scope this wave (WBT)\n-\n-- API route **URL** consolidation (`api/trigger-tile`, `api/tiles`, `api/upscale`,\n-  `api/repaint`, `api/save-image`, `api/upload-tile`, `api/complete-token`,\n-  `api/trigger-upscale`, `api/trigger-fidelity` → `api/world/*`) — deferred;\n-  `io/world.api.ts` keeps current URLs.\n-- Midjourney/upscale provider logic (only packaging moves).\n-\n----\n-\n-# 3. interior-designer — merge dual skeleton (19 dirs; barrel exists)\n-\n-## 3.1 Current tree\n-\n-```\n-interior-designer/                 # index.ts EXISTS; interior-designer.config.ts EXISTS\n-├── ui/InteriorDesignerWorkspace/  # 1 real §4 component\n-├── state/ io/ core/ services/ tasks/ prompts/   # scaffolded stubs (mostly empty barrels; io/ has api+dto+keys)\n-├── components/                    # LEGACY: 13 loose + UI/(7) meshes/(3) terrain/(2) tools/(5)\n-├── store/useInteriorStore.ts      # 1,651 LOC god store — LARGER than WBT's (new finding vs assess)\n-├── ai/TextureService.ts\n-├── utils/                         # UnityExporter.ts UnityYAML.ts polygonUtils.ts textureCache.ts\n-└── __tests__/\n-```\n-\n-## 3.2 Ideal target tree\n-\n-```\n-interior-designer/\n-├── index.ts  interior-designer.config.ts        # keep\n-├── ui/\n-│   ├── InteriorDesignerWorkspace/ (keep) InteriorCanvas/ DesignManager/ FloorManager/ ObjectManager/\n-│   ├── SurfaceManager/ WallManager/ TransformManager/ CameraController/ KeybindingManager/\n-│   ├── Exporter/ RetextureExporter/ SculptableSurface/ VoxelTerrainMesh/\n-│   ├── panels/                                  # ← components/UI/ (7 panel components)\n-│   └── meshes/ terrain/ tools/                  # grouped subunits preserved\n-├── state/\n-│   ├── useInteriorStore.ts                      # MOVED as-is (split = deferred)\n-│   ├── textureCache.ts                          # client runtime cache\n-│   └── queries/                                 # keep stub\n-├── io/                                          # keep (api/dto/keys)\n-├── core/                                        # + polygonUtils.ts + unity/{UnityExporter,UnityYAML}.ts\n-├── services/                                    # + TextureService.ts (← ai/)\n-├── tasks/                                       # Wave 6: retexture-model / text-to-3d / surface-material\n-└── prompts/                                     # keep\n-```\n-\n-## 3.3 Move map\n-\n-| # | Old path | New path |\n-|---|----------|----------|\n-| I1–I13 | `components/{CameraController,DesignManager,Exporter,FloorManager,InteriorCanvas,KeybindingManager,ObjectManager,RetextureExporter,SculptableSurface,SurfaceManager,TransformManager,VoxelTerrainMesh,WallManager}.tsx` | `ui/<X>/<X>.tsx` (+ local `index.ts` each) |\n-| I14–I20 | `components/UI/{AssetLibrary,InteriorRightSidebar,LayerPanel,PropertiesPanel,SurfaceProperties,TerrainEditorPanel,Toolbar}.tsx` | `ui/panels/<X>/<X>.tsx` |\n-| I21 | `components/meshes/{DoorMesh,RoadMesh,WindowMesh}.tsx` | `ui/meshes/…` |\n-| I22 | `components/terrain/{GlobalWaterPlane,TerrainBrushPreview,index}.tsx` | `ui/terrain/…` |\n-| I23 | `components/tools/{ObjectTool,ScatterTool,SurfaceTool,TerrainTool,WallTool}.tsx` | `ui/tools/…` |\n-| I24 | `store/useInteriorStore.ts` | `state/useInteriorStore.ts` (move only; split deferred) |\n-| I25 | `ai/TextureService.ts` | `services/TextureService.ts` (verify server-only during move; add `import 'server-only'` if true, else place in `state/hooks/`) |\n-| I26 | `utils/polygonUtils.ts` | `core/polygonUtils.ts` |\n-| I27 | `utils/{UnityExporter,UnityYAML}.ts` | `core/unity/{UnityExporter,UnityYAML}.ts` (pure generators) |\n-| I28 | `utils/textureCache.ts` | `state/textureCache.ts` |\n-| I29 | `__tests__/*` (6 files) | stay; import paths updated |\n-| I30 *(W6)* | `src/trigger/{retexture-model,text-to-3d,surface-material}.ts` | `tasks/*.task.ts` (ownership: consumed by `api/interior-designer/*` routes) |\n-\n-## 3.4 Public barrel\n-\n-Keep current exports; add moved-path re-exports needed by the 10 external referrers\n-(9 `api/interior-designer/**` routes import `io/` DTOs + services via barrel; app\n-page imports `InteriorDesignerWorkspace`). `useInteriorStore` stays internal if no\n-external import exists (verify by grep before curating).\n-\n-## 3.5 Out of scope\n-\n-Splitting the 1,651-LOC `useInteriorStore` (own P1 follow-up); Meshy/texture\n-provider logic; deleting `store/`-era snake_case remaps.\n-\n----\n-\n-# 4. loop-creator — 12 dirs, no barrel\n-\n-## 4.1 Current tree\n-\n-```\n-loop-creator/            # NO index.ts\n-├── agents/              # 7 flat agents + market-analyst-wrapper.ts + market-analyst/ (tools/, scorers/, tests)\n-├── components/          # 7 components (LoopCreatorLayout.tsx = 1,612 LOC)\n-├── graph/               # loop-graph.ts state.ts        ← orchestration at root\n-├── hooks/useAutoSave.ts\n-├── lib/layout.ts\n-├── mentions/providers.ts\n-└── __tests__/\n-```\n-\n-## 4.2 Ideal target tree\n-\n-```\n-loop-creator/\n-├── index.ts                        # NEW\n-├── ui/                             # LoopCreatorLayout/ CustomNodes/ LoopEmptyState/ LoopSelector/\n-│   │                               # MarketAnalysisPanel/ PropertiesPanel/ SuggestionPanel/\n-│   └── MentionsProvider/           # providers.ts (mirror storyteller pattern)\n-├── state/hooks/useAutoSave.ts\n-├── core/layout.ts                  # pure graph layout math (← lib/)\n-└── agents/\n-    ├── index.ts                    # NEW agent barrel\n-    ├── (7 flat agents + market-analyst-wrapper.ts + market-analyst/ — unchanged)\n-    └── orchestration/              # loop-graph.ts state.ts (← graph/)\n-```\n-\n-## 4.3 Move map\n-\n-| # | Old path | New path |\n-|---|----------|----------|\n-| L1–L7 | `components/{LoopCreatorLayout,CustomNodes,LoopEmptyState,LoopSelector,MarketAnalysisPanel,PropertiesPanel,SuggestionPanel}.tsx` | `ui/<X>/<X>.tsx` (+ local barrels) |\n-| L8 | `graph/loop-graph.ts` | `agents/orchestration/loop-graph.ts` |\n-| L9 | `graph/state.ts` | `agents/orchestration/state.ts` |\n-| L10 | `hooks/useAutoSave.ts` | `state/hooks/useAutoSave.ts` |\n-| L11 | `lib/layout.ts` | `core/layout.ts` |\n-| L12 | `mentions/providers.ts` | `ui/MentionsProvider/providers.ts` |\n-\n-## 4.4 Public barrel\n-\n-`LoopCreatorLayout` (app page), the agent/graph entry points used by the 3\n-`api/loop-creator/*` routes (market-analyst, supervisor/chat, graph run), mention\n-providers (if externally consumed — verify).\n-\n-## 4.5 Out of scope\n-\n-Splitting `LoopCreatorLayout` (1,612 LOC); TanStack `state/queries/` adoption;\n-`loop-creator.config.ts` (create only if real constants surface).\n-\n----\n-\n-# 5. chat — 6 dirs, no barrel (stays a domain this run)\n-\n-## 5.1 Current tree\n-\n-```\n-chat/                    # NO root index.ts (only components/index.ts)\n-├── components/          # 9 components + index.ts (AgentLog.tsx = 1,374 LOC)\n-├── hooks/useChatStream.ts (+ .test.ts, __tests__/)\n-├── mentions/            # context-builder.ts game-entity-provider.ts types.ts\n-└── types.ts\n-```\n-\n-## 5.2 Ideal target tree\n-\n-```\n-chat/\n-├── index.ts                     # NEW (consumers: storyteller ×3, loop-creator ×2,\n-│                                #   src/lib/chat-persistence.ts, app storyteller page)\n-├── ui/                          # AgentLog/ ChatInput/ ChatInterface/ CitationDisplay/ MentionChip/\n-│                                # QuickActions/ SectionProgress/ StreamingSectionsInline/ StreamingTerminal/\n-├── state/hooks/useChatStream.ts\n-└── core/\n-    ├── mentions/                # context-builder.ts game-entity-provider.ts types.ts (pure)\n-    └── types.ts                 # ← root types.ts\n-```\n-\n-## 5.3 Move map\n-\n-| # | Old path | New path |\n-|---|----------|----------|\n-| C1–C9 | `components/<X>.tsx` (9 files) | `ui/<X>/<X>.tsx` (+ local barrels; delete `components/index.ts`) |\n-| C10 | `hooks/useChatStream.ts` + `useChatStream.test.ts` + `hooks/__tests__/` | `state/hooks/…` |\n-| C11 | `mentions/{context-builder,game-entity-provider,types}.ts` | `core/mentions/…` |\n-| C12 | `types.ts` | `core/types.ts` (re-exported from root barrel) |\n-\n-## 5.4 Public barrel\n-\n-`ChatInterface`, `AgentLog`, `QuickActions`, `MentionChip`, `useChatStream`,\n-mention provider types + `core/types` — exactly the symbols the 8 external\n-referrer files import today (grep-verified before curating).\n-\n-## 5.5 Out of scope\n-\n-Chat → `src/shared/` move (open architecture question — decision deferred);\n-`AgentLog.tsx` split. **Config note:** `tsconfig.fabro-verify.json` and `knip.json`\n-both reference chat paths — must be updated in the same increment (PLAN items).\n-\n----\n-\n-# 6. game-design — root files → §4 AI-module skeleton\n-\n-## 6.1 Current\n-\n-`agent.ts`, `memory.ts`, `schemas.ts`, `tools/v2/{haute-game-tools,logic-transformers,loop-tools}.ts`.\n-No barrel. External referrers: `src/workflows/game-design/game-loop-workflow.ts`,\n-`api/workflows/game-design`, 3 integration tests under `tests/integration/`.\n-\n-## 6.2 Target tree\n-\n-```\n-game-design/\n-├── index.ts                                  # NEW\n-├── core/schemas.ts                           # pure Zod (← root schemas.ts)\n-└── agents/\n-    ├── GameDesignAgent.ts                    # ← agent.ts\n-    ├── memory.ts                             # ← memory.ts\n-    ├── tools/                                # ← tools/v2/ flattened (3 files)\n-    └── orchestration/GameLoopWorkflow.ts     # ← src/workflows/game-design/game-loop-workflow.ts\n-```\n-\n-## 6.3 Move map\n-\n-| # | Old | New |\n-|---|-----|-----|\n-| G1 | `agent.ts` | `agents/GameDesignAgent.ts` |\n-| G2 | `memory.ts` | `agents/memory.ts` |\n-| G3 | `schemas.ts` | `core/schemas.ts` |\n-| G4 | `tools/v2/{haute-game-tools,logic-transformers,loop-tools}.ts` | `agents/tools/…` |\n-| G5 | `src/workflows/game-design/game-loop-workflow.ts` | `agents/orchestration/GameLoopWorkflow.ts` (module absorbs its workflow; `src/workflows/{schema,human-loop-workflow}.ts` stay put) |\n-\n-## 6.4 Barrel: agent factory, workflow entry, schema types — what the 4 referrers use.\n-## 6.5 Out of scope: prompts extraction; Mastra-native memory migration.\n+> Supersedes the previous domains-catalog STRUCTURE.md (that scope is a separate\n+> future run). Grounded in a fresh 2026-07-03 inventory (`ls`/`grep`, see PLAN §0).\n \n ---\n \n-# 7. deduction-puzzle-designer — 7 dirs, 1 external referrer\n-\n-## 7.1 Current\n-\n-`components/{PuzzleDesignerLayout.tsx, LogicMap/(2), ScenarioDefinition/(3), SceneStaging/(3)}`,\n-`store/puzzle-store.ts`. No barrel.\n-\n-## 7.2 Target tree\n-\n-```\n-deduction-puzzle-designer/\n-├── index.ts                          # NEW — exports PuzzleDesignerLayout\n-├── ui/\n-│   ├── PuzzleDesignerLayout/ LogicMap/ ScenarioDefinition/ SceneStaging/\n-└── state/usePuzzleStore.ts           # ← store/puzzle-store.ts\n-```\n-\n-## 7.3 Move map\n-\n-| # | Old | New |\n-|---|-----|-----|\n-| D1 | `components/PuzzleDesignerLayout.tsx` | `ui/PuzzleDesignerLayout/PuzzleDesignerLayout.tsx` |\n-| D2 | `components/LogicMap/**` (incl. `nodes/`) | `ui/LogicMap/**` |\n-| D3 | `components/ScenarioDefinition/**` (3 files) | `ui/ScenarioDefinition/**` |\n-| D4 | `components/SceneStaging/**` (3 files) | `ui/SceneStaging/**` |\n-| D5 | `store/puzzle-store.ts` | `state/usePuzzleStore.ts` |\n-\n-## 7.4 Barrel: `PuzzleDesignerLayout` (sole consumer: `app/app/[projectId]/deduction-puzzle/page.tsx`).\n-## 7.5 Out of scope: store split; io/core extraction (no server surface yet).\n-\n----\n-\n-# 8. 3d-asset-exporter — components-only → ui + tasks\n-\n-## 8.1 Current\n-\n-`components/{AssetEditor,AssetExporterSidebar,AssetUploadZone,ThreeDPanel,ThreeDViewer}.tsx`\n-(ThreeDPanel = 1,409 LOC). No barrel. Referrers: interior-designer `AssetLibrary`,\n-asset-exporter app page.\n-\n-## 8.2 Target tree\n-\n-```\n-3d-asset-exporter/\n-├── index.ts                     # NEW\n-├── ui/                          # AssetEditor/ AssetExporterSidebar/ AssetUploadZone/ ThreeDPanel/ ThreeDViewer/\n-└── tasks/                       # Wave 6: generate-3d-model.task.ts remesh-3d-model.task.ts\n-```\n-\n-## 8.3 Move map\n-\n-| # | Old | New |\n-|---|-----|-----|\n-| A1–A5 | `components/<X>.tsx` (5 files) | `ui/<X>/<X>.tsx` |\n-| A6 *(W6)* | `src/trigger/{generate-3d-model,remesh-3d-model}.ts` | `tasks/*.task.ts` (confirm ownership vs `api/generate-3d`/`api/trigger-3d` referrers during move) |\n-\n-## 8.4 Barrel: `ThreeDPanel`, `AssetExporterSidebar` (+ upload zone if page-consumed). The interior-designer → 3d cross-module import must switch to this barrel.\n-## 8.5 Out of scope: `ThreeDPanel` split; `services/`/`io/` layers (no direct DB access today).\n-\n----\n-\n-# 9. marketing — components + context → ui + state\n-\n-## 9.1 Current\n-\n-`components/` (8 files; `LandingPage` 1,525 LOC, `ThreeDIcon` 1,345 LOC),\n-`context/LiquidContext.tsx`. No barrel. 8 external referrers (app shell pages +\n-`src/components/{GlobalHeader,LiquidGlass,ProjectSelectorDropdown,TroubleshootPanel}`).\n-\n-## 9.2 Target tree\n-\n-```\n-marketing/\n-├── index.ts                 # NEW\n-├── ui/                      # GlobalLiquidLoader/ LandingPage/ Liquid/ LiquidBackgroundProvider/\n-│                            # ProPlanPromo/ ThreeDIcon/ ToolsIntegration/ TurbulentBackground/\n-└── state/LiquidContext.tsx  # React context = client state\n-```\n-\n-## 9.3 Move map\n-\n-| # | Old | New |\n-|---|-----|-----|\n-| M1–M8 | `components/<X>.tsx` (8 files) | `ui/<X>/<X>.tsx` |\n-| M9 | `context/LiquidContext.tsx` | `state/LiquidContext.tsx` |\n-\n-## 9.4 Barrel: `LandingPage`, `LiquidBackgroundProvider`, `GlobalLiquidLoader`, `Liquid`, `ProPlanPromo`, `TurbulentBackground`, `ThreeDIcon`, `LiquidContext` hook — grep-curated from the 8 referrers.\n-## 9.5 Out of scope: `LandingPage`/`ThreeDIcon` splits.\n-\n----\n-\n-# 10. Catalog-wide referrer surface (sizes PLAN reference-update todos)\n-\n-| Module | Ext. referrer files | Hot spots |\n-|--------|:---:|-----------|\n-| storyteller | **50** | ~30 `src/app/api/storyteller/**` routes · `src/services/storyteller.service.ts` · `src/evaluation/**` (4) · `tests/integration` (6) · `src/mcp` · chat module (2) · storyteller app page · `api/workflows/game-design` · `tests/unit`, `tests/system` |\n-| world-building-toolkit | **17** | interior-designer (5) · 3d-asset-exporter (3) · `src/app/app/**` (4) · `src/components/Global*` (≈3) · `src/shared/data/useProjectFromUrl.ts` · `src/infrastructure/ai/types.ts` |\n-| interior-designer | **10** | 9 `api/interior-designer/**` routes · interior-design app page |\n-| chat | **8** | storyteller (3) · loop-creator (2) · `src/lib/chat-persistence.ts` · storyteller app page · storyteller e2e test |\n-| marketing | **8** | `app/{page,login,layout,app/page}.tsx` · `src/components/{GlobalHeader,LiquidGlass,ProjectSelectorDropdown,TroubleshootPanel}` |\n-| loop-creator | **4** | 3 API routes · loop-creator app page |\n-| game-design | **4** | `src/workflows/game-design/*` · 3 `tests/integration/**` |\n-| 3d-asset-exporter | **2** | interior-designer `AssetLibrary` · asset-exporter app page |\n-| deduction-puzzle-designer | **1** | deduction-puzzle app page |\n-\n-**Config/docs referrers** (update in the same increment as each wave):\n-\n-- `tsconfig.fabro-verify.json` — currently includes only `src/domains/chat/**` +\n-  `src/app/api/chat/**`; extend per wave.\n-- `knip.json` — references `src/domains/chat/components/index.ts` (breaks at chat wave).\n-- `eslint.config.js` (~lines 172–240) — storyteller deep-import guard (currently\n-  `ignores: ['src/domains/storyteller/**']` with external restriction) + domain/shared\n-  boundary blocks; clone the guard per module as each barrel lands.\n-- `trigger.config.*` `dirs`/includes — Wave 6 task co-location.\n-- Docs: `docs/internal/*.md`, `AGENTS.md`, `CLAUDE.md` path citations.\n+## 1. Current top-level tree (`ls -1 src/`, 2026-07-03)\n+\n+| Entry | Role today |\n+|---|---|\n+| `agent-core/` | Mastra kernel dupes: observability (459 LOC manual spans), models, judging, memory, skills, agents, planner, executive, persistence, search, workspace, schemas |\n+| `app/` | Next.js App Router — routes + API ✅ |\n+| `components/` | 18 loose app-shell components + `auth/`, `providers/`, `tour.tsx` + `ui/` (target-aligned subfolder, 170 imports) |\n+| `config/` | `style-presets.ts` (image-gen presets; 9 imports: WBT + storyteller + app routes) |\n+| `constants/` | `localStorage.ts`, `polling.ts`, `worldPromptIdeas.ts` (24 imports) |\n+| `content/` | `legal/` markdown read via `fs` from `app/terms` + `app/privacy` |\n+| `db/` | Drizzle schema + client ✅ |\n+| `domains/` | Product modules ✅ (internals out of scope) |\n+| `evaluation/` | Offline eval harness (2 imports from app) |\n+| `hooks/` | `useGameEntities.ts`, `useProjectFromUrl.ts` (9 imports; real impls already in `shared/data/`) |\n+| `infrastructure/` | `ai/` (replicate, meshy, fal, legnext, gateway, embeddings, rag, contextAssembler) + `storage/` (Supabase clients, `database.types.ts`) — 23 imports |\n+| `instrumentation.ts`, `instrumentation-client.ts` | Next.js instrumentation — stays at root ✅ |\n+| `lib/` | 6 shims (auth, api-utils, db, error-utils, security, utils = 252 imports) + 16 real files/dirs (~52 imports) |\n+| `mcp/` | MCP server (single entry) — keep per goal exception |\n+| `middleware.ts` | Next.js middleware — stays at root ✅ |\n+| `pages/` | Legacy Pages router: `api/mcp.ts` (live MCP HTTP endpoint) + `_error.tsx` (Sentry) |\n+| `prompts/` | Storyteller-only prompt registry/repository (5 imports, all storyteller) |\n+| `services/` | `entities.service.ts`, `storyteller.service.ts`, `tiles.service.ts`, `index.ts` (5 imports) |\n+| `shared/` | F-1 stubs ✅ — `agent-kernel/`, `auth/`, `data/`, `errors/`, `jobs/`, `observability/`, `types/`, `__tests__/` |\n+| `store/` | `useAuthStore` (2), `useErrorStore` (3), `useGlobalStatusStore` (16) |\n+| `trigger/` | Trigger.dev task files ✅ (registry role; internals untouched) |\n+| `types/` | `enums.ts`, `onboarding.ts`, `three-jsx.d.ts` (6 imports) |\n+| `workflows/` | `game-design/` (LIVE — imported by `app/api/workflows/game-design/route.ts`), `human-loop-workflow.ts`, `schema.ts` |\n+\n+**23 entries → target is 8 folders + 3 root files.**\n+\n+## 2. Ideal target tree (after this run)\n+\n+```\n+src/\n+├─ domains/<module>/          # vertical slices (internals: domains-catalog run)\n+├─ shared/                    # cross-module (imported by 2+ modules)\n+│   ├─ agent-kernel/          # MastraInstance, models, agents, context, skills, scorers\n+│   ├─ ai/                    # external AI clients: replicate, meshy, fal, legnext,\n+│   │                         #   gateway, embeddings, rag (ex-infrastructure/ai)\n+│   ├─ auth/                  # auth, security, validation, useAuthStore, supabase-admin, admin-users\n+│   ├─ data/                  # api-utils, utils, url, fetch-cache, react-query, seedFromString\n+│   │   ├─ queries/           #   useGameEntities, useProjectFromUrl\n+│   │   ├─ generation/        #   TilesService, style-presets\n+│   │   ├─ constants/         #   localStorage, polling, visuals\n+│   │   └─ storage/           #   StorageService, supabase clients (ex-infrastructure/storage)\n+│   ├─ errors/                # error-utils, useErrorStore, ErrorBoundary(+Wrapper)\n+│   ├─ jobs/                  # useGlobalStatusStore, AsyncStatusIndicator, Troubleshoot*\n+│   ├─ observability/         # langfuse-session + ex-agent-core/observability (verbatim move)\n+│   ├─ tours/                 # tour engine + per-module tours + tour-constants + module-tours  [taxonomy extension — see note]\n+│   └─ types/                 # enums, onboarding, three-jsx.d.ts (ambient)\n+├─ components/ui/             # Radix + CVA primitives ONLY (+ ImageLightbox, LiquidGlass, EntityPicker)\n+├─ db/                        # schema + client + types.ts (ex database.types.ts)\n+├─ trigger/                   # task registry (unchanged)\n+├─ app/                       # routes + API glue\n+│   ├─ _shell/                # app chrome: GlobalHeader, GlobalSidebar, GameHubDashboard,\n+│   │                         #   ProjectLoader, ProjectSelectorDropdown, ProjectTourWrapper,\n+│   │                         #   ModuleOnboardingController, providers/, auth/\n+│   ├─ _content/legal/        # terms.md, privacy.md (fs-read by app/terms + app/privacy)\n+│   └─ api/mcp/route.ts       # migrated from pages/api/mcp.ts\n+├─ mcp/                       # ALLOWED EXCEPTION — single-entry MCP server (goal §inventory)\n+├─ evaluation/                # ALLOWED EXCEPTION — slim offline harness (overhaul deferred)\n+├─ middleware.ts              # stays at root\n+└─ instrumentation.ts / instrumentation-client.ts   # stay at root\n+```\n+\n+> **Taxonomy note — `shared/tours/`:** ARCHITECTURE §3 lists six `shared/` children;\n+> the tour/onboarding system (tour engine + 5 module tours + constants, ~32 imports\n+> from 5 domains) is a cross-module client building block that fits none of them.\n+> Adding `shared/tours/` follows the §3 rule (\"imported by 2+ modules → shared/\").\n+> **`app/_shell/`** uses the Next.js private-folder convention; shell chrome is\n+> \"app glue\", legal under §3.\n+\n+## 3. Disposition table (every legacy top-level folder)\n+\n+| Folder | Disposition | Evidence / notes |\n+|---|---|---|\n+| `agent-core/` | **merge → `shared/agent-kernel/` + `shared/observability/`** | 30 imports (observability 19, agents 5, judging 2, models/skills/planner/executive 1 each). Subdirs with 0 `@/`-imports (memory, schemas, persistence, search, workspace) audited → delete if relative-import-free, else merge |\n+| `lib/` | **merge → `shared/*`, `db/`, domains; then delete** | 6 shims (252 imports) codemod-only; 16 real files mapped in §4 |\n+| `infrastructure/` | **merge → `shared/ai/`, `shared/data/storage/`, `db/types.ts`** | 23 imports across 3+ modules + trigger |\n+| `hooks/` | **delete after codemod** | 9 imports; impls already at `shared/data/queries/` + `shared/data/` |\n+| `store/` | **merge → `shared/auth/`, `shared/errors/`, `shared/jobs/`; delete** | 21 imports; `useAuthStore`/`useErrorStore` already exist in `shared/` |\n+| `services/` | **merge → `shared/data/` (entities, tiles) + `domains/storyteller/services/` (storyteller); delete** | 5 imports; `EntitiesService`/`TilesService` already in `shared/data/` |\n+| `prompts/` | **move → `domains/storyteller/prompts/`** | 5 imports, all storyteller |\n+| `evaluation/` | **keep slim** (exception) | 2 imports; scorer port deferred |\n+| `mcp/` | **keep** (exception) | single entry; 7 imports (self-tests + pages/api + app/api/api-keys) |\n+| `workflows/` | **move → `domains/game-design/workflows/`** | ⚠ assess correction: 1 live import from `app/api/workflows/game-design/route.ts`; NOT dead |\n+| `types/` | **merge → `shared/types/`; delete** | 6 imports |\n+| `config/` | **merge → `shared/data/generation/style-presets.ts`; delete** | 9 imports from WBT + storyteller + app routes (cross-module) |\n+| `constants/` | **merge → `shared/data/constants/` (localStorage, polling) + `domains/world-building-toolkit/` (worldPromptIdeas); delete** | 24 imports |\n+| `content/` | **move → `app/_content/legal/`; delete** | 0 imports; 2 `fs.path` string refs: `app/terms/page.tsx:10`, `app/privacy/page.tsx:10` |\n+| `pages/` | **migrate `api/mcp.ts` → `app/api/mcp/route.ts`; delete `_error.tsx` + folder** | ⚠ Risk: MCP SSE/`externalResolver` semantics — PLAN item 44 has a documented-exception fallback |\n+| `components/` (loose files) | **split → `app/_shell/`, `components/ui/`, `shared/errors|jobs|tours`** | 26 non-ui imports; `components/ui/` (170 imports) already correct |\n+\n+## 4. Move map (old → new)\n+\n+### 4a. Codemod-only (target already exists; rewrite import, then delete shim)\n+\n+| Old import | New import | Sites |\n+|---|---|---|\n+| `@/lib/auth` | `@/shared/auth/auth` | 34 |\n+| `@/lib/api-utils` | `@/shared/data/api-utils` | 47 |\n+| `@/lib/db` | `@/db/client` | 44 |\n+| `@/lib/error-utils` | `@/shared/errors/error-utils` | 64 |\n+| `@/lib/security` | `@/shared/auth/security` | 2 |\n+| `@/lib/utils` | `@/shared/data/utils` | 61 |\n+| `@/lib/validation/auth` | `@/shared/auth/validation` | 5 |\n+| `@/hooks/useGameEntities` | `@/shared/data/queries/useGameEntities` | ~5 |\n+| `@/hooks/useProjectFromUrl` | `@/shared/data/useProjectFromUrl` | ~4 |\n+| `@/store/useAuthStore` | `@/shared/auth/useAuthStore` | 2 |\n+| `@/store/useErrorStore` | `@/shared/errors/useErrorStore` | 3 |\n+| `@/services/{entities,tiles}.service` | `@/shared/data/EntitiesService`, `@/shared/data/generation/TilesService` | ~3 |\n+| `@/services/storyteller.service` | `@/domains/storyteller` barrel (or its services path if barrel lacks the export) | ~2 |\n+\n+### 4b. File moves (`git mv` + codemod)\n+\n+| Old path | New path |\n+|---|---|\n+| `store/useGlobalStatusStore.ts` | `shared/jobs/useGlobalStatusStore.ts` (16 imports) |\n+| `agent-core/models.ts` | `shared/agent-kernel/models.ts` |\n+| `agent-core/observability.ts` | `shared/observability/observability.ts` (verbatim; Mastra-tracing rewrite deferred) |\n+| `agent-core/agents/*` | `shared/agent-kernel/agents/*` |\n+| `agent-core/judging/*` | `shared/agent-kernel/scorers/*` |\n+| `agent-core/skills/*` | `shared/agent-kernel/skills/*` |\n+| `agent-core/planner.ts`, `executive.ts` | `shared/agent-kernel/` |\n+| `agent-core/{memory,schemas,persistence,search,workspace}` | audit (0 `@/`-imports) → delete or merge to `shared/agent-kernel/` |\n+| `infrastructure/ai/*` (incl. `rag/`) | `shared/ai/*` |\n+| `infrastructure/storage/{StorageService,supabase,supabaseClient}.ts` | `shared/data/storage/*` |\n+| `infrastructure/storage/database.types.ts` | `db/types.ts` |\n+| `prompts/*` | `domains/storyteller/prompts/*` |\n+| `workflows/game-design/*` (+ `human-loop-workflow.ts`, `schema.ts` if relatively imported) | `domains/game-design/workflows/*` |\n+| `types/{enums,onboarding}.ts`, `types/three-jsx.d.ts` | `shared/types/*` |\n+| `config/style-presets.ts` | `shared/data/generation/style-presets.ts` |\n+| `constants/{localStorage,polling}.ts` | `shared/data/constants/*` |\n+| `constants/worldPromptIdeas.ts` | `domains/world-building-toolkit/` (existing constants home) |\n+| `content/legal/*` | `app/_content/legal/*` (+ update 2 fs-path strings) |\n+| `lib/{url,fetch-cache,react-query,seedFromString}.*` | `shared/data/*` |\n+| `lib/{supabase-admin.ts,admin-users.tsx}` | `shared/auth/*` |\n+| `lib/langfuse-session.ts` | `shared/observability/langfuse-session.ts` |\n+| `lib/agent-context/cross-domain-context.ts` | `shared/agent-kernel/context/cross-domain-context.ts` |\n+| `lib/constants/visuals.ts` | `shared/data/constants/visuals.ts` |\n+| `lib/server/{image-service,prompts}.ts` | audit importers → `domains/world-building-toolkit/services/` (default) or `shared/data/server/` |\n+| `lib/{chat-persistence,bible-permissions}.ts` | `domains/storyteller/services/` (single-domain; confirm via grep) |\n+| `lib/{tour-constants,module-tours}.ts`, `lib/tours/*`, `components/tour.tsx` | `shared/tours/*` |\n+| `components/{GlobalHeader,GlobalSidebar,GameHubDashboard,ProjectLoader,ProjectSelectorDropdown,ProjectTourWrapper,ModuleOnboardingController}.tsx`, `components/providers/`, `components/auth/` | `app/_shell/*` |\n+| `components/{ErrorBoundary,ErrorBoundaryWrapper}.tsx` | `shared/errors/*` |\n+| `components/{AsyncStatusIndicator,TroubleshootIndicator,TroubleshootPanel}.tsx` | `shared/jobs/*` |\n+| `components/{ImageLightbox,LiquidGlass,EntityPicker}.tsx` | `components/ui/*` |\n+| `pages/api/mcp.ts` | `app/api/mcp/route.ts` (Node runtime route handler) |\n+| `pages/_error.tsx` | delete (App-Router `global-error` covers once `pages/` is gone) |\n+\n+## 5. Re-export shim plan (SPEC F-1 staged migration)\n+\n+- **Existing shims** (`lib/auth`, `api-utils`, `db`, `error-utils`, `security`, `utils`): codemod importers this run, **then delete the shim files** — no new shims needed.\n+- **Temporary shims created then removed within this run** (so move and codemod land as separate, individually-green commits): `store/useGlobalStatusStore.ts`, `agent-core/observability.ts`, `agent-core/models.ts` → 3-line `export * from '@/shared/...'`.\n+- **No shims** for ≤9-import paths (`prompts`, `types`, `config`, `services`, `hooks`, `workflows`, `store/useAuthStore`, `store/useErrorStore`) — atomic move+codemod per commit.\n+- End state: **zero shim files remain**; boundary lint at `error` blocks all legacy paths.\n+\n+## 6. Out of scope for this run\n+\n+- `src/domains/*` internal reshape (domains-catalog run) — only import-line fixes.\n+- `evaluation/` rewrite / Mastra `createScorer` port (dedicated eval run).\n+- Rewriting `agent-core/observability.ts` onto Mastra AI Tracing (A-stream) — this run **moves** it verbatim.\n+- `useAuthStore` → TanStack Query refactor (behavior change).\n+- `mcp/` internals; `trigger/` internals; `db/schema.ts` contents.\n",
+        "summary": {
+          "files_changed": 1,
+          "additions": 170,
+          "deletions": 572
+        }
+      }
     }
   ],
-  "conclusion": null,
+  "conclusion": {
+    "timestamp": "2026-07-03T13:13:53.726595Z",
+    "status": "failed",
+    "timing": {
+      "wall_time_ms": 3600006,
+      "inference_time_ms": 750638,
+      "tool_time_ms": 2954,
+      "active_time_ms": 753592
+    },
+    "failure": {
+      "reason": "workflow_error",
+      "detail": {
+        "message": "stall watchdog: node \"Verification\" had no activity for 1800s",
+        "category": "deterministic"
+      }
+    },
+    "final_git_commit_sha": "c4c316ca01d70906ad1676b07936dab133c4bdc6",
+    "stages": [
+      {
+        "stage_id": "start",
+        "stage_label": "start",
+        "timing": {
+          "wall_time_ms": 0,
+          "inference_time_ms": 0,
+          "tool_time_ms": 0,
+          "active_time_ms": 0
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "scope",
+        "stage_label": "scope",
+        "timing": {
+          "wall_time_ms": 18694,
+          "inference_time_ms": 17852,
+          "tool_time_ms": 208,
+          "active_time_ms": 18060
+        },
+        "billing_usd_micros": 93181,
+        "retries": 0
+      },
+      {
+        "stage_id": "assess",
+        "stage_label": "assess",
+        "timing": {
+          "wall_time_ms": 201199,
+          "inference_time_ms": 199973,
+          "tool_time_ms": 618,
+          "active_time_ms": 200591
+        },
+        "billing_usd_micros": 502832,
+        "retries": 0
+      },
+      {
+        "stage_id": "clarify_prep",
+        "stage_label": "clarify_prep",
+        "timing": {
+          "wall_time_ms": 58932,
+          "inference_time_ms": 58046,
+          "tool_time_ms": 247,
+          "active_time_ms": 58293
+        },
+        "billing_usd_micros": 234994,
+        "retries": 0
+      },
+      {
+        "stage_id": "Clarify",
+        "stage_label": "Clarify",
+        "timing": {
+          "wall_time_ms": 730054,
+          "inference_time_ms": 0,
+          "tool_time_ms": 0,
+          "active_time_ms": 0
+        },
+        "retries": 0
+      },
+      {
+        "stage_id": "plan",
+        "stage_label": "plan",
+        "timing": {
+          "wall_time_ms": 476996,
+          "inference_time_ms": 474767,
+          "tool_time_ms": 1881,
+          "active_time_ms": 476648
+        },
+        "billing_usd_micros": 4929290,
+        "retries": 0
+      }
+    ],
+    "billing": {
+      "input_tokens": 140269,
+      "output_tokens": 50654,
+      "total_tokens": 1364570,
+      "reasoning_tokens": 0,
+      "cache_read_tokens": 948405,
+      "cache_write_tokens": 225242,
+      "total_usd_micros": 5760297
+    },
+    "total_retries": 0,
+    "diff": {}
+  },
   "sandbox": {
     "kind": "ready",
     "plan": {
@@ -2274,7 +2382,38 @@
   },
   "pull_request": null,
   "superseded_by": null,
-  "pending_interviews": {},
+  "pending_interviews": {
+    "01KWKZTJTVFRQPF6DJZ8TFXAZ7": {
+      "question": {
+        "id": "01KWKZTJTVFRQPF6DJZ8TFXAZ7",
+        "text": "Plan is ready. [A] build · [B] plan only · [I] iterate (notes) · [X] abort — do not reuse Clarify's A/B/C here",
+        "stage": "Verification",
+        "question_type": "multiple_choice",
+        "options": [
+          {
+            "key": "A",
+            "label": "[A] Approve & build"
+          },
+          {
+            "key": "B",
+            "label": "[B] Approve, plan only"
+          },
+          {
+            "key": "X",
+            "label": "[X] Abort"
+          },
+          {
+            "key": "U",
+            "label": "Unanswered — abort"
+          }
+        ],
+        "allow_freeform": true,
+        "timeout_seconds": 86400.0,
+        "context_display": "All three deliverables are written. Summary for the Verification gate:\n\n**1. P0 declaration:** `No P0` — no security/correctness defects; one near-miss caught: assess marked `src/workflows/` dead, but it's live via `src/app/api/workflows/game-design/route.ts:6` (disposition changed delete → move).\n\n**2. Your Clarify decision: [C] Full src-root.**\n- In scope: all 5 waves this run — ~460 import rewrites, all 16 legacy folders merged/moved/deleted, `pages/` migration, lint flips, docs/knip sweep.\n- Explicitly deferred: `domains/*` internals, `evaluation/` overhaul, Mastra-tracing rewrite of `observability.ts`, `useAuthStore`→TanStack refactor.\n\n**3. First shippable increment:** **Items 1–20 (Waves 0–1)** — fabro-verify src-root patch + codemod of the 6 existing `lib/` shims (252 sites) + retire `hooks/`, `store/`, `services/` (~35 more sites) + first lint flip to `error`.\n\n**4. Item count / effort:** **58 items** across 5 waves; increment 1 ≈ 1–2 dev days; full run ≈ 5–7 dev days with 6 verify gates.\n\n**5. Plan highlights:**\n- `STRUCTURE.md` (rewritten for src-root): current 23-entry tree, ideal 8-entry tree, disposition for every folder, full move map (§4a codemod-only vs §4b git-mv), shim plan, out-of-scope list.\n- Corrected counts vs assess: `@/lib` = 304 (not 168), `@/agent-core` = 30, `@/infrastructure` = 23; `components/ui/` already exists (170 imports) — no rename needed, just relocate 18 loose shell components.\n- New homes: `shared/ai/` (ex-`infrastructure/ai`), `shared/tours/` (tour system scattered across 3 folders, ~32 imports — documented taxonomy extension), `app/_shell/` (chrome), `db/types.ts` (ex-`database.types.ts`).\n- Infra fix: `scripts/fabro-verify.mjs` needs a small `src-root` mode (Item 1) — its module regex only handles `src/domains/<m>` scopes.\n- Risk-flagged: `pages/api/mcp.ts` → app route (Item 53 has documented-exception fallback), agent-core move touches storyteller import lines only.\n- Every move todo pairs with a grep-driven codemod + `[G]` zero-hit guard; lint groups flip `warn→error` per wave, never before.\n\n**6. Verification reminder:** pick **[A] Approve & build** to implement, **[B]** for plan-only, **[I]** only if you want plan changes (type notes), **[X]** to abort.\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"no\"\n  }\n}\n```"
+      },
+      "started_at": "2026-07-03T12:38:59.164003Z"
+    }
+  },
   "stages": {
     "start@1": {
       "first_event_seq": 18,
@@ -2553,7 +2692,12 @@
       "first_event_seq": 199,
       "prompt": null,
       "response": null,
-      "completion": null,
+      "completion": {
+        "outcome": "succeeded",
+        "notes": "Stage completed: plan",
+        "failure_reason": null,
+        "timestamp": "2026-07-03T12:38:55.695896Z"
+      },
       "provider_used": {
         "mode": "agent",
         "provider": "anthropic",
@@ -2567,6 +2711,12 @@
       "output": null,
       "started_at": "2026-07-03T12:30:58.592584Z",
       "handler": "agent",
+      "timing": {
+        "wall_time_ms": 476996,
+        "inference_time_ms": 474767,
+        "tool_time_ms": 1881,
+        "active_time_ms": 476648
+      },
       "usage": {
         "input_tokens": 73657,
         "output_tokens": 37884,
@@ -2775,7 +2925,7 @@
         ],
         "warnings": []
       },
-      "state": "running"
+      "state": "succeeded"
     },
     "Clarify@1": {
       "first_event_seq": 187,
@@ -3288,6 +3438,29 @@
         "warnings": []
       },
       "state": "succeeded"
+    },
+    "Verification@1": {
+      "first_event_seq": 274,
+      "prompt": null,
+      "response": null,
+      "completion": null,
+      "provider_used": null,
+      "diff": null,
+      "script_invocation": null,
+      "script_timing": null,
+      "parallel_results": null,
+      "output": null,
+      "started_at": "2026-07-03T12:38:59.163951Z",
+      "handler": "human",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "reasoning_tokens": 0,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0
+      },
+      "state": "running"
     }
   }
 }
