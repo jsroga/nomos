@@ -29,7 +29,7 @@ vi.mock('@/lib/auth', () => ({
     requireAuth: vi.fn().mockResolvedValue({ session: { user: { id: 'test-user' } } })
 }))
 
-vi.mock('@/domains/storyteller/lib/access-verification', () => ({
+vi.mock('@/domains/storyteller/services/AccessVerificationService', () => ({
     verifyProjectAccess: vi.fn().mockResolvedValue(true),
     verifyEpisodeAccess: vi.fn().mockResolvedValue(true),
 }))

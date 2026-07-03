@@ -7,7 +7,7 @@ import type { MentionProvider, ProjectContext } from '@/domains/chat/mentions/ty
 import {
   buildStorytellerProjectContext,
   getStorytellerMentionProviders,
-} from '@/domains/storyteller/mentions/providers'
+} from './providers'
 
 interface MentionsContextValue {
   mentionProviders: MentionProvider[]

@@ -1,5 +1,5 @@
 import { useQueries } from '@tanstack/react-query'
-import { entityLoader } from '@/domains/storyteller/lib/entity-loader'
+import { entityLoader } from '@/domains/storyteller/services/EntityLoaderService'
 import { storytellerKeys } from '@/domains/storyteller/io/storyteller.keys'
 
 export function useEntities(ids: string[], projectId: string | null | undefined, context?: string) {
