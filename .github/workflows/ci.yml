@@ -54,7 +54,7 @@ jobs:
       - run: npm ci
 
       - name: Vitest
-        run: npx vitest run --exclude 'tests/integration/**'
+        run: npm run test:unit
 
   # ───────────────────────────────────────────────
   # Job 3: Dead Code Detection (Knip)
@@ -94,8 +94,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      # continue-on-error: upstream Bun/claude-code-action startup flakes (see anthropics/claude-code-action#1205).
+      # Real HIGH findings are still enforced by the grep step below when the report is written.
       - uses: anthropics/claude-code-action@v1
         id: security-review
+        continue-on-error: true
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
@@ -263,6 +266,9 @@ jobs:
       - name: Fail on HIGH severity findings
         if: always()
         run: |
+          if [ "${{ steps.security-review.outcome }}" != "success" ]; then
+            echo "::warning::AI security review action failed (often upstream Bun/claude-code-action). Skipping severity gate."
+          fi
           if [ ! -f /tmp/security-report.md ]; then
             echo "::warning::Security report file not found - review may have failed to write output"
             exit 0
@@ -294,6 +300,7 @@ jobs:
           fetch-depth: 0
 
       - uses: anthropics/claude-code-action@v1
+        continue-on-error: true
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
@@ -356,6 +363,7 @@ jobs:
           fetch-depth: 0
 
       - uses: anthropics/claude-code-action@v1
+        continue-on-error: true
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |

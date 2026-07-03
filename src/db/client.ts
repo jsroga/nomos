@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
-import { storytellerSchema } from '@/domains/storyteller'
+import * as schema from './schema'
 
 const connectionString = process.env.DATABASE_URL!
 
@@ -13,4 +13,4 @@ const pool = new Pool({
   connectionTimeoutMillis: 20000,
 })
 
-export const db = drizzle(pool, { schema: storytellerSchema })
+export const db = drizzle(pool, { schema })
