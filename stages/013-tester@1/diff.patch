@@ -1,0 +1,214 @@
+diff --git a/src/domains/storyteller/__tests__/wave1-structure.test.ts b/src/domains/storyteller/__tests__/wave1-structure.test.ts
+new file mode 100644
+index 0000000..90f2b74
+--- /dev/null
++++ b/src/domains/storyteller/__tests__/wave1-structure.test.ts
+@@ -0,0 +1,78 @@
++/**
++ * Wave 1 Structure Tests
++ * 
++ * Verifies the catalog cleanup Wave 1 structural integrity:
++ * - Moved files resolve from new paths
++ * - Cross-module moves work correctly
++ * - Critical imports work end-to-end
++ * 
++ * These tests are behavior-focused: they verify the structure works,
++ * not the specific names of every export.
++ */
++
++import { describe, it, expect } from 'vitest'
++
++describe('Wave 1 - Core Reorganization (15 folders → 4 units)', () => {
++  it('should import from core editing unit', async () => {
++    const { deepMerge } = await import('@/domains/storyteller/core/editing')
++    
++    expect(typeof deepMerge).toBe('function')
++  })
++
++  it('should import from core entities unit', async () => {
++    const { parseReferences } = await import('@/domains/storyteller/core/entities')
++    
++    expect(typeof parseReferences).toBe('function')
++  })
++
++  it('should import from core formatting unit', async () => {
++    const { formatActionForDisplay } = await import('@/domains/storyteller/core/formatting')
++    
++    expect(typeof formatActionForDisplay).toBe('function')
++  })
++})
++
++describe('Wave 1 - Agent Reorganization (17 folders → 8 units)', () => {
++  it('should import judge agents from new path', async () => {
++    const { runConsistencyCheck } = await import('@/domains/storyteller/agents/judges/ConsistencyAgent')
++    
++    expect(typeof runConsistencyCheck).toBe('function')
++  })
++
++  it('should import WorkflowContext from orchestration (moved from core)', async () => {
++    const { WORKFLOW_EVENTS } = await import('@/domains/storyteller/agents/orchestration/WorkflowContext')
++    
++    expect(WORKFLOW_EVENTS).toBeDefined()
++  })
++})
++
++describe('Wave 1 - Cross-Module Moves', () => {
++  it('should import MastraInstance from shared/agent-kernel (moved from storyteller/agents)', async () => {
++    const { getMastraInstance } = await import('@/shared/agent-kernel')
++    
++    expect(typeof getMastraInstance).toBe('function')
++  })
++
++  it('should import ModelConfig from storyteller/config (moved from agents)', async () => {
++    const { GLOBAL_AGENT_MODEL, AGENT_RUNTIME_DEFAULTS } = await import('@/domains/storyteller/config/ModelConfig')
++    
++    expect(GLOBAL_AGENT_MODEL).toBeDefined()
++    expect(AGENT_RUNTIME_DEFAULTS).toBeDefined()
++  })
++
++  it('should have storyteller.config.ts root seam', async () => {
++    const config = await import('@/domains/storyteller/storyteller.config')
++    
++    expect(config.STORYTELLER_CONFIG).toBeDefined()
++  })
++})
++
++describe('Wave 1 - Import Resolution Integrity', () => {
++  it('should resolve state hooks from queries subdirectory', async () => {
++    const { useBibleState } = await import('@/domains/storyteller/state/queries/useBibleState')
++    const { useEpisodeData } = await import('@/domains/storyteller/state/queries/useEpisodeData')
++    
++    expect(typeof useBibleState).toBe('function')
++    expect(typeof useEpisodeData).toBe('function')
++  })
++})
+diff --git a/src/domains/storyteller/agents/StorytellerAgent/StorytellerAgent.ts b/src/domains/storyteller/agents/StorytellerAgent/StorytellerAgent.ts
+index 0f18409..879f232 100644
+--- a/src/domains/storyteller/agents/StorytellerAgent/StorytellerAgent.ts
++++ b/src/domains/storyteller/agents/StorytellerAgent/StorytellerAgent.ts
+@@ -47,7 +47,7 @@ import {
+   researchTool,
+   factCheckTool,
+   referenceLookupTool,
+-} from '@/domains/storyteller/tools'
++} from '@/domains/storyteller/agents/tools'
+ import { runStoryCreationWorkflowTool } from '@/domains/storyteller/tools/workflow-tools'
+ import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
+ 
+diff --git a/src/domains/storyteller/agents/council/ConsequenceAgent.ts b/src/domains/storyteller/agents/council/ConsequenceAgent.ts
+index 247900d..e52181e 100644
+--- a/src/domains/storyteller/agents/council/ConsequenceAgent.ts
++++ b/src/domains/storyteller/agents/council/ConsequenceAgent.ts
+@@ -8,7 +8,7 @@ import {
+ import { extractThinking, truncateForTrace } from '@/agent-core/agents/agent-response'
+ import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
+ import { CONSEQUENCE_TRACKER_PROMPT } from '@/domains/storyteller/prompts/personas/consequence-tracker'
+-import { checkContinuityTool, quickConsistencyCheckTool } from '@/domains/storyteller/tools'
++import { checkContinuityTool, quickConsistencyCheckTool } from '@/domains/storyteller/agents/tools'
+ import { getMastraInstance } from '@/shared/agent-kernel'
+ import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/config/ModelConfig'
+ 
+diff --git a/src/domains/storyteller/agents/council/DevilsAdvocateAgent.ts b/src/domains/storyteller/agents/council/DevilsAdvocateAgent.ts
+index cb6e172..fcc8fed 100644
+--- a/src/domains/storyteller/agents/council/DevilsAdvocateAgent.ts
++++ b/src/domains/storyteller/agents/council/DevilsAdvocateAgent.ts
+@@ -18,7 +18,7 @@ import { getMastraInstance } from '@/shared/agent-kernel'
+ import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/config/ModelConfig'
+ 
+ // Import Script Tools for suggestions
+-import { improveDialogueTool, shiftToneTool } from '@/domains/storyteller/tools'
++import { improveDialogueTool, shiftToneTool } from '@/domains/storyteller/agents/tools'
+ 
+ interface DevilsAdvocateConfig {
+   modelName: string
+diff --git a/src/domains/storyteller/agents/council/GardenerAgent.ts b/src/domains/storyteller/agents/council/GardenerAgent.ts
+index 0c0c407..6d2bfb3 100644
+--- a/src/domains/storyteller/agents/council/GardenerAgent.ts
++++ b/src/domains/storyteller/agents/council/GardenerAgent.ts
+@@ -13,7 +13,7 @@ import {
+   condenseSceneTool,
+   regenerateTextTool,
+   selfCritiqueTool,
+-} from '@/domains/storyteller/tools'
++} from '@/domains/storyteller/agents/tools'
+ import { extractThinking, truncateForTrace } from '@/agent-core/agents/agent-response'
+ import { getMastraInstance } from '@/shared/agent-kernel'
+ import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/config/ModelConfig'
+diff --git a/src/domains/storyteller/agents/council/PsychologistAgent.ts b/src/domains/storyteller/agents/council/PsychologistAgent.ts
+index bf644ce..aa93221 100644
+--- a/src/domains/storyteller/agents/council/PsychologistAgent.ts
++++ b/src/domains/storyteller/agents/council/PsychologistAgent.ts
+@@ -8,7 +8,7 @@ import {
+ import { extractThinking, truncateForTrace } from '@/agent-core/agents/agent-response'
+ import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
+ import { CHARACTER_PSYCHOLOGY_PROMPT } from '@/domains/storyteller/prompts/personas/character-psychology'
+-import { analyzePsychologyTool, simulateReactionTool, assessRelationshipTool } from '@/domains/storyteller/tools'
++import { analyzePsychologyTool, simulateReactionTool, assessRelationshipTool } from '@/domains/storyteller/agents/tools'
+ import { getMastraInstance } from '@/shared/agent-kernel'
+ import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/config/ModelConfig'
+ 
+diff --git a/src/domains/storyteller/agents/orchestration/StorytellerWorkflow.ts b/src/domains/storyteller/agents/orchestration/StorytellerWorkflow.ts
+index 18dc7dd..326cbdd 100644
+--- a/src/domains/storyteller/agents/orchestration/StorytellerWorkflow.ts
++++ b/src/domains/storyteller/agents/orchestration/StorytellerWorkflow.ts
+@@ -8,7 +8,7 @@
+  */
+ 
+ import { createStorytellerAgent, StorytellerAgent } from '@/domains/storyteller/agents'
+-import { checkContinuityTool, manageBeatTool } from '@/domains/storyteller/tools'
++import { checkContinuityTool, manageBeatTool } from '@/domains/storyteller/agents/tools'
+ import { getErrorMessage } from '@/lib/error-utils'
+ 
+ // ==========================================
+diff --git a/src/domains/storyteller/agents/tools/rag-tools.ts b/src/domains/storyteller/agents/tools/rag-tools.ts
+index 82b8d8a..e7a1b1c 100644
+--- a/src/domains/storyteller/agents/tools/rag-tools.ts
++++ b/src/domains/storyteller/agents/tools/rag-tools.ts
+@@ -9,7 +9,7 @@
+ 
+ import { createTool } from '@mastra/core/tools'
+ import { z } from 'zod'
+-import { ragService, DocumentType, RagResult } from '../services/RagService'
++import { ragService, DocumentType, RagResult } from '@/domains/storyteller/services/RagService'
+ 
+ // ==========================================
+ // SCHEMAS
+diff --git a/src/domains/storyteller/agents/tools/script-tools.ts b/src/domains/storyteller/agents/tools/script-tools.ts
+index 627a166..5f4a9d8 100644
+--- a/src/domains/storyteller/agents/tools/script-tools.ts
++++ b/src/domains/storyteller/agents/tools/script-tools.ts
+@@ -14,7 +14,7 @@ import {
+   addVisualHook,
+   shiftTone,
+   regenerateText,
+-} from '../services/ScriptOperationsService'
++} from '@/domains/storyteller/services/ScriptOperationsService'
+ 
+ // ==========================================
+ // MASTRA TOOLS
+diff --git a/src/domains/storyteller/state/__tests__/useBibleState.test.ts b/src/domains/storyteller/state/__tests__/useBibleState.test.ts
+index 655d576..d285fc9 100644
+--- a/src/domains/storyteller/state/__tests__/useBibleState.test.ts
++++ b/src/domains/storyteller/state/__tests__/useBibleState.test.ts
+@@ -5,7 +5,7 @@
+ import { renderHook, act, waitFor } from '@testing-library/react'
+ import { beforeEach, describe, expect, it, vi } from 'vitest'
+ 
+-import { useBibleState } from '../useBibleState'
++import { useBibleState } from '../queries/useBibleState'
+ 
+ const pushMock = vi.fn()
+ const replaceMock = vi.fn()
+diff --git a/src/domains/storyteller/state/__tests__/useEpisodeData.test.ts b/src/domains/storyteller/state/__tests__/useEpisodeData.test.ts
+index 53e2497..d01a9ca 100644
+--- a/src/domains/storyteller/state/__tests__/useEpisodeData.test.ts
++++ b/src/domains/storyteller/state/__tests__/useEpisodeData.test.ts
+@@ -6,7 +6,7 @@ import { renderHook, act, waitFor } from '@testing-library/react'
+ import { beforeEach, describe, expect, it, vi } from 'vitest'
+ 
+ import { LocalStorageKeys } from '@/constants/localStorage'
+-import { useEpisodeData } from '../useEpisodeData'
++import { useEpisodeData } from '../queries/useEpisodeData'
+ 
+ const pushMock = vi.fn()
+ const useEpisodesMock = vi.fn()
