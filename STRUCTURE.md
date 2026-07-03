@@ -1,415 +1,577 @@
-# STRUCTURE.md — Domains catalog ideal folder structure
+# STRUCTURE.md — Ideal folder structure for `src/domains/*` (contract for implementation)
 
-> **Contract for implementation.** `PLAN.md` executes the move maps below and updates
-> every referrer. Grounded in `docs/unified/ARCHITECTURE.md` §4 (Module Blueprint),
-> the §4 WBT worked example, and `docs/unified/SPEC.md` F-1/F-2/F-3 + D-1.
+> **Status:** Approved scope **[C] Full catalog** (see `DECISIONS.md`).
+> Grounded in `docs/unified/ARCHITECTURE.md` §4 (module blueprint), §4 worked
+> example (world-building-toolkit), §3 (topology), §8 (task co-location).
+> `PLAN.md` implements these move maps — every move item there references a row here.
 >
-> **Legal module root only:** `index.ts`, `ui/`, `state/`, `io/`, `core/`,
-> `services/`, `agents/`, `tasks/`, `prompts/`, `<module>.config.ts`. Omit empty
-> layers. AI modules use `agents/` + `prompts/`; asset modules skip them for `tasks/`.
+> **This file supersedes the previous STRUCTURE.md**, which described a pre-migration
+> storyteller (root `components/`, `hooks/`, `lib/`, `mentions/`, `tools/`). Those
+> migrations have already landed; this contract is grounded in the tree as of
+> 2026-07-03 (fresh `find`/`grep` inventory, see PLAN §0 spot-checks).
 >
-> **Dependency rule (lint-enforced):** `ui → state → io → core ← services/agents/tasks`.
-> No cross-module deep imports — go through the target module's `index.ts`.
+> Conventions:
+> - `→` = `git mv` (behavior-preserving; import specifiers rewritten by codemod).
+> - *(split)* = file dissolves into several new files (only god-store rows).
+> - Per-unit `index.ts` barrels made redundant by a collapse are **deleted**, their
+>   exports folded into the new group barrel.
+> - Anything not listed in a module's move map **stays put** this run.
 
 ## Catalog summary (current → target)
 
-| Module | dirs now | dirs target | barrel | worst sprawl / top violation |
-|--------|:--------:|:-----------:|:------:|------------------------------|
-| storyteller | 104 | ~55 | exists (leaks) → curate | `core/` 15 folders; `hooks/` `lib/` `mentions/` `tools/` at root |
-| interior-designer | 19 | ~11 | exists | dual state: `store/useInteriorStore.ts` **1651 LOC** + `state/` + `components/`+`ui/`+`ai/` |
-| loop-creator | 12 | ~9 | **missing** | flat `components/`; `hooks/` `lib/` `mentions/` `graph/` at root |
-| world-building-toolkit | 7 | ~11 | **missing** | **P0 browser `.delete()`**; `store/useWorldStore.ts` **864 LOC** god store |
-| deduction-puzzle-designer | 7 | ~7 | **missing** | flat `components/`, `store/`; no barrel |
-| chat | 6 | ~6 | **missing** | flat `components/`, `hooks/`, `mentions/`; no barrel |
-| game-design | 3 | ~4 | **missing** | thin; `agent.ts` at root not `agents/` |
-| 3d-asset-exporter | 2 | ~4 | **missing** | thin; only `components/`; no `services/` |
-| marketing | 3 | ~4 | **missing** | thin; `components/` + `context/`; no barrel |
+| Module | dirs now | dirs target | barrel today | worst sprawl / top violation |
+|--------|:--------:|:-----------:|:------------:|------------------------------|
+| storyteller | 102 | ~60 | exists (re-exports deep agent paths) | `core/` 15 one-type folders; `agents/` 17 folders |
+| interior-designer | 19 | ~13 | exists | dual skeleton: legacy `components/ store/ ai/ utils/` beside empty §4 stubs; `useInteriorStore.ts` **1,651 LOC** |
+| loop-creator | 12 | ~9 | **missing** | flat `components/`; `graph/ hooks/ lib/ mentions/` at root |
+| world-building-toolkit | 7 | ~10 | **missing** | **P0**: browser→Supabase writes; 864-LOC god `useWorldStore` |
+| deduction-puzzle-designer | 7 | ~7 | **missing** | flat `components/` + `store/` |
+| chat | 6 | ~14 | **missing** (only `components/index.ts`) | flat `components/`; `mentions/` at root |
+| game-design | 3 | ~5 | **missing** | `agent.ts`/`memory.ts`/`schemas.ts` at module root |
+| 3d-asset-exporter | 3 | ~7 | **missing** | `components/` only; tasks live in `src/trigger/` |
+| marketing | 3 | ~10 | **missing** | `components/` + `context/` |
 
-Referrer files (external to the module, in `src/`+`tests/`): storyteller **50**,
-WBT **17**, interior **10**, chat **8**, marketing **8**, loop-creator **4**,
-game-design **4**, 3d **2**, deduction **1**.
+External referrer files (in `src/` + `tests/`, outside the module — sized by grep):
+storyteller **50**, WBT **17**, interior-designer **10**, chat **8**, marketing **8**,
+loop-creator **4**, game-design **4**, 3d-asset-exporter **2**, deduction **1**.
 
 ---
 
-# 1. storyteller  (full before/after — worst sprawl)
+# 1. storyteller — 102 subdirs → ~60 (primary pain; full before/after)
 
 ## 1.1 Current tree (top 2 levels)
 
 ```
 storyteller/
-├─ index.ts                 # leaks ~80 symbols (agents, services, db/schema, core)
-├─ agents/                  # 16 agent folders + MastraInstance + ModelConfig + __tests__ + index.ts
-├─ components/              # ~30 PascalCase component folders   → rename ui/
-├─ config/                  # action-config, storyteller-agents, tool-result-mapper
-├─ core/                    # 15 folders (see below) — worst sub-sprawl
-├─ db/                      # schema.ts (2nd Drizzle source of truth)  → fold into src/db (D-1)
-├─ hooks/                   # useBibleState, useEntity, useEpisodeData, …  → state/ or ui/
-├─ io/                      # storyteller.api.ts, .keys.ts, .dto.ts   ✅ keep
-├─ lib/                     # access-verification.ts, entity-loader.ts  → services/ + core/
-├─ mentions/                # MentionsProvider/, providers.ts  → ui/ + core/
-├─ prompts/                 # schemas/, personas/, skills/ (7 personas)  ✅ keep
-├─ services/                # ~15 *Service.ts + context/SeriesBible  ✅ keep
-├─ state/                   # store(s); missing queries/ subfolder
-└─ tools/                   # 8 *-tools.ts + index.ts + __tests__  → agents/tools/
+├── index.ts                # barrel EXISTS — but re-exports deep agent paths ('./agents/ConsistencyAgent' …)
+├── agents/                 # 17 subdirs: 11 agent folders (each <Agent>/{<Agent>.ts,index.ts})
+│   │                       #   + StoryWorkflow/ StorytellerWorkflow/ WritersRoomGraph/ StorytellerPlanner/
+│   │                       #   + MastraInstance/ (infra) + ModelConfig/ (config) + tools/ + __tests__/
+├── config/                 # action-config.ts storyteller-agents.tsx storyteller-config.ts tool-result-mapper.ts
+├── core/                   # 15 subdirs, ONE FOLDER PER TYPE (worst sprawl root):
+│   │                       #   ActionFormatters/ ActionTypes/ CascadeEditor/ ConsistencyTypes/ DeepMerge/
+│   │                       #   EntityExtractor/ EntityReferences/ Enums/ ReferenceParser/ StoryPlanFields/
+│   │                       #   StoryPlanTypes/ StoryTypes/ UndoManager/ WorkflowContext/ utils/
+├── db/schema.ts            # local Drizzle schema — PARALLEL to src/db/schema.ts (fragmentation, NOT inversion)
+├── io/                     # storyteller.{api,dto,keys}.ts ✅
+├── prompts/                # guardrails/ personas/ schemas/ + extended-thinking.ts push-to-hub.ts ✅
+├── services/               # 16 *Service.ts + context/ ✅
+├── state/                  # hooks/ queries/ ✅
+└── ui/                     # 31 component folders ✅ (correct §4 pattern — keep)
 ```
 
-**`core/` (15 folders):** ActionFormatters, ActionTypes, CascadeEditor,
-ConsistencyTypes, DeepMerge, EntityExtractor, EntityReferences, Enums,
-ReferenceParser, StoryPlanFields, StoryPlanTypes, StoryTypes, UndoManager,
-WorkflowContext, utils.
-
-**`agents/` (16):** ConsequenceAgent, ConsistencyAgent, CreativeDirectorAgent,
-DevilsAdvocateAgent, GardenerAgent, MastraInstance, ModelConfig,
-PremiseArchitectAgent, PsychologistAgent, ScriptReviewAgent, SelfCritiqueAgent,
-StoryWorkflow, StorytellerAgent, StorytellerPlanner, StorytellerWorkflow,
-WritersRoomGraph.
+Sprawl: `core/` = 15 folders × (file + `index.ts`) for ~15 files; `agents/` = 17
+folders for 11 agents + 4 orchestration units + 2 misplaced infra/config units.
 
 ## 1.2 Ideal target tree
 
 ```
 storyteller/
-├─ index.ts                        # curated ~30 public exports (see §1.4)
-├─ storyteller.config.ts           # ← config/ collapses into one file (+ local barrel if large)
-│
-├─ ui/                             # ← components/ renamed
-│   ├─ ActionApprovalModal/  ActionToast/  CharacterPanel/  CharacterWeb/
-│   ├─ ConsistencyMessage/  CorkBoard/  EpisodeManager/  MasterPromptEditor/
-│   ├─ PhaseNavigator/  QuestionCard/  ReferenceText/  ScriptEditor/
-│   ├─ StoryPlanBoard/  StorytellerEmptyState/  Timeline/  WorldBiblePanel/
-│   ├─ MentionsProvider/           # ← mentions/MentionsProvider
-│   └─ … (~30 component folders, each with local index.ts)
-│
-├─ state/
-│   ├─ useStorytellerUiStore.ts    # ephemeral UI only (selection/mode/panels)
-│   ├─ hooks/                      # UI-local hooks (useLoadingStates, useStorytellerHydration)
-│   └─ queries/                    # ← hooks/ server hooks: useBibleState, useEntity,
-│       │                          #     useEpisodeData, useStorytellerActions
-│       └─ …
-│
-├─ io/                             # ✅ unchanged: storyteller.api.ts .keys.ts .dto.ts
-│
-├─ core/                          # 15 → 8 units (all pure, unit-tested)
-│   ├─ ActionTypes/                # + absorbs ActionFormatters/
-│   ├─ ConsistencyTypes/           # + absorbs CascadeEditor/
-│   ├─ EntityReferences/           # + absorbs EntityExtractor/ + lib/entity-loader (pure parts)
-│   ├─ StoryPlanTypes/             # + absorbs StoryPlanFields/
-│   ├─ StoryTypes/
-│   ├─ Enums/
-│   ├─ ReferenceParser/            # + mention parsing from mentions/providers.ts
-│   ├─ UndoManager/
-│   └─ utils/                      # + absorbs DeepMerge/
-│
-├─ services/                       # ✅ + AccessVerificationService (← lib/access-verification)
-│   └─ … (~15 *Service.ts, context/SeriesBible)
-│
-├─ agents/                         # keep 16 agents; reduce noise
-│   ├─ MastraInstance/  ModelConfig/
-│   ├─ StorytellerAgent/  StorytellerPlanner/  StorytellerWorkflow/  StoryWorkflow/
-│   ├─ WritersRoomGraph/  ConsistencyAgent/  ScriptReviewAgent/  …(remaining agents)
-│   ├─ WorkflowContext/            # ← core/WorkflowContext (Mastra-specific, not pure)
-│   └─ tools/                      # ← top-level tools/ (agent-tools, beat-tools, …)
-│
-└─ prompts/                        # ✅ unchanged (schemas/, personas/, skills/ 7 personas)
+├── index.ts                     # curated public barrel (§1.4)
+├── storyteller.config.ts        # NEW root config seam → re-exports config/storyteller-config.ts
+├── ui/                          # UNCHANGED (31 folders)
+├── state/                       # UNCHANGED (hooks/ queries/)
+├── io/                          # UNCHANGED
+├── core/                        # 15 → 5 units, all pure
+│   ├── index.ts                 # NEW core barrel
+│   ├── types/                   # ActionTypes.ts StoryTypes.ts StoryPlanTypes.ts ConsistencyTypes.ts Enums.ts
+│   ├── editing/                 # CascadeEditor.ts UndoManager.ts DeepMerge.ts
+│   ├── entities/                # EntityExtractor.ts EntityReferences.ts ReferenceParser.ts
+│   ├── formatting/              # ActionFormatters.ts StoryPlanFields.ts
+│   └── utils/                   # youtube-utils.ts (unchanged)
+├── services/                    # UNCHANGED (16 services + context/)
+├── agents/                      # 17 → 5 subdirs (+ __tests__)
+│   ├── index.ts                 # rewritten agent barrel
+│   ├── StorytellerAgent/        # keep as folder (primary agent, large)
+│   ├── council/                 # ConsequenceAgent.ts DevilsAdvocateAgent.ts GardenerAgent.ts
+│   │                            # PremiseArchitectAgent.ts PsychologistAgent.ts SelfCritiqueAgent.ts
+│   ├── judges/                  # ConsistencyAgent.ts CreativeDirectorAgent.ts ScriptReviewAgent.ts
+│   ├── orchestration/           # StoryWorkflow.ts StorytellerWorkflow.ts WritersRoomGraph.ts
+│   │                            # StorytellerPlanner.ts WorkflowContext.ts (← from core/)
+│   ├── tools/                   # UNCHANGED
+│   └── __tests__/               # UNCHANGED (import paths updated)
+├── tasks/                       # NEW (Wave 6): 7 storyteller tasks from src/trigger/ (S31–S37)
+├── prompts/                     # UNCHANGED
+├── config/                      # + ModelConfig.ts (← agents/ModelConfig/)
+└── db/schema.ts                 # stays this run (content merge into src/db = deferred, SPEC D-1)
 ```
 
-`db/` is **removed**: `db/schema.ts` folds into `src/db/schema.ts` (D-1, Wave 6).
-`hooks/`, `lib/`, `mentions/`, `tools/`, `config/` all disappear from the root.
-Root goes from **14** dirs → **8** (`ui state io core services agents prompts` + files).
-Total dirs ~104 → **~55** (skills personas retained ~21).
+Folder-count effect: agents 17→5(+tests), core 15→5 ⇒ **102 → ~60 subdirs (~42% cut)**.
 
-## 1.3 Move map (representative; codemod covers the tail)
+## 1.3 Move map
 
-| old_path | new_path |
-|----------|----------|
-| `components/` (all) | `ui/` |
-| `mentions/MentionsProvider/` | `ui/MentionsProvider/` |
-| `mentions/providers.ts` | split → `ui/MentionsProvider/providers.ts` + parse fns → `core/ReferenceParser/` |
-| `hooks/useBibleState.ts` | `state/queries/useBibleState.ts` |
-| `hooks/useEntity.ts` | `state/queries/useEntity.ts` |
-| `hooks/useEpisodeData.ts` | `state/queries/useEpisodeData.ts` |
-| `hooks/useStorytellerActions.ts` | `state/queries/useStorytellerActions.ts` |
-| `hooks/useLoadingStates.ts` | `state/hooks/useLoadingStates.ts` |
-| `hooks/useStorytellerHydration.ts` | `state/hooks/useStorytellerHydration.ts` |
-| `lib/access-verification.ts` | `services/AccessVerificationService.ts` |
-| `lib/entity-loader.ts` | pure → `core/EntityReferences/`; server bits → `services/` |
-| `tools/*.ts` (8 files + index) | `agents/tools/*.ts` |
-| `tools/__tests__/` | `agents/tools/__tests__/` |
-| `core/ActionFormatters/*` | `core/ActionTypes/` |
-| `core/CascadeEditor/*` | `core/ConsistencyTypes/` |
-| `core/EntityExtractor/*` | `core/EntityReferences/` |
-| `core/StoryPlanFields/*` | `core/StoryPlanTypes/` |
-| `core/DeepMerge/*` | `core/utils/` |
-| `core/WorkflowContext/*` | `agents/WorkflowContext/` |
-| `config/action-config.ts` | `storyteller.config.ts` (merge) |
-| `config/storyteller-agents.ts` | `storyteller.config.ts` (merge) |
-| `config/tool-result-mapper.ts` | `agents/tools/tool-result-mapper.ts` (Mastra-adjacent) |
-| `db/schema.ts` | `src/db/schema.ts` (fold, Wave 6 / D-1) |
+| # | Old path (under `src/domains/storyteller/`) | New path |
+|---|----------|----------|
+| S1 | `agents/ConsequenceAgent/ConsequenceAgent.ts` | `agents/council/ConsequenceAgent.ts` |
+| S2 | `agents/DevilsAdvocateAgent/DevilsAdvocateAgent.ts` | `agents/council/DevilsAdvocateAgent.ts` |
+| S3 | `agents/GardenerAgent/GardenerAgent.ts` | `agents/council/GardenerAgent.ts` |
+| S4 | `agents/PremiseArchitectAgent/PremiseArchitectAgent.ts` | `agents/council/PremiseArchitectAgent.ts` |
+| S5 | `agents/PsychologistAgent/PsychologistAgent.ts` | `agents/council/PsychologistAgent.ts` |
+| S6 | `agents/SelfCritiqueAgent/SelfCritiqueAgent.ts` | `agents/council/SelfCritiqueAgent.ts` |
+| S7 | `agents/ConsistencyAgent/ConsistencyAgent.ts` | `agents/judges/ConsistencyAgent.ts` |
+| S8 | `agents/CreativeDirectorAgent/CreativeDirectorAgent.ts` | `agents/judges/CreativeDirectorAgent.ts` |
+| S9 | `agents/ScriptReviewAgent/ScriptReviewAgent.ts` | `agents/judges/ScriptReviewAgent.ts` |
+| S10 | `agents/StoryWorkflow/StoryWorkflow.ts` | `agents/orchestration/StoryWorkflow.ts` |
+| S11 | `agents/StorytellerWorkflow/StorytellerWorkflow.ts` | `agents/orchestration/StorytellerWorkflow.ts` |
+| S12 | `agents/WritersRoomGraph/WritersRoomGraph.ts` | `agents/orchestration/WritersRoomGraph.ts` |
+| S13 | `agents/StorytellerPlanner/StorytellerPlanner.ts` | `agents/orchestration/StorytellerPlanner.ts` |
+| S14 | `core/WorkflowContext/WorkflowContext.ts` | `agents/orchestration/WorkflowContext.ts` (ALS/event-bus is not pure core) |
+| S15 | `agents/MastraInstance/MastraInstance.ts` | `src/shared/agent-kernel/MastraInstance.ts` (shared/ already exists) |
+| S16 | `agents/ModelConfig/ModelConfig.ts` | `config/ModelConfig.ts` |
+| S17 | `core/ActionTypes/ActionTypes.ts` | `core/types/ActionTypes.ts` |
+| S18 | `core/StoryTypes/StoryTypes.ts` | `core/types/StoryTypes.ts` |
+| S19 | `core/StoryPlanTypes/StoryPlanTypes.ts` | `core/types/StoryPlanTypes.ts` |
+| S20 | `core/ConsistencyTypes/ConsistencyTypes.ts` | `core/types/ConsistencyTypes.ts` |
+| S21 | `core/Enums/Enums.ts` | `core/types/Enums.ts` |
+| S22 | `core/CascadeEditor/CascadeEditor.ts` | `core/editing/CascadeEditor.ts` |
+| S23 | `core/UndoManager/UndoManager.ts` | `core/editing/UndoManager.ts` |
+| S24 | `core/DeepMerge/DeepMerge.ts` | `core/editing/DeepMerge.ts` |
+| S25 | `core/EntityExtractor/EntityExtractor.ts` | `core/entities/EntityExtractor.ts` |
+| S26 | `core/EntityReferences/EntityReferences.ts` | `core/entities/EntityReferences.ts` |
+| S27 | `core/ReferenceParser/ReferenceParser.ts` | `core/entities/ReferenceParser.ts` |
+| S28 | `core/ActionFormatters/ActionFormatters.ts` | `core/formatting/ActionFormatters.ts` |
+| S29 | `core/StoryPlanFields/StoryPlanFields.ts` | `core/formatting/StoryPlanFields.ts` |
+| S30 | 26 × per-unit `index.ts` in collapsed `agents/*/` + `core/*/` folders | **deleted**; exports folded into NEW `agents/{council,judges,orchestration}/index.ts`, `core/{types,editing,entities,formatting}/index.ts`, `core/index.ts` |
+| S31 *(W6)* | `src/trigger/generate-portrait.ts` | `tasks/generate-portrait.task.ts` |
+| S32 *(W6)* | `src/trigger/select-portrait-variant.ts` | `tasks/select-portrait-variant.task.ts` |
+| S33 *(W6)* | `src/trigger/generate-poster.ts` | `tasks/generate-poster.task.ts` |
+| S34 *(W6)* | `src/trigger/generate-episode-poster.ts` | `tasks/generate-episode-poster.task.ts` |
+| S35 *(W6)* | `src/trigger/generate-moodboard.ts` | `tasks/generate-moodboard.task.ts` |
+| S36 *(W6)* | `src/trigger/generate-storyboard.ts` | `tasks/generate-storyboard.task.ts` |
+| S37 *(W6)* | `src/trigger/generate-combined-storyboard.ts` | `tasks/generate-combined-storyboard.task.ts` |
 
-## 1.4 Public barrel (`storyteller/index.ts`) after reshape (~30 exports)
+## 1.4 Public barrel (`storyteller/index.ts`) after reshape
 
-- **UI components** (client): ActionApprovalModal, ActionToast, CharacterPanel,
-  CharacterWeb (+`CharacterWebProps`), ConsistencyMessage, CorkBoard, EpisodeManager,
-  MasterPromptEditor, PhaseNavigator, QuestionCard, ReferenceText, ScriptEditor
-  (+`ScriptEditorProps`), StoryPlanBoard (+props), StorytellerEmptyState, Timeline
-  (+props), WorldBiblePanel (+props), MentionsProvider.
-- **State hooks (public):** useBibleState, useEpisodeData, useStorytellerActions,
-  useStorytellerHydration, useLoadingStates.
-- **Public core types:** from `core/ActionTypes`, `core/ConsistencyTypes`,
-  `core/Enums`, `core/ReferenceParser`, `core/UndoManager`.
-- **Prompt schemas:** `prompts/schemas/agent-schemas`.
-- **Server seam (type-only where possible, `@internal`):** re-export the specific
-  services/agents that `src/app/api/**`, `src/services`, `src/evaluation`, `src/mcp`
-  and `src/trigger` consume, until those callers route through `services/`. Remove
-  the blanket `export * from './db/schema'` and `export * from './agents'` firehose.
+Same exported **symbols** as today (contract-preserving); internal paths change:
 
-## 1.5 Out of scope for storyteller (this catalog effort)
-- Rewriting any Mastra agent/workflow behavior (move files only; A-stream deferred).
-- Flattening `prompts/skills/*` persona folders (correct Workspace convention).
-- Splitting individual >400 LOC components (tracked separately from folder collapse).
+- **Agents:** `export * from './agents'`, where `agents/index.ts` re-exports
+  `StorytellerAgent/`, `council/`, `judges/`, `orchestration/` — covers today's
+  deep root-barrel exports (`ConsistencyAgent`, `ScriptReviewAgent`,
+  `StorytellerWorkflow`, `WritersRoomGraph`).
+- **UI:** unchanged (31 component re-exports).
+- **Core:** single `export * from './core'` replacing today's per-folder exports.
+- **State/io:** unchanged.
+- **Server seam (interim):** keep re-exporting `db/schema` + service entry points
+  consumed by `src/app/api/storyteller/**`, `src/services/storyteller.service.ts`,
+  `src/mcp`, `src/evaluation/**` until the schema/shared wave.
+- **Removed:** `MastraInstance` (import from `@/shared/agent-kernel`), `ModelConfig`
+  (via `config/`).
+
+## 1.5 Out of scope this wave (storyteller)
+
+- `db/schema.ts` **content** merge into `src/db/schema.ts` (SPEC D-1 — deferred).
+- Mastra behavior changes: `z.any()` in `StoryWorkflow.ts:112,143,168`, manual
+  `withSpan` spans, `AgentMemory`, skill-loader (SPEC A-stream — separate effort;
+  non-negotiable "move files first").
+- God-component splits (`ActionApprovalModal` ~978 LOC, `CharacterWeb` ~922 LOC).
+- `ui/WorldBible/` loose-file re-organization (add local barrel only, no moves).
+- SSE route decomposition (`quality-improvement-spec` ST-2).
 
 ---
 
-# 2. world-building-toolkit  (P0 write path + god-store split)
+# 2. world-building-toolkit — flat legacy → §4 worked example
 
 ## 2.1 Current tree
-```
-world-building-toolkit/
-├─ components/    services/   store/   utils/     # flat legacy; NO index.ts
-```
-`store/useWorldStore.ts` = **864 LOC** god store (viewport + tiles/projects/assets
-data + job polling + `localStorage` recovery + `window.dispatchEvent`). **P0:**
-browser `.delete()` — `store/useWorldStore.ts:356` (`projects`),
-`components/AssetsPanel.tsx:61` (`assets`).
 
-## 2.2 Ideal target tree (from ARCHITECTURE §4 worked example)
+```
+world-building-toolkit/            # NO index.ts
+├── components/                    # 8 loose + Canvas/{WorldCanvas,Tile,RepaintCanvas} + Sidebar/Sidebar
+├── services/                      # CLIENT-side (misnamed layer): FidelityService RepaintService
+│                                  #   SelectModeService TileGenerationService (polling, window events)
+│                                  #   UpscaleService (localStorage recovery — confirmed :46,:113,:281,:363)
+├── store/useWorldStore.ts         # 864 LOC god store: server data + UI + jobs + browser→Supabase writes (P0)
+└── utils/rle.ts
+```
+
+## 2.2 Ideal target tree (= ARCHITECTURE §4 worked example)
+
 ```
 world-building-toolkit/
-├─ index.ts                        # WorldCanvas, useTiles, useWorldUiStore, types
-├─ world-building-toolkit.config.ts
-├─ ui/  (WorldCanvas/ Tile/ RepaintCanvas/ Sidebar/ AssetsPanel/ TileReviewDialog/ …)
-├─ state/
-│   ├─ useWorldUiStore.ts          # ~150 LOC: viewport, selection, modes, brush
-│   └─ queries/  (useTiles.ts useProjects.ts useAssets.ts useTileMutation.ts)
-├─ io/  (tiles.api.ts world.keys.ts world.dto.ts)   # NO browser supabase
-├─ core/  (TileGrid.ts ContextAssembly.ts)          # pure, from utils/
-├─ services/  (TileService.ts FidelityService.ts RepaintService.ts SelectModeService.ts UpscaleService.ts)
-└─ tasks/  (generate-tile.task.ts upscale-tile.task.ts enhance-fidelity.task.ts)  # ← src/trigger
+├── index.ts                          # NEW (§2.4)
+├── ui/                               # folder-per-component
+│   ├── WorldCanvas/ Tile/ RepaintCanvas/ Sidebar/ AssetsPanel/ TileReviewDialog/
+│   └── MjVariantPicker/ RepaintToolbar/ SelectModeToolbar/ SettingsDialog/ WorldGenToolbar/
+├── state/
+│   ├── useWorldUiStore.ts            # ~150 LOC: viewport selection modes brush debug flags ONLY
+│   ├── hooks/                        # client orchestration hooks (ex-"services", W14–W18)
+│   └── queries/                      # useTiles.ts useProjects.ts useAssets.ts useTileMutation.ts
+├── io/                               # world.api.ts world.keys.ts world.dto.ts — NO browser→Supabase
+├── core/                             # TileGrid.ts (← utils/rle.ts) + ContextAssembly.ts (← store debug blob)
+├── services/                         # SERVER-only (`import 'server-only'`): TileService.ts ProjectService.ts (NEW)
+├── tasks/                            # Wave 6: generate-tile / upscale-tile / enhance-fidelity /
+│                                     #   select-mj-variant / upload-asset .task.ts
+└── world-building-toolkit.config.ts  # NEW
 ```
 
 ## 2.3 Move map
-| old_path | new_path |
-|----------|----------|
-| `components/` (all) | `ui/` |
-| `store/useWorldStore.ts` (UI slice) | `state/useWorldUiStore.ts` (~150 LOC) |
-| `store/useWorldStore.ts` (tiles/projects/assets reads) | `state/queries/useTiles.ts` · `useProjects.ts` · `useAssets.ts` |
-| `store/useWorldStore.ts` (add/remove/accept writes) | `state/queries/useTileMutation.ts` → `io/tiles.api.ts` → route → `services/TileService.ts` |
-| `store/useWorldStore.ts:356` `projects.delete()` | route `DELETE /api/world/projects/:id` → `ProjectService` |
-| `components/AssetsPanel.tsx:61` `assets.delete()` | route `DELETE /api/world/assets/:id` → `AssetService` |
-| `utils/rle.ts` + neighbor math | `core/TileGrid.ts` |
-| `services/*` (existing) | `services/*` (keep; add DB writes) |
-| `src/trigger/generate-tile.ts` (+ siblings) | `tasks/*.task.ts` |
-| polling / `localStorage` / `window.dispatchEvent` | delete → shared `useJob` (Trigger Realtime) |
 
-## 2.4 Barrel: `WorldCanvas`, `useTiles`, `useWorldUiStore`, public tile/asset types.
-## 2.5 Out of scope: reworking the tile generation model; only path + state split.
+| # | Old path | New path |
+|---|----------|----------|
+| W1 | `components/Canvas/WorldCanvas.tsx` | `ui/WorldCanvas/WorldCanvas.tsx` (+ local `index.ts`; same for all ui moves) |
+| W2 | `components/Canvas/Tile.tsx` | `ui/Tile/Tile.tsx` |
+| W3 | `components/Canvas/RepaintCanvas.tsx` | `ui/RepaintCanvas/RepaintCanvas.tsx` |
+| W4 | `components/Sidebar/Sidebar.tsx` | `ui/Sidebar/Sidebar.tsx` |
+| W5 | `components/AssetsPanel.tsx` | `ui/AssetsPanel/AssetsPanel.tsx` |
+| W6 | `components/MjVariantPicker.tsx` | `ui/MjVariantPicker/MjVariantPicker.tsx` |
+| W7 | `components/RepaintToolbar.tsx` | `ui/RepaintToolbar/RepaintToolbar.tsx` |
+| W8 | `components/SelectModeToolbar.tsx` | `ui/SelectModeToolbar/SelectModeToolbar.tsx` |
+| W9 | `components/SettingsDialog.tsx` | `ui/SettingsDialog/SettingsDialog.tsx` |
+| W10 | `components/TileReviewDialog.tsx` | `ui/TileReviewDialog/TileReviewDialog.tsx` |
+| W11 | `components/WorldGenToolbar.tsx` | `ui/WorldGenToolbar/WorldGenToolbar.tsx` |
+| W12 | `utils/rle.ts` | `core/TileGrid.ts` (pure; renamed per §4 example) |
+| W13 | `store/useWorldStore.ts` *(split — P0)* | `state/useWorldUiStore.ts` + `state/queries/{useTiles,useProjects,useAssets,useTileMutation}.ts` + `io/{world.api,world.keys,world.dto}.ts` + `services/{ProjectService,TileService}.ts` behind `/api` routes (kills browser→Supabase writes + snake_case remap hacks) |
+| W14 | `services/FidelityService.ts` | `state/hooks/useFidelity.ts` *(refactor: client orchestration → hook; server calls via io/)* |
+| W15 | `services/RepaintService.ts` | `state/hooks/useRepaint.ts` *(refactor)* |
+| W16 | `services/SelectModeService.ts` | `state/hooks/useSelectMode.ts` *(refactor)* |
+| W17 | `services/TileGenerationService.ts` | `state/hooks/useTileGeneration.ts` *(refactor: polling + `window` events → `shared/jobs` `useJob`)* |
+| W18 | `services/UpscaleService.ts` | `state/hooks/useUpscale.ts` *(refactor: localStorage recovery → runId re-subscribe)* |
+| W19 *(W6)* | `src/trigger/generate-tile.ts` | `tasks/generate-tile.task.ts` (also: `schemaTask`, kill `neighbors?: any`) |
+| W20 *(W6)* | `src/trigger/upscale-tile.ts` | `tasks/upscale-tile.task.ts` |
+| W21 *(W6)* | `src/trigger/enhance-fidelity.ts` | `tasks/enhance-fidelity.task.ts` |
+| W22 *(W6)* | `src/trigger/select-mj-variant.ts` | `tasks/select-mj-variant.task.ts` |
+| W23 *(W6)* | `src/trigger/upload-asset.ts` | `tasks/upload-asset.task.ts` |
+
+W13–W18 are **refactors, not pure moves** — sequenced after the ui/core moves,
+each its own PLAN item with paired tests. Everything else is `git mv` + codemod.
+
+## 2.4 Public barrel (`index.ts`)
+
+Phase 1 (referrer lockdown, before any move): re-export `useWorldStore`,
+`WorldCanvas`, `Sidebar`, `AssetsPanel`, `TileReviewDialog`, `WorldGenToolbar`,
+public tile/project types — then rewrite all 17 external referrers to the barrel.
+Phase 2 (after W13): barrel swaps to `useWorldUiStore` + `useTiles`/`useProjects`/
+`useAssets` + DTO types; legacy `useWorldStore` export deleted.
+
+## 2.5 Out of scope this wave (WBT)
+
+- API route **URL** consolidation (`api/trigger-tile`, `api/tiles`, `api/upscale`,
+  `api/repaint`, `api/save-image`, `api/upload-tile`, `api/complete-token`,
+  `api/trigger-upscale`, `api/trigger-fidelity` → `api/world/*`) — deferred;
+  `io/world.api.ts` keeps current URLs.
+- Midjourney/upscale provider logic (only packaging moves).
 
 ---
 
-# 3. interior-designer  (kill 1651-LOC dual state)
+# 3. interior-designer — merge dual skeleton (19 dirs; barrel exists)
 
-## 3.1 Current (19 dirs) — has `store/` **1651 LOC** god store **and** `state/`,
-plus **both** `components/` and `ui/`, plus an `ai/` folder + `utils/`.
+## 3.1 Current tree
+
+```
+interior-designer/                 # index.ts EXISTS; interior-designer.config.ts EXISTS
+├── ui/InteriorDesignerWorkspace/  # 1 real §4 component
+├── state/ io/ core/ services/ tasks/ prompts/   # scaffolded stubs (mostly empty barrels; io/ has api+dto+keys)
+├── components/                    # LEGACY: 13 loose + UI/(7) meshes/(3) terrain/(2) tools/(5)
+├── store/useInteriorStore.ts      # 1,651 LOC god store — LARGER than WBT's (new finding vs assess)
+├── ai/TextureService.ts
+├── utils/                         # UnityExporter.ts UnityYAML.ts polygonUtils.ts textureCache.ts
+└── __tests__/
+```
 
 ## 3.2 Ideal target tree
+
 ```
 interior-designer/
-├─ index.ts   interior-designer.config.ts
-├─ ui/                         # merge components/ → ui/ (dedupe)
-├─ state/
-│   ├─ useInteriorUiStore.ts   # ephemeral: viewport, brush, mode (~150 LOC)
-│   └─ queries/  (useDesigns.ts useDesignMutation.ts useProjects.ts …)
-├─ io/                         # ✅ exists
-├─ core/                       # ✅ exists (+ pure bits from utils/)
-├─ services/                   # ✅ exists (+ DB writes if any browser writes found)
-├─ tasks/                      # ✅ exists
-├─ prompts/                    # ✅ exists (or fold ai/ here)
+├── index.ts  interior-designer.config.ts        # keep
+├── ui/
+│   ├── InteriorDesignerWorkspace/ (keep) InteriorCanvas/ DesignManager/ FloorManager/ ObjectManager/
+│   ├── SurfaceManager/ WallManager/ TransformManager/ CameraController/ KeybindingManager/
+│   ├── Exporter/ RetextureExporter/ SculptableSurface/ VoxelTerrainMesh/
+│   ├── panels/                                  # ← components/UI/ (7 panel components)
+│   └── meshes/ terrain/ tools/                  # grouped subunits preserved
+├── state/
+│   ├── useInteriorStore.ts                      # MOVED as-is (split = deferred)
+│   ├── textureCache.ts                          # client runtime cache
+│   └── queries/                                 # keep stub
+├── io/                                          # keep (api/dto/keys)
+├── core/                                        # + polygonUtils.ts + unity/{UnityExporter,UnityYAML}.ts
+├── services/                                    # + TextureService.ts (← ai/)
+├── tasks/                                       # Wave 6: retexture-model / text-to-3d / surface-material
+└── prompts/                                     # keep
 ```
 
 ## 3.3 Move map
-| old_path | new_path |
-|----------|----------|
-| `store/useInteriorStore.ts` (UI slice) | `state/useInteriorUiStore.ts` |
-| `store/useInteriorStore.ts` (server state) | `state/queries/*` (TanStack) |
-| `components/*` | `ui/*` (merge with existing `ui/`) |
-| `ai/*` | `agents/` or `prompts/` per content |
-| `utils/*` (pure) | `core/` |
-| `store/` (after migration) | **deleted** |
 
-## 3.4 Barrel: existing `index.ts` — retarget to `ui/` + `state/queries` hooks + types.
-## 3.5 Out of scope: model/prompt changes; only state split + folder merge.
+| # | Old path | New path |
+|---|----------|----------|
+| I1–I13 | `components/{CameraController,DesignManager,Exporter,FloorManager,InteriorCanvas,KeybindingManager,ObjectManager,RetextureExporter,SculptableSurface,SurfaceManager,TransformManager,VoxelTerrainMesh,WallManager}.tsx` | `ui/<X>/<X>.tsx` (+ local `index.ts` each) |
+| I14–I20 | `components/UI/{AssetLibrary,InteriorRightSidebar,LayerPanel,PropertiesPanel,SurfaceProperties,TerrainEditorPanel,Toolbar}.tsx` | `ui/panels/<X>/<X>.tsx` |
+| I21 | `components/meshes/{DoorMesh,RoadMesh,WindowMesh}.tsx` | `ui/meshes/…` |
+| I22 | `components/terrain/{GlobalWaterPlane,TerrainBrushPreview,index}.tsx` | `ui/terrain/…` |
+| I23 | `components/tools/{ObjectTool,ScatterTool,SurfaceTool,TerrainTool,WallTool}.tsx` | `ui/tools/…` |
+| I24 | `store/useInteriorStore.ts` | `state/useInteriorStore.ts` (move only; split deferred) |
+| I25 | `ai/TextureService.ts` | `services/TextureService.ts` (verify server-only during move; add `import 'server-only'` if true, else place in `state/hooks/`) |
+| I26 | `utils/polygonUtils.ts` | `core/polygonUtils.ts` |
+| I27 | `utils/{UnityExporter,UnityYAML}.ts` | `core/unity/{UnityExporter,UnityYAML}.ts` (pure generators) |
+| I28 | `utils/textureCache.ts` | `state/textureCache.ts` |
+| I29 | `__tests__/*` (6 files) | stay; import paths updated |
+| I30 *(W6)* | `src/trigger/{retexture-model,text-to-3d,surface-material}.ts` | `tasks/*.task.ts` (ownership: consumed by `api/interior-designer/*` routes) |
+
+## 3.4 Public barrel
+
+Keep current exports; add moved-path re-exports needed by the 10 external referrers
+(9 `api/interior-designer/**` routes import `io/` DTOs + services via barrel; app
+page imports `InteriorDesignerWorkspace`). `useInteriorStore` stays internal if no
+external import exists (verify by grep before curating).
+
+## 3.5 Out of scope
+
+Splitting the 1,651-LOC `useInteriorStore` (own P1 follow-up); Meshy/texture
+provider logic; deleting `store/`-era snake_case remaps.
 
 ---
 
-# 4. loop-creator  (create barrel + skeleton)
+# 4. loop-creator — 12 dirs, no barrel
 
-## 4.1 Current (12): `components/ agents/(market-analyst) hooks/ lib/ mentions/ graph/ __tests__`; no barrel.
+## 4.1 Current tree
+
+```
+loop-creator/            # NO index.ts
+├── agents/              # 7 flat agents + market-analyst-wrapper.ts + market-analyst/ (tools/, scorers/, tests)
+├── components/          # 7 components (LoopCreatorLayout.tsx = 1,612 LOC)
+├── graph/               # loop-graph.ts state.ts        ← orchestration at root
+├── hooks/useAutoSave.ts
+├── lib/layout.ts
+├── mentions/providers.ts
+└── __tests__/
+```
 
 ## 4.2 Ideal target tree
+
 ```
 loop-creator/
-├─ index.ts   loop-creator.config.ts
-├─ ui/                    # ← components/ (+ mentions/ UI parts)
-├─ state/  (useLoopUiStore.ts  queries/useLoops.ts useLoopMutation.ts)   # ← hooks/
-├─ io/     (loop.api.ts loop.keys.ts loop.dto.ts)
-├─ core/                  # ← lib/ pure logic + mention parsing
-├─ services/              # DB layer (extract from hooks/lib)
-├─ agents/  (LoopCreatorAgent/ MarketAnalyst/ tools/)   # ← agents/ + agents/market-analyst
-└─ prompts/               # if present, else fold into agents/
+├── index.ts                        # NEW
+├── ui/                             # LoopCreatorLayout/ CustomNodes/ LoopEmptyState/ LoopSelector/
+│   │                               # MarketAnalysisPanel/ PropertiesPanel/ SuggestionPanel/
+│   └── MentionsProvider/           # providers.ts (mirror storyteller pattern)
+├── state/hooks/useAutoSave.ts
+├── core/layout.ts                  # pure graph layout math (← lib/)
+└── agents/
+    ├── index.ts                    # NEW agent barrel
+    ├── (7 flat agents + market-analyst-wrapper.ts + market-analyst/ — unchanged)
+    └── orchestration/              # loop-graph.ts state.ts (← graph/)
 ```
 
 ## 4.3 Move map
-| old_path | new_path |
-|----------|----------|
-| `components/*` | `ui/*` |
-| `mentions/*` | UI → `ui/`; parse → `core/` |
-| `hooks/*` (server) | `state/queries/*` |
-| `hooks/*` (UI) | `state/` or colocated |
-| `lib/*` (pure) | `core/*` |
-| `lib/*` (server) | `services/*` |
-| `graph/*` | `agents/` (workflow) or `core/` (pure state machine) |
-| `agents/market-analyst/*` | `agents/MarketAnalyst/*` |
 
-## 4.4 Barrel: LoopCanvas + market-insights components, `useLoops`, public loop types.
-## 4.5 Out of scope: agent behavior; graph runtime semantics.
+| # | Old path | New path |
+|---|----------|----------|
+| L1–L7 | `components/{LoopCreatorLayout,CustomNodes,LoopEmptyState,LoopSelector,MarketAnalysisPanel,PropertiesPanel,SuggestionPanel}.tsx` | `ui/<X>/<X>.tsx` (+ local barrels) |
+| L8 | `graph/loop-graph.ts` | `agents/orchestration/loop-graph.ts` |
+| L9 | `graph/state.ts` | `agents/orchestration/state.ts` |
+| L10 | `hooks/useAutoSave.ts` | `state/hooks/useAutoSave.ts` |
+| L11 | `lib/layout.ts` | `core/layout.ts` |
+| L12 | `mentions/providers.ts` | `ui/MentionsProvider/providers.ts` |
+
+## 4.4 Public barrel
+
+`LoopCreatorLayout` (app page), the agent/graph entry points used by the 3
+`api/loop-creator/*` routes (market-analyst, supervisor/chat, graph run), mention
+providers (if externally consumed — verify).
+
+## 4.5 Out of scope
+
+Splitting `LoopCreatorLayout` (1,612 LOC); TanStack `state/queries/` adoption;
+`loop-creator.config.ts` (create only if real constants surface).
 
 ---
 
-# 5. chat  (cross-cutting; create barrel)
+# 5. chat — 6 dirs, no barrel (stays a domain this run)
 
-## 5.1 Current (6): `components/ hooks/(+__tests__) mentions/ types.ts`; no barrel.
+## 5.1 Current tree
+
+```
+chat/                    # NO root index.ts (only components/index.ts)
+├── components/          # 9 components + index.ts (AgentLog.tsx = 1,374 LOC)
+├── hooks/useChatStream.ts (+ .test.ts, __tests__/)
+├── mentions/            # context-builder.ts game-entity-provider.ts types.ts
+└── types.ts
+```
 
 ## 5.2 Ideal target tree
+
 ```
 chat/
-├─ index.ts
-├─ ui/       # ← components/ (+ mentions/ UI)
-├─ state/    (useChatUiStore.ts  queries/useMessages.ts)   # ← hooks/
-├─ io/       (chat.api.ts chat.dto.ts)
-└─ core/     (types.ts  + mention parsing)                 # ← types.ts + mentions logic
+├── index.ts                     # NEW (consumers: storyteller ×3, loop-creator ×2,
+│                                #   src/lib/chat-persistence.ts, app storyteller page)
+├── ui/                          # AgentLog/ ChatInput/ ChatInterface/ CitationDisplay/ MentionChip/
+│                                # QuickActions/ SectionProgress/ StreamingSectionsInline/ StreamingTerminal/
+├── state/hooks/useChatStream.ts
+└── core/
+    ├── mentions/                # context-builder.ts game-entity-provider.ts types.ts (pure)
+    └── types.ts                 # ← root types.ts
 ```
 
 ## 5.3 Move map
-| old_path | new_path |
-|----------|----------|
-| `components/*` | `ui/*` |
-| `hooks/*` (server) | `state/queries/*` |
-| `hooks/*` (UI) | `state/` |
-| `mentions/*` | `ui/` + `core/` |
-| `types.ts` | `core/types.ts` |
 
-## 5.4 Barrel: ChatPanel/MessageList components, `useMessages`, message types.
-## 5.5 Out of scope: chat protocol / streaming behavior.
+| # | Old path | New path |
+|---|----------|----------|
+| C1–C9 | `components/<X>.tsx` (9 files) | `ui/<X>/<X>.tsx` (+ local barrels; delete `components/index.ts`) |
+| C10 | `hooks/useChatStream.ts` + `useChatStream.test.ts` + `hooks/__tests__/` | `state/hooks/…` |
+| C11 | `mentions/{context-builder,game-entity-provider,types}.ts` | `core/mentions/…` |
+| C12 | `types.ts` | `core/types.ts` (re-exported from root barrel) |
 
----
+## 5.4 Public barrel
 
-# 6. deduction-puzzle-designer  (create barrel)
+`ChatInterface`, `AgentLog`, `QuickActions`, `MentionChip`, `useChatStream`,
+mention provider types + `core/types` — exactly the symbols the 8 external
+referrer files import today (grep-verified before curating).
 
-## 6.1 Current (7): `components/(LogicMap ScenarioDefinition SceneStaging) store/ prompts? services? utils?`; no barrel.
+## 5.5 Out of scope
 
-## 6.2 Ideal target tree
-```
-deduction-puzzle-designer/
-├─ index.ts
-├─ ui/       # ← components/
-├─ state/    (useDeductionUiStore.ts  queries/)   # ← store/ split
-├─ io/
-├─ core/     # puzzle types + logic (← utils/)
-├─ services/
-└─ prompts/  # if present
-```
-
-## 6.3 Move map: `components/* → ui/*`; `store/*` split → `state/*`; `utils/* → core/*`.
-## 6.4 Barrel: LogicMap, ScenarioDefinition, SceneStaging, puzzle types.
-## 6.5 Out of scope: puzzle-generation prompts/behavior.
+Chat → `src/shared/` move (open architecture question — decision deferred);
+`AgentLog.tsx` split. **Config note:** `tsconfig.fabro-verify.json` and `knip.json`
+both reference chat paths — must be updated in the same increment (PLAN items).
 
 ---
 
-# 7. game-design  (thin — normalize + barrel)
+# 6. game-design — root files → §4 AI-module skeleton
 
-## 7.1 Current (3): root `agent.ts memory.ts schemas.ts` + `tools/`; no barrel.
+## 6.1 Current
 
-## 7.2 Ideal target tree
+`agent.ts`, `memory.ts`, `schemas.ts`, `tools/v2/{haute-game-tools,logic-transformers,loop-tools}.ts`.
+No barrel. External referrers: `src/workflows/game-design/game-loop-workflow.ts`,
+`api/workflows/game-design`, 3 integration tests under `tests/integration/`.
+
+## 6.2 Target tree
+
 ```
 game-design/
-├─ index.ts
-├─ agents/  (GameDesignAgent/  memory.ts  tools/)   # ← agent.ts + memory.ts + tools/
-├─ core/    (schemas.ts → *.dto.ts / types)          # ← schemas.ts
-└─ prompts/ # if separable from agent.ts
+├── index.ts                                  # NEW
+├── core/schemas.ts                           # pure Zod (← root schemas.ts)
+└── agents/
+    ├── GameDesignAgent.ts                    # ← agent.ts
+    ├── memory.ts                             # ← memory.ts
+    ├── tools/                                # ← tools/v2/ flattened (3 files)
+    └── orchestration/GameLoopWorkflow.ts     # ← src/workflows/game-design/game-loop-workflow.ts
 ```
 
-## 7.3 Move map: `agent.ts → agents/GameDesignAgent/`; `memory.ts → agents/`;
-`schemas.ts → core/`; `tools/ → agents/tools/`.
-## 7.4 Barrel: GameDesignAgent handle + public schemas.
+## 6.3 Move map
+
+| # | Old | New |
+|---|-----|-----|
+| G1 | `agent.ts` | `agents/GameDesignAgent.ts` |
+| G2 | `memory.ts` | `agents/memory.ts` |
+| G3 | `schemas.ts` | `core/schemas.ts` |
+| G4 | `tools/v2/{haute-game-tools,logic-transformers,loop-tools}.ts` | `agents/tools/…` |
+| G5 | `src/workflows/game-design/game-loop-workflow.ts` | `agents/orchestration/GameLoopWorkflow.ts` (module absorbs its workflow; `src/workflows/{schema,human-loop-workflow}.ts` stay put) |
+
+## 6.4 Barrel: agent factory, workflow entry, schema types — what the 4 referrers use.
+## 6.5 Out of scope: prompts extraction; Mastra-native memory migration.
 
 ---
 
-# 8. 3d-asset-exporter  (thin — add services + barrel)
+# 7. deduction-puzzle-designer — 7 dirs, 1 external referrer
 
-## 8.1 Current (2): only `components/`; no barrel, no services.
+## 7.1 Current
 
-## 8.2 Ideal target tree
+`components/{PuzzleDesignerLayout.tsx, LogicMap/(2), ScenarioDefinition/(3), SceneStaging/(3)}`,
+`store/puzzle-store.ts`. No barrel.
+
+## 7.2 Target tree
+
+```
+deduction-puzzle-designer/
+├── index.ts                          # NEW — exports PuzzleDesignerLayout
+├── ui/
+│   ├── PuzzleDesignerLayout/ LogicMap/ ScenarioDefinition/ SceneStaging/
+└── state/usePuzzleStore.ts           # ← store/puzzle-store.ts
+```
+
+## 7.3 Move map
+
+| # | Old | New |
+|---|-----|-----|
+| D1 | `components/PuzzleDesignerLayout.tsx` | `ui/PuzzleDesignerLayout/PuzzleDesignerLayout.tsx` |
+| D2 | `components/LogicMap/**` (incl. `nodes/`) | `ui/LogicMap/**` |
+| D3 | `components/ScenarioDefinition/**` (3 files) | `ui/ScenarioDefinition/**` |
+| D4 | `components/SceneStaging/**` (3 files) | `ui/SceneStaging/**` |
+| D5 | `store/puzzle-store.ts` | `state/usePuzzleStore.ts` |
+
+## 7.4 Barrel: `PuzzleDesignerLayout` (sole consumer: `app/app/[projectId]/deduction-puzzle/page.tsx`).
+## 7.5 Out of scope: store split; io/core extraction (no server surface yet).
+
+---
+
+# 8. 3d-asset-exporter — components-only → ui + tasks
+
+## 8.1 Current
+
+`components/{AssetEditor,AssetExporterSidebar,AssetUploadZone,ThreeDPanel,ThreeDViewer}.tsx`
+(ThreeDPanel = 1,409 LOC). No barrel. Referrers: interior-designer `AssetLibrary`,
+asset-exporter app page.
+
+## 8.2 Target tree
+
 ```
 3d-asset-exporter/
-├─ index.ts
-├─ ui/        # ← components/  (ExportPanel/ …)
-├─ services/  (ExportService.ts)   # server export/DB logic (extract from components)
-└─ tasks/     # export.task.ts if long-running (Trigger)
+├── index.ts                     # NEW
+├── ui/                          # AssetEditor/ AssetExporterSidebar/ AssetUploadZone/ ThreeDPanel/ ThreeDViewer/
+└── tasks/                       # Wave 6: generate-3d-model.task.ts remesh-3d-model.task.ts
 ```
 
-## 8.3 Move map: `components/* → ui/*`; extract any fetch/DB logic → `services/`.
-## 8.4 Barrel: ExportPanel + export types.
+## 8.3 Move map
+
+| # | Old | New |
+|---|-----|-----|
+| A1–A5 | `components/<X>.tsx` (5 files) | `ui/<X>/<X>.tsx` |
+| A6 *(W6)* | `src/trigger/{generate-3d-model,remesh-3d-model}.ts` | `tasks/*.task.ts` (confirm ownership vs `api/generate-3d`/`api/trigger-3d` referrers during move) |
+
+## 8.4 Barrel: `ThreeDPanel`, `AssetExporterSidebar` (+ upload zone if page-consumed). The interior-designer → 3d cross-module import must switch to this barrel.
+## 8.5 Out of scope: `ThreeDPanel` split; `services/`/`io/` layers (no direct DB access today).
 
 ---
 
-# 9. marketing  (thin — normalize + barrel)
+# 9. marketing — components + context → ui + state
 
-## 9.1 Current (3): `components/ context/`; no barrel. (No `agent.ts`.)
+## 9.1 Current
 
-## 9.2 Ideal target tree
+`components/` (8 files; `LandingPage` 1,525 LOC, `ThreeDIcon` 1,345 LOC),
+`context/LiquidContext.tsx`. No barrel. 8 external referrers (app shell pages +
+`src/components/{GlobalHeader,LiquidGlass,ProjectSelectorDropdown,TroubleshootPanel}`).
+
+## 9.2 Target tree
+
 ```
 marketing/
-├─ index.ts
-├─ ui/       # ← components/
-├─ state/    # ← context/ (React context → UI store or state provider)
-└─ agents/   # only if an agent exists; else omit
+├── index.ts                 # NEW
+├── ui/                      # GlobalLiquidLoader/ LandingPage/ Liquid/ LiquidBackgroundProvider/
+│                            # ProPlanPromo/ ThreeDIcon/ ToolsIntegration/ TurbulentBackground/
+└── state/LiquidContext.tsx  # React context = client state
 ```
 
-## 9.3 Move map: `components/* → ui/*`; `context/*` → `state/` (evaluate: React
-context provider stays in `ui/` if purely presentational).
-## 9.4 Barrel: marketing surface components + public types.
+## 9.3 Move map
+
+| # | Old | New |
+|---|-----|-----|
+| M1–M8 | `components/<X>.tsx` (8 files) | `ui/<X>/<X>.tsx` |
+| M9 | `context/LiquidContext.tsx` | `state/LiquidContext.tsx` |
+
+## 9.4 Barrel: `LandingPage`, `LiquidBackgroundProvider`, `GlobalLiquidLoader`, `Liquid`, `ProPlanPromo`, `TurbulentBackground`, `ThreeDIcon`, `LiquidContext` hook — grep-curated from the 8 referrers.
+## 9.5 Out of scope: `LandingPage`/`ThreeDIcon` splits.
 
 ---
 
-# 10. Cross-cutting structure work (F-1, D-1)
+# 10. Catalog-wide referrer surface (sizes PLAN reference-update todos)
 
-## 10.1 `src/shared/` (F-1) — create target import homes
-```
-src/shared/
-├─ agent-kernel/   jobs/   data/   auth/   observability/   errors/
-```
-Each starts as a **re-export stub** of the current home (`shared/auth` → `lib/auth`,
-`shared/jobs` → `useJob` home, etc.). No logic moves in this wave — only the target
-path + the boundary ESLint rule (see §10.3).
+| Module | Ext. referrer files | Hot spots |
+|--------|:---:|-----------|
+| storyteller | **50** | ~30 `src/app/api/storyteller/**` routes · `src/services/storyteller.service.ts` · `src/evaluation/**` (4) · `tests/integration` (6) · `src/mcp` · chat module (2) · storyteller app page · `api/workflows/game-design` · `tests/unit`, `tests/system` |
+| world-building-toolkit | **17** | interior-designer (5) · 3d-asset-exporter (3) · `src/app/app/**` (4) · `src/components/Global*` (≈3) · `src/shared/data/useProjectFromUrl.ts` · `src/infrastructure/ai/types.ts` |
+| interior-designer | **10** | 9 `api/interior-designer/**` routes · interior-design app page |
+| chat | **8** | storyteller (3) · loop-creator (2) · `src/lib/chat-persistence.ts` · storyteller app page · storyteller e2e test |
+| marketing | **8** | `app/{page,login,layout,app/page}.tsx` · `src/components/{GlobalHeader,LiquidGlass,ProjectSelectorDropdown,TroubleshootPanel}` |
+| loop-creator | **4** | 3 API routes · loop-creator app page |
+| game-design | **4** | `src/workflows/game-design/*` · 3 `tests/integration/**` |
+| 3d-asset-exporter | **2** | interior-designer `AssetLibrary` · asset-exporter app page |
+| deduction-puzzle-designer | **1** | deduction-puzzle app page |
 
-## 10.2 `src/db/schema.ts` (D-1) — single Drizzle source
-Fold `src/domains/storyteller/db/schema.ts` into `src/db/schema.ts`; delete the
-local `db/` folder or make it a pure re-export barrel during migration. camelCase
-end-to-end; snake_case boundary only in the Drizzle column map.
+**Config/docs referrers** (update in the same increment as each wave):
 
-## 10.3 Config & lint scopes to update when paths move
-| file | change |
-|------|--------|
-| `eslint.config.js` | keep storyteller deep-import ban (lines 179–180); add same ban per newly-barreled module; flip F-1 boundary rule `warn → error` per migrated module |
-| `tsconfig.fabro-verify.json` | currently scopes 3 storyteller files → update to new `ui/state/io/core/services` paths after moves |
-| `knip.json` | update entry/`project` globs if folder names change (`components→ui`, `store→state`) |
-| `docs/internal/*.md`, `AGENTS.md`, code-comment path cites | rewrite `components/`→`ui/`, `tools/`→`agents/tools/`, `db/schema`→`src/db/schema` |
+- `tsconfig.fabro-verify.json` — currently includes only `src/domains/chat/**` +
+  `src/app/api/chat/**`; extend per wave.
+- `knip.json` — references `src/domains/chat/components/index.ts` (breaks at chat wave).
+- `eslint.config.js` (~lines 172–240) — storyteller deep-import guard (currently
+  `ignores: ['src/domains/storyteller/**']` with external restriction) + domain/shared
+  boundary blocks; clone the guard per module as each barrel lands.
+- `trigger.config.*` `dirs`/includes — Wave 6 task co-location.
+- Docs: `docs/internal/*.md`, `AGENTS.md`, `CLAUDE.md` path citations.
