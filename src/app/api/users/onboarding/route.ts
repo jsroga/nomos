@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { OnboardingState, DEFAULT_ONBOARDING_STATE, ModuleId } from '@/types/onboarding'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export async function POST(req: NextRequest) {

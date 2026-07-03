@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/auth'
-import { getErrorMessage } from '@/lib/error-utils'
+import { requireAuth } from '@/shared/auth/auth'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 export const dynamic = 'force-dynamic'
 

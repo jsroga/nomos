@@ -21,7 +21,7 @@ import {
   Square,
 } from 'lucide-react'
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import { SidebarSection, SidebarLabel } from '@/components/ui/domain-sidebar'
 
 // Brush type icon component

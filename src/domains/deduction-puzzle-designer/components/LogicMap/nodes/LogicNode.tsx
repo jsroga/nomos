@@ -1,6 +1,6 @@
 import React, { memo } from 'react'
 import { Handle, Position, NodeProps, Node } from '@xyflow/react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 
 // Define supported node types
 export type LogicNodeType = 'solution' | 'clue' | 'distractor'

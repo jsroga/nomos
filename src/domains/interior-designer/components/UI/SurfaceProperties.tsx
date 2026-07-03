@@ -24,12 +24,12 @@ import { SidebarSection, SidebarLabel, SidebarSliderRow } from '@/components/ui/
 import { Switch } from '@/components/ui/switch'
 import { TextureStyle } from '@/domains/interior-designer/ai/TextureService'
 import { LocalStorageKeys } from '@/constants/localStorage'
-import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
+import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import toast from 'react-hot-toast'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import { Progress } from '@/components/ui/progress'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // Active task statuses that indicate work is still in progress
 const ACTIVE_TASK_STATUSES = ['PENDING', 'QUEUED', 'EXECUTING', 'WAITING', 'DEQUEUED']

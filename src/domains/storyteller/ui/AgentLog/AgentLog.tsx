@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import { AgentAction, AgentQuestion } from '@/domains/storyteller/core/types/ActionTypes'
 import { ActionCommitted, ActionSuggestion } from '../ActionToast'
 import { ActionStatus } from '@/domains/storyteller/core/types/Enums'

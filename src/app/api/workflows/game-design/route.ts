@@ -4,9 +4,9 @@ import {
   createGameLoopWorkflow,
   GameLoopWorkflow,
 } from '@/workflows/game-design/game-loop-workflow'
-import { requireAuth, checkRateLimit } from '@/lib/api-utils'
+import { requireAuth, checkRateLimit } from '@/shared/data/api-utils'
 import { verifyProjectAccess } from '@/domains/storyteller'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // Request schemas
 const CreateLoopRequestSchema = z.object({

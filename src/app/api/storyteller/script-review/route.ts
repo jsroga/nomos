@@ -15,8 +15,8 @@ import {
   quickReview,
   ScriptReviewRequest,
 } from '@/domains/storyteller'
-import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
-import { getErrorMessage } from '@/lib/error-utils'
+import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 export const POST = withAuth(async (request: NextRequest, _auth: AuthenticatedRequest) => {
   try {

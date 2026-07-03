@@ -6,7 +6,7 @@
  */
 
 import React, { useState } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import {
   ChevronDown,
   ChevronUp,

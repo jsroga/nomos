@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { episodes, projects, storyPlans } from '@/db'
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import { verifyEpisodeAccess, verifyProjectAccess } from '@/domains/storyteller'
 import { eq } from 'drizzle-orm'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/shared/auth/auth'
 
 // GET: Fetch story plan for an episode or project
 export async function GET(req: NextRequest) {

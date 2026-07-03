@@ -10,9 +10,9 @@ import { z } from 'zod'
 import { beats } from '@/db'
 import { BeatType, BeatStatus } from '@/domains/storyteller/core/types/Enums'
 import { v4 as uuidv4 } from 'uuid'
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import { eq } from 'drizzle-orm'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // ==========================================
 // SCHEMAS

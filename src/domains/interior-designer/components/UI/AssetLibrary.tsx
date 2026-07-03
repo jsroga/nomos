@@ -6,7 +6,7 @@ import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldSt
 import { AssetsPanel } from '@/domains/world-building-toolkit/components/AssetsPanel'
 import { AssetUploadZone } from '@/domains/3d-asset-exporter/components/AssetUploadZone'
 import { Box, Circle, Cylinder, Cone, LayoutGrid, DoorOpen } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 
 const PRIMITIVES = [
   { id: 'cube', name: 'Cube', icon: Box },

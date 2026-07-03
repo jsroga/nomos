@@ -26,7 +26,7 @@ import {
 import { createAllHauteGameTools } from './tools/v2/haute-game-tools'
 import { GameDesignMemory } from './memory'
 import { GameLoop, GameMechanic } from './schemas'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 interface GameDesignAgentConfig {
   modelName?: string

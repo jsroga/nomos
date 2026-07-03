@@ -3,8 +3,8 @@
 import React from 'react'
 import { X, Trash2, AlertTriangle, Clock, FileCode } from 'lucide-react'
 import { Liquid } from '@/domains/marketing/components/Liquid'
-import { useErrorStore, CapturedError } from '@/store/useErrorStore'
-import { cn } from '@/lib/utils'
+import { useErrorStore, CapturedError } from '@/shared/errors/useErrorStore'
+import { cn } from '@/shared/data/utils'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 

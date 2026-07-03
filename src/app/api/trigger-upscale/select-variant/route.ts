@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { tasks } from '@trigger.dev/sdk/v3'
 import type { selectMjVariantTask } from '@/trigger/select-mj-variant'
-import { withAuth, verifyProjectAccess, type AuthenticatedRequest } from '@/lib/api-utils'
+import { withAuth, verifyProjectAccess, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
 export const dynamic = 'force-dynamic'
 

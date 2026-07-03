@@ -3,8 +3,8 @@ import { asc, eq } from 'drizzle-orm'
 import { ZodError } from 'zod'
 
 import { episodes } from '@/db'
-import { requireAuth } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { requireAuth } from '@/shared/auth/auth'
+import { db } from '@/db/client'
 import {
   parseCreateStorytellerEpisodeRequest,
 } from '@/domains/storyteller/io/storyteller.api'

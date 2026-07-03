@@ -8,7 +8,7 @@ import {
   WORKFLOW_EVENTS,
 } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
 import { v4 as uuidv4 } from 'uuid'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 /**
  * Tool to trigger the hierarchical Story Creation Workflow.

@@ -5,7 +5,7 @@ import {
   withRateLimit,
   verifyProjectAccess,
   type AuthenticatedRequest,
-} from '@/lib/api-utils'
+} from '@/shared/data/api-utils'
 
 // Entity creation schema
 const createEntitySchema = z.object({

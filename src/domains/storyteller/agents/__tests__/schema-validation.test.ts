@@ -39,7 +39,7 @@ import {
   InconsistencySchema,
   ConsistencyFixSchema,
 } from '@/domains/storyteller/agents/judges/ConsistencyAgent'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 /**
  * Recursively check if a Zod schema contains z.any() or z.unknown()

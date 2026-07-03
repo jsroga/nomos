@@ -3,7 +3,7 @@ import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorS
 import { useThree } from '@react-three/fiber'
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js'
 import * as THREE from 'three'
-import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
+import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 
 export const RetextureExporter: React.FC = () => {
   const requestRetextureExport = useInteriorStore(state => state.requestRetextureExport)

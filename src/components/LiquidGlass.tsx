@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { Liquid } from '@/domains/marketing/components/Liquid'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 
 interface LiquidGlassProps {
   children: React.ReactNode

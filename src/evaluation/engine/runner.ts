@@ -1,6 +1,6 @@
 import { langfuse } from '../../agent-core/observability'
 import { ScoreName } from './scores'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 export interface EvaluationItem {
   id: string

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Check, X, Loader2, GripVertical } from 'lucide-react'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import toast from 'react-hot-toast'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 import { tileGenerationService } from '@/domains/world-building-toolkit/services/TileGenerationService'
 
 export type TileReviewType = 'generation' | 'fidelity' | 'upscale'

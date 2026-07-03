@@ -2,8 +2,8 @@
 
 import React from 'react'
 import { AlertTriangle } from 'lucide-react'
-import { useErrorStore } from '@/store/useErrorStore'
-import { cn } from '@/lib/utils'
+import { useErrorStore } from '@/shared/errors/useErrorStore'
+import { cn } from '@/shared/data/utils'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 

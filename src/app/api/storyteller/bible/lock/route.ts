@@ -13,7 +13,7 @@ import {
   storytellerBibleLockResponseSchema,
 } from '@/domains/storyteller/io/storyteller.dto'
 import { isCentralUser } from '@/lib/bible-permissions'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/shared/auth/auth'
 import { verifyProjectAccess } from '@/domains/storyteller'
 
 export async function POST(request: NextRequest) {

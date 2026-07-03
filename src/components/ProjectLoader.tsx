@@ -1,6 +1,6 @@
 'use client'
 
-import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
+import { useProjectFromUrl } from '@/shared/data/useProjectFromUrl'
 import { Loader2 } from 'lucide-react'
 
 export function ProjectLoader({ children }: { children: React.ReactNode }) {

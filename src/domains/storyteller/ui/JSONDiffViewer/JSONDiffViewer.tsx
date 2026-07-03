@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import { ConsistencyChange } from '@/domains/storyteller/core/types/ConsistencyTypes'
 
 interface JSONDiffViewerProps {

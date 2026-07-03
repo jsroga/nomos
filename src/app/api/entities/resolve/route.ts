@@ -23,7 +23,7 @@ import {
   getEntityTypeFromId,
   relationshipEnricher,
 } from '@/domains/storyteller'
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import { eq } from 'drizzle-orm'
 
 /**

@@ -1,5 +1,5 @@
 import { createTool } from '@mastra/core/tools'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 import {
   ResearchInputSchema,
   FactCheckInputSchema,

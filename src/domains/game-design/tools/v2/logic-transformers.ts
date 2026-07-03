@@ -9,7 +9,7 @@ import {
   SuggestProgressionOutputSchema,
   GameLoopSchema,
 } from '../../schemas'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // Create a shared model instance
 function getModel() {

@@ -6,7 +6,7 @@
 
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import { storytellerService } from '@/services'
+import { storytellerService } from '@/domains/storyteller'
 import { validateApiKey, getServiceContext } from '../../core/auth'
 import { LangSmithContext } from '../../core/types'
 

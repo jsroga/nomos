@@ -10,7 +10,7 @@
 
 import { langfuse } from '../agent-core/observability'
 import { PromptDefinition } from './types'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 export interface LangfuseSyncOptions {
   /** Only sync prompts with these tags */

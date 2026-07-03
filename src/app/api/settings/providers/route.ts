@@ -1,4 +1,4 @@
-import { requireAuth } from '@/lib/api-utils'
+import { requireAuth } from '@/shared/data/api-utils'
 import { NextResponse } from 'next/server'
 
 export async function GET() {

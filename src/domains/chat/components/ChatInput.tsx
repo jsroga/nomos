@@ -35,7 +35,7 @@ import {
   LucideIcon,
 } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import {
   MentionItem,
   MentionProvider,

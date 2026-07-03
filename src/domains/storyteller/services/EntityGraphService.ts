@@ -12,7 +12,7 @@
  */
 
 import { entityReferences } from '@/db'
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import { eq, and, sql, inArray, desc } from 'drizzle-orm'
 import { EntityReference, EntityType } from './EntityRegistryService'
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
-import { requireAuth } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { requireAuth } from '@/shared/auth/auth'
+import { db } from '@/db/client'
 import { projects } from '@/db'
 import { eq } from 'drizzle-orm'
 import {
@@ -11,8 +11,8 @@ import {
   isAllowedUrl,
   safeFetch,
   secureLog,
-} from '@/lib/security'
-import { getErrorMessage } from '@/lib/error-utils'
+} from '@/shared/auth/security'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 export async function POST(request: NextRequest) {
   try {

@@ -1,6 +1,6 @@
 import React from 'react'
 import { Crown, Zap, Flag, Anchor, Target } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import { SeasonStructure } from '@/domains/storyteller/prompts/schemas/agent-schemas'
 
 interface SeasonOverviewCardProps {

@@ -7,7 +7,7 @@
  */
 
 import { NextRequest } from 'next/server'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/shared/auth/auth'
 import { verifyProjectAccess } from '@/domains/storyteller'
 import { streamLoopCreator } from '@/domains/loop-creator/graph/loop-graph'
 import { LoopCreatorState } from '@/domains/loop-creator/graph/state'

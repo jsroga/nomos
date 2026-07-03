@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { promises as fs } from 'fs'
 import path from 'path'
-import { requireAuth } from '@/lib/api-utils'
+import { requireAuth } from '@/shared/data/api-utils'
 
 const MANIFEST_PATH = path.join(process.cwd(), 'public/library/manifest.json')
 

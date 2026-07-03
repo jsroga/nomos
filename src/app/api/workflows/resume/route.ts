@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ResumeWorkflowSchema } from '../../../../workflows/schema'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 export async function POST(req: NextRequest) {
   try {

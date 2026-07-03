@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import { projects } from '@/db'
 import { verifyProjectAccess } from '@/domains/storyteller'
 import { eq } from 'drizzle-orm'
 import { tasks } from '@trigger.dev/sdk/v3'
 import type { generatePortrait } from '@/trigger/generate-portrait'
-import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/lib/api-utils'
+import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { resolveStyleReferenceUrls } from '@/config/style-presets'
 
 export const POST = withRateLimit(

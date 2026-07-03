@@ -27,7 +27,7 @@ import {
   Panel,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import { Loader2, RefreshCw } from 'lucide-react'
 import CharacterNode from './CharacterNode'
 import { ReferenceText } from '../ReferenceText'

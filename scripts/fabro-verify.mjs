@@ -22,6 +22,9 @@ function filesFromPlan(planText) {
 function moduleFromPlan() {
   if (!existsSync('PLAN.md')) return null;
   const plan = readFileSync('PLAN.md', 'utf8');
+  // Special case: check for "Fabro module: src-root" at the top
+  const srcRootMatch = plan.match(/^Fabro module: src-root$/m);
+  if (srcRootMatch) return 'src-root';
   const m = plan.match(/src\/domains\/([a-z0-9-]+)/);
   return m?.[1] ?? null;
 }
@@ -101,6 +104,15 @@ function modulePrefixes(module) {
 
 function runModuleTypecheck(module, focusFiles) {
   const tsconfigPath = 'tsconfig.fabro-verify.json';
+  
+  // For src-root, only typecheck focusFiles (changed files); skip if no changes
+  if (module === 'src-root') {
+    if (!focusFiles.length) {
+      console.log('typecheck: no changed files — skip');
+      return;
+    }
+  }
+  
   const include = focusFiles.length
     ? focusFiles
     : [
@@ -162,6 +174,22 @@ function main() {
   if (!module) {
     console.error('fabro-verify: could not detect module from PLAN.md — refusing full-repo tsc (OOM risk)');
     process.exit(1);
+  }
+
+  // Special handling for src-root: typecheck/lint changed files across all of src/
+  if (module === 'src-root') {
+    const changed = collectChangedTsFiles();
+    const srcChanged = changed.filter((f) => f.startsWith('src/') || f.startsWith('tests/'));
+    
+    if (!srcChanged.length) {
+      console.warn('fabro-verify (src-root): no changed TS files in src/ or tests/');
+    }
+    
+    console.log(`fabro-verify (src-root): verifying ${srcChanged.length} changed file(s)`);
+    runModuleTypecheck(module, srcChanged);
+    runEslint(srcChanged);
+    console.log('fabro-verify: pass');
+    return;
   }
 
   const changed = collectChangedTsFiles();

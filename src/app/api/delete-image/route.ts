@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
-import { withAuth, verifyProjectAccess, type AuthenticatedRequest } from '@/lib/api-utils'
+import { withAuth, verifyProjectAccess, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
 export const POST = withAuth(
   async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {

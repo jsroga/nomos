@@ -10,9 +10,9 @@ import { DesignManager } from '@/domains/interior-designer/components/DesignMana
 import { InteriorRightSidebar } from '@/domains/interior-designer/components/UI/InteriorRightSidebar'
 import { Toolbar } from '@/domains/interior-designer/components/UI/Toolbar'
 import { useInteriorStore } from '@/domains/interior-designer/state'
-import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
+import { useProjectFromUrl } from '@/shared/data/useProjectFromUrl'
 import { TOUR_STEP_IDS } from '@/lib/tour-constants'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 
 // Dynamic import with SSR disabled to avoid React reconciler issues with Three.js

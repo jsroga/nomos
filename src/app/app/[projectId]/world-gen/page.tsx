@@ -10,7 +10,7 @@ import {
   TileReviewDialog,
   TileReviewType,
 } from '@/domains/world-building-toolkit/components/TileReviewDialog'
-import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
+import { useProjectFromUrl } from '@/shared/data/useProjectFromUrl'
 
 interface ReviewQueueItem {
   id: string

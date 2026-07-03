@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { spawn } from 'child_process'
 import * as path from 'path'
 import * as fs from 'fs'
-import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
-import { getErrorMessage } from '@/lib/error-utils'
+import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 /**
  * Evaluation Runner API

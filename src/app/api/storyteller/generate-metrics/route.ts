@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
-import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
+import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
 function getOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY

@@ -1,7 +1,7 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
-import { signUpSchema } from '@/lib/validation/auth'
+import { signUpSchema } from '@/shared/auth/validation'
 import { getSiteURL } from '@/lib/url'
 import { ValidationError } from 'yup'
 

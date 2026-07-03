@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
 import { interiorDesignerApi } from '@/domains/interior-designer/io/interior-designer.api'
 import { interiorSceneDataSchema, type InteriorSceneData } from '@/domains/interior-designer/io'
-import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
+import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import * as THREE from 'three'
 
 export type InteractionMode =

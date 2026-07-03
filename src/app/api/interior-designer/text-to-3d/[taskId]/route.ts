@@ -4,8 +4,8 @@ import {
   interiorTaskParamsSchema,
   interiorTextTo3DStatusResponseSchema,
 } from '@/domains/interior-designer/io/interior-designer.dto'
-import { requireAuth } from '@/lib/auth'
-import { getErrorMessage } from '@/lib/error-utils'
+import { requireAuth } from '@/shared/auth/auth'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 export const dynamic = 'force-dynamic'
 

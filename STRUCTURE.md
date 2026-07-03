@@ -133,7 +133,11 @@ src/
 | `agent-core/judging/*` | `shared/agent-kernel/scorers/*` |
 | `agent-core/skills/*` | `shared/agent-kernel/skills/*` |
 | `agent-core/planner.ts`, `executive.ts` | `shared/agent-kernel/` |
-| `agent-core/{memory,schemas,persistence,search,workspace}` | audit (0 `@/`-imports) → delete or merge to `shared/agent-kernel/` |
+| `agent-core/memory/agent-memory.ts` | `shared/agent-kernel/memory/` (preserve - may have relative refs) |
+| `agent-core/schemas.ts` | `shared/agent-kernel/schemas.ts` (preserve - imported by planner.ts) |
+| `agent-core/persistence/memory-store.ts` | `shared/agent-kernel/persistence/` (preserve - may be used) |
+| `agent-core/search/{hybrid-search.ts,index.ts}` | `shared/agent-kernel/search/` (preserve - may be used) |
+| `agent-core/workspace/{storyteller-workspace.ts,index.ts}` | `shared/agent-kernel/workspace/` (preserve - may be used) |
 | `infrastructure/ai/*` (incl. `rag/`) | `shared/ai/*` |
 | `infrastructure/storage/{StorageService,supabase,supabaseClient}.ts` | `shared/data/storage/*` |
 | `infrastructure/storage/database.types.ts` | `db/types.ts` |

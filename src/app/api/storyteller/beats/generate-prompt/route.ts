@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createStorytellerAgent } from '@/domains/storyteller'
-import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
+import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
 const PROMPT_GENERATOR_SYSTEM = `You are a Visual Director for a film. 
 Your task is to take a story beat and convert it into a vivid, specific visual image prompt for an AI image generator.

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { Component, ErrorInfo, ReactNode } from 'react'
-import { useErrorStore } from '@/store/useErrorStore'
+import { useErrorStore } from '@/shared/errors/useErrorStore'
 
 interface Props {
   children: ReactNode

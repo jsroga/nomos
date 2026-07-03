@@ -24,7 +24,7 @@ import { getEvalTestCasesWithOutputs, EVAL_TEST_CASES } from './eval-dataset'
 import { getABTestCases, AB_REGRESSION_TESTS, printABTestSummary } from './ab-regression-dataset'
 import { StorytellerExample } from '../datasets/storyteller-golden'
 import { langfuse } from '@/agent-core/observability'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // ============================================
 // Configuration

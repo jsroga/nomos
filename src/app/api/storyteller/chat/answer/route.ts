@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { HumanMessage } from '@langchain/core/messages'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/shared/auth/auth'
 
 export const runtime = 'nodejs'
 

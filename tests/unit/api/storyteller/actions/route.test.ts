@@ -13,7 +13,7 @@ vi.mock('@/domains/storyteller', () => ({
 }))
 
 import { POST } from '@/app/api/storyteller/actions/route'
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 
 // Mock dependencies
 vi.mock('@/lib/db', () => ({

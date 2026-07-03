@@ -7,7 +7,7 @@ import {
 } from '../../domains/game-design/tools/v2/logic-transformers'
 import { db } from '../../lib/db'
 import { gameLoops } from '../../db/schema'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // ==========================================
 // WORKFLOW INPUT/OUTPUT SCHEMAS

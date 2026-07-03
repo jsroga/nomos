@@ -1,10 +1,10 @@
 import { create } from 'zustand'
 import { getSupabaseClient } from '@/infrastructure/storage/supabaseClient'
-import { useAuthStore } from '@/store/useAuthStore'
+import { useAuthStore } from '@/shared/auth/useAuthStore'
 import type { SelectResult } from '@/domains/world-building-toolkit/services/SelectModeService'
 import { Database } from '@/infrastructure/storage/database.types'
 import { JobStatus, JobType } from '@/types/enums'
-import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
+import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 
 export type SelectBox = { x1: number; y1: number; x2: number; y2: number }
 

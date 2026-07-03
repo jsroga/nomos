@@ -2,7 +2,7 @@ import { Agent } from '@mastra/core/agent'
 import { withSpan } from './observability'
 import { promptRepository } from '../prompts/repository'
 import { registerCorePrompts } from '../prompts/registry'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // ==========================================
 // CO-PILOT PROTOCOL

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useGameEntities } from '@/hooks/useGameEntities'
+import { useGameEntities } from '@/shared/data/queries/useGameEntities'
 import {
   Users,
   MapPin,

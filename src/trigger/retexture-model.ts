@@ -3,7 +3,7 @@ import { MeshyClient } from '@/infrastructure/ai/meshy'
 import { storageService } from '@/infrastructure/storage/StorageService'
 import { v4 as uuidv4 } from 'uuid'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 export const retextureModelTask = task({
   id: 'retexture-model',

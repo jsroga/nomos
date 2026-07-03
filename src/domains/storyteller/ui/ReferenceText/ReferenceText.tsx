@@ -19,7 +19,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react'
 import { useEntities } from '@/domains/storyteller/state/queries/useEntity'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 import { splitIntoSegments, ParsedReference, TextSegment, stripReferences } from '@/domains/storyteller/core/entities/ReferenceParser'
 import {

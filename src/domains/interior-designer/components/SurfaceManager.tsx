@@ -7,7 +7,7 @@ import {
   Surface,
   SurfaceType,
 } from '@/domains/interior-designer/store/useInteriorStore'
-import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
+import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import * as THREE from 'three'
 import { Extrude } from '@react-three/drei'
 import { RoadMesh } from '@/domains/interior-designer/components/meshes/RoadMesh'

@@ -21,10 +21,10 @@ import { Button } from '@/components/ui/button'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 import toast from 'react-hot-toast'
 import { AIProvider } from '@/types/enums'
-import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
+import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { LocalStorageKeys } from '@/constants/localStorage'
 import { TOUR_STEP_IDS } from '@/lib/tour-constants'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // Dynamic import with SSR disabled to avoid React reconciler issues
 const ThreeDViewer = dynamic(

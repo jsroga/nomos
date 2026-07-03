@@ -8,7 +8,7 @@
 
 import { eq } from 'drizzle-orm'
 import { projects, storyPlans } from '@/db'
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import { budgetContext, type RawContextParts } from '@/domains/storyteller/services/context/token-budget'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
 

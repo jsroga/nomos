@@ -6,7 +6,7 @@ import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldSt
 import { AssetEditor } from '@/domains/3d-asset-exporter/components/AssetEditor'
 import { ThreeDPanel } from '@/domains/3d-asset-exporter/components/ThreeDPanel'
 import { Image as ImageIcon, Box } from 'lucide-react'
-import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
+import { useProjectFromUrl } from '@/shared/data/useProjectFromUrl'
 import { TOUR_STEP_IDS } from '@/lib/tour-constants'
 
 export default function AssetExporterPage() {

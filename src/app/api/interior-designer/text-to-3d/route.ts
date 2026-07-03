@@ -11,7 +11,7 @@ import {
   withRateLimit,
   verifyProjectAccess,
   type AuthenticatedRequest,
-} from '@/lib/api-utils'
+} from '@/shared/data/api-utils'
 
 export const dynamic = 'force-dynamic'
 

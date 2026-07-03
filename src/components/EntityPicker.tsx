@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useGameEntities, GameEntity, EntityType } from '@/hooks/useGameEntities'
+import { useGameEntities, GameEntity, EntityType } from '@/shared/data/queries/useGameEntities'
 import { Search, Users, MapPin, Gamepad2, Shield, Package, Target } from 'lucide-react'
 
 interface EntityPickerProps {

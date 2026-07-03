@@ -7,7 +7,7 @@ import 'server-only'
  * Used by both REST API and MCP server.
  */
 
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import { characters, projects, episodes, beats } from '@/domains/storyteller'
 import { eq, desc } from 'drizzle-orm'
 import { z } from 'zod'

@@ -19,11 +19,11 @@ import { CreativeDirectorAgent } from '@/domains/storyteller/agents/judges/Creat
 import { getWorkflowTraceId, getWorkflowEventBus } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
 import { langfuse } from '@/agent-core/observability'
 import { characters, storyPlans } from '@/db'
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import { eq } from 'drizzle-orm'
 
 import { WORKFLOW_EVENTS } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 import type { MazurJudgment } from '@/agent-core/judging'
 import { ReferenceValidator } from '@/domains/storyteller/services/ReferenceValidatorService'
 

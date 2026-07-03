@@ -9,7 +9,7 @@ import { RichText } from '../RichText'
 import { useBible } from './BibleContext'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
 import { useConfirmDialog } from '@/components/ui/confirm-dialog'
-import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
+import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 
 interface BibleOverviewProps {
   primaryImageIndex: number | null

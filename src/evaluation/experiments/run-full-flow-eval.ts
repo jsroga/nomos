@@ -16,7 +16,7 @@
 import { projects } from '@/db'
 import { createStorytellerAgent } from '@/domains/storyteller'
 import { langfuse } from '@/agent-core/observability'
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import { eq } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 import { createOpenAI } from '@ai-sdk/openai'
