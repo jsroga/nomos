@@ -7,6 +7,11 @@ graph = "workflow.fabro"
 #   fabro run .fabro/workflows/plan/workflow.toml -I module=interior-designer
 #   fabro run .fabro/workflows/plan/workflow.toml -I module=storyteller
 #   fabro run .fabro/workflows/plan/workflow.toml -I module=chat
+#
+# Full domains catalog (ideal STRUCTURE.md + move map + update all referrers):
+#   fabro run .fabro/workflows/plan/workflow.toml \
+#     -I module=domains-catalog \
+#     --goal-file .fabro/workflows/plan/goals/domains-catalog-cleanup.md
 [run]
 goal = "Clean up and align the {{ inputs.module }} module (src/domains/{{ inputs.module }}) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification."
 

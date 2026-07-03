@@ -5,7 +5,7 @@ digraph Plan {
         model_stylesheet="
             *          { model: gpt-5.4;         reasoning_effort: medium; }
             .review    { model: codex;           reasoning_effort: low;    }
-            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }
+            .planning  { model: claude-fable-5; reasoning_effort: high;   }
             .design    { model: gpt-5.4;         reasoning_effort: medium; }
             .build     { model: codex;           reasoning_effort: high;   }
             .testing   { model: gpt-5.4;         reasoning_effort: medium; }
@@ -55,18 +55,19 @@ digraph Plan {
         human.default_choice="plan"
     ]
 
-    // goal_gate + retry_target=clarify_prep: on plan failure, loops to clarify_prep
-    // (max_visits=2). clarify_prep skips re-prompting if human.gate.Clarify.* is set.
-    // Human is NOT re-asked at Clarify unless clarify_prep exhausts visits and the
-    // graph re-enters Clarify from a different path — plan max_visits=5 caps total.
+    // Plan uses claude-fable-5 only — no model fallback. Transient provider errors get
+    // `retry_policy=patient` + `max_retries=2`; after that, or on any hard failure
+    // (credits, outage, goal_gate miss), the run aborts — it does NOT fall back to
+    // another model and does NOT document itself in Retro.
     plan [
-        label="Plan (Architect)\nagent: Plan Author\nmodel: claude-opus-4-8"
+        label="Plan (Architect)\nagent: Plan Author\nmodel: claude-fable-5"
         class="planning"
         prompt="@prompts/plan.md"
         fidelity="summary:high"
         goal_gate=true
-        retry_target="clarify_prep"
-        max_visits=5
+        retry_policy="patient"
+        max_retries=2
+        max_visits=3
     ]
 
     Verification [
@@ -201,7 +202,7 @@ digraph Plan {
     // error, e.g. dead Anthropic credits) must NOT march into build on an empty/stale
     // PLAN.md — route it to Retro so the failure is documented instead of silent.
     plan -> Verification [condition="outcome=succeeded"]
-    plan -> Retro        [label="Plan failed — no valid plan to build"]
+    plan -> exit         [label="Plan failed — abort (fable-5 required)"]
 
     Verification -> setup      [label="[A] Approve & build"]
     Verification -> Retro       [label="[B] Approve, plan only"]

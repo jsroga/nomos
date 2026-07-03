@@ -62,7 +62,21 @@ summary. For each finding use:
 ```
 
 Severity: **Critical / High / Medium / Low**. Keep it to the ~6-10 findings that
-matter most — this feeds Clarify prep and Plan, which need signal, not a catalog.
+matter most for a **single-module** run — this feeds Clarify prep and Plan.
+
+## Catalog-wide runs (`module=domains-catalog`)
+
+When the run goal targets the **full `src/domains/` catalog** (see
+`goals/domains-catalog-cleanup.md`):
+
+- Expand to **~15–25 findings** plus a **catalog overview table** (all 9 modules).
+- **Storyteller deep dive** is mandatory: folder sprawl (~104 dirs), **draft ideal
+  target tree** (fewer top-level folders, §4 layers), list folders to eliminate.
+- Per other module: **ideal target tree sketch** (3–8 lines ASCII) + 3–5 gap bullets.
+- **Referrer heat map**: `grep` counts for deep imports per module from `src/app`,
+  `src/shared`, `src/hooks`, tests.
+- Include **cross-cutting** findings (schema, shared migration).
+- Still end with `## Metadata` and **Open questions for Clarify** (catalog A/B/C).
 
 **End `findings/assess.md` with this required metadata block** (downstream agents
 and the graph condition on it):

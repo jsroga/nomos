@@ -4,7 +4,7 @@
 _version = 1
 
 [project]
-name = "Game Building Kit"
+name = "world-building-kit"
 
 # Auto-create pull requests on successful workflow runs.
 [run.pull_request]

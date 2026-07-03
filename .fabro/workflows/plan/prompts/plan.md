@@ -64,10 +64,41 @@ Group findings into concrete **improvement items**:
 Prioritization: **P0** security/correctness · **P1** structural unblockers · **P2**
 maintainability · **P3** nits.
 
+## Catalog-wide plans (`module=domains-catalog`)
+
+When the goal is the **full domains catalog** cleanup:
+
+- **`STRUCTURE.md` is mandatory** — ideal folder tree per module (see goal file).
+  `PLAN.md` implements the move map + referrer updates; do not bury structure only
+  inside `PLAN.md`.
+- `PLAN.md` may contain **50–100 numbered todos** — expected for moves + grep-driven
+  referrer fixes across `src/`, `tests/`, `docs/`.
+- Each **move** todo must pair with **update referrers** todo(s) listing grep patterns
+  and expected file counts.
+- Spot-check **each** module's `index.ts` and top-level folders (Scope output).
+- **Impact map**: routes, `shared/`, `db/`, hooks, fabro-verify, knip.
+- Default **Minimum first increment**: finalize `STRUCTURE.md` (all modules) + implement
+  storyteller reshape + **full referrer sweep** (Wave 1).
+
+## Mandatory spot-checks (catalog addition)
+
+When `module=domains-catalog`, also run once per pilot module in Wave 1:
+
+```bash
+grep -rc "from '@/domains/storyteller" src/ tests/ | grep -v ':0$' | head -20
+grep -rc "storyteller/" src/app/api --include='*.ts' | head -15
+```
+
+Record counts in `PLAN.md` — they size the referrer-update todos.
+
 ## Output files
 
 **`PLAN.md`** — if it exists, you may overwrite after your spot-checks (you will have
 read the paths above). Structure:
+
+0. **`STRUCTURE.md`** (catalog / folder-reshape runs) — write **before** or alongside
+   `PLAN.md` when the goal requires ideal folder layout. See goal file /
+   `goals/domains-catalog-cleanup.md`. Plan items must reference move-map rows.
 
 1. **Summary** — 2-4 sentences.
 2. **Prioritized items** — P0…P3.

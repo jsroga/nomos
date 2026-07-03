@@ -30,9 +30,28 @@ If `UX.md` is absent (backend-only increment), skip `component-audit` and
 ## Inputs — read first
 
 1. **`PLAN.md`** — approved plan; follow it precisely.
-2. **`DECISIONS.md`** — Clarify + Verification choices (scope, deferrals).
-3. **`UX.md`** — only if present (same thread); skip if backend-only.
-4. **`findings/assess.md`** — architectural context.
+2. **`STRUCTURE.md`** — when present, this is the **move map and ideal layout**.
+   Every `git mv` must match a row; every old import path must be updated per the
+   referrer todos.
+3. **`DECISIONS.md`** — Clarify + Verification choices (scope, deferrals).
+4. **`UX.md`** — only if present (same thread); skip if backend-only.
+5. **`findings/assess.md`** — architectural context.
+
+## Folder reshape runs (structure + referrers)
+
+When `STRUCTURE.md` exists or the plan is a catalog/folder cleanup:
+
+1. Call `use_skill` **`refactor`** before bulk moves.
+2. **Order:** (a) create target dirs + barrels, (b) `git mv` per move map, (c) fix
+   imports **inside** the module, (d) fix **all external referrers** (`src/app`,
+   `src/shared`, `src/db`, `src/hooks`, `tests/`) using `grep -rn` — do not stop
+   at module boundary.
+3. Each middle todo should be either a **move batch** or a **referrer batch** with
+   explicit paths from `PLAN.md` (not "update imports" without file list).
+4. After moves, run `grep -rn` for **old path fragments** from `STRUCTURE.md` move map
+   — zero hits required before handoff.
+5. Update `index.ts` barrels last (or per plan) so external imports converge on
+   `@/domains/<module>` only.
 
 ## Your task list — build it first, in THIS exact shape
 

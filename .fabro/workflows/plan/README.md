@@ -97,15 +97,20 @@ For a Docker/Daytona run the `{git_root}` path is a **container** path that does
 exist on the Mac, so the committed project skills are never found — discovery returns
 `[]` and the agent shows `0/0`. The only reliably-scanned dir is the **global** one.
 
-**Fix (local, one-time):** symlink the global dir at the repo skills so they're always
-discovered:
+**Fix (local, one-time):** copy the repo skills into the global dir as **real files**
+(not a symlink). Fabro's skill discovery glob is symlink-safe — it does **not**
+descend into a `~/.fabro/skills` symlink, so a symlinked dir shows `0/0` even though
+the `SKILL.md` files are visible on disk:
 
 ```bash
-ln -s "$PWD/.fabro/skills" ~/.fabro/skills   # run once from the repo root
+rm -f ~/.fabro/skills                          # remove old symlink (if present)
+mkdir -p ~/.fabro/skills
+cp -R .fabro/skills/. ~/.fabro/skills/         # run from the repo root
 ```
 
-`agent.skills.discovered` in the run events should then list all 16 skills. This
-symlink is machine-local (not committed) — recreate it on a new machine.
+Re-run the copy after you add or change a skill in `.fabro/skills/`. After it,
+`agent.skills.discovered` in the run events lists all 16 skills. This copy is
+machine-local (not committed) — recreate it on a new machine.
 
 ## Build path routing
 
@@ -179,10 +184,30 @@ fabro run .fabro/workflows/plan/workflow.toml -I module=<domain-folder>
 ```
 
 `<domain-folder>` is the name under `src/domains/` (e.g. `interior-designer`,
-`storyteller`, `chat`). Fabro renders `{{ inputs.module }}` only in **`goal` and
+`storyteller`, `chat`). Use **`domains-catalog`** for a repo-wide cleanup plan
+(storyteller folder sprawl + all 9 modules). Fabro renders `{{ inputs.module }}` only in **`goal` and
 `prompt`** attributes ([docs](https://docs.fabro.sh/workflows/variables)) — not in
 shell `script` or environment `env`. The **Scope** stage is therefore a prompt node
 (`prompts/scope.md`) so the module path is templated correctly.
+
+### Domains catalog cleanup (ideal structure + all referrers)
+
+Design **ideal folder trees** in `STRUCTURE.md`, plan **50–100 todos**, then on
+approve move files and **update every file that references old paths** (not just
+inside the module).
+
+```bash
+fabro run .fabro/workflows/plan/workflow.toml \
+  -I module=domains-catalog \
+  --goal-file .fabro/workflows/plan/goals/domains-catalog-cleanup.md
+```
+
+Deliverables: `STRUCTURE.md` (ideal trees + move map) → `PLAN.md` (moves + grep-driven
+referrer todos) → optional implement Wave 1 (storyteller + full referrer sweep).
+
+Briefing: `.fabro/workflows/plan/goals/domains-catalog-cleanup.md`. At **Clarify**,
+pick **A** (structure for all modules; implement storyteller wave + referrers),
+**B** (structure + plan only), or **C** (full catalog). Recommend **A**.
 
 ## Merging when the run succeeds
 
@@ -208,6 +233,12 @@ the run branch — merge those the same way if you want them on `main` without b
 ## Model resilience ([fallbacks](https://docs.fabro.sh/execution/failures))
 
 `codex` + `gpt-5.4` share one usage-limited OpenAI account. `[run.model].fallbacks = ["anthropic", "openai"]` makes Fabro switch to Anthropic on `usage_limit_reached`.
+
+**Plan model policy:** Plan is **claude-fable-5 only** — no fallback to Opus, Sonnet,
+or GPT. The `.planning` stylesheet sets the model (highest precedence), so
+`[run.model].fallbacks` does not apply to Plan. Transient Anthropic errors get
+`retry_policy=patient` + `max_retries=2`; if fable-5 still fails, the **whole run
+aborts** (`plan → exit`) — no build, no Retro.
 
 ## Child runs — deliberate non-goal
 
