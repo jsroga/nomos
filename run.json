@@ -1312,8 +1312,8 @@
   "status": {
     "kind": "running"
   },
-  "status_updated_at": "2026-07-03T09:17:42.997589Z",
-  "last_event_at": "2026-07-03T09:24:13.471328Z",
+  "status_updated_at": "2026-07-03T09:24:52.444998Z",
+  "last_event_at": "2026-07-03T09:24:52.444998Z",
   "pending_control": null,
   "checkpoints": [
     {
@@ -1984,9 +1984,9 @@
       }
     },
     {
-      "seq": 0,
+      "seq": 277,
       "checkpoint": {
-        "timestamp": "2026-07-03T09:24:13.580553Z",
+        "timestamp": "2026-07-03T09:24:16.993786Z",
         "current_node": "plan",
         "completed_nodes": [
           "start",
@@ -1998,6 +1998,270 @@
         ],
         "node_retries": {},
         "context_values": {
+          "graph.default_fidelity": "summary:medium",
+          "human.gate.label": "[C] Full blueprint",
+          "internal.retry_count.plan": 0,
+          "internal.retry_count.scope": 0,
+          "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)",
+          "internal.retry_count.assess": 0,
+          "internal.run_id": "01KWKKV6DTZ1ACNMMR63YH8M0J",
+          "plan.has_ui_surface": "no",
+          "preferred_label": "[C] Full blueprint",
+          "response.assess": "## Assessment Complete\n\nI've written a comprehensive catalog assessment covering all 9 domains. Here's what I found:\n\n### Critical Issues\n\n1. **Storyteller has 104 subdirectories** — 5x the §4 target. The `core/` layer alone has 17 type-per-folder units that should collapse to 8. Additional sprawl from `hooks/`, `lib/`, `mentions/` feature silos at root.\n\n2. **World-Building-Toolkit has P0 security issues** — browser writes directly to Supabase (`useWorldStore.ts:332`) + 864-LOC god store mixing UI/data/jobs. Violates §2 principle 4 and §5 state-split rule.\n\n3. **5/9 modules have no public barrel** — loop-creator, WBT, deduction-puzzle, chat, and the three thin modules. Storyteller has a barrel but leaks 80+ internals, enabling ~250 deep import sites.\n\n### Catalog Overview\n\nCreated a table showing all 9 modules' current state vs §4 target:\n- Only **interior-designer** is close to §4 compliance (but has dual state systems)\n- **Storyteller** is partially compliant but massively over-foldered\n- Other 7 modules need full §4 reshaping\n\n### Storyteller Deep Dive\n\nProvided:\n- Current 14 top-level folders breakdown\n- Core sprawl analysis (17 folders → target 8)\n- Ideal target tree reducing 104 dirs → ~50-60\n- Top 10 folders to eliminate with specific merge targets\n\n### Referrer Heat Map\n\nStoryteller dominates with **~250+ external import sites** across `src/app` (80), `src/evaluation` (8), tests (150+). Other modules have 1-12 each.\n\n**Recommendation:** Option A (finalize structures for all modules, implement storyteller Wave 1 only after human approval).",
+          "response.scope": "I'll run the scope assessment commands exactly as specified.",
+          "graph.default_max_retries": "1",
+          "graph.stall_timeout": "1800000ms",
+          "human.gate.selected": "C",
+          "thread.clarify_prep.current_node": "Clarify",
+          "current_node": "plan",
+          "internal.retry_count.start": 0,
+          "internal.fidelity": "summary:high",
+          "internal.thread_id": "planning",
+          "response.clarify_prep": "## Assessment summary\n\nThe catalog reveals **severe folder sprawl** in storyteller (104 subdirectories vs §4 target of ~12-15), **missing public barrels** in 5/9 modules (deep imports bypass encapsulation), **god stores** mixing server/client state in 2 modules (WBT: 864 LOC; interior: ~500 LOC), and a **P0 security issue** (browser→Supabase writes in WBT). Only interior-designer partially follows §4; the other 8 modules need structural reshaping.\n\n## Key gaps (max 5)\n\n1. **Storyteller folder sprawl (104 dirs):** 17 `core/` type folders (ActionFormatters, CascadeEditor, EntityExtractor, etc.) should merge into 8 units; `hooks/`, `lib/`, `mentions/` feature silos violate layer discipline; `tools/` at root instead of `agents/tools/`. Target: ~50-60 dirs (50% reduction).\n\n2. **Reference sweep scope (storyteller alone: 250+ files):** ~80 files in `src/app/api/storyteller/`, ~10 in `src/services`, ~8 in `src/evaluation`, ~150+ test files import storyteller internals 3-4 levels deep. Every folder move requires paired \"update referrers\" todo with grep patterns.\n\n3. **Missing barrels (5/9 modules):** `loop-creator`, `world-building-toolkit`, `deduction-puzzle-designer`, `chat`, `game-design`, `3d-asset-exporter`, `marketing` have no `index.ts`. Cross-module imports reach internal layers directly. Need curated public APIs (~10-30 exports per module).\n\n4. **God stores kill separation of concerns:** WBT `useWorldStore.ts` (864 LOC) mixes viewport state, tiles/projects/assets data, job polling, and manual snake_case mapping. Interior similar. Target: split server state (TanStack Query) from ephemeral UI (Zustand ~150 LOC).\n\n5. **P0 security + manual state hacks:** WBT has browser writes (`supabase.from('projects').insert()` at `:332`), bypassing auth/RLS validation. Also: hand-rolled polling, `localStorage` recovery, `window.dispatchEvent` side-effects instead of Trigger Realtime + `useJob`.\n\n## Pick one scope (buttons are A / B / C — meanings are module-specific below)\n\n| Button | What the plan will assume for **this catalog effort** |\n|--------|------------------------------------------------------|\n| **[A] Staged** | Finalize `STRUCTURE.md` for **all 9 modules** (full ideal trees + move maps for storyteller, loop-creator, WBT, interior, chat, deduction-puzzle, game-design, 3d-asset-exporter, marketing). **Implement Wave 1 only:** storyteller folder collapse (17→8 core units, delete hooks/lib/mentions, move tools→agents/, rename components→ui) + **full referrer update** (~80 app routes, ~10 services, ~8 evaluation, ~150+ tests — grep-driven file lists). Verification gates after moves. **Deferred:** WBT state split (P0 but complex), 5-module barrel creation, interior cleanup, loop-creator reshape, schema consolidation (saves 200+ referrer updates for later waves). |\n| **[B] Plan-only** | Write `STRUCTURE.md` for all 9 modules (current tree at top 2 levels, ideal target grounded in §4, move map `old→new` for every file that moves, public barrel contract, deferred items). **No code moves this run** — design artifacts only. Also: grep-based referrer inventory (patterns + estimated counts per module: \"expect ~250 storyteller, ~10 WBT, ~12 chat…\"). Delivers: approved structure contract + implementation roadmap. Zero verification loops, zero import breakage risk. Human reviews structures, approves, triggers separate implementation run. |\n| **[C] Full catalog** | `STRUCTURE.md` + **implement all waves across all 9 modules:** storyteller collapse, WBT state split + write path fix (security P0), interior store deletion, loop-creator reshape (create ui/state/io/core/services layers), create 5 missing barrels (loop/WBT/deduction/chat/game-design/3d/marketing), schema consolidation (fold storyteller db/ into src/db/), **all referrer updates** (400+ files: app routes, services, evaluation, trigger, tests, shared, docs). Requires 8-10 verification loops (typecheck/unit/fabro-verify per wave), high coordination cost, 3-5 day effort. Delivers: entire catalog §4-compliant, all barrels curated, no deep imports, unified schema. |\n\n**Advanced:** type custom constraints in freeform (routes to [F]) · pick [R] only if assess findings are wrong\n\n**Recommendation: [A]** — Storyteller's 104-dir sprawl is the operator's stated pain; Wave 1 (collapse + referrers) proves the structure/move/update pattern on the hardest module. Finalize all 9 structures now (design is cheap), but defer WBT security P0 and other modules to avoid context-switch thrash — each verification loop adds 20-30 min latency. Option B (plan-only) doesn't validate the moves work; Option C (full catalog) is 5x scope with 10x verification overhead.",
+          "thread.planning.current_node": "plan",
+          "graph.label": "Optional Build",
+          "failure_signature": "",
+          "internal.node_visit_count": 1,
+          "outcome": "succeeded",
+          "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
+          "thread.review.current_node": "clarify_prep",
+          "plan.has_p0_security_issue": "yes",
+          "internal.retry_count.clarify_prep": 0,
+          "internal.work_dir": "/workspace/kurvitza",
+          "response.plan": "All three deliverables are written. Here is the Verification summary.\n\n**1. P0 declaration:** `P0 exists` — browser Supabase writes in world-building-toolkit: `store/useWorldStore.ts:356` (`projects.delete()`) and `components/AssetsPanel.tsx:61` (`assets.delete()`) bypass auth/RLS. Fixed in Wave 2 (items 27–29, 40).\n\n**2. Your Clarify decision: [C] Full catalog.** In scope: `STRUCTURE.md` for all 9 modules **and** `PLAN.md` implementing **all 7 waves + every referrer update** — storyteller collapse, WBT P0 + god-store split, interior 1651-LOC store split, loop/chat/thin reshapes, 8 barrels, F-1 shared+lint, D-1 schema fold. Explicitly deferred: new features, Mastra behavior rewrites, skills flattening, wider `src/lib` migration.\n\n**3. First shippable increment: Items 1–26 (Wave 0 foundations + full storyteller reshape with its complete 50-file referrer sweep).**\n\n**4. Item count / effort:** 76 numbered todos across 8 waves. Increment 1 ≈ 3–4 dev days; full catalog ≈ 3–5 weeks with 8 verification loops.\n\n**Plan summary (concrete refs):**\n- `STRUCTURE.md` §1: storyteller 104→~55 dirs; `core/` 15→8 units; delete `hooks/`/`lib/`/`mentions/`/`tools/`/`config/` at root; `components/→ui/`; curated `index.ts` (~30 exports, drop the `db/schema` + `agents` firehose).\n- §2: WBT §4 worked-example reshape + write-path fix + 864-LOC store split.\n- §3: interior `store/useInteriorStore.ts` (**1651 LOC**, corrected from assess's ~500) → TanStack + `useInteriorUiStore`.\n- §10: `src/shared/*` + boundary lint (F-1), `src/db/schema.ts` fold (D-1); update `tsconfig.fabro-verify.json` (3 scoped paths), `knip.json`, eslint bans.\n- Corrections logged in `DECISIONS.md` (referrer files 50 not 250; WBT writes are `.delete()` not `insert:332`; interior 1651 LOC; marketing has 8 referrers).\n\n**6. Verification reminder:** pick **[A] Approve & build** to implement, **[B]** for plan-only, **[I]** to request plan changes (type notes), **[X]** to abort. (Clarify's C is already decided — this gate's A/B/I/X is separate.)\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"yes\"\n  }\n}\n```",
+          "internal.retry_count.Clarify": 0,
+          "last_stage": "plan",
+          "failure_class": "",
+          "human.gate.Clarify.answer": "C",
+          "graph.rankdir": "LR",
+          "graph.goal": "# Domains catalog cleanup — ideal structure + full reference update\n\n## Mission\n\nDesign the **ideal folder structure** for every module under `src/domains/`, then\n**update every file in the repo that references old paths** (imports, re-exports,\ntests, API routes, shared shims, docs, Fabro verify scopes). Behavior-preserving;\nno new product features.\n\nThis is a **large, multi-sprint** effort — the plan may contain **50–100 todos**.\nDo **not** under-scope the reference sweep: a move without updating all referrers\nis a failed increment.\n\n**Primary pain (operator):** `storyteller` has **~104 subdirectories** — far too\nmany top-level and nested folders. The operator wants Fabro to **propose** a\nconcrete target tree (fewer folders, §4-aligned), get human approval, then **execute\nthe moves and fix every import**.\n\n**Scope:** all 9 domain modules:\n\n| Module | ~dirs today | Notes |\n|--------|-------------|--------|\n| `storyteller` | 104 | **Worst sprawl** — design target tree first |\n| `interior-designer` | 19 | Partial §4 skeleton |\n| `loop-creator` | 12 | Agents + market-analyst subtree |\n| `deduction-puzzle-designer` | 7 | Smaller |\n| `world-building-toolkit` | 7 | Flat legacy → reshape per ARCHITECTURE worked example |\n| `chat` | 6 | Cross-cutting UI |\n| `game-design` | 3 | Thin |\n| `3d-asset-exporter` | 3 | Asset module |\n| `marketing` | 3 | Thin |\n\n## Required deliverable: ideal structure (before code moves)\n\n**Plan Author MUST write `STRUCTURE.md`** at repo root (overwrite stale copies).\nThis is the contract for implementation — not optional prose in `PLAN.md` alone.\n\nFor **each** module, `STRUCTURE.md` contains:\n\n1. **Current tree** (top 2 levels + note on worst sprawl).\n2. **Ideal target tree** (ASCII) — grounded in `docs/unified/ARCHITECTURE.md` §4.\n   - Module root: only `index.ts`, `ui/`, `state/`, `io/`, `core/`, `services/`,\n     `agents/`, `tasks/`, `prompts/`, `<module>.config.ts` (omit empty layers).\n   - **Collapse rules** for storyteller: merge `core/*` one-folder-per-type into\n     fewer `core/` units; fold `mentions/`, `hooks/`, `lib/`, `db/` into correct\n     layers; keep `agents/` but reduce per-agent folder noise where sensible.\n3. **Move map** — table `old_path → new_path` for every file that moves.\n4. **Public barrel** — what `index.ts` exports after the reshape.\n5. **Out of scope for this wave** — folders/files that stay put until a later wave.\n\n**Storyteller gets the most detail** (full before/after). Other modules: at least\ntarget tree + move map for files that move in the approved wave.\n\n## Required deliverable: reference update (every referrer)\n\nAfter the structure is approved, implementation MUST update **all referrers**, not\nonly files inside the module:\n\n| Referrer class | Examples | Action |\n|----------------|----------|--------|\n| Intra-module imports | `../../core/Foo` | Rewrite to new paths |\n| Cross-module deep imports | `@/domains/storyteller/agents/...` | Route through `index.ts` or new public path |\n| App API routes | `src/app/api/storyteller/**` | Update imports to services/io/barrel |\n| Shared shims | `src/shared/**`, `src/lib/**` | Update re-exports |\n| DB layer | `src/db/**`, `src/domains/*/db/schema` | Align with unified schema plan |\n| Hooks outside domain | `src/hooks/**` | Move or update imports per STRUCTURE |\n| Tests | `**/__tests__/**`, `tests/**` | Fix paths + mocks |\n| Config | `tsconfig.fabro-verify.json`, `knip`, `eslint` boundaries | Update include paths |\n| Docs | `docs/internal/*.md`, `AGENTS.md` paths cited in code comments | Update when paths change |\n\n**Plan Author** must include todos that run, per module/wave:\n\n```bash\ngrep -rn \"from '@/domains/<module>\" src/ tests/\ngrep -rn \"domains/<module>/\" src/ tests/\n```\n\n…and assign **one todo per referrer batch** (or per directory of callers) so nothing\nis missed. Expect **dozens of files** outside `src/domains/storyteller/` for\nstoryteller alone.\n\n## Plan shape (`PLAN.md`)\n\n1. **Executive summary**\n2. **Pointer to `STRUCTURE.md`** — \"implementation follows move map\"\n3. **Global prerequisites** (F-1…F-3 from SPEC)\n4. **Per-module sections** with prioritized items\n5. **Master todo list** (numbered 1…N, N may be 80–100):\n   - Structure design todos (write/iterate `STRUCTURE.md`)\n   - Move todos (git mv / codemod batches)\n   - **Reference-update todos** (grep-driven, list affected files)\n   - Barrel + boundary lint todos\n   - Verification per wave\n6. **Suggested waves**\n7. **Deferred**\n\n## Clarify gate (catalog-wide)\n\n| Option | Posture |\n|--------|---------|\n| **A — Staged** | Finalize `STRUCTURE.md` for **all** modules; **implement Wave 1** only (storyteller ideal tree + full referrer update) after Verification. |\n| **B — Plan-only** | `STRUCTURE.md` + `PLAN.md` + referrer inventory; **no moves** this run. |\n| **C — Full catalog** | Structure for all; implement all waves + all referrers (many verify loops). |\n\nRecommend **A**.\n\n## Non-negotiables\n\n- Ground ideal trees in `docs/unified/ARCHITECTURE.md` §4 + worked examples (§4 WBT).\n- **No move without referrer audit** — every `PLAN.md` move item has a paired\n  \"update referrers\" item listing grep patterns.\n- Behavior-preserving; `npm run typecheck`, `npm run test:unit`, `node scripts/fabro-verify.mjs`.\n- Use `refactor` skill for layer moves; codemod import paths in batches.\n- Orchestration/agent logic: **move files first**; do not rewrite Mastra behavior in\n  the same increment as folder collapse unless the plan explicitly says so.\n\n## Assess focus\n\n- Catalog table (9 modules vs §4)\n- **Storyteller**: current vs ideal folder count estimate; top 10 folders to eliminate\n- **Referrer heat map**: which modules have the most external deep imports\n- `## Metadata` (`has_ui_surface: no` for structure-only Wave 1)\n",
+          "human.gate.Clarify.label": "[C] Full blueprint",
+          "last_response": "All three deliverables are written. Here is the Verification summary.\n\n**1. P0 declaration:** `P0 exists` — browser Supabase writes in world-building-toolkit: `store/useWorldStore.ts:356` (`projects"
+        },
+        "node_outcomes": {
+          "plan": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_response": "All three deliverables are written. Here is the Verification summary.\n\n**1. P0 declaration:** `P0 exists` — browser Supabase writes in world-building-toolkit: `store/useWorldStore.ts:356` (`projects",
+              "plan.has_p0_security_issue": "yes",
+              "last_stage": "plan",
+              "response.plan": "All three deliverables are written. Here is the Verification summary.\n\n**1. P0 declaration:** `P0 exists` — browser Supabase writes in world-building-toolkit: `store/useWorldStore.ts:356` (`projects.delete()`) and `components/AssetsPanel.tsx:61` (`assets.delete()`) bypass auth/RLS. Fixed in Wave 2 (items 27–29, 40).\n\n**2. Your Clarify decision: [C] Full catalog.** In scope: `STRUCTURE.md` for all 9 modules **and** `PLAN.md` implementing **all 7 waves + every referrer update** — storyteller collapse, WBT P0 + god-store split, interior 1651-LOC store split, loop/chat/thin reshapes, 8 barrels, F-1 shared+lint, D-1 schema fold. Explicitly deferred: new features, Mastra behavior rewrites, skills flattening, wider `src/lib` migration.\n\n**3. First shippable increment: Items 1–26 (Wave 0 foundations + full storyteller reshape with its complete 50-file referrer sweep).**\n\n**4. Item count / effort:** 76 numbered todos across 8 waves. Increment 1 ≈ 3–4 dev days; full catalog ≈ 3–5 weeks with 8 verification loops.\n\n**Plan summary (concrete refs):**\n- `STRUCTURE.md` §1: storyteller 104→~55 dirs; `core/` 15→8 units; delete `hooks/`/`lib/`/`mentions/`/`tools/`/`config/` at root; `components/→ui/`; curated `index.ts` (~30 exports, drop the `db/schema` + `agents` firehose).\n- §2: WBT §4 worked-example reshape + write-path fix + 864-LOC store split.\n- §3: interior `store/useInteriorStore.ts` (**1651 LOC**, corrected from assess's ~500) → TanStack + `useInteriorUiStore`.\n- §10: `src/shared/*` + boundary lint (F-1), `src/db/schema.ts` fold (D-1); update `tsconfig.fabro-verify.json` (3 scoped paths), `knip.json`, eslint bans.\n- Corrections logged in `DECISIONS.md` (referrer files 50 not 250; WBT writes are `.delete()` not `insert:332`; interior 1651 LOC; marketing has 8 referrers).\n\n**6. Verification reminder:** pick **[A] Approve & build** to implement, **[B]** for plan-only, **[I]** to request plan changes (type notes), **[X]** to abort. (Clarify's C is already decided — this gate's A/B/I/X is separate.)\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"yes\"\n  }\n}\n```",
+              "plan.has_ui_surface": "no"
+            },
+            "notes": "Stage completed: plan",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "anthropic",
+                    "model_id": "claude-opus-4-8"
+                  },
+                  "tokens": {
+                    "input_tokens": 68874,
+                    "output_tokens": 32214,
+                    "reasoning_tokens": 0,
+                    "cache_read_tokens": 600225,
+                    "cache_write_tokens": 133693
+                  }
+                },
+                "facts": {
+                  "algorithm": "anthropic",
+                  "cache_write_5m_tokens": 133693,
+                  "cache_write_1h_tokens": 0
+                }
+              },
+              "total_usd_micros": 2285413
+            },
+            "files_touched": [
+              "/workspace/kurvitza/DECISIONS.md",
+              "/workspace/kurvitza/PLAN.md",
+              "/workspace/kurvitza/STRUCTURE.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 384969,
+              "tool_time_ms": 1527,
+              "active_time_ms": 386496
+            }
+          },
+          "Clarify": {
+            "status": "succeeded",
+            "preferred_label": "[C] Full blueprint",
+            "suggested_next_ids": [
+              "plan"
+            ],
+            "context_updates": {
+              "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)",
+              "human.gate.Clarify.answer": "C",
+              "human.gate.label": "[C] Full blueprint",
+              "human.gate.selected": "C",
+              "human.gate.Clarify.label": "[C] Full blueprint"
+            },
+            "usage": null
+          },
+          "scope": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_response": "I'll run the scope assessment commands exactly as specified.",
+              "last_stage": "scope",
+              "response.scope": "I'll run the scope assessment commands exactly as specified."
+            },
+            "notes": "Stage completed: scope",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "anthropic",
+                    "model_id": "claude-sonnet-4-5"
+                  },
+                  "tokens": {
+                    "input_tokens": 4462,
+                    "output_tokens": 809,
+                    "reasoning_tokens": 0,
+                    "cache_read_tokens": 42639,
+                    "cache_write_tokens": 16387
+                  }
+                },
+                "facts": {
+                  "algorithm": "anthropic",
+                  "cache_write_5m_tokens": 16387,
+                  "cache_write_1h_tokens": 0
+                }
+              },
+              "total_usd_micros": 99763
+            },
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 18970,
+              "tool_time_ms": 260,
+              "active_time_ms": 19230
+            }
+          },
+          "assess": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_response": "## Assessment Complete\n\nI've written a comprehensive catalog assessment covering all 9 domains. Here's what I found:\n\n### Critical Issues\n\n1. **Storyteller has 104 subdirectories** — 5x the §4 targ",
+              "response.assess": "## Assessment Complete\n\nI've written a comprehensive catalog assessment covering all 9 domains. Here's what I found:\n\n### Critical Issues\n\n1. **Storyteller has 104 subdirectories** — 5x the §4 target. The `core/` layer alone has 17 type-per-folder units that should collapse to 8. Additional sprawl from `hooks/`, `lib/`, `mentions/` feature silos at root.\n\n2. **World-Building-Toolkit has P0 security issues** — browser writes directly to Supabase (`useWorldStore.ts:332`) + 864-LOC god store mixing UI/data/jobs. Violates §2 principle 4 and §5 state-split rule.\n\n3. **5/9 modules have no public barrel** — loop-creator, WBT, deduction-puzzle, chat, and the three thin modules. Storyteller has a barrel but leaks 80+ internals, enabling ~250 deep import sites.\n\n### Catalog Overview\n\nCreated a table showing all 9 modules' current state vs §4 target:\n- Only **interior-designer** is close to §4 compliance (but has dual state systems)\n- **Storyteller** is partially compliant but massively over-foldered\n- Other 7 modules need full §4 reshaping\n\n### Storyteller Deep Dive\n\nProvided:\n- Current 14 top-level folders breakdown\n- Core sprawl analysis (17 folders → target 8)\n- Ideal target tree reducing 104 dirs → ~50-60\n- Top 10 folders to eliminate with specific merge targets\n\n### Referrer Heat Map\n\nStoryteller dominates with **~250+ external import sites** across `src/app` (80), `src/evaluation` (8), tests (150+). Other modules have 1-12 each.\n\n**Recommendation:** Option A (finalize structures for all modules, implement storyteller Wave 1 only after human approval).",
+              "last_stage": "assess"
+            },
+            "notes": "Stage completed: assess",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "anthropic",
+                    "model_id": "claude-sonnet-4-5"
+                  },
+                  "tokens": {
+                    "input_tokens": 40618,
+                    "output_tokens": 11504,
+                    "reasoning_tokens": 0,
+                    "cache_read_tokens": 273600,
+                    "cache_write_tokens": 44006
+                  }
+                },
+                "facts": {
+                  "algorithm": "anthropic",
+                  "cache_write_5m_tokens": 44006,
+                  "cache_write_1h_tokens": 0
+                }
+              },
+              "total_usd_micros": 541516
+            },
+            "files_touched": [
+              "/workspace/kurvitza/findings/assess.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 244098,
+              "tool_time_ms": 729,
+              "active_time_ms": 244827
+            }
+          },
+          "clarify_prep": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_stage": "clarify_prep",
+              "last_response": "## Assessment summary\n\nThe catalog reveals **severe folder sprawl** in storyteller (104 subdirectories vs §4 target of ~12-15), **missing public barrels** in 5/9 modules (deep imports bypass encapsul",
+              "response.clarify_prep": "## Assessment summary\n\nThe catalog reveals **severe folder sprawl** in storyteller (104 subdirectories vs §4 target of ~12-15), **missing public barrels** in 5/9 modules (deep imports bypass encapsulation), **god stores** mixing server/client state in 2 modules (WBT: 864 LOC; interior: ~500 LOC), and a **P0 security issue** (browser→Supabase writes in WBT). Only interior-designer partially follows §4; the other 8 modules need structural reshaping.\n\n## Key gaps (max 5)\n\n1. **Storyteller folder sprawl (104 dirs):** 17 `core/` type folders (ActionFormatters, CascadeEditor, EntityExtractor, etc.) should merge into 8 units; `hooks/`, `lib/`, `mentions/` feature silos violate layer discipline; `tools/` at root instead of `agents/tools/`. Target: ~50-60 dirs (50% reduction).\n\n2. **Reference sweep scope (storyteller alone: 250+ files):** ~80 files in `src/app/api/storyteller/`, ~10 in `src/services`, ~8 in `src/evaluation`, ~150+ test files import storyteller internals 3-4 levels deep. Every folder move requires paired \"update referrers\" todo with grep patterns.\n\n3. **Missing barrels (5/9 modules):** `loop-creator`, `world-building-toolkit`, `deduction-puzzle-designer`, `chat`, `game-design`, `3d-asset-exporter`, `marketing` have no `index.ts`. Cross-module imports reach internal layers directly. Need curated public APIs (~10-30 exports per module).\n\n4. **God stores kill separation of concerns:** WBT `useWorldStore.ts` (864 LOC) mixes viewport state, tiles/projects/assets data, job polling, and manual snake_case mapping. Interior similar. Target: split server state (TanStack Query) from ephemeral UI (Zustand ~150 LOC).\n\n5. **P0 security + manual state hacks:** WBT has browser writes (`supabase.from('projects').insert()` at `:332`), bypassing auth/RLS validation. Also: hand-rolled polling, `localStorage` recovery, `window.dispatchEvent` side-effects instead of Trigger Realtime + `useJob`.\n\n## Pick one scope (buttons are A / B / C — meanings are module-specific below)\n\n| Button | What the plan will assume for **this catalog effort** |\n|--------|------------------------------------------------------|\n| **[A] Staged** | Finalize `STRUCTURE.md` for **all 9 modules** (full ideal trees + move maps for storyteller, loop-creator, WBT, interior, chat, deduction-puzzle, game-design, 3d-asset-exporter, marketing). **Implement Wave 1 only:** storyteller folder collapse (17→8 core units, delete hooks/lib/mentions, move tools→agents/, rename components→ui) + **full referrer update** (~80 app routes, ~10 services, ~8 evaluation, ~150+ tests — grep-driven file lists). Verification gates after moves. **Deferred:** WBT state split (P0 but complex), 5-module barrel creation, interior cleanup, loop-creator reshape, schema consolidation (saves 200+ referrer updates for later waves). |\n| **[B] Plan-only** | Write `STRUCTURE.md` for all 9 modules (current tree at top 2 levels, ideal target grounded in §4, move map `old→new` for every file that moves, public barrel contract, deferred items). **No code moves this run** — design artifacts only. Also: grep-based referrer inventory (patterns + estimated counts per module: \"expect ~250 storyteller, ~10 WBT, ~12 chat…\"). Delivers: approved structure contract + implementation roadmap. Zero verification loops, zero import breakage risk. Human reviews structures, approves, triggers separate implementation run. |\n| **[C] Full catalog** | `STRUCTURE.md` + **implement all waves across all 9 modules:** storyteller collapse, WBT state split + write path fix (security P0), interior store deletion, loop-creator reshape (create ui/state/io/core/services layers), create 5 missing barrels (loop/WBT/deduction/chat/game-design/3d/marketing), schema consolidation (fold storyteller db/ into src/db/), **all referrer updates** (400+ files: app routes, services, evaluation, trigger, tests, shared, docs). Requires 8-10 verification loops (typecheck/unit/fabro-verify per wave), high coordination cost, 3-5 day effort. Delivers: entire catalog §4-compliant, all barrels curated, no deep imports, unified schema. |\n\n**Advanced:** type custom constraints in freeform (routes to [F]) · pick [R] only if assess findings are wrong\n\n**Recommendation: [A]** — Storyteller's 104-dir sprawl is the operator's stated pain; Wave 1 (collapse + referrers) proves the structure/move/update pattern on the hardest module. Finalize all 9 structures now (design is cheap), but defer WBT security P0 and other modules to avoid context-switch thrash — each verification loop adds 20-30 min latency. Option B (plan-only) doesn't validate the moves work; Option C (full catalog) is 5x scope with 10x verification overhead."
+            },
+            "notes": "Stage completed: clarify_prep",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "anthropic",
+                    "model_id": "claude-sonnet-4-5"
+                  },
+                  "tokens": {
+                    "input_tokens": 21254,
+                    "output_tokens": 2987,
+                    "reasoning_tokens": 0,
+                    "cache_read_tokens": 32747,
+                    "cache_write_tokens": 32159
+                  }
+                },
+                "facts": {
+                  "algorithm": "anthropic",
+                  "cache_write_5m_tokens": 32159,
+                  "cache_write_1h_tokens": 0
+                }
+              },
+              "total_usd_micros": 238987
+            },
+            "files_touched": [
+              "/workspace/kurvitza/CLARIFY.md",
+              "/workspace/kurvitza/DECISIONS.md",
+              "/workspace/kurvitza/PLAN.md"
+            ],
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 72745,
+              "tool_time_ms": 208,
+              "active_time_ms": 72953
+            }
+          },
+          "start": {
+            "status": "succeeded",
+            "usage": null
+          }
+        },
+        "next_node_id": "Verification",
+        "git_commit_sha": "b8a6d226e90fbfd795860d8668219403bba1df41",
+        "node_visits": {
+          "scope": 1,
+          "start": 1,
+          "plan": 1,
+          "clarify_prep": 1,
+          "Clarify": 1,
+          "assess": 1
+        }
+      },
+      "diff": {
+        "patch": "diff --git a/STRUCTURE.md b/STRUCTURE.md\nnew file mode 100644\nindex 0000000..85ee063\n--- /dev/null\n+++ b/STRUCTURE.md\n@@ -0,0 +1,415 @@\n+# STRUCTURE.md — Domains catalog ideal folder structure\n+\n+> **Contract for implementation.** `PLAN.md` executes the move maps below and updates\n+> every referrer. Grounded in `docs/unified/ARCHITECTURE.md` §4 (Module Blueprint),\n+> the §4 WBT worked example, and `docs/unified/SPEC.md` F-1/F-2/F-3 + D-1.\n+>\n+> **Legal module root only:** `index.ts`, `ui/`, `state/`, `io/`, `core/`,\n+> `services/`, `agents/`, `tasks/`, `prompts/`, `<module>.config.ts`. Omit empty\n+> layers. AI modules use `agents/` + `prompts/`; asset modules skip them for `tasks/`.\n+>\n+> **Dependency rule (lint-enforced):** `ui → state → io → core ← services/agents/tasks`.\n+> No cross-module deep imports — go through the target module's `index.ts`.\n+\n+## Catalog summary (current → target)\n+\n+| Module | dirs now | dirs target | barrel | worst sprawl / top violation |\n+|--------|:--------:|:-----------:|:------:|------------------------------|\n+| storyteller | 104 | ~55 | exists (leaks) → curate | `core/` 15 folders; `hooks/` `lib/` `mentions/` `tools/` at root |\n+| interior-designer | 19 | ~11 | exists | dual state: `store/useInteriorStore.ts` **1651 LOC** + `state/` + `components/`+`ui/`+`ai/` |\n+| loop-creator | 12 | ~9 | **missing** | flat `components/`; `hooks/` `lib/` `mentions/` `graph/` at root |\n+| world-building-toolkit | 7 | ~11 | **missing** | **P0 browser `.delete()`**; `store/useWorldStore.ts` **864 LOC** god store |\n+| deduction-puzzle-designer | 7 | ~7 | **missing** | flat `components/`, `store/`; no barrel |\n+| chat | 6 | ~6 | **missing** | flat `components/`, `hooks/`, `mentions/`; no barrel |\n+| game-design | 3 | ~4 | **missing** | thin; `agent.ts` at root not `agents/` |\n+| 3d-asset-exporter | 2 | ~4 | **missing** | thin; only `components/`; no `services/` |\n+| marketing | 3 | ~4 | **missing** | thin; `components/` + `context/`; no barrel |\n+\n+Referrer files (external to the module, in `src/`+`tests/`): storyteller **50**,\n+WBT **17**, interior **10**, chat **8**, marketing **8**, loop-creator **4**,\n+game-design **4**, 3d **2**, deduction **1**.\n+\n+---\n+\n+# 1. storyteller  (full before/after — worst sprawl)\n+\n+## 1.1 Current tree (top 2 levels)\n+\n+```\n+storyteller/\n+├─ index.ts                 # leaks ~80 symbols (agents, services, db/schema, core)\n+├─ agents/                  # 16 agent folders + MastraInstance + ModelConfig + __tests__ + index.ts\n+├─ components/              # ~30 PascalCase component folders   → rename ui/\n+├─ config/                  # action-config, storyteller-agents, tool-result-mapper\n+├─ core/                    # 15 folders (see below) — worst sub-sprawl\n+├─ db/                      # schema.ts (2nd Drizzle source of truth)  → fold into src/db (D-1)\n+├─ hooks/                   # useBibleState, useEntity, useEpisodeData, …  → state/ or ui/\n+├─ io/                      # storyteller.api.ts, .keys.ts, .dto.ts   ✅ keep\n+├─ lib/                     # access-verification.ts, entity-loader.ts  → services/ + core/\n+├─ mentions/                # MentionsProvider/, providers.ts  → ui/ + core/\n+├─ prompts/                 # schemas/, personas/, skills/ (7 personas)  ✅ keep\n+├─ services/                # ~15 *Service.ts + context/SeriesBible  ✅ keep\n+├─ state/                   # store(s); missing queries/ subfolder\n+└─ tools/                   # 8 *-tools.ts + index.ts + __tests__  → agents/tools/\n+```\n+\n+**`core/` (15 folders):** ActionFormatters, ActionTypes, CascadeEditor,\n+ConsistencyTypes, DeepMerge, EntityExtractor, EntityReferences, Enums,\n+ReferenceParser, StoryPlanFields, StoryPlanTypes, StoryTypes, UndoManager,\n+WorkflowContext, utils.\n+\n+**`agents/` (16):** ConsequenceAgent, ConsistencyAgent, CreativeDirectorAgent,\n+DevilsAdvocateAgent, GardenerAgent, MastraInstance, ModelConfig,\n+PremiseArchitectAgent, PsychologistAgent, ScriptReviewAgent, SelfCritiqueAgent,\n+StoryWorkflow, StorytellerAgent, StorytellerPlanner, StorytellerWorkflow,\n+WritersRoomGraph.\n+\n+## 1.2 Ideal target tree\n+\n+```\n+storyteller/\n+├─ index.ts                        # curated ~30 public exports (see §1.4)\n+├─ storyteller.config.ts           # ← config/ collapses into one file (+ local barrel if large)\n+│\n+├─ ui/                             # ← components/ renamed\n+│   ├─ ActionApprovalModal/  ActionToast/  CharacterPanel/  CharacterWeb/\n+│   ├─ ConsistencyMessage/  CorkBoard/  EpisodeManager/  MasterPromptEditor/\n+│   ├─ PhaseNavigator/  QuestionCard/  ReferenceText/  ScriptEditor/\n+│   ├─ StoryPlanBoard/  StorytellerEmptyState/  Timeline/  WorldBiblePanel/\n+│   ├─ MentionsProvider/           # ← mentions/MentionsProvider\n+│   └─ … (~30 component folders, each with local index.ts)\n+│\n+├─ state/\n+│   ├─ useStorytellerUiStore.ts    # ephemeral UI only (selection/mode/panels)\n+│   ├─ hooks/                      # UI-local hooks (useLoadingStates, useStorytellerHydration)\n+│   └─ queries/                    # ← hooks/ server hooks: useBibleState, useEntity,\n+│       │                          #     useEpisodeData, useStorytellerActions\n+│       └─ …\n+│\n+├─ io/                             # ✅ unchanged: storyteller.api.ts .keys.ts .dto.ts\n+│\n+├─ core/                          # 15 → 8 units (all pure, unit-tested)\n+│   ├─ ActionTypes/                # + absorbs ActionFormatters/\n+│   ├─ ConsistencyTypes/           # + absorbs CascadeEditor/\n+│   ├─ EntityReferences/           # + absorbs EntityExtractor/ + lib/entity-loader (pure parts)\n+│   ├─ StoryPlanTypes/             # + absorbs StoryPlanFields/\n+│   ├─ StoryTypes/\n+│   ├─ Enums/\n+│   ├─ ReferenceParser/            # + mention parsing from mentions/providers.ts\n+│   ├─ UndoManager/\n+│   └─ utils/                      # + absorbs DeepMerge/\n+│\n+├─ services/                       # ✅ + AccessVerificationService (← lib/access-verification)\n+│   └─ … (~15 *Service.ts, context/SeriesBible)\n+│\n+├─ agents/                         # keep 16 agents; reduce noise\n+│   ├─ MastraInstance/  ModelConfig/\n+│   ├─ StorytellerAgent/  StorytellerPlanner/  StorytellerWorkflow/  StoryWorkflow/\n+│   ├─ WritersRoomGraph/  ConsistencyAgent/  ScriptReviewAgent/  …(remaining agents)\n+│   ├─ WorkflowContext/            # ← core/WorkflowContext (Mastra-specific, not pure)\n+│   └─ tools/                      # ← top-level tools/ (agent-tools, beat-tools, …)\n+│\n+└─ prompts/                        # ✅ unchanged (schemas/, personas/, skills/ 7 personas)\n+```\n+\n+`db/` is **removed**: `db/schema.ts` folds into `src/db/schema.ts` (D-1, Wave 6).\n+`hooks/`, `lib/`, `mentions/`, `tools/`, `config/` all disappear from the root.\n+Root goes from **14** dirs → **8** (`ui state io core services agents prompts` + files).\n+Total dirs ~104 → **~55** (skills personas retained ~21).\n+\n+## 1.3 Move map (representative; codemod covers the tail)\n+\n+| old_path | new_path |\n+|----------|----------|\n+| `components/` (all) | `ui/` |\n+| `mentions/MentionsProvider/` | `ui/MentionsProvider/` |\n+| `mentions/providers.ts` | split → `ui/MentionsProvider/providers.ts` + parse fns → `core/ReferenceParser/` |\n+| `hooks/useBibleState.ts` | `state/queries/useBibleState.ts` |\n+| `hooks/useEntity.ts` | `state/queries/useEntity.ts` |\n+| `hooks/useEpisodeData.ts` | `state/queries/useEpisodeData.ts` |\n+| `hooks/useStorytellerActions.ts` | `state/queries/useStorytellerActions.ts` |\n+| `hooks/useLoadingStates.ts` | `state/hooks/useLoadingStates.ts` |\n+| `hooks/useStorytellerHydration.ts` | `state/hooks/useStorytellerHydration.ts` |\n+| `lib/access-verification.ts` | `services/AccessVerificationService.ts` |\n+| `lib/entity-loader.ts` | pure → `core/EntityReferences/`; server bits → `services/` |\n+| `tools/*.ts` (8 files + index) | `agents/tools/*.ts` |\n+| `tools/__tests__/` | `agents/tools/__tests__/` |\n+| `core/ActionFormatters/*` | `core/ActionTypes/` |\n+| `core/CascadeEditor/*` | `core/ConsistencyTypes/` |\n+| `core/EntityExtractor/*` | `core/EntityReferences/` |\n+| `core/StoryPlanFields/*` | `core/StoryPlanTypes/` |\n+| `core/DeepMerge/*` | `core/utils/` |\n+| `core/WorkflowContext/*` | `agents/WorkflowContext/` |\n+| `config/action-config.ts` | `storyteller.config.ts` (merge) |\n+| `config/storyteller-agents.ts` | `storyteller.config.ts` (merge) |\n+| `config/tool-result-mapper.ts` | `agents/tools/tool-result-mapper.ts` (Mastra-adjacent) |\n+| `db/schema.ts` | `src/db/schema.ts` (fold, Wave 6 / D-1) |\n+\n+## 1.4 Public barrel (`storyteller/index.ts`) after reshape (~30 exports)\n+\n+- **UI components** (client): ActionApprovalModal, ActionToast, CharacterPanel,\n+  CharacterWeb (+`CharacterWebProps`), ConsistencyMessage, CorkBoard, EpisodeManager,\n+  MasterPromptEditor, PhaseNavigator, QuestionCard, ReferenceText, ScriptEditor\n+  (+`ScriptEditorProps`), StoryPlanBoard (+props), StorytellerEmptyState, Timeline\n+  (+props), WorldBiblePanel (+props), MentionsProvider.\n+- **State hooks (public):** useBibleState, useEpisodeData, useStorytellerActions,\n+  useStorytellerHydration, useLoadingStates.\n+- **Public core types:** from `core/ActionTypes`, `core/ConsistencyTypes`,\n+  `core/Enums`, `core/ReferenceParser`, `core/UndoManager`.\n+- **Prompt schemas:** `prompts/schemas/agent-schemas`.\n+- **Server seam (type-only where possible, `@internal`):** re-export the specific\n+  services/agents that `src/app/api/**`, `src/services`, `src/evaluation`, `src/mcp`\n+  and `src/trigger` consume, until those callers route through `services/`. Remove\n+  the blanket `export * from './db/schema'` and `export * from './agents'` firehose.\n+\n+## 1.5 Out of scope for storyteller (this catalog effort)\n+- Rewriting any Mastra agent/workflow behavior (move files only; A-stream deferred).\n+- Flattening `prompts/skills/*` persona folders (correct Workspace convention).\n+- Splitting individual >400 LOC components (tracked separately from folder collapse).\n+\n+---\n+\n+# 2. world-building-toolkit  (P0 write path + god-store split)\n+\n+## 2.1 Current tree\n+```\n+world-building-toolkit/\n+├─ components/    services/   store/   utils/     # flat legacy; NO index.ts\n+```\n+`store/useWorldStore.ts` = **864 LOC** god store (viewport + tiles/projects/assets\n+data + job polling + `localStorage` recovery + `window.dispatchEvent`). **P0:**\n+browser `.delete()` — `store/useWorldStore.ts:356` (`projects`),\n+`components/AssetsPanel.tsx:61` (`assets`).\n+\n+## 2.2 Ideal target tree (from ARCHITECTURE §4 worked example)\n+```\n+world-building-toolkit/\n+├─ index.ts                        # WorldCanvas, useTiles, useWorldUiStore, types\n+├─ world-building-toolkit.config.ts\n+├─ ui/  (WorldCanvas/ Tile/ RepaintCanvas/ Sidebar/ AssetsPanel/ TileReviewDialog/ …)\n+├─ state/\n+│   ├─ useWorldUiStore.ts          # ~150 LOC: viewport, selection, modes, brush\n+│   └─ queries/  (useTiles.ts useProjects.ts useAssets.ts useTileMutation.ts)\n+├─ io/  (tiles.api.ts world.keys.ts world.dto.ts)   # NO browser supabase\n+├─ core/  (TileGrid.ts ContextAssembly.ts)          # pure, from utils/\n+├─ services/  (TileService.ts FidelityService.ts RepaintService.ts SelectModeService.ts UpscaleService.ts)\n+└─ tasks/  (generate-tile.task.ts upscale-tile.task.ts enhance-fidelity.task.ts)  # ← src/trigger\n+```\n+\n+## 2.3 Move map\n+| old_path | new_path |\n+|----------|----------|\n+| `components/` (all) | `ui/` |\n+| `store/useWorldStore.ts` (UI slice) | `state/useWorldUiStore.ts` (~150 LOC) |\n+| `store/useWorldStore.ts` (tiles/projects/assets reads) | `state/queries/useTiles.ts` · `useProjects.ts` · `useAssets.ts` |\n+| `store/useWorldStore.ts` (add/remove/accept writes) | `state/queries/useTileMutation.ts` → `io/tiles.api.ts` → route → `services/TileService.ts` |\n+| `store/useWorldStore.ts:356` `projects.delete()` | route `DELETE /api/world/projects/:id` → `ProjectService` |\n+| `components/AssetsPanel.tsx:61` `assets.delete()` | route `DELETE /api/world/assets/:id` → `AssetService` |\n+| `utils/rle.ts` + neighbor math | `core/TileGrid.ts` |\n+| `services/*` (existing) | `services/*` (keep; add DB writes) |\n+| `src/trigger/generate-tile.ts` (+ siblings) | `tasks/*.task.ts` |\n+| polling / `localStorage` / `window.dispatchEvent` | delete → shared `useJob` (Trigger Realtime) |\n+\n+## 2.4 Barrel: `WorldCanvas`, `useTiles`, `useWorldUiStore`, public tile/asset types.\n+## 2.5 Out of scope: reworking the tile generation model; only path + state split.\n+\n+---\n+\n+# 3. interior-designer  (kill 1651-LOC dual state)\n+\n+## 3.1 Current (19 dirs) — has `store/` **1651 LOC** god store **and** `state/`,\n+plus **both** `components/` and `ui/`, plus an `ai/` folder + `utils/`.\n+\n+## 3.2 Ideal target tree\n+```\n+interior-designer/\n+├─ index.ts   interior-designer.config.ts\n+├─ ui/                         # merge components/ → ui/ (dedupe)\n+├─ state/\n+│   ├─ useInteriorUiStore.ts   # ephemeral: viewport, brush, mode (~150 LOC)\n+│   └─ queries/  (useDesigns.ts useDesignMutation.ts useProjects.ts …)\n+├─ io/                         # ✅ exists\n+├─ core/                       # ✅ exists (+ pure bits from utils/)\n+├─ services/                   # ✅ exists (+ DB writes if any browser writes found)\n+├─ tasks/                      # ✅ exists\n+├─ prompts/                    # ✅ exists (or fold ai/ here)\n+```\n+\n+## 3.3 Move map\n+| old_path | new_path |\n+|----------|----------|\n+| `store/useInteriorStore.ts` (UI slice) | `state/useInteriorUiStore.ts` |\n+| `store/useInteriorStore.ts` (server state) | `state/queries/*` (TanStack) |\n+| `components/*` | `ui/*` (merge with existing `ui/`) |\n+| `ai/*` | `agents/` or `prompts/` per content |\n+| `utils/*` (pure) | `core/` |\n+| `store/` (after migration) | **deleted** |\n+\n+## 3.4 Barrel: existing `index.ts` — retarget to `ui/` + `state/queries` hooks + types.\n+## 3.5 Out of scope: model/prompt changes; only state split + folder merge.\n+\n+---\n+\n+# 4. loop-creator  (create barrel + skeleton)\n+\n+## 4.1 Current (12): `components/ agents/(market-analyst) hooks/ lib/ mentions/ graph/ __tests__`; no barrel.\n+\n+## 4.2 Ideal target tree\n+```\n+loop-creator/\n+├─ index.ts   loop-creator.config.ts\n+├─ ui/                    # ← components/ (+ mentions/ UI parts)\n+├─ state/  (useLoopUiStore.ts  queries/useLoops.ts useLoopMutation.ts)   # ← hooks/\n+├─ io/     (loop.api.ts loop.keys.ts loop.dto.ts)\n+├─ core/                  # ← lib/ pure logic + mention parsing\n+├─ services/              # DB layer (extract from hooks/lib)\n+├─ agents/  (LoopCreatorAgent/ MarketAnalyst/ tools/)   # ← agents/ + agents/market-analyst\n+└─ prompts/               # if present, else fold into agents/\n+```\n+\n+## 4.3 Move map\n+| old_path | new_path |\n+|----------|----------|\n+| `components/*` | `ui/*` |\n+| `mentions/*` | UI → `ui/`; parse → `core/` |\n+| `hooks/*` (server) | `state/queries/*` |\n+| `hooks/*` (UI) | `state/` or colocated |\n+| `lib/*` (pure) | `core/*` |\n+| `lib/*` (server) | `services/*` |\n+| `graph/*` | `agents/` (workflow) or `core/` (pure state machine) |\n+| `agents/market-analyst/*` | `agents/MarketAnalyst/*` |\n+\n+## 4.4 Barrel: LoopCanvas + market-insights components, `useLoops`, public loop types.\n+## 4.5 Out of scope: agent behavior; graph runtime semantics.\n+\n+---\n+\n+# 5. chat  (cross-cutting; create barrel)\n+\n+## 5.1 Current (6): `components/ hooks/(+__tests__) mentions/ types.ts`; no barrel.\n+\n+## 5.2 Ideal target tree\n+```\n+chat/\n+├─ index.ts\n+├─ ui/       # ← components/ (+ mentions/ UI)\n+├─ state/    (useChatUiStore.ts  queries/useMessages.ts)   # ← hooks/\n+├─ io/       (chat.api.ts chat.dto.ts)\n+└─ core/     (types.ts  + mention parsing)                 # ← types.ts + mentions logic\n+```\n+\n+## 5.3 Move map\n+| old_path | new_path |\n+|----------|----------|\n+| `components/*` | `ui/*` |\n+| `hooks/*` (server) | `state/queries/*` |\n+| `hooks/*` (UI) | `state/` |\n+| `mentions/*` | `ui/` + `core/` |\n+| `types.ts` | `core/types.ts` |\n+\n+## 5.4 Barrel: ChatPanel/MessageList components, `useMessages`, message types.\n+## 5.5 Out of scope: chat protocol / streaming behavior.\n+\n+---\n+\n+# 6. deduction-puzzle-designer  (create barrel)\n+\n+## 6.1 Current (7): `components/(LogicMap ScenarioDefinition SceneStaging) store/ prompts? services? utils?`; no barrel.\n+\n+## 6.2 Ideal target tree\n+```\n+deduction-puzzle-designer/\n+├─ index.ts\n+├─ ui/       # ← components/\n+├─ state/    (useDeductionUiStore.ts  queries/)   # ← store/ split\n+├─ io/\n+├─ core/     # puzzle types + logic (← utils/)\n+├─ services/\n+└─ prompts/  # if present\n+```\n+\n+## 6.3 Move map: `components/* → ui/*`; `store/*` split → `state/*`; `utils/* → core/*`.\n+## 6.4 Barrel: LogicMap, ScenarioDefinition, SceneStaging, puzzle types.\n+## 6.5 Out of scope: puzzle-generation prompts/behavior.\n+\n+---\n+\n+# 7. game-design  (thin — normalize + barrel)\n+\n+## 7.1 Current (3): root `agent.ts memory.ts schemas.ts` + `tools/`; no barrel.\n+\n+## 7.2 Ideal target tree\n+```\n+game-design/\n+├─ index.ts\n+├─ agents/  (GameDesignAgent/  memory.ts  tools/)   # ← agent.ts + memory.ts + tools/\n+├─ core/    (schemas.ts → *.dto.ts / types)          # ← schemas.ts\n+└─ prompts/ # if separable from agent.ts\n+```\n+\n+## 7.3 Move map: `agent.ts → agents/GameDesignAgent/`; `memory.ts → agents/`;\n+`schemas.ts → core/`; `tools/ → agents/tools/`.\n+## 7.4 Barrel: GameDesignAgent handle + public schemas.\n+\n+---\n+\n+# 8. 3d-asset-exporter  (thin — add services + barrel)\n+\n+## 8.1 Current (2): only `components/`; no barrel, no services.\n+\n+## 8.2 Ideal target tree\n+```\n+3d-asset-exporter/\n+├─ index.ts\n+├─ ui/        # ← components/  (ExportPanel/ …)\n+├─ services/  (ExportService.ts)   # server export/DB logic (extract from components)\n+└─ tasks/     # export.task.ts if long-running (Trigger)\n+```\n+\n+## 8.3 Move map: `components/* → ui/*`; extract any fetch/DB logic → `services/`.\n+## 8.4 Barrel: ExportPanel + export types.\n+\n+---\n+\n+# 9. marketing  (thin — normalize + barrel)\n+\n+## 9.1 Current (3): `components/ context/`; no barrel. (No `agent.ts`.)\n+\n+## 9.2 Ideal target tree\n+```\n+marketing/\n+├─ index.ts\n+├─ ui/       # ← components/\n+├─ state/    # ← context/ (React context → UI store or state provider)\n+└─ agents/   # only if an agent exists; else omit\n+```\n+\n+## 9.3 Move map: `components/* → ui/*`; `context/*` → `state/` (evaluate: React\n+context provider stays in `ui/` if purely presentational).\n+## 9.4 Barrel: marketing surface components + public types.\n+\n+---\n+\n+# 10. Cross-cutting structure work (F-1, D-1)\n+\n+## 10.1 `src/shared/` (F-1) — create target import homes\n+```\n+src/shared/\n+├─ agent-kernel/   jobs/   data/   auth/   observability/   errors/\n+```\n+Each starts as a **re-export stub** of the current home (`shared/auth` → `lib/auth`,\n+`shared/jobs` → `useJob` home, etc.). No logic moves in this wave — only the target\n+path + the boundary ESLint rule (see §10.3).\n+\n+## 10.2 `src/db/schema.ts` (D-1) — single Drizzle source\n+Fold `src/domains/storyteller/db/schema.ts` into `src/db/schema.ts`; delete the\n+local `db/` folder or make it a pure re-export barrel during migration. camelCase\n+end-to-end; snake_case boundary only in the Drizzle column map.\n+\n+## 10.3 Config & lint scopes to update when paths move\n+| file | change |\n+|------|--------|\n+| `eslint.config.js` | keep storyteller deep-import ban (lines 179–180); add same ban per newly-barreled module; flip F-1 boundary rule `warn → error` per migrated module |\n+| `tsconfig.fabro-verify.json` | currently scopes 3 storyteller files → update to new `ui/state/io/core/services` paths after moves |\n+| `knip.json` | update entry/`project` globs if folder names change (`components→ui`, `store→state`) |\n+| `docs/internal/*.md`, `AGENTS.md`, code-comment path cites | rewrite `components/`→`ui/`, `tools/`→`agents/tools/`, `db/schema`→`src/db/schema` |\n",
+        "summary": {
+          "files_changed": 1,
+          "additions": 415,
+          "deletions": 0
+        }
+      }
+    },
+    {
+      "seq": 0,
+      "checkpoint": {
+        "timestamp": "2026-07-03T09:24:52.582611Z",
+        "current_node": "Verification",
+        "completed_nodes": [
+          "start",
+          "scope",
+          "assess",
+          "clarify_prep",
+          "Clarify",
+          "plan",
+          "Verification"
+        ],
+        "node_retries": {},
+        "context_values": {
           "internal.retry_count.plan": 0,
           "thread.review.current_node": "clarify_prep",
           "response.scope": "I'll run the scope assessment commands exactly as specified.",
@@ -2005,15 +2269,16 @@
           "response.clarify_prep": "## Assessment summary\n\nThe catalog reveals **severe folder sprawl** in storyteller (104 subdirectories vs §4 target of ~12-15), **missing public barrels** in 5/9 modules (deep imports bypass encapsulation), **god stores** mixing server/client state in 2 modules (WBT: 864 LOC; interior: ~500 LOC), and a **P0 security issue** (browser→Supabase writes in WBT). Only interior-designer partially follows §4; the other 8 modules need structural reshaping.\n\n## Key gaps (max 5)\n\n1. **Storyteller folder sprawl (104 dirs):** 17 `core/` type folders (ActionFormatters, CascadeEditor, EntityExtractor, etc.) should merge into 8 units; `hooks/`, `lib/`, `mentions/` feature silos violate layer discipline; `tools/` at root instead of `agents/tools/`. Target: ~50-60 dirs (50% reduction).\n\n2. **Reference sweep scope (storyteller alone: 250+ files):** ~80 files in `src/app/api/storyteller/`, ~10 in `src/services`, ~8 in `src/evaluation`, ~150+ test files import storyteller internals 3-4 levels deep. Every folder move requires paired \"update referrers\" todo with grep patterns.\n\n3. **Missing barrels (5/9 modules):** `loop-creator`, `world-building-toolkit`, `deduction-puzzle-designer`, `chat`, `game-design`, `3d-asset-exporter`, `marketing` have no `index.ts`. Cross-module imports reach internal layers directly. Need curated public APIs (~10-30 exports per module).\n\n4. **God stores kill separation of concerns:** WBT `useWorldStore.ts` (864 LOC) mixes viewport state, tiles/projects/assets data, job polling, and manual snake_case mapping. Interior similar. Target: split server state (TanStack Query) from ephemeral UI (Zustand ~150 LOC).\n\n5. **P0 security + manual state hacks:** WBT has browser writes (`supabase.from('projects').insert()` at `:332`), bypassing auth/RLS validation. Also: hand-rolled polling, `localStorage` recovery, `window.dispatchEvent` side-effects instead of Trigger Realtime + `useJob`.\n\n## Pick one scope (buttons are A / B / C — meanings are module-specific below)\n\n| Button | What the plan will assume for **this catalog effort** |\n|--------|------------------------------------------------------|\n| **[A] Staged** | Finalize `STRUCTURE.md` for **all 9 modules** (full ideal trees + move maps for storyteller, loop-creator, WBT, interior, chat, deduction-puzzle, game-design, 3d-asset-exporter, marketing). **Implement Wave 1 only:** storyteller folder collapse (17→8 core units, delete hooks/lib/mentions, move tools→agents/, rename components→ui) + **full referrer update** (~80 app routes, ~10 services, ~8 evaluation, ~150+ tests — grep-driven file lists). Verification gates after moves. **Deferred:** WBT state split (P0 but complex), 5-module barrel creation, interior cleanup, loop-creator reshape, schema consolidation (saves 200+ referrer updates for later waves). |\n| **[B] Plan-only** | Write `STRUCTURE.md` for all 9 modules (current tree at top 2 levels, ideal target grounded in §4, move map `old→new` for every file that moves, public barrel contract, deferred items). **No code moves this run** — design artifacts only. Also: grep-based referrer inventory (patterns + estimated counts per module: \"expect ~250 storyteller, ~10 WBT, ~12 chat…\"). Delivers: approved structure contract + implementation roadmap. Zero verification loops, zero import breakage risk. Human reviews structures, approves, triggers separate implementation run. |\n| **[C] Full catalog** | `STRUCTURE.md` + **implement all waves across all 9 modules:** storyteller collapse, WBT state split + write path fix (security P0), interior store deletion, loop-creator reshape (create ui/state/io/core/services layers), create 5 missing barrels (loop/WBT/deduction/chat/game-design/3d/marketing), schema consolidation (fold storyteller db/ into src/db/), **all referrer updates** (400+ files: app routes, services, evaluation, trigger, tests, shared, docs). Requires 8-10 verification loops (typecheck/unit/fabro-verify per wave), high coordination cost, 3-5 day effort. Delivers: entire catalog §4-compliant, all barrels curated, no deep imports, unified schema. |\n\n**Advanced:** type custom constraints in freeform (routes to [F]) · pick [R] only if assess findings are wrong\n\n**Recommendation: [A]** — Storyteller's 104-dir sprawl is the operator's stated pain; Wave 1 (collapse + referrers) proves the structure/move/update pattern on the hardest module. Finalize all 9 structures now (design is cheap), but defer WBT security P0 and other modules to avoid context-switch thrash — each verification loop adds 20-30 min latency. Option B (plan-only) doesn't validate the moves work; Option C (full catalog) is 5x scope with 10x verification overhead.",
           "response.assess": "## Assessment Complete\n\nI've written a comprehensive catalog assessment covering all 9 domains. Here's what I found:\n\n### Critical Issues\n\n1. **Storyteller has 104 subdirectories** — 5x the §4 target. The `core/` layer alone has 17 type-per-folder units that should collapse to 8. Additional sprawl from `hooks/`, `lib/`, `mentions/` feature silos at root.\n\n2. **World-Building-Toolkit has P0 security issues** — browser writes directly to Supabase (`useWorldStore.ts:332`) + 864-LOC god store mixing UI/data/jobs. Violates §2 principle 4 and §5 state-split rule.\n\n3. **5/9 modules have no public barrel** — loop-creator, WBT, deduction-puzzle, chat, and the three thin modules. Storyteller has a barrel but leaks 80+ internals, enabling ~250 deep import sites.\n\n### Catalog Overview\n\nCreated a table showing all 9 modules' current state vs §4 target:\n- Only **interior-designer** is close to §4 compliance (but has dual state systems)\n- **Storyteller** is partially compliant but massively over-foldered\n- Other 7 modules need full §4 reshaping\n\n### Storyteller Deep Dive\n\nProvided:\n- Current 14 top-level folders breakdown\n- Core sprawl analysis (17 folders → target 8)\n- Ideal target tree reducing 104 dirs → ~50-60\n- Top 10 folders to eliminate with specific merge targets\n\n### Referrer Heat Map\n\nStoryteller dominates with **~250+ external import sites** across `src/app` (80), `src/evaluation` (8), tests (150+). Other modules have 1-12 each.\n\n**Recommendation:** Option A (finalize structures for all modules, implement storyteller Wave 1 only after human approval).",
           "response.plan": "All three deliverables are written. Here is the Verification summary.\n\n**1. P0 declaration:** `P0 exists` — browser Supabase writes in world-building-toolkit: `store/useWorldStore.ts:356` (`projects.delete()`) and `components/AssetsPanel.tsx:61` (`assets.delete()`) bypass auth/RLS. Fixed in Wave 2 (items 27–29, 40).\n\n**2. Your Clarify decision: [C] Full catalog.** In scope: `STRUCTURE.md` for all 9 modules **and** `PLAN.md` implementing **all 7 waves + every referrer update** — storyteller collapse, WBT P0 + god-store split, interior 1651-LOC store split, loop/chat/thin reshapes, 8 barrels, F-1 shared+lint, D-1 schema fold. Explicitly deferred: new features, Mastra behavior rewrites, skills flattening, wider `src/lib` migration.\n\n**3. First shippable increment: Items 1–26 (Wave 0 foundations + full storyteller reshape with its complete 50-file referrer sweep).**\n\n**4. Item count / effort:** 76 numbered todos across 8 waves. Increment 1 ≈ 3–4 dev days; full catalog ≈ 3–5 weeks with 8 verification loops.\n\n**Plan summary (concrete refs):**\n- `STRUCTURE.md` §1: storyteller 104→~55 dirs; `core/` 15→8 units; delete `hooks/`/`lib/`/`mentions/`/`tools/`/`config/` at root; `components/→ui/`; curated `index.ts` (~30 exports, drop the `db/schema` + `agents` firehose).\n- §2: WBT §4 worked-example reshape + write-path fix + 864-LOC store split.\n- §3: interior `store/useInteriorStore.ts` (**1651 LOC**, corrected from assess's ~500) → TanStack + `useInteriorUiStore`.\n- §10: `src/shared/*` + boundary lint (F-1), `src/db/schema.ts` fold (D-1); update `tsconfig.fabro-verify.json` (3 scoped paths), `knip.json`, eslint bans.\n- Corrections logged in `DECISIONS.md` (referrer files 50 not 250; WBT writes are `.delete()` not `insert:332`; interior 1651 LOC; marketing has 8 referrers).\n\n**6. Verification reminder:** pick **[A] Approve & build** to implement, **[B]** for plan-only, **[I]** to request plan changes (type notes), **[X]** to abort. (Clarify's C is already decided — this gate's A/B/I/X is separate.)\n\n```json\n{\n  \"context_updates\": {\n    \"plan.has_ui_surface\": \"no\",\n    \"plan.has_p0_security_issue\": \"yes\"\n  }\n}\n```",
+          "thread.plan.current_node": "Verification",
           "graph.model_stylesheet": "\n            *          { model: gpt-5.4;         reasoning_effort: medium; }\n            .review    { model: codex;           reasoning_effort: low;    }\n            .planning  { model: claude-opus-4-8; reasoning_effort: high;   }\n            .design    { model: gpt-5.4;         reasoning_effort: medium; }\n            .build     { model: codex;           reasoning_effort: high;   }\n            .testing   { model: gpt-5.4;         reasoning_effort: medium; }\n            .visual    { model: gpt-5.4;         reasoning_effort: medium; }\n            .retro     { model: gpt-5.4;         reasoning_effort: medium; }\n        ",
           "graph.rankdir": "LR",
           "internal.retry_count.start": 0,
-          "human.gate.label": "[C] Full blueprint",
+          "human.gate.label": "[A] Approve & build",
           "plan.has_ui_surface": "no",
           "thread.clarify_prep.current_node": "Clarify",
           "human.gate.Clarify.question": "Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)",
           "internal.work_dir": "/workspace/kurvitza",
-          "internal.fidelity": "summary:high",
+          "internal.fidelity": "summary:medium",
           "graph.goal": "# Domains catalog cleanup — ideal structure + full reference update\n\n## Mission\n\nDesign the **ideal folder structure** for every module under `src/domains/`, then\n**update every file in the repo that references old paths** (imports, re-exports,\ntests, API routes, shared shims, docs, Fabro verify scopes). Behavior-preserving;\nno new product features.\n\nThis is a **large, multi-sprint** effort — the plan may contain **50–100 todos**.\nDo **not** under-scope the reference sweep: a move without updating all referrers\nis a failed increment.\n\n**Primary pain (operator):** `storyteller` has **~104 subdirectories** — far too\nmany top-level and nested folders. The operator wants Fabro to **propose** a\nconcrete target tree (fewer folders, §4-aligned), get human approval, then **execute\nthe moves and fix every import**.\n\n**Scope:** all 9 domain modules:\n\n| Module | ~dirs today | Notes |\n|--------|-------------|--------|\n| `storyteller` | 104 | **Worst sprawl** — design target tree first |\n| `interior-designer` | 19 | Partial §4 skeleton |\n| `loop-creator` | 12 | Agents + market-analyst subtree |\n| `deduction-puzzle-designer` | 7 | Smaller |\n| `world-building-toolkit` | 7 | Flat legacy → reshape per ARCHITECTURE worked example |\n| `chat` | 6 | Cross-cutting UI |\n| `game-design` | 3 | Thin |\n| `3d-asset-exporter` | 3 | Asset module |\n| `marketing` | 3 | Thin |\n\n## Required deliverable: ideal structure (before code moves)\n\n**Plan Author MUST write `STRUCTURE.md`** at repo root (overwrite stale copies).\nThis is the contract for implementation — not optional prose in `PLAN.md` alone.\n\nFor **each** module, `STRUCTURE.md` contains:\n\n1. **Current tree** (top 2 levels + note on worst sprawl).\n2. **Ideal target tree** (ASCII) — grounded in `docs/unified/ARCHITECTURE.md` §4.\n   - Module root: only `index.ts`, `ui/`, `state/`, `io/`, `core/`, `services/`,\n     `agents/`, `tasks/`, `prompts/`, `<module>.config.ts` (omit empty layers).\n   - **Collapse rules** for storyteller: merge `core/*` one-folder-per-type into\n     fewer `core/` units; fold `mentions/`, `hooks/`, `lib/`, `db/` into correct\n     layers; keep `agents/` but reduce per-agent folder noise where sensible.\n3. **Move map** — table `old_path → new_path` for every file that moves.\n4. **Public barrel** — what `index.ts` exports after the reshape.\n5. **Out of scope for this wave** — folders/files that stay put until a later wave.\n\n**Storyteller gets the most detail** (full before/after). Other modules: at least\ntarget tree + move map for files that move in the approved wave.\n\n## Required deliverable: reference update (every referrer)\n\nAfter the structure is approved, implementation MUST update **all referrers**, not\nonly files inside the module:\n\n| Referrer class | Examples | Action |\n|----------------|----------|--------|\n| Intra-module imports | `../../core/Foo` | Rewrite to new paths |\n| Cross-module deep imports | `@/domains/storyteller/agents/...` | Route through `index.ts` or new public path |\n| App API routes | `src/app/api/storyteller/**` | Update imports to services/io/barrel |\n| Shared shims | `src/shared/**`, `src/lib/**` | Update re-exports |\n| DB layer | `src/db/**`, `src/domains/*/db/schema` | Align with unified schema plan |\n| Hooks outside domain | `src/hooks/**` | Move or update imports per STRUCTURE |\n| Tests | `**/__tests__/**`, `tests/**` | Fix paths + mocks |\n| Config | `tsconfig.fabro-verify.json`, `knip`, `eslint` boundaries | Update include paths |\n| Docs | `docs/internal/*.md`, `AGENTS.md` paths cited in code comments | Update when paths change |\n\n**Plan Author** must include todos that run, per module/wave:\n\n```bash\ngrep -rn \"from '@/domains/<module>\" src/ tests/\ngrep -rn \"domains/<module>/\" src/ tests/\n```\n\n…and assign **one todo per referrer batch** (or per directory of callers) so nothing\nis missed. Expect **dozens of files** outside `src/domains/storyteller/` for\nstoryteller alone.\n\n## Plan shape (`PLAN.md`)\n\n1. **Executive summary**\n2. **Pointer to `STRUCTURE.md`** — \"implementation follows move map\"\n3. **Global prerequisites** (F-1…F-3 from SPEC)\n4. **Per-module sections** with prioritized items\n5. **Master todo list** (numbered 1…N, N may be 80–100):\n   - Structure design todos (write/iterate `STRUCTURE.md`)\n   - Move todos (git mv / codemod batches)\n   - **Reference-update todos** (grep-driven, list affected files)\n   - Barrel + boundary lint todos\n   - Verification per wave\n6. **Suggested waves**\n7. **Deferred**\n\n## Clarify gate (catalog-wide)\n\n| Option | Posture |\n|--------|---------|\n| **A — Staged** | Finalize `STRUCTURE.md` for **all** modules; **implement Wave 1** only (storyteller ideal tree + full referrer update) after Verification. |\n| **B — Plan-only** | `STRUCTURE.md` + `PLAN.md` + referrer inventory; **no moves** this run. |\n| **C — Full catalog** | Structure for all; implement all waves + all referrers (many verify loops). |\n\nRecommend **A**.\n\n## Non-negotiables\n\n- Ground ideal trees in `docs/unified/ARCHITECTURE.md` §4 + worked examples (§4 WBT).\n- **No move without referrer audit** — every `PLAN.md` move item has a paired\n  \"update referrers\" item listing grep patterns.\n- Behavior-preserving; `npm run typecheck`, `npm run test:unit`, `node scripts/fabro-verify.mjs`.\n- Use `refactor` skill for layer moves; codemod import paths in batches.\n- Orchestration/agent logic: **move files first**; do not rewrite Mastra behavior in\n  the same increment as folder collapse unless the plan explicitly says so.\n\n## Assess focus\n\n- Catalog table (9 modules vs §4)\n- **Storyteller**: current vs ideal folder count estimate; top 10 folders to eliminate\n- **Referrer heat map**: which modules have the most external deep imports\n- `## Metadata` (`has_ui_surface: no` for structure-only Wave 1)\n",
           "last_stage": "plan",
           "human.gate.Clarify.label": "[C] Full blueprint",
@@ -2021,21 +2286,25 @@
           "failure_signature": "",
           "internal.retry_count.scope": 0,
           "thread.planning.current_node": "plan",
-          "internal.thread_id": "planning",
+          "internal.thread_id": "plan",
+          "internal.retry_count.Verification": 0,
           "graph.default_max_retries": "1",
           "outcome": "succeeded",
           "internal.retry_count.assess": 0,
-          "preferred_label": "[C] Full blueprint",
+          "preferred_label": "[A] Approve & build",
+          "human.gate.Verification.label": "[A] Approve & build",
           "internal.run_id": "01KWKKV6DTZ1ACNMMR63YH8M0J",
           "internal.retry_count.clarify_prep": 0,
-          "current_node": "plan",
+          "current_node": "Verification",
           "failure_class": "",
           "last_response": "All three deliverables are written. Here is the Verification summary.\n\n**1. P0 declaration:** `P0 exists` — browser Supabase writes in world-building-toolkit: `store/useWorldStore.ts:356` (`projects",
           "plan.has_p0_security_issue": "yes",
+          "human.gate.Verification.answer": "A",
           "graph.default_fidelity": "summary:medium",
+          "human.gate.Verification.question": "Plan is ready. [A] build · [B] plan only · [I] iterate (notes) · [X] abort — do not reuse Clarify's A/B/C here",
           "human.gate.Clarify.answer": "C",
           "graph.stall_timeout": "1800000ms",
-          "human.gate.selected": "C",
+          "human.gate.selected": "A",
           "internal.retry_count.Clarify": 0
         },
         "node_outcomes": {
@@ -2127,6 +2396,21 @@
               "active_time_ms": 386496
             }
           },
+          "Verification": {
+            "status": "succeeded",
+            "preferred_label": "[A] Approve & build",
+            "suggested_next_ids": [
+              "setup"
+            ],
+            "context_updates": {
+              "human.gate.label": "[A] Approve & build",
+              "human.gate.Verification.answer": "A",
+              "human.gate.Verification.question": "Plan is ready. [A] build · [B] plan only · [I] iterate (notes) · [X] abort — do not reuse Clarify's A/B/C here",
+              "human.gate.selected": "A",
+              "human.gate.Verification.label": "[A] Approve & build"
+            },
+            "usage": null
+          },
           "Clarify": {
             "status": "succeeded",
             "preferred_label": "[C] Full blueprint",
@@ -2141,6 +2425,44 @@
               "human.gate.Clarify.label": "[C] Full blueprint"
             },
             "usage": null
+          },
+          "scope": {
+            "status": "succeeded",
+            "context_updates": {
+              "last_response": "I'll run the scope assessment commands exactly as specified.",
+              "last_stage": "scope",
+              "response.scope": "I'll run the scope assessment commands exactly as specified."
+            },
+            "notes": "Stage completed: scope",
+            "usage": {
+              "input": {
+                "usage": {
+                  "model": {
+                    "provider": "anthropic",
+                    "model_id": "claude-sonnet-4-5"
+                  },
+                  "tokens": {
+                    "input_tokens": 4462,
+                    "output_tokens": 809,
+                    "reasoning_tokens": 0,
+                    "cache_read_tokens": 42639,
+                    "cache_write_tokens": 16387
+                  }
+                },
+                "facts": {
+                  "algorithm": "anthropic",
+                  "cache_write_5m_tokens": 16387,
+                  "cache_write_1h_tokens": 0
+                }
+              },
+              "total_usd_micros": 99763
+            },
+            "timing": {
+              "wall_time_ms": 0,
+              "inference_time_ms": 18970,
+              "tool_time_ms": 260,
+              "active_time_ms": 19230
+            }
           },
           "start": {
             "status": "succeeded",
@@ -2186,49 +2508,12 @@
               "tool_time_ms": 729,
               "active_time_ms": 244827
             }
-          },
-          "scope": {
-            "status": "succeeded",
-            "context_updates": {
-              "last_response": "I'll run the scope assessment commands exactly as specified.",
-              "last_stage": "scope",
-              "response.scope": "I'll run the scope assessment commands exactly as specified."
-            },
-            "notes": "Stage completed: scope",
-            "usage": {
-              "input": {
-                "usage": {
-                  "model": {
-                    "provider": "anthropic",
-                    "model_id": "claude-sonnet-4-5"
-                  },
-                  "tokens": {
-                    "input_tokens": 4462,
-                    "output_tokens": 809,
-                    "reasoning_tokens": 0,
-                    "cache_read_tokens": 42639,
-                    "cache_write_tokens": 16387
-                  }
-                },
-                "facts": {
-                  "algorithm": "anthropic",
-                  "cache_write_5m_tokens": 16387,
-                  "cache_write_1h_tokens": 0
-                }
-              },
-              "total_usd_micros": 99763
-            },
-            "timing": {
-              "wall_time_ms": 0,
-              "inference_time_ms": 18970,
-              "tool_time_ms": 260,
-              "active_time_ms": 19230
-            }
           }
         },
-        "next_node_id": "Verification",
+        "next_node_id": "setup",
         "node_visits": {
           "plan": 1,
+          "Verification": 1,
           "scope": 1,
           "start": 1,
           "assess": 1,
@@ -2782,7 +3067,12 @@
       "first_event_seq": 206,
       "prompt": null,
       "response": null,
-      "completion": null,
+      "completion": {
+        "outcome": "succeeded",
+        "notes": "Stage completed: plan",
+        "failure_reason": null,
+        "timestamp": "2026-07-03T09:24:13.580278Z"
+      },
       "provider_used": {
         "mode": "agent",
         "provider": "anthropic",
@@ -2796,6 +3086,12 @@
       "output": null,
       "started_at": "2026-07-03T09:17:46.628230Z",
       "handler": "agent",
+      "timing": {
+        "wall_time_ms": 386831,
+        "inference_time_ms": 384969,
+        "tool_time_ms": 1527,
+        "active_time_ms": 386496
+      },
       "usage": {
         "input_tokens": 68874,
         "output_tokens": 32214,
@@ -3004,7 +3300,7 @@
         ],
         "warnings": []
       },
-      "state": "running"
+      "state": "succeeded"
     },
     "scope@1": {
       "first_event_seq": 23,
@@ -3244,6 +3540,29 @@
         "warnings": []
       },
       "state": "succeeded"
+    },
+    "Verification@1": {
+      "first_event_seq": 280,
+      "prompt": null,
+      "response": null,
+      "completion": null,
+      "provider_used": null,
+      "diff": null,
+      "script_invocation": null,
+      "script_timing": null,
+      "parallel_results": null,
+      "output": null,
+      "started_at": "2026-07-03T09:24:16.994315Z",
+      "handler": "human",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "reasoning_tokens": 0,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0
+      },
+      "state": "running"
     },
     "Clarify@1": {
       "first_event_seq": 194,
