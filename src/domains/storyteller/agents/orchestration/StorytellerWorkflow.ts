@@ -8,7 +8,7 @@
  */
 
 import { createStorytellerAgent, StorytellerAgent } from '@/domains/storyteller/agents'
-import { checkContinuityTool, manageBeatTool } from '@/domains/storyteller/tools'
+import { checkContinuityTool, manageBeatTool } from '@/domains/storyteller/agents/tools'
 import { getErrorMessage } from '@/lib/error-utils'
 
 // ==========================================

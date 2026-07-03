@@ -5,7 +5,7 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useBibleState } from '../useBibleState'
+import { useBibleState } from '../queries/useBibleState'
 
 const pushMock = vi.fn()
 const replaceMock = vi.fn()

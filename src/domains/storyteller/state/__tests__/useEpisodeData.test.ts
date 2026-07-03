@@ -6,7 +6,7 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LocalStorageKeys } from '@/constants/localStorage'
-import { useEpisodeData } from '../useEpisodeData'
+import { useEpisodeData } from '../queries/useEpisodeData'
 
 const pushMock = vi.fn()
 const useEpisodesMock = vi.fn()

@@ -8,7 +8,7 @@ import {
 import { extractThinking, truncateForTrace } from '@/agent-core/agents/agent-response'
 import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
 import { CHARACTER_PSYCHOLOGY_PROMPT } from '@/domains/storyteller/prompts/personas/character-psychology'
-import { analyzePsychologyTool, simulateReactionTool, assessRelationshipTool } from '@/domains/storyteller/tools'
+import { analyzePsychologyTool, simulateReactionTool, assessRelationshipTool } from '@/domains/storyteller/agents/tools'
 import { getMastraInstance } from '@/shared/agent-kernel'
 import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/config/ModelConfig'
 

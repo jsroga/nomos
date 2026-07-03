@@ -13,7 +13,7 @@ import {
   condenseSceneTool,
   regenerateTextTool,
   selfCritiqueTool,
-} from '@/domains/storyteller/tools'
+} from '@/domains/storyteller/agents/tools'
 import { extractThinking, truncateForTrace } from '@/agent-core/agents/agent-response'
 import { getMastraInstance } from '@/shared/agent-kernel'
 import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/config/ModelConfig'

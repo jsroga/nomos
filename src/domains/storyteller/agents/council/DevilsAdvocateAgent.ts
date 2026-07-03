@@ -18,7 +18,7 @@ import { getMastraInstance } from '@/shared/agent-kernel'
 import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/config/ModelConfig'
 
 // Import Script Tools for suggestions
-import { improveDialogueTool, shiftToneTool } from '@/domains/storyteller/tools'
+import { improveDialogueTool, shiftToneTool } from '@/domains/storyteller/agents/tools'
 
 interface DevilsAdvocateConfig {
   modelName: string

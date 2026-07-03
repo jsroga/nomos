@@ -47,7 +47,7 @@ import {
   researchTool,
   factCheckTool,
   referenceLookupTool,
-} from '@/domains/storyteller/tools'
+} from '@/domains/storyteller/agents/tools'
 import { runStoryCreationWorkflowTool } from '@/domains/storyteller/tools/workflow-tools'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
 

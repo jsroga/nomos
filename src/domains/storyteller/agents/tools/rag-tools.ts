@@ -9,7 +9,7 @@
 
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import { ragService, DocumentType, RagResult } from '../services/RagService'
+import { ragService, DocumentType, RagResult } from '@/domains/storyteller/services/RagService'
 
 // ==========================================
 // SCHEMAS

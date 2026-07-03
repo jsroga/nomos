@@ -14,7 +14,7 @@ import {
   addVisualHook,
   shiftTone,
   regenerateText,
-} from '../services/ScriptOperationsService'
+} from '@/domains/storyteller/services/ScriptOperationsService'
 
 // ==========================================
 // MASTRA TOOLS
