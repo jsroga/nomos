@@ -4,7 +4,7 @@ import {
   detectLoadingSection,
   getActionDedupeKey,
 } from '../tool-result-mapper'
-import { ActionType, BibleSection } from '@/domains/storyteller/core/Enums'
+import { ActionType, BibleSection } from '@/domains/storyteller/core/types/Enums'
 
 describe('detectLoadingSection', () => {
   it('returns null for non-update tools', () => {

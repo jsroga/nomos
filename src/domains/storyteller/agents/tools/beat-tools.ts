@@ -8,7 +8,7 @@
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { beats } from '@/db'
-import { BeatType, BeatStatus } from '@/domains/storyteller/core/Enums'
+import { BeatType, BeatStatus } from '@/domains/storyteller/core/types/Enums'
 import { v4 as uuidv4 } from 'uuid'
 import { db } from '@/lib/db'
 import { eq } from 'drizzle-orm'

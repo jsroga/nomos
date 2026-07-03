@@ -3,8 +3,8 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { ActionHistoryEntry, AgentAction } from '@/domains/storyteller/core/ActionTypes'
-import { formatActionForDisplay } from '@/domains/storyteller/core/ActionFormatters'
+import { ActionHistoryEntry, AgentAction } from '@/domains/storyteller/core/types/ActionTypes'
+import { formatActionForDisplay } from '@/domains/storyteller/core/formatting/ActionFormatters'
 import { X, Undo2, Check, Loader2, Eye } from 'lucide-react'
 
 interface ActionToastProps {

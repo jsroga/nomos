@@ -4,7 +4,7 @@ import React, { useState, useEffect, memo } from 'react'
 import { ChevronLeft, ChevronRight, Play, Pause, ChevronUp, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-import { QuestionSession } from '@/domains/storyteller/core/ActionTypes'
+import { QuestionSession } from '@/domains/storyteller/core/types/ActionTypes'
 
 interface Beat {
   id: string

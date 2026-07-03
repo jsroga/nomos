@@ -6,7 +6,7 @@
  * (entity auto-linking, dedup, SSE emission).
  */
 
-import { ActionType, BibleSection } from '@/domains/storyteller/core/Enums'
+import { ActionType, BibleSection } from '@/domains/storyteller/core/types/Enums'
 import { processToolResultToAction, getActionTypeForSection } from './action-config'
 
 export type DetectedSection = BibleSection | 'beats'

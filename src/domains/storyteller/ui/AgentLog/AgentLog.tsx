@@ -2,12 +2,12 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
-import { AgentAction, AgentQuestion } from '@/domains/storyteller/core/ActionTypes'
+import { AgentAction, AgentQuestion } from '@/domains/storyteller/core/types/ActionTypes'
 import { ActionCommitted, ActionSuggestion } from '../ActionToast'
-import { ActionStatus } from '@/domains/storyteller/core/Enums'
+import { ActionStatus } from '@/domains/storyteller/core/types/Enums'
 import { QuestionCard } from '../QuestionCard'
 import { ReferenceText } from '../ReferenceText'
-import { hasReferences } from '@/domains/storyteller/core/ReferenceParser'
+import { hasReferences } from '@/domains/storyteller/core/entities/ReferenceParser'
 import {
   Bot,
   User,

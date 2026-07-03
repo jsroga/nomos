@@ -7,7 +7,7 @@
 
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import { BeatStatus } from '@/domains/storyteller/core/Enums'
+import { BeatStatus } from '@/domains/storyteller/core/types/Enums'
 
 // ==========================================
 // TYPES

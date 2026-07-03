@@ -35,7 +35,7 @@ export const selfCritiqueTool = createTool({
       }
     }
 
-    const { createSelfCritiqueAgent } = await import('@/domains/storyteller/agents/SelfCritiqueAgent')
+    const { createSelfCritiqueAgent } = await import('@/domains/storyteller/agents/council/SelfCritiqueAgent')
     const agent = await createSelfCritiqueAgent()
     const result = await agent.critique(
       draft,

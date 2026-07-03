@@ -15,14 +15,14 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createStorytellerAgent } from '@/domains/storyteller/agents/StorytellerAgent'
-import { EpisodePremiseSchema, PremiseArchitectResponseSchema } from '@/domains/storyteller/agents/PremiseArchitectAgent'
+import { EpisodePremiseSchema, PremiseArchitectResponseSchema } from '@/domains/storyteller/agents/council/PremiseArchitectAgent'
 import {
   getAgentModel,
   getModelByEffort,
   inferEffortFromContext,
   toMastraModelString,
   MODEL_FALLBACKS,
-} from '@/domains/storyteller/agents/ModelConfig'
+} from '@/domains/storyteller/config/ModelConfig'
 import { updateStoryPhaseTool } from '@/domains/storyteller/tools/storytelling-adapter'
 
 // Mock DB interactions

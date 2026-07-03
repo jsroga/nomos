@@ -21,12 +21,12 @@ import React, { useMemo, useState, useEffect } from 'react'
 import { useEntities } from '@/domains/storyteller/state/queries/useEntity'
 import { cn } from '@/lib/utils'
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
-import { splitIntoSegments, ParsedReference, TextSegment, stripReferences } from '@/domains/storyteller/core/ReferenceParser'
+import { splitIntoSegments, ParsedReference, TextSegment, stripReferences } from '@/domains/storyteller/core/entities/ReferenceParser'
 import {
   EntityReference,
   EntityRelationship,
   EntityType,
-} from '@/domains/storyteller/core/EntityReferences'
+} from '@/domains/storyteller/core/entities/EntityReferences'
 import { User, MapPin, Calendar, Users, Scroll, Film, BookOpen, Loader2 } from 'lucide-react'
 
 export type { EntityReference, EntityRelationship, EntityType }

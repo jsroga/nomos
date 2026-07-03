@@ -1,6 +1,6 @@
 import React, { useState, useEffect, memo } from 'react'
 import { BeatCard } from '../BeatCard'
-import { BeatCard as BeatData } from '@/domains/storyteller/core/StoryTypes'
+import { BeatCard as BeatData } from '@/domains/storyteller/core/types/StoryTypes'
 import { useParams } from 'next/navigation'
 import { Plus, Image as ImageIcon, Loader2, Sparkles } from 'lucide-react'
 import { useConfirmDialog } from '@/components/ui/confirm-dialog'

@@ -1,4 +1,4 @@
-import { EntityReference } from '@/domains/storyteller/core/EntityReferences'
+import { EntityReference } from '@/domains/storyteller/core/entities/EntityReferences'
 
 /**
  * EntityLoader

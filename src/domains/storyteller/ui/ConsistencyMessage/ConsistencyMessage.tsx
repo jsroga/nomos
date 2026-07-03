@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { RefreshCcw, Check, AlertTriangle, User, Zap, Scroll, Brain, Palette } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { ConsistencyCheckResult, Inconsistency, ConsistencyFix } from '@/domains/storyteller/core/ConsistencyTypes'
+import { ConsistencyCheckResult, Inconsistency, ConsistencyFix } from '@/domains/storyteller/core/types/ConsistencyTypes'
 import { JSONDiffViewer } from '../JSONDiffViewer'
 
 interface ConsistencyMessageProps {

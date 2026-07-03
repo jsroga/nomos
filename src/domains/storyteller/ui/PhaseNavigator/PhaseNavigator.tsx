@@ -15,7 +15,7 @@ import React from 'react'
 import { cn } from '@/lib/utils'
 import { Sparkles, LayoutGrid, PenTool, Check, Lock, ChevronRight, Loader2 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import type { PhaseId } from '@/domains/storyteller/core/Enums'
+import type { PhaseId } from '@/domains/storyteller/core/types/Enums'
 
 // Re-exported for UI consumers; canonical source is the Phase enum in enums.ts
 export type Phase = PhaseId

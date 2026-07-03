@@ -11,9 +11,9 @@ import { db } from '@/lib/db'
 import { eq, and } from 'drizzle-orm'
 import { deepMerge } from '@/domains/storyteller/config/action-config'
 import { getErrorMessage } from '@/lib/error-utils'
-import { ReferenceValidator } from '../services/ReferenceValidatorService'
+import { ReferenceValidator } from '@/domains/storyteller/services/ReferenceValidatorService'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
-import { parseReferences } from '@/domains/storyteller/core/ReferenceParser'
+import { parseReferences } from '@/domains/storyteller/core/entities/ReferenceParser'
 
 /** After this many rejections for worldDescription link count, next attempt is accepted to stop loops. */
 const WORLD_DESC_REJECTION_ACCEPT_AFTER = 2

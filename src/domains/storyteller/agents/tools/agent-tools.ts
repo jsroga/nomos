@@ -9,23 +9,23 @@
 
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import { createPsychologistAgent } from '@/domains/storyteller/agents/PsychologistAgent'
-import { createConsequenceAgent } from '@/domains/storyteller/agents/ConsequenceAgent'
-import { createDevilsAdvocateAgent } from '@/domains/storyteller/agents/DevilsAdvocateAgent'
-import { createGardenerAgent } from '@/domains/storyteller/agents/GardenerAgent'
-import { createPremiseArchitectAgent } from '@/domains/storyteller/agents/PremiseArchitectAgent'
-import { runConsistencyCheck } from '@/domains/storyteller/agents/ConsistencyAgent'
-import { CreativeDirectorAgent } from '@/domains/storyteller/agents/CreativeDirectorAgent'
-import { getWorkflowTraceId, getWorkflowEventBus } from '@/domains/storyteller/core/WorkflowContext'
+import { createPsychologistAgent } from '@/domains/storyteller/agents/council/PsychologistAgent'
+import { createConsequenceAgent } from '@/domains/storyteller/agents/council/ConsequenceAgent'
+import { createDevilsAdvocateAgent } from '@/domains/storyteller/agents/council/DevilsAdvocateAgent'
+import { createGardenerAgent } from '@/domains/storyteller/agents/council/GardenerAgent'
+import { createPremiseArchitectAgent } from '@/domains/storyteller/agents/council/PremiseArchitectAgent'
+import { runConsistencyCheck } from '@/domains/storyteller/agents/judges/ConsistencyAgent'
+import { CreativeDirectorAgent } from '@/domains/storyteller/agents/judges/CreativeDirectorAgent'
+import { getWorkflowTraceId, getWorkflowEventBus } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
 import { langfuse } from '@/agent-core/observability'
 import { characters, storyPlans } from '@/db'
 import { db } from '@/lib/db'
 import { eq } from 'drizzle-orm'
 
-import { WORKFLOW_EVENTS } from '@/domains/storyteller/core/WorkflowContext'
+import { WORKFLOW_EVENTS } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
 import { getErrorMessage } from '@/lib/error-utils'
 import type { MazurJudgment } from '@/agent-core/judging'
-import { ReferenceValidator } from '../services/ReferenceValidatorService'
+import { ReferenceValidator } from '@/domains/storyteller/services/ReferenceValidatorService'
 
 /** Shape returned by PremiseArchitectAgent.generatePremise */
 interface PremiseGenerationResult {

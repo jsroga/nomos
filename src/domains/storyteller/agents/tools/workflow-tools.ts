@@ -6,7 +6,7 @@ import {
   getWorkflowEventBus,
   getWorkflowTraceId,
   WORKFLOW_EVENTS,
-} from '@/domains/storyteller/core/WorkflowContext'
+} from '@/domains/storyteller/agents/orchestration/WorkflowContext'
 import { v4 as uuidv4 } from 'uuid'
 import { getErrorMessage } from '@/lib/error-utils'
 

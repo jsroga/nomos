@@ -10,7 +10,7 @@
  * 3. Runtime configuration
  */
 
-import { deepMerge } from '@/domains/storyteller/core/DeepMerge'
+import { deepMerge } from '@/domains/storyteller/core/editing/DeepMerge'
 
 // ============================================
 // TYPES

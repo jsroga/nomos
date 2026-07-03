@@ -6,12 +6,8 @@
  * seam until later shared-layer/schema cleanup work lands.
  */
 
-// Agents
+// Agents (re-exported from unified barrel covering all agent groups)
 export * from './agents'
-export * from './agents/ConsistencyAgent'
-export * from './agents/ScriptReviewAgent'
-export * from './agents/StorytellerWorkflow'
-export * from './agents/WritersRoomGraph'
 
 // Client-facing components (ui/)
 export * from './ui/ActionApprovalModal'
@@ -41,14 +37,8 @@ export * from './config/action-config'
 export * from './config/storyteller-agents'
 export * from './config/tool-result-mapper'
 
-// Core
-export * from './core/ActionTypes'
-export * from './core/CascadeEditor'
-export * from './core/ConsistencyTypes'
-export * from './core/Enums'
-export * from './core/ReferenceParser'
-export * from './core/UndoManager'
-export * from './core/WorkflowContext'
+// Core (re-exported from unified barrel)
+export * from './core'
 
 // State hooks
 export * from './state/queries/useBibleState'

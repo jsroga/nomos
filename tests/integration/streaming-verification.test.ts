@@ -1,6 +1,6 @@
 
 import { describe, it, expect } from 'vitest'
-import { createStorytellerAgent } from '@/domains/storyteller/agents'
+import { createStorytellerAgent } from '@/domains/storyteller'
 
 describe('Storyteller Streaming Compatibility', () => {
     it('should return a stream result from the agent', async () => {

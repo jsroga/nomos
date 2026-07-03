@@ -9,7 +9,7 @@ import {
   extractCastFromUpdates,
   normalizeCastInUpdates,
   readCastFromPlan,
-} from '@/domains/storyteller/core/StoryPlanFields'
+} from '@/domains/storyteller/core/formatting/StoryPlanFields'
 
 describe('deepMerge', () => {
   it('merges nested objects without clobbering sibling keys', () => {

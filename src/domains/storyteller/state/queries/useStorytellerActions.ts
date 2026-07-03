@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { ActionHistoryEntry, AgentAction } from '@/domains/storyteller/core/ActionTypes'
-import { BibleSection } from '@/domains/storyteller/core/Enums'
+import { ActionHistoryEntry, AgentAction } from '@/domains/storyteller/core/types/ActionTypes'
+import { BibleSection } from '@/domains/storyteller/core/types/Enums'
 import {
   getSectionForActionType,
   applyUpdatesToStoryPlan,

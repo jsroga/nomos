@@ -22,11 +22,11 @@ import { eq, and, inArray } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 
 // Re-export types from reference-parser for convenience
-export { ENTITY_PREFIXES, PREFIX_TO_TYPE } from '@/domains/storyteller/core/ReferenceParser'
+export { ENTITY_PREFIXES, PREFIX_TO_TYPE } from '@/domains/storyteller/core/entities/ReferenceParser'
 
-export type { EntityType } from '@/domains/storyteller/core/ReferenceParser'
+export type { EntityType } from '@/domains/storyteller/core/entities/ReferenceParser'
 
-import { EntityType, ENTITY_PREFIXES, PREFIX_TO_TYPE } from '@/domains/storyteller/core/ReferenceParser'
+import { EntityType, ENTITY_PREFIXES, PREFIX_TO_TYPE } from '@/domains/storyteller/core/entities/ReferenceParser'
 
 export interface EntityReference {
   id: string // e.g., "char-a1b2c3d4"

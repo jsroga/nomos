@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import type { StoryPlan } from '@/domains/storyteller/prompts/schemas/agent-schemas'
-import { dedupeCastByName, mergeCastFromSource, readCastFromPlan } from '@/domains/storyteller/core/StoryPlanFields'
+import { dedupeCastByName, mergeCastFromSource, readCastFromPlan } from '@/domains/storyteller/core/formatting/StoryPlanFields'
 
 interface HydrationParams {
   currentProject: any

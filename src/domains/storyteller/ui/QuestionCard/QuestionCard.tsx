@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
-import { AgentQuestion, QuestionOption } from '@/domains/storyteller/core/ActionTypes'
+import { AgentQuestion, QuestionOption } from '@/domains/storyteller/core/types/ActionTypes'
 import { Check, MessageCircleQuestion, Clock, Star, ChevronRight } from 'lucide-react'
 
 interface QuestionCardProps {

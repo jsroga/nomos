@@ -1,17 +1,19 @@
 /**
  * Storyteller Agents v2 - Mastra Implementation
+ * Re-organized structure: StorytellerAgent/, council/, judges/, orchestration/, tools/
  */
 
-export { StorytellerAgent, createStorytellerAgent } from '@/domains/storyteller/agents/StorytellerAgent'
-export { PsychologistAgent, createPsychologistAgent } from '@/domains/storyteller/agents/PsychologistAgent'
-export { GardenerAgent, createGardenerAgent } from '@/domains/storyteller/agents/GardenerAgent'
-export { ConsequenceAgent, createConsequenceAgent } from '@/domains/storyteller/agents/ConsequenceAgent'
-export { DevilsAdvocateAgent, createDevilsAdvocateAgent } from '@/domains/storyteller/agents/DevilsAdvocateAgent'
-export { PremiseArchitectAgent, createPremiseArchitectAgent } from '@/domains/storyteller/agents/PremiseArchitectAgent'
-export { storyCreationWorkflow } from '@/domains/storyteller/agents/StoryWorkflow'
+// Primary agent
+export { StorytellerAgent, createStorytellerAgent } from './StorytellerAgent';
 
-// Creative Directors (Meta-agents that influence storytelling style)
-export {
-  CreativeDirectorAgent,
-  type CreativeDirectorType,
-} from '@/domains/storyteller/agents/CreativeDirectorAgent'
+// Council agents (specialized advisors)
+export * from './council';
+
+// Judge agents (quality control)
+export * from './judges';
+
+// Orchestration (workflows, graphs, planner, context)
+export * from './orchestration';
+
+// Tools
+export * from './tools';
