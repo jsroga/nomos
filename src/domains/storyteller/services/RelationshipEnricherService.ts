@@ -5,7 +5,7 @@
  * Provides enriched descriptions with entity references for tooltips.
  */
 
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import { projects } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { EntityType } from './EntityRegistryService'

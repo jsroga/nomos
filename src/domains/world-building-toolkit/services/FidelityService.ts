@@ -1,5 +1,5 @@
 import { Tile, useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
-import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
+import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { DynamicLocalStorageKeys } from '@/constants/localStorage'
 import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/constants/polling'
 

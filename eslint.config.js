@@ -188,8 +188,9 @@ module.exports = [
   {
     files: ['src/domains/**/*.{ts,tsx}'],
     rules: {
+      // Wave 1 completed - now at ERROR
       'no-restricted-imports': [
-        'warn',
+        'error',
         {
           patterns: [
             {
@@ -197,24 +198,37 @@ module.exports = [
               message: 'Import from "@/shared/data" or "@/shared/auth" instead of @/lib.',
             },
             {
-              group: ['@/agent-core/*', '@/agent-core'],
-              message: 'Import from "@/shared/agent-kernel" instead of @/agent-core.',
-            },
-            {
-              group: ['@/infrastructure/*', '@/infrastructure'],
-              message: 'Import from "@/shared/data" or "@/shared/agent-kernel" instead of @/infrastructure.',
-            },
-            {
-              group: ['@/services/*', '@/services'],
-              message: 'Import from "@/shared/data" or domain index instead of root @/services.',
+              group: ['@/hooks/*', '@/hooks'],
+              message: 'Import from "@/shared/data/queries" or "@/shared/data" instead of root @/hooks.',
             },
             {
               group: ['@/store/*', '@/store'],
               message: 'Import from "@/shared/auth" or "@/shared/errors" instead of root @/store.',
             },
             {
-              group: ['@/hooks/*', '@/hooks'],
-              message: 'Import from "@/shared/data/queries" or "@/shared/data" instead of root @/hooks.',
+              group: ['@/services/*', '@/services'],
+              message: 'Import from "@/shared/data" or domain index instead of root @/services.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // Wave 2+ boundary rules (still at WARN)
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'warn',
+        {
+          patterns: [
+            {
+              group: ['@/agent-core/*', '@/agent-core'],
+              message: 'Import from "@/shared/agent-kernel" instead of @/agent-core.',
+            },
+            {
+              group: ['@/infrastructure/*', '@/infrastructure'],
+              message: 'Import from "@/shared/data" or "@/shared/agent-kernel" instead of @/infrastructure.',
             },
             {
               group: ['@/prompts/*', '@/prompts'],

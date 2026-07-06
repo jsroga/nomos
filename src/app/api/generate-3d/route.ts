@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
-import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/lib/api-utils'
-import { sanitizePath, isValidProjectId, safeFetch, secureLog } from '@/lib/security'
+import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { sanitizePath, isValidProjectId, safeFetch, secureLog } from '@/shared/auth/security'
 
 /**
  * @openapi

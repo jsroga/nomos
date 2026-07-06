@@ -10,9 +10,9 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import toast from 'react-hot-toast'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 import { STYLE_PRESETS } from '@/config/style-presets'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
 

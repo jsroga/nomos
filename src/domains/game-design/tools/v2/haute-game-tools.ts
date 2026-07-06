@@ -21,7 +21,7 @@ import {
   SilentTeacherOutputSchema,
   MundanePoetOutputSchema,
 } from '../../schemas'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 function getModel() {
   return new ChatOpenAI({

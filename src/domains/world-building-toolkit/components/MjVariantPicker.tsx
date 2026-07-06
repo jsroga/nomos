@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { upscaleService } from '../services/UpscaleService'
 import toast from 'react-hot-toast'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 interface MjVariantPickerProps {
   tileId: string

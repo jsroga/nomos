@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { tasks } from '@trigger.dev/sdk/v3'
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import { projects } from '@/db'
 import { type StoryPlan } from '@/domains/storyteller'
 import { verifyProjectAccess } from '@/domains/storyteller'
 import { eq } from 'drizzle-orm'
 import OpenAI from 'openai'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/shared/auth/auth'
 import { resolveStyleReferenceUrls } from '@/config/style-presets'
 
 function getOpenAIClient() {

@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getUndoManager } from '@/domains/storyteller'
 import { verifyProjectAccess } from '@/domains/storyteller'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/shared/auth/auth'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30

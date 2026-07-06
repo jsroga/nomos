@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import { assets, projects } from '@/db/schema'
 import { v4 as uuidv4 } from 'uuid'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { eq } from 'drizzle-orm'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/shared/auth/auth'
 
 // Helper to generate thumbnail for 3D models
 async function generate3DThumbnail(modelPath: string, outputPath: string): Promise<void> {

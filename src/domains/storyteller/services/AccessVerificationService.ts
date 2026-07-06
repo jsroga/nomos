@@ -5,7 +5,7 @@
  * instead of multiple sequential queries.
  */
 
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import { beats, episodes, projects, characters } from '@/domains/storyteller/db/schema'
 import { gameLoops } from '@/db/schema'
 import { eq } from 'drizzle-orm'

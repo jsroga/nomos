@@ -9,7 +9,7 @@
 
 import React, { memo } from 'react'
 import { Handle, Position, NodeProps } from '@xyflow/react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import { User, Users, Crown, MapPin, Calendar, Scroll } from 'lucide-react'
 import { CharacterNodeData, CharacterWebNode } from './types'
 

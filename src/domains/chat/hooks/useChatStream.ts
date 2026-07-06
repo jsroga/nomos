@@ -29,7 +29,7 @@ import {
   clearInterruptedStream,
 } from '@/lib/chat-persistence'
 import { generateSessionId } from '@/lib/langfuse-session'
-import { getErrorMessage, toError } from '@/lib/error-utils'
+import { getErrorMessage, toError } from '@/shared/errors/error-utils'
 
 const CHAT_DEBUG = process.env.NEXT_PUBLIC_CHAT_DEBUG === '1'
 

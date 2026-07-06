@@ -24,7 +24,7 @@ import {
   recordError,
   flushObservability,
 } from '@/agent-core/observability'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // Use the imported langfuse client if enabled
 const langfuseClient = isLangfuseEnabled ? langfuse : null

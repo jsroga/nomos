@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/lib/api-utils'
+import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
 // Poll for task completion
 async function pollForCompletion(

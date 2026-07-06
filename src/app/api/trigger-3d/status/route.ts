@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runs } from '@trigger.dev/sdk/v3'
-import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
-import { getErrorMessage } from '@/lib/error-utils'
+import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 export const dynamic = 'force-dynamic'
 

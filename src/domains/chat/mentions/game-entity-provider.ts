@@ -6,7 +6,7 @@
  */
 
 import { MentionProvider, MentionItem, ProjectContext } from './types'
-import { GameEntity } from '@/hooks/useGameEntities'
+import { GameEntity } from '@/shared/data/queries/useGameEntities'
 
 const ENTITY_TYPE_ICONS: Record<string, string> = {
   character: 'User',

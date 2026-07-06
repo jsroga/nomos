@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import { TOUR_STEP_IDS } from '@/lib/tour-constants'
 import { useSearchParams, useRouter, useParams, usePathname } from 'next/navigation'
 import { toast } from 'sonner'
@@ -123,7 +123,7 @@ const MasterPromptEditor = dynamic(
   { ssr: false }
 )
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
-import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
+import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 // posterGenerationService loaded dynamically at call sites
 import { FileText, Users, BookOpen, AlertCircle, Scroll } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -133,14 +133,14 @@ import {
   SidebarEmptyState,
   SidebarHeader,
 } from '@/components/ui/domain-sidebar'
-// import { useProjectFromUrl } from '@/hooks/useProjectFromUrl'
+// import { useProjectFromUrl } from '@/shared/data/useProjectFromUrl'
 import { useConfirmDialog } from '@/components/ui/confirm-dialog'
 
 import { LocalStorageKeys } from '@/constants/localStorage'
 // moodboardGenerationService loaded dynamically at call sites
 import { cachedFetch, clearFetchCache } from '@/lib/fetch-cache'
 import { isAdminUser } from '@/lib/admin-users'
-import { toError } from '@/lib/error-utils'
+import { toError } from '@/shared/errors/error-utils'
 
 // Module-level tracking removed in favor of useRef
 // const hydratedProjects = new Set<string>()

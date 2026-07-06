@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { ConfidentAIClient, getTestRunUrl, LLMTestCase } from '@/evaluation/confident-ai/client'
 import { spawn } from 'child_process'
 import * as path from 'path'
-import { withAuth, type AuthenticatedRequest } from '@/lib/api-utils'
+import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
 function runPythonScript(scriptPath: string, input: string): Promise<string> {
   return new Promise((resolve, reject) => {

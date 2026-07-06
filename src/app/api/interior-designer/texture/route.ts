@@ -5,7 +5,7 @@ import {
   interiorTextureResponseSchema,
   type InteriorTextureResponse,
 } from '@/domains/interior-designer/io/interior-designer.dto'
-import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/lib/api-utils'
+import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
 export const POST = withRateLimit(
   withAuth(

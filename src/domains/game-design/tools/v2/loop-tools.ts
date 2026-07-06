@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { db } from '../../../../db'
 import { gameLoops, marketAnalyses } from '../../../../db/schema'
 import { eq } from 'drizzle-orm'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // Schema for Get Loops
 const GetLoopsSchema = z.object({

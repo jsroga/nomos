@@ -1,6 +1,6 @@
 'use client'
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import { motion } from 'framer-motion'
 
 export type GlowEffectProps = {

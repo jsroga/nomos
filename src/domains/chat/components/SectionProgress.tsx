@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import { Check, Loader2, Clock, ChevronDown, ChevronUp } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 

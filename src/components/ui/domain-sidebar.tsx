@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import { LocalStorageKeys } from '@/constants/localStorage'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Slider } from '@/components/ui/slider'

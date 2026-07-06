@@ -6,7 +6,7 @@ import {
   withRateLimit,
   verifyProjectAccess,
   type AuthenticatedRequest,
-} from '@/lib/api-utils'
+} from '@/shared/data/api-utils'
 import { resolveStyleReferenceUrls } from '@/config/style-presets'
 
 export const dynamic = 'force-dynamic'

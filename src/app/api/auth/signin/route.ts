@@ -1,7 +1,7 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
-import { signInSchema } from '@/lib/validation/auth'
+import { signInSchema } from '@/shared/auth/validation'
 import { ValidationError } from 'yup'
 
 export async function POST(request: NextRequest) {

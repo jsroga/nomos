@@ -1,13 +1,13 @@
 import { Save, Edit2, X, Lock, Unlock, Shield, Loader2, Network, BookOpen } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 
 // Lazy load CharacterWeb since it's a heavy component
 const CharacterWeb = lazy(() => import('../CharacterWeb').then(m => ({ default: m.CharacterWeb })))
 import { LocalStorageKeys } from '@/constants/localStorage'
-import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
+import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { isCentralUser, canEditBible } from '@/lib/bible-permissions'
 
 import { StoryPlan } from '@/domains/storyteller/prompts/schemas/agent-schemas'

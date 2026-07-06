@@ -7,7 +7,7 @@
 
 import { getConfidentAIClient } from './client'
 import { STORYTELLER_METRICS, getMetricNames } from './metrics'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 const STORYTELLER_COLLECTION_NAME = 'Storyteller Full v3'
 const STORYTELLER_QUICK_COLLECTION = 'Storyteller Quick v3'

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Langfuse } from 'langfuse'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // Initialize Langfuse client for fetching data
 function getLangfuseClient() {

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import { interiorDesigns, projects } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
-import { requireAuth, checkRateLimit } from '@/lib/api-utils'
+import { requireAuth, checkRateLimit } from '@/shared/data/api-utils'
 import {
   createInteriorDesignRequestSchema,
   deleteInteriorDesignQuerySchema,

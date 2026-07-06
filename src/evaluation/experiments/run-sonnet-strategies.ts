@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import OpenAI from 'openai'
 import { runMultiVariantTest, AgentVariant } from './storyteller-experiments'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // ============================================
 // CLAUDE 3.5 SONNET CONFIGURATION

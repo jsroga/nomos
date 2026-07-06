@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { tasks } from '@trigger.dev/sdk/v3'
 import type { remesh3DModelTask } from '@/trigger/remesh-3d-model'
-import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/lib/api-utils'
+import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
 export const dynamic = 'force-dynamic'
 

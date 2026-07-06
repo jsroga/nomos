@@ -2,7 +2,7 @@
 
 import React, { Suspense, useState, useEffect } from 'react'
 import { Loader2, AlertCircle, ExternalLink } from 'lucide-react'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // Lazy load Three.js components to avoid SSR issues
 let Canvas: any = null

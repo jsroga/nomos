@@ -25,7 +25,7 @@ import {
 } from 'lucide-react'
 import { AgentAction } from '@/domains/storyteller/core/types/ActionTypes'
 import ReactDiffViewer, { DiffMethod } from 'react-diff-viewer-continued'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 
 interface ActionChange {
   path: string

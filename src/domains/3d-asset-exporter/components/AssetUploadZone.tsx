@@ -3,7 +3,7 @@
 import React, { useState, useRef, DragEvent } from 'react'
 import { Upload, X, Check, AlertCircle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 const SUPPORTED_FORMATS = {
   images: ['.png', '.jpg', '.jpeg', '.webp'],

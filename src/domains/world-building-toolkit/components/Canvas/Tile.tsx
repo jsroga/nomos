@@ -1,6 +1,6 @@
 import React from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import { AlertCircle, Loader2 } from 'lucide-react'
 
 const STAGE_LABELS: Record<string, string> = {

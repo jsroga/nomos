@@ -7,7 +7,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { resetPasswordSchema } from '@/lib/validation/auth'
+import { resetPasswordSchema } from '@/shared/auth/validation'
 
 export default function ResetPasswordPage() {
   const router = useRouter()

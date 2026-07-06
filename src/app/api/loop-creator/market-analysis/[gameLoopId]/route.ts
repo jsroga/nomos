@@ -148,7 +148,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
   }
 }
 
-import { requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/shared/auth/auth'
 
 /**
  * POST - Save a new market analysis

@@ -29,7 +29,7 @@ import {
   Database,
   LucideIcon,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import { MentionItem, MentionCategory, TYPE_ICONS } from '../mentions/types'
 
 // Icon component map

@@ -2,7 +2,7 @@ import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import fs from 'fs'
 import path from 'path'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 interface GenerateCombinedStoryboardPayload {
   episodeId: string

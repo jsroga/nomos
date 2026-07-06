@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { characters, projects } from '@/db'
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import {
   bibleToPrompt,
   bibleToVisualPrompt,
@@ -12,7 +12,7 @@ import { eq } from 'drizzle-orm'
 import { createOpenAI } from '@ai-sdk/openai'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { generateText } from 'ai'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/shared/auth/auth'
 
 export async function GET(req: NextRequest) {
   try {

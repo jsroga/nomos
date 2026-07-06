@@ -1,5 +1,5 @@
 import { UnityExporter } from '../utils/UnityExporter'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // Mock Fetch
 const mockFetch = async (url: string) => {

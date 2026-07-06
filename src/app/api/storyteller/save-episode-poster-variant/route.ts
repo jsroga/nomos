@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import { episodes } from '@/db'
 import { verifyEpisodeAccess, verifyProjectAccess } from '@/domains/storyteller'
 import { eq } from 'drizzle-orm'
 import fs from 'fs'
 import path from 'path'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/shared/auth/auth'
 
 export async function POST(req: NextRequest) {
   try {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { withAuth, verifyProjectAccess, type AuthenticatedRequest } from '@/lib/api-utils'
+import { withAuth, verifyProjectAccess, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { Database } from '@/infrastructure/storage/database.types'
 
 type TileUpdate = Database['public']['Tables']['tiles']['Update']

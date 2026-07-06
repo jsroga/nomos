@@ -20,7 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { StorytellerImage } from '../StorytellerImage'
 import { ImageVariantSelector } from '../ImageVariantSelector'
 import { ReferenceText } from '../ReferenceText'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 
 interface EpisodePremisePanelProps {
   premise: EpisodePremise | null

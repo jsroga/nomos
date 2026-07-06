@@ -5,7 +5,7 @@ import { Loader2, Save, Square, Check } from 'lucide-react'
 import { getSupabaseClient } from '@/infrastructure/storage/supabaseClient'
 import { selectModeService } from '@/domains/world-building-toolkit/services/SelectModeService'
 import toast from 'react-hot-toast'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 export const SelectModeToolbar: React.FC = () => {
   const isSelectMode = useWorldStore(state => state.isSelectMode)

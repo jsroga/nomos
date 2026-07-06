@@ -14,7 +14,7 @@ import {
   HelpCircle,
   ArrowRight,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import { ReferenceText } from '../ReferenceText'
 
 interface EpisodeRoadmapCardProps {

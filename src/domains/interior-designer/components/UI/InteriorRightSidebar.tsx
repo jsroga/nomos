@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import { AssetLibrary } from './AssetLibrary'
 import { PropertiesPanel } from './PropertiesPanel'
 import { LayerPanel } from './LayerPanel'

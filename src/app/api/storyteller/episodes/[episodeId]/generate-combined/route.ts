@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import { episodes, projects } from '@/db'
 import { eq } from 'drizzle-orm'
 import { generateCombinedStoryboard } from '@/trigger/generate-combined-storyboard'

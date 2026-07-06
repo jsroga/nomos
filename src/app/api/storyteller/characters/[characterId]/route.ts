@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import { characters, projects } from '@/db'
 import { eq } from 'drizzle-orm'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/shared/auth/auth'
 
 async function verifyCharacterAccess(characterId: string, userId: string) {
   const [character] = await db.select().from(characters).where(eq(characters.id, characterId))

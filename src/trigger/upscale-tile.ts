@@ -2,7 +2,7 @@ import { task, logger, metadata, AbortTaskRunError } from '@trigger.dev/sdk/v3'
 import { put } from '@vercel/blob'
 import { storageService } from '@/infrastructure/storage/StorageService'
 import { UPSCALE_PROMPTS, MASK_CONFIG, getCreativityPrompt } from '@/lib/server/prompts'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // Provider types
 type UpscaleProvider = 'midjourney' | 'replicate' | 'stability'

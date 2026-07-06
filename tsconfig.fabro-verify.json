@@ -1,8 +1,0 @@
-{
-  "extends": "./tsconfig.json",
-  "include": [
-    "src/domains/storyteller/**/*.ts",
-    "src/domains/storyteller/**/*.tsx",
-    "src/app/api/storyteller/**/*.ts"
-  ]
-}

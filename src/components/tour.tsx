@@ -11,7 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 
 import { X, ArrowLeft, ArrowRight, Play, SkipForward, XCircle } from 'lucide-react'
 

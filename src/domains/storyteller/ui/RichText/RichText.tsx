@@ -17,7 +17,7 @@
 import React, { useMemo } from 'react'
 import { ReferenceText } from '../ReferenceText'
 import { hasReferences } from '@/domains/storyteller/core/entities/ReferenceParser'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import { useBible } from '../WorldBible/BibleContext'
 import { extractEntitiesFromPlan } from '@/domains/storyteller/core/entities/EntityExtractor'
 

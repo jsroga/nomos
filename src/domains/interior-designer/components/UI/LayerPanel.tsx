@@ -3,7 +3,7 @@
 import React from 'react'
 import { useInteriorStore } from '@/domains/interior-designer/store/useInteriorStore'
 import { Square, Trash2, GitCommit, BrickWall, Box, Mountain, Droplets } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/data/utils'
 import { Button } from '@/components/ui/button'
 import { SidebarSection, SidebarEmptyState } from '@/components/ui/domain-sidebar'
 

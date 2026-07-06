@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runs } from '@trigger.dev/sdk/v3'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/shared/auth/auth'
 
 export const dynamic = 'force-dynamic'
 

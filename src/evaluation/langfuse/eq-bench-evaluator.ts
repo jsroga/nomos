@@ -17,7 +17,7 @@ import {
   EQ_BENCH_MAGIC_JUDGE,
   EQ_BENCH_CONSISTENCY_JUDGE,
 } from '../../prompts/storyteller-prompts'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // =============================================================================
 // TYPES

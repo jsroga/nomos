@@ -5,7 +5,7 @@
  * Enables agents to be aware of entities from ALL domains.
  */
 
-import { GameEntity } from '@/hooks/useGameEntities'
+import { GameEntity } from '@/shared/data/queries/useGameEntities'
 
 /**
  * Build cross-domain context XML for AI agents

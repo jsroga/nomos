@@ -5,7 +5,7 @@
  * using Reciprocal Rank Fusion (RRF) for optimal retrieval.
  */
 
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import { documentEmbeddings } from '@/db'
 import { sql, and, desc } from 'drizzle-orm'
 import { getVoyageEmbeddings } from '../embeddings/voyage-embeddings'

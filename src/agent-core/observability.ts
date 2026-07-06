@@ -1,5 +1,5 @@
 import { Langfuse, Span, LangfuseTraceClient } from 'langfuse'
-import { getErrorMessage, toError } from '@/lib/error-utils'
+import { getErrorMessage, toError } from '@/shared/errors/error-utils'
 
 // Initialize Langfuse singleton with robust configuration
 // Ensure environment variables LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY are set

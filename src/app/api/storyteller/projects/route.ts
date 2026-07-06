@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import { projects } from '@/db'
 
 /**
@@ -63,7 +63,7 @@ import { projects } from '@/db'
  *         description: Server error
  */
 
-import { requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/shared/auth/auth'
 import { eq } from 'drizzle-orm'
 
 export async function POST(req: Request) {

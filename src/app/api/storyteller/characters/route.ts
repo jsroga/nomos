@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import { characters } from '@/db'
 import { verifyCharacterAccess, verifyProjectAccess } from '@/domains/storyteller'
 import { eq, desc, and, sql } from 'drizzle-orm'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/shared/auth/auth'
 
 /**
  * @openapi

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { FalClient, SamParams } from '@/infrastructure/ai/fal'
-import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/lib/api-utils'
+import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
 // Set max duration for longer processing (App Router)
 export const maxDuration = 60

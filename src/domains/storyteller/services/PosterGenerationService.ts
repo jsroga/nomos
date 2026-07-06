@@ -1,4 +1,4 @@
-import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
+import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/constants/polling'
 
 // Define local storage keys

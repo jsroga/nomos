@@ -6,7 +6,7 @@ import { imageService, StyleInfo } from '@/lib/server/image-service'
 import sharp from 'sharp'
 import { v4 as uuidv4 } from 'uuid'
 import { storageService } from '@/infrastructure/storage/StorageService'
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 import {
   logLLMRequestStart,
   logLLMRequestComplete,

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db } from '@/db/client'
 import { beats, episodes, projects } from '@/db'
 import { eq, asc } from 'drizzle-orm'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/shared/auth/auth'
 
 async function verifyEpisodeAccess(episodeId: string, userId: string) {
   const [episode] = await db.select().from(episodes).where(eq(episodes.id, episodeId))

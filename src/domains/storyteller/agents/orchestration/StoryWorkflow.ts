@@ -27,7 +27,7 @@ import {
   WORKFLOW_EVENTS,
 } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
 
-import { getErrorMessage } from '@/lib/error-utils'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // Helper to emit step events
 const emitStepEvent = (step: string, phase: 'start' | 'complete', data?: any) => {

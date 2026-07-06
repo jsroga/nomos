@@ -2,8 +2,8 @@
 
 import React from 'react'
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react'
-import { useGlobalStatusStore, OperationType } from '@/store/useGlobalStatusStore'
-import { cn } from '@/lib/utils'
+import { useGlobalStatusStore, OperationType } from '@/shared/jobs/useGlobalStatusStore'
+import { cn } from '@/shared/data/utils'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { LiquidGlass } from '@/components/LiquidGlass'
