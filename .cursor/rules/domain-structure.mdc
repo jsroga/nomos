@@ -1,0 +1,46 @@
+---
+description: src/domains/<module> vertical-slice topology invariants and dependency rule from docs/unified/ARCHITECTURE.md
+globs: "**/src/domains/**"
+alwaysApply: false
+---
+
+# Domain module topology (target state)
+
+Each module under `src/domains/<module>/` is a vertical slice with this layer shape and a **single public `index.ts` barrel**:
+
+```
+src/domains/<module>/
+├── ui/           # React components (presentational + container)
+├── state/        # Zustand client UI state; TanStack Query for server data
+├── io/           # network/api boundaries
+├── core/         # pure domain logic (no React, no DB, no IO)
+├── services/     # orchestration / business services
+├── agents/       # Mastra agents + tools (domain-specific)
+├── tasks/        # Trigger.dev tasks (asset modules lean here, not agents/)
+├── prompts/      # agent prompts + Workspace skills
+└── index.ts      # single public barrel
+```
+
+## Dependency rule (inward → outward allowed; outward → inward forbidden)
+
+`ui → state → io → core → services → agents`, and `ui` may read `services`/`agents` only via the barrel. **Never**: `ui` touching `db`/`io` directly, `core` importing React/DB/IO, cross-module internal (non-barrel) imports.
+
+## Non-negotiable invariants
+
+1. One public `index.ts` barrel per module — no deep imports from outside.
+2. Server data lives in Tanstack Query, **not** Zustand.
+3. Browser → Supabase writes go through the sanctioned write path; no manual snake_case remapping scattered in components.
+4. One framework — don't hand-roll parallels to Mastra primitives (agents, memory, tools, workflows).
+5. Typed boundaries — no `any` at module edges; no `z.any()` in workflow/agent schemas.
+6. File size limits — no god files (split beyond ~300-400 lines).
+7. ESLint barrel guards (`no-restricted-imports`) per module — storyteller has one; add for new modules.
+8. Asset modules (`interior-designer`, `world-building-toolkit`, `3d-asset-exporter`) lean on `tasks/` not `agents/`.
+
+## When changing a module
+
+- Place every change in the correct layer above.
+- Name the barrel contract you touch.
+- Flag any step crossing a dependency-rule boundary as a risk in `PLAN.md`.
+- Run `node scripts/fabro-verify.mjs` — it scopes to the module and ignores out-of-scope errors.
+
+Governing doc: `docs/unified/ARCHITECTURE.md`.

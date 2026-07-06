@@ -1,0 +1,36 @@
+---
+description: Run and interpret Mastra scorers / golden eval suite for agent and prompt changes
+globs: "**/evals/**"
+alwaysApply: false
+---
+
+# Evaluations (Mastra scorers)
+
+The eval system lives in `evals/` and uses **Mastra scorers** (not Confident AI / DeepEval — those were removed).
+
+## Run
+
+```bash
+npm run eval                       # all 12 golden examples
+npm run eval -- --samples=5        # multiple samples per case
+npm run eval:dashboard             # open dashboard (next dev)
+```
+
+Judge: `CONFIDENT_API_KEY` (cloud) or `OPENAI_API_KEY` (local judge).
+
+## Layout
+
+- `evals/datasets/storyteller-golden.ts` — 12 golden examples
+- `evals/scorers/` — `consistency`, `hallucination`, `magic`, `persona-fidelity` (+ shared + index)
+- `evals/run.ts` — runner; `evals/report/generate.ts` — report; `evals/results/latest.json`
+- `evals/types.ts`, `evals/tsconfig.json`
+
+## When to run evals
+
+- Any change to a Mastra agent prompt, tool, or model config.
+- Any change to storyteller generation flow.
+- PRs that touch `src/domains/storyteller/` — automation `pr-verify` runs `--samples=3`.
+
+## Interpreting results
+
+Read `evals/results/latest.json`. A change is an improvement only if scores go up **without** regressing any single scorer below baseline. Use `/llm-eval` skill for eval design and `/prompt-optimizer` for eval-gated prompt iteration. See `docs/TESTING.md` and `docs/internal/hypothesis-evaluation-guide.md`.

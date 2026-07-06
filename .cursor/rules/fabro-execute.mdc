@@ -1,0 +1,57 @@
+---
+description: How to launch and operate the Fabro execute workflow for a src/domains module (assess → clarify → plan → build → retro)
+globs: "**/src/domains/**,.fabro/workflows/execute/**"
+alwaysApply: false
+---
+
+# Fabro execute workflow — operating guide
+
+The dark-factory loop lives in `.fabro/workflows/execute/`. Run it for one module at a time. Module is **required** on every run (no default).
+
+## Launch
+
+```bash
+# single module (under src/domains/)
+fabro run .fabro/workflows/execute/workflow.toml -I module=<domain-folder>
+
+# special scopes
+fabro run .fabro/workflows/execute/workflow.toml -I module=domains-catalog   # all 9 modules
+fabro run .fabro/workflows/execute/workflow.toml -I module=src-root          # top-level src/ cleanup
+```
+
+## Stages (mirrors `workflow.fabro`)
+
+`scope → assess → clarify_prep → clarify [gate] → plan → verification [gate] → setup → ux_designer? → developer → verify → tester → run_tests → run_e2e → screenshot → serve? → preview [gate] → retro`
+
+## Human gates (fail-closed, 24h timeout)
+
+| Gate | Buttons | Timeout default |
+|------|---------|-----------------|
+| **clarify** | [A] Staged · [B] Minimal · [C] Full · [F] Custom · [R] Re-assess | → `plan` (A) |
+| **verification** | [A] Approve & build · [B] Plan only · [I] Iterate · [X] Abort | → `retro` (plan only — **never auto-builds**) |
+| **preview** | [A] Looks good · [R] Revise · [S] Skip | → `retro` |
+
+## Environments
+
+- `execute-docker` (default) — `node:22-bookworm`, 4 cpu / 8GB. No preview URL.
+- `execute-daytona` — adds preview URLs: `--environment execute-daytona --preserve-sandbox`, then `fabro sandbox preview <run-id> 3000 --open`.
+
+## Verify stage
+
+Both Fabro `verify` and the Cursor `afterFileEdit` hook run `node scripts/fabro-verify.mjs` — module-scoped `tsc` + ESLint that **ignores errors outside `src/domains/<module>/`** (avoids full-repo OOM). It reads the module from `PLAN.md`; for `src-root` runs the first `PLAN.md` line must be `Fabro module: src-root`.
+
+## Artifacts written by stages
+
+`findings/assess.md`, `CLARIFY.md`, `DECISIONS.md`, `PLAN.md`, `STRUCTURE.md` (catalog/src-root), `UX.md` (build path), `screenshots/**` + `SCREENSHOTS.md` (UI), `RETRO.md`. Do **not** commit `CLARIFY.md`/`DECISIONS.md` — stale copies poison Docker clones.
+
+## Merge a successful run
+
+```bash
+fabro pr create <run-id>         # recommended
+# or manual
+git fetch origin fabro/run/<run-id> && git merge origin/fabro/run/<run-id>
+```
+
+## Interactive equivalent
+
+In Cursor Agent, run `/execute` (skill) — same stages, same prompts, `AskQuestion` gates. Headless: `src/agent-core/cursor-runner.ts` via Cursor SDK. The stage prompts are the **single source of truth** in `.fabro/workflows/execute/prompts/` — never duplicate them.

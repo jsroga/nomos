@@ -26,3 +26,6 @@ export * from '@/domains/storyteller/tasks/generate-portrait.task'
 export * from '@/domains/storyteller/tasks/generate-moodboard.task'
 export * from '@/domains/storyteller/tasks/select-portrait-variant.task'
 export * from '@/domains/storyteller/tasks/upload-asset.task'
+
+// Dark factory — Cursor SDK execute loop (cross-cutting, not domain-owned)
+export * from '@/trigger/cursor-execute.task'

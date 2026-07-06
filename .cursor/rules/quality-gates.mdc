@@ -1,0 +1,46 @@
+---
+description: Quality gates to run before declaring work done — typecheck, lint, unit tests, knip, fabro-verify
+globs: "**/*.ts,**/*.tsx,**/*.js,**/*.mjs"
+alwaysApply: false
+---
+
+# Quality gates
+
+Run these before claiming a task is done. Failures must be fixed, not bypassed.
+
+## Full repo
+
+```bash
+npm run typecheck      # tsc --noEmit
+npm run lint           # ESLint
+npm run test:unit      # Vitest
+npx knip               # dead code / unused exports
+```
+
+## Module-scoped (fast, dark-factory verify)
+
+```bash
+node scripts/fabro-verify.mjs
+```
+
+Module-scoped `tsc` + ESLint that **ignores errors outside the target module** (`src/domains/<module>/` or `src-root`). Reads the module from `PLAN.md` (first line must be `Fabro module: src-root` for src-root runs). Uses an ephemeral `tsconfig.fabro-verify.json` and `NODE_OPTIONS=--max-old-space-size=6144` to avoid full-repo OOM.
+
+## E2E (build path only)
+
+```bash
+npm run test:e2e                # Playwright default
+npm run test:e2e smoke          # storyteller smoke script
+npm run test:e2e full-loop      # what Fabro run_e2e runs
+```
+
+## Baseline / ratchets
+
+Typecheck and ESLint warnings are ratcheted — never increase the baseline count. See `docs/quality-improvement-spec.md`. `.local/` is for ad-hoc tooling (gitignored); don't add throwaway plumbing under `src/lib`.
+
+## Order of operations (mirror Fabro build path)
+
+1. Implement (use skills: `/refactor`, `/write-tests`, `/review`).
+2. `node scripts/fabro-verify.mjs` → fix → repeat (max 2 fix loops).
+3. `npm run test:unit` → fix → repeat.
+4. `npm run test:e2e full-loop` (if UI surface).
+5. Screenshot + retro.

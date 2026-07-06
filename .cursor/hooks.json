@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "hooks": {
+    "afterFileEdit": [
+      { "command": "./.cursor/hooks/verify-on-edit.sh" },
+      { "command": "./.cursor/hooks/format-on-edit.sh" }
+    ],
+    "beforeShellExecution": [
+      { "command": "./.cursor/hooks/guard-destructive.sh" }
+    ],
+    "sessionStart": [
+      { "command": "./.cursor/hooks/session-init.sh" }
+    ],
+    "stop": [
+      { "command": "./.cursor/hooks/verify-on-edit.sh", "loop_limit": 3 }
+    ]
+  }
+}

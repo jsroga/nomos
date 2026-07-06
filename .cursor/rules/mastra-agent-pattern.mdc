@@ -1,0 +1,48 @@
+---
+description: Mastra v1 agent/tool/memory patterns — imports, createTool signature, structuredOutput, model strings, single Mastra instance
+globs: "**/agents/**,**/mastra/**,**/domains/**/agents/**,**/agent-core/**"
+alwaysApply: false
+---
+
+# Mastra v1 patterns (distilled from AGENTS.md)
+
+This repo uses **Mastra v1** (`@mastra/core@^1.x`). Mirror patterns in `src/domains/storyteller/agents/*` and `src/mastra/*`.
+
+## Imports — use sub-paths, never the package root
+
+- `@mastra/core/agent`, `@mastra/core/tools`, `@mastra/core/mastra`, `@mastra/core/workspace`
+- `RequestContext`, **not** `RuntimeContext`
+
+## Tools — two-arg execute
+
+```ts
+export const myTool = createTool({
+  id: 'my_tool',                       // snake_case, stable
+  description: 'When the model should call this — be specific.',
+  inputSchema: z.object({ … }),
+  outputSchema: z.object({ … }),
+  execute: async (inputData, context) => { … },   // separate params, not one object
+})
+```
+
+Delegate business logic to `src/services/*` when it exists.
+
+## Agents
+
+- No `format` on agents — use `structuredOutput`.
+- Model strings: `'openai/gpt-4o-mini'`, `'anthropic/claude-…'` (`provider/model`).
+- Register through the central Mastra instance so storage, workspace, and tracing are shared.
+- Wrap runs in `withSpan` where the domain already does.
+- Bound memory (`lastMessages: 10` or similar).
+- Subagents → `agents` config (`agent-<key>` tools). Mastra workflows ≠ Fabro workflows.
+
+## Don't
+
+- Second Postgres store or Mastra instance.
+- `RuntimeContext`, root `@mastra/core` imports, old single-arg `execute`.
+- Hardcoded secrets or model strings.
+- Remove tracing or shrink memory windows without reason.
+
+## Verify
+
+`npm run typecheck` · `npm run lint` · `npm run test:unit`

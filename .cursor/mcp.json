@@ -3,6 +3,14 @@
     "trigger": {
       "command": "npx",
       "args": ["trigger.dev@4.1.2", "mcp"]
+    },
+    "fabro": {
+      "command": "fabro",
+      "args": ["mcp", "start"]
+    },
+    "world-building-kit": {
+      "command": "npx",
+      "args": ["tsx", "src/mcp/stdio.ts"]
     }
   }
 }
