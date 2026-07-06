@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { Trash2, Edit2, Check, X, GripVertical, Sparkles, ImageIcon } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/Button'
+import { Textarea } from '@/components/Textarea'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
+import { Skeleton } from '@/components/Skeleton'
 import { cn } from '@/shared/data/utils'
 
 interface Beat {

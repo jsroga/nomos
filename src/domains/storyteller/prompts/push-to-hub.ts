@@ -10,9 +10,9 @@
  */
 
 import { config } from 'dotenv'
-import { pushPromptsToLangfuse } from '@/prompts/langfuse-sync'
-import { STORYTELLER_SYSTEM_PROMPT } from '@/prompts/registry'
-import type { PromptDefinition } from '@/prompts/types'
+import { pushPromptsToLangfuse } from '@/shared/agent-kernel/prompts/langfuse-sync'
+import { STORYTELLER_SYSTEM_PROMPT } from '@/shared/agent-kernel/prompts/registry'
+import type { PromptDefinition } from '@/shared/agent-kernel/prompts/types'
 import { PROMPT_IDS } from '../config/storyteller-config'
 import { CHARACTER_PSYCHOLOGY_PROMPT } from './personas/character-psychology'
 import { CONSEQUENCE_TRACKER_PROMPT } from './personas/consequence-tracker'

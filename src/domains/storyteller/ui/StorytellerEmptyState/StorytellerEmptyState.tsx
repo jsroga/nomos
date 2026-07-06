@@ -1,10 +1,10 @@
 'use client'
 
 import React from 'react'
-import { TOUR_STEP_IDS } from '@/lib/tour-constants'
+import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { Sparkles, Loader2 } from 'lucide-react'
 import { Film, BookOpen, FilePlus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/Button'
 
 interface StorytellerEmptyStateProps {
   hasBible: boolean

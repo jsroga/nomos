@@ -1,6 +1,0 @@
-{
-  "graphs": {
-    "storyteller": "./src/domains/storyteller/agents/WritersRoomGraph/WritersRoomGraph.ts:writersRoomGraph"
-  },
-  "env": ".env.local"
-}

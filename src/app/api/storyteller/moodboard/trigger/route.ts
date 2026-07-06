@@ -3,11 +3,11 @@ import { tasks } from '@trigger.dev/sdk/v3'
 import { db } from '@/db/client'
 import { projects } from '@/db'
 import { type StoryPlan } from '@/domains/storyteller'
-import { verifyProjectAccess } from '@/domains/storyteller'
+import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { eq } from 'drizzle-orm'
 import OpenAI from 'openai'
 import { requireAuth } from '@/shared/auth/auth'
-import { resolveStyleReferenceUrls } from '@/config/style-presets'
+import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets'
 
 function getOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY

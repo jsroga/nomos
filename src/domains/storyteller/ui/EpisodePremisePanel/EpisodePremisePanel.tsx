@@ -15,8 +15,8 @@ import {
   Plus,
 } from 'lucide-react'
 import { EpisodePremise, StoryPlan, Faction, WorldRule } from '@/domains/storyteller/prompts/schemas/agent-schemas'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/Button'
+import { Skeleton } from '@/components/Skeleton'
 import { StorytellerImage } from '../StorytellerImage'
 import { ImageVariantSelector } from '../ImageVariantSelector'
 import { ReferenceText } from '../ReferenceText'

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import { JobStatus, JobType } from '@/types/enums'
-import { useGlobalStatusStore } from '@/store/useGlobalStatusStore'
+import { JobStatus, JobType } from '@/shared/types/enums'
+import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import type { SelectResult } from './client-services/SelectModeService'
 
 export type SelectBox = { x1: number; y1: number; x2: number; y2: number }

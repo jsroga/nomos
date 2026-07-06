@@ -6,9 +6,9 @@
  */
 
 import { Agent } from '@mastra/core/agent'
-import { promptRepository } from '@/prompts/repository'
-import { registerCorePrompts, registerGameDesignPrompts } from '@/prompts/registry'
-import { withSpan } from '@/shared/observability'
+import { promptRepository } from '@/shared/agent-kernel/prompts/repository'
+import { registerCorePrompts, registerGameDesignPrompts } from '@/shared/agent-kernel/prompts/registry'
+import { withSpan } from '@/shared/observability/observability'
 import { v4 as uuidv4 } from 'uuid'
 
 // Import all game design tools

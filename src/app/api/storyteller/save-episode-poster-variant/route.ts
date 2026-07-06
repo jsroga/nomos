@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db/client'
 import { episodes } from '@/db'
-import { verifyEpisodeAccess, verifyProjectAccess } from '@/domains/storyteller'
+import { verifyEpisodeAccess, verifyProjectAccess } from '@/domains/storyteller/server'
 import { eq } from 'drizzle-orm'
 import fs from 'fs'
 import path from 'path'

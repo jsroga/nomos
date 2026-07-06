@@ -1,4 +1,4 @@
-import { MASK_CONFIG } from '@/lib/server/prompts'
+import { MASK_CONFIG } from '@/shared/data/server/prompts'
 
 export interface LegNextUploadPaintPayload {
   imgUrl: string

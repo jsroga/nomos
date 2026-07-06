@@ -10,7 +10,7 @@ import {
   createAgentTrace,
   recordAgentGeneration,
   withSpan,
-} from '@/agent-core/observability'
+} from '@/shared/observability/observability'
 import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
 import { getMastraInstance } from '@/shared/agent-kernel'
 import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/config/ModelConfig'

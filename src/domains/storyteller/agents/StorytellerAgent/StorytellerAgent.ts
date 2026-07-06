@@ -11,9 +11,9 @@
 import { Agent } from '@mastra/core/agent'
 import { Mastra } from '@mastra/core/mastra'
 import { Memory } from '@mastra/memory'
-import { promptRepository } from '@/prompts/repository'
-import { registerCorePrompts } from '@/prompts/registry'
-import { withSpan } from '@/agent-core/observability'
+import { promptRepository } from '@/shared/agent-kernel/prompts/repository'
+import { registerCorePrompts } from '@/shared/agent-kernel/prompts/registry'
+import { withSpan } from '@/shared/observability/observability'
 import { v4 as uuidv4 } from 'uuid'
 import { getMastraInstance, getStorageInstance } from '@/shared/agent-kernel'
 import { GLOBAL_AGENT_MODEL, AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/config/ModelConfig'
@@ -48,7 +48,7 @@ import {
   factCheckTool,
   referenceLookupTool,
 } from '@/domains/storyteller/agents/tools'
-import { runStoryCreationWorkflowTool } from '@/domains/storyteller/tools/workflow-tools'
+import { runStoryCreationWorkflowTool } from '@/domains/storyteller/agents/tools/workflow-tools'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
 
 interface StorytellerConfig {

@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/Dialog'
+import { Button } from '@/components/Button'
 import { Check, X, Loader2, GripVertical } from 'lucide-react'
 import { useWorldStore } from '@/domains/world-building-toolkit'
 import toast from 'react-hot-toast'

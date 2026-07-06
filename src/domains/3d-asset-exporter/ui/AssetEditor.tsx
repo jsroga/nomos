@@ -10,12 +10,12 @@ import {
   Loader2,
   Upload,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Slider } from '@/components/ui/slider'
+import { Button } from '@/components/Button'
+import { Slider } from '@/components/Slider'
 import { useWorldStore } from '@/domains/world-building-toolkit'
 import toast from 'react-hot-toast'
 import { repaintService } from '@/domains/world-building-toolkit/state/client-services/RepaintService'
-import { EditorTool } from '@/types/enums'
+import { EditorTool } from '@/shared/types/enums'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
 interface AssetEditorProps {

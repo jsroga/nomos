@@ -4,8 +4,8 @@ import {
   recordAgentGeneration,
   recordAgentThinking,
   withSpan,
-} from '@/agent-core/observability'
-import { extractThinking, truncateForTrace } from '@/agent-core/agents/agent-response'
+} from '@/shared/observability/observability'
+import { extractThinking, truncateForTrace } from '@/shared/agent-kernel/agents/agent-response'
 import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
 import { CHARACTER_PSYCHOLOGY_PROMPT } from '@/domains/storyteller/prompts/personas/character-psychology'
 import { analyzePsychologyTool, simulateReactionTool, assessRelationshipTool } from '@/domains/storyteller/agents/tools'

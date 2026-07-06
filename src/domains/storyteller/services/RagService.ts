@@ -15,15 +15,15 @@ import { v4 as uuidv4 } from 'uuid'
 import {
   getVoyageEmbeddings,
   VoyageEmbeddings,
-} from '@/infrastructure/ai/embeddings/voyage-embeddings'
+} from '@/shared/ai/embeddings/voyage-embeddings'
 import {
   getHybridSearchEngine,
   HybridSearchEngine,
   SearchResult,
-} from '@/infrastructure/ai/rag/hybrid-search'
-import { getSemanticChunker, SemanticChunker } from '@/infrastructure/ai/rag/semantic-chunker'
-import { getQueryExpander, QueryExpander } from '@/infrastructure/ai/rag/query-expander'
-import { getReranker, Reranker } from '@/infrastructure/ai/rag/reranker'
+} from '@/shared/ai/rag/hybrid-search'
+import { getSemanticChunker, SemanticChunker } from '@/shared/ai/rag/semantic-chunker'
+import { getQueryExpander, QueryExpander } from '@/shared/ai/rag/query-expander'
+import { getReranker, Reranker } from '@/shared/ai/rag/reranker'
 import { STORYTELLER_CONFIG } from '../config/storyteller-config'
 
 // Document types for categorized retrieval

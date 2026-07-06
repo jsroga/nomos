@@ -117,19 +117,29 @@ just satisfies it.
 src/
 ├─ domains/<module>/         # vertical slices — the unit of ownership
 │   └─ … (see §4 blueprint)
-├─ shared/                   # cross-module building blocks (NEW canonical home)
-│   ├─ agent-kernel/         # generalized orchestration core (from agent-core/ + orchestration-rfc)
+├─ shared/                   # cross-module building blocks (canonical home, migration in progress)
+│   ├─ agent-kernel/         # Mastra factory, Studio entry, agent-core primitives
+│   │   ├─ mastra/           # create-mastra.ts, Studio registry + tool catalog
+│   │   └── agent-core/      # executive, planner, observability
 │   ├─ jobs/                 # useJob hook, Job types, Trigger Realtime client
-│   ├─ data/                 # query-client, query-key factory, api fetcher, Result type
-│   ├─ auth/                 # requireAuth, getUserSession (was lib/auth)
+│   ├─ data/                 # api-utils, queries, EntitiesService, utils
+│   ├─ auth/                 # requireAuth, getUserSession
 │   ├─ observability/        # withSpan, Langfuse/OTEL wiring
 │   └─ errors/               # AppError, error→HTTP/SSE mappers, useErrorStore
 ├─ components/ui/            # Radix + CVA design system (shared primitives) — unchanged
 ├─ db/                       # Drizzle: single schema source of truth + client
 ├─ trigger/                  # thin re-export registry only (see §8)
+├─ mcp/                      # MCP server (separate deployable)
 └─ app/                      # Next.js App Router: routes + API; thin glue only
+
+vitest/mocks/                # test-only mocks (e.g. next/server)
 ```
 
+> **Current state (2026-07):** `shared/` partially absorbs `lib/`, `agent-core/`,
+> and `infrastructure/`. Mastra Studio: `shared/agent-kernel/mastra/`. LangGraph
+> removed from loop-creator. No top-level `tests/` — unit tests colocated in
+> `src/**/__tests__/` (`docs/TESTING.md`).
+>
 > `shared/` supersedes the ad-hoc spread across `src/lib`, `src/agent-core`,
 > `src/infrastructure`, `src/store`. Migration is incremental (SPEC §P1); the
 > *rule* is: anything imported by 2+ modules lives in `shared/`, never in a module.

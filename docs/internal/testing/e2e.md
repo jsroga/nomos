@@ -2,6 +2,8 @@
 
 End-to-end tests for the cross-domain integration system.
 
+> **Last reviewed:** 2026-07-06. Run via `npm run test:e2e [scenario]` (see `scripts/run-e2e.ts`).
+
 ## Overview
 
 These tests verify the complete "Swiss Army Knife" workflow:
@@ -52,7 +54,7 @@ Create `.env.test`:
 
 ```bash
 TEST_PROJECT_ID=test-project-swiss-knife
-BASE_URL=http://localhost:3000
+BASE_URL=http://localhost:4000
 DATABASE_URL=postgresql://...
 ```
 
@@ -72,13 +74,21 @@ Make sure the `game_entities` tables are created:
 ### Run all E2E tests
 
 ```bash
-npx playwright test
+npm run test:e2e
 ```
 
-### Run specific test file
+### Run a specific scenario
 
 ```bash
-npx playwright test swiss-knife-integration
+npm run test:e2e swiss-knife
+npm run test:e2e actions
+npm run test:e2e full-loop
+```
+
+### Run Playwright directly
+
+```bash
+npx playwright test
 ```
 
 ### Run with UI mode (interactive)
@@ -190,10 +200,7 @@ npx playwright test --debug
 
 **Cause:** Cross-domain context builder not called
 
-**Fix:** Verify `buildCrossDomainContext()` is called in:
-
-- `src/domains/storyteller/agents/agent-v2-base.ts`
-- `src/domains/loop-creator/agents/supervisor.ts`
+**Fix:** Verify `buildCrossDomainContext()` is called in storyteller chat/stream route and loop-creator supervisor.
 
 ### Mentions don't show cross-domain entities
 

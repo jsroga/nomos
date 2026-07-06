@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/Button'
 import { Plus, ArrowRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 

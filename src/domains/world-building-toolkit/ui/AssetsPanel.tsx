@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit'
-import { getSupabaseClient } from '@/infrastructure/storage/supabaseClient'
+import { getSupabaseClient } from '@/shared/data/storage/supabaseClient'
 import { Loader2, Trash2, AlertTriangle, Cuboid } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/Button'
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@/components/Dialog'
 import toast from 'react-hot-toast'
 
 interface AssetsPanelProps {

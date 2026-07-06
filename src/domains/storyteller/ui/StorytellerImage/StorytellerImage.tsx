@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Sparkles, Image as ImageIcon } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/Button'
 import { cn } from '@/shared/data/utils'
 // LiquidGlass removed
 

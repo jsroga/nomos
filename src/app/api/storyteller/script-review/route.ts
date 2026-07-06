@@ -14,7 +14,7 @@ import {
   reviewScript,
   quickReview,
   ScriptReviewRequest,
-} from '@/domains/storyteller'
+} from '@/domains/storyteller/server'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 

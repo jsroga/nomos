@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState, useCallback } from 'react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/Button'
 import { cn } from '@/shared/data/utils'
 import { ActionHistoryEntry, AgentAction } from '@/domains/storyteller/core/types/ActionTypes'
 import { formatActionForDisplay } from '@/domains/storyteller/core/formatting/ActionFormatters'

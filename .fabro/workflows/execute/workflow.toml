@@ -1,0 +1,76 @@
+_version = 1
+
+[workflow]
+graph = "workflow.fabro"
+
+# Run (module is REQUIRED — pass on every run):
+#   fabro run .fabro/workflows/execute/workflow.toml -I module=interior-designer
+#   fabro run .fabro/workflows/execute/workflow.toml -I module=storyteller
+#   fabro run .fabro/workflows/execute/workflow.toml -I module=chat
+[run]
+goal = "Clean up and align the {{ inputs.module }} module (src/domains/{{ inputs.module }}) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at verification."
+
+[run.inputs]
+# No default — always pass `-I module=<domain-folder-name>` (under src/domains/).
+
+[run.model]
+name = "codex"
+provider = "openai"
+fallbacks = ["anthropic", "openai"]
+
+[run.agent]
+permissions = "full"
+
+[run.environment]
+id = "execute-docker"
+
+[environments.local]
+provider = "local"
+
+[environments.execute-docker]
+provider = "docker"
+
+[environments.execute-docker.image]
+docker = "node:22-bookworm"
+
+[environments.execute-docker.resources]
+cpu = 4
+memory = "8GB"
+
+[environments.execute-docker.env]
+NODE_OPTIONS = "--max-old-space-size=6144"
+
+# Preview URLs require Daytona: fabro run … --environment execute-daytona --preserve-sandbox
+[environments.execute-daytona]
+provider = "daytona"
+
+[environments.execute-daytona.image]
+docker = "node:22-bookworm"
+
+[environments.execute-daytona.resources]
+cpu = 4
+memory = "8GB"
+
+[environments.execute-daytona.env]
+NODE_OPTIONS = "--max-old-space-size=6144"
+
+[run.artifacts]
+include = ["screenshots/**", "SCREENSHOTS.md"]
+
+[[run.hooks]]
+id = "unit-tests-after-implement"
+name = "unit-tests-after-implement"
+event = "stage_complete"
+script = "npm run test:unit"
+matcher = "developer"
+blocking = true
+timeout = "10m"
+
+[[run.hooks]]
+id = "e2e-full-after-implement"
+name = "e2e-full-after-implement"
+event = "stage_complete"
+script = "npm run test:e2e full-loop"
+matcher = "developer"
+blocking = false
+timeout = "30m"

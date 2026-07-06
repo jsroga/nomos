@@ -1,65 +1,61 @@
 # Loop Creator Module Documentation
 
+> **Last reviewed:** 2026-07-06
+
 ## Overview
 
-The Loop Creator module is an AI-powered game design assistant. It allows designers to architect gameplay loops, progression systems, and mechanical balances using a specialized multi-agent system. It bridge high-level concepting with systemic implementation.
+The Loop Creator module is an AI-powered game design assistant. Designers architect gameplay loops, progression systems, and mechanical balance using a multi-agent Mastra system.
 
 ## Architecture
 
 ### Multi-Agent System (Game Design Lab)
 
-The module utilizes a LangGraph-based workflow where specialized game design agents collaborate:
+**Mastra agents** collaborate under an imperative **supervisor orchestrator** (`src/domains/loop-creator/core/graph/loop-orchestrator.ts`). LangGraph was removed; `loop-graph.ts` is a thin re-export for backward compatibility.
 
-- **Supervisor**: Manages the orchestration of the design process and handles routing.
-- **Loop Planner**: The core strategist that defines the "Core Loop" and "Meta-Loops" of the game.
-- **Mechanics Designer**: Translates abstract concepts into concrete gameplay mechanics (e.g., combat systems, interaction rules).
-- **Progression Architect**: Designs XP curves, level-up systems, and long-term player retention vectors.
-- **Balance Analyst**: Simulates and evaluates systemic fairness and difficulty scaling.
-- **Concept Evaluator**: Validates that design decisions align with the intended genre and target audience.
-- **Market/Genre Analyst**: Provides context on competitor games and genre expectations.
+| Agent | Role |
+|-------|------|
+| **Supervisor** | Routes user intent to specialists |
+| **Loop Planner** | Core loop and meta-loop strategy |
+| **Mechanics Designer** | Concrete mechanics (combat, interactions) |
+| **Progression Architect** | XP curves, retention vectors |
+| **Balance Analyst** | Fairness and difficulty scaling |
+| **Market Analyst** | Competitor/genre context (Mastra Agent + tools) |
 
-### State Management (`LoopState`)
+### State Management
 
-State is maintained via a centralized graph state (defined in `src/domains/loop-creator/graph/state.ts`):
+Centralized graph state in `src/domains/loop-creator/core/graph/state.ts`:
 
-#### 1. Mechanic Nodes
+#### Mechanic nodes
 
-The fundamental building blocks of gameplay.
+Building blocks with `inputs`/`outputs`, `balanceFactors` (effort, reward, frequency), and RAG `citations`.
 
-- **Structure**:
-  - `inputs`/`outputs`: Trigger/Effect logic.
-  - `balanceFactors`: `effort` (1-10), `reward` (1-10), `frequency` (per session).
-  - `citations`: RAG sources justifying the mechanic.
-- **Types**: `core` (essential), `secondary` (depth), `meta` (retention), `progression`.
+#### Game loops
 
-#### 2. Game Loops
+Collections of mechanics with psychological phases (`challenge` → `action` → `feedback`) and timeframes (`micro`, `session`, `meta`).
 
-Collections of mechanics forming a cycle.
+#### Progression systems
 
-- **Psychological Phases**: `challenge` -> `action` -> `feedback`.
-- **Metrics**: `satisfactionPeak` and `playerExperience` descriptions.
-- **Timeframes**: `micro` (seconds), `session` (minutes), `meta` (days).
+Long-term curves (`linear`, `exponential`, `logarithmic`, `s-curve`) and milestones.
 
-#### 3. Progression Systems
+### Streaming API
 
-Long-term retention vectors.
+`streamLoopCreator()` yields `StreamEvent` objects (`node`, `message`, `action`, `token`, `error`) consumed by `/api/loop-creator/chat`.
 
-- **Curves**: `linear`, `exponential`, `logarithmic`, `s-curve`.
-- **Milestones**: specific achievements with `requiredEffort` (hours) and `unlocks`.
+### Integration
 
-### Implementation Details
-
-#### `loop-graph.ts`
-
-Defines the state machine for the design process. It supports branching paths (e.g., iterating on mechanics before finalizing progression) and ensures that all agent contributions are synthesized into a coherent design document.
-
-#### Systems Integration (`useLoopDesign`)
-
-The module provides hooks for other parts of the application to consume the generated design. This allows the Storyteller or Interior Designer to align narrative and spatial choices with the underlying mechanical loop.
+`useLoopDesign` hooks let Storyteller and other modules align narrative/spatial choices with mechanical loops.
 
 ## Workflow
 
-1. **Initiate**: Define the core genre and player fantasy.
-2. **Draft**: The Loop Planner and Mechanics Designer create a first-pass loop.
-3. **Refine**: The Balance Analyst and Progression Architect stress-test the systems.
-4. **Finalize**: The Concept Evaluator provides a final verdict, and the design is locked for production reference.
+1. **Initiate** — genre and player fantasy  
+2. **Draft** — Loop Planner + Mechanics Designer first pass  
+3. **Refine** — Balance + Progression stress-test  
+4. **Finalize** — Concept evaluation; lock for production reference  
+
+## Tests
+
+```bash
+npx vitest run src/domains/loop-creator
+```
+
+E2E: `npm run test:e2e full-loop`

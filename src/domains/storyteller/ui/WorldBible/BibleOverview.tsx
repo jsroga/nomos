@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Globe, RefreshCw, Zap, Palette, Sparkles, Star, Loader2, Trash2, Plus } from 'lucide-react'
-import { IconButton } from '@/components/ui/icon-button'
+import { IconButton } from '@/components/IconButton'
 import { StorytellerImage } from '../StorytellerImage'
 import toast from 'react-hot-toast'
 import { moodboardGenerationService } from '../../services/MoodboardGenerationService'
@@ -8,7 +8,7 @@ import { RichText } from '../RichText'
 
 import { useBible } from './BibleContext'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
-import { useConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useConfirmDialog } from '@/components/ConfirmDialog'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 
 interface BibleOverviewProps {

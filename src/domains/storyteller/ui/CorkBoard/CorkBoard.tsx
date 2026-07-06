@@ -3,11 +3,11 @@ import { BeatCard } from '../BeatCard'
 import { BeatCard as BeatData } from '@/domains/storyteller/core/types/StoryTypes'
 import { useParams } from 'next/navigation'
 import { Plus, Image as ImageIcon, Loader2, Sparkles } from 'lucide-react'
-import { useConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useConfirmDialog } from '@/components/ConfirmDialog'
 import { beatImageService } from '../../services/BeatImageService'
 import { Message } from '../AgentLog'
 import { ImageLightbox } from '@/components/ImageLightbox'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/Button'
 
 interface CorkBoardProps {
   beats: BeatData[]

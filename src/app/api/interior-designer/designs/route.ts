@@ -12,7 +12,7 @@ import {
   interiorDesignResponseSchema,
   updateInteriorDesignRequestSchema,
 } from '@/domains/interior-designer/io/interior-designer.dto'
-import { verifyProjectAccess } from '@/domains/storyteller'
+import { verifyProjectAccess } from '@/domains/storyteller/server'
 
 /**
  * Verify design access using single JOIN query

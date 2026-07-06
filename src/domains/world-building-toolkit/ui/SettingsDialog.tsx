@@ -8,12 +8,12 @@ import {
   Info,
   Check,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button } from '@/components/Button'
+import { ScrollArea } from '@/components/ScrollArea'
 import { cn } from '@/shared/data/utils'
 import toast from 'react-hot-toast'
 import { getErrorMessage } from '@/shared/errors/error-utils'
-import { STYLE_PRESETS } from '@/config/style-presets'
+import { STYLE_PRESETS } from '@/shared/data/constants/style-presets'
 import { useWorldStore } from '@/domains/world-building-toolkit'
 
 interface SettingsDialogProps {

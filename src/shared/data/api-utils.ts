@@ -8,7 +8,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { NextRequest, NextResponse } from 'next/server'
 import { getUserSession } from '@/shared/auth/auth'
 
-// Re-exported so existing `@/lib/api-utils` importers keep working.
+// Re-exported so existing `@/shared/data/api-utils` importers keep working.
 // Canonical implementation (incl. E2E bypass) lives in @/shared/auth/auth.
 export { getUserSession }
 
@@ -178,7 +178,7 @@ export function withRateLimit<T = any>(
 const ALLOWED_ORIGINS = [
   process.env.NEXT_PUBLIC_APP_URL,
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
-  'http://localhost:3000',
+  'http://localhost:4000',
   'http://localhost:3001',
 ].filter(Boolean) as string[]
 // ============================================

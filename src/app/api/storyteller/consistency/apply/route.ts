@@ -9,10 +9,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import {
   applyCascadingFixes,
-  getUndoManager,
   type ConsistencyFix,
 } from '@/domains/storyteller'
-import { verifyProjectAccess } from '@/domains/storyteller'
+import { getUndoManager, verifyProjectAccess } from '@/domains/storyteller/server'
 import { requireAuth } from '@/shared/auth/auth'
 
 export const runtime = 'nodejs'

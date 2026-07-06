@@ -1,9 +1,9 @@
 import React from 'react'
 import { Crown, Target, Zap, ShieldAlert } from 'lucide-react'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card'
+import { Badge } from '@/components/Badge'
 import { Faction } from '@/domains/storyteller/prompts/schemas/agent-schemas'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 import { RichText } from '../RichText'
 
 interface FactionCardProps {

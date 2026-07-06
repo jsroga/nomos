@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { worldApi } from '../io/world.api'
-import { worldKeys } from '../io/world.keys'
-import type { CreateProjectRequest, UpsertTileRequest } from '../io/world.dto'
-import { tilesToMap, toLegacyAsset, toLegacyProject } from '../core/world-types'
+import { worldApi } from '../../io/world.api'
+import { worldKeys } from '../../io/world.keys'
+import type { CreateProjectRequest, UpsertTileRequest } from '../../io/world.dto'
+import { tilesToMap, toLegacyAsset, toLegacyProject } from '../../core/world-types'
 
 export function useWorldProjects() {
   return useQuery({

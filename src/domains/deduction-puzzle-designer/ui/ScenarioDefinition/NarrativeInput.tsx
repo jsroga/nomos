@@ -1,6 +1,6 @@
 import React from 'react'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/Textarea'
+import { Label } from '@/components/Label'
 import { usePuzzleStore } from '../../state/usePuzzleUiStore'
 
 export function NarrativeInput() {

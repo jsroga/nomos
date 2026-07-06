@@ -1,2 +1,7 @@
-// Re-export placeholder for AI clients module
-// Will be populated during Wave 3 migration
+export * from './contextAssembler'
+export * from './contextAssemblerWorker'
+export * from './fal'
+export * from './legnext'
+export * from './meshy'
+export * from './replicate'
+export * from './types'

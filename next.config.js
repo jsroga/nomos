@@ -66,10 +66,8 @@ const nextConfig = {
     '@opentelemetry/sdk-trace-base',
     // LangChain packages are better kept external (server-only)
     '@langchain/core',
-    '@langchain/langgraph',
     '@langchain/anthropic',
     '@langchain/openai',
-    '@langchain/langgraph-checkpoint-postgres',
     // Mastra packages are server-only
     '@mastra/core',
     '@mastra/langfuse',
@@ -82,6 +80,12 @@ const nextConfig = {
   ],
   devIndicators: {
     position: 'bottom-right',
+  },
+  async redirects() {
+    return [
+      { source: '/app', destination: '/projects', permanent: true },
+      { source: '/app/:path*', destination: '/:path*', permanent: true },
+    ]
   },
   // Optimize webpack configuration for faster builds
   webpack: (config, { isServer, dev }) => {

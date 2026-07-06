@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Card } from '@/components/ui/card'
+import { Card } from '@/components/Card'
 import { DeductionLogicMap } from './LogicMap/DeductionLogicMap'
 import { NarrativeInput } from './ScenarioDefinition/NarrativeInput'
 import { SolutionTemplateBuilder } from './ScenarioDefinition/SolutionTemplateBuilder'

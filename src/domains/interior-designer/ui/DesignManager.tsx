@@ -3,11 +3,11 @@ import { interiorDesignerApi } from '@/domains/interior-designer/io/interior-des
 import type { InteriorDesign } from '@/domains/interior-designer/io/interior-designer.dto'
 import { useInteriorStore } from '@/domains/interior-designer'
 import { useWorldStore } from '@/domains/world-building-toolkit'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/Button'
 import { Trash2, FileText, Plus, Edit2 } from 'lucide-react'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { useConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ScrollArea'
+import { useConfirmDialog } from '@/components/ConfirmDialog'
+import { Input } from '@/components/Input'
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@/components/Dialog'
 
 export const DesignManager: React.FC = () => {
   const currentProject = useWorldStore(state => state.currentProject)

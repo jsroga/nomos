@@ -1,11 +1,11 @@
 import { task, logger, metadata, wait } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import { put } from '@vercel/blob'
-import { GENERATION_PROMPTS, MASK_CONFIG } from '@/lib/server/prompts'
-import { imageService, StyleInfo } from '@/lib/server/image-service'
+import { GENERATION_PROMPTS, MASK_CONFIG } from '@/shared/data/server/prompts'
+import { imageService, StyleInfo } from '@/shared/data/server/image-service'
 import sharp from 'sharp'
 import { v4 as uuidv4 } from 'uuid'
-import { storageService } from '@/infrastructure/storage/StorageService'
+import { storageService } from '@/shared/data/storage/StorageService'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import {
   logLLMRequestStart,

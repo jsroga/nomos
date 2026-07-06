@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Button } from '@/components/ui/button'
-import { Slider } from '@/components/ui/slider'
+import { Button } from '@/components/Button'
+import { Slider } from '@/components/Slider'
 import { X, Wand2, Loader2 } from 'lucide-react'
-import { LocalStorageKeys } from '@/constants/localStorage'
+import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { ImageVariantSelector } from '../ImageVariantSelector'
 import { StorytellerImage } from '../StorytellerImage'
 

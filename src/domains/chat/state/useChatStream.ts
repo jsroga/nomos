@@ -27,8 +27,8 @@ import {
   saveInterruptedStream,
   loadInterruptedStream,
   clearInterruptedStream,
-} from '@/lib/chat-persistence'
-import { generateSessionId } from '@/lib/langfuse-session'
+} from '@/shared/data/chat-persistence'
+import { generateSessionId } from '@/shared/data/langfuse-session'
 import { getErrorMessage, toError } from '@/shared/errors/error-utils'
 
 const CHAT_DEBUG = process.env.NEXT_PUBLIC_CHAT_DEBUG === '1'

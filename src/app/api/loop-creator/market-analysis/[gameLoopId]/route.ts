@@ -19,7 +19,7 @@ import {
   gameLoops,
 } from '@/db/schema'
 import { eq } from 'drizzle-orm'
-import type { MarketAnalysisReport } from '@/domains/loop-creator'
+import type { MarketAnalysisReport } from '@/domains/loop-creator/server'
 
 interface RouteParams {
   params: Promise<{ gameLoopId: string }>

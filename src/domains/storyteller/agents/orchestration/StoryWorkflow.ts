@@ -5,7 +5,7 @@ import { createConsequenceAgent } from '@/domains/storyteller/agents/council/Con
 import { createGardenerAgent } from '@/domains/storyteller/agents/council/GardenerAgent'
 import { createDevilsAdvocateAgent } from '@/domains/storyteller/agents/council/DevilsAdvocateAgent'
 import { createStorytellerAgent } from '@/domains/storyteller/agents/StorytellerAgent'
-import { langfuse } from '@/agent-core/observability'
+import { langfuse } from '@/shared/observability/observability'
 import { getAgentModelConfig } from '@/domains/storyteller/config/ModelConfig'
 /**
  * Story Creation Workflow with Full Langfuse Tracing

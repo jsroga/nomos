@@ -108,7 +108,7 @@ export const createCharacterTool = createTool({
     try {
       // Call the character creation API
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/storyteller/characters`,
+        `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:4000'}/api/storyteller/characters`,
         {
           method: 'POST',
           headers: {
@@ -189,7 +189,7 @@ export const checkCharacterExistsTool = createTool({
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/storyteller/characters?projectId=${projectId}`,
+        `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:4000'}/api/storyteller/characters?projectId=${projectId}`,
         {
           headers: {
             'x-bypass-auth': 'true',

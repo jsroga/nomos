@@ -85,3 +85,6 @@ export {
 // Self-Critique Tool
 export { selfCritiqueTool } from './self-critique-tool'
 
+// Workflow Tool (delegates to the multi-agent story creation pipeline)
+export { runStoryCreationWorkflowTool } from './workflow-tools'
+

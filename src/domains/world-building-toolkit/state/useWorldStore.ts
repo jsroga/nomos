@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { create } from 'zustand'
-import { useAuthStore } from '@/store/useAuthStore'
+import { useAuthStore } from '@/shared/auth/useAuthStore'
 import { worldApi } from '../io/world.api'
 import {
   type Asset,

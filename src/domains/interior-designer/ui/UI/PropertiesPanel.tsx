@@ -6,8 +6,8 @@ import { useInteriorStore } from '@/domains/interior-designer'
 import { useWorldStore } from '@/domains/world-building-toolkit'
 import { SurfaceProperties } from './SurfaceProperties'
 import { TerrainEditorPanel } from './TerrainEditorPanel'
-import { Slider } from '@/components/ui/slider'
-import { Switch } from '@/components/ui/switch'
+import { Slider } from '@/components/Slider'
+import { Switch } from '@/components/Switch'
 import {
   Move,
   RotateCw,
@@ -20,20 +20,20 @@ import {
   Wand2,
   Box,
 } from 'lucide-react'
-import { seedFromString } from '@/lib/seedFromString'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { seedFromString } from '@/shared/data/seedFromString'
+import { Button } from '@/components/Button'
+import { Input } from '@/components/Input'
 import toast from 'react-hot-toast'
-import { LocalStorageKeys } from '@/constants/localStorage'
+import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
-import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/constants/polling'
+import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/shared/data/constants/polling'
 import {
   SidebarSection,
   SidebarLabel,
   SidebarInput,
   SidebarSliderRow,
   SidebarEmptyState,
-} from '@/components/ui/domain-sidebar'
+} from '@/components/DomainSidebar'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
 const isActiveTaskStatus = (status: string) =>

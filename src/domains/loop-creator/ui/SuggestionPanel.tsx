@@ -1,6 +1,6 @@
 import React from 'react'
 import { Node, Edge } from '@xyflow/react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/Button'
 import {
   Check,
   X,
@@ -14,7 +14,7 @@ import {
   CheckCheck,
   Sparkles,
 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@/components/Badge'
 
 export interface Suggestion {
   id: string

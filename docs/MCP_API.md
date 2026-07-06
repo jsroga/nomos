@@ -106,7 +106,7 @@ Tools for the writers room, characters, and episodes.
 *   `list_episodes`: List all episodes.
 *   `list_beats`: List beats for an episode.
 *   `get_series_bible`: Get world rules and story plan.
-*   `storyteller_chat`: Chat with the AI Writers Room (LangGraph workflow).
+*   `storyteller_chat`: Chat with the AI Writers Room (Mastra agent + SSE stream).
 
 ### Generation (Async via Trigger.dev)
 
@@ -161,7 +161,7 @@ Read-only data access via MCP resources.
 
 ### Integrations
 
-*   **LangSmith**: All MCP tools are traced. Pass `LangSmithContext` to services for deeper tracing in LangGraph.
+*   **Langfuse / LangSmith**: MCP tool calls are traced when observability keys are configured.
 *   **Trigger.dev**: Use `tasks.trigger()` in services for long-running jobs.
 
 ---

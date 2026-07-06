@@ -168,7 +168,7 @@ module.exports = [
     },
   },
   {
-    files: ['src/**/*.{ts,tsx}', 'tests/**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}'],
     ignores: [
       'src/domains/**',
     ],
@@ -259,12 +259,12 @@ module.exports = [
       ],
     },
   },
-  // Wave 2+ boundary rules (still at WARN)
+  // Wave 2+ boundary rules — dissolved legacy folders
   {
     files: ['src/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
-        'warn',
+        'error',
         {
           patterns: [
             {
@@ -273,11 +273,39 @@ module.exports = [
             },
             {
               group: ['@/infrastructure/*', '@/infrastructure'],
-              message: 'Import from "@/shared/data" or "@/shared/agent-kernel" instead of @/infrastructure.',
+              message: 'Import from "@/shared/data" or "@/shared/ai" instead of @/infrastructure.',
             },
             {
               group: ['@/prompts/*', '@/prompts'],
               message: 'Import from "@/shared/agent-kernel/prompts" instead of root @/prompts.',
+            },
+            {
+              group: ['@/lib/*', '@/lib'],
+              message: 'Import from "@/shared/data", "@/shared/auth", or "@/shared/tours" instead of @/lib.',
+            },
+            {
+              group: ['@/types/*', '@/types'],
+              message: 'Import from "@/shared/types" instead of @/types.',
+            },
+            {
+              group: ['@/config/*', '@/config'],
+              message: 'Import from "@/shared/data/constants" instead of @/config.',
+            },
+            {
+              group: ['@/constants/*', '@/constants'],
+              message: 'Import from "@/shared/data/constants" instead of @/constants.',
+            },
+            {
+              group: ['@/workflows/*', '@/workflows'],
+              message: 'Import from domain agents or "@/shared/agent-kernel/workflows" instead of @/workflows.',
+            },
+            {
+              group: ['@/mastra/*', '@/mastra'],
+              message: 'Import from "@/shared/agent-kernel/mastra" instead of @/mastra.',
+            },
+            {
+              group: ['@/evaluation/*', '@/evaluation'],
+              message: 'Import from "@/evals" (top-level evals/) instead of @/evaluation.',
             },
           ],
         },

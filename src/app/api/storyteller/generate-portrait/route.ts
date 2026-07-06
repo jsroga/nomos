@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db/client'
 import { projects } from '@/db'
-import { verifyProjectAccess } from '@/domains/storyteller'
+import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { eq } from 'drizzle-orm'
 import { tasks } from '@trigger.dev/sdk/v3'
-import type { generatePortrait } from '@/trigger/generate-portrait'
+import type { generatePortrait } from '@/domains/storyteller/tasks/generate-portrait.task'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
-import { resolveStyleReferenceUrls } from '@/config/style-presets'
+import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets'
 
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {

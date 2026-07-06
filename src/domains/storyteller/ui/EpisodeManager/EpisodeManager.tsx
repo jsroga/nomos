@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { Plus, Edit2, Film, Trash2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { TOUR_STEP_IDS } from '@/lib/tour-constants'
-import { cachedFetch, clearFetchCache } from '@/lib/fetch-cache'
-import { useConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Button } from '@/components/Button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/Tooltip'
+import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
+import { cachedFetch, clearFetchCache } from '@/shared/data/fetch-cache'
+import { useConfirmDialog } from '@/components/ConfirmDialog'
 import {
   Dialog,
   DialogContent,
@@ -13,8 +13,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
+} from '@/components/Dialog'
+import { Input } from '@/components/Input'
 
 interface Episode {
   id: string

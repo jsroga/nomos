@@ -22,7 +22,7 @@ import {
   entityRegistry,
   getEntityTypeFromId,
   relationshipEnricher,
-} from '@/domains/storyteller'
+} from '@/domains/storyteller/server'
 import { db } from '@/db/client'
 import { eq } from 'drizzle-orm'
 
@@ -290,8 +290,8 @@ async function tryAutoRegisterEntity(
 export async function GET(request: NextRequest) {
   try {
     // Security: Require authentication
-    const { requireAuth } = await import('@/lib/auth')
-    const { verifyProjectAccess } = await import('@/domains/storyteller')
+    const { requireAuth } = await import('@/shared/auth/auth')
+    const { verifyProjectAccess } = await import('@/domains/storyteller/server')
 
     const { session } = await requireAuth()
     if (!session) {

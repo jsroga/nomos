@@ -61,7 +61,7 @@ export const createEpisodeTool = createTool({
     try {
       // Create episode via API
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/storyteller/episodes`,
+        `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:4000'}/api/storyteller/episodes`,
         {
           method: 'POST',
           headers: {
@@ -93,7 +93,7 @@ export const createEpisodeTool = createTool({
       if (generatePoster && premise?.logline) {
         // Fire and forget poster generation
         fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/storyteller/moodboard/trigger`,
+          `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:4000'}/api/storyteller/moodboard/trigger`,
           {
             method: 'POST',
             headers: {

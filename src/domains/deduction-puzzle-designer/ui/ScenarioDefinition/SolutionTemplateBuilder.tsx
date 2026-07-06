@@ -1,6 +1,6 @@
 import React from 'react'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
+import { Label } from '@/components/Label'
+import { Button } from '@/components/Button'
 import { User, Box, MapPin, Flame, Clock, List } from 'lucide-react'
 
 export function SolutionTemplateBuilder() {

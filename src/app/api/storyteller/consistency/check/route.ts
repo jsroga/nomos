@@ -10,9 +10,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import {
   runConsistencyCheck,
+} from '@/domains/storyteller/server'
+import {
   type ConsistencyCheckRequest,
 } from '@/domains/storyteller'
-import { verifyProjectAccess } from '@/domains/storyteller'
+import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { requireAuth } from '@/shared/auth/auth'
 
 export const runtime = 'nodejs'

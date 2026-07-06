@@ -8,7 +8,7 @@ The system follows a **layered architecture** with clear separation of concerns:
 
 1. **Presentation Layer**: Next.js 15 with React Server Components
 2. **Application Layer**: API Routes, Server Actions, Real-time handlers
-3. **Domain Layer**: Multi-agent orchestration (Mastra/LangGraph)
+3. **Domain Layer**: Multi-agent orchestration (**Mastra v1** — agents, tools, workflows)
 4. **Infrastructure Layer**: External services, databases, AI providers
 
 ### Target module architecture
@@ -19,6 +19,22 @@ Every feature module under `src/domains/<module>/` follows the blueprint in
 Implementation sequencing and acceptance criteria live in
 [docs/unified/SPEC.md](unified/SPEC.md). Conformance is enforced by
 `src/domains/__tests__/domain-structure.test.ts` and ESLint barrel-import rules.
+
+### `src/` topology (7 folders)
+
+| Folder | Role |
+|--------|------|
+| `app/` | Next.js routes, API glue, `_shell/` app chrome |
+| `domains/` | Feature modules (blueprint §4) |
+| `shared/` | Cross-module code (`agent-kernel`, `ai`, `data`, `auth`, …) |
+| `components/ui/` | Radix/CVA design system only |
+| `db/` | Drizzle schema + client |
+| `trigger/` | Task registry + shared task helpers |
+| `mcp/` | MCP server (separate deployable) |
+
+Dev-time eval harness lives in top-level `evals/` (excluded from app `tsconfig`).
+Static legal copy lives in top-level `content/`.
+Structure is enforced by `src/__tests__/src-structure.test.ts`.
 
 ---
 
@@ -115,8 +131,7 @@ graph LR
     end
 
     subgraph "Agent Runtime"
-        Mastra[Mastra Core]
-        LangGraph[LangGraph Agents]
+        Mastra[Mastra Core<br/>Agents · Tools · Workflows]
         Tools[Tool Registry]
     end
 
@@ -130,8 +145,7 @@ graph LR
     TaskQueue --> Upscale
     
     Actions --> DB
-    Mastra --> LangGraph
-    LangGraph --> Tools
+    Mastra --> Tools
     Tools --> DB
     Tools --> Vector
     
@@ -241,3 +255,29 @@ Router → Specialist A → Direct Handoff → Specialist B
 - Preserves full context
 - Reduces latency
 - Each agent owns its domain
+
+---
+
+## Mastra Studio (local dev)
+
+Inspect and chat with registered agents outside the Next.js app:
+
+```bash
+npm run mastra:dev   # http://localhost:4111
+```
+
+| Concern | Location |
+|---------|----------|
+| Studio entry | `src/shared/agent-kernel/mastra/index.ts` |
+| Studio agent registry | `src/shared/agent-kernel/mastra/agents/registry.ts` |
+| Studio tool catalog (bundler-safe stubs) | `src/shared/agent-kernel/mastra/tools/bundles.ts` |
+| Production Mastra instance + Postgres memory | `src/shared/agent-kernel/MastraInstance.ts` |
+| Production agents & tools | `src/domains/*/agents/` |
+
+Studio tools mirror production IDs/descriptions; DB writes and Trigger jobs run in the app runtime.
+
+---
+
+## Testing
+
+See [TESTING.md](./TESTING.md). Unit tests are **colocated** under `src/**/__tests__/`. Run `npm run test:unit`. E2E: `npm run test:e2e`.

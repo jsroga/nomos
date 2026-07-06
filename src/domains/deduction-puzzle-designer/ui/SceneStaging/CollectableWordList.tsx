@@ -1,6 +1,6 @@
 import React from 'react'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/Label'
+import { Badge } from '@/components/Badge'
 import { Share2 } from 'lucide-react'
 
 export function CollectableWordList() {

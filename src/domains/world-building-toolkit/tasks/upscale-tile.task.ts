@@ -1,7 +1,7 @@
 import { task, logger, metadata, AbortTaskRunError } from '@trigger.dev/sdk/v3'
 import { put } from '@vercel/blob'
-import { storageService } from '@/infrastructure/storage/StorageService'
-import { UPSCALE_PROMPTS, MASK_CONFIG, getCreativityPrompt } from '@/lib/server/prompts'
+import { storageService } from '@/shared/data/storage/StorageService'
+import { UPSCALE_PROMPTS, MASK_CONFIG, getCreativityPrompt } from '@/shared/data/server/prompts'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // Provider types
@@ -80,7 +80,7 @@ async function pollLegNextTask(
   throw new AbortTaskRunError('Task timeout - Status did not reach completed')
 }
 
-// NOTE: getCreativityPrompt is now imported from @/constants/prompts
+// NOTE: getCreativityPrompt is now imported from @/shared/data/constants/prompts
 
 // Midjourney upscale via PiAPI - uses imagine + upscale workflow
 // Midjourney upscale via LegNext AI - uses upload_paint + upscale workflow

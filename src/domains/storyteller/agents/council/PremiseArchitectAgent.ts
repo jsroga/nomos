@@ -21,12 +21,12 @@ import {
   recordAgentScore,
   withSpan,
   langfuse,
-} from '@/agent-core/observability'
+} from '@/shared/observability/observability'
 import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
 import { EPISODE_PREMISE_PROMPT, getRandomCreativeRiskExamples } from '@/domains/storyteller/prompts/personas/episode-premise'
-import { MODELS, IMPROVEMENT_LOOP } from '@/agent-core/models'
+import { MODELS, IMPROVEMENT_LOOP } from '@/shared/agent-kernel/models'
 import { getMastraInstance } from '@/shared/agent-kernel'
-import { runImprovementLoop, judgeMazur, MazurJudgment } from '@/agent-core/judging'
+import { runImprovementLoop, judgeMazur, MazurJudgment } from '@/shared/agent-kernel/judging'
 import { ReferenceValidator } from '@/domains/storyteller/services/ReferenceValidatorService'
 
 /**

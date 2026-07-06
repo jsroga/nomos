@@ -2,7 +2,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { forgotPasswordSchema } from '@/shared/auth/validation'
-import { getSiteURL } from '@/lib/url'
+import { getSiteURL } from '@/shared/data/url'
 import { ValidationError } from 'yup'
 
 export async function POST(request: NextRequest) {

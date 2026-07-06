@@ -412,7 +412,7 @@ class EntityGraphService {
     try {
       // Use the voyage embeddings or OpenAI embeddings
       const { getVoyageEmbeddings } =
-        await import('@/infrastructure/ai/embeddings/voyage-embeddings')
+        await import('@/shared/ai/embeddings/voyage-embeddings')
       const embeddings = getVoyageEmbeddings()
 
       const [embedding] = await embeddings.embedDocuments([content])
@@ -446,7 +446,7 @@ class EntityGraphService {
     try {
       // Get embedding for query
       const { getVoyageEmbeddings } =
-        await import('@/infrastructure/ai/embeddings/voyage-embeddings')
+        await import('@/shared/ai/embeddings/voyage-embeddings')
       const embeddings = getVoyageEmbeddings()
       const queryEmbedding = await embeddings.embedQuery(query)
 

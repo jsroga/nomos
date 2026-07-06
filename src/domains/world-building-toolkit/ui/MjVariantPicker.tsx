@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
-import { upscaleService } from '../services/UpscaleService'
+import { upscaleService } from '../state/client-services/UpscaleService'
 import toast from 'react-hot-toast'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 

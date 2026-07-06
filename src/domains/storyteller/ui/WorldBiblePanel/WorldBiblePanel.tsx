@@ -1,14 +1,14 @@
 import { Save, Edit2, X, Lock, Unlock, Shield, Loader2, Network, BookOpen } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
+import { Button } from '@/components/Button'
 import { cn } from '@/shared/data/utils'
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 
 // Lazy load CharacterWeb since it's a heavy component
 const CharacterWeb = lazy(() => import('../CharacterWeb').then(m => ({ default: m.CharacterWeb })))
-import { LocalStorageKeys } from '@/constants/localStorage'
+import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
-import { isCentralUser, canEditBible } from '@/lib/bible-permissions'
+import { isCentralUser, canEditBible } from '@/shared/auth/bible-permissions'
 
 import { StoryPlan } from '@/domains/storyteller/prompts/schemas/agent-schemas'
 // CharacterCreationDialog removed - Cast is managed via CharacterPanel sidebar
@@ -86,9 +86,7 @@ const WorldBiblePanel: React.FC<WorldBiblePanelProps> = props => {
   const projectId =
     props.projectId ||
     (typeof window !== 'undefined'
-      ? window.location.pathname.startsWith('/app/')
-        ? window.location.pathname.split('/')[2]
-        : window.location.pathname.split('/')[1]
+      ? window.location.pathname.split('/')[1]
       : '')
 
   return (

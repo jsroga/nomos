@@ -27,7 +27,7 @@ import {
   Menu,
   Github,
 } from 'lucide-react'
-import { BleedingText } from '@/components/ui/BleedingText'
+import { BleedingText } from '@/components/BleedingText'
 import { TurbulentBackground } from './TurbulentBackground'
 
 const SUBTITLES = [
@@ -51,7 +51,7 @@ function ClientOnly({ children }: { children: React.ReactNode }) {
   if (!hasMounted) return null
   return <>{children}</>
 }
-import { MotionHighlight, LiquidDistortionText } from '@/components/ui/text-effects'
+import { MotionHighlight, LiquidDistortionText } from '@/components/TextEffects'
 import dynamic from 'next/dynamic'
 import { ToolsIntegration } from './ToolsIntegration'
 import { ProPlanPromo } from './ProPlanPromo'
@@ -682,11 +682,11 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                   items={['SYSTEMS', 'DOCS', 'API']}
                   onSelect={item => {
                     if (item === 'DOCS') {
-                      window.location.href = '/docs/getting-started'
+                      window.location.href = 'https://github.com/jsroga/kurvitza#readme'
                       return
                     }
                     if (item === 'API') {
-                      window.location.href = '/docs'
+                      window.location.href = 'https://github.com/jsroga/kurvitza/tree/main/docs'
                       return
                     }
                     const el = document.getElementById(item.toLowerCase())
@@ -717,7 +717,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                 </button>
 
                 <Link
-                  href={isLoggedIn ? '/app' : '/login'}
+                  href={isLoggedIn ? '/projects' : '/login'}
                   className="hidden sm:inline-flex group relative items-center gap-2 px-5 py-2.5 text-sm font-bold text-white transition-all duration-300 rounded-lg overflow-hidden border border-primary/50 hover:border-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm hover:shadow-[0_0_20px_-5px_rgba(92,124,250,0.5)] hover:scale-[1.02]"
                 >
                   <span className="relative z-10">{isLoggedIn ? 'Dashboard' : 'Get Started'}</span>
@@ -765,7 +765,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                   {/* Top CTA */}
                   <div className="p-6 border-b border-white/5 space-y-3">
                     <Link
-                      href={isLoggedIn ? '/app' : '/login'}
+                      href={isLoggedIn ? '/projects' : '/login'}
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center justify-center gap-2 w-full px-5 py-3 text-sm font-bold text-white rounded-lg border border-primary/50 bg-primary/20 hover:bg-primary/30 transition-colors font-syne tracking-wide"
                     >
@@ -795,11 +795,11 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                         onClick={() => {
                           setMobileMenuOpen(false)
                           if (item === 'DOCS') {
-                            window.location.href = '/docs/getting-started'
+                            window.location.href = 'https://github.com/jsroga/kurvitza#readme'
                             return
                           }
                           if (item === 'API') {
-                            window.location.href = '/docs'
+                            window.location.href = 'https://github.com/jsroga/kurvitza/tree/main/docs'
                             return
                           }
                           const el = document.getElementById(item.toLowerCase())
@@ -841,7 +841,7 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
             className="flex flex-col sm:flex-row items-center gap-5"
           >
             <Link
-              href={isLoggedIn ? '/app' : '/login'}
+              href={isLoggedIn ? '/projects' : '/login'}
               className="group relative inline-flex items-center gap-3 px-10 py-5 text-sm font-bold text-white transition-all duration-300 rounded-lg overflow-hidden border border-primary/60 hover:border-primary bg-primary/20 hover:bg-primary/30 backdrop-blur-sm shadow-[0_0_30px_-10px_rgba(92,124,250,0.4)] hover:shadow-[0_0_40px_-8px_rgba(92,124,250,0.6)] hover:scale-[1.03] font-syne tracking-wide"
             >
               <Plus className="w-4 h-4" />
@@ -1501,7 +1501,9 @@ export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
-                href="/docs"
+                href="https://github.com/jsroga/kurvitza/tree/main/docs"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="group inline-flex items-center gap-2 px-6 py-4 text-sm font-bold text-white/60 hover:text-white transition-all duration-300 border border-transparent hover:border-white/10 rounded-lg hover:bg-white/5 font-mono"
               >
                 Read the docs

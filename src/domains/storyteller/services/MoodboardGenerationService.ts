@@ -1,5 +1,5 @@
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
-import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/constants/polling'
+import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/shared/data/constants/polling'
 
 // Define local storage keys
 const DynamicLocalStorageKeys = {

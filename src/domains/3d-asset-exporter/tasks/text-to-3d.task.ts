@@ -1,6 +1,6 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
-import { storageService } from '@/infrastructure/storage/StorageService'
+import { storageService } from '@/shared/data/storage/StorageService'
 import { v4 as uuidv4 } from 'uuid'
 
 const MESHY_BASE_URL = 'https://api.meshy.ai/openapi/v2/text-to-3d'

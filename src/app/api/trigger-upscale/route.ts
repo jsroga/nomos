@@ -7,7 +7,7 @@ import {
   verifyProjectAccess,
   type AuthenticatedRequest,
 } from '@/shared/data/api-utils'
-import { resolveStyleReferenceUrls } from '@/config/style-presets'
+import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets'
 
 export const dynamic = 'force-dynamic'
 

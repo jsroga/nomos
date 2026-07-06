@@ -12,7 +12,7 @@ import {
   storytellerEpisodesQuerySchema,
   storytellerEpisodesResponseSchema,
 } from '@/domains/storyteller/io/storyteller.dto'
-import { verifyProjectAccess } from '@/domains/storyteller'
+import { verifyProjectAccess } from '@/domains/storyteller/server'
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)

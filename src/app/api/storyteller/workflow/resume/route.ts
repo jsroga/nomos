@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { workflowStore } from '@/domains/storyteller'
+import { workflowStore } from '@/domains/storyteller/server'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
 export const runtime = 'nodejs'

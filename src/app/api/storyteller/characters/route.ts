@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db/client'
 import { characters } from '@/db'
-import { verifyCharacterAccess, verifyProjectAccess } from '@/domains/storyteller'
+import { verifyCharacterAccess, verifyProjectAccess } from '@/domains/storyteller/server'
 import { eq, desc, and, sql } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
 
@@ -304,7 +304,7 @@ export async function POST(req: NextRequest) {
     let entityId: string | null = null
     try {
       const entityResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/entities`,
+        `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:4000'}/api/entities`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -346,7 +346,7 @@ export async function POST(req: NextRequest) {
         title: `Design mechanics for ${name}`,
         description: 'Create gameplay systems and abilities for this character',
         targetDomain: 'loop-creator',
-        targetRoute: `/app/${projectId}/loop-creator`,
+        targetRoute: `/${projectId}/loop-creator`,
         autoMessage: `Design combat and movement mechanics for @${name}. Consider their role${role ? ` as ${role}` : ''}.`,
         priority: 5,
         entityId: entityId || newCharacter.id,
@@ -357,7 +357,7 @@ export async function POST(req: NextRequest) {
         title: `Build ${name}'s home`,
         description: 'Design the character\'s living space in 3D',
         targetDomain: 'interior-designer',
-        targetRoute: `/app/${projectId}/interior-design`,
+        targetRoute: `/${projectId}/interior-design`,
         priority: 3,
         entityId: entityId || newCharacter.id,
       },
@@ -470,14 +470,14 @@ export async function DELETE(req: NextRequest) {
     if (character) {
       try {
         const entitiesResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/entities?projectId=${character.projectId}&sourceDomain=storyteller`
+          `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:4000'}/api/entities?projectId=${character.projectId}&sourceDomain=storyteller`
         )
         const { entities } = await entitiesResponse.json()
         const entity = entities?.find((e: any) => e.source_entity_id === id)
 
         if (entity) {
           await fetch(
-            `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/entities/${entity.id}`,
+            `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:4000'}/api/entities/${entity.id}`,
             { method: 'DELETE' }
           )
         }

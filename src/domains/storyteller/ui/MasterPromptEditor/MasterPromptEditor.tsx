@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/Button'
 import { Save, Scroll, FileText, Sparkles } from 'lucide-react'
-import { SidebarTextarea } from '@/components/ui/domain-sidebar'
-import { TOUR_STEP_IDS } from '@/lib/tour-constants'
-import { getRandomWorldPromptIdea } from '@/constants/worldPromptIdeas'
+import { SidebarTextarea } from '@/components/DomainSidebar'
+import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
+import { getRandomWorldPromptIdea } from '@/shared/data/constants/worldPromptIdeas'
 
 interface MasterPromptEditorProps {
   scope: 'Project' | 'Episode'

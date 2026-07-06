@@ -10,8 +10,6 @@ export default defineConfig({
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
-      'tests/integration/**',
-      'tests/system/**',
       '**/*.e2e.test.{ts,tsx}',
     ],
     env: {
@@ -19,7 +17,7 @@ export default defineConfig({
     },
     alias: {
       '@': path.resolve(__dirname, './src'),
-      'next/server': path.resolve(__dirname, './tests/__mocks__/next-server.ts'),
+      '@/evals': path.resolve(__dirname, './evals'),
     },
   },
 })

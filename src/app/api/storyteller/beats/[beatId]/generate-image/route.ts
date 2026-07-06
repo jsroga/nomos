@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/db/client'
 import { beats, episodes, projects } from '@/db'
 import { eq } from 'drizzle-orm'
-import { generateStoryboard } from '@/trigger/generate-storyboard'
+import { generateStoryboard } from '@/domains/storyteller/tasks/generate-storyboard.task'
 
 export async function POST(req: Request, props: { params: Promise<{ beatId: string }> }) {
   const params = await props.params

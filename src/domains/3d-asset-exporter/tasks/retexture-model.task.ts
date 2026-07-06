@@ -1,8 +1,8 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
-import { MeshyClient } from '@/infrastructure/ai/meshy'
-import { storageService } from '@/infrastructure/storage/StorageService'
+import { MeshyClient } from '@/shared/ai/meshy'
+import { storageService } from '@/shared/data/storage/StorageService'
 import { v4 as uuidv4 } from 'uuid'
-import { supabaseAdmin } from '@/lib/supabase-admin'
+import { supabaseAdmin } from '@/shared/auth/supabase-admin'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
 export const retextureModelTask = task({

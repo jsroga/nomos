@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useRef, useState, useEffect, useMemo } from 'react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/Button'
 import {
   Send,
   StopCircle,
@@ -34,7 +34,7 @@ import {
   Gamepad2,
   LucideIcon,
 } from 'lucide-react'
-import { Textarea } from '@/components/ui/textarea'
+import { Textarea } from '@/components/Textarea'
 import { cn } from '@/shared/data/utils'
 import {
   MentionItem,
@@ -46,7 +46,7 @@ import {
 } from '../core/mentions/types'
 import { buildMessageWithContext } from '../core/mentions/context-builder'
 import { MentionChipBar } from './MentionChip'
-import { TOUR_STEP_IDS } from '@/lib/tour-constants'
+import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 
 // Icon component map
 const ICON_MAP: Record<string, LucideIcon> = {

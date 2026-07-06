@@ -1,5 +1,5 @@
 import type { Tile } from '../../core/world-types'
-import { LocalStorageKeys } from '@/constants/localStorage'
+import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 
 export interface SelectBox {
   x1: number

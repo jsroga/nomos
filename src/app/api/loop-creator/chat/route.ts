@@ -8,10 +8,11 @@
 
 import { NextRequest } from 'next/server'
 import { requireAuth } from '@/shared/auth/auth'
-import { verifyProjectAccess } from '@/domains/storyteller'
-import { streamLoopCreator, type LoopCreatorState } from '@/domains/loop-creator'
+import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { streamLoopCreator } from '@/domains/loop-creator/server'
+import { type LoopCreatorState } from '@/domains/loop-creator'
 import { HumanMessage, AIMessage } from '@langchain/core/messages'
-import { langfuse, isLangfuseEnabled } from '@/agent-core/observability'
+import { langfuse, isLangfuseEnabled } from '@/shared/observability/observability'
 
 export const maxDuration = 120
 export const runtime = 'nodejs'

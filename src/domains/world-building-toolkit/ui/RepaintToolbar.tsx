@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit'
 import { Paintbrush, Eraser, Check, X, Loader2 } from 'lucide-react'
-import { Slider } from '@/components/ui/slider'
+import { Slider } from '@/components/Slider'
 import { repaintService } from '@/domains/world-building-toolkit/state/client-services/RepaintService'
 import toast from 'react-hot-toast'
 

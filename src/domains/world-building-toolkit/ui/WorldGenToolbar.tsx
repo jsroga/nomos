@@ -4,10 +4,10 @@ import React, { useRef, useState } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit'
 import { Hand, Square, Paintbrush, Upload, Loader2 } from 'lucide-react'
 import { cn } from '@/shared/data/utils'
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Button } from '@/components/Button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 import { toast } from 'sonner'
-import { TOUR_STEP_IDS } from '@/lib/tour-constants'
+import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
 interface ToolButtonProps {

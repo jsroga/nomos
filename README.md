@@ -1,89 +1,46 @@
 # World Building Kit
 
-> AI-powered creative platform for storytellers, game designers, and world builders.
+AI workspace for storytellers and game designers — characters, narratives, loops, 3D worlds, and agent tooling.
 
-[![CI](https://github.com/jsroga/world-building-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/jsroga/world-building-kit/actions/workflows/ci.yml)
-[![License: BUSL-1.1](https://img.shields.io/badge/License-BUSL--1.1-blue.svg)](LICENSE)
-
----
-
-## What is it?
-
-World Building Kit is a multi-agent AI workspace that helps you design and manage rich fictional universes — characters, narratives, game mechanics, 3D environments, and more — through a suite of specialized AI tools.
-
-**Tech Stack:** Next.js 15 · Supabase · LangGraph · Trigger.dev · Three.js
-
----
+**Stack:** Next.js 15 · Supabase · Mastra · Trigger.dev · Three.js
 
 ## Modules
 
-| Module | Description |
-|--------|-------------|
-| **Storyteller** | Virtual Writers Room — characters, episodes, arcs, world bible |
-| **Loop Creator** | Game loop design with multi-agent supervisor + specialists |
-| **Interior Designer** | 3D world-building, terrain sculpting, tilemap editor |
-| **Chat** | AI chat with tool use, action approvals, streaming |
-| **MCP Server** | Model Context Protocol API for external integrations |
+| Module | What it does |
+|--------|----------------|
+| Storyteller | Writers room — bible, episodes, beats, characters |
+| Loop Creator | Game-loop design with multi-agent planning |
+| Interior Designer | 3D terrain, tilemaps, world editing |
+| Chat | Streaming agent chat with tool approvals |
+| MCP | Model Context Protocol server for external tools |
 
----
-
-## Quick Start
+## Quick start
 
 ```bash
-# Install dependencies
 npm install
-
-# Start development server
+cp .env.local.example .env.local   # fill in keys
 npm run dev
-
-# Start MCP server
-npm run mcp:dev
-
-# Run tests
-npm run test:unit
 ```
-
-Requires a `.env.local` — see `.env.example` for required variables.
-
----
-
-## Documentation
-
-- [System Architecture](docs/ARCHITECTURE.md)
-- [Agent Core](docs/agent-core.md)
-- [MCP API Reference](docs/MCP_API.md)
-- [Evaluation Framework](docs/evaluation/README.md)
-- **Modules:** [Storyteller](docs/modules/storyteller.md) · [Loop Creator](docs/modules/loop-creator.md) · [Interior Designer](docs/modules/interior-designer.md) · [Chat](docs/modules/chat.md)
-
----
-
-## CI / CD
-
-Every push to `main`, `dev`, and `preview/**` runs:
-
-1. **Lint** — ESLint
-2. **Unit Tests** — Vitest
-3. **Dead Code** — Knip
-4. **AI Security Review** — Claude (blocks deploy on HIGH severity findings)
-5. **Deploy** — Vercel (production on `main`, preview on other branches)
-
----
-
-## Development
-
-See [CLAUDE.md](CLAUDE.md) for full development rules and conventions.
 
 ```bash
-npm run build          # Production build
-npm run lint           # ESLint
-npm run test:unit      # Unit tests (Vitest)
-npm run test:e2e       # E2E tests
-npm run mcp:build      # Build MCP server
+npm run test:unit
+npm run test:e2e full-loop
+npm run mastra:dev
 ```
 
----
+## Docs
+
+| Topic | Location |
+|-------|----------|
+| Architecture (target) | [docs/unified/ARCHITECTURE.md](docs/unified/ARCHITECTURE.md) |
+| Architecture (current) | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| MCP API | [docs/MCP_API.md](docs/MCP_API.md) |
+| Evaluations | [docs/evaluation/README.md](docs/evaluation/README.md) |
+| Agent / Mastra rules | [AGENTS.md](AGENTS.md) |
+| Dev commands & repo ops | [CLAUDE.md](CLAUDE.md) |
+
+Internal module notes live under `docs/internal/`.
 
 ## License
 
-[Business Source License 1.1](LICENSE) — source available, not open source.
-See [LICENSE](LICENSE) for usage terms.
+[Business Source License 1.1](LICENSE)

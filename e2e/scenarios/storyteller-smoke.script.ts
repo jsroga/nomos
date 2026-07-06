@@ -17,7 +17,7 @@
  * Run: npm run test:e2e smoke
  */
 
-const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000'
+const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:4000'
 const API_URL = `${BASE_URL}/api/storyteller/chat/stream`
 // Use environment variable or a known test project ID
 // The smoke test validates stream events, not actual DB persistence

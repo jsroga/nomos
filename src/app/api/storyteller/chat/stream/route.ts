@@ -1,12 +1,17 @@
-import { createStorytellerAgent, normalizeMastraTraceId } from '@/domains/storyteller'
+// NOTE: import from specific server-side submodules rather than the
+// `@/domains/storyteller` barrel — that barrel also re-exports client UI
+// components (e.g. CorkBoard), which pulls client-only hooks into this
+// server Route Handler's build graph and breaks compilation.
+import { createStorytellerAgent, normalizeMastraTraceId } from '@/domains/storyteller/agents'
 import { EventEmitter } from 'node:events'
-import { BibleSection, assembleStorytellerContext } from '@/domains/storyteller'
+import { BibleSection } from '@/domains/storyteller/core'
+import { assembleStorytellerContext } from '@/domains/storyteller/services/ContextAssemblyService'
 import {
   mapToolResultToAction,
   detectLoadingSection,
   getActionDedupeKey,
   type DetectedSection,
-} from '@/domains/storyteller'
+} from '@/domains/storyteller/config/tool-result-mapper'
 
 // Node.js Runtime required for Mastra core dependencies
 export const runtime = 'nodejs'
@@ -23,7 +28,7 @@ import {
   recordToolCall,
   recordError,
   flushObservability,
-} from '@/agent-core/observability'
+} from '@/shared/observability/observability'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // Use the imported langfuse client if enabled
@@ -35,8 +40,10 @@ export async function POST(req: Request) {
 
   try {
     // Security: Require authentication
-    const { requireAuth } = await import('@/lib/auth')
-    const { verifyProjectAccess, verifyEpisodeAccess } = await import('@/domains/storyteller')
+    const { requireAuth } = await import('@/shared/auth/auth')
+    const { verifyProjectAccess, verifyEpisodeAccess } = await import(
+      '@/domains/storyteller/services/AccessVerificationService'
+    )
 
     const { session } = await requireAuth()
     if (!session) {
@@ -194,7 +201,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
     // Create EventBus for Workflow Visibility
     // EventEmitter imported at top level to avoid edge runtime issues
     const { workflowContext, WORKFLOW_EVENTS } =
-      await import('@/domains/storyteller')
+      await import('@/domains/storyteller/agents/orchestration/WorkflowContext')
     const eventBus = new EventEmitter()
     const activeSpans = new Map<string, ReturnType<NonNullable<typeof trace>['span']>>() // Track spans by step name
 
@@ -655,7 +662,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
                         if (projectId) {
                           try {
                             const { entityAutoLinker } =
-                              await import('@/domains/storyteller')
+                              await import('@/domains/storyteller/services/EntityAutoLinkerService')
 
                             // Auto-link text fields in the payload
                             for (const [key, value] of Object.entries(linkedPayload)) {
@@ -805,7 +812,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
           if (projectId && fullText.length > 0) {
             try {
               const { entityAutoLinker } =
-                await import('@/domains/storyteller')
+                await import('@/domains/storyteller/services/EntityAutoLinkerService')
               finalText = await entityAutoLinker.autoLink(fullText, projectId)
             } catch (err) {
               console.warn('[Stream] Entity auto-linking failed:', err)

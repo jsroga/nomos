@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { AgentLog } from './AgentLog'
 import { ChatInput } from './ChatInput'
 import { Message, AgentConfigMap, AgentQuestion, ThinkingMessagesConfig } from '../core/types'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/Button'
 import { Activity, FlaskConical, Loader2 } from 'lucide-react'
 import { MentionProvider, ProjectContext } from '../core/mentions/types'
 
@@ -102,7 +102,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     score: number
     feedback: string
     criteria: Record<string, { score: number; comment: string }>
-    confidentAIUrl?: string
   } | null>(null)
 
   // Check localStorage for eval mode key OR admin status
@@ -130,7 +129,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setEvalResult(null)
 
     try {
-      const response = await fetch('/api/evaluation/llm-judge', {
+      const response = await fetch('/api/llm-judge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -238,26 +237,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <FlaskConical size={16} className="text-purple-400" />
-              <span className="text-sm font-semibold text-purple-400">
-                {evalResult.confidentAIUrl ? 'Confident AI Evaluation' : 'LLM-as-Judge Evaluation'}
-              </span>
-              {evalResult.confidentAIUrl && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300">
-                  EQ-Bench • Mazur • Gilligan
-                </span>
-              )}
+              <span className="text-sm font-semibold text-purple-400">Mastra Scorer Evaluation</span>
             </div>
             <div className="flex items-center gap-2">
-              {evalResult.confidentAIUrl && (
-                <a
-                  href={evalResult.confidentAIUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-purple-400 hover:text-purple-300 underline"
-                >
-                  View Details →
-                </a>
-              )}
               <button
                 onClick={() => setEvalResult(null)}
                 className="text-xs text-muted-foreground hover:text-foreground"

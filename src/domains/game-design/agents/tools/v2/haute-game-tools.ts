@@ -20,7 +20,7 @@ import {
   StrandWeaverOutputSchema,
   SilentTeacherOutputSchema,
   MundanePoetOutputSchema,
-} from '../../core/schemas'
+} from '../../../core/schemas'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
 function getModel() {

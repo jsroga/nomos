@@ -1,6 +1,9 @@
 # Skill eval run outputs (see agentskills.io skill evaluation model)
 **/*-workspace/
-.claude/settings.local.json
+.claude/
+
+# Local notes / audits (not committed)
+.local/
 
 # Logs
 logs
@@ -34,8 +37,12 @@ public/projects/
 .langgraph_api
 .vercel
 
-*storybook.log
-storybook-static
+# Playwright (HTML report + failure artifacts)
+/test-results/
+/playwright-report/
+
+# Mastra CLI build output
+.mastra/
 
 # Lighthouse reports
 lighthouse-*.report.html
@@ -66,8 +73,10 @@ mastra-memory.db-wal
 /CLARIFY.md
 /DECISIONS.md
 /PLAN.md
+/STRUCTURE.md
 /RETRO.md
 /UX.md
 /SCREENSHOTS.md
-/findings/assess.md
+/findings/
 /screenshots/
+/IMPROVEMENT_PLAN.md

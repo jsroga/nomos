@@ -31,7 +31,7 @@ import {
   getLoopCreatorMentionProviders,
   buildLoopCreatorProjectContext,
 } from '../core/mentions/providers'
-import { isAdminUser } from '@/lib/admin-users'
+import { isAdminUser } from '@/shared/auth/admin-users'
 import {
   Sparkles,
   Bot,
@@ -62,7 +62,7 @@ import { PropertiesPanel } from './PropertiesPanel'
 import { MarketAnalysisPanel } from './MarketAnalysisPanel'
 import { LoopSelector } from './LoopSelector'
 import { LoopEmptyState } from './LoopEmptyState'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/Button'
 import { EntitySelectorButton } from '@/components/EntityPicker'
 import {
   Dialog,
@@ -70,10 +70,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Badge } from '@/components/ui/badge'
-import { DomainSidebar } from '@/components/ui/domain-sidebar'
+} from '@/components/Dialog'
+import { ScrollArea } from '@/components/ScrollArea'
+import { Badge } from '@/components/Badge'
+import { DomainSidebar } from '@/components/DomainSidebar'
 
 // Agent configuration with icons for each loop creator agent
 const LOOP_AGENT_CONFIG = {
@@ -128,8 +128,8 @@ interface LoopCreatorLayoutProps {
   projectId: string
 }
 
-import { TOUR_STEP_IDS } from '@/lib/tour-constants'
-import { useTour } from '@/components/tour'
+import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
+import { useTour } from '@/components/shell/Tour'
 
 export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
   const { currentStep } = useTour()

@@ -8,7 +8,7 @@ import {
   AnalyzeBalanceOutputSchema,
   SuggestProgressionOutputSchema,
   GameLoopSchema,
-} from '../../core/schemas'
+} from '../../../core/schemas'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // Create a shared model instance

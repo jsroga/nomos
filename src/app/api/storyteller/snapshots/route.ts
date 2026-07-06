@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { requireAuth } from '@/shared/auth/auth'
-import { verifyBeatAccess, verifyCharacterAccess } from '@/domains/storyteller'
+import { verifyBeatAccess, verifyCharacterAccess } from '@/domains/storyteller/server'
 
 export async function POST(req: NextRequest) {
   try {

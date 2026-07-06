@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-The Storyteller module is the core narrative engine of the application. It acts as a "Virtual Writers Room," simulating the collaborative process of a TV production team. It uses a **Multi-Agent System (MAS)** built on LangGraph/LangChain.
+The Storyteller module is the core narrative engine of the application. It acts as a "Virtual Writers Room," simulating the collaborative process of a TV production team. It uses a **Multi-Agent System (MAS)** built on **Mastra v1** (agents, tools, workflows).
 
 ## 2. Architecture: Writers Room V2 (Handoffs + Skills)
 

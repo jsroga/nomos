@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createStorytellerAgent } from '@/domains/storyteller'
+import { createStorytellerAgent } from '@/domains/storyteller/server'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
 const PROMPT_GENERATOR_SYSTEM = `You are a Visual Director for a film. 

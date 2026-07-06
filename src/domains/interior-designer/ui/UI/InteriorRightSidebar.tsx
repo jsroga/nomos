@@ -7,8 +7,8 @@ import { PropertiesPanel } from './PropertiesPanel'
 import { LayerPanel } from './LayerPanel'
 import { useInteriorStore } from '@/domains/interior-designer'
 import { Package, Settings, Layers } from 'lucide-react'
-import { TOUR_STEP_IDS } from '@/lib/tour-constants'
-import { Button } from '@/components/ui/button'
+import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
+import { Button } from '@/components/Button'
 
 type TabId = 'assets' | 'properties' | 'layers'
 

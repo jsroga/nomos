@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { RefreshCcw, Check, AlertTriangle, User, Zap, Scroll, Brain, Palette } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/Button'
 import { cn } from '@/shared/data/utils'
 import { ConsistencyCheckResult, Inconsistency, ConsistencyFix } from '@/domains/storyteller/core/types/ConsistencyTypes'
 import { JSONDiffViewer } from '../JSONDiffViewer'

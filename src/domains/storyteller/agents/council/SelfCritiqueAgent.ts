@@ -10,14 +10,14 @@ import {
   createAgentTrace,
   recordAgentGeneration,
   withSpan,
-} from '@/agent-core/observability'
+} from '@/shared/observability/observability'
 import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
 import {
   SELF_CRITIQUE_PROMPT,
   GRRM_GILLIGAN_STANDARDS,
   CREATIVE_EXAMPLES,
 } from '@/domains/storyteller/prompts/extended-thinking'
-import { truncateForTrace } from '@/agent-core/agents/agent-response'
+import { truncateForTrace } from '@/shared/agent-kernel/agents/agent-response'
 import { getMastraInstance } from '@/shared/agent-kernel'
 import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/config/ModelConfig'
 

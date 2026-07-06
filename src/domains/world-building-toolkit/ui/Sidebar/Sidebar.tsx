@@ -1,16 +1,16 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react'
-import { TOUR_STEP_IDS } from '@/lib/tour-constants'
+import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { useWorldStore, Tile } from '@/domains/world-building-toolkit'
-import { assembleContextImage, type ContextImageVariant } from '@/infrastructure/ai/contextAssembler'
+import { assembleContextImage, type ContextImageVariant } from '@/shared/ai/contextAssembler'
 import { upscaleService } from '@/domains/world-building-toolkit/state/client-services/UpscaleService'
 import {
   tileGenerationService,
   type FollowUpContextPayload,
 } from '@/domains/world-building-toolkit/state/client-services/TileGenerationService'
 import { fidelityService } from '@/domains/world-building-toolkit/state/client-services/FidelityService'
-import { LocalStorageKeys } from '@/constants/localStorage'
-import { STYLE_PRESETS_MAP } from '@/config/style-presets'
-import { Button } from '@/components/ui/button'
+import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { STYLE_PRESETS_MAP } from '@/shared/data/constants/style-presets'
+import { Button } from '@/components/Button'
 import { AssetsPanel } from '@/domains/world-building-toolkit/ui/AssetsPanel'
 import { MjVariantPicker } from '@/domains/world-building-toolkit/ui/MjVariantPicker'
 import {
@@ -22,7 +22,7 @@ import {
   SidebarSliderRow,
   SidebarTextarea,
   SidebarInput,
-} from '@/components/ui/domain-sidebar'
+} from '@/components/DomainSidebar'
 import {
   Loader2,
   Plus,
@@ -41,7 +41,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 import toast from 'react-hot-toast'
 
 export const Sidebar: React.FC = () => {

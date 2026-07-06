@@ -3,8 +3,8 @@ import { db } from '@/db/client'
 import { episodes, projects } from '@/db'
 import { eq } from 'drizzle-orm'
 import { tasks } from '@trigger.dev/sdk/v3'
-import type { generatePoster } from '@/trigger/generate-poster'
-import { resolveStyleReferenceUrls } from '@/config/style-presets'
+import type { generatePoster } from '@/domains/storyteller/tasks/generate-poster.task'
+import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets'
 
 export async function POST(req: Request, props: { params: Promise<{ episodeId: string }> }) {
   const params = await props.params

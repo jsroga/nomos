@@ -30,25 +30,13 @@ function moduleFromPlan() {
 
 const SRC_ROOT_DIRS = [
   'src/shared',
-  'src/lib',
-  'src/agent-core',
-  'src/infrastructure',
-  'src/hooks',
-  'src/store',
-  'src/services',
-  'src/prompts',
-  'src/evaluation',
   'src/mcp',
-  'src/workflows',
-  'src/types',
-  'src/config',
-  'src/constants',
-  'src/content',
-  'src/pages',
   'src/trigger',
   'src/db',
   'src/components',
   'src/app',
+  'evals',
+  'content',
 ];
 
 function isSrcRootPath(file) {

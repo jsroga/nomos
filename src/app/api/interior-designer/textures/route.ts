@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ReplicateClient } from '@/infrastructure/ai/replicate'
+import { ReplicateClient } from '@/shared/ai/replicate'
 import {
   interiorTexturesRequestSchema,
   interiorTexturesResponseSchema,

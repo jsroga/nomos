@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, memo } from 'react'
 import { ChevronLeft, ChevronRight, Play, Pause, ChevronUp, ChevronDown } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/Button'
 
 import { QuestionSession } from '@/domains/storyteller/core/types/ActionTypes'
 

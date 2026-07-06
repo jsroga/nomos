@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { beats, characters, episodes, projects, seriesBibles, storyPlans } from '@/db'
 import { db } from '@/db/client'
-import { verifyEpisodeAccess, verifyProjectAccess } from '@/domains/storyteller'
+import { verifyEpisodeAccess, verifyProjectAccess } from '@/domains/storyteller/server'
 import { eq, and } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 import { requireAuth } from '@/shared/auth/auth'
-import { recordUserAction, flushObservability } from '@/agent-core/observability'
+import { recordUserAction, flushObservability } from '@/shared/observability/observability'
 
 /**
  * Deep merge two objects, with special handling for arrays (replace, not concat)
@@ -543,7 +543,7 @@ export async function POST(req: NextRequest) {
 
         // Register as entity with name-based ID for entity linking
         try {
-          const { entityRegistry } = await import('@/domains/storyteller')
+          const { entityRegistry } = await import('@/domains/storyteller/server')
           const slugName = action.payload.name.toLowerCase().replace(/\s+/g, '-')
           await entityRegistry.registerWithId(`char-${slugName}`, {
             name: action.payload.name,

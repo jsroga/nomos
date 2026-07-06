@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { Plus, Trash2, RefreshCw, ChevronDown, Check, Loader2, Edit2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Button } from '@/components/Button'
+import { Input } from '@/components/Input'
 import { cn } from '@/shared/data/utils'
 import {
   Dialog,
@@ -12,9 +12,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { useConfirmDialog } from '@/components/ui/confirm-dialog'
+} from '@/components/Dialog'
+import { ScrollArea } from '@/components/ScrollArea'
+import { useConfirmDialog } from '@/components/ConfirmDialog'
 
 interface GameLoop {
   id: string

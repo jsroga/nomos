@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { Check, X, Eye, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/Button'
 import { PendingAction } from './BibleContext'
 
 interface SectionPendingOverlayProps {

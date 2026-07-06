@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { requireAuth } from '@/shared/auth/auth'
-import { verifyEpisodeAccess } from '@/domains/storyteller'
+import { verifyEpisodeAccess } from '@/domains/storyteller/server'
 
 export async function GET(req: NextRequest) {
   try {

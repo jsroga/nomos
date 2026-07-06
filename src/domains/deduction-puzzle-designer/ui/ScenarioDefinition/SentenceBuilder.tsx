@@ -1,6 +1,6 @@
 import React from 'react'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/Label'
+import { Badge } from '@/components/Badge'
 
 export function SentenceBuilder() {
   return (

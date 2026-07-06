@@ -1,2 +1,3 @@
-// Re-export placeholder for tours module
-// Will be populated during Wave 4 migration
+export * from './tour-types'
+export * from './tour-constants'
+export * from './module-tours'

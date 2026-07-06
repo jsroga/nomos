@@ -1,7 +1,7 @@
 import { StoryPlan, StorySequence } from '@/domains/storyteller/prompts/schemas/agent-schemas'
 import { EpisodePremisePanel } from '../EpisodePremisePanel'
-import { Button } from '@/components/ui/button'
-import { TooltipProvider } from '@/components/ui/tooltip'
+import { Button } from '@/components/Button'
+import { TooltipProvider } from '@/components/Tooltip'
 import { CheckCircle } from 'lucide-react'
 
 export interface StoryPlanBoardProps {

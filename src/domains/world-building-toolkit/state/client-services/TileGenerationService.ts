@@ -1,9 +1,9 @@
 import { useWorldStore } from '../useWorldStore'
 import type { Tile } from '../../core/world-types'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
-import { DynamicLocalStorageKeys } from '@/constants/localStorage'
-import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/constants/polling'
-import type { ContextImageVariant } from '@/infrastructure/ai/contextAssembler'
+import { DynamicLocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/shared/data/constants/polling'
+import type { ContextImageVariant } from '@/shared/ai/contextAssembler'
 
 interface TileGenRunState {
   runId: string

@@ -5,7 +5,7 @@ import { RepaintCanvas } from './RepaintCanvas'
 import { selectModeService } from '@/domains/world-building-toolkit/state/client-services/SelectModeService'
 import { Sparkles, X, ArrowRight } from 'lucide-react'
 import { getErrorMessage } from '@/shared/errors/error-utils'
-import { useTour } from '@/components/tour'
+import { useTour } from '@/components/shell/Tour'
 
 const TILE_SIZE = 512
 

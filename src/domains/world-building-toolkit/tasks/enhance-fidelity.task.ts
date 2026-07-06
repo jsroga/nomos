@@ -1,14 +1,14 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import { put } from '@vercel/blob'
-import { FIDELITY_PROMPTS, getCreativityPrompt } from '@/lib/server/prompts'
+import { FIDELITY_PROMPTS, getCreativityPrompt } from '@/shared/data/server/prompts'
 import {
   logLLMRequestStart,
   logLLMRequestComplete,
   logLLMRequestError,
 } from '@/trigger/utils/llm-logger'
 
-// NOTE: getCreativityPrompt is now imported from @/constants/prompts
+// NOTE: getCreativityPrompt is now imported from @/shared/data/constants/prompts
 
 export const enhanceFidelityTask = task({
   id: 'enhance-fidelity',

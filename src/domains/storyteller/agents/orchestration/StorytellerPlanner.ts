@@ -1,7 +1,7 @@
-import { ExecutiveAgent, ExecutiveConfig, CoPilotInteraction } from '@/agent-core/executive'
-import { createPlannerTool, PlanPersistence } from '@/agent-core/planner'
-import { getPlotPhaseTool, validateConsistencyTool } from '@/domains/storyteller/tools/storytelling-adapter'
-import { researchTool, factCheckTool } from '@/domains/storyteller/tools/research-adapter'
+import { ExecutiveAgent, ExecutiveConfig, CoPilotInteraction } from '@/shared/agent-kernel/executive'
+import { createPlannerTool, PlanPersistence } from '@/shared/agent-kernel/planner'
+import { getPlotPhaseTool, validateConsistencyTool } from '@/domains/storyteller/agents/tools/storytelling-adapter'
+import { researchTool, factCheckTool } from '@/domains/storyteller/agents/tools/research-adapter'
 
 // ==========================================
 // STORYTELLER PLANNER

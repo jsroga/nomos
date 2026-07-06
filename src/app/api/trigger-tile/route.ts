@@ -7,7 +7,7 @@ import {
   verifyProjectAccess,
   type AuthenticatedRequest,
 } from '@/shared/data/api-utils'
-import { resolveStyleReferenceUrls, resolveStyleContext } from '@/config/style-presets'
+import { resolveStyleReferenceUrls, resolveStyleContext } from '@/shared/data/constants/style-presets'
 import {
   resolveFollowUpImageProviderFromEnv,
   type TileAIProvider,

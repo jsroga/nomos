@@ -5,9 +5,9 @@ import {
   useInteriorStore,
   TerrainQuality,
 } from '@/domains/interior-designer'
-import { Slider } from '@/components/ui/slider'
-import { Switch } from '@/components/ui/switch'
-import { Button } from '@/components/ui/button'
+import { Slider } from '@/components/Slider'
+import { Switch } from '@/components/Switch'
+import { Button } from '@/components/Button'
 import {
   ChevronUp,
   ChevronDown,
@@ -22,7 +22,7 @@ import {
 } from 'lucide-react'
 
 import { cn } from '@/shared/data/utils'
-import { SidebarSection, SidebarLabel } from '@/components/ui/domain-sidebar'
+import { SidebarSection, SidebarLabel } from '@/components/DomainSidebar'
 
 // Brush type icon component
 const BrushIcon: React.FC<{ type: 'raise' | 'lower' | 'flatten' | 'smooth'; size?: number }> = ({

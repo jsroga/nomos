@@ -2,7 +2,7 @@ import { task } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import fs from 'fs'
 import path from 'path'
-import { submitImagineTask, pollLegNextTask } from '../infrastructure/ai/legnext'
+import { submitImagineTask, pollLegNextTask } from '@/shared/ai/legnext'
 
 interface GeneratePortraitPayload {
   prompt: string

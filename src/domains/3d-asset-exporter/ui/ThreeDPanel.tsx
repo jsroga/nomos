@@ -17,13 +17,13 @@ import {
   ToggleRight,
   Upload,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/Button'
 import { useWorldStore } from '@/domains/world-building-toolkit'
 import toast from 'react-hot-toast'
-import { AIProvider } from '@/types/enums'
+import { AIProvider } from '@/shared/types/enums'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
-import { LocalStorageKeys } from '@/constants/localStorage'
-import { TOUR_STEP_IDS } from '@/lib/tour-constants'
+import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // Dynamic import with SSR disabled to avoid React reconciler issues

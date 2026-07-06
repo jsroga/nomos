@@ -1,6 +1,6 @@
 import React from 'react'
 import { Sparkles, Building2, Cpu, Users, Eye, Atom } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/Card'
 import { WorldRule } from '@/domains/storyteller/prompts/schemas/agent-schemas'
 import { cn } from '@/shared/data/utils'
 import { RichText } from '../RichText'

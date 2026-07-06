@@ -1,54 +1,61 @@
 # Agent Core: Shared Agentic Infrastructure
 
-> A research-grade, module-agnostic planning and autonomy layer for AI agents.
+> Module-agnostic planning and autonomy primitives. **Last reviewed:** 2026-07-06.
 
-## Boundary Definition
-This module (`src/agent-core`) contains the **pure cognitive primitives** required for an agent to plan, execute, and correct itself. It DOES NOT contain domain-specific logic (e.g., RPG rules, Storyteller prompts). Domain logic should be implemented in `src/domains/`.
+## Boundary
+
+| Layer | Path | Role |
+|-------|------|------|
+| **Cognitive primitives** | `src/shared/agent-kernel/` | Executive loop, planner, schemas, persistence, skills |
+| **Mastra kernel** | `src/shared/agent-kernel/mastra/` | `createMastra`, Studio registry, Langfuse/workspace |
+| **Production instance** | `src/shared/agent-kernel/MastraInstance.ts` | Singleton + Postgres memory for app |
+| **Domain agents** | `src/domains/*/agents/` | Storyteller, loop-creator, game-design, etc. |
+
+Domain logic (prompts, tools, workflows) stays in `src/domains/`. Do not put RPG/story rules in agent-core.
 
 ## Architecture Overview
 
 ```
-agent-core/
-├── executive.ts       # The "Boss" - Decision loop with Co-Pilot protocol
-├── planner.ts         # Plan management tool (CRUD operations)
-├── schemas.ts         # Zod-validated data structures
-├── middleware/        # Safety & control layers (Human-in-loop)
-└── persistence/       # Storage adapters (JSON store)
+shared/agent-kernel/
+├── executive.ts           # Deliberative loop: OBSERVE → THINK → DECIDE → ACT
+├── planner.ts             # Plan CRUD tool
+├── schemas.ts             # Zod structures
+├── models.ts              # Model registry
+├── skills/                # Skill loader (migrating to Mastra Workspace)
+├── mastra/
+│   ├── create-mastra.ts   # Shared Mastra factory
+│   ├── index.ts           # Mastra Studio entry
+│   ├── agents/registry.ts
+│   └── tools/bundles.ts   # Studio tool catalog
+└── MastraInstance.ts      # App singleton + Postgres memory
 ```
 
-### 1. Executive Agent
-The central orchestrator implementing a **deliberative reasoning loop**:
+### Executive Agent
+
+Central orchestrator for plan-driven tasks:
+
 `OBSERVE → THINK → DECIDE → ACT → LEARN`
 
-1.  Read current plan state.
-2.  Generate internal monologue (`<thinking>`).
-3.  Output structured CoPilotInteraction.
-4.  Execute tools or ask user.
-5.  Update plan.
+### Co-Pilot Protocol
 
-### 2. Co-Pilot Protocol
-Standardized interaction format:
-*   `PROPOSE_PLAN`: Agent suggests a task list.
-*   `ASK_USER`: Agent requests clarification/approval.
-*   `EXECUTE_STEP`: Agent performs a tool action.
-*   `FINISH`: Agent completes the goal.
-
-### 3. TodoArtifact Schema
-Zod-validated task tracking with support for hierarchical IDs and dependencies.
+* `PROPOSE_PLAN` — suggest a task list  
+* `ASK_USER` — request clarification  
+* `EXECUTE_STEP` — run a tool  
+* `FINISH` — complete the goal  
 
 ## Extension Points
 
-### Domain Planners
-Extend `PlannerTool` and `ExecutiveAgent` with domain-specific capabilities:
-*   **StorytellerPlanner**: Adds Hero's Journey templates & plot consistency checks.
-*   **GameLoopPlanner**: Adds ECS component templates & system integrity checks.
+* **StorytellerPlanner** — Hero's Journey templates (`domains/storyteller/agents/orchestration/`)
+* **Loop orchestrator** — imperative supervisor (`domains/loop-creator/core/graph/loop-orchestrator.ts`)
 
-### Middleware
-*   **HumanInTheLoop**: Checkpoint-based approval.
-*   **InterruptController**: Pause/resume execution.
+## Observability
 
-## Strict Process
-To maintain reliability in this core "OS":
-1.  **Type Safety**: `tsc` must pass.
-2.  **Linting**: `eslint` must be clean.
-3.  **Tracing**: All "Thoughts" logged to LangSmith.
+Prefer Mastra `Observability` + `LangfuseExporter` (wired in `create-mastra.ts`). Legacy manual spans are being phased out — see `docs/unified/ARCHITECTURE.md` §9.
+
+## Local development
+
+```bash
+npm run mastra:dev   # Studio at http://localhost:4111
+```
+
+Edit agents in code; restart Studio to pick up changes. In-Studio agent editing is not supported.

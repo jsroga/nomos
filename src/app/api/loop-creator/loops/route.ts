@@ -3,7 +3,7 @@ import { db } from '@/db/client'
 import { gameLoops } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
 import { requireAuth, checkRateLimit } from '@/shared/data/api-utils'
-import { verifyGameLoopAccess, verifyProjectAccess } from '@/domains/storyteller'
+import { verifyGameLoopAccess, verifyProjectAccess } from '@/domains/storyteller/server'
 
 /**
  * GET - Fetch game loops
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
     let entityId: string | null = null
     try {
       const entityResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/entities`,
+        `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:4000'}/api/entities`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
         title: `Write a story featuring ${name}`,
         description: 'Create narrative scenarios that showcase this mechanic',
         targetDomain: 'storyteller',
-        targetRoute: `/app/${projectId}/storyteller`,
+        targetRoute: `/${projectId}/storyteller`,
         autoMessage: `Write a scene that demonstrates the @${name} mechanic in action. Make it feel exciting and impactful.`,
         priority: 5,
         entityId: entityId || newLoop.id,
@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
         title: `Design a level for ${name}`,
         description: 'Create environments that leverage this mechanic',
         targetDomain: 'interior-designer',
-        targetRoute: `/app/${projectId}/interior-design`,
+        targetRoute: `/${projectId}/interior-design`,
         priority: 4,
         entityId: entityId || newLoop.id,
       },

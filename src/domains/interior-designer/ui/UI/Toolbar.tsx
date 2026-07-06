@@ -14,8 +14,8 @@ import {
   GitCommit,
   Mountain,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Button } from '@/components/Button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 
 interface ToolButtonProps {
   icon: React.ReactNode

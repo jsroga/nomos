@@ -3,9 +3,9 @@ import { z } from 'zod'
 import {
   createGameLoopWorkflow,
   GameLoopWorkflow,
-} from '@/workflows/game-design/game-loop-workflow'
+} from '@/domains/game-design/agents/game-loop-workflow'
 import { requireAuth, checkRateLimit } from '@/shared/data/api-utils'
-import { verifyProjectAccess } from '@/domains/storyteller'
+import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // Request schemas

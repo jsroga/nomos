@@ -78,7 +78,7 @@ suite encodes.
    Strategy (HOW)            │                         Surface adapter (OUT)
    ├ DirectStrategy   ───────┤  ports: AgentPort, EntityLinkerPort,   ├ toSSE()        → /chat/stream
    ├ CouncilStrategy  ───────┤         TracerPort, ClockPort,         ├ toJSON()       → REST/evals/script-ops
-   └ PlanStrategy     ───────┘         EventBusPort                   └ toGraphState() → MCP / LangGraph
+   └ PlanStrategy     ───────┘         EventBusPort                   └ toGraphState() → MCP / graph adapters
 ```
 
 **Ports (dependency inversion — the testability lever).** The core depends on

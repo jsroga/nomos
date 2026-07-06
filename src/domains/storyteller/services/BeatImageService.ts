@@ -1,5 +1,5 @@
 import { BeatCard } from '@/domains/storyteller/core/types/StoryTypes'
-import { LocalStorageKeys } from '@/constants/localStorage'
+import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 
 class BeatImageService {
   private getProviderConfig() {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { CharacterCreationDialog } from '../CharacterCreationDialog'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/Button'
 import {
   Plus,
   ChevronUp,
@@ -19,9 +19,9 @@ import {
   TrendingUp,
   Edit2,
 } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { useConfirmDialog } from '@/components/ui/confirm-dialog'
-import { TOUR_STEP_IDS } from '@/lib/tour-constants'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
+import { useConfirmDialog } from '@/components/ConfirmDialog'
+import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 
 // Character metrics based on Affective Circumplex + Self-Determination Theory
 // Aligned with src/domains/storytell../types.ts

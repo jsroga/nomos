@@ -1,13 +1,8 @@
 /**
- * Storyteller public module API.
+ * Storyteller public module API (client-safe).
  *
- * This is the only supported storyteller import target for code outside
- * src/domains/storyteller. A few server-side re-exports remain as an interim
- * seam until later shared-layer/schema cleanup work lands.
+ * Server-only exports live in ./server.ts — import those from API routes only.
  */
-
-// Agents (re-exported from unified barrel covering all agent groups)
-export * from './agents'
 
 // Client-facing components (ui/)
 export * from './ui/ActionApprovalModal'
@@ -50,21 +45,10 @@ export * from './state/hooks/useStorytellerHydration'
 // Mentions (ui/)
 export * from './ui/MentionsProvider'
 
+// Client-safe generation helpers (no server-only)
+export { beatImageService } from './services/BeatImageService'
+export { moodboardGenerationService } from './services/MoodboardGenerationService'
+export { posterGenerationService } from './services/PosterGenerationService'
+
 // Prompt types/schemas
 export * from './prompts/schemas/agent-schemas'
-
-// Interim server-side compatibility re-exports (scheduled for later cleanup)
-export * from './db/schema'
-export * as storytellerSchema from './db/schema'
-export * from './services/AccessVerificationService'
-export * from './services/ContextAssemblyService'
-export * from './services/ContextualSummaryService'
-export * from './services/EntityAutoLinkerService'
-export * from './services/EntityRegistryService'
-export * from './services/MoodboardGenerationService'
-export * from './services/PosterGenerationService'
-export * from './services/RagService'
-export * from './services/RelationshipEnricherService'
-export * from './services/ScriptOperationsService'
-export * from './services/context/SeriesBible'
-export * from './services/StorytellerCrudService'

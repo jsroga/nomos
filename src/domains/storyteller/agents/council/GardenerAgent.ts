@@ -4,7 +4,7 @@ import {
   recordAgentGeneration,
   recordAgentThinking,
   withSpan,
-} from '@/agent-core/observability'
+} from '@/shared/observability/observability'
 import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
 import { WRITER_STRUCTURED_PROMPT } from '@/domains/storyteller/prompts/personas/writer'
 import {
@@ -14,7 +14,7 @@ import {
   regenerateTextTool,
   selfCritiqueTool,
 } from '@/domains/storyteller/agents/tools'
-import { extractThinking, truncateForTrace } from '@/agent-core/agents/agent-response'
+import { extractThinking, truncateForTrace } from '@/shared/agent-kernel/agents/agent-response'
 import { getMastraInstance } from '@/shared/agent-kernel'
 import { AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/config/ModelConfig'
 

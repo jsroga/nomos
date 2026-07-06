@@ -17,14 +17,14 @@ import { createPremiseArchitectAgent } from '@/domains/storyteller/agents/counci
 import { runConsistencyCheck } from '@/domains/storyteller/agents/judges/ConsistencyAgent'
 import { CreativeDirectorAgent } from '@/domains/storyteller/agents/judges/CreativeDirectorAgent'
 import { getWorkflowTraceId, getWorkflowEventBus } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
-import { langfuse } from '@/agent-core/observability'
+import { langfuse } from '@/shared/observability/observability'
 import { characters, storyPlans } from '@/db'
 import { db } from '@/db/client'
 import { eq } from 'drizzle-orm'
 
 import { WORKFLOW_EVENTS } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
 import { getErrorMessage } from '@/shared/errors/error-utils'
-import type { MazurJudgment } from '@/agent-core/judging'
+import type { MazurJudgment } from '@/shared/agent-kernel/judging'
 import { ReferenceValidator } from '@/domains/storyteller/services/ReferenceValidatorService'
 
 /** Shape returned by PremiseArchitectAgent.generatePremise */

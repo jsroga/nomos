@@ -22,9 +22,9 @@ import {
   Check,
   Clock,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button } from '@/components/Button'
+import { Badge } from '@/components/Badge'
+import { ScrollArea } from '@/components/ScrollArea'
 import { MarketAnalysisReport } from '../agents/market-analyst/types'
 import { Node, Edge } from '@xyflow/react'
 

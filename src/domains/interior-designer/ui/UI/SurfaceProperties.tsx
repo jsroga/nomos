@@ -1,9 +1,9 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Slider } from '@/components/ui/slider'
+import { Button } from '@/components/Button'
+import { Input } from '@/components/Input'
+import { Slider } from '@/components/Slider'
 import { interiorDesignerApi } from '@/domains/interior-designer/io/interior-designer.api'
 import { useInteriorStore, SurfaceType } from '@/domains/interior-designer'
 import {
@@ -20,15 +20,15 @@ import {
   Check,
   RotateCcw,
 } from 'lucide-react'
-import { SidebarSection, SidebarLabel, SidebarSliderRow } from '@/components/ui/domain-sidebar'
-import { Switch } from '@/components/ui/switch'
+import { SidebarSection, SidebarLabel, SidebarSliderRow } from '@/components/DomainSidebar'
+import { Switch } from '@/components/Switch'
 import { TextureStyle } from '@/domains/interior-designer'
-import { LocalStorageKeys } from '@/constants/localStorage'
+import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { useWorldStore } from '@/domains/world-building-toolkit'
 import toast from 'react-hot-toast'
 import { cn } from '@/shared/data/utils'
-import { Progress } from '@/components/ui/progress'
+import { Progress } from '@/components/Progress'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // Active task statuses that indicate work is still in progress

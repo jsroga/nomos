@@ -26,6 +26,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@/evals/*": [
+        "./evals/*"
       ]
     },
     "experimentalDecorators": true,
@@ -40,6 +43,7 @@
     "**/*.tsx"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "evals"
   ]
 }

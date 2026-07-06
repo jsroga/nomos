@@ -3,7 +3,7 @@
 > Spec-driven development plan for raising code quality across the repo (top-level)
 > and the `storyteller` domain specifically.
 >
-> **Status:** In progress · **Owner:** TBD · **Last reviewed:** 2026-06-22
+> **Status:** In progress · **Owner:** TBD · **Last reviewed:** 2026-07-06
 >
 > This document is written *spec-first*: every initiative below states the
 > **Problem**, an **Evidence** pointer (file:line), the **Spec** (the target
@@ -12,11 +12,11 @@
 
 ---
 
-## Implementation status — updated 2026-06-22
+## Implementation status — updated 2026-07-06
 
 Baseline gates (run before every change): `npx knip` (0 findings), `npm run lint:ratchet`
-(≤ baseline), `npx vitest run --exclude '**/*.e2e.test.*' --exclude 'tests/integration/**'`
-(263 passing). ESLint warning baseline currently **1724** (`eslint-warnings-baseline.txt`);
+(≤ baseline), `npm run test:unit` (colocated tests under `src/**/__tests__/`).
+ESLint warning baseline currently **1724** (`eslint-warnings-baseline.txt`);
 typecheck baseline **0** (`typecheck-baseline.txt`).
 
 ### Done
@@ -39,6 +39,9 @@ typecheck baseline **0** (`typecheck-baseline.txt`).
 | **De-regex creative judgment** | Removed regex-based *creative-quality* heuristics: deleted `prose-quality-scorer.ts` (SLOP_PATTERNS), `scene-necessity.ts`, `visual-hook-validator.ts` + dead `inferEffortFromMessage`/`inferEffortFromBeat`/`estimateCost`. `self_critique` tool is now **LLM-only** (`SelfCritiqueAgent`); `story-workflow` creative-decision uses the LLM critique score. Slop list retained as **prompt guidance** only (`formatBannedPhrasesForPrompt`). Kept mechanical regex (entity-link/URL parsing). Warnings 1701 → 1697. Tradeoff: each self-critique is now a (cheap-model) LLM call instead of free regex. |
 | **Storyteller modularization** | Consolidated **20 root folders → 7** via an alias-based codemod (186 import specifiers across 118 files): `agents/` (+planner, graph, workflows), `components/` (+hooks, mentions), `prompts/` (+guardrails, schemas, skills), `services/` (+lib, context, db), `core/` (enums, types, actions, consistency, questions, utils), plus `config/` & `tools/`. Verified: tsc 0 errors, knip clean, 288 tests. Fixed non-import string refs (`SKILLS_DIR`, `drizzle.config.js`, `langgraph.json`). |
 | **Cleanup** | Root junk artifacts removed + `.gitignore`; Knip-confirmed dead code removed; `/skills` moved into the storyteller domain (`SKILLS_DIR` constant) |
+| **LangGraph removal** | Loop Creator migrated to Mastra orchestrator (`loop-orchestrator.ts`); `@langchain/langgraph` removed from dependencies; market analyst uses Mastra Agent |
+| **Shared layer (partial)** | `shared/auth`, `shared/errors`, `shared/data`, `shared/agent-kernel` absorbing `lib/` + `agent-core/` + Mastra Studio entry |
+| **Test layout** | Removed stale top-level `tests/` folder; unit tests colocated in `src/**/__tests__/`; see `docs/TESTING.md` |
 
 ### Next steps (prioritized)
 
@@ -110,8 +113,8 @@ typecheck baseline **0** (`typecheck-baseline.txt`).
 | Build gates | Build ignores TS **and** ESLint errors | `next.config.js` (`ignoreBuildErrors`, `ignoreDuringBuilds`) |
 | CI typecheck | Runs but `continue-on-error: true` (non-blocking) | `.github/workflows/ci.yml:32-36` |
 | CI ESLint | Runs but `continue-on-error: true` (non-blocking) | `.github/workflows/ci.yml:37-39` |
-| CI tests | `vitest run` excluding `tests/integration/**` — **hard gate** | `.github/workflows/ci.yml:58-59` |
-| Integration/e2e/eval | Not in CI | (absent from `ci.yml`) |
+| CI tests | `npm run test:unit` — **hard gate** | CI workflow |
+| Integration/e2e/eval | Not in CI | See `docs/TESTING.md` |
 | `any` usage | `no-explicit-any: 'warn'`; 100+ occurrences in storyteller alone | `eslint.config.js:98` |
 | Unused vars | `'warn'` (comment says promote to `'error'` after cleanup) | `eslint.config.js:101-105` |
 | Hardcoded secret fallback | `INTERNAL_DOCS_SECRET || 'okurwadiabel'` | `src/middleware.ts:4` |
@@ -223,23 +226,23 @@ then reducing the blast radius of the few enormous files.
 
 ### Q-6 — Run the high-risk test tiers (integration / e2e / eval) in CI `P1`
 
-**Problem:** The agent flows most likely to break are tested only locally; CI runs unit tests only and excludes `tests/integration/**`.
+**Problem:** Agent flows most likely to break (e2e, eval) are not in CI; only colocated unit tests run.
 
-**Evidence:** `.github/workflows/ci.yml:58-59`; integration/e2e/eval absent from workflow.
+**Evidence:** `npm run test:e2e` and `npm run eval` absent from CI workflow.
 
 **Spec:**
 - Add a CI job (nightly schedule **and** on-demand `workflow_dispatch`, to control LLM cost) that runs:
-  - `tests/integration/**`
   - `npm run test:e2e` (at least the storyteller smoke scenario)
   - `npm run eval regression` (a fast deterministic subset)
+  - Optionally: explicit `npx vitest run '**/*.e2e.test.ts'` when DB secrets are available
 - These jobs may be allowed to fail-soft initially but must report status.
 
 **Acceptance Criteria:**
-- [ ] New scheduled job exists and runs the three tiers.
+- [ ] New scheduled job exists and runs the tiers above.
 - [ ] Job summary surfaces pass/fail counts.
-- [ ] Secrets (LLM keys) injected via GitHub secrets, not committed.
+- [ ] Secrets (LLM keys, DATABASE_URL) injected via GitHub secrets, not committed.
 
-**Verification:** trigger the job via `workflow_dispatch`; confirm it executes all three tiers.
+**Verification:** trigger the job via `workflow_dispatch`; confirm it executes.
 
 ---
 

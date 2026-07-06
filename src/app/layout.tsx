@@ -1,11 +1,11 @@
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
-import { AuthProvider } from '@/components/providers/AuthProvider'
+import { AuthProvider } from '@/components/AuthProvider'
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { JetBrains_Mono, Inter, Syne } from 'next/font/google'
 import { GlobalLiquidLoader } from '@/domains/marketing'
-import ReactQueryProvider from '@/lib/react-query'
+import ReactQueryProvider from '@/shared/data/react-query'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' })

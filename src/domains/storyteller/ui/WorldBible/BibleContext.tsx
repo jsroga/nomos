@@ -10,8 +10,8 @@ import {
   Item,
   StoryEvent,
 } from '@/domains/storyteller/prompts/schemas/agent-schemas'
-import { canEditBible } from '@/lib/bible-permissions'
-import { cachedFetch, clearFetchCache } from '@/lib/fetch-cache'
+import { canEditBible } from '@/shared/auth/bible-permissions'
+import { cachedFetch, clearFetchCache } from '@/shared/data/fetch-cache'
 
 // Pending action for a section
 export interface PendingAction {

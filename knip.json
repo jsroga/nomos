@@ -2,18 +2,15 @@
   "$schema": "https://unpkg.com/knip@latest/schema.json",
   "entry": [
     "src/app/**/*.{ts,tsx}",
-    "src/pages/**/*.{ts,tsx}",
     "src/mcp/server.ts",
     "src/trigger/**/*.ts",
     "trigger.config.ts",
     "scripts/**/*.{ts,js,mjs}",
     "e2e/**/*.ts",
-    "src/evaluation/experiments/**/*.ts",
-    "src/evaluation/confident-ai/run-experiment.ts",
-    "src/evaluation/hypothesis/run-experiment.ts",
-    "src/evaluation/scripts/**/*.ts"
+    "evals/run.ts",
+    "evals/scorers/**/*.ts"
   ],
-  "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{ts,js,mjs}", "e2e/**/*.ts"],
+  "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{ts,js,mjs}", "e2e/**/*.ts", "evals/**/*.ts"],
   "ignore": [
     "**/*.test.ts",
     "**/*.spec.ts",
@@ -22,12 +19,7 @@
     "**/__mocks__/**",
     ".next/**",
     "dist/**",
-    "scripts/deepeval/venv/**",
     "public/scripts/**",
-    "src/evaluation/experiments/eval-architecture.ts",
-    "src/evaluation/experiments/extended-thinking-ab-test.ts",
-    "src/evaluation/experiments/loop-creator.ts",
-    "e2e/parallel-runner.ts",
     "src/domains/chat/components/index.ts"
   ],
   "ignoreDependencies": [

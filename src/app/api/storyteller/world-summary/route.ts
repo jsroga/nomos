@@ -6,8 +6,8 @@ import {
   bibleToVisualPrompt,
   ragService,
   type SeriesBible,
-} from '@/domains/storyteller'
-import { verifyProjectAccess } from '@/domains/storyteller'
+} from '@/domains/storyteller/server'
+import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { eq } from 'drizzle-orm'
 import { createOpenAI } from '@ai-sdk/openai'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'

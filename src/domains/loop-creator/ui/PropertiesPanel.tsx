@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { Node } from '@xyflow/react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
+import { Button } from '@/components/Button'
+import { Input } from '@/components/Input'
+import { Textarea } from '@/components/Textarea'
+import { Label } from '@/components/Label'
 import { X, Trash2, Swords, Gamepad2, Star, BarChart3, Layers } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@/components/Badge'
 import { nodeColors } from './CustomNodes'
 
 interface PropertiesPanelProps {
