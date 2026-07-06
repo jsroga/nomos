@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { textureService } from '@/domains/interior-designer/ai/TextureService'
+import { textureService } from '@/domains/interior-designer'
 import {
   interiorTextureRequestSchema,
   interiorTextureResponseSchema,

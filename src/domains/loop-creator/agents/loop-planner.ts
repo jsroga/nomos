@@ -9,7 +9,7 @@
 
 import { ChatOpenAI } from '@langchain/openai'
 import { AIMessage, SystemMessage } from '@langchain/core/messages'
-import { LoopCreatorState, GameLoop, LoopAgentAction, NextAgent } from '../graph/state'
+import { LoopCreatorState, GameLoop, LoopAgentAction, NextAgent } from '../core/graph/state'
 import { v4 as uuidv4 } from 'uuid'
 
 const LOOP_PLANNER_SYSTEM_PROMPT = `You are a Game Loop Planner - an expert in designing engaging gameplay loop structures.

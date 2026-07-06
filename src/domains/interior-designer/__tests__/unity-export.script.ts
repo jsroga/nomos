@@ -1,4 +1,4 @@
-import { UnityExporter } from '../utils/UnityExporter'
+import { UnityExporter } from '../core/UnityExporter'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // Mock Fetch

@@ -1,10 +1,10 @@
 import { Workflow, createStep } from '@mastra/core/workflows'
 import { z } from 'zod'
-import { GameDesignAgent } from '../../domains/game-design/agent'
 import {
+  GameDesignAgent,
   createAnalyzeMechanicBalanceTool,
   createValidateLoopStructureTool,
-} from '../../domains/game-design/tools/v2/logic-transformers'
+} from '@/domains/game-design'
 import { db } from '../../lib/db'
 import { gameLoops } from '../../db/schema'
 import { getErrorMessage } from '@/shared/errors/error-utils'
@@ -382,8 +382,7 @@ export async function createGameLoopWorkflow(agentConfig: {
   modelName: string
   connectionString?: string
 }): Promise<GameLoopWorkflow> {
-  const { GameDesignAgent } = await import('../../domains/game-design/agent')
-  const { createGameDesignMemory } = await import('../../domains/game-design/memory')
+  const { GameDesignAgent, createGameDesignMemory } = await import('@/domains/game-design')
 
   // Create memory if connection string provided
   const memory = agentConfig.connectionString

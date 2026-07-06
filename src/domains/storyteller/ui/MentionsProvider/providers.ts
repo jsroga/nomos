@@ -8,7 +8,7 @@
  * - Registry: All entities from the EntityRegistry (GraphRAG-enabled) - SERVER ONLY
  */
 
-import { MentionProvider, MentionItem, ProjectContext } from '@/domains/chat/mentions/types'
+import type { MentionProvider, MentionItem, ProjectContext } from '@/domains/chat'
 
 // Entity type definitions (duplicated to avoid importing server-only code)
 type EntityType = 'character' | 'place' | 'event' | 'faction' | 'rule' | 'beat' | 'episode'

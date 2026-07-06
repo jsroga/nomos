@@ -91,6 +91,35 @@ grep -rc "storyteller/" src/app/api --include='*.ts' | head -15
 
 Record counts in `PLAN.md` — they size the referrer-update todos.
 
+## src-root plans (`module=src-root`)
+
+When the goal is **top-level `src/` cleanup** (see `goals/src-root-cleanup.md`):
+
+- **`STRUCTURE.md` is mandatory** — src-root section with disposition table + move map.
+  `PLAN.md` implements moves + referrer updates; do not bury structure only in prose.
+- First line of `PLAN.md` body: **`Fabro module: src-root`** (verify script reads this).
+- `PLAN.md` may contain **40–80 numbered todos** — expected for legacy folder moves +
+  grep-driven referrer fixes across `src/`, `tests/`, config.
+- **Do not reshape `src/domains/*` internals** unless fixing a direct import broken by
+  a top-level move (document each as a small referrer-only todo).
+- Default **Minimum first increment**: finalize `STRUCTURE.md` + Wave 1 =
+  `shared/` stubs (SPEC F-1) + migrate highest-traffic `lib/` / `agent-core` paths
+  with re-export shims + full referrer sweep for those paths.
+
+### Mandatory spot-checks (src-root)
+
+Run once before writing `PLAN.md`:
+
+```bash
+ls -1 src/
+ls -1 src/shared/ 2>/dev/null || echo "shared/ missing"
+grep -rc "from '@/lib" src/ tests/ | grep -v ':0$' | head -15
+grep -rc "from '@/agent-core" src/ tests/ | grep -v ':0$' | head -15
+grep -rc "from '@/hooks" src/ tests/ | grep -v ':0$' | head -15
+head -30 src/db/schema.ts
+head -20 src/trigger/index.ts
+```
+
 ## Output files
 
 **`PLAN.md`** — if it exists, you may overwrite after your spot-checks (you will have
@@ -98,7 +127,8 @@ read the paths above). Structure:
 
 0. **`STRUCTURE.md`** (catalog / folder-reshape runs) — write **before** or alongside
    `PLAN.md` when the goal requires ideal folder layout. See goal file /
-   `goals/domains-catalog-cleanup.md`. Plan items must reference move-map rows.
+   `goals/domains-catalog-cleanup.md` or `goals/src-root-cleanup.md`. Plan items
+   must reference move-map rows.
 
 1. **Summary** — 2-4 sentences.
 2. **Prioritized items** — P0…P3.

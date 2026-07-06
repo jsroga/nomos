@@ -78,6 +78,22 @@ When the run goal targets the **full `src/domains/` catalog** (see
 - Include **cross-cutting** findings (schema, shared migration).
 - Still end with `## Metadata` and **Open questions for Clarify** (catalog A/B/C).
 
+## src-root runs (`module=src-root`)
+
+When the run goal targets **top-level `src/` cleanup** (see
+`goals/src-root-cleanup.md`):
+
+- Expand to **~12–20 findings** plus a **top-level folder inventory table**
+  (every `src/*` entry vs §3 target disposition).
+- **Duplication deep dive**: `agent-core/` vs `shared/agent-kernel/` vs scattered
+  `domains/*/agents` — who imports what.
+- **Import heat map**: grep counts for `@/lib`, `@/agent-core`, `@/hooks`,
+  `@/infrastructure`, `@/store` from `src/app`, `src/domains`, `tests/`.
+- Flag **SPEC F-1** readiness (`shared/` stubs exist? re-export shims needed?).
+- Explicitly note **`domains/` is out of scope** for internal reshape — only
+  referrer fixes when top-level paths change.
+- Still end with `## Metadata` and **Open questions for Clarify** (src-root A/B/C).
+
 **End `findings/assess.md` with this required metadata block** (downstream agents
 and the graph condition on it):
 

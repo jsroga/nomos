@@ -23,10 +23,54 @@ function moduleFromPlan() {
   if (!existsSync('PLAN.md')) return null;
   const plan = readFileSync('PLAN.md', 'utf8');
   // Special case: check for "Fabro module: src-root" at the top
-  const srcRootMatch = plan.match(/^Fabro module: src-root$/m);
-  if (srcRootMatch) return 'src-root';
+  if (/Fabro module:\s*src-root/i.test(plan)) return 'src-root';
   const m = plan.match(/src\/domains\/([a-z0-9-]+)/);
   return m?.[1] ?? null;
+}
+
+const SRC_ROOT_DIRS = [
+  'src/shared',
+  'src/lib',
+  'src/agent-core',
+  'src/infrastructure',
+  'src/hooks',
+  'src/store',
+  'src/services',
+  'src/prompts',
+  'src/evaluation',
+  'src/mcp',
+  'src/workflows',
+  'src/types',
+  'src/config',
+  'src/constants',
+  'src/content',
+  'src/pages',
+  'src/trigger',
+  'src/db',
+  'src/components',
+  'src/app',
+];
+
+function isSrcRootPath(file) {
+  if (file.startsWith('src/middleware') || file.startsWith('src/instrumentation')) {
+    return true;
+  }
+  return SRC_ROOT_DIRS.some((d) => file === d || file.startsWith(`${d}/`));
+}
+
+function srcRootFileGlobs() {
+  const files = [];
+  for (const dir of SRC_ROOT_DIRS) {
+    if (!existsSync(dir)) continue;
+    const out = sh(
+      `find "${dir}" -type f \\( -name '*.ts' -o -name '*.tsx' \\) 2>/dev/null || true`,
+    );
+    files.push(...out.split('\n').map((f) => f.trim()).filter(Boolean));
+  }
+  for (const f of ['src/middleware.ts', 'src/instrumentation.ts', 'src/instrumentation-client.ts']) {
+    if (existsSync(f)) files.push(f);
+  }
+  return files;
 }
 
 function collectChangedTsFiles() {
@@ -62,6 +106,7 @@ function collectChangedTsFiles() {
 }
 
 function moduleFileGlobs(module) {
+  if (module === 'src-root') return srcRootFileGlobs();
   const dirs = [`src/domains/${module}`, `src/app/api/${module}`];
   const files = [];
   for (const dir of dirs) {
@@ -99,6 +144,7 @@ function filterErrors(output, allowedPaths) {
 }
 
 function modulePrefixes(module) {
+  if (module === 'src-root') return SRC_ROOT_DIRS.map((d) => `${d}/`);
   return [`src/domains/${module}/`, `src/app/api/${module}/`];
 }
 
@@ -115,11 +161,13 @@ function runModuleTypecheck(module, focusFiles) {
   
   const include = focusFiles.length
     ? focusFiles
-    : [
-        `src/domains/${module}/**/*.ts`,
-        `src/domains/${module}/**/*.tsx`,
-        `src/app/api/${module}/**/*.ts`,
-      ];
+    : module === 'src-root'
+      ? SRC_ROOT_DIRS.map((d) => `${d}/**/*.{ts,tsx}`)
+      : [
+          `src/domains/${module}/**/*.ts`,
+          `src/domains/${module}/**/*.tsx`,
+          `src/app/api/${module}/**/*.ts`,
+        ];
   const config = { extends: './tsconfig.json', include };
   writeFileSync(tsconfigPath, `${JSON.stringify(config, null, 2)}\n`);
 
@@ -194,12 +242,17 @@ function main() {
 
   const changed = collectChangedTsFiles();
   const moduleFiles = moduleFileGlobs(module);
-  const moduleChanged = changed.filter(
-    (f) => f.includes(`/domains/${module}/`) || f.includes(`/api/${module}/`),
-  );
+  const moduleChanged =
+    module === 'src-root'
+      ? changed.filter((f) => isSrcRootPath(f) || f.startsWith('tests/'))
+      : changed.filter(
+          (f) => f.includes(`/domains/${module}/`) || f.includes(`/api/${module}/`),
+        );
   const planFiles = existsSync('PLAN.md')
-    ? filesFromPlan(readFileSync('PLAN.md', 'utf8')).filter(
-        (f) => f.includes(`/domains/${module}/`) || f.includes(`/api/${module}/`),
+    ? filesFromPlan(readFileSync('PLAN.md', 'utf8')).filter((f) =>
+        module === 'src-root'
+          ? isSrcRootPath(f) || f.startsWith('tests/')
+          : f.includes(`/domains/${module}/`) || f.includes(`/api/${module}/`),
       )
     : [];
   const focus = moduleChanged.length ? moduleChanged : planFiles;

@@ -5,7 +5,7 @@
  */
 
 import { AIMessage } from '@langchain/core/messages'
-import { LoopCreatorState } from '../graph/state'
+import { LoopCreatorState } from '../core/graph/state'
 import { runMarketAnalysis, LoopAnalysisInput } from './market-analyst'
 
 /**

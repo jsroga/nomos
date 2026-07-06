@@ -1,6 +1,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { createGetLoopsTool, createGetLoopByIdTool } from '../../src/domains/game-design/tools/v2/loop-tools'
+import { createGetLoopsTool, createGetLoopByIdTool } from '../../src/domains/game-design'
 
 // Mock the db module that loop-tools imports from
 vi.mock('../../src/db', () => ({

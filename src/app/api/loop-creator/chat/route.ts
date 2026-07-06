@@ -9,8 +9,7 @@
 import { NextRequest } from 'next/server'
 import { requireAuth } from '@/shared/auth/auth'
 import { verifyProjectAccess } from '@/domains/storyteller'
-import { streamLoopCreator } from '@/domains/loop-creator/graph/loop-graph'
-import { LoopCreatorState } from '@/domains/loop-creator/graph/state'
+import { streamLoopCreator, type LoopCreatorState } from '@/domains/loop-creator'
 import { HumanMessage, AIMessage } from '@langchain/core/messages'
 import { langfuse, isLangfuseEnabled } from '@/agent-core/observability'
 

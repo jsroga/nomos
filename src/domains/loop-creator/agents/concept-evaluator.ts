@@ -7,7 +7,7 @@
 
 import { ChatOpenAI } from '@langchain/openai'
 import { z } from 'zod'
-import { LoopCreatorState, LoopAgentAction } from '../graph/state'
+import { LoopCreatorState, LoopAgentAction } from '../core/graph/state'
 
 const ConceptEvaluationSchema = z.object({
   overallAlignment: z.number().min(0).max(100).describe('Overall alignment score 0-100'),

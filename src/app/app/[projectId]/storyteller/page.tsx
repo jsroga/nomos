@@ -28,11 +28,13 @@ import {
   useStorytellerHydration,
 } from '@/domains/storyteller'
 // Consolidated Chat & Storyteller Imports
-import { SmartQuickActions } from '@/domains/chat/components/QuickActions'
-import { StreamingTerminal } from '@/domains/chat/components/StreamingTerminal'
-import { StreamingSectionsInline } from '@/domains/chat/components/StreamingSectionsInline'
-import { useChatStream } from '@/domains/chat/hooks/useChatStream'
-import { Message } from '@/domains/chat/types'
+import {
+  SmartQuickActions,
+  StreamingTerminal,
+  StreamingSectionsInline,
+  useChatStream,
+  type Message,
+} from '@/domains/chat'
 // Action UI components loaded dynamically below (ActionCommitted, ActionSuggestion, ActionApprovalModal, QuestionCard)
 import {
   Loader2,
@@ -122,7 +124,7 @@ const MasterPromptEditor = dynamic(
   () => import('@/domains/storyteller').then(m => m.MasterPromptEditor),
   { ssr: false }
 )
-import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
+import { useWorldStore } from '@/domains/world-building-toolkit'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 // posterGenerationService loaded dynamically at call sites
 import { FileText, Users, BookOpen, AlertCircle, Scroll } from 'lucide-react'

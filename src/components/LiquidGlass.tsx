@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Liquid } from '@/domains/marketing/components/Liquid'
+import { Liquid } from '@/domains/marketing'
 import { cn } from '@/shared/data/utils'
 
 interface LiquidGlassProps {

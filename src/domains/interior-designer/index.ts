@@ -7,6 +7,11 @@
 
 export { InteriorDesignerWorkspace } from './ui'
 
+export { useInteriorStore, TERRAIN_QUALITY_RESOLUTION } from './state'
+export { textureService, type TextureStyle } from './services/TextureService'
+export { interiorDesignerApi } from './io/interior-designer.api'
+export type { InteriorDesign } from './io/interior-designer.dto'
+
 export {
   INTERIOR_DESIGNER_API_BASE_PATH,
   INTERIOR_DESIGNER_MODULE_ID,

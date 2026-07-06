@@ -12,6 +12,12 @@ graph = "workflow.fabro"
 #   fabro run .fabro/workflows/plan/workflow.toml \
 #     -I module=domains-catalog \
 #     --goal-file .fabro/workflows/plan/goals/domains-catalog-cleanup.md
+#
+# Top-level src/ cleanup (ideal §3 topology + lib/agent-core → shared/):
+#   fabro run .fabro/workflows/plan/workflow.toml \
+#     -I module=src-root \
+#     --goal-file .fabro/workflows/plan/goals/src-root-cleanup.md \
+#     --label "planner=claude-fable-5"
 [run]
 goal = "Clean up and align the {{ inputs.module }} module (src/domains/{{ inputs.module }}) with the target architecture in docs/unified/ARCHITECTURE.md (module blueprint, dependency rule, non-negotiable invariants). Produce a prioritized plan; implement only after human approval at Verification."
 

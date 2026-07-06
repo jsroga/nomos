@@ -1,4 +1,4 @@
-import type { Tile } from '@/domains/world-building-toolkit/store/useWorldStore'
+import type { Tile } from '@/domains/world-building-toolkit'
 
 export interface TileContext {
   targetX: number

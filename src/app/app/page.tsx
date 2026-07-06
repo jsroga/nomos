@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link' // Added Link import
 import { useRouter } from 'next/navigation'
-import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
+import { useWorldStore } from '@/domains/world-building-toolkit'
 import { Plus, FolderOpen, Loader2, LogOut, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -13,7 +13,7 @@ import { useConfirmDialog } from '@/components/ui/confirm-dialog'
 import dynamic from 'next/dynamic'
 
 // New Imports for Liquid UI
-import { TurbulentBackground } from '@/domains/marketing/components/TurbulentBackground'
+import { TurbulentBackground } from '@/domains/marketing'
 import { TURBULENT_BG_PROPS } from '@/lib/constants/visuals'
 import { BleedingText } from '@/components/ui/BleedingText'
 import { motion } from 'framer-motion'
@@ -33,7 +33,7 @@ const SUBTITLES = [
 
 // Lazy load 3D icon for performance
 const ThreeDIcon = dynamic(
-  () => import('@/domains/marketing/components/ThreeDIcon').then((mod) => mod.ThreeDIcon),
+  () => import('@/domains/marketing').then((mod) => mod.ThreeDIcon),
   { ssr: false, loading: () => <div className="w-[200px] h-[200px] bg-white/5 animate-pulse rounded-full" /> }
 )
 

@@ -1,9 +1,8 @@
 'use client'
 
 import React, { createContext, useContext, useMemo, type ComponentProps } from 'react'
-import { ChatInterface } from '@/domains/chat/components/ChatInterface'
-import { getGameEntityProvider } from '@/domains/chat/mentions/game-entity-provider'
-import type { MentionProvider, ProjectContext } from '@/domains/chat/mentions/types'
+import { ChatInterface, getGameEntityProvider } from '@/domains/chat'
+import type { MentionProvider, ProjectContext } from '@/domains/chat'
 import {
   buildStorytellerProjectContext,
   getStorytellerMentionProviders,

@@ -184,8 +184,14 @@ fabro run .fabro/workflows/plan/workflow.toml -I module=<domain-folder>
 ```
 
 `<domain-folder>` is the name under `src/domains/` (e.g. `interior-designer`,
-`storyteller`, `chat`). Use **`domains-catalog`** for a repo-wide cleanup plan
-(storyteller folder sprawl + all 9 modules). Fabro renders `{{ inputs.module }}` only in **`goal` and
+`storyteller`, `chat`). Special module inputs:
+
+| `module=` | Scope |
+| --- | --- |
+| **`domains-catalog`** | All 9 modules under `src/domains/` — ideal trees + referrer sweep |
+| **`src-root`** | Top-level `src/` folders vs §3 topology (`lib/`, `agent-core/` → `shared/`, etc.) |
+
+Fabro renders `{{ inputs.module }}` only in **`goal` and
 `prompt`** attributes ([docs](https://docs.fabro.sh/workflows/variables)) — not in
 shell `script` or environment `env`. The **Scope** stage is therefore a prompt node
 (`prompts/scope.md`) so the module path is templated correctly.
@@ -208,6 +214,31 @@ referrer todos) → optional implement Wave 1 (storyteller + full referrer sweep
 Briefing: `.fabro/workflows/plan/goals/domains-catalog-cleanup.md`. At **Clarify**,
 pick **A** (structure for all modules; implement storyteller wave + referrers),
 **B** (structure + plan only), or **C** (full catalog). Recommend **A**.
+
+### src-root cleanup (top-level `src/` vs §3 topology)
+
+Design **ideal top-level `src/` layout** in `STRUCTURE.md` (disposition table +
+move map), plan **40–80 todos**, then on approve move legacy folders (`lib/`,
+`agent-core/`, `hooks/`, …) into `shared/` / `domains/` with full referrer sweep.
+**Plan stage uses `claude-fable-5` only** (no fallback).
+
+```bash
+fabro run .fabro/workflows/plan/workflow.toml \
+  -I module=src-root \
+  --goal-file .fabro/workflows/plan/goals/src-root-cleanup.md \
+  --label "planner=claude-fable-5"
+```
+
+Deliverables: `STRUCTURE.md` (src-root section) → `PLAN.md` (must include
+`Fabro module: src-root` for verify) → optional Wave 1 implement (`shared/` stubs
++ highest-traffic `lib/`/`agent-core` re-exports).
+
+Briefing: `.fabro/workflows/plan/goals/src-root-cleanup.md`. At **Clarify**, pick
+**A** (structure for all top-level folders; implement Wave 1), **B** (plan only),
+or **C** (full src-root migration). Recommend **A**.
+
+**Skills:** copy `.fabro/skills/` to `~/.fabro/skills/` (real files, not symlink) —
+see Developer skills section above.
 
 ## Merging when the run succeeds
 

@@ -1,4 +1,4 @@
-export { TERRAIN_QUALITY_RESOLUTION, useInteriorStore } from '../store/useInteriorStore'
+export { TERRAIN_QUALITY_RESOLUTION, useInteriorStore } from './useInteriorStore'
 
 export type {
   Floor,
@@ -18,4 +18,4 @@ export type {
   TerrainSettings,
   Wall,
   Water,
-} from '../store/useInteriorStore'
+} from './useInteriorStore'

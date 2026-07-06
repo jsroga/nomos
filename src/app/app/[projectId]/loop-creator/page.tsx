@@ -1,4 +1,4 @@
-import { LoopCreatorLayout } from '@/domains/loop-creator/components/LoopCreatorLayout'
+import { LoopCreatorLayout } from '@/domains/loop-creator'
 
 interface PageProps {
   params: Promise<{ projectId: string }>

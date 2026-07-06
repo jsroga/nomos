@@ -2,7 +2,7 @@
 
 import { useParams, useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
-import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
+import { useWorldStore } from '@/domains/world-building-toolkit'
 
 export function useProjectFromUrl() {
   const params = useParams()

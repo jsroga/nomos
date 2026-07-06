@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react'
 import { useRouter, usePathname, useParams } from 'next/navigation'
-import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
+import { useWorldStore } from '@/domains/world-building-toolkit'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { ChevronDown, Plus, FolderOpen, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -22,8 +22,8 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Liquid } from '@/domains/marketing/components/Liquid'
-import { useLiquid } from '@/domains/marketing/context/LiquidContext'
+import { Liquid } from '@/domains/marketing'
+import { useLiquid } from '@/domains/marketing'
 
 export function ProjectSelectorDropdown() {
   const router = useRouter()

@@ -5,13 +5,12 @@ import {
     createAnalyzeMechanicBalanceTool,
     createSuggestProgressionTool,
     createValidateLoopStructureTool,
-} from '../../../src/domains/game-design/tools/v2/logic-transformers'
-import {
     createGetLoopsTool,
     createGetLoopByIdTool,
     createGetMarketAnalysisTool,
-} from '../../../src/domains/game-design/tools/v2/loop-tools'
-import { GameMechanic, GameLoop } from '../../../src/domains/game-design/schemas'
+    type GameMechanic,
+    type GameLoop,
+} from '../../../src/domains/game-design'
 
 // Skip if no OPENAI_API_KEY
 const hasOpenAI = !!process.env.OPENAI_API_KEY

@@ -3,12 +3,38 @@
 Run the commands below **exactly** via the shell tool. Paste their **full stdout**
 as your response. Do not analyze, summarize, or skip output.
 
-Target: `{{ inputs.module }}` (use `domains-catalog` for full `src/domains/` sweep)
+Target: `{{ inputs.module }}` (`domains-catalog` = all `src/domains/` · `src-root` = top-level `src/`)
 
 ```bash
 MOD="{{ inputs.module }}"
 echo "=== target: $MOD ==="
-if [ "$MOD" = "domains-catalog" ]; then
+if [ "$MOD" = "src-root" ]; then
+  echo "=== src/ top-level (target topology audit) ==="
+  ls -1 src/
+  echo
+  echo "=== directory counts (top-level folders) ==="
+  for d in src/*/; do
+    name=$(basename "$d")
+    dirs=$(find "$d" -type d 2>/dev/null | wc -l | tr -d ' ')
+    files=$(find "$d" -type f 2>/dev/null | wc -l | tr -d ' ')
+    echo "$name: $dirs dirs, $files files"
+  done
+  echo
+  echo "=== root files (middleware, instrumentation) ==="
+  ls -1 src/*.{ts,tsx,js} 2>/dev/null || true
+  echo
+  echo "=== shared/ skeleton ==="
+  ls -1 src/shared/ 2>/dev/null || echo "(missing)"
+  echo
+  echo "=== legacy import heat (sample counts) ==="
+  for pat in "@/lib" "@/agent-core" "@/hooks" "@/infrastructure" "@/store" "@/services"; do
+    c=$(grep -r "$pat" src/ tests/ --include='*.ts' --include='*.tsx' 2>/dev/null | wc -l | tr -d ' ')
+    echo "$pat: $c lines"
+  done
+  echo
+  echo "=== domains/ (out of scope for moves — referrer context only) ==="
+  ls -1 src/domains/
+elif [ "$MOD" = "domains-catalog" ]; then
   echo "=== domains catalog (all modules) ==="
   ls -1 src/domains/
   echo
@@ -47,3 +73,5 @@ substitute another module.
 
 For `domains-catalog`, read `.fabro/workflows/plan/goals/domains-catalog-cleanup.md`
 if present — it is the operator briefing for this run.
+
+For `src-root`, read `.fabro/workflows/plan/goals/src-root-cleanup.md` if present.

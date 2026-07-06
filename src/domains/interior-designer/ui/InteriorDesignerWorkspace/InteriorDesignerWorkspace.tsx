@@ -6,19 +6,19 @@ import { Loader2, Download, Save, Focus } from 'lucide-react'
 import { debounce } from 'lodash'
 import { Button } from '@/components/ui/button'
 import { DomainSidebar } from '@/components/ui/domain-sidebar'
-import { DesignManager } from '@/domains/interior-designer/components/DesignManager'
-import { InteriorRightSidebar } from '@/domains/interior-designer/components/UI/InteriorRightSidebar'
-import { Toolbar } from '@/domains/interior-designer/components/UI/Toolbar'
+import { DesignManager } from '@/domains/interior-designer/ui/DesignManager'
+import { InteriorRightSidebar } from '@/domains/interior-designer/ui/UI/InteriorRightSidebar'
+import { Toolbar } from '@/domains/interior-designer/ui/UI/Toolbar'
 import { useInteriorStore } from '@/domains/interior-designer/state'
 import { useProjectFromUrl } from '@/shared/data/useProjectFromUrl'
 import { TOUR_STEP_IDS } from '@/lib/tour-constants'
 import { cn } from '@/shared/data/utils'
-import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
+import { useWorldStore } from '@/domains/world-building-toolkit'
 
 // Dynamic import with SSR disabled to avoid React reconciler issues with Three.js
 const InteriorCanvas = dynamic(
   () =>
-    import('@/domains/interior-designer/components/InteriorCanvas').then(mod => ({
+    import('@/domains/interior-designer/ui/InteriorCanvas').then(mod => ({
       default: mod.InteriorCanvas,
     })),
   {
@@ -141,7 +141,7 @@ export function InteriorDesignerWorkspace() {
               onClick={async () => {
                 const { walls, objects } = useInteriorStore.getState()
                 const zipBlob =
-                  await import('@/domains/interior-designer/utils/UnityExporter').then(m =>
+                  await import('@/domains/interior-designer/core/UnityExporter').then(m =>
                     m.UnityExporter.createExportZip({ walls, objects })
                   )
 

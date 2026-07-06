@@ -11,7 +11,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useChatStream } from '@/domains/chat/hooks/useChatStream'
+import { useChatStream } from '@/domains/chat'
 
 // Mock storage
 const mockSessionStorage = (() => {

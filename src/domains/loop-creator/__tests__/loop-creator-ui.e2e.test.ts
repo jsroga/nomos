@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { LoopAgentAction } from '../graph/state'
+import { LoopAgentAction } from '../core/graph/state'
 
 // Mock fetch for API calls
 const mockFetch = vi.fn()

@@ -15,7 +15,7 @@ vi.mock('@/domains/interior-designer/io/interior-designer.api', () => ({
 }))
 
 describe('useInteriorStore.renameDesign', () => {
-  let useInteriorStore: typeof import('../store/useInteriorStore').useInteriorStore
+  let useInteriorStore: typeof import('../state/useInteriorStore').useInteriorStore
 
   beforeAll(async () => {
     vi.stubGlobal('localStorage', {
@@ -24,7 +24,7 @@ describe('useInteriorStore.renameDesign', () => {
       removeItem: vi.fn(),
     })
 
-    ;({ useInteriorStore } = await import('../store/useInteriorStore'))
+    ;({ useInteriorStore } = await import('../state/useInteriorStore'))
   })
 
   beforeEach(() => {

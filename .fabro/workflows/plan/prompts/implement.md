@@ -39,18 +39,20 @@ If `UX.md` is absent (backend-only increment), skip `component-audit` and
 
 ## Folder reshape runs (structure + referrers)
 
-When `STRUCTURE.md` exists or the plan is a catalog/folder cleanup:
+When `STRUCTURE.md` exists or the plan is a catalog/folder cleanup (`domains-catalog`
+or `src-root`):
 
 1. Call `use_skill` **`refactor`** before bulk moves.
-2. **Order:** (a) create target dirs + barrels, (b) `git mv` per move map, (c) fix
-   imports **inside** the module, (d) fix **all external referrers** (`src/app`,
-   `src/shared`, `src/db`, `src/hooks`, `tests/`) using `grep -rn` — do not stop
-   at module boundary.
-3. Each middle todo should be either a **move batch** or a **referrer batch** with
+2. **Order:** (a) create target dirs + barrels/re-export shims, (b) `git mv` per move map,
+   (c) fix imports inside moved trees, (d) fix **all external referrers** (`src/app`,
+   `src/domains`, `src/shared`, `src/db`, `src/hooks`, `tests/`) using `grep -rn`.
+3. For **`src-root`**: prefer SPEC F-1 staged re-exports (`shared/` stubs that re-export
+   old paths) before deleting legacy folders.
+4. Each middle todo should be either a **move batch** or a **referrer batch** with
    explicit paths from `PLAN.md` (not "update imports" without file list).
-4. After moves, run `grep -rn` for **old path fragments** from `STRUCTURE.md` move map
+5. After moves, run `grep -rn` for **old path fragments** from `STRUCTURE.md` move map
    — zero hits required before handoff.
-5. Update `index.ts` barrels last (or per plan) so external imports converge on
+6. Update barrels/re-exports last so imports converge on `@/shared/*` and
    `@/domains/<module>` only.
 
 ## Your task list — build it first, in THIS exact shape
@@ -96,8 +98,8 @@ change traceable to a plan item. Mark each done as you finish it; keep exactly o
 ## Self-verification (targeted — fast, no false failures)
 
 Full-repo `npm run typecheck` **OOMs** in the Fabro Docker sandbox (~4GB+ heap). The
-`verify` stage runs `node scripts/fabro-verify.mjs` — module-scoped typecheck + lint
-(only errors under `src/domains/<module>/` and `src/app/api/<module>/` fail the gate).
+`verify` stage runs `node scripts/fabro-verify.mjs` — scoped typecheck + lint
+(module paths for domain runs; changed-file scope for `src-root` runs).
 
 For your own check before handoff, run the same script:
 

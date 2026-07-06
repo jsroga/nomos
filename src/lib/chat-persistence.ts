@@ -4,7 +4,7 @@
  * Handles saving and restoring chat state across page reloads and navigation.
  */
 
-import { Message } from '@/domains/chat/types'
+import type { Message } from '@/domains/chat'
 
 export interface ChatState {
   messages: Message[]

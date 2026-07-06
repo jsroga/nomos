@@ -4,7 +4,7 @@
  * Type definitions for the market analysis agent and its tools.
  */
 
-import { MechanicNode, MechanicEdge, GameLoop } from '../../graph/state'
+import { MechanicNode, MechanicEdge, GameLoop } from '../../core/graph/state'
 
 /**
  * Loop data passed to analysis tools

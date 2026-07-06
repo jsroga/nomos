@@ -1,5 +1,5 @@
 import { Bot, User, Brain, Lightbulb, Scale, Eye, Pen } from 'lucide-react'
-import type { AgentConfigMap } from '@/domains/chat/types'
+import type { AgentConfigMap } from '@/domains/chat'
 
 export const STORYTELLER_AGENT_CONFIG: AgentConfigMap = {
   Showrunner: {

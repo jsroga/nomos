@@ -10,7 +10,7 @@
 
 import { ChatOpenAI } from '@langchain/openai'
 import { AIMessage, SystemMessage } from '@langchain/core/messages'
-import { LoopCreatorState, NextAgent, LoopCreatorPhase, LoopAgentActionType } from '../graph/state'
+import { LoopCreatorState, NextAgent, LoopCreatorPhase, LoopAgentActionType } from '../core/graph/state'
 import { v4 as uuidv4 } from 'uuid'
 import { buildCrossDomainContext } from '@/lib/agent-context/cross-domain-context'
 

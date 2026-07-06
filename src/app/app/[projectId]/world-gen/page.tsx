@@ -1,15 +1,15 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Sidebar } from '@/domains/world-building-toolkit/components/Sidebar/Sidebar'
-import { WorldCanvas } from '@/domains/world-building-toolkit/components/Canvas/WorldCanvas'
-import { RepaintToolbar } from '@/domains/world-building-toolkit/components/RepaintToolbar'
-import { SelectModeToolbar } from '@/domains/world-building-toolkit/components/SelectModeToolbar'
-import { WorldGenToolbar } from '@/domains/world-building-toolkit/components/WorldGenToolbar'
 import {
+  Sidebar,
+  WorldCanvas,
+  RepaintToolbar,
+  SelectModeToolbar,
+  WorldGenToolbar,
   TileReviewDialog,
-  TileReviewType,
-} from '@/domains/world-building-toolkit/components/TileReviewDialog'
+  type TileReviewType,
+} from '@/domains/world-building-toolkit'
 import { useProjectFromUrl } from '@/shared/data/useProjectFromUrl'
 
 interface ReviewQueueItem {

@@ -169,15 +169,60 @@ module.exports = [
   },
   {
     files: ['src/**/*.{ts,tsx}', 'tests/**/*.{ts,tsx}'],
-    ignores: ['src/domains/storyteller/**'],
+    ignores: [
+      'src/domains/**',
+    ],
     rules: {
       'no-restricted-imports': [
-        'error',  // Flipped from 'warn' after Wave 1 referrer cleanup
+        'error',
         {
           patterns: [
             {
-              group: ['@/domains/storyteller/*', '!@/domains/storyteller/io/*'],
-              message: 'Import from "@/domains/storyteller" instead of storyteller internals. Only io/ is allowed for deep imports.',
+              group: [
+                '@/domains/storyteller/*',
+                '!@/domains/storyteller/io/*',
+              ],
+              message:
+                'Import from "@/domains/storyteller" instead of storyteller internals. Only io/ is allowed for deep imports.',
+            },
+            {
+              group: [
+                '@/domains/interior-designer/*',
+                '!@/domains/interior-designer/io/*',
+              ],
+              message:
+                'Import from "@/domains/interior-designer" instead of interior-designer internals. Only io/ is allowed for deep imports.',
+            },
+            {
+              group: ['@/domains/world-building-toolkit/*'],
+              message:
+                'Import from "@/domains/world-building-toolkit" instead of world-building-toolkit internals.',
+            },
+            {
+              group: ['@/domains/chat/*'],
+              message: 'Import from "@/domains/chat" instead of chat internals.',
+            },
+            {
+              group: ['@/domains/loop-creator/*'],
+              message: 'Import from "@/domains/loop-creator" instead of loop-creator internals.',
+            },
+            {
+              group: ['@/domains/marketing/*'],
+              message: 'Import from "@/domains/marketing" instead of marketing internals.',
+            },
+            {
+              group: ['@/domains/deduction-puzzle-designer/*'],
+              message:
+                'Import from "@/domains/deduction-puzzle-designer" instead of deduction-puzzle-designer internals.',
+            },
+            {
+              group: ['@/domains/3d-asset-exporter/*'],
+              message:
+                'Import from "@/domains/3d-asset-exporter" instead of 3d-asset-exporter internals.',
+            },
+            {
+              group: ['@/domains/game-design/*'],
+              message: 'Import from "@/domains/game-design" instead of game-design internals.',
             },
           ],
         },

@@ -1,4 +1,4 @@
-import { LandingPage } from '@/domains/marketing/components/LandingPage'
+import { LandingPage } from '@/domains/marketing'
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 

@@ -15,7 +15,7 @@ import {
   MechanicEdge,
   LoopAgentAction,
   NextAgent,
-} from '../graph/state'
+} from '../core/graph/state'
 import { v4 as uuidv4 } from 'uuid'
 
 const MECHANICS_DESIGNER_SYSTEM_PROMPT = `You are a Game Mechanics Designer - an expert in creating compelling gameplay mechanics.

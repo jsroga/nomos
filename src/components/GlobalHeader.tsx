@@ -2,14 +2,14 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { useWorldStore } from '@/domains/world-building-toolkit/store/useWorldStore'
+import { useWorldStore } from '@/domains/world-building-toolkit'
 import { Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { SettingsDialog } from '@/domains/world-building-toolkit/components/SettingsDialog'
+import { SettingsDialog } from '@/domains/world-building-toolkit/ui/SettingsDialog'
 import { ProjectSelectorDropdown } from '@/components/ProjectSelectorDropdown'
 import { AsyncStatusIndicator } from '@/components/AsyncStatusIndicator'
 import { TroubleshootIndicator } from '@/components/TroubleshootIndicator'
-import { LiquidBackgroundProvider } from '@/domains/marketing/components/LiquidBackgroundProvider'
+import { LiquidBackgroundProvider } from '@/domains/marketing'
 
 export function GlobalHeader() {
   const currentProject = useWorldStore(state => state.currentProject)

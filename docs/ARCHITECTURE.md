@@ -11,6 +11,15 @@ The system follows a **layered architecture** with clear separation of concerns:
 3. **Domain Layer**: Multi-agent orchestration (Mastra/LangGraph)
 4. **Infrastructure Layer**: External services, databases, AI providers
 
+### Target module architecture
+
+Every feature module under `src/domains/<module>/` follows the blueprint in
+[docs/unified/ARCHITECTURE.md](unified/ARCHITECTURE.md) §4 (`ui/`, `state/`, `io/`,
+`core/`, `services/`, `agents/`, `tasks/`, plus a root `index.ts` public barrel).
+Implementation sequencing and acceptance criteria live in
+[docs/unified/SPEC.md](unified/SPEC.md). Conformance is enforced by
+`src/domains/__tests__/domain-structure.test.ts` and ESLint barrel-import rules.
+
 ---
 
 ## System Context Diagram

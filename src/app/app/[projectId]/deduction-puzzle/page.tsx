@@ -1,4 +1,4 @@
-import { PuzzleDesignerLayout } from '@/domains/deduction-puzzle-designer/components/PuzzleDesignerLayout'
+import { PuzzleDesignerLayout } from '@/domains/deduction-puzzle-designer'
 
 interface PageProps {
   params: Promise<{ projectId: string }>

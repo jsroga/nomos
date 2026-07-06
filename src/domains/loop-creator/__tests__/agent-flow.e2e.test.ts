@@ -43,8 +43,8 @@ vi.mock('@langchain/langgraph-checkpoint-postgres', () => ({
   },
 }))
 
-import { streamLoopCreator, StreamEvent } from '../graph/loop-graph'
-import { createInitialLoopState } from '../graph/state'
+import { streamLoopCreator, StreamEvent } from '../core/graph/loop-graph'
+import { createInitialLoopState } from '../core/graph/state'
 
 describe('Agent Flow E2E', () => {
   beforeEach(() => {

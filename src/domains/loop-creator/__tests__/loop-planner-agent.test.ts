@@ -5,7 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { loopPlannerAgent } from '../agents/loop-planner'
-import { createInitialLoopState, LoopCreatorState } from '../graph/state'
+import { createInitialLoopState, LoopCreatorState } from '../core/graph/state'
 
 // Mock OpenAI
 const mockResponse = {

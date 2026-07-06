@@ -7,8 +7,8 @@
 import { NextRequest } from 'next/server'
 import {
   streamMarketAnalysis,
-  LoopAnalysisInput,
-} from '@/domains/loop-creator/agents/market-analyst'
+  type LoopAnalysisInput,
+} from '@/domains/loop-creator'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120 // 2 minutes max for thorough analysis

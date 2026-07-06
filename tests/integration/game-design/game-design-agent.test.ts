@@ -1,7 +1,6 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { GameDesignAgent } from '../../../src/domains/game-design/agent'
-import { GameDesignMemory, createGameDesignMemory } from '../../../src/domains/game-design/memory'
+import { GameDesignAgent, GameDesignMemory, createGameDesignMemory } from '../../../src/domains/game-design'
 import { PlanPersistence } from '../../../src/agent-core/planner'
 
 // Skip if no OPENAI_API_KEY

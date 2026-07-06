@@ -3,7 +3,7 @@
  * Phase 1: Quick Wins Optimization
  */
 
-import { TERRAIN_QUALITY_RESOLUTION, TerrainQuality } from '../store/useInteriorStore'
+import { TERRAIN_QUALITY_RESOLUTION, TerrainQuality } from '../state/useInteriorStore'
 import { describe, it, expect } from 'vitest'
 
 describe('Terrain Quality Presets', () => {
