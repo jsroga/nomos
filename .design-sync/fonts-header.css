@@ -1,0 +1,3 @@
+/* Brand fonts — the app loads these via next/font; the DS bundle uses Google Fonts.
+   Must stay the FIRST rules of the concatenated stylesheet (@import before all else). */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@400;500;600;700;800&display=swap');

@@ -1,4 +1,8 @@
 {
+  "name": "world-building-kit",
+  "version": "0.1.0",
+  "private": true,
+  "types": ".design-sync/.cache/types/.design-sync/ds-entry.d.ts",
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.33",
     "@ai-sdk/google": "^3.0.18",

@@ -1,0 +1,12 @@
+/* next/font injects these variables at runtime in the app; define them here for the DS bundle. */
+:root {
+  --font-sans: 'Inter';
+  --font-mono: 'JetBrains Mono';
+  --font-syne: 'Syne';
+}
+
+body {
+  font-family: var(--font-sans), sans-serif;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}

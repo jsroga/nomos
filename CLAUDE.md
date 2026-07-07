@@ -1,4 +1,6 @@
-# CLAUDE.md — dev commands & repo ops
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 Quick reference for running and changing this repo. **Mastra agents, tools, and memory:** see [AGENTS.md](AGENTS.md). **Architecture & modules:** see [docs/README.md](docs/README.md).
 
@@ -15,8 +17,39 @@ npm run lint
 npm run typecheck
 npm run test:unit
 npm run test:e2e         # Playwright (default)
-npm run test:e2e smoke   # storyteller smoke script
+npm run test:e2e smoke   # storyteller smoke; also: actions, full-loop, swiss-knife
 ```
+
+Single unit test (Vitest; `@/` → `src/`):
+
+```bash
+npx vitest run src/domains/storyteller/agents/tools/__tests__/storytelling.test.ts
+npx vitest run src/domains/loop-creator            # whole directory
+```
+
+`*.e2e.test.ts` files are excluded from `test:unit` (need DB/LLM) — run them explicitly with `npx vitest run <path>` when keys are available. E2E scenarios need a running app + `.env.local`.
+
+## Architecture
+
+**Stack:** Next.js 15 (App Router, RSC) · Supabase (Postgres + pgvector + auth/RLS) · Mastra v1 (agents/tools/workflows) · Trigger.dev v4 (background jobs) · Three.js. Long-running work (image/3D generation) goes Frontend → API → Trigger.dev task → poll/subscribe.
+
+`src/` topology:
+
+| Folder | Role |
+|--------|------|
+| `app/` | Next.js routes, API glue, `_shell/` chrome |
+| `domains/` | Feature modules — vertical slices (storyteller, loop-creator, interior-designer, chat, …) |
+| `shared/` | Cross-module code: `agent-kernel` (Mastra instance, scorers), `ai`, `data`, `auth`, `observability` |
+| `components/` | Radix/CVA design system, flat PascalCase folder per primitive |
+| `db/` | Drizzle schema + client |
+| `trigger/` | Trigger.dev task registry |
+| `mcp/` | MCP server (separate deployable) |
+
+Each `src/domains/<module>/` follows the blueprint in [docs/unified/ARCHITECTURE.md](docs/unified/ARCHITECTURE.md): `ui/`, `state/`, `io/`, `core/`, `services/`, `agents/`, `tasks/`, `prompts/` + a **single public `index.ts` barrel**. Dependency rule: `ui → state → io → core → services → agents`; no cross-module deep imports, `core/` is pure (no React/DB/IO), server data lives in TanStack Query not Zustand. Enforced by `src/domains/__tests__/domain-structure.test.ts` and ESLint barrel guards. Asset modules (`interior-designer`, `world-building-toolkit`, `3d-asset-exporter`) lean on `tasks/`, not `agents/`.
+
+Two Mastra entries: `src/mastra.ts` is the Studio CLI entry (bundler-safe tool stubs in `src/shared/agent-kernel/mastra/tools/`); `src/shared/agent-kernel/MastraInstance.ts` is the production instance (Postgres memory, tracing). Production agents live in `src/domains/*/agents/`. Never create a second Mastra instance or Postgres store.
+
+**TypeScript is strict**: implicit `any` is a compile error and `@typescript-eslint/no-explicit-any` is an `error` (no `: any` / `as any`). Legacy `@ts-nocheck` files exist; don't add new ones.
 
 ## Mastra
 
@@ -30,10 +63,10 @@ npm run mastra:build
 ```bash
 npm run eval              # all 12 golden examples (Mastra scorers)
 npm run eval -- --samples=5
-npm run eval:dashboard    # open dashboard (next dev)
+npm run eval:dashboard    # generate + open HTML report
 ```
 
-Details: [docs/TESTING.md](docs/TESTING.md).
+Run evals after any change to agent prompts, tools, model config, or the storyteller generation flow. A change is an improvement only if no single scorer regresses below baseline (`evals/results/latest.json`). Scorers: `src/shared/agent-kernel/scorers/`; golden set: `evals/datasets/storyteller-golden.ts`. Details: [docs/TESTING.md](docs/TESTING.md).
 
 ## MCP & Trigger
 
@@ -75,13 +108,16 @@ Shared prompts: **`.agents/execute/`** · skills: **`.agents/skills/`** (Cursor/
 
 ## Quality gates
 
+Run before declaring work done; fix failures, don't bypass:
+
 ```bash
 npm run typecheck
 npm run lint
-npx knip
+npm run test:unit
+npx knip                 # dead code / unused exports
 ```
 
-Fabro `execute` workflow verify stage: `node scripts/fabro-verify.mjs` (module-scoped typecheck/lint).
+Module-scoped fast verify (dark-factory; reads module from `PLAN.md`, matches husky pre-commit): `node scripts/fabro-verify.mjs`.
 
 ## Local-only tooling
 

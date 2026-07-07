@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.json",
+  "include": ["ds-entry.ts", "ds-frame.tsx"],
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": ".cache/types",
+    "rootDir": "..",
+    "noCheck": true
+  }
+}
