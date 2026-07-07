@@ -26,6 +26,15 @@ export {
 export { normalizeMastraTraceId } from './agents/orchestration/WorkflowContext'
 export { workflowStore } from './agents/orchestration/WorkflowContext'
 
+export {
+  reviewScript,
+  quickReview,
+  type ScriptReviewRequest,
+  type ScriptReviewResult,
+} from './agents/judges/ScriptReviewAgent'
+
+export { storytellerService } from './services/StorytellerCrudService'
+
 // Consistency check (legacy ConsistencyAgent — wave 2 will use ConsistencyService)
 export { runConsistencyCheck } from './agents/judges/ConsistencyAgent'
 

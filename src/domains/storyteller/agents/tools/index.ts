@@ -25,6 +25,20 @@ export { manageEpisodeTool, listEpisodesTool } from './episode-tools'
 // World Bible + Continuity (3 tools)
 export { updateWorldBibleTool, readWorldBibleTool, checkContinuityTool } from './bible-tools'
 
+// Legacy council tools (writers' room — until workflow migration)
+export {
+  selfCritiqueTool,
+  improveDialogueTool,
+  addVisualHookTool,
+  condenseSceneTool,
+  regenerateTextTool,
+  shiftToneTool,
+  analyzePsychologyTool,
+  simulateReactionTool,
+  assessRelationshipTool,
+  quickConsistencyCheckTool,
+} from './legacy-council-tools'
+
 /**
  * All tools for the GRRM Agent
  * Total: 9 tools (down from ~57)

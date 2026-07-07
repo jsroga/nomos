@@ -6,7 +6,8 @@
  */
 
 import { MCPServerResources } from '@mastra/mcp'
-import { entitiesService, storytellerService } from '@/shared/data/EntitiesService'
+import { entitiesService } from '@/shared/data/EntitiesService'
+import { storytellerService } from '@/domains/storyteller/server'
 import { validateApiKey, getServiceContext } from '../core/auth'
 
 // ============================================
@@ -117,7 +118,7 @@ export const mcpResources: MCPServerResources = {
     const context = await getServiceContext(authResult)
     const { type, params } = parseResourceUri(uri)
 
-    let result: any
+    let result: unknown
 
     switch (type) {
       case 'projects': {

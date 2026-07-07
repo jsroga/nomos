@@ -1,5 +1,22 @@
+import * as Sentry from '@sentry/nextjs'
+
+const sentryOptions = {
+  dsn: 'https://5624b3a707f335df243772d343ae9f25@o4510956650627072.ingest.de.sentry.io/4510956652003408',
+  tracesSampleRate: 1,
+  enableLogs: true,
+  sendDefaultPii: true,
+} satisfies Sentry.NodeOptions
+
 export async function register() {
-  // Only run on Node.js server runtime (not Edge or browser)
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    Sentry.init(sentryOptions)
+  }
+
+  if (process.env.NEXT_RUNTIME === 'edge') {
+    Sentry.init(sentryOptions)
+  }
+
+  // Only run Mastra / OTEL setup on Node.js server runtime (not Edge or browser)
   if (
     typeof globalThis.process === 'undefined' ||
     typeof globalThis.process.versions?.node === 'undefined'
@@ -39,3 +56,5 @@ export async function register() {
     console.error('❌ Failed to register OpenTelemetry:', err)
   }
 }
+
+export const onRequestError = Sentry.captureRequestError
