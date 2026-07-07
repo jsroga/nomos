@@ -1,10 +1,10 @@
 import type { Agent } from '@mastra/core/agent'
 import type { MCPServerBase } from '@mastra/core/mcp'
 import { Mastra } from '@mastra/core/mastra'
-import { LangfuseExporter } from '@mastra/langfuse'
+import { Observability, MastraStorageExporter } from '@mastra/observability'
 import { PostgresStore } from '@mastra/pg'
 import { PinoLogger } from '@mastra/loggers'
-import { Observability } from '@mastra/observability'
+import { STORYTELLER_SCORERS } from '../scorers'
 import { Workspace, LocalFilesystem } from '@mastra/core/workspace'
 import { existsSync, readFileSync } from 'fs'
 import path from 'path'
@@ -82,12 +82,6 @@ export function createMastra(
 ): Mastra {
   configureSerializationLimits()
 
-  const langfuseExporter = new LangfuseExporter({
-    publicKey: process.env.LANGFUSE_PUBLIC_KEY,
-    secretKey: process.env.LANGFUSE_SECRET_KEY,
-    baseUrl: process.env.LANGFUSE_BASE_URL,
-  })
-
   const projectRoot = resolveProjectRoot()
 
   const workspace = new Workspace({
@@ -104,6 +98,7 @@ export function createMastra(
 
   return new Mastra({
     agents,
+    scorers: STORYTELLER_SCORERS,
     ...(storage ? { storage } : {}),
     workspace,
     ...(options?.mcpServers ? { mcpServers: options.mcpServers } : {}),
@@ -111,13 +106,17 @@ export function createMastra(
       name: 'Mastra',
       level: 'info',
     }),
-    observability: new Observability({
-      configs: {
-        storyteller: {
-          serviceName: 'storyteller',
-          exporters: [langfuseExporter],
-        },
-      },
-    }),
+    ...(storage
+      ? {
+          observability: new Observability({
+            configs: {
+              default: {
+                serviceName: 'storyteller',
+                exporters: [new MastraStorageExporter()],
+              },
+            },
+          }),
+        }
+      : {}),
   })
 }

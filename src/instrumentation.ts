@@ -8,7 +8,7 @@ export async function register() {
   }
 
   // Patch Mastra's default serialization limits BEFORE any Mastra modules load
-  // This prevents context truncation in Langfuse (default maxTotalChars: 8192 is too small)
+  // (default maxTotalChars: 8192 is too small for large agent context)
   //
   // IMPORTANT: This uses a different approach since direct import of @mastra/core/ai-tracing
   // causes module resolution issues (crypto not found in client bundle)
@@ -26,29 +26,7 @@ export async function register() {
     console.warn('⚠️ Could not configure Mastra serialization limits:', e)
   }
 
-  // Configure Langfuse OTLP endpoint if credentials exist
-  // Langfuse expects traces at: https://cloud.langfuse.com/api/public/otel/v1/traces
-  const langfuseHost =
-    process.env.LANGFUSE_HOST || process.env.LANGFUSE_BASE_URL || 'https://cloud.langfuse.com'
-  const langfusePublicKey = process.env.LANGFUSE_PUBLIC_KEY
-  const langfuseSecretKey = process.env.LANGFUSE_SECRET_KEY
-
-  if (langfusePublicKey && langfuseSecretKey) {
-    // Set OTLP endpoint for Langfuse if not already set
-    if (!process.env.OTEL_EXPORTER_OTLP_ENDPOINT) {
-      process.env.OTEL_EXPORTER_OTLP_ENDPOINT = `${langfuseHost}/api/public/otel`
-    }
-
-    // Set auth header for OTLP exporter (Basic auth with publicKey:secretKey)
-    const authHeader = Buffer.from(`${langfusePublicKey}:${langfuseSecretKey}`).toString('base64')
-    if (!process.env.OTEL_EXPORTER_OTLP_HEADERS) {
-      process.env.OTEL_EXPORTER_OTLP_HEADERS = `Authorization=Basic ${authHeader}`
-    }
-
-    console.log('✅ Langfuse OTLP configured:', langfuseHost)
-  }
-
-  // Register OpenTelemetry with @vercel/otel
+  // Register OpenTelemetry with @vercel/otel (Mastra Observability uses Mastra storage exporters)
   try {
     const otelStart = performance.now()
     const { registerOTel } = await import('@vercel/otel')

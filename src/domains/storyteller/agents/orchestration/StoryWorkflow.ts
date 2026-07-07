@@ -5,10 +5,9 @@ import { createConsequenceAgent } from '@/domains/storyteller/agents/council/Con
 import { createGardenerAgent } from '@/domains/storyteller/agents/council/GardenerAgent'
 import { createDevilsAdvocateAgent } from '@/domains/storyteller/agents/council/DevilsAdvocateAgent'
 import { createStorytellerAgent } from '@/domains/storyteller/agents/StorytellerAgent'
-import { langfuse } from '@/shared/observability/observability'
 import { getAgentModelConfig } from '@/domains/storyteller/config/ModelConfig'
 /**
- * Story Creation Workflow with Full Langfuse Tracing
+ * Story Creation Workflow
  */
 
 // Input Schema
@@ -29,8 +28,12 @@ import {
 
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
-// Helper to emit step events
-const emitStepEvent = (step: string, phase: 'start' | 'complete', data?: any) => {
+type WorkflowStepParams = {
+  getInitData: () => Record<string, unknown>
+  getStepResult: (stepId: string) => Record<string, unknown> | undefined
+}
+
+const emitStepEvent = (step: string, phase: 'start' | 'complete', data?: Record<string, unknown>) => {
   const bus = getWorkflowEventBus()
   const traceId = getWorkflowTraceId()
   if (bus) {
@@ -42,18 +45,8 @@ const emitStepEvent = (step: string, phase: 'start' | 'complete', data?: any) =>
   }
 }
 
-// Helper for Langfuse spans
-const createStepSpan = (stepName: string, agentName: string, input: any) => {
-  const traceId = getWorkflowTraceId()
-  if (!traceId) return null
-
-  return langfuse.span({
-    traceId,
-    name: `workflow.${stepName}`,
-    input,
-    metadata: { agentName, stepType: 'workflow_step' },
-  })
-}
+// Workflow step spans are emitted by Mastra when agents run with tracingOptions.
+const createStepSpan = (_stepName: string, _agentName: string, _input: unknown) => null
 
 const psychologyStep = createStep({
   id: 'psychological_analysis',
@@ -111,7 +104,7 @@ const draftingStep = createStep({
   id: 'drafting',
   inputSchema: z.any(),
   outputSchema: z.object({ draft: z.string(), thinking: z.string().optional() }),
-  execute: async (params: any) => {
+  execute: async (params: WorkflowStepParams) => {
     const { getInitData, getStepResult } = params
     const input = getInitData()
 
@@ -142,7 +135,7 @@ const critiqueStep = createStep({
   id: 'critique',
   inputSchema: z.any(),
   outputSchema: z.object({ critique: z.string(), thinking: z.string().optional() }),
-  execute: async (params: any) => {
+  execute: async (params: WorkflowStepParams) => {
     const { getInitData, getStepResult } = params
     const input = getInitData()
     const traceId = input?.traceId || getWorkflowTraceId()
@@ -172,7 +165,7 @@ const creativeDecisionStep = createStep({
     critiqueScore: z.number(),
     refinementFocus: z.string().optional(),
   }),
-  execute: async (params: any) => {
+  execute: async (params: WorkflowStepParams) => {
     try {
       const { getStepResult } = params
       const critiqueRes = getStepResult('critique')
@@ -215,7 +208,7 @@ const synthesisStep = createStep({
   id: 'synthesis',
   inputSchema: z.any(),
   outputSchema: z.object({ finalOutput: z.string() }),
-  execute: async (params: any) => {
+  execute: async (params: WorkflowStepParams) => {
     const { getInitData, getStepResult } = params
     const input = getInitData()
     const traceId = input?.traceId || getWorkflowTraceId()
@@ -307,7 +300,7 @@ Critique: "${critique}"
       input?.goal,
       prompt,
       input?.traceId || undefined,
-      toolChoice as any
+      toolChoice as string | { type: 'tool'; toolName: string }
     )
     emitStepEvent('Final Synthesis', 'complete', { output: response.slice(0, 200) })
     span?.end({ output: { text: response.slice(0, 500) } })

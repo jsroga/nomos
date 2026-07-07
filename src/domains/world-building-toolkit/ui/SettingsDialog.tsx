@@ -37,7 +37,6 @@ interface ProviderStatus {
   meshy: boolean
   fal: boolean
   voyage: boolean
-  langfuse: boolean
   langsmith: boolean
 }
 
@@ -326,7 +325,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                             <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
                               Observability
                             </h5>
-                            <ConnectionDot connected={providers.langfuse} label="Langfuse" />
                             <ConnectionDot connected={providers.langsmith} label="LangSmith" />
                           </div>
                         </div>

@@ -43,6 +43,7 @@ public/projects/
 
 # Mastra CLI build output
 .mastra/
+src/mastra/public/
 
 # Lighthouse reports
 lighthouse-*.report.html

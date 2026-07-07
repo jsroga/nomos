@@ -1,8 +1,7 @@
 import { MODELS } from '@/shared/agent-kernel/models'
 
 export function toMastraJudgingModel(): string {
-  // Read at call time so evals/run.ts can load .env.local first when possible.
-  // Note: scorer modules still bake model at import — set JUDGING_MODEL in the shell or use dynamic import if needed.
+  // Read at call time so evals/run.ts can load .env.local before scorer modules import.
   const model = process.env.JUDGING_MODEL || MODELS.judging.primary
   return model.replace(':', '/')
 }

@@ -1,12 +1,14 @@
 import { MastraMemory, MemoryConfig, StorageThreadType, MastraDBMessage } from '@mastra/core/memory'
-import type { StorageListMessagesInput, StorageListThreadsInput, StorageListThreadsOutput } from '@mastra/core/storage'
+import type {
+  MemoryStorage,
+  StorageCloneThreadInput,
+  StorageCloneThreadOutput,
+  StorageListMessagesInput,
+  StorageListThreadsInput,
+  StorageListThreadsOutput,
+} from '@mastra/core/storage'
 import { InMemoryStore, MastraStorage } from '@mastra/core/storage'
 import { MastraVector } from '@mastra/core/vector'
-
-/** Extension type for storage adapters that support listMessagesById */
-interface MemoryStorageWithListById {
-  listMessagesById(args: { messageIds: string[] }): Promise<{ messages: MastraDBMessage[] }>
-}
 
 export class AgentMemory extends MastraMemory {
   constructor(config: { name: string; storage?: MastraStorage; vector?: MastraVector }) {
@@ -19,34 +21,43 @@ export class AgentMemory extends MastraMemory {
     }
   }
 
+  private async memoryStore(): Promise<MemoryStorage> {
+    const memory = await this.storage.getStore('memory')
+    if (!memory) {
+      throw new Error('[AgentMemory] Memory store not configured on MastraCompositeStore')
+    }
+    return memory
+  }
+
   async getThreadById(args: { threadId: string }): Promise<StorageThreadType | null> {
-    return this.storage.getThreadById(args)
+    const memory = await this.memoryStore()
+    return memory.getThreadById(args)
   }
 
   async getThreadsByResourceId(args: StorageListThreadsInput): Promise<StorageListThreadsOutput> {
-    return this.storage.listThreads(args)
+    return this.listThreads(args)
   }
 
   async getThreadsByResourceIdPaginated(args: StorageListThreadsInput): Promise<StorageListThreadsOutput> {
-    return this.storage.listThreads(args)
+    return this.listThreads(args)
   }
 
   async listThreads(args: StorageListThreadsInput): Promise<StorageListThreadsOutput> {
-    return this.storage.listThreads(args)
+    const memory = await this.memoryStore()
+    return memory.listThreads(args)
   }
 
   async saveThread(args: { thread: StorageThreadType; memoryConfig?: MemoryConfig }): Promise<StorageThreadType> {
-    return this.storage.saveThread(args)
+    const memory = await this.memoryStore()
+    return memory.saveThread({ thread: args.thread })
   }
 
   async saveMessages(args: { messages: MastraDBMessage[]; memoryConfig?: MemoryConfig }) {
-    const saved = await this.storage.saveMessages(args)
+    const memory = await this.memoryStore()
+    const saved = await memory.saveMessages({ messages: args.messages })
 
-    // RAG: Index new messages if vector store/embedder are available.
-    // Logic: Text content -> Embed -> Upsert
     if (this.vector && this.embedder) {
-      const messagesToEmbed = Array.isArray(saved.messages) ? saved.messages : [saved]
-      const inputs = messagesToEmbed
+      const inputs = saved.messages
         .filter((m): m is MastraDBMessage & { content: string } => typeof m.content === 'string')
         .map(m => ({
           id: m.id,
@@ -74,14 +85,27 @@ export class AgentMemory extends MastraMemory {
   }
 
   async recall(args: StorageListMessagesInput & { threadConfig?: MemoryConfig; vectorSearchString?: string }) {
-    const result = await this.storage.listMessages(args)
-    return {
-      messages: result.messages,
-    }
+    const memory = await this.memoryStore()
+    return memory.listMessages(args)
+  }
+
+  async updateThread({
+    id,
+    title,
+    metadata,
+  }: {
+    id: string
+    title: string
+    metadata: Record<string, unknown>
+    memoryConfig?: MemoryConfig
+  }) {
+    const memory = await this.memoryStore()
+    return memory.updateThread({ id, title, metadata })
   }
 
   async deleteThread(threadId: string) {
-    return this.storage.deleteThread({ threadId })
+    const memory = await this.memoryStore()
+    await memory.deleteThread({ threadId })
   }
 
   async getWorkingMemory(_args: { threadId: string; resourceId?: string; memoryConfig?: MemoryConfig }) {
@@ -92,33 +116,54 @@ export class AgentMemory extends MastraMemory {
     return null
   }
 
-  async updateWorkingMemory(_args: { threadId: string; resourceId?: string; workingMemory: string; memoryConfig?: MemoryConfig }) {
+  async updateWorkingMemory(_args: {
+    threadId: string
+    resourceId?: string
+    workingMemory: string
+    memoryConfig?: MemoryConfig
+  }) {
     // No-op
   }
 
-  async __experimental_updateWorkingMemoryVNext(_args: { threadId: string; resourceId?: string; workingMemory: string; searchString?: string; memoryConfig?: MemoryConfig }) {
+  async __experimental_updateWorkingMemoryVNext(_args: {
+    threadId: string
+    resourceId?: string
+    workingMemory: string
+    searchString?: string
+    memoryConfig?: MemoryConfig
+  }) {
     return { success: false, reason: 'Not implemented' }
   }
 
   async deleteMessages(messageIds: string[]) {
-    return this.storage.deleteMessages(messageIds)
+    const memory = await this.memoryStore()
+    await memory.deleteMessages(messageIds)
   }
 
-  async rememberMessages({ threadId, resourceId, vectorMessageSearch, config }: {
+  async cloneThread(args: StorageCloneThreadInput): Promise<StorageCloneThreadOutput> {
+    const memory = await this.memoryStore()
+    return memory.cloneThread(args)
+  }
+
+  async rememberMessages({
+    threadId,
+    resourceId,
+    vectorMessageSearch,
+    config,
+  }: {
     threadId: string
     resourceId?: string
     vectorMessageSearch?: string
     config?: { lastMessages?: number }
   }) {
-    // 1. Get recent messages
-    const result = await this.storage.listMessages({
+    const memory = await this.memoryStore()
+    const result = await memory.listMessages({
       threadId,
       resourceId,
-      limit: config?.lastMessages || 10,
+      perPage: config?.lastMessages || 10,
     })
     const messages: MastraDBMessage[] = result.messages
 
-    // 2. Vector Search (Hybrid RAG)
     if (this.vector && this.embedder && vectorMessageSearch) {
       try {
         const { embeddings } = await this.embedder.doEmbed({ values: [vectorMessageSearch] })
@@ -130,22 +175,16 @@ export class AgentMemory extends MastraMemory {
           topK: 5,
         })
 
-        // Fetch full messages for results
         const resultIds = results.map(r => r.id).filter((id): id is string => !!id)
         if (resultIds.length > 0) {
-          if ('listMessagesById' in this.storage) {
-            const vectorResult = await (this.storage as MemoryStorageWithListById).listMessagesById({
-              messageIds: resultIds,
-            })
-            vectorResult.messages.forEach(m => messages.push(m))
-          }
+          const vectorResult = await memory.listMessagesById({ messageIds: resultIds })
+          vectorResult.messages.forEach(m => messages.push(m))
         }
       } catch (err) {
         console.warn('[AgentMemory] Vector search failed:', err)
       }
     }
 
-    // Deduplicate
     const uniqueMessages = Array.from(new Map(messages.map(m => [m.id, m])).values())
 
     return {

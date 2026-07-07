@@ -16,13 +16,13 @@ npm run eval -- --samples=5        # multiple samples per case
 npm run eval:dashboard             # open dashboard (next dev)
 ```
 
-Judge: `CONFIDENT_API_KEY` (cloud) or `OPENAI_API_KEY` (local judge).
+Judge: `OPENAI_API_KEY` or `JUDGING_MODEL` in `.env.local` (Mastra LLM-as-judge via `createScorer`).
 
 ## Layout
 
+- `src/shared/agent-kernel/scorers/` — `consistency`, `hallucination`, `magic`, `persona-fidelity` (registered on Mastra)
 - `evals/datasets/storyteller-golden.ts` — 12 golden examples
-- `evals/scorers/` — `consistency`, `hallucination`, `magic`, `persona-fidelity` (+ shared + index)
-- `evals/run.ts` — runner; `evals/report/generate.ts` — report; `evals/results/latest.json`
+- `evals/run.ts` — batch runner; `evals/report/generate.ts` — HTML report; `evals/results/latest.json`
 - `evals/types.ts`, `evals/tsconfig.json`
 
 ## When to run evals

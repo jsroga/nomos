@@ -3,8 +3,7 @@
  * Full DB/API execution runs via stdio (`npm run mcp:start`) or HTTP (`/api/mcp`).
  */
 
-import { MCPServer } from '@mastra/mcp'
-import type { MCPServerResources } from '@mastra/mcp/server'
+import { MCPServer, type MCPServerResources } from '@mastra/mcp'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 

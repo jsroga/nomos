@@ -8,7 +8,7 @@
     "scripts/**/*.{ts,js,mjs}",
     "e2e/**/*.ts",
     "evals/run.ts",
-    "evals/scorers/**/*.ts"
+    "src/shared/agent-kernel/scorers/**/*.ts"
   ],
   "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{ts,js,mjs}", "e2e/**/*.ts", "evals/**/*.ts"],
   "ignore": [

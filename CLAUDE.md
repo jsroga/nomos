@@ -88,4 +88,4 @@ Ad-hoc audits and one-off scripts: **`.local/`** (gitignored). Do not add repo p
 
 ## Env
 
-Copy `.env.local.example` → `.env.local`. Evaluation: `CONFIDENT_API_KEY` (cloud) or `OPENAI_API_KEY` (local judge). Internal docs: `INTERNAL_DOCS_SECRET`.
+Copy `.env.local.example` → `.env.local`. Evaluation judges: `OPENAI_API_KEY` or `JUDGING_MODEL` (see `evals/run.ts`). Internal docs: `INTERNAL_DOCS_SECRET`.

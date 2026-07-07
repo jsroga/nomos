@@ -13,18 +13,10 @@ export class PromptRepository implements IPromptRepository {
   }
 
   async getPrompt(name: string, variables: PromptVariables = {}): Promise<string> {
-    // Remote prompts (Langfuse hub) — lazy import so local-only paths (e.g. evals CLI) never load Langfuse
     if (this.useRemote) {
-      try {
-        const { langfuse } = await import('../../observability/observability')
-        const remotePrompt = await langfuse.getPrompt(name)
-        return remotePrompt.compile(variables)
-      } catch (error) {
-        console.warn(
-          `[PromptRepository] Failed to fetch remote prompt '${name}'. Falling back to local.`,
-          error
-        )
-      }
+      console.warn(
+        `[PromptRepository] Remote prompts are disabled; using local registry for '${name}'.`
+      )
     }
     const definition = this.localRegistry.get(name)
     if (!definition) {

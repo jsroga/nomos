@@ -48,7 +48,7 @@ npm run eval -- --samples=5
 npm run eval -- --scorers=consistency
 ```
 
-Uses Mastra `createScorer` metrics in `evals/scorers/`. Golden set: 12 examples in `evals/datasets/storyteller-golden.ts` (3 per scorer), each with `referenceOutput` and per-example `metadata.scorers`. Results land in `evals/results/latest.json` and the evaluation dashboard at `/evaluation/dashboard`.
+Uses Mastra `createScorer` definitions in `src/shared/agent-kernel/scorers/` (also registered on the Mastra instance). Golden set: 12 examples in `evals/datasets/storyteller-golden.ts` (3 per scorer), each with `referenceOutput` and per-example `metadata.scorers`. Results land in `evals/results/latest.json`; view via `npm run eval:dashboard`.
 
 ## Mastra / agent verification
 

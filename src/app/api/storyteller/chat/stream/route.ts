@@ -19,26 +19,13 @@ export const runtime = 'nodejs'
 
 interface StreamChunk {
   type: string
-  payload?: any
+  payload?: unknown
 }
 
-// Import Langfuse observability with enhanced tracing
-import {
-  langfuse,
-  isLangfuseEnabled,
-  recordToolCall,
-  recordError,
-  flushObservability,
-} from '@/shared/observability/observability'
+import { recordError } from '@/shared/observability/observability'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
-// Use the imported langfuse client if enabled
-const langfuseClient = isLangfuseEnabled ? langfuse : null
-
 export async function POST(req: Request) {
-  let trace: ReturnType<typeof langfuse.trace> | null = null
-  let generation: ReturnType<ReturnType<typeof langfuse.trace>['generation']> | null = null
-
   try {
     // Security: Require authentication
     const { requireAuth } = await import('@/shared/auth/auth')
@@ -113,40 +100,11 @@ export async function POST(req: Request) {
 
     const traceId = normalizeMastraTraceId(req.headers.get('x-trace-id') || bodyTraceId)
 
-    // Generate sessionId for Langfuse session tracking
-    // Sessions group multiple traces together for multi-turn conversations
-    // @see https://langfuse.com/docs/observability/features/sessions
-    // Security: Use session user ID instead of client-provided userId
+    // Session ID groups multi-turn chat for Mastra tracingOptions
     const sessionId =
       bodySessionId || `session-${projectId || 'unknown'}-${episodeId || Date.now()}`
-    const safeUserId = session.user.id // Always use authenticated user ID
 
-    // Create trace with session context
-    if (langfuseClient) {
-      try {
-        trace = langfuseClient.trace({
-          name: 'storyteller-chat',
-          id: traceId,
-          sessionId, // Links this trace to the session for grouped view in Langfuse
-          userId: safeUserId, // Use authenticated user ID
-          metadata: {
-            projectId,
-            episodeId,
-            agenticMode,
-            source: 'web-ui',
-            userEmail: session.user.email, // Track user email for audit
-          },
-          tags: ['storyteller', 'chat', projectId ? `project:${projectId}` : 'no-project'].filter(
-            Boolean
-          ),
-        })
-        console.log(`[Langfuse] Created trace ${traceId} in session ${sessionId}`)
-      } catch (e) {
-        console.warn('Failed to create Langfuse trace:', e)
-      }
-    }
-
-    // 1. Fetch + format FULL context (project, bible, story plan, characters, beats, RAG)
+    // 1. Fetch + format FULL context
     const { contextPrompt, existingBibleData } = await assembleStorytellerContext({
       projectId,
       episodeId,
@@ -154,11 +112,7 @@ export async function POST(req: Request) {
       currentPhase,
       userId: session.user.id,
       onError: err => {
-        try {
-          trace?.update({ metadata: { contextError: String(err) } })
-        } catch {
-          /* ignore */
-        }
+        console.warn('[Stream] Context assembly error:', err)
       },
     })
 
@@ -189,69 +143,11 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
       ? `${contextPrompt}\n${sectionPrompt}\n${agenticInstruction}\nUSER REQUEST:\n${message}\n\nRemember: Use projectId="${projectId}" for all tool calls that require it.`
       : `${sectionPrompt}\n${agenticInstruction}\n${message}`
 
-    // Create a generation span for the LLM call (safe - won't throw)
-    // The generation object is used to create child spans for tool calls
-    let generationId: string | undefined
-    try {
-      if (trace) {
-        generation = trace.generation({
-          name: 'storyteller-agent-stream',
-          input: promptWithContext || '(no prompt provided)', // Ensure never undefined
-          model: resolvedModelName.replace(':', '/'),
-          metadata: {
-            projectId: projectId || '(no project)',
-            episodeId: episodeId || '(no episode)',
-          },
-        })
-        // Capture generation ID for child span linkage
-        // Langfuse SDK stores the ID in the 'id' property
-        generationId = (generation as any)?.id || (generation as any)?.observationId
-        console.log(`[Langfuse] Created generation with ID: ${generationId}`)
-      }
-    } catch (e) {
-      console.warn('Failed to create Langfuse generation:', e)
-    }
-
     // Create EventBus for Workflow Visibility
-    // EventEmitter imported at top level to avoid edge runtime issues
     const { workflowContext, WORKFLOW_EVENTS } =
       await import('@/domains/storyteller/agents/orchestration/WorkflowContext')
     const eventBus = new EventEmitter()
-    const activeSpans = new Map<string, ReturnType<NonNullable<typeof trace>['span']>>() // Track spans by step name
 
-    // Bridge Workflow Events to LangFuse & Logging
-    eventBus.on(WORKFLOW_EVENTS.STEP_START, ({ step, agent }) => {
-      // 1. LangFuse Span
-      try {
-        if (trace) {
-          const span = trace.span({
-            name: `workflow-step: ${step}`,
-            metadata: { agent, projectId },
-            input: { step },
-          })
-          activeSpans.set(step, span)
-        }
-      } catch { } // Safe
-    })
-
-    eventBus.on(WORKFLOW_EVENTS.STEP_COMPLETE, ({ step, output }) => {
-      // 1. Close LangFuse Span
-      try {
-        const span = activeSpans.get(step)
-        if (span) {
-          // Ensure output is never undefined for Langfuse
-          const safeOutput = output
-            ? typeof output === 'string'
-              ? output
-              : JSON.stringify(output)
-            : '(no output)'
-          span.end({ output: safeOutput })
-          activeSpans.delete(step)
-        }
-      } catch { } // Safe
-    })
-
-    // Log generation request detection (detection logic moved up before prompt construction)
     // Prepare context wrapper with memory for multi-turn conversations
     // See: https://mastra.ai/docs/agents/agent-memory
     const streamOptions: Record<string, unknown> = {
@@ -286,8 +182,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
     // Create SSE stream that useChatStream can parse
     const encoder = new TextEncoder()
     let fullText = ''
-    let toolCallSummary: string[] = [] // Track tool calls for Langfuse output
-    const toolCallStartTimes = new Map<string, number>() // Track tool call durations for Langfuse
+    const toolCallStartTimes = new Map<string, number>()
 
     // Track emitted actions to prevent duplicates (same tool + same section = skip)
     const emittedActionKeys = new Set<string>()
@@ -306,7 +201,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
           try {
             controller.enqueue(encoder.encode(data))
             return true
-          } catch (e) {
+          } catch (_e) {
             console.warn('[Stream] Enqueue failed, stream likely closed')
             isStreamClosed = true
             return false
@@ -319,7 +214,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
           isStreamClosed = true
           try {
             controller.close()
-          } catch (e) {
+          } catch (_e) {
             console.warn('[Stream] Close failed, already closed')
           }
         }
@@ -522,9 +417,6 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
 
                   console.log(`[Stream] Tool call: ${toolName}, args keys:`, Object.keys(toolArgs))
 
-                  // Track tool call for Langfuse output
-                  toolCallSummary.push(`Tool: ${toolName}`)
-
                   // Emit section_loading when update tools are called
                   const loadingSection = detectLoadingSection(toolName, toolArgs)
                   if (loadingSection) {
@@ -556,7 +448,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
                     typeof toolResult === 'string' ? toolResult.substring(0, 200) : toolResult
                   )
 
-                  // Parse tool result early - needed for both Langfuse and SSE events
+                  // Parse tool result early — needed for SSE events
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamically parsed JSON from tool results
                   let parsed: any
                   try {
@@ -565,34 +457,11 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
                     parsed = toolResult
                   }
 
-                  // Record tool call in Langfuse for observability (nested under generation)
-                  try {
-                    // Calculate duration from tool call start
-                    const startTime = toolCallStartTimes.get(toolName)
-                    const durationMs = startTime ? Date.now() - startTime : undefined
-                    toolCallStartTimes.delete(toolName) // Clean up
-
-                    recordToolCall({
-                      traceId,
-                      parentObservationId: generationId, // Link to parent generation
-                      toolName,
-                      args: payload?.args || {},
-                      result: parsed,
-                      error:
-                        parsed?.error ||
-                        (parsed?.message?.includes?.('Error') ? parsed.message : undefined),
-                      durationMs,
-                    })
-                  } catch {
-                    /* ignore tracing errors */
+                  // Calculate duration from tool call start
+                  const startTime = toolCallStartTimes.get(toolName)
+                  if (startTime) {
+                    toolCallStartTimes.delete(toolName)
                   }
-
-                  // Track tool result for Langfuse output
-                  const resultSummary =
-                    typeof toolResult === 'string'
-                      ? toolResult.substring(0, 200)
-                      : JSON.stringify(toolResult).substring(0, 200)
-                  toolCallSummary.push(`Result (${toolName}): ${resultSummary}...`)
 
                   // Send tool_result event with PARSED result for client
                   safeEnqueue(
@@ -688,7 +557,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
                               } else if (Array.isArray(value)) {
                                 // Handle arrays (e.g., plotTwists)
                                 linkedPayload[key] = await Promise.all(
-                                  value.map(async (item: any) => {
+                                  value.map(async (item: unknown) => {
                                     if (typeof item === 'string') {
                                       return await entityAutoLinker.autoLink(item, projectId)
                                     } else if (item && typeof item === 'object') {
@@ -772,9 +641,14 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
           } catch (streamIterationError: unknown) {
             // The fullStream iterator threw - extract error details and send to client
             console.error('Stream iteration error:', streamIterationError)
-            const err = streamIterationError as any
+            const err =
+              streamIterationError && typeof streamIterationError === 'object'
+                ? (streamIterationError as {
+                    error?: { code?: string; message?: string }
+                    message?: string
+                  })
+                : null
 
-            // Extract user-friendly error message
             let errorMessage = 'An error occurred while processing your request.'
             let errorCode = 'STREAM_ERROR'
 
@@ -786,7 +660,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
               errorMessage = err.error.message
               errorCode = err.error.code || 'API_ERROR'
             } else if (err?.message) {
-              errorMessage = getErrorMessage(err)
+              errorMessage = getErrorMessage(streamIterationError)
             }
 
             // Send error event to client
@@ -860,53 +734,9 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
           // Send complete event
           safeEnqueue(`data: ${JSON.stringify({ type: 'complete' })}\n\n`)
 
-          // End Langfuse generation and trace (safe - won't throw)
-          try {
-            // Build comprehensive output including text and tool calls - ensure no undefined values
-            // Use finalText (with auto-linked entities) for accurate tracing
-            const langfuseOutput = {
-              text: finalText || '(no text output)',
-              toolCalls: toolCallSummary.length > 0 ? toolCallSummary : ['(no tool calls)'],
-              summary: finalText
-                ? finalText.slice(0, 500)
-                : toolCallSummary.length > 0
-                  ? toolCallSummary.slice(0, 3).join(' | ')
-                  : '(empty response)',
-              entitiesLinked: finalText !== fullText, // Track if auto-linking was applied
-            }
-            generation?.end({ output: langfuseOutput })
-            trace?.update({
-              output: langfuseOutput,
-              input: promptWithContext || '(no input)', // Ensure trace input is also set
-            })
-            if (langfuseClient) {
-              try {
-                await langfuseClient.flush()
-              } catch { }
-            }
-          } catch {
-            /* ignore langfuse errors */
-          }
-
           safeClose()
         } catch (error) {
           console.error('Stream processing error:', error)
-
-          // Log error to Langfuse (safe - won't throw)
-          try {
-            generation?.end({
-              output: error instanceof Error ? error.message : 'Stream failed',
-              level: 'ERROR',
-              statusMessage: error instanceof Error ? error.message : 'Unknown error',
-            })
-            if (langfuseClient) {
-              try {
-                await langfuseClient.flush()
-              } catch { }
-            }
-          } catch {
-            /* ignore */
-          }
 
           safeEnqueue(
             `data: ${JSON.stringify({
@@ -945,7 +775,6 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
         agentName: 'Storyteller',
         recoverable: false,
       })
-      await flushObservability()
     } catch {
       /* ignore */
     }

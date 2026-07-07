@@ -12,7 +12,6 @@ import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { streamLoopCreator } from '@/domains/loop-creator/server'
 import { type LoopCreatorState } from '@/domains/loop-creator'
 import { HumanMessage, AIMessage } from '@langchain/core/messages'
-import { langfuse, isLangfuseEnabled } from '@/shared/observability/observability'
 
 export const maxDuration = 120
 export const runtime = 'nodejs'
@@ -37,7 +36,7 @@ interface ChatRequest {
   message: string
   projectId: string
   threadId?: string
-  sessionId?: string // Langfuse session ID for grouped traces
+  sessionId?: string // Mastra session ID for grouped traces
   userId?: string // User ID for tracking
   /** Recent conversation so the agent has context (avoids stateless replies) */
   recentMessages?: { role: 'user' | 'assistant'; content: string }[]
@@ -117,9 +116,6 @@ export async function POST(req: NextRequest) {
       threadId,
       context,
       recentMessages,
-      modelConfig,
-      sessionId: bodySessionId,
-      userId,
     } = body
 
     if (!message || !projectId) {
@@ -135,29 +131,6 @@ export async function POST(req: NextRequest) {
         status: 404,
         headers: { 'Content-Type': 'application/json' },
       })
-    }
-
-    // Generate Langfuse session ID for grouping traces
-    const langfuseSessionId = bodySessionId || `session-loop-creator-${projectId}`
-
-    // Create Langfuse trace with session for observability
-    let trace: ReturnType<typeof langfuse.trace> | null = null
-    if (isLangfuseEnabled) {
-      try {
-        trace = langfuse.trace({
-          name: 'loop-creator-chat',
-          sessionId: langfuseSessionId,
-          userId: userId || session.user.id,
-          metadata: {
-            projectId,
-            source: 'loop-creator',
-          },
-          tags: ['loop-creator', 'chat', `project:${projectId}`],
-        })
-        console.log(`[Langfuse] Created loop-creator trace in session ${langfuseSessionId}`)
-      } catch (e) {
-        console.warn('[Langfuse] Failed to create trace:', e)
-      }
     }
 
     const stream = new ReadableStream({

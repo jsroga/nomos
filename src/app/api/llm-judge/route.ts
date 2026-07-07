@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { registerCorePrompts } from '@/shared/agent-kernel/prompts/registry'
-import { ALL_SCORERS } from '@/evals/scorers'
+import { ALL_SCORERS } from '@/shared/agent-kernel/scorers'
 
 interface ConversationMessage {
   role: 'user' | 'assistant'

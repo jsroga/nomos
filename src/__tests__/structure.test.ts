@@ -105,7 +105,12 @@ describe('src/mastra CLI shim', () => {
   it('contains only index.ts (canonical entry is src/mastra.ts)', () => {
     if (!fs.existsSync(mastraDir)) return
     const entries = fs.readdirSync(mastraDir)
-    expect(entries, `src/mastra/ must be CLI shim only: ${entries.join(', ')}`).toEqual(['index.ts'])
+    const allowed = new Set(['index.ts', 'public'])
+    const unexpected = entries.filter(e => !allowed.has(e))
+    expect(
+      unexpected,
+      `src/mastra/ must be CLI shim only (index.ts, optional public/): ${entries.join(', ')}`,
+    ).toEqual([])
   })
 })
 

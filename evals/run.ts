@@ -14,7 +14,7 @@ import * as dotenv from 'dotenv'
 import * as fs from 'fs'
 import * as path from 'path'
 import { STORYTELLER_GOLDEN_DATASET, type ScorerId, type StorytellerGoldenExample } from './datasets/storyteller-golden'
-import type { EvalScorer } from './scorers'
+import type { EvalScorer } from '@/shared/agent-kernel/scorers'
 import type {
   ExampleLog,
   MultiVariantReport,
@@ -78,7 +78,7 @@ function buildScenarioMetrics(results: ScorerRunResult[]): ScenarioMetrics {
 }
 
 async function loadScorers() {
-  const { ALL_SCORERS } = await import('./scorers')
+  const { ALL_SCORERS } = await import('@/shared/agent-kernel/scorers')
   return ALL_SCORERS
 }
 
@@ -105,7 +105,7 @@ async function runEval(): Promise<MultiVariantReport> {
   const examples = sampleArray(allExamples, samples)
   const results: ScorerRunResult[] = []
 
-  console.log(`\n🧪 Mastra Eval Runner`)
+  console.log('\n🧪 Mastra Eval Runner')
   console.log(`   Examples: ${examples.length}`)
   console.log(`   Scorers: ${globalScorers.map(s => s.id).join(', ')}\n`)
 

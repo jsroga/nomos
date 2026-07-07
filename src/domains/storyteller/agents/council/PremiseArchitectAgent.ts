@@ -14,19 +14,19 @@
 
 import { z } from 'zod'
 import { Agent } from '@mastra/core/agent'
+import type { Mastra } from '@mastra/core/mastra'
 import {
   createAgentTrace,
   recordAgentGeneration,
   recordAgentThinking,
   recordAgentScore,
   withSpan,
-  langfuse,
 } from '@/shared/observability/observability'
 import { createMastraTraceId, getWorkflowTraceId } from '@/domains/storyteller/agents/orchestration/WorkflowContext'
 import { EPISODE_PREMISE_PROMPT, getRandomCreativeRiskExamples } from '@/domains/storyteller/prompts/personas/episode-premise'
 import { MODELS, IMPROVEMENT_LOOP } from '@/shared/agent-kernel/models'
 import { getMastraInstance } from '@/shared/agent-kernel'
-import { runImprovementLoop, judgeMazur, MazurJudgment } from '@/shared/agent-kernel/judging'
+import { runImprovementLoop, judgeMazur, MazurJudgment, type IterationResult } from '@/shared/agent-kernel/judging'
 import { ReferenceValidator } from '@/domains/storyteller/services/ReferenceValidatorService'
 
 /**
@@ -67,7 +67,6 @@ export const PremiseArchitectResponseSchema = z.object({
   confidence: z.number().min(0).max(1).describe('Confidence score 0-1'),
 })
 
-type EpisodePremise = z.infer<typeof EpisodePremiseSchema>
 export type PremiseArchitectResponse = z.infer<typeof PremiseArchitectResponseSchema>
 
 interface PremiseArchitectConfig {
@@ -81,7 +80,7 @@ interface PremiseArchitectConfig {
   /** Quality threshold to pass (0-1, default: 0.85) */
   qualityThreshold?: number
   /** Callback for each iteration (UI updates) */
-  onIteration?: (iteration: any) => void
+  onIteration?: (iteration: IterationResult) => void
 }
 
 interface GenerationResult {
@@ -124,7 +123,7 @@ export class PremiseArchitectAgent {
     })
 
       // Manually attach mastra instance for observability/memory without tools
-      ; (this.agent as any).mastra = m
+      ; (this.agent as Agent & { mastra?: Mastra }).mastra = m
 
     this.createAgentTrace()
   }
@@ -187,10 +186,16 @@ This request, emphasize this level of invention (random examples):\n- ${randomEx
         let currentText = responseObject
           ? JSON.stringify(responseObject, null, 2)
           : initialResponse.text
+        type GenerateResponseExtras = {
+          reasoning?: string
+          thinking?: string
+          steps?: Array<{ thinking?: string }>
+        }
+        const responseExtras = initialResponse as typeof initialResponse & GenerateResponseExtras
         const thinking =
-          (initialResponse as any).reasoning ||
-          (initialResponse as any).thinking ||
-          (initialResponse as any).steps?.[0]?.thinking
+          responseExtras.reasoning ||
+          responseExtras.thinking ||
+          responseExtras.steps?.[0]?.thinking
 
         recordAgentGeneration(
           id,
@@ -210,16 +215,6 @@ This request, emphasize this level of invention (random examples):\n- ${randomEx
         }
 
         // === STEP 2: Run Mazur Self-Improvement Loop ===
-        langfuse.event({
-          traceId: id,
-          name: 'mazur_loop_start',
-          input: {
-            initialContentLength: currentText.length,
-            maxIterations: this.config.maxIterations,
-            qualityThreshold: this.config.qualityThreshold,
-          },
-        })
-
         const loopResult = await runImprovementLoop(currentText, {
           maxIterations: this.config.maxIterations,
           qualityThreshold: this.config.qualityThreshold,
@@ -268,17 +263,6 @@ This request, emphasize this level of invention (random examples):\n- ${randomEx
         recordAgentScore(id, 'mazur_final', loopResult.finalScore, 'Final Mazur score')
         recordAgentScore(id, 'mazur_iterations', loopResult.totalIterations, 'Iterations needed')
 
-        langfuse.event({
-          traceId: id,
-          name: 'mazur_loop_complete',
-          output: {
-            exitReason: loopResult.exitReason,
-            iterations: loopResult.totalIterations,
-            converged: loopResult.converged,
-            finalScore: loopResult.finalScore,
-          },
-        })
-
         console.log(
           `[PremiseArchitect] Mazur loop complete: ${loopResult.exitReason} ` +
           `after ${loopResult.totalIterations} iterations. ` +
@@ -319,7 +303,7 @@ This request, emphasize this level of invention (random examples):\n- ${randomEx
       | 'logline'
       | 'thematicFocus'
       | 'transformation',
-    existingPremise: any,
+    existingPremise: Record<string, unknown>,
     context: string,
     traceId?: string
   ): Promise<{ text: string }> {
@@ -403,7 +387,7 @@ export async function createPremiseArchitectAgent(
     useMazurLoop?: boolean
     maxIterations?: number
     qualityThreshold?: number
-    onIteration?: (iteration: any) => void
+    onIteration?: (iteration: IterationResult) => void
   }
 ): Promise<PremiseArchitectAgent> {
   return PremiseArchitectAgent.create(modelName, options)

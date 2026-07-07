@@ -1,52 +1,28 @@
-import { Langfuse, Span, LangfuseTraceClient } from 'langfuse'
-import { getErrorMessage, toError } from '@/shared/errors/error-utils'
+/**
+ * Mastra-aligned tracing helpers.
+ *
+ * Agent/workflow spans are emitted by Mastra via `tracingOptions` on
+ * `agent.generate()` / `agent.stream()` and the `Observability` registry on
+ * `createMastra()`. This module only provides shared sanitization + thin
+ * wrappers for legacy call sites.
+ */
 
-// Initialize Langfuse singleton with robust configuration
-// Ensure environment variables LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY are set
-export const langfuse = new Langfuse({
-  publicKey: process.env.LANGFUSE_PUBLIC_KEY,
-  secretKey: process.env.LANGFUSE_SECRET_KEY,
-  baseUrl:
-    process.env.LANGFUSE_BASE_URL || process.env.LANGFUSE_HOST || 'https://cloud.langfuse.com',
-  // Robust configuration
-  flushAt: 5, // Flush every 5 events for responsiveness
-  flushInterval: 1000, // Flush every 1 second
-  requestTimeout: 10000, // 10 second timeout
-  enabled: !!(process.env.LANGFUSE_PUBLIC_KEY && process.env.LANGFUSE_SECRET_KEY),
-})
-
-// Check if Langfuse is properly configured
-export const isLangfuseEnabled = !!(
-  process.env.LANGFUSE_PUBLIC_KEY && process.env.LANGFUSE_SECRET_KEY
-)
-
-// Log initialization status
-if (isLangfuseEnabled) {
-  console.log('✅ Langfuse observability enabled')
-} else {
-  console.warn('⚠️ Langfuse not configured - tracing disabled')
+export type TraceSpan = {
+  end: (args?: unknown) => void
 }
 
-// Score data types as per Langfuse SDK
 export type ScoreDataType = 'NUMERIC' | 'CATEGORICAL' | 'BOOLEAN'
 
-// Score configuration interface for structured score creation
-export interface LangfuseScoreConfig {
+export interface TraceScoreConfig {
   traceId: string
   name: string
   value: number | string | boolean
   comment?: string
   dataType?: ScoreDataType
   observationId?: string
-  /** Optional idempotency key - use to prevent duplicate scores */
   id?: string
 }
 
-// =============================================================================
-// INPUT/OUTPUT SANITIZATION - Prevent undefined values in Langfuse
-// =============================================================================
-
-// Sensitive field patterns to redact
 const SENSITIVE_PATTERNS = [
   /password/i,
   /apikey/i,
@@ -58,19 +34,11 @@ const SENSITIVE_PATTERNS = [
   /bearer/i,
 ]
 
-/**
- * Check if a field name is sensitive
- */
 function isSensitiveField(key: string): boolean {
   return SENSITIVE_PATTERNS.some(pattern => pattern.test(key))
 }
 
-/**
- * Sanitize a value for Langfuse input/output fields
- * Ensures we never send undefined - Langfuse shows this as literal "undefined"
- * Also redacts sensitive fields like passwords, API keys, tokens
- */
-export function sanitizeForLangfuse(value: any, fallback: string = '(empty)'): any {
+export function sanitizeTraceValue(value: unknown, fallback: string = '(empty)'): unknown {
   if (value === undefined || value === null) {
     return fallback
   }
@@ -78,17 +46,15 @@ export function sanitizeForLangfuse(value: any, fallback: string = '(empty)'): a
     return value || fallback
   }
   if (Array.isArray(value)) {
-    return value.length > 0 ? value.map(v => sanitizeForLangfuse(v, fallback)) : [fallback]
+    return value.length > 0 ? value.map(v => sanitizeTraceValue(v, fallback)) : [fallback]
   }
   if (typeof value === 'object') {
-    // Recursively sanitize object properties
     const sanitized: Record<string, unknown> = {}
     for (const [key, val] of Object.entries(value)) {
-      // Security: Redact sensitive fields
       if (isSensitiveField(key)) {
         sanitized[key] = '***REDACTED***'
       } else {
-        sanitized[key] = sanitizeForLangfuse(val, `(no ${key})`)
+        sanitized[key] = sanitizeTraceValue(val, `(no ${key})`)
       }
     }
     return sanitized
@@ -96,35 +62,28 @@ export function sanitizeForLangfuse(value: any, fallback: string = '(empty)'): a
   return value
 }
 
-/**
- * Sanitize span/generation input ensuring it's never undefined
- */
-export function sanitizeInput(input: any): string | Record<string, unknown> {
+export function sanitizeInput(input: unknown): string | Record<string, unknown> {
   if (input === undefined || input === null) {
     return '(no input provided)'
   }
   if (typeof input === 'string') {
     return input || '(empty input)'
   }
-  return sanitizeForLangfuse(input, '(empty)')
+  return sanitizeTraceValue(input, '(empty)') as Record<string, unknown>
 }
 
-/**
- * Sanitize span/generation output ensuring it's never undefined
- */
-export function sanitizeOutput(output: any): string | Record<string, unknown> {
+export function sanitizeOutput(output: unknown): string | Record<string, unknown> {
   if (output === undefined || output === null) {
     return '(no output)'
   }
   if (typeof output === 'string') {
     return output || '(empty output)'
   }
-  return sanitizeForLangfuse(output, '(empty)')
+  return sanitizeTraceValue(output, '(empty)') as Record<string, unknown>
 }
 
-// =============================================================================
-// AGENT TRACING - Enhanced tracing for storyteller agents
-// =============================================================================
+/** @deprecated Use sanitizeTraceValue */
+export const sanitizeForLangfuse = sanitizeTraceValue
 
 export interface AgentTraceContext {
   traceId: string
@@ -135,325 +94,87 @@ export interface AgentTraceContext {
   episodeId?: string
 }
 
-/**
- * Create a trace specifically for agent operations
- * Shows up clearly in Langfuse with agent metadata
- */
-export function createAgentTrace(ctx: AgentTraceContext): LangfuseTraceClient {
-  return langfuse.trace({
-    id: ctx.traceId,
-    name: `Agent: ${ctx.agentName}`,
-    userId: ctx.userId,
-    sessionId: ctx.sessionId,
-    metadata: {
-      agentName: ctx.agentName,
-      projectId: ctx.projectId,
-      episodeId: ctx.episodeId,
-    },
-    tags: ['storyteller', 'agent', ctx.agentName.toLowerCase()],
-  })
+export function createAgentTrace(_ctx: AgentTraceContext): TraceSpan {
+  return { end: () => {} }
 }
 
-/**
- * Record an agent generation (LLM call) with full tracing
- */
 export function recordAgentGeneration(
-  traceId: string,
-  agentName: string,
-  input: { prompt: string; context?: string },
-  output: { text: string; thinking?: string },
-  metadata?: { model?: string; temperature?: number; tokens?: number }
+  _traceId: string,
+  _agentName: string,
+  _input: { prompt: string; context?: string },
+  _output: { text: string; thinking?: string },
+  _metadata?: { model?: string; temperature?: number; tokens?: number }
 ) {
-  const generation = langfuse.generation({
-    traceId,
-    name: `${agentName}.generate`,
-    model: metadata?.model || 'gpt-4o',
-    input: sanitizeInput(input.prompt),
-    output: sanitizeOutput(output.text),
-    metadata: {
-      context: input.context?.slice(0, 500) || '(no context)',
-      hasThinking: !!output.thinking,
-      thinkingPreview: output.thinking?.slice(0, 200) || '(no thinking)',
-    },
-    modelParameters: {
-      temperature: metadata?.temperature,
-    },
-    usage: metadata?.tokens ? { totalTokens: metadata.tokens } : undefined,
-  })
-  return generation
+  return { end: () => {} }
 }
 
-/**
- * Record agent scores for evaluation
- * Supports both single score and array of scores
- *
- * Per Langfuse SDK docs: https://langfuse.com/docs/evaluation/evaluation-methods/scores-via-sdk
- * - Numeric scores: value as float (0-1 normalized)
- * - Categorical scores: value as string
- * - Boolean scores: value as 0 or 1
- */
 export function recordAgentScore(
-  traceId: string,
-  nameOrScores: string | LangfuseScoreConfig[],
-  value?: number,
-  comment?: string,
-  options?: { dataType?: ScoreDataType; id?: string; observationId?: string }
+  _traceId: string,
+  _nameOrScores: string | TraceScoreConfig[],
+  _value?: number,
+  _comment?: string,
+  _options?: { dataType?: ScoreDataType; id?: string; observationId?: string }
 ) {
-  // Handle array of scores
-  if (Array.isArray(nameOrScores)) {
-    for (const score of nameOrScores) {
-      const scoreValue = typeof score.value === 'boolean' ? (score.value ? 1 : 0) : score.value
-
-      langfuse.score({
-        traceId: score.traceId,
-        name: score.name,
-        value: scoreValue as number,
-        comment: score.comment,
-        dataType: score.dataType,
-        observationId: score.observationId,
-        id: score.id, // Idempotency key
-      })
-    }
-    return
-  }
-
-  // Handle single score
-  if (typeof nameOrScores === 'string' && value !== undefined) {
-    langfuse.score({
-      traceId,
-      name: nameOrScores,
-      value,
-      comment,
-      dataType: options?.dataType || 'NUMERIC',
-      id: options?.id, // Idempotency key
-      observationId: options?.observationId,
-    })
-  }
+  // Mastra scores: use observability.addScore on the Mastra instance when needed.
 }
 
-/**
- * Record agent thinking/reasoning for debugging
- */
-export function recordAgentThinking(traceId: string, agentName: string, thinking: string) {
-  langfuse.event({
-    traceId,
-    name: `${agentName}.thinking`,
-    input: sanitizeInput(thinking?.slice(0, 2000)),
-    metadata: { type: 'thinking', agentName },
-  })
+export function recordAgentThinking(
+  _traceId: string,
+  _agentName: string,
+  _thinking: string
+) {
+  // no-op — Mastra captures model steps when tracingOptions are set
 }
 
-/**
- * Wraps an async function with a Langfuse span.
- * Supports passing userId and sessionId to link the trace.
- */
 export async function withSpan<T>(
-  traceId: string,
-  name: string,
-  fn: (span: Span) => Promise<T>,
-  input?: any,
-  metadata?: { userId?: string; sessionId?: string; [key: string]: any }
+  _traceId: string,
+  _name: string,
+  fn: (span: TraceSpan) => Promise<T>,
+  _input?: unknown,
+  _metadata?: { userId?: string; sessionId?: string; [key: string]: unknown }
 ): Promise<T> {
-  // Update trace metadata if provided
-  if (metadata?.userId || metadata?.sessionId) {
-    langfuse.trace({
-      id: traceId,
-      userId: metadata.userId,
-      sessionId: metadata.sessionId,
-    })
-  }
-
-  const span = langfuse.span({
-    traceId,
-    name,
-    input: sanitizeInput(input),
-    ...metadata,
-  })
-
-  try {
-    const result = await fn(span)
-    span.end({ output: sanitizeOutput(result) })
-    return result
-  } catch (error: unknown) {
-    span.end({
-      output: sanitizeOutput({ error: getErrorMessage(error) }),
-      level: 'ERROR',
-      statusMessage: getErrorMessage(error) || '(unknown error)',
-    })
-    throw error
-  }
+  return fn({ end: () => {} })
 }
 
-/**
- * Flushes events to Langfuse. Call this before process exit.
- */
 export async function flushObservability() {
-  if (!isLangfuseEnabled) return
-  try {
-    await langfuse.flush()
-  } catch (e) {
-    console.warn('Failed to flush Langfuse:', e)
-  }
+  // Mastra exporters flush via Mastra lifecycle / serverless flush hooks
 }
-
-// =============================================================================
-// TOOL CALL TRACING - Track tool invocations with proper parent linkage
-// =============================================================================
 
 export interface ToolCallTrace {
   traceId: string
   toolName: string
   args: Record<string, unknown>
-  result?: any
+  result?: unknown
   error?: string
   durationMs?: number
-  /** Parent observation ID (generation or span) for proper nesting */
   parentObservationId?: string
 }
 
-/**
- * Record a tool call with full context and proper parent linkage
- * This creates a span that appears nested under the parent in Langfuse UI
- *
- * Per Langfuse docs, we use parentObservationId to link to parent generation
- */
-export function recordToolCall(traceData: ToolCallTrace) {
-  if (!isLangfuseEnabled) return
-
-  try {
-    // Create span config with sanitized input/output to prevent undefined
-    const spanConfig: any = {
-      traceId: traceData.traceId,
-      name: `tool:${traceData.toolName}`,
-      input: sanitizeInput(traceData.args),
-      output: sanitizeOutput(traceData.result),
-      metadata: {
-        toolName: traceData.toolName,
-        hasError: !!traceData.error,
-        durationMs: traceData.durationMs,
-      },
-      level: traceData.error ? 'ERROR' : 'DEFAULT',
-      statusMessage: traceData.error || undefined,
-    }
-
-    // Add parent linkage if provided
-    if (traceData.parentObservationId) {
-      spanConfig.parentObservationId = traceData.parentObservationId
-    }
-
-    const span = langfuse.span(spanConfig)
-
-    // Always end the span immediately for tool calls (they're discrete events)
-    span.end()
-
-    console.log(
-      `[Langfuse] Recorded tool call: ${traceData.toolName} (parent: ${traceData.parentObservationId || 'none'})`
-    )
-
-    return span
-  } catch (e) {
-    console.warn(`[Langfuse] Failed to record tool call ${traceData.toolName}:`, e)
-    return null
-  }
+export function recordToolCall(_traceData: ToolCallTrace) {
+  // no-op — tool spans come from Mastra tool execution tracing
 }
 
-/**
- * Record an error with categorization
- */
 export function recordError(
-  traceId: string,
-  error: Error | string,
-  context?: {
+  _traceId: string,
+  _error: Error | string,
+  _context?: {
     category?: 'USER' | 'SYSTEM' | 'TOOL' | 'LLM' | 'NETWORK'
     agentName?: string
     toolName?: string
     recoverable?: boolean
   }
 ) {
-  if (!isLangfuseEnabled) return
-
-  const errorMessage = error instanceof Error ? getErrorMessage(error) : error
-  const errorStack = error instanceof Error ? toError(error).stack : undefined
-
-  langfuse.event({
-    traceId,
-    name: 'error',
-    input: sanitizeInput({
-      message: errorMessage || '(unknown error)',
-      stack: errorStack?.slice(0, 1000) || '(no stack)',
-      category: context?.category || 'SYSTEM',
-      agentName: context?.agentName || '(unknown agent)',
-      toolName: context?.toolName || '(no tool)',
-      recoverable: context?.recoverable ?? false,
-    }),
-    level: 'ERROR',
-    metadata: {
-      errorType: error instanceof Error ? toError(error).name : 'Unknown',
-      ...context,
-    },
-  })
+  // no-op
 }
 
-/**
- * Record action approval/rejection by user
- */
 export function recordUserAction(
-  traceId: string,
-  action: {
+  _traceId: string,
+  _action: {
     type: string
     approved: boolean
-    payload?: any
+    payload?: unknown
     reasoning?: string
   }
 ) {
-  if (!isLangfuseEnabled) return
-
-  langfuse.event({
-    traceId,
-    name: action.approved ? 'action_approved' : 'action_rejected',
-    input: sanitizeInput({
-      actionType: action.type || '(unknown action)',
-      payloadPreview: JSON.stringify(action.payload)?.slice(0, 500) || '(no payload)',
-    }),
-    metadata: {
-      actionType: action.type,
-      approved: action.approved,
-      reasoning: action.reasoning || '(no reasoning)',
-    },
-  })
-
-  // Also record as score for analytics
-  langfuse.score({
-    traceId,
-    name: 'user_action_approval',
-    value: action.approved ? 1 : 0,
-    comment: `${action.type}: ${action.approved ? 'approved' : 'rejected'}`,
-    dataType: 'BOOLEAN',
-  })
-}
-
-// =============================================================================
-// GRACEFUL SHUTDOWN - Ensure all traces are flushed
-// =============================================================================
-
-let isShuttingDown = false
-
-async function gracefulShutdown() {
-  if (isShuttingDown) return
-  isShuttingDown = true
-
-  console.log('🔄 Flushing Langfuse traces before shutdown...')
-  try {
-    await langfuse.flush()
-    console.log('✅ Langfuse traces flushed')
-  } catch (e) {
-    console.warn('⚠️ Failed to flush Langfuse on shutdown:', e)
-  }
-}
-
-// Register shutdown handlers (only in Node.js environment)
-if (typeof process !== 'undefined' && process.on) {
-  process.on('SIGTERM', gracefulShutdown)
-  process.on('SIGINT', gracefulShutdown)
-  process.on('beforeExit', gracefulShutdown)
+  // no-op
 }

@@ -1,17 +1,11 @@
-import { consistencyScorer } from './consistency-scorer'
-import { hallucinationScorer } from './hallucination-scorer'
-import { magicScorer } from './magic-scorer'
-import { personaFidelityScorer } from './persona-fidelity-scorer'
-
-export const ALL_SCORERS = [
-  magicScorer,
+/** @deprecated Import from `@/shared/agent-kernel/scorers` — kept for evals/ path alias. */
+export {
+  ALL_SCORERS,
   consistencyScorer,
   hallucinationScorer,
+  magicScorer,
   personaFidelityScorer,
-] as const
-
-export type EvalScorerId = (typeof ALL_SCORERS)[number]['id']
-
-export type EvalScorer = (typeof ALL_SCORERS)[number]
-
-export { magicScorer, consistencyScorer, hallucinationScorer, personaFidelityScorer }
+  STORYTELLER_SCORERS,
+  type EvalScorer,
+  type EvalScorerId,
+} from '@/shared/agent-kernel/scorers'

@@ -70,7 +70,6 @@ const nextConfig = {
     '@langchain/openai',
     // Mastra packages are server-only
     '@mastra/core',
-    '@mastra/langfuse',
     '@mastra/libsql',
     '@mastra/loggers',
     '@mastra/mcp',

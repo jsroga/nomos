@@ -8,7 +8,7 @@
 import { generateObject } from 'ai'
 import { z } from 'zod'
 import { getJudgingModel, PERSONAS, MODELS } from '../models'
-import { langfuse, withSpan } from '../../observability'
+import { withSpan } from '../../observability'
 
 // =============================================================================
 // JUDGMENT SCHEMAS
@@ -93,7 +93,7 @@ export async function judgeWithPersona(
   traceId: string,
   context?: string
 ): Promise<PersonaJudgment> {
-  const persona = PERSONAS[personaId]
+  const _persona = PERSONAS[personaId]
 
   return withSpan(traceId, `MazurJudge.${personaId}`, async span => {
     const model = getJudgingModel('primary')
@@ -113,14 +113,6 @@ Remember: Your job is to catch AI slop before it reaches the audience.`
       schema: PersonaJudgmentSchema,
       prompt,
       temperature: MODELS.judging.temperature,
-    })
-
-    // Log to Langfuse
-    langfuse.score({
-      traceId,
-      name: `mazur_${persona.dimension.toLowerCase()}`,
-      value: result.object.score,
-      comment: result.object.quote,
     })
 
     span.end({ output: result.object })
@@ -188,11 +180,6 @@ export async function judgeMazur(
       verdict,
       refinementPriority,
     }
-
-    // Log overall scores to Langfuse
-    langfuse.score({ traceId, name: 'mazur_overall', value: overallScore })
-    langfuse.score({ traceId, name: 'mazur_slop', value: slopScore, comment: 'Lower is better' })
-    langfuse.score({ traceId, name: 'mazur_originality', value: originality.score })
 
     span.end({ output: { overallScore, slopScore, verdict } })
     return judgment

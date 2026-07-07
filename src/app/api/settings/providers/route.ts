@@ -21,7 +21,6 @@ export async function GET() {
       meshy: !!process.env.MESHY_API_KEY,
       fal: !!process.env.FAL_KEY,
       voyage: !!process.env.VOYAGE_API_KEY,
-      langfuse: !!process.env.LANGFUSE_PUBLIC_KEY,
       langsmith: !!process.env.LANGCHAIN_API_KEY,
     },
   })

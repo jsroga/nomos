@@ -28,7 +28,7 @@ import {
   loadInterruptedStream,
   clearInterruptedStream,
 } from '@/shared/data/chat-persistence'
-import { generateSessionId } from '@/shared/data/langfuse-session'
+import { generateSessionId } from '@/shared/data/trace-session'
 import { getErrorMessage, toError } from '@/shared/errors/error-utils'
 
 const CHAT_DEBUG = process.env.NEXT_PUBLIC_CHAT_DEBUG === '1'
@@ -37,9 +37,9 @@ interface UseChatStreamProps {
   initialMessages?: Message[]
   onAction?: (action: AgentAction) => Promise<void>
   onQuestion?: (question: QuestionSession) => void
-  onStreamingUpdate?: (data: any) => void
+  onStreamingUpdate?: (data: Record<string, unknown>) => void
   onCitationsUpdate?: (citations: Citation[]) => void
-  onGroundingUpdate?: (score: number, details: any) => void
+  onGroundingUpdate?: (score: number, details: Record<string, unknown>) => void
   /** Called when a specific bible section starts/stops loading */
   onSectionLoading?: (section: string, loading: boolean, message?: string) => void
   /** Called when streaming completes (success or error) */
@@ -437,7 +437,7 @@ export function useChatStream({
   /**
    * Process section progress events
    */
-  const processSectionEvent = useCallback((data: any) => {
+  const processSectionEvent = useCallback((data: Record<string, unknown>) => {
     if (!verboseUiRef.current) return
     if (data.type === 'section_start') {
       setStreamingSections(prev => {
@@ -492,7 +492,7 @@ export function useChatStream({
    * Process citation events
    */
   const processCitationEvent = useCallback(
-    (data: any) => {
+    (data: Record<string, unknown>) => {
       if (data.type === 'citation' || data.type === 'citations') {
         const newCitations: Citation[] = Array.isArray(data.citations)
           ? data.citations
@@ -1006,7 +1006,7 @@ export function useChatStream({
   )
 
   const sendMessage = useCallback(
-    async (endpoint: string, payload: any, customHeaders: Record<string, string> = {}) => {
+    async (endpoint: string, payload: Record<string, unknown>, customHeaders: Record<string, string> = {}) => {
       setIsSending(true)
       abortControllerRef.current = new AbortController()
 

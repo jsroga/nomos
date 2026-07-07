@@ -2,7 +2,7 @@
  * SELF-IMPROVEMENT LOOP
  *
  * Iterative refinement using Mazur Framework judges.
- * Up to N iterations, with full Langfuse visibility.
+ * Up to N iterations, with Mastra tracing via withSpan.
  *
  * The loop continues until:
  * 1. Quality threshold reached (default 0.85)
@@ -15,7 +15,7 @@ import { generateText, generateObject } from 'ai'
 import { z } from 'zod'
 import { v4 as uuidv4 } from 'uuid'
 import { getGenerationModel, getJudgingModel, MODELS, IMPROVEMENT_LOOP, PERSONAS } from '../models'
-import { langfuse, withSpan, createAgentTrace } from '../../observability'
+import { withSpan, createAgentTrace } from '../../observability'
 import { judgeMazur, MazurJudgment } from './mazur-judge'
 
 // =============================================================================
@@ -186,15 +186,6 @@ Plan specific changes that will improve the score. Focus on the weakest dimensio
       temperature: MODELS.judging.temperature,
     })
 
-    // Log plan to Langfuse
-    langfuse.event({
-      traceId,
-      name: 'refinement_plan',
-      input: { judgment: { overall: judgment.overallScore, slop: judgment.slopScore } },
-      output: result.object,
-      metadata: { confidence: result.object.confidence },
-    })
-
     span.end({ output: result.object })
     return result.object
   })
@@ -218,17 +209,10 @@ export async function runImprovementLoop(
     onIteration,
   } = config
 
-  // Create trace in Langfuse
   createAgentTrace({
     traceId,
     agentName: 'ImprovementLoop',
     projectId,
-  })
-
-  langfuse.event({
-    traceId,
-    name: 'loop_started',
-    input: { maxIterations, qualityThreshold, contentLength: initialContent.length },
   })
 
   const iterations: IterationResult[] = []
@@ -240,22 +224,6 @@ export async function runImprovementLoop(
     await withSpan(traceId, `iteration_${i}`, async span => {
       // === STEP 1: Judge current content ===
       const judgment = await judgeMazur(currentContent, traceId)
-
-      // Log iteration to Langfuse
-      langfuse.event({
-        traceId,
-        name: `iteration_${i}`,
-        input: { content: currentContent.slice(0, 500) + '...' },
-        output: {
-          depth: judgment.depth.score,
-          structure: judgment.structure.score,
-          feeling: judgment.feeling.score,
-          overall: judgment.overallScore,
-          slop: judgment.slopScore,
-          verdict: judgment.verdict,
-        },
-        metadata: { iteration: i },
-      })
 
       const delta = judgment.overallScore - previousScore
       const improved = delta > 0
@@ -279,11 +247,6 @@ export async function runImprovementLoop(
       // 1. Quality threshold reached
       if (judgment.overallScore >= qualityThreshold && judgment.slopScore < 0.2) {
         exitReason = 'threshold_reached'
-        langfuse.event({
-          traceId,
-          name: 'loop_converged',
-          output: { reason: 'threshold_reached', iterations: i, finalScore: judgment.overallScore },
-        })
         span.end({ output: { exit: 'threshold_reached' } })
         return
       }
@@ -293,11 +256,6 @@ export async function runImprovementLoop(
         exitReason = 'regression'
         // Revert to previous content
         currentContent = iterations[i - 2].content
-        langfuse.event({
-          traceId,
-          name: 'loop_regression',
-          output: { reason: 'regression', iterations: i, delta },
-        })
         span.end({ output: { exit: 'regression' } })
         return
       }
@@ -305,18 +263,13 @@ export async function runImprovementLoop(
       // 3. Delta too small (plateau)
       if (i > 2 && Math.abs(delta) < minImprovementDelta) {
         exitReason = 'delta_too_small'
-        langfuse.event({
-          traceId,
-          name: 'loop_plateau',
-          output: { reason: 'delta_too_small', iterations: i, delta },
-        })
         span.end({ output: { exit: 'delta_too_small' } })
         return
       }
 
       // === STEP 2: Plan refinement (Cursor-style reasoning) ===
       if (judgment.verdict !== 'PASS') {
-        const plan = await planRefinement(currentContent, judgment, traceId)
+        await planRefinement(currentContent, judgment, traceId)
 
         // === STEP 3: Execute refinement ===
         const model = getGenerationModel('creative')
@@ -330,15 +283,6 @@ export async function runImprovementLoop(
 
         currentContent = refined.text
         previousScore = judgment.overallScore
-
-        langfuse.generation({
-          traceId,
-          name: `refinement_${i}`,
-          model: MODELS.generation.creative,
-          input: refinementPrompt.slice(0, 1000),
-          output: refined.text.slice(0, 1000),
-          metadata: { iteration: i, plan: plan.strategy },
-        })
       }
 
       span.end({ output: { score: judgment.overallScore, delta } })
@@ -350,26 +294,6 @@ export async function runImprovementLoop(
 
   // Final judgment
   const finalJudgment = iterations[iterations.length - 1].judgment
-
-  // Log final result
-  langfuse.event({
-    traceId,
-    name: 'loop_completed',
-    output: {
-      exitReason,
-      totalIterations: iterations.length,
-      finalScore: finalJudgment.overallScore,
-      slopScore: finalJudgment.slopScore,
-      converged: exitReason === 'threshold_reached',
-    },
-  })
-
-  // Record final scores
-  langfuse.score({ traceId, name: 'final_overall', value: finalJudgment.overallScore })
-  langfuse.score({ traceId, name: 'final_slop', value: finalJudgment.slopScore })
-  langfuse.score({ traceId, name: 'iterations_needed', value: iterations.length / maxIterations })
-
-  await langfuse.flush()
 
   return {
     finalContent: currentContent,

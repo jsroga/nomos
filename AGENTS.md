@@ -30,7 +30,8 @@ The dark-factory execute loop has three interchangeable runners that share the *
 | Tools | `src/domains/*/agents/tools`, `src/shared/agent-kernel/mastra/tools/` |
 | Models | `src/agent-core/models.ts`, domain `ModelConfig/` |
 | Memory | `@mastra/memory` + `PostgresStore` via shared storage |
-| Observability | `@mastra/langfuse`, `src/agent-core/observability.ts` |
+| Observability | `@mastra/observability`, `src/shared/observability/observability.ts` |
+| Evals / scorers | `@mastra/core/evals` `createScorer`, `src/shared/agent-kernel/scorers/` |
 | Prompts | `src/prompts/*`, domain `prompts/` |
 
 ## Tool pattern
