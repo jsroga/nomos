@@ -7,6 +7,8 @@ const reactCompiler = require('eslint-plugin-react-compiler')
 const prettier = require('eslint-config-prettier')
 const unusedImports = require('eslint-plugin-unused-imports')
 
+const strictTypeScriptRules = typescript.configs.strict.rules
+
 module.exports = [
   {
     ignores: [
@@ -92,10 +94,11 @@ module.exports = [
     },
     rules: {
       ...typescript.configs.recommended.rules,
+      ...strictTypeScriptRules,
       ...react.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
       ...prettier.rules,
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': 'off',
       'unused-imports/no-unused-imports': 'error',
       // Dead code: use 'error' to fail CI on unused vars (after fixing existing warnings).

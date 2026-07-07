@@ -11,8 +11,9 @@ Run these before claiming a task is done. Failures must be fixed, not bypassed.
 ## Full repo
 
 ```bash
-npm run typecheck      # tsc --noEmit
-npm run lint           # ESLint
+npm run typecheck      # tsc --noEmit (strict, no implicit any)
+npm run lint           # ESLint strict + no-explicit-any error
+npm run check:lint     # alias for full-repo ESLint
 npm run test:unit      # Vitest
 npx knip               # dead code / unused exports
 ```

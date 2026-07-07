@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Husky pre-commit entry: architecture → docs → typecheck → unit tests → prod build.
+ * Husky pre-commit entry: architecture → docs → typecheck → eslint → unit tests → prod build.
  */
 import { spawnSync } from 'node:child_process'
 
@@ -27,6 +27,7 @@ function main() {
   run('architecture layout', 'node', ['scripts/check-architecture.mjs'])
   run('docs sync', 'node', ['scripts/check-docs-updated.mjs'])
   run('typecheck (staged)', 'node', ['scripts/pre-commit-typecheck.mjs'])
+  run('eslint (staged)', 'node', ['scripts/pre-commit-lint.mjs'])
   run('unit tests', 'npm', ['run', 'test:unit'])
   run('production build', 'npm', ['run', 'build'])
 

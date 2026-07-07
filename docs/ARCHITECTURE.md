@@ -38,6 +38,13 @@ Dev-time eval harness lives in top-level `evals/` (excluded from app `tsconfig`)
 Static legal copy lives in `src/domains/marketing/legal/` (served at `/terms` and `/privacy`).
 Structure is enforced by `src/__tests__/structure.test.ts` and `src/__tests__/src-topology.ts`.
 
+### TypeScript & ESLint (strict)
+
+- **`tsconfig.json`**: `strict: true` (includes `noImplicitAny` — implicit `any` is a compile error).
+- **`eslint.config.js`**: `@typescript-eslint/strict` rules; `@typescript-eslint/no-explicit-any` is **`error`** (blocks `: any`, `as any`, etc.).
+- **Pre-commit**: staged-file ESLint via `scripts/pre-commit-lint.mjs`; full repo: `npm run lint` / `npm run check:lint`.
+- Legacy files may still use `@ts-nocheck` during migration; new code must not add `any` or disable typing without a tracked exception.
+
 ---
 
 ## System Context Diagram
