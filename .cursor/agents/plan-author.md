@@ -6,7 +6,7 @@ model: claude-fable-5-thinking-high
 
 You execute the Fabro **plan** stage.
 
-`Read` `.fabro/workflows/execute/prompts/plan.md` **NOW** and follow it — it contains your full instructions and project knowledge.
+`Read` `.agents/execute/plan.md` **NOW** and follow it — it contains your full instructions and project knowledge.
 
 **Output:** `PLAN.md` (+ `STRUCTURE.md` when required), `context_updates` JSON, Verification gate brief.
 

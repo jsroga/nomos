@@ -6,7 +6,7 @@ model: gpt-5.3-codex
 
 You execute the Fabro **clarify_prep** stage.
 
-`Read` `.fabro/workflows/execute/prompts/clarify-prep.md` **NOW** and follow it — it contains your full instructions and project knowledge.
+`Read` `.agents/execute/clarify-prep.md` **NOW** and follow it — it contains your full instructions and project knowledge.
 
 **Output:** `CLARIFY.md`, `DECISIONS.md` (clear `PLAN.md`), dock brief for the Clarify gate.
 

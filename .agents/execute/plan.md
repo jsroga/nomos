@@ -33,6 +33,8 @@ touch a dependency-rule boundary or an invariant as a risk.
 
 Plan Author **discovers the codebase independently** via spot-checks below.
 
+{% include "partials/session-scratch.md" %}
+
 ## What you know about this project
 
 ### Architecture invariants (must honor in every plan item)

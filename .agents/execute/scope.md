@@ -130,6 +130,8 @@ git status --short
 If `find` returns nothing for a single-module run, report that — do not substitute
 another module.
 
+{% include "partials/session-scratch.md" %}
+
 ## Phase 2 — write `.local/findings/scope.md` (facts + questions only)
 
 After shell output, write **`.local/findings/scope.md`** with `write_file`. Read it first

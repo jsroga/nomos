@@ -58,8 +58,9 @@ MCP reference: [docs/MCP_API.md](docs/MCP_API.md).
 The Fabro `execute` loop runs three ways — same stages, prompts, gates, and verify:
 
 ```bash
-# Interactive (Cursor Agent)
+# Interactive (Cursor Agent or Claude Code)
 /execute <module>                         # e.g. /execute storyteller
+/scope-runner                             # or invoke any stage subagent directly
 
 # Sandboxed (Docker / Daytona)
 fabro run .fabro/workflows/execute/workflow.toml -I module=<module>
@@ -70,7 +71,7 @@ npx tsx src/shared/agent-kernel/cursor-runner.ts --module <module>
 npx tsx src/shared/agent-kernel/cursor-runner.ts --module <module> --cloud --repo owner/repo --auto-create-pr
 ```
 
-Cursor config: `.cursor/rules/*.mdc` (scoped), `.cursor/agents/*.md` (5 stage subagents), `.cursor/skills/execute/SKILL.md` (`/execute`), `.cursor/hooks.json` (verify-on-edit + destructive-command guard), `.cursor/mcp.json` (trigger + fabro + world-building-kit), `.cursor/automations/` (PR verify, nightly sweep — opt-in drafts; materialize via `/automate`). Trigger.dev task: `cursor-execute` (`src/trigger/cursor-execute.task.ts`). Stage prompts are the single source of truth in `.fabro/workflows/execute/prompts/`.
+Shared prompts: **`.agents/execute/`** · skills: **`.agents/skills/`** (Cursor/Claude symlinks; Fabro via `.fabro/skills`). Thin adapters: `.cursor/agents/*.md`, `.claude/agents/*.md`. Fabro: `workflow.fabro` → `@../../../.agents/execute/<stage>.md`. See [.agents/README.md](.agents/README.md).
 
 ## Quality gates
 

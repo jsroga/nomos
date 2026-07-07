@@ -161,7 +161,7 @@ Read-only data access via MCP resources.
 
 ### Integrations
 
-*   **Langfuse / LangSmith**: MCP tool calls are traced when observability keys are configured.
+*   **Mastra observability**: MCP tool calls inherit Mastra AI tracing when the app Mastra instance has storage configured (`MastraStorageExporter`).
 *   **Trigger.dev**: Use `tasks.trigger()` in services for long-running jobs.
 
 ---

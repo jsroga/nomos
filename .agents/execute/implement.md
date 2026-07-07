@@ -5,6 +5,10 @@ chose **[A] Approve & build** at Verification.
 
 **Model:** `codex` (OpenAI). Do not substitute other models.
 
+## Where this stage sits
+
+{% include "partials/configuration-diagram.md" %}
+
 ## What you know about this project
 
 ### Code rules (lint-enforced — violations fail verify)
@@ -66,12 +70,16 @@ and `orchestration/StorytellerPlanner.ts` — left the tree non-compiling while 
 
 ## Fabro skills — use them
 
-Project skills live in `.fabro/skills/` and are available via the **`use_skill`**
+Project skills live in **`.agents/skills/`** (Fabro resolves via `.fabro/skills` symlink) and are available via the **`use_skill`**
 tool (also slash syntax like `/refactor`). **Call `use_skill` at the start** when a
 task matches — do not reinvent procedures from memory.
 
 | When | Skill name |
 | --- | --- |
+| Reshape agents/orchestration/workflows | `agent-sprawl-audit` then `mastra-workflow` |
+| Touch storyteller SSE / chat stream route | `sse-wire-contract` |
+| Change evals / golden dataset / scorers | `storyteller-eval-golden`; craft rubrics → `craft-scorer-author` |
+| Clean up or extend storyteller E2E | `e2e-storyteller-audit` |
 | Layer moves, extracting modules | `refactor` |
 | New/changed tests | `write-tests` |
 | Drizzle/schema/API boundaries | `services-audit` |
@@ -94,6 +102,8 @@ If `UX.md` is absent (backend-only increment), skip `component-audit` and
 4. **`UX.md`** — only if present; skip if backend-only.
 
 **Do not read** `.local/findings/scope.md` — Scope is for Clarify only.
+
+{% include "partials/session-scratch.md" %}
 
 ## Folder reshape runs (structure + referrers)
 

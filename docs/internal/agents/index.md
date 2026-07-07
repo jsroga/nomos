@@ -36,7 +36,7 @@ Agents load Mastra **Workspace** skills (SKILL.md under storyteller prompts) on 
 
 ## Debugging
 
-1. Langfuse traces (when `LANGFUSE_*` keys are set)
+1. Mastra AI traces in Postgres (via `MastraStorageExporter`; inspect in Mastra Studio)
 2. Mastra Studio: `npm run mastra:dev`
 3. Writer's Room UI log tab
 4. Stream route SSE events (`/api/storyteller/chat/stream`)

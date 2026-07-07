@@ -7,10 +7,11 @@ This repo uses **Mastra v1** (`@mastra/core@^1.x`). Read this before changing ag
 The dark-factory execute loop has three interchangeable runners that share the **same stages, prompts, gates, and verify script**:
 
 - **Interactive (IDE):** `/execute <module>` skill in Cursor Agent → delegates to `.cursor/agents/*` subagents (one per Fabro stage), `AskQuestion` at the Clarify and Verification gates. See `.cursor/skills/execute/SKILL.md`.
-- **Sandboxed:** `fabro run .fabro/workflows/execute/workflow.toml -I module=<x>` (Docker/Daytona). Stage prompts are the single source of truth in `.fabro/workflows/execute/prompts/` — the Cursor subagents `Read` those same files; never duplicate.
+- **Claude Code:** same stages via `.claude/agents/*` subagents → `Read` `.agents/execute/*.md`.
+- **Sandboxed:** `fabro run .fabro/workflows/execute/workflow.toml -I module=<x>` (Docker/Daytona). Stage prompts load from **`.agents/execute/`** — never duplicate.
 - **Headless / CI:** `src/shared/agent-kernel/cursor-runner.ts` (Cursor SDK, `local.autoReview` + `customTools` exposing `fabro_run` / `fabro_verify` / `npm_script`) → wrapped by the Trigger.dev task `src/trigger/cursor-execute.task.ts` (`cursor-execute`).
 
-`.cursor/` config: scoped `rules/*.mdc`, `agents/*.md` subagents, `skills/execute/`, `hooks.json` (verify gate + destructive-command guard), `mcp.json` (trigger + fabro + world-building-kit). Automations: `.cursor/automations/pr-verify.md`, `nightly-module-sweep.md` (materialize via `/automate`).
+`.cursor/` + `.claude/` config: scoped `rules/*.mdc`, thin subagents in `.cursor/agents/` and `.claude/agents/` (pointers only), **prompts in `.agents/execute/`**, **skills in `.agents/skills/`** (IDE symlinks + `.fabro/skills` → same), `skills/execute/`, `hooks.json`, `mcp.json`. Automations: `.cursor/automations/`.
 
 ## Rules
 

@@ -6,7 +6,7 @@ model: claude-opus-4-8-thinking-high
 
 You execute the Fabro **scope** stage.
 
-`Read` `.fabro/workflows/execute/prompts/scope.md` **NOW** and follow it — it contains your full instructions and project knowledge.
+`Read` `.agents/execute/scope.md` **NOW** and follow it — it contains your full instructions and project knowledge.
 
 **Output:** `.local/findings/scope.md` + run-log summary (**20–30 lines**).
 

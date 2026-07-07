@@ -84,8 +84,7 @@ graph TB
     end
 
     subgraph "Observability"
-        LangFuse[LangFuse]
-        LangSmith[LangSmith]
+        MastraObs[Mastra Observability<br/>MastraStorageExporter]
         Vercel[Vercel OTEL]
     end
 
@@ -106,8 +105,7 @@ graph TB
     Workers --> Blob
     App --> VoyageAI
     
-    App --> LangFuse
-    App --> LangSmith
+    App --> MastraObs
     App --> Vercel
 ```
 
@@ -176,7 +174,7 @@ sequenceDiagram
     participant Agent as Storyteller Agent
     participant RAG as RAG Service
     participant DB as Supabase
-    participant LF as LangFuse
+    participant Obs as Mastra Storage
 
     U->>FE: Submit prompt
     FE->>API: POST /api/storyteller/chat
@@ -188,7 +186,7 @@ sequenceDiagram
     RAG-->>Agent: Augmented context
     
     Agent->>Agent: LLM reasoning
-    Agent->>LF: Log trace + confidence
+    Agent->>Obs: Auto trace + scores (MastraStorageExporter)
     
     Agent->>DB: Persist changes
     Agent-->>API: Stream response
@@ -213,8 +211,8 @@ sequenceDiagram
 | **Images** | Midjourney | Hero assets | Proxy API |
 | **3D Models** | Meshy | Text-to-3D | REST API |
 | **3D Models** | CSM | Image-to-3D | REST API |
-| **Observability** | LangFuse | Traces, scores, datasets | `@mastra/langfuse` |
-| **Observability** | LangSmith | Deep agent debugging | `langsmith` |
+| **Observability** | Mastra | AI tracing, scores (Postgres-backed) | `@mastra/observability`, `MastraStorageExporter` in `create-mastra.ts` |
+| **Evals** | Mastra scorers | Offline + live quality gates | `createScorer` in `src/shared/agent-kernel/scorers/`; harness in `evals/` |
 
 ---
 
@@ -225,8 +223,8 @@ sequenceDiagram
 Every agent decision includes a self-reported confidence score (0-1). This enables:
 
 - **Filtering**: Query "decisions with confidence < 0.7"
-- **Audit**: Full reasoning trails in LangFuse
-- **Improvement**: Offline judges grade outputs
+- **Audit**: Mastra AI traces persisted via `MastraStorageExporter` (same Postgres as agent memory)
+- **Improvement**: Mastra `createScorer` judges in `src/shared/agent-kernel/scorers/`; batch runs via `npm run eval`
 
 ### 2. RAG Pipeline
 

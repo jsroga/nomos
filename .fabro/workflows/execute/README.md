@@ -1,24 +1,30 @@
 # Execute workflow — UI & artifacts
 
-## Agent sharing (Fabro + Cursor)
+## Agent sharing (Fabro + Cursor + Claude)
 
-**The prompt file is the agent.** Each stage in `workflow.fabro` points at
-`prompt="@prompts/<stage>.md"` — that markdown file is the full agent instruction
-set (role, project knowledge, outputs, rules). Fabro feeds the body directly to
-the LLM.
+**The prompt file is the agent.** Stage bodies live once in **`.agents/execute/`**.
 
-**Cursor adapters** live in `.cursor/agents/<stage>.md`. They are thin:
-YAML frontmatter (`name`, `description`, `model`) + a pointer to `Read` the
-matching prompt. **All richness lives once in `.fabro/workflows/execute/prompts/`.**
-Do not duplicate prompt content in `.cursor/agents/` — it will drift.
+| Runner | Loads prompts via |
+| --- | --- |
+| **Fabro** | `workflow.fabro` → `prompt="@../../../.agents/execute/<stage>.md"` |
+| **Cursor** | `.cursor/agents/<adapter>.md` → `Read` `.agents/execute/<stage>.md` |
+| **Claude Code** | `.claude/agents/<adapter>.md` → `Read` `.agents/execute/<stage>.md` |
 
-| Stage | Prompt (agent) | Cursor adapter | Artifact |
-| --- | --- | --- | --- |
-| Scope | `prompts/scope.md` | `scope-runner.md` | `.local/findings/scope.md` |
-| Clarify Prep | `prompts/clarify-prep.md` | `clarify-facilitator.md` | `CLARIFY.md`, `DECISIONS.md` |
-| Plan | `prompts/plan.md` | `plan-author.md` | `PLAN.md`, `STRUCTURE.md` |
-| Implement | `prompts/implement.md` | `developer.md` | code changes |
-| Retro | `prompts/retro.md` | `retro-author.md` | `RETRO.md` |
+**Thin adapters** (`.cursor/agents/`, `.claude/agents/`) hold YAML frontmatter (`name`, `description`, `model`) + a pointer to the matching `.agents/execute/` file. **Do not duplicate prompt content in adapters** — it will drift.
+
+**Configuration diagram** (goals entry, stage agents, skills aggregate): [.agents/CONFIGURATION.md](../../../.agents/CONFIGURATION.md).
+
+Agents may optionally use **`.local/tmp/{session-id}/`** for throwaway recon artifacts (gitignored) — see `.agents/execute/partials/session-scratch.md`.
+
+| Stage | Prompt (`.agents/execute/`) | Cursor adapter | Claude adapter | Artifact |
+| --- | --- | --- | --- | --- |
+| Scope | `scope.md` | `scope-runner.md` | `scope-runner.md` | `.local/findings/scope.md` |
+| Clarify Prep | `clarify-prep.md` | `clarify-facilitator.md` | `clarify-facilitator.md` | `CLARIFY.md`, `DECISIONS.md` |
+| Plan | `plan.md` | `plan-author.md` | `plan-author.md` | `PLAN.md`, `STRUCTURE.md` |
+| Implement | `implement.md` | `developer.md` | `developer.md` | code changes |
+| Retro | `retro.md` | `retro-author.md` | `retro-author.md` | `RETRO.md` |
+
+Legacy path `.fabro/workflows/execute/prompts/` is retired — see `prompts/README.md`.
 
 **Data flow:** Scope → Clarify only (`.local/findings/scope.md`). Plan does **not** read
 Scope output — it discovers the codebase via spot-checks + human's Clarify choice.
@@ -97,15 +103,16 @@ Clarify Prep **must** still emit the full 3-question + A/B/C table every time (s
 | `RETRO.md` | Retro (evidence-based — git diff verified) |
 ## Developer skills ([skills](https://docs.fabro.sh/agents/skills))
 
-The 16 skills live in `.fabro/skills/*/SKILL.md` (valid YAML frontmatter) and the
-**Implement** stage has `permissions="full"` + a `use_skill` table in its prompt.
+**20 skills** live in **`.agents/skills/*/SKILL.md`** (canonical). **`.fabro/skills`** is a symlink → `.agents/skills/` for sandbox `{git_root}` discovery. **Cursor** and **Claude Code** use symlinks under `.cursor/skills/` and `.claude/skills/`. See [`.agents/skills/README.md`](../../../.agents/skills/README.md).
+
+The **Implement** stage has `permissions="full"` + a `use_skill` table in `.agents/execute/implement.md`.
 
 **Gotcha for sandboxed runs (why you saw `skills 0/0`):** Fabro runs skill
 **discovery on the local server**, not inside the sandbox. It searches, in order:
 
 ```
 ~/.fabro/skills            → resolves to the Mac home (LOCAL)
-{git_root}/.fabro/skills   → resolves to the SANDBOX path /workspace/<repo>/.fabro/skills
+{git_root}/.fabro/skills   → symlink to .agents/skills/ in the sandbox clone
 {git_root}/skills
 ```
 
@@ -113,19 +120,19 @@ For a Docker/Daytona run the `{git_root}` path is a **container** path that does
 exist on the Mac, so the committed project skills are never found — discovery returns
 `[]` and the agent shows `0/0`. The only reliably-scanned dir is the **global** one.
 
-**Fix (local, one-time):** copy the repo skills into the global dir as **real files**
+**Fix (local, one-time):** copy canonical skills into the global dir as **real files**
 (not a symlink). Fabro's skill discovery glob is symlink-safe — it does **not**
 descend into a `~/.fabro/skills` symlink, so a symlinked dir shows `0/0` even though
 the `SKILL.md` files are visible on disk:
 
 ```bash
-rm -f ~/.fabro/skills                          # remove old symlink (if present)
+rm -rf ~/.fabro/skills                          # remove old symlink (if present)
 mkdir -p ~/.fabro/skills
-cp -R .fabro/skills/. ~/.fabro/skills/         # run from the repo root
+cp -R .agents/skills/. ~/.fabro/skills/         # run from the repo root
 ```
 
-Re-run the copy after you add or change a skill in `.fabro/skills/`. After it,
-`agent.skills.discovered` in the run events lists all 16 skills. This copy is
+Re-run the copy after you add or change a skill under **`.agents/skills/`**. After it,
+`agent.skills.discovered` in the run events lists all 20 skills. This copy is
 machine-local (not committed) — recreate it on a new machine.
 
 ## Build path routing
@@ -203,7 +210,7 @@ fabro run .fabro/workflows/execute/workflow.toml -I module=<domain-folder>
 Fabro renders `{{ inputs.module }}` only in **`goal` and
 `prompt`** attributes ([docs](https://docs.fabro.sh/workflows/variables)) — not in
 shell `script` or environment `env`. The **Scope** stage is therefore a prompt node
-(`prompts/scope.md`) so the module path is templated correctly.
+(`.agents/execute/scope.md`) so the module path is templated correctly.
 
 ### Domains catalog cleanup (ideal structure + all referrers)
 
@@ -242,7 +249,7 @@ Deliverables: `STRUCTURE.md` (src-root section) → `PLAN.md` (must include
 At **clarify**, pick **A** (structure for all top-level folders; implement Wave 1), **B** (plan only),
 or **C** (full src-root migration). Recommend **A**.
 
-**Skills:** copy `.fabro/skills/` to `~/.fabro/skills/` (real files, not symlink) —
+**Skills:** copy **`.agents/skills/`** to `~/.fabro/skills/` (real files, not symlink) —
 see Developer skills section above.
 
 ## Merging when the run succeeds

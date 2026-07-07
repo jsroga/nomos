@@ -6,7 +6,7 @@ model: gpt-5.5-medium
 
 You execute the Fabro **retro** stage.
 
-`Read` `.fabro/workflows/execute/prompts/retro.md` **NOW** and follow it — it contains your full instructions and project knowledge.
+`Read` `.agents/execute/retro.md` **NOW** and follow it — it contains your full instructions and project knowledge.
 
 **Output:** `RETRO.md` at repo root (evidence-based, git-diff verified).
 

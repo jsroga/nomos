@@ -7,7 +7,7 @@
 | Layer | Path | Role |
 |-------|------|------|
 | **Cognitive primitives** | `src/shared/agent-kernel/` | Executive loop, planner, schemas, persistence, skills |
-| **Mastra kernel** | `src/shared/agent-kernel/mastra/` | `createMastra`, Studio registry, Langfuse/workspace |
+| **Mastra kernel** | `src/shared/agent-kernel/mastra/` | `createMastra`, Studio registry, Observability/workspace |
 | **Production instance** | `src/shared/agent-kernel/MastraInstance.ts` | Singleton + Postgres memory for app |
 | **Domain agents** | `src/domains/*/agents/` | Storyteller, loop-creator, game-design, etc. |
 
@@ -50,7 +50,7 @@ Central orchestrator for plan-driven tasks:
 
 ## Observability
 
-Prefer Mastra `Observability` + `LangfuseExporter` (wired in `create-mastra.ts`). Legacy manual spans are being phased out — see `docs/unified/ARCHITECTURE.md` §9.
+Mastra `Observability` + `MastraStorageExporter` (wired in `create-mastra.ts`) is the sole tracer — agent/LLM/tool spans land in Postgres. Legacy manual span helpers in `src/shared/observability/` are thin sanitization wrappers only. Eval scorers live in `src/shared/agent-kernel/scorers/` and register on the Mastra instance.
 
 ## Local development
 

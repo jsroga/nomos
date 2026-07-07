@@ -5,13 +5,18 @@ description: Run the Fabro execute dark-factory loop interactively for one src/d
 
 # /execute — interactive dark-factory loop
 
-You orchestrate the Fabro `execute` workflow inside Cursor. Same stages, same prompts (single source in `.fabro/workflows/execute/prompts/`), same human gates as `.fabro/workflows/execute/workflow.fabro`. You delegate each stage to a subagent in `.cursor/agents/` and surface each human gate via `AskQuestion`.
+You orchestrate the Fabro `execute` workflow inside Cursor. Same stages, same prompts (single source in **`.agents/execute/`**), same human gates as `.fabro/workflows/execute/workflow.fabro`. You delegate each stage to a subagent in `.cursor/agents/` and surface each human gate via `AskQuestion`.
 
 ## Invocation
 
 `/execute <module>` — `<module>` is a folder under `src/domains/` (e.g. `storyteller`, `interior-designer`, `chat`), or a special scope: `domains-catalog` (all 9 modules) or `src-root` (top-level `src/` cleanup). If the user omits `<module>`, ask which one before starting.
 
 Set the goal: *"Clean up and align the `<module>` module with `docs/unified/ARCHITECTURE.md`. Produce a prioritized plan; implement only after human approval at Verification."*
+
+Configuration map (goals vs execute, agents, skills): `.agents/CONFIGURATION.md`.
+
+Optional session scratch: `.local/tmp/{session-id}/` for throwaway scripts or inventories
+(gitignored) — see `execute/partials/session-scratch.md`.
 
 ## Stage flow (mirror `workflow.fabro`)
 
@@ -26,7 +31,7 @@ flowchart LR
 
 ## How to run each stage
 
-For every stage: spawn the matching subagent (Task tool / `agents` config). The subagent `Read`s its prompt from `.fabro/workflows/execute/prompts/<stage>.md` and follows it. You pass context forward between stages.
+For every stage: spawn the matching subagent (Task tool / `agents` config). The subagent `Read`s its prompt from **`.agents/execute/<stage>.md`** and follows it. You pass context forward between stages.
 
 | Stage | Subagent | Output |
 |-------|----------|--------|
@@ -105,4 +110,4 @@ For headless/CI: `src/shared/agent-kernel/cursor-runner.ts`, kicked by Trigger.d
 
 ## Single source of truth
 
-Stage prompts live in `.fabro/workflows/execute/prompts/`. Subagents `Read` them — never duplicate prompt text here or in the subagent files.
+Stage prompts live in **`.agents/execute/`**. Subagents `Read` them — never duplicate prompt text in `.cursor/agents/`, `.claude/agents/`, or Fabro adapters.
