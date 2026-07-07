@@ -8,10 +8,26 @@ command=$(echo "$input" | jq -r '.command // empty' 2>/dev/null || true)
 
 [ -n "$command" ] || exit 0
 
-# Patterns that should never run unattended in a dark factory.
-destructive_re='(^|[[:space:]])(rm[[:space:]]+(-[a-zA-Z]*r[a-zA-Z]*f|--force)[[:space:]]+(/|~|\$HOME|\*|[.][.]))|git[[:space:]]+push[[:space:]].*--force|git[[:space:]]+push[[:space:]]+(-f|--force)|git[[:space:]]+reset[[:space:]]+--hard|git[[:space:]]+clean[[:space:]]+(-[a-zA-Z]*d[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*)|mkfs|dd[[:space:]]+.*of=/dev/|chmod[[:space:]]+-R[[:space:]]+000'
+# Strip quoted strings and heredoc bodies before scanning — PR bodies / commit messages
+# may mention "git push --force" without intending to run it.
+scan="$command"
+# Remove single-quoted strings
+while [[ "$scan" =~ \'([^\']|\\.)*\' ]]; do
+  scan="${scan//${BASH_REMATCH[0]}/}"
+done
+# Remove double-quoted strings
+while [[ "$scan" =~ \"([^\"\\]|\\.)*\" ]]; do
+  scan="${scan//${BASH_REMATCH[0]}/}"
+done
+# Remove heredoc bodies — only scan the command prefix before <<
+if [[ "$scan" == *"<<"* ]]; then
+  scan="${scan%%<<*}"
+fi
 
-if echo "$command" | grep -qE "$destructive_re"; then
+# Token-boundary patterns — must not match inside quoted/heredoc text (already stripped).
+destructive_re='(^|[[:space:];|&])(rm[[:space:]]+(-[a-zA-Z]*r[a-zA-Z]*f|--force)[[:space:]]+(/|~|\$HOME|\*|[.][.]))|(^|[[:space:];|&])git[[:space:]]+push[[:space:]]+(-f|--force)|(^|[[:space:];|&])git[[:space:]]+push[[:space:]]+[^[:space:]]+[[:space:]]+(-f|--force)|(^|[[:space:];|&])git[[:space:]]+reset[[:space:]]+--hard|(^|[[:space:];|&])git[[:space:]]+clean[[:space:]]+(-[a-zA-Z]*d[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*)|(^|[[:space:];|&])mkfs|(^|[[:space:];|&])dd[[:space:]]+.*of=/dev/|(^|[[:space:];|&])chmod[[:space:]]+-R[[:space:]]+000'
+
+if echo "$scan" | grep -qE "$destructive_re"; then
   cat <<JSON
 {
   "permission": "deny",

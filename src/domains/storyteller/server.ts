@@ -22,13 +22,11 @@ export * from './services/StorytellerCrudService'
 export { createStorytellerAgent } from './agents/StorytellerAgent/StorytellerAgent'
 export {
   runStorytellerWorkflow,
-  normalizeMastraTraceId,
 } from './agents/orchestration/StorytellerWorkflow'
+export { normalizeMastraTraceId } from './agents/orchestration/WorkflowContext'
 export { workflowStore } from './agents/orchestration/WorkflowContext'
+
+// Consistency check (legacy ConsistencyAgent — wave 2 will use ConsistencyService)
 export { runConsistencyCheck } from './agents/judges/ConsistencyAgent'
-export {
-  reviewScript,
-  quickReview,
-  type ScriptReviewRequest,
-} from './agents/judges/ScriptReviewAgent'
+
 export { getUndoManager } from './core/editing/UndoManager'

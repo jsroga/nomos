@@ -59,7 +59,14 @@ export function useEpisodeData(projectId: string | undefined) {
     }
 
     if (episodeQuery.data) {
-      setCurrentEpisode(episodeQuery.data)
+      // Extract only the fields we need from the episode query data
+      const episodeBasic: EpisodeBasic = {
+        id: episodeQuery.data.id,
+        episode_prompt: episodeQuery.data.episode_prompt ?? undefined,
+        title: episodeQuery.data.title,
+        masterPrompt: episodeQuery.data.masterPrompt,
+      }
+      setCurrentEpisode(episodeBasic)
       if (episodeQuery.data.title) {
         setCurrentEpisodeTitle(episodeQuery.data.title)
       }

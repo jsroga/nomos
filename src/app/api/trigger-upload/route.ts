@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { uploadAssetTask } from '@/trigger/upload-asset'
+import { uploadAssetTask } from '@/domains/storyteller/tasks/upload-asset.task'
 import { withAuth, verifyProjectAccess, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
-export const POST = withAuth(
+export const POST = withAuth<{ runId: string } | { error: string }>(
   async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
     const body = await request.json()
     const { projectId, assetId, modelFilename } = body

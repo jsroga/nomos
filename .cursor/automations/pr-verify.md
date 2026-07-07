@@ -1,4 +1,6 @@
-# Automation draft — PR verify + eval
+# Automation draft — PR verify + eval (opt-in)
+
+**Not active until materialized.** Requires Cursor Cloud Agents + `/automate`. Paste the YAML below into the Automations editor when ready.
 
 Always-on cloud agent that runs the dark-factory verify gates on every PR and comments a summary. Materialize via the Automations editor: open the Agents Window, run `/automate`, and paste the YAML draft below, or use `cursor-app-control.open_automation` with `prefillWorkflowData`.
 

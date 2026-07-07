@@ -1,7 +1,6 @@
 import { ExecutiveAgent, ExecutiveConfig, CoPilotInteraction } from '@/shared/agent-kernel/executive'
 import { createPlannerTool, PlanPersistence } from '@/shared/agent-kernel/planner'
-import { getPlotPhaseTool, validateConsistencyTool } from '@/domains/storyteller/agents/tools/storytelling-adapter'
-import { researchTool, factCheckTool } from '@/domains/storyteller/agents/tools/research-adapter'
+import { checkContinuityTool, readWorldBibleTool } from '@/domains/storyteller/agents/tools'
 
 // ==========================================
 // STORYTELLER PLANNER
@@ -24,7 +23,7 @@ export class StorytellerPlanner {
 
   static async create(config: StorytellerPlannerConfig): Promise<StorytellerPlanner> {
     const instance = new StorytellerPlanner(config)
-    const tools = [getPlotPhaseTool, validateConsistencyTool, researchTool, factCheckTool]
+    const tools = [checkContinuityTool, readWorldBibleTool]
 
     const executiveConfig: ExecutiveConfig = {
       modelName: config.modelName || 'anthropic/claude-3-haiku-20240307',

@@ -19,7 +19,6 @@ import {
   type QuestionSession,
   STORYTELLER_AGENT_CONFIG,
   StorytellerEmptyState,
-  type StoryPlan,
   type StorySequence,
   useBibleState,
   useEpisodeData,
@@ -27,14 +26,18 @@ import {
   useStorytellerActions,
   useStorytellerHydration,
 } from '@/domains/storyteller'
+import type { StoryPlan } from '@/domains/storyteller/prompts/schemas/agent-schemas'
 // Consolidated Chat & Storyteller Imports
 import {
   SmartQuickActions,
   StreamingTerminal,
   StreamingSectionsInline,
   useChatStream,
+  ModelSelector,
   type Message,
 } from '@/domains/chat'
+import { DEFAULT_CHAT_MODEL, getChatModelOption } from '@/domains/storyteller/config/ChatModelCatalog'
+import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 // Action UI components loaded dynamically below (ActionCommitted, ActionSuggestion, ActionApprovalModal, QuestionCard)
 import {
   Loader2,
@@ -138,7 +141,6 @@ import {
 // import { useProjectFromUrl } from '@/shared/data/useProjectFromUrl'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
 
-import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 // moodboardGenerationService loaded dynamically at call sites
 import { cachedFetch, clearFetchCache } from '@/shared/data/fetch-cache'
 import { isAdminUser } from '@/shared/auth/admin-users'
@@ -277,7 +279,11 @@ export default function StorytellerPage() {
   const [generatingSection, setGeneratingSection] = useState<string | null>(null)
 
   // --- Extracted hooks ---
-  useStorytellerHydration({ currentProject, setStoryPlan, setStoryDecisions })
+  useStorytellerHydration({
+    currentProject,
+    setStoryPlan: setStoryPlan as never,
+    setStoryDecisions,
+  })
 
   const {
     actionHistory,
@@ -299,7 +305,7 @@ export default function StorytellerPage() {
   } = useStorytellerActions({
     currentProject,
     currentEpisodeId,
-    setStoryPlan,
+    setStoryPlan: setStoryPlan as never,
     setStoryDecisions,
     setCharacters,
     setScript,
@@ -930,6 +936,21 @@ export default function StorytellerPage() {
     return bible
   }, [currentProject?.id, currentProject?.series_bible, currentProject?.master_prompt, storyDecisions])
 
+  // Selected chat model for the Writers Room. Hydrate from localStorage after
+  // mount to avoid SSR/client mismatch (localStorage is not available on server).
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_CHAT_MODEL)
+  const modelHydratedRef = useRef(false)
+  useEffect(() => {
+    const stored = window.localStorage.getItem(LocalStorageKeys.STORYTELLER_CHAT_MODEL)
+    if (stored && getChatModelOption(stored)) setSelectedModel(stored)
+    modelHydratedRef.current = true
+  }, [])
+  useEffect(() => {
+    if (!modelHydratedRef.current) return
+    window.localStorage.setItem(LocalStorageKeys.STORYTELLER_CHAT_MODEL, selectedModel)
+  }, [selectedModel])
+  const handleModelChange = useCallback((modelId: string) => setSelectedModel(modelId), [])
+
   const handleSendMessage = useCallback(
     async (e?: React.FormEvent, msgOverride?: string, section?: string) => {
       e?.preventDefault()
@@ -988,6 +1009,7 @@ export default function StorytellerPage() {
         seriesBible,
         characters: charactersSummary,
         streamMode: useEnhancedStreaming ? 'events' : 'nodes',
+        modelName: selectedModel,
       })
     },
     [
@@ -1005,6 +1027,7 @@ export default function StorytellerPage() {
       setLoadingSections,
       getSerializedMessages,
       getSeriesBible,
+      selectedModel,
     ]
   )
 
@@ -2484,7 +2507,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           // Refetch-after-delete path: only merge moodImages into state/store and persist a merge-only PATCH so we never overwrite the rest of the bible/plan
           const newMoodImages = updates.moodImages
           if (!currentEpisodeId) {
-            setStoryPlan(prev => (prev ? { ...prev, moodImages: newMoodImages } : prev))
+            setStoryPlan(prev => (prev ? { ...prev, moodImages: newMoodImages ?? prev.moodImages } : prev))
           }
           useWorldStore.getState().setCurrentProject({
             ...latestProject,
@@ -2503,11 +2526,11 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           })
         } else {
           // Full replace path
-          const currentBible = (latestProject.series_bible as StoryPlan) || {}
+          const currentBible = (latestProject.series_bible as unknown as StoryPlan) || {}
           const newBible = { ...currentBible, ...updates }
           useWorldStore.getState().setCurrentProject({
             ...latestProject,
-            series_bible: newBible,
+            series_bible: newBible as unknown as Record<string, unknown>,
           })
           if (!currentEpisodeId) {
             setStoryPlan(newBible)
@@ -2547,7 +2570,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
       // Update local store immediately for responsiveness
       useWorldStore.getState().setCurrentProject({
         ...currentProject,
-        series_bible: newBible,
+        series_bible: newBible as unknown as Record<string, unknown>,
       })
 
       await fetch(`/api/storyteller/projects/${currentProject.id}`, {
@@ -2931,9 +2954,11 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           <div className="flex flex-col h-full" id={TOUR_STEP_IDS.STORYTELLER_CHAT}>
             <MentionsProvider
               projectId={currentProject?.id || ''}
-              characters={characters}
-              beats={beats}
-              storyPlan={storyPlan}
+              characters={
+                characters as unknown as Array<{ id: string; name: string; [key: string]: unknown }>
+              }
+              beats={beats as unknown as Array<{ id: string; [key: string]: unknown }>}
+              storyPlan={storyPlan as unknown as Record<string, unknown> | null}
             >
             <MentionsChatInterface
               isActivityPanelOpen={isActivityPanelOpen}
@@ -2953,6 +2978,9 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
               isSending={isSending}
               showThinking={showThinking}
               currentPhase={currentPhase}
+              headerContent={
+                <ModelSelector value={selectedModel} onChange={handleModelChange} />
+              }
               ActionComponent={MemoizedActionComponent}
               QuestionComponent={StableQuestionComponent}
             >

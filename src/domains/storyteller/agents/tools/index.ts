@@ -1,90 +1,46 @@
 /**
- * Storyteller Tools - Mastra Implementation
+ * Storyteller Tools - GRRM Solo Model
  *
- * Central barrel export for all migrated Mastra tools.
+ * Consolidated to ~10 core CRUD tools across 4 files.
+ * All tools follow Mastra v1 patterns: createTool with (inputData, context) execute signature.
  */
 
-// Beat Management
+import { manageBeatTool, listBeatsTool } from './beat-tools'
+import { manageCharacterTool, listCharactersTool } from './character-tools'
+import { manageEpisodeTool, listEpisodesTool } from './episode-tools'
+import {
+  updateWorldBibleTool,
+  readWorldBibleTool,
+  checkContinuityTool,
+} from './bible-tools'
+
 export { manageBeatTool, listBeatsTool } from './beat-tools'
 
-// Character Relationships
-export {
-  analyzeRelationshipsTool,
-  suggestRelationshipTool,
-} from './character-tools'
+// Character management (2 tools)
+export { manageCharacterTool, listCharactersTool } from './character-tools'
 
-// Character Creation
-export {
-  askCharacterQuestionsTool,
-  createCharacterTool,
-  checkCharacterExistsTool,
-  characterCreationTools,
-} from './character-creation-tools'
+// Episode management (2 tools)
+export { manageEpisodeTool, listEpisodesTool } from './episode-tools'
 
-// Episode Creation
-export {
-  createEpisodeTool,
-  askContinueTobeatsTool,
-  startBeatPlanningTool,
-  episodeCreationTools,
-} from './episode-creation-tools'
+// World Bible + Continuity (3 tools)
+export { updateWorldBibleTool, readWorldBibleTool, checkContinuityTool } from './bible-tools'
 
-// Continuity Checking
-export { checkContinuityTool, quickConsistencyCheckTool } from './continuity-tools'
-
-// Script Editing
-export {
-  expandSceneTool,
-  condenseSceneTool,
-  improveDialogueTool,
-  addVisualHookTool,
-  shiftToneTool,
-  regenerateTextTool,
-} from './script-tools'
-
-// World Building
-export { updateWorldBibleTool, worldBuildingTools } from './world-building-tools'
-
-// Research (already migrated)
-export { researchTool, factCheckTool, referenceLookupTool } from './research-adapter'
-
-// Storytelling Logic (already migrated)
-export {
-  getPlotPhaseTool,
-  validateConsistencyTool,
-  updateStoryPhaseTool,
-} from './storytelling-adapter'
-
-// RAG Tools
-export {
-  searchKnowledgeBaseTool,
-  storeKnowledgeTool,
-  searchCharacterHistoryTool,
-  getUserPreferencesTool,
-} from './rag-tools'
-
-// Psychologist Tools
-export {
-  analyzePsychologyTool,
-  simulateReactionTool,
-  assessRelationshipTool,
-} from './psychologist-tools'
-
-// Agent Meta Tools (The Council)
-export {
-  consultPsychologistTool,
-  consultConsequenceTrackerTool,
-  consultDevilsAdvocateTool,
-  consultGardenerTool,
-  consultPremiseArchitectTool,
-  consultConsistencyTool,
-  consultCreativeDirectorTool,
-  agentTools,
-} from './agent-tools'
-
-// Self-Critique Tool
-export { selfCritiqueTool } from './self-critique-tool'
-
-// Workflow Tool (delegates to the multi-agent story creation pipeline)
-export { runStoryCreationWorkflowTool } from './workflow-tools'
-
+/**
+ * All tools for the GRRM Agent
+ * Total: 9 tools (down from ~57)
+ */
+export const grrmTools = [
+  // Beat CRUD
+  manageBeatTool,
+  listBeatsTool,
+  // Character CRUD
+  manageCharacterTool,
+  listCharactersTool,
+  // Episode CRUD
+  manageEpisodeTool,
+  listEpisodesTool,
+  // World Bible + Continuity
+  updateWorldBibleTool,
+  readWorldBibleTool,
+  checkContinuityTool,
+]

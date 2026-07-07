@@ -1,4 +1,6 @@
-# Automation draft — nightly module sweep
+# Automation draft — nightly module sweep (opt-in)
+
+**Not active until materialized.** Requires Cursor Cloud Agents + `/automate`. Operator must opt in to `--auto-approve` for unattended builds.
 
 Always-on cloud agent that iterates every `src/domains/*` module through the Fabro `execute` sandbox overnight and opens one PR per module that produced changes. Materialize via the Automations editor: open the Agents Window, run `/automate`, and paste the YAML draft below.
 

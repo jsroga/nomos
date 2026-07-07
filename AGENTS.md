@@ -1,12 +1,12 @@
 # AGENTS.md — Mastra development
 
-This repo uses **Mastra v1** (`@mastra/core@^1.x`). Read this before changing agents, tools, workflows, or memory. Mirror patterns in `src/domains/storyteller/agents/*` and `src/mastra/*`.
+This repo uses **Mastra v1** (`@mastra/core@^1.x`). Read this before changing agents, tools, workflows, or memory. Mirror patterns in `src/domains/storyteller/agents/*` and `src/shared/agent-kernel/mastra/*`.
 
 ## Dark factory
 
 The dark-factory execute loop has three interchangeable runners that share the **same stages, prompts, gates, and verify script**:
 
-- **Interactive (IDE):** `/execute <module>` skill in Cursor Agent → delegates to `.cursor/agents/*` subagents (one per Fabro stage), `AskQuestion` at the Clarify / Verification / Preview gates. See `.cursor/skills/execute/SKILL.md`.
+- **Interactive (IDE):** `/execute <module>` skill in Cursor Agent → delegates to `.cursor/agents/*` subagents (one per Fabro stage), `AskQuestion` at the Clarify and Verification gates. See `.cursor/skills/execute/SKILL.md`.
 - **Sandboxed:** `fabro run .fabro/workflows/execute/workflow.toml -I module=<x>` (Docker/Daytona). Stage prompts are the single source of truth in `.fabro/workflows/execute/prompts/` — the Cursor subagents `Read` those same files; never duplicate.
 - **Headless / CI:** `src/shared/agent-kernel/cursor-runner.ts` (Cursor SDK, `local.autoReview` + `customTools` exposing `fabro_run` / `fabro_verify` / `npm_script`) → wrapped by the Trigger.dev task `src/trigger/cursor-execute.task.ts` (`cursor-execute`).
 
@@ -25,9 +25,9 @@ The dark-factory execute loop has three interchangeable runners that share the *
 
 | Concern | Location |
 |---------|----------|
-| Mastra instance | `src/mastra/`, `src/shared/agent-kernel/MastraInstance.ts` |
-| Agents | `src/domains/*/agents`, `src/mastra/agents/` |
-| Tools | `src/domains/*/agents/tools`, `src/mastra/tools/` |
+| Mastra instance | `src/mastra.ts` (Studio CLI), `src/shared/agent-kernel/MastraInstance.ts` (app) |
+| Agents | `src/domains/*/agents` |
+| Tools | `src/domains/*/agents/tools`, `src/shared/agent-kernel/mastra/tools/` |
 | Models | `src/agent-core/models.ts`, domain `ModelConfig/` |
 | Memory | `@mastra/memory` + `PostgresStore` via shared storage |
 | Observability | `@mastra/langfuse`, `src/agent-core/observability.ts` |

@@ -23,14 +23,18 @@ npx knip               # dead code / unused exports
 node scripts/fabro-verify.mjs
 ```
 
-Module-scoped `tsc` + ESLint that **ignores errors outside the target module** (`src/domains/<module>/` or `src-root`). Reads the module from `PLAN.md` (first line must be `Fabro module: src-root` for src-root runs). Uses an ephemeral `tsconfig.fabro-verify.json` and `NODE_OPTIONS=--max-old-space-size=6144` to avoid full-repo OOM.
+Module-scoped `tsc` + ESLint (ignores errors outside the target module), module unit
+tests, **then husky pre-commit parity**: `check-architecture.mjs`, `check-docs-updated.mjs
+--working-tree`, full `npm run test:unit`, `npm run build`. Passing fabro-verify means
+**git commit pre-commit hooks would pass** after staging. Reads module from `PLAN.md`.
+Uses `NODE_OPTIONS=--max-old-space-size=6144`.
 
-## E2E (build path only)
+## E2E
 
 ```bash
 npm run test:e2e                # Playwright default
 npm run test:e2e smoke          # storyteller smoke script
-npm run test:e2e full-loop      # what Fabro run_e2e runs
+npm run test:e2e full-loop      # full storyteller loop
 ```
 
 ## Baseline / ratchets
@@ -40,7 +44,7 @@ Typecheck and ESLint warnings are ratcheted — never increase the baseline coun
 ## Order of operations (mirror Fabro build path)
 
 1. Implement (use skills: `/refactor`, `/write-tests`, `/review`).
-2. `node scripts/fabro-verify.mjs` → fix → repeat (max 2 fix loops).
-3. `npm run test:unit` → fix → repeat.
-4. `npm run test:e2e full-loop` (if UI surface).
-5. Screenshot + retro.
+2. `node scripts/fabro-verify.mjs` → fix → repeat (max 3 fix loops; includes pre-commit parity).
+3. Retro (evidence-based — `git diff` verified).
+
+Optional locally after fabro-verify pass: `npx knip`, `npm run test:e2e full-loop` (storyteller UI).

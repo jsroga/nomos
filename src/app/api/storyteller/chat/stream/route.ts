@@ -3,6 +3,7 @@
 // components (e.g. CorkBoard), which pulls client-only hooks into this
 // server Route Handler's build graph and breaks compilation.
 import { createStorytellerAgent, normalizeMastraTraceId } from '@/domains/storyteller/agents'
+import { isKnownChatModel, resolveChatModelId } from '@/domains/storyteller/config/ChatModelCatalog'
 import { EventEmitter } from 'node:events'
 import { BibleSection } from '@/domains/storyteller/core'
 import { assembleStorytellerContext } from '@/domains/storyteller/services/ContextAssemblyService'
@@ -63,6 +64,7 @@ export async function POST(req: Request) {
       currentPhase,
       sessionId: bodySessionId,
       userId,
+      modelName,
     } = await req.json()
 
     // Security: Validate required parameters
@@ -71,6 +73,18 @@ export async function POST(req: Request) {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       })
+    }
+
+    // Resolve the chat model id. Unknown / unset values fall back to the
+    // global default so existing clients (which send no `modelName`) keep
+    // working. Explicitly unknown ids are rejected to avoid silently hitting
+    // an unconfigured provider.
+    const resolvedModelName = resolveChatModelId(modelName)
+    if (!isKnownChatModel(resolvedModelName)) {
+      return new Response(
+        JSON.stringify({ error: `Unknown model: ${resolvedModelName}` }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      )
     }
 
     // Security: Limit message length to prevent abuse
@@ -148,7 +162,7 @@ export async function POST(req: Request) {
       },
     })
 
-    const agent = await createStorytellerAgent()
+    const agent = await createStorytellerAgent(resolvedModelName)
 
     // No pattern matching - LLM decides what to update via tool calls.
     // Section is extracted from the tool result, not pre-detected.
@@ -183,7 +197,7 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
         generation = trace.generation({
           name: 'storyteller-agent-stream',
           input: promptWithContext || '(no prompt provided)', // Ensure never undefined
-          model: 'gpt-4o',
+          model: resolvedModelName.replace(':', '/'),
           metadata: {
             projectId: projectId || '(no project)',
             episodeId: episodeId || '(no episode)',

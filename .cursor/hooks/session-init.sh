@@ -4,7 +4,7 @@ set -euo pipefail
 
 cat <<'JSON'
 {
-  "user_message": "Dark factory ready. /execute <module> runs the Fabro execute loop interactively (scope → assess → clarify → plan → verify gate → build → retro). Sandboxed: fabro run .fabro/workflows/execute/workflow.toml -I module=<x>. Gates: typecheck/lint via node scripts/fabro-verify.mjs; unit tests npm run test:unit; evals npm run eval. Destructive commands (rm -rf, force-push, hard-reset) are blocked by .cursor/hooks/guard-destructive.sh."
+  "user_message": "Dark factory ready. /execute <module> runs the Fabro execute loop (scope → clarify → plan → verify gate → developer (codex) → retro). Sandboxed: fabro run .fabro/workflows/execute/workflow.toml -I module=<x>. Verify: node scripts/fabro-verify.mjs (typecheck + lint + module UT). Destructive commands blocked by guard-destructive.sh."
 }
 JSON
 exit 0

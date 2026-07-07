@@ -11,9 +11,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import {
   runConsistencyCheck,
 } from '@/domains/storyteller/server'
-import {
-  type ConsistencyCheckRequest,
-} from '@/domains/storyteller'
+import type { ConsistencyCheckRequest } from '@/domains/storyteller/core/types/ConsistencyTypes'
 import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { requireAuth } from '@/shared/auth/auth'
 
@@ -44,7 +42,7 @@ export async function POST(request: NextRequest) {
     console.log('[Consistency Check API] Starting check for project:', projectId)
 
     const result = await runConsistencyCheck(
-      { projectId, episodeId, ...trigger.context },
+      { ...trigger.context, projectId, episodeId },
       trigger.action
     )
 

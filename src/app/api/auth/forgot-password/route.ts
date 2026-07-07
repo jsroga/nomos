@@ -2,7 +2,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { forgotPasswordSchema } from '@/shared/auth/validation'
-import { getSiteURL } from '@/shared/data/url'
+import { getSiteURLFromRequest } from '@/shared/data/url'
 import { ValidationError } from 'yup'
 
 export async function POST(request: NextRequest) {
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
 
     await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${getSiteURL()}auth/callback?type=recovery`,
+      redirectTo: `${getSiteURLFromRequest(request.url)}auth/callback?type=recovery`,
     })
 
     // Always return success to avoid leaking whether email exists

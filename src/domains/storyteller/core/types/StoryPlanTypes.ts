@@ -109,4 +109,6 @@ export interface StoryPlan {
   soundtracks?: SoundtrackTrack[] | null
   moodImages?: string[] | null
   premise?: EpisodePremise | null
+  themes?: string[] | null
+  seasonStructure?: string | null
 }

@@ -18,6 +18,7 @@ export { CitationPreview, type Citation } from './CitationDisplay'
 
 export { ChatInterface } from './ChatInterface'
 export { ChatInput } from './ChatInput'
+export { ModelSelector } from './ModelSelector'
 
 // Re-export thinking messages configuration types and defaults
 export {

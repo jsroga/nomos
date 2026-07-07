@@ -60,6 +60,8 @@ test-in-memory-store.ts
 
 # TypeScript build cache
 *.tsbuildinfo
+tsconfig.fabro-verify.json
+tsconfig.precommit.json
 
 # Local dev DBs (e.g. Mastra memory)
 mastra-memory.db
@@ -77,6 +79,6 @@ mastra-memory.db-wal
 /RETRO.md
 /UX.md
 /SCREENSHOTS.md
-/findings/
+.local/findings/
 /screenshots/
 /IMPROVEMENT_PLAN.md

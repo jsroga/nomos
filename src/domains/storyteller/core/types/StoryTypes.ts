@@ -1,3 +1,5 @@
+import type { PhaseId } from './Enums'
+
 export interface Setup {
   id: string
   description: string
@@ -87,6 +89,7 @@ export interface SeriesBible {
 
 export interface WritersRoomState {
   episodeId?: string
+  messages?: Array<{ role: string; content: string }>
   beatBoard: BeatCard[]
   currentBeat?: BeatCard
   rejectedBeats: BeatCard[]
@@ -96,5 +99,5 @@ export interface WritersRoomState {
   seriesBible?: SeriesBible
   episodePremise?: any
   unresolvedSetups: Setup[]
-  currentPhase: Phase
+  currentPhase: PhaseId
 }

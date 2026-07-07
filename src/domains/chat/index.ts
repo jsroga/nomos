@@ -10,6 +10,7 @@ export {
   CitationPreview,
   ChatInterface,
   ChatInput,
+  ModelSelector,
   QuickActions,
   SmartQuickActions,
   StreamingTerminal,

@@ -18,43 +18,13 @@ import { v4 as uuidv4 } from 'uuid'
 import { getMastraInstance, getStorageInstance } from '@/shared/agent-kernel'
 import { GLOBAL_AGENT_MODEL, AGENT_RUNTIME_DEFAULTS } from '@/domains/storyteller/config/ModelConfig'
 
-// Import all v2 tools
-import {
-  manageBeatTool,
-  listBeatsTool,
-  analyzeRelationshipsTool,
-  suggestRelationshipTool,
-  checkContinuityTool,
-  quickConsistencyCheckTool,
-  expandSceneTool,
-  condenseSceneTool,
-  improveDialogueTool,
-  addVisualHookTool,
-  shiftToneTool,
-  regenerateTextTool,
-  agentTools,
-  worldBuildingTools,
-  updateStoryPhaseTool,
-  getPlotPhaseTool,
-  validateConsistencyTool,
-  characterCreationTools,
-  episodeCreationTools,
-  selfCritiqueTool,
-  searchKnowledgeBaseTool,
-  storeKnowledgeTool,
-  searchCharacterHistoryTool,
-  getUserPreferencesTool,
-  researchTool,
-  factCheckTool,
-  referenceLookupTool,
-} from '@/domains/storyteller/agents/tools'
-import { runStoryCreationWorkflowTool } from '@/domains/storyteller/agents/tools/workflow-tools'
+// Import consolidated GRRM tools (9 tools total)
+import { grrmTools } from '@/domains/storyteller/agents/tools'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
 
 interface StorytellerConfig {
   modelName: string
   mastra?: Mastra
-  enableWorkflowTool?: boolean
 }
 
 export class StorytellerAgent {
@@ -62,40 +32,8 @@ export class StorytellerAgent {
   private toolsMap: Record<string, any>
 
   private constructor(config: StorytellerConfig, instructions: string) {
-    // All storyteller tools
-    const tools: any[] = [
-      selfCritiqueTool,
-      manageBeatTool,
-      listBeatsTool,
-      analyzeRelationshipsTool,
-      suggestRelationshipTool,
-      checkContinuityTool,
-      quickConsistencyCheckTool,
-      expandSceneTool,
-      condenseSceneTool,
-      improveDialogueTool,
-      addVisualHookTool,
-      shiftToneTool,
-      regenerateTextTool,
-      ...agentTools,
-      ...worldBuildingTools,
-      ...characterCreationTools,
-      ...episodeCreationTools,
-      updateStoryPhaseTool,
-      getPlotPhaseTool,
-      validateConsistencyTool,
-      searchKnowledgeBaseTool,
-      storeKnowledgeTool,
-      searchCharacterHistoryTool,
-      getUserPreferencesTool,
-      researchTool,
-      factCheckTool,
-      referenceLookupTool,
-    ]
-
-    if (config.enableWorkflowTool !== false) {
-      tools.push(runStoryCreationWorkflowTool)
-    }
+    // Use consolidated GRRM tools (9 total: beat×2, character×2, episode×2, bible×3)
+    const tools = grrmTools
 
     // Store tools for direct execution
     this.toolsMap = tools.reduce((acc, tool) => ({ ...acc, [tool.id]: tool }), {})
@@ -135,8 +73,7 @@ export class StorytellerAgent {
   }
 
   static async create(
-    modelName: string = 'openai:gpt-4o-mini',
-    enableWorkflowTool: boolean = true
+    modelName: string = 'openai:gpt-4o-mini'
   ): Promise<StorytellerAgent> {
     registerCorePrompts()
 
@@ -452,7 +389,7 @@ You have access to the 'consult_devils_advocate' tool.
     const instructions = storytellerPrompt.text
 
     // Pass the singleton mastra instance to the agent
-    return new StorytellerAgent({ modelName, mastra: m, enableWorkflowTool }, instructions)
+    return new StorytellerAgent({ modelName, mastra: m }, instructions)
   }
 
   /**
@@ -487,8 +424,6 @@ You have access to the 'consult_devils_advocate' tool.
         const prompt = `Goal: ${goal}\n\nContext:\n${context}`
         const response = await this.agent.generate(prompt, {
           toolChoice,
-          temperature: options?.temperature ?? 0.75,
-          topP: options?.topP ?? 0.92,
           maxSteps: AGENT_RUNTIME_DEFAULTS.maxSteps,
           tracingOptions: {
             traceId: id,
@@ -613,15 +548,13 @@ Create a beat with:
   /**
    * Stream response from the agent
    */
-  async stream(prompt: string, options?: any) {
+  stream(prompt: string, options?: any) {
     // Use stream() with v2 models (specificationVersion = 'v2' set in createModel)
     const traceId = options?.traceId || this.generateHexId(32)
 
     return this.agent.stream(prompt, {
       toolChoice: options?.toolChoice || 'auto',
-      temperature: options?.temperature ?? 0.85,
-      topP: options?.topP ?? 0.95,
-      ...options,
+      maxSteps: AGENT_RUNTIME_DEFAULTS.maxSteps,
       tracingOptions: {
         traceId,
         ...(options?.parentSpanId ? { parentSpanId: options.parentSpanId } : {}),
@@ -632,8 +565,7 @@ Create a beat with:
 
 // Factory function for easy instantiation
 export async function createStorytellerAgent(
-  modelName: string = GLOBAL_AGENT_MODEL,
-  enableWorkflowTool: boolean = true
+  modelName: string = GLOBAL_AGENT_MODEL
 ): Promise<StorytellerAgent> {
-  return StorytellerAgent.create(modelName, enableWorkflowTool)
+  return StorytellerAgent.create(modelName)
 }

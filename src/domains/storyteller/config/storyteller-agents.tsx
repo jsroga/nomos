@@ -1,40 +1,54 @@
-import { Bot, User, Brain, Lightbulb, Scale, Eye, Pen } from 'lucide-react'
+import { Bot, User, Brain, Lightbulb, Scale, Eye, Pen, BookOpen } from 'lucide-react'
 import type { AgentConfigMap } from '@/domains/chat'
 
 export const STORYTELLER_AGENT_CONFIG: AgentConfigMap = {
-  Showrunner: {
+  // NEW: GRRM solo model agents (P1-4)
+  'GRRM Author': {
     color: 'text-primary',
     bgColor: 'bg-primary/10 border-primary/30',
+    icon: <Pen className="w-4 h-4" />,
+  },
+  'Beat Planner': {
+    color: 'text-blue-400/80',
+    bgColor: 'bg-blue-400/10 border-blue-400/20',
+    icon: <BookOpen className="w-4 h-4" />,
+  },
+  
+  // LEGACY: Old council/judges agents (deprecated — still on disk, not used in new flow)
+  // TODO(P2-1): Remove these once deletion wave completes
+  Showrunner: {
+    color: 'text-muted-foreground/50',
+    bgColor: 'bg-muted/5 border-border/10',
     icon: <Brain className="w-4 h-4" />,
   },
   PlotArchitect: {
-    color: 'text-blue-400/80',
-    bgColor: 'bg-blue-400/10 border-blue-400/20',
+    color: 'text-muted-foreground/50',
+    bgColor: 'bg-muted/5 border-border/10',
     icon: <Lightbulb className="w-4 h-4" />,
   },
   CharacterPsychology: {
-    color: 'text-purple-400/80',
-    bgColor: 'bg-purple-500/10 border-purple-500/30',
+    color: 'text-muted-foreground/50',
+    bgColor: 'bg-muted/5 border-border/10',
     icon: <Brain className="w-4 h-4" />,
   },
   ConsequenceTracker: {
-    color: 'text-green-400/80',
-    bgColor: 'bg-green-500/10 border-green-500/30',
+    color: 'text-muted-foreground/50',
+    bgColor: 'bg-muted/5 border-border/10',
     icon: <Bot className="w-4 h-4" />,
   },
   DevilsAdvocate: {
-    color: 'text-red-400/80',
-    bgColor: 'bg-red-500/10 border-red-500/30',
+    color: 'text-muted-foreground/50',
+    bgColor: 'bg-muted/5 border-border/10',
     icon: <Scale className="w-4 h-4" />,
   },
   VisualMoment: {
-    color: 'text-cyan-400/80',
-    bgColor: 'bg-cyan-500/10 border-cyan-500/30',
+    color: 'text-muted-foreground/50',
+    bgColor: 'bg-muted/5 border-border/10',
     icon: <Eye className="w-4 h-4" />,
   },
   Writer: {
-    color: 'text-orange-400/80',
-    bgColor: 'bg-orange-500/10 border-orange-500/30',
+    color: 'text-muted-foreground/50',
+    bgColor: 'bg-muted/5 border-border/10',
     icon: <Pen className="w-4 h-4" />,
   },
   User: {

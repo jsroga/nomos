@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Fabro plan-workflow verify: scoped typecheck + lint for the target module.
- * Full-repo `tsc --noEmit` OOMs (~4GB+) in the plan Docker sandbox; this script
- * typechecks only the module under cleanup (from PLAN.md) and fails only on errors
- * in that module's paths — not pre-existing issues elsewhere in the monorepo.
+ * Fabro plan-workflow verify: scoped typecheck + lint for the target module,
+ * then husky pre-commit parity (architecture, docs, full unit tests, production build).
+ * Full-repo `tsc --noEmit` OOMs (~4GB+) in the plan Docker sandbox; module typecheck
+ * uses an ephemeral tsconfig and ignores errors outside the verify scope.
  */
 import { execSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
@@ -107,6 +107,48 @@ function moduleFileGlobs(module) {
   return files;
 }
 
+function runModuleUnitTests(module) {
+  if (module === 'src-root') {
+    const changed = collectChangedTsFiles().filter(
+      (f) => f.includes('__tests__') || f.includes('.test.') || f.includes('.spec.'),
+    );
+    if (!changed.length) {
+      console.log('unit-tests: no changed test files — skip');
+      return;
+    }
+    console.log(`unit-tests: ${changed.length} changed test file(s)`);
+    const result = spawnSync('npx', ['vitest', 'run', ...changed], {
+      stdio: 'inherit',
+      env: { ...process.env, NODE_OPTIONS: NODE_OPTS },
+      maxBuffer: 64 * 1024 * 1024,
+    });
+    if (result.status !== 0) {
+      console.error('unit-tests: FAILED');
+      process.exit(result.status ?? 1);
+    }
+    console.log('unit-tests: OK');
+    return;
+  }
+
+  const domainDir = `src/domains/${module}`;
+  if (!existsSync(domainDir)) {
+    console.log(`unit-tests: no domain dir ${domainDir} — skip`);
+    return;
+  }
+
+  console.log(`unit-tests: vitest run ${domainDir}`);
+  const result = spawnSync('npx', ['vitest', 'run', domainDir], {
+    stdio: 'inherit',
+    env: { ...process.env, NODE_OPTIONS: NODE_OPTS },
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  if (result.status !== 0) {
+    console.error('unit-tests: FAILED');
+    process.exit(result.status ?? 1);
+  }
+  console.log('unit-tests: OK');
+}
+
 function runEslint(files) {
   if (!files.length) {
     console.log('eslint: no files — skip');
@@ -205,6 +247,32 @@ function runModuleTypecheck(module, focusFiles) {
   }
 }
 
+function runPreCommitParityGates() {
+  console.log('\n=== pre-commit parity (matches .husky/pre-commit) ===');
+
+  const gates = [
+    ['architecture layout', 'node', ['scripts/check-architecture.mjs']],
+    ['docs sync', 'node', ['scripts/check-docs-updated.mjs', '--working-tree']],
+    ['unit tests', 'npm', ['run', 'test:unit']],
+    ['production build', 'npm', ['run', 'build']],
+  ];
+
+  for (const [label, cmd, args] of gates) {
+    console.log(`\n▶ pre-commit parity: ${label}`);
+    const result = spawnSync(cmd, args, {
+      stdio: 'inherit',
+      env: { ...process.env, NODE_OPTIONS: NODE_OPTS },
+      maxBuffer: 64 * 1024 * 1024,
+    });
+    if (result.status !== 0) {
+      console.error(`pre-commit parity: ${label} FAILED — fix before handoff (same gates as git commit)`);
+      process.exit(result.status ?? 1);
+    }
+  }
+
+  console.log('pre-commit parity: all gates passed');
+}
+
 function main() {
   const module = moduleFromPlan();
   if (!module) {
@@ -224,6 +292,8 @@ function main() {
     console.log(`fabro-verify (src-root): verifying ${srcChanged.length} changed file(s)`);
     runModuleTypecheck(module, srcChanged);
     runEslint(srcChanged);
+    runModuleUnitTests(module);
+    runPreCommitParityGates();
     console.log('fabro-verify: pass');
     return;
   }
@@ -253,6 +323,8 @@ function main() {
 
   runModuleTypecheck(module, focus);
   runEslint(eslintTargets.length ? eslintTargets : moduleFiles);
+  runModuleUnitTests(module);
+  runPreCommitParityGates();
   console.log('fabro-verify: pass');
 }
 

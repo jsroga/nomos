@@ -126,4 +126,26 @@ export const studioAgents: Record<string, Agent> = {
       ...storytellerStudioTools,
     },
   }),
+
+  // NEW: GRRM solo model agents (P1-4)
+  grrmAuthor: new Agent({
+    id: 'grrm-author',
+    name: 'GRRM Author',
+    instructions:
+      'You are George R.R. Martin\'s creative mind. Work SOLO: plan → draft → self-critique → iterate. Output script-format beats (slugline + action + dialogue with subtext). Every beat must move action forward (Law of Motion: actionTaken, consequence, storyStateChange).',
+    model: DEFAULT_MODEL,
+    tools: storytellerStudioTools,
+  }),
+
+  beatPlanner: new Agent({
+    id: 'beat-planner',
+    name: 'Beat Planner',
+    instructions:
+      'You plan story beat structure (goal, conflict, turn, dialogue hook) — NO prose generation. Output structured beat plans as JSON. Hand plans to the Author for script execution.',
+    model: DEFAULT_MODEL,
+    tools: {
+      list_beats: storytellerStudioTools.list_beats,
+      manage_beat: storytellerStudioTools.manage_beat,
+    },
+  }),
 }

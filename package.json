@@ -97,6 +97,7 @@
     "@typescript-eslint/parser": "^8.48.0",
     "autoprefixer": "^10.4.22",
     "babel-plugin-react-compiler": "^1.0.0",
+    "esbuild": "^0.25.12",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react": "^7.37.5",
@@ -106,6 +107,7 @@
     "fast-check": "^4.5.3",
     "glob": "^13.0.0",
     "happy-dom": "^20.4.0",
+    "husky": "^9.1.7",
     "jsdom": "^27.4.0",
     "knip": "^5.82.1",
     "mastra": "^1.18.0",
@@ -117,6 +119,10 @@
     "vitest": "^4.0.18"
   },
   "scripts": {
+    "prepare": "husky",
+    "check:architecture": "node scripts/check-architecture.mjs",
+    "check:docs": "node scripts/check-docs-updated.mjs",
+    "precommit": "node scripts/pre-commit.mjs",
     "build": "next build",
     "dev": "next dev --turbo -p 4000",
     "dev:webpack": "next dev -p 4000",

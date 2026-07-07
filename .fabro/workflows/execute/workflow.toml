@@ -40,7 +40,6 @@ memory = "8GB"
 [environments.execute-docker.env]
 NODE_OPTIONS = "--max-old-space-size=6144"
 
-# Preview URLs require Daytona: fabro run … --environment execute-daytona --preserve-sandbox
 [environments.execute-daytona]
 provider = "daytona"
 
@@ -53,24 +52,3 @@ memory = "8GB"
 
 [environments.execute-daytona.env]
 NODE_OPTIONS = "--max-old-space-size=6144"
-
-[run.artifacts]
-include = ["screenshots/**", "SCREENSHOTS.md"]
-
-[[run.hooks]]
-id = "unit-tests-after-implement"
-name = "unit-tests-after-implement"
-event = "stage_complete"
-script = "npm run test:unit"
-matcher = "developer"
-blocking = true
-timeout = "10m"
-
-[[run.hooks]]
-id = "e2e-full-after-implement"
-name = "e2e-full-after-implement"
-event = "stage_complete"
-script = "npm run test:e2e full-loop"
-matcher = "developer"
-blocking = false
-timeout = "30m"

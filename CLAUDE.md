@@ -70,7 +70,7 @@ npx tsx src/shared/agent-kernel/cursor-runner.ts --module <module>
 npx tsx src/shared/agent-kernel/cursor-runner.ts --module <module> --cloud --repo owner/repo --auto-create-pr
 ```
 
-Cursor config: `.cursor/rules/*.mdc` (scoped), `.cursor/agents/*.md` (9 stage subagents), `.cursor/skills/execute/SKILL.md` (`/execute`), `.cursor/hooks.json` (verify-on-edit + destructive-command guard), `.cursor/mcp.json` (trigger + fabro + world-building-kit), `.cursor/automations/` (PR verify, nightly sweep — materialize via `/automate`). Trigger.dev task: `cursor-execute` (`src/trigger/cursor-execute.task.ts`). Stage prompts are the single source of truth in `.fabro/workflows/execute/prompts/`.
+Cursor config: `.cursor/rules/*.mdc` (scoped), `.cursor/agents/*.md` (5 stage subagents), `.cursor/skills/execute/SKILL.md` (`/execute`), `.cursor/hooks.json` (verify-on-edit + destructive-command guard), `.cursor/mcp.json` (trigger + fabro + world-building-kit), `.cursor/automations/` (PR verify, nightly sweep — opt-in drafts; materialize via `/automate`). Trigger.dev task: `cursor-execute` (`src/trigger/cursor-execute.task.ts`). Stage prompts are the single source of truth in `.fabro/workflows/execute/prompts/`.
 
 ## Quality gates
 

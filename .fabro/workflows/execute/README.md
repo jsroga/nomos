@@ -1,5 +1,40 @@
 # Execute workflow — UI & artifacts
 
+## Agent sharing (Fabro + Cursor)
+
+**The prompt file is the agent.** Each stage in `workflow.fabro` points at
+`prompt="@prompts/<stage>.md"` — that markdown file is the full agent instruction
+set (role, project knowledge, outputs, rules). Fabro feeds the body directly to
+the LLM.
+
+**Cursor adapters** live in `.cursor/agents/<stage>.md`. They are thin:
+YAML frontmatter (`name`, `description`, `model`) + a pointer to `Read` the
+matching prompt. **All richness lives once in `.fabro/workflows/execute/prompts/`.**
+Do not duplicate prompt content in `.cursor/agents/` — it will drift.
+
+| Stage | Prompt (agent) | Cursor adapter | Artifact |
+| --- | --- | --- | --- |
+| Scope | `prompts/scope.md` | `scope-runner.md` | `.local/findings/scope.md` |
+| Clarify Prep | `prompts/clarify-prep.md` | `clarify-facilitator.md` | `CLARIFY.md`, `DECISIONS.md` |
+| Plan | `prompts/plan.md` | `plan-author.md` | `PLAN.md`, `STRUCTURE.md` |
+| Implement | `prompts/implement.md` | `developer.md` | code changes |
+| Retro | `prompts/retro.md` | `retro-author.md` | `RETRO.md` |
+
+**Data flow:** Scope → Clarify only (`.local/findings/scope.md`). Plan does **not** read
+Scope output — it discovers the codebase via spot-checks + human's Clarify choice.
+
+**Depth targets (quality bar):**
+
+| Stage | Agent-heavy module (e.g. storyteller) | Typical module |
+| --- | --- | --- |
+| Scope (`.local/findings/scope.md`) | **≥120 lines** — subsystem map, 8–12 tensions, 5–7 Clarify axes | **≥60 lines** |
+| Plan (`PLAN.md`) | **35–55 items**, **≥500 lines** — spot-check evidence, rewiring matrix, deletion order, risk register | **15–25 items**, **≥200 lines** |
+
+Shallow scope or plan output should be treated as a failed stage — re-run or iterate at Verification **[I]**.
+
+Interactive IDE path: `/execute` skill → spawns Cursor subagent → subagent `Read`s
+prompt → executes. Sandboxed path: `fabro run …` reads prompt directly.
+
 ## Where to find things in the Fabro web UI
 
 Run detail: `http://127.0.0.1:32276/runs/<run-id>`
@@ -24,14 +59,12 @@ prefixes are the keyboard accelerators. Edges with `freeform=true` add a free-te
 fallback (routed to `human.gate.text`).
 
 1. **Clarify** (before Plan): Clarify Prep's final response has the **module-specific**
-   scope table (from `findings/assess.md`). Dock buttons are generic **[A] Staged** ·
-   **[B] Minimal** · **[C] Full** · **[F]** custom · **[R]** re-assess — the prep
-   summary defines what A/B/C mean for **this** module. Do not commit `CLARIFY.md` /
-   `DECISIONS.md` (stale files poison Docker clones).
+   scope table (from `.local/findings/scope.md`). Dock buttons are generic **[A] [B] [C]**
+   · **[F]** custom · **[R]** re-scope — the prep summary defines what A/B/C mean
+   for **this** module. Do not commit `CLARIFY.md` / `DECISIONS.md` (stale files
+   poison Docker clones).
 2. **Verification** (after Plan): **[A]** approve & build · **[B]** plan only ·
    **[I]** iterate (freeform notes only — not "A" from Clarify) · **[X]** abort
-3. **Preview** (build path, UI increments only): `[A]` looks good · `[R]` revise
-   (freeform, back to Implement) · `[S]` skip
 
 **Timeout defaults (`human.default_choice`).** Every gate has a 24h `timeout` plus a
 safe default so it never hangs indefinitely:
@@ -40,45 +73,28 @@ safe default so it never hangs indefinitely:
 | --- | --- | --- |
 | clarify | `plan` (recommended [A] scope) | keeps planning moving |
 | verification | `retro` (plan-only) | **never auto-builds** unattended |
-| preview | `retro` (finish) | no destructive action |
 
 **Fail closed.** Per the docs, `Interrupted`/`Skipped` answers never fall through to
 an approval edge. Each gate has an explicit `condition="outcome=failed"` → **Exit**
 route so an unanswered/disconnected gate ends cleanly instead of silently stuck.
-Auto-approve (`--auto-approve`) selects the first option (Clarify `[A]`,
-Verification `[A]` approve & build) — an explicit operator choice, distinct from an
-unanswered prompt.
+Auto-approve (`--auto-approve`) on Clarify picks edge **`[A]`** only (the literal graph
+label — **not** your module-specific meaning). It does **not** substitute for the
+Clarify Prep dock brief. **Do not use `--auto-approve` on runs where you need to read
+or review Clarify options** — use it only for unattended Verification → build after
+you have already chosen scope manually, or accept that Clarify will auto-pick `[A]`
+without showing module-specific A/B/C text in the dock buttons.
 
-## Preview ([preview](https://docs.fabro.sh/human-tools/preview))
-
-For UI increments the build path runs a **Dev server** stage (`npm run dev` on
-port 3000, backgrounded) then pauses at the **Preview** gate so you can open the
-running app before finishing.
-
-Preview URLs **require the Daytona provider** — local/docker sandboxes cannot serve
-previews (the gate still pauses for manual review, just without a URL). To actually
-preview:
-
-```bash
-fabro run .fabro/workflows/execute/workflow.toml -I module=interior-designer \
-  --environment execute-daytona --preserve-sandbox
-# at the Preview gate:
-fabro sandbox preview <run-id> 3000 --open     # or the Preview button in the web UI
-```
-
-`--preserve-sandbox` keeps the sandbox alive so preview URLs work after the run ends.
+Clarify Prep **must** still emit the full 3-question + A/B/C table every time (see
+`clarify-prep.md`).
 
 ## Artifacts
 
 | File | Written by |
 | --- | --- |
-| `findings/assess.md` | Assess |
-| `CLARIFY.md` | Clarify Prep |
-| `DECISIONS.md` | Plan (updates with human choices) |
-| `PLAN.md` | Plan (Architect) |
-| `UX.md` | UX Designer (build path only) |
-| `screenshots/**`, `SCREENSHOTS.md` | UI Screenshot (build path only) |
-| `RETRO.md` | Retro |
+| `.local/findings/scope.md` | Scope (Clarify input only — Plan does not read this; target **≥120 lines** for agent-heavy modules) |
+| `CLARIFY.md`, `DECISIONS.md` | Clarify Prep |
+| `PLAN.md` | Plan (Architect — agent-heavy runs target **≥500 lines**, 35–55 numbered items) |
+| `RETRO.md` | Retro (evidence-based — git diff verified) |
 ## Developer skills ([skills](https://docs.fabro.sh/agents/skills))
 
 The 16 skills live in `.fabro/skills/*/SKILL.md` (valid YAML frontmatter) and the
@@ -114,19 +130,12 @@ machine-local (not committed) — recreate it on a new machine.
 
 ## Build path routing
 
-- **`plan.has_ui_surface=yes`** (set by Plan Author `context_updates`) → Bootstrap →
-  **UX Designer** → Implement → verify → test → e2e → Screenshot → **Dev server** →
-  **Preview** gate → Retro.
-- **`plan.has_ui_surface=no`** (typical backend cleanup) → Bootstrap → **Implement**
-  (skips UX Designer) → verify → test → e2e → Screenshot → Retro (skips Preview).
-- **Bootstrap failure** → `setup_fail` shell stage with a clear error → Exit (does
-  not continue to Implement).
-
-## Browser / screenshots
-
-Build path only, after e2e: **UI Screenshot** uses Playwright **CLI** (`npx playwright
-screenshot`) post-bootstrap — run-level Playwright MCP is disabled to avoid ~30s
-startup delay on plan-path agents before `npm ci`.
+- **All increments** → Bootstrap (`npm ci`) → **Implement (codex)** → **Verify**
+  (`fabro-verify.mjs` = module typecheck + lint + module UT, **then husky pre-commit parity**: architecture, docs, full unit tests, production build) → **Retro**.
+- **Verify fix loop:** up to 3 retries back to Implement; then **ship anyway** to Retro
+  (verify failure does not block PR).
+- No UX Designer, Tester, E2E, Screenshot, or Preview stages in the simplified graph.
+- **Assess** stage removed — Clarify Prep works from Scope output only.
 
 ## Docker image
 
@@ -142,7 +151,7 @@ Daytona is the only provider that serves preview URLs.
 | Lever | Where | Effect |
 | --- | --- | --- |
 | Node heap `--max-old-space-size=6144` + 8GB/4cpu | `[environments.execute-docker].env`/`.resources` + `fabro-verify.mjs` | module-scoped `tsc` avoids full-repo OOM |
-| `node scripts/fabro-verify.mjs` | `verify` shell + `implement.md` self-check | typecheck/lint target module only; ignores errors outside `src/domains/<m>/` |
+| `node scripts/fabro-verify.mjs` | `verify` shell + `implement.md` self-check | module-scoped tsc + ESLint; then **pre-commit parity** (architecture, docs, `test:unit`, `build`) — commit-ready handoff |
 | `npm ci --prefer-offline --no-audit --no-fund` | Bootstrap script | skips audit/funding network calls |
 | `grep`, not `rg` | assess/plan prompts | ripgrep isn't installed pre-Bootstrap |
 | Read-before-write reminder | assess/clarify-prep prompts | avoids blocked `write_file` on pre-existing `.md` files |
@@ -168,12 +177,12 @@ Fidelity is tuned per-transition so each stage gets exactly the context it needs
 | `Preview → developer` (revise) | `compact` | surfaces the reviewer's `human.gate.text` note |
 | everything else | `summary:medium` (graph default) | lean preambles |
 
-Fix loops bail out with `condition="outcome=failed && internal.node_visit_count < 3"` →
-**Retro** after two fix attempts, so a stuck build (e.g. verify OOM) documents itself
-instead of burning `developer` visits.
+Fix loops: `verify` fails → **Implement (codex)** while `internal.node_visit_count < 4`
+(1 initial + 3 fix turns). After that → **Retro** unconditionally (**ship anyway** —
+verify failure does not block PR).
 
-Routing reads context set by earlier stages: `plan.has_ui_surface` (UX/Preview
-routing), `outcome` (gate pass/fail), `human.gate.*` (Clarify/Verification choices).
+Routing reads context set by earlier stages: `outcome` (verify pass/fail),
+`human.gate.*` (Clarify/Verification choices).
 
 ## Reusable across modules ([variables](https://docs.fabro.sh/workflows/variables))
 

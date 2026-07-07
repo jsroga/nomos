@@ -11,6 +11,9 @@ export enum LocalStorageKeys {
   AI_CONFIG_MESHY = 'ai-config-meshy',
   AI_CONFIG_LEGNEXT = 'ai-config-legnext',
 
+  // Storyteller chat model picker (selected chat model id)
+  STORYTELLER_CHAT_MODEL = 'storyteller-chat-model',
+
   // General AI Settings
   AI_ACTIVE_UPSCALER = 'ai-active-upscaler',
   AI_SEGMENTATION_PROVIDER = 'ai-segmentation-provider',

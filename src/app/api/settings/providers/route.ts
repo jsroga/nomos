@@ -12,6 +12,8 @@ export async function GET() {
       openai: !!process.env.OPENAI_API_KEY,
       anthropic: !!process.env.ANTHROPIC_API_KEY,
       google: !!process.env.GOOGLE_API_KEY,
+      zhipu: !!process.env.ZHIPU_API_KEY,
+      moonshot: !!process.env.MOONSHOT_API_KEY,
       legnext: !!process.env.LEGNEXT_API_KEY,
       stability: !!process.env.STABILITY_API_KEY,
       replicate: !!process.env.REPLICATE_API_TOKEN,

@@ -1,478 +1,421 @@
 /**
- * Character Relationship Tools - Mastra v2
+ * Character Management Tools - GRRM Solo Model
  *
- * Analyze and track relationships between characters.
- * Migrated from legacy LangChain DynamicStructuredTool.
+ * Consolidated character CRUD (merge create+update into manageCharacterTool).
  */
 
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
+import { characters } from '@/db/schema'
+import { db } from '@/db/client'
+import { eq, and } from 'drizzle-orm'
+import { v4 as uuidv4 } from 'uuid'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // ==========================================
-// TYPES & SCHEMAS
+// SCHEMAS
 // ==========================================
 
-z.enum([
-  'ally',
-  'enemy',
-  'rival',
-  'mentor',
-  'student',
-  'lover',
-  'family',
-  'stranger',
-  'acquaintance',
-  'complex',
-])
+const CharacterPsychologySchema = z
+  .object({
+    archetype: z.string().optional(),
+    actualMotivation: z.string().optional(),
+    fears: z.string().optional(),
+    desires: z.string().optional(),
+    delusions: z.string().optional(),
+    secrets: z.string().optional(),
+    fatalFlaw: z.string().optional(),
+    traits: z.array(z.string()).optional(),
+  })
+  .optional()
+  .describe('Deep psychological profile')
 
-type RelationshipType = z.infer<typeof RelationshipTypeSchema>
-
-interface CharacterMetrics {
-  valence: number
-  arousal: number
-  dominance: number
-  autonomy: number
-  competence: number
-  relatedness: number
-  transformation: number
-}
-
-interface CharacterState {
-  name: string
-  currentGoals: string[]
-  fears: string[]
-  selfDelusion?: string
-  actualMotivation?: string
-  metrics: CharacterMetrics
-}
-
-interface BeatCard {
-  id: string
-  sequence: number
-  charactersInvolved: string[]
-  emotionalShifts?: Record<string, { from: string; to: string }>
-}
-
-interface RelationshipEdge {
-  from: string
-  to: string
-  type: RelationshipType
-  strength: number
-  trust: number
-  dynamic: string
-  tension?: string
-  history: { beatId: string; beatSequence: number; change: string; strengthDelta: number }[]
-}
-
-interface RelationshipMatrix {
-  characters: string[]
-  edges: RelationshipEdge[]
-  clusters: { name: string; members: string[] }[]
-  centralCharacter: string
-  isolatedCharacters: string[]
-}
-
-const AnalyzeRelationshipsInputSchema = z.object({
-  focus: z
-    .enum(['full_matrix', 'character_focus', 'cluster_analysis', 'evolution'])
-    .describe('Analysis type'),
-  characterName: z.string().optional().describe('Character to focus on'),
-  includeHistory: z.boolean().optional().default(false).describe('Include beat history'),
-  characters: z.array(z.record(z.unknown())).describe('Array of CharacterState objects'),
-  beatBoard: z.array(z.record(z.unknown())).describe('Array of BeatCard objects'),
-  seriesBible: z.record(z.any()).optional().describe('Series bible context'),
-})
-
-const SuggestRelationshipInputSchema = z.object({
-  character1: z.string().describe('First character name'),
-  character2: z.string().describe('Second character name'),
-  desiredTone: z
-    .enum(['conflict', 'alliance', 'romance', 'rivalry', 'mentorship', 'any'])
+const CharacterDataSchema = z.object({
+  name: z.string().min(1).describe('Character name'),
+  role: z
+    .enum(['Protagonist', 'Antagonist', 'Supporting', 'Background', 'Lead'])
     .optional()
-    .default('any'),
-  characters: z.array(z.record(z.unknown())).describe('Array of CharacterState objects'),
+    .describe('Character role in the story'),
+  description: z.string().optional().describe('Physical and personality description'),
+  shortDescription: z.string().optional().describe('Brief one-line description'),
+  gender: z.string().optional().describe('Gender identity'),
+  mbti: z.string().optional().describe('MBTI personality type'),
+  voiceSignature: z.string().optional().describe('Distinctive speaking style'),
+  portraitUrl: z.string().url().optional().describe('Character portrait image URL'),
+  characterPrompt: z.string().optional().describe('Internal character prompt'),
+  psychology: CharacterPsychologySchema,
+  // Metrics
+  valence: z.number().min(-100).max(100).optional().describe('Emotional valence'),
+  arousal: z.number().min(0).max(100).optional().describe('Arousal level'),
+  autonomy: z.number().min(0).max(100).optional().describe('Autonomy level'),
+  competence: z.number().min(0).max(100).optional().describe('Competence level'),
+  relatedness: z.number().min(0).max(100).optional().describe('Relatedness level'),
+  cognitiveClarity: z.number().min(0).max(100).optional().describe('Cognitive clarity'),
+  perceivedStakes: z.number().min(0).max(100).optional().describe('Perceived stakes'),
+  socialSafety: z.number().min(0).max(100).optional().describe('Social safety'),
+  moralAlignment: z.number().min(0).max(100).optional().describe('Moral alignment'),
+  transformationProgress: z.number().min(0).max(100).optional().describe('Transformation progress'),
+})
+
+const ManageCharacterInputSchema = z.object({
+  operation: z.enum(['create', 'update', 'delete', 'get', 'list']).describe('The operation to perform'),
+  characterId: z.string().uuid().optional().describe('Character ID for update/delete/get operations'),
+  projectId: z.string().uuid().optional().describe('Project ID (required for create/list)'),
+  data: CharacterDataSchema.optional().describe('Character data for create/update'),
+})
+
+const ListCharactersInputSchema = z.object({
+  projectId: z.string().uuid().describe('Project ID to filter characters'),
+  role: z
+    .enum(['Protagonist', 'Antagonist', 'Supporting', 'Background', 'Lead'])
+    .optional()
+    .describe('Filter by role'),
 })
 
 // ==========================================
-// HELPER FUNCTIONS
+// OUTPUT SCHEMAS
 // ==========================================
 
-function buildRelationshipMatrix(
-  characters: CharacterState[],
-  beats: BeatCard[],
-  seriesBible: Record<string, unknown> = {}
-): RelationshipMatrix {
-  const charNames = characters.map(c => c.name)
-  const edges: RelationshipEdge[] = []
+const CharacterOutputSchema = z.object({
+  id: z.string().uuid(),
+  projectId: z.string().uuid(),
+  name: z.string(),
+  role: z.string(),
+  description: z.string().optional(),
+  shortDescription: z.string().optional(),
+  gender: z.string().optional(),
+  mbti: z.string().optional(),
+  voiceSignature: z.string().optional(),
+  portraitUrl: z.string().optional(),
+  psychology: z.record(z.unknown()).optional(),
+  valence: z.number().optional(),
+  arousal: z.number().optional(),
+  autonomy: z.number().optional(),
+  competence: z.number().optional(),
+  relatedness: z.number().optional(),
+})
 
-  const factions = seriesBible.factions || []
-  const factionMembership: Map<string, string> = new Map()
-  factions.forEach((faction: any) => {
-    const members = faction.members || faction.keyMembers || []
-    members.forEach((member: string) => factionMembership.set(member.toLowerCase(), faction.name))
-  })
+const ManageCharacterOutputSchema = z.object({
+  success: z.boolean(),
+  message: z.string().optional(),
+  error: z.string().optional(),
+  character: CharacterOutputSchema.optional(),
+})
 
-  for (let i = 0; i < charNames.length; i++) {
-    for (let j = i + 1; j < charNames.length; j++) {
-      const edge = inferRelationship(characters[i], characters[j], beats, factionMembership)
-      if (edge) edges.push(edge)
-    }
-  }
-
-  const clusters = findRelationshipClusters(edges, charNames)
-
-  const connectionCounts = new Map<string, number>()
-  charNames.forEach(name => connectionCounts.set(name, 0))
-  edges.forEach(edge => {
-    connectionCounts.set(
-      edge.from,
-      (connectionCounts.get(edge.from) || 0) + Math.abs(edge.strength)
-    )
-    connectionCounts.set(edge.to, (connectionCounts.get(edge.to) || 0) + Math.abs(edge.strength))
-  })
-
-  const centralCharacter =
-    Array.from(connectionCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || charNames[0] || ''
-  const isolatedCharacters = charNames.filter(name => {
-    const totalStrength = edges
-      .filter(e => e.from === name || e.to === name)
-      .reduce((sum, e) => sum + Math.abs(e.strength), 0)
-    return totalStrength < 20
-  })
-
-  return { characters: charNames, edges, clusters, centralCharacter, isolatedCharacters }
-}
-
-function inferRelationship(
-  char1: CharacterState,
-  char2: CharacterState,
-  beats: BeatCard[],
-  factionMembership: Map<string, string>
-): RelationshipEdge | null {
-  const sharedBeats = beats.filter(
-    beat =>
-      beat.charactersInvolved.includes(char1.name) && beat.charactersInvolved.includes(char2.name)
-  )
-
-  if (sharedBeats.length === 0) return null
-
-  let cumulativeShift = 0
-  const history: RelationshipEdge['history'] = []
-
-  sharedBeats.forEach(beat => {
-    const shift1 = beat.emotionalShifts?.[char1.name]
-    const shift2 = beat.emotionalShifts?.[char2.name]
-    let delta = 0
-
-    if (shift1 && shift2) {
-      const positive1 = ['happy', 'hopeful', 'trusting', 'loving'].some(e =>
-        shift1.to.toLowerCase().includes(e)
-      )
-      const positive2 = ['happy', 'hopeful', 'trusting', 'loving'].some(e =>
-        shift2.to.toLowerCase().includes(e)
-      )
-      if (positive1 && positive2) delta = 10
-      else if (!positive1 && !positive2) delta = -5
-      else delta = -10
-    }
-
-    if (delta !== 0) {
-      cumulativeShift += delta
-      history.push({
-        beatId: beat.id,
-        beatSequence: beat.sequence,
-        change: `${char1.name} felt ${shift1?.to || 'unchanged'}, ${char2.name} felt ${shift2?.to || 'unchanged'}`,
-        strengthDelta: delta,
-      })
-    }
-  })
-
-  const type = determineRelationshipType(char1, char2, factionMembership)
-  const baseStrength = Math.min(100, Math.max(-100, sharedBeats.length * 5 + cumulativeShift))
-  const avgRelatedness = (char1.metrics.relatedness + char2.metrics.relatedness) / 2
-
-  return {
-    from: char1.name,
-    to: char2.name,
-    type,
-    strength: baseStrength,
-    trust: avgRelatedness,
-    dynamic: generateDynamicDescription(type),
-    history,
-  }
-}
-
-function determineRelationshipType(
-  char1: CharacterState,
-  char2: CharacterState,
-  factionMembership: Map<string, string>
-): RelationshipType {
-  const faction1 = factionMembership.get(char1.name.toLowerCase())
-  const faction2 = factionMembership.get(char2.name.toLowerCase())
-
-  if (faction1 && faction2 && faction1 === faction2) return 'ally'
-
-  const goals1 = char1.currentGoals || []
-  const goals2 = char2.currentGoals || []
-  const fears1 = char1.fears || []
-  const sharedGoals = goals1.filter(g1 =>
-    goals2.some(
-      g2 =>
-        g1.toLowerCase().includes(g2.toLowerCase()) || g2.toLowerCase().includes(g1.toLowerCase())
-    )
-  )
-  if (sharedGoals.length > 0) return 'ally'
-
-  const conflicting = fears1.some(f => goals2.some(g => f.toLowerCase().includes(g.toLowerCase())))
-  if (conflicting) return 'rival'
-
-  if (char1.metrics.transformation > 70 && char2.metrics.transformation < 30) return 'mentor'
-
-  return 'acquaintance'
-}
-
-function generateDynamicDescription(type: RelationshipType): string {
-  const descriptions: Record<RelationshipType, string[]> = {
-    ally: ['fighting alongside each other', 'bound by shared purpose'],
-    enemy: ['sworn adversaries', 'locked in conflict'],
-    rival: ['competitive but respectful', 'pushing each other'],
-    mentor: ['guiding and teaching', 'sharing wisdom'],
-    student: ['learning and growing', 'seeking guidance'],
-    lover: ['deeply connected', 'emotionally intimate'],
-    family: ['bound by blood', 'familial duty'],
-    stranger: ['unknown to each other', 'paths not yet crossed'],
-    acquaintance: ['casual familiarity', 'surface-level connection'],
-    complex: ['tangled history', 'complicated dynamic'],
-  }
-  const options = descriptions[type] || descriptions.acquaintance
-  return options[Math.floor(Math.random() * options.length)]
-}
-
-function findRelationshipClusters(
-  edges: RelationshipEdge[],
-  _charNames: string[]
-): { name: string; members: string[] }[] {
-  const clusters: { name: string; members: string[] }[] = []
-  const assigned = new Set<string>()
-
-  edges
-    .filter(
-      e => e.strength > 30 && (e.type === 'ally' || e.type === 'family' || e.type === 'lover')
-    )
-    .forEach(edge => {
-      if (!assigned.has(edge.from) && !assigned.has(edge.to)) {
-        clusters.push({ name: `${edge.from}/${edge.to} Alliance`, members: [edge.from, edge.to] })
-        assigned.add(edge.from)
-        assigned.add(edge.to)
-      } else {
-        const existingCluster = clusters.find(
-          c => c.members.includes(edge.from) || c.members.includes(edge.to)
-        )
-        if (existingCluster) {
-          if (!existingCluster.members.includes(edge.from)) {
-            existingCluster.members.push(edge.from)
-            assigned.add(edge.from)
-          }
-          if (!existingCluster.members.includes(edge.to)) {
-            existingCluster.members.push(edge.to)
-            assigned.add(edge.to)
-          }
-        }
-      }
-    })
-
-  return clusters
-}
-
-function analyzeMetricCompatibility(m1: CharacterMetrics, m2: CharacterMetrics): string[] {
-  const insights: string[] = []
-  if (Math.sign(m1.valence) !== Math.sign(m2.valence)) {
-    insights.push(
-      `TENSION: ${m1.valence > 0 ? 'Positive' : 'Negative'} vs ${m2.valence > 0 ? 'Positive' : 'Negative'} emotional baselines.`
-    )
-  }
-  const autonomyGap = Math.abs(m1.autonomy - m2.autonomy)
-  if (autonomyGap > 30)
-    insights.push(`POWER DYNAMIC: ${autonomyGap}pt autonomy gap suggests mentor/student dynamic.`)
-  const transformGap = Math.abs(m1.transformation - m2.transformation)
-  if (transformGap > 40)
-    insights.push('ARC TENSION: Character arc mismatch creates story potential.')
-  return insights
-}
-
-function inferBestDynamic(char1: CharacterState, char2: CharacterState): string {
-  if (Math.abs(char1.metrics.transformation - char2.metrics.transformation) > 40)
-    return 'mentorship'
-  if (char1.metrics.competence > 60 && char2.metrics.competence > 60) return 'rivalry'
-  if (char1.metrics.relatedness > 60 && char2.metrics.relatedness > 60) return 'alliance'
-  return 'complex'
-}
+const ListCharactersOutputSchema = z.object({
+  success: z.boolean(),
+  characters: z.array(CharacterOutputSchema),
+  count: z.number(),
+})
 
 // ==========================================
-// MASTRA TOOLS
+// TOOLS
 // ==========================================
 
-export const analyzeRelationshipsTool = createTool({
-  id: 'analyze_relationships',
+/**
+ * Unified character management tool
+ * Merges create + update operations
+ */
+export const manageCharacterTool = createTool({
+  id: 'manage_character',
   description:
-    'Analyze character relationships. Modes: full_matrix, character_focus, cluster_analysis, evolution.',
-  inputSchema: AnalyzeRelationshipsInputSchema,
-  execute: async (args: any) => {
-    const context = args?.context || args
-    const {
-      focus,
-      characterName,
-      includeHistory = false,
-      characters,
-      beatBoard,
-      seriesBible = {},
-    } = context
+    'Create, update, delete, or get a character. Create requires projectId and name. Update requires characterId.',
+  inputSchema: ManageCharacterInputSchema,
+  outputSchema: ManageCharacterOutputSchema,
+  execute: async (inputData, context) => {
+    const { operation, characterId, projectId, data } = inputData
 
-    if (characters.length < 2) {
-      return JSON.stringify({ success: false, error: 'Need at least 2 characters' })
-    }
+    try {
+      switch (operation) {
+        case 'create': {
+          if (!projectId) {
+            return {
+              success: false,
+              error: 'projectId is required for create operation',
+            }
+          }
+          if (!data || !data.name) {
+            return {
+              success: false,
+              error: 'data.name is required for create operation',
+            }
+          }
 
-    const matrix = buildRelationshipMatrix(
-      characters as CharacterState[],
-      beatBoard as BeatCard[],
-      seriesBible
-    )
+          // Check if character already exists
+          const existing = await db
+            .select()
+            .from(characters)
+            .where(and(eq(characters.projectId, projectId), eq(characters.name, data.name)))
+            .limit(1)
 
-    switch (focus) {
-      case 'full_matrix': {
-        const edgeSummaries = matrix.edges.map(e => ({
-          pair: `${e.from} ↔ ${e.to}`,
-          type: e.type,
-          strength: e.strength,
-          trust: e.trust,
-          dynamic: e.dynamic,
-          ...(includeHistory && { history: e.history }),
-        }))
-        return JSON.stringify({
-          success: true,
-          totalCharacters: matrix.characters.length,
-          totalRelationships: matrix.edges.length,
-          centralCharacter: matrix.centralCharacter,
-          isolatedCharacters: matrix.isolatedCharacters,
-          relationships: edgeSummaries,
-          clusters: matrix.clusters,
-        })
-      }
-      case 'character_focus': {
-        if (!characterName)
-          return JSON.stringify({ success: false, error: 'characterName required' })
-        const charEdges = matrix.edges.filter(
-          e => e.from === characterName || e.to === characterName
-        )
-        if (charEdges.length === 0) {
-          return JSON.stringify({
-            success: true,
-            character: characterName,
-            message: 'No relationships yet.',
-            suggestions: ['Add interactions'],
+          if (existing.length > 0) {
+            return {
+              success: false,
+              error: `Character "${data.name}" already exists in this project`,
+            }
+          }
+
+          const newCharacterId = uuidv4()
+
+          await db.insert(characters).values({
+            id: newCharacterId,
+            projectId,
+            name: data.name,
+            role: data.role ?? 'Supporting',
+            description: data.shortDescription ?? data.description ?? null,
+            gender: data.gender ?? null,
+            mbti: data.mbti ?? null,
+            voiceSignature: data.voiceSignature ?? null,
+            portraitUrl: data.portraitUrl ?? null,
+            characterPrompt: data.characterPrompt ?? null,
+            psychology: data.psychology ?? null,
+            valence: data.valence ?? 0,
+            arousal: data.arousal ?? 50,
+            autonomy: data.autonomy ?? 60,
+            competence: data.competence ?? 60,
+            relatedness: data.relatedness ?? 50,
+            cognitiveClarity: data.cognitiveClarity ?? 70,
+            perceivedStakes: data.perceivedStakes ?? 40,
+            socialSafety: data.socialSafety ?? 60,
+            moralAlignment: data.moralAlignment ?? 70,
+            transformationProgress: data.transformationProgress ?? 0,
           })
+
+          const [created] = await db.select().from(characters).where(eq(characters.id, newCharacterId))
+
+          return {
+            success: true,
+            message: `Created character "${data.name}" (${data.role ?? 'Supporting'})`,
+            character: {
+              id: created.id,
+              projectId: created.projectId,
+              name: created.name,
+              role: created.role,
+              description: created.description ?? undefined,
+              shortDescription: created.description ?? undefined,
+              gender: created.gender ?? undefined,
+              mbti: created.mbti ?? undefined,
+              voiceSignature: created.voiceSignature ?? undefined,
+              portraitUrl: created.portraitUrl ?? undefined,
+              psychology: (created.psychology as any) ?? undefined,
+              valence: created.valence,
+              arousal: created.arousal,
+              autonomy: created.autonomy,
+              competence: created.competence,
+              relatedness: created.relatedness,
+            },
+          }
         }
-        const relationships = charEdges.map(e => ({
-          otherCharacter: e.from === characterName ? e.to : e.from,
-          type: e.type,
-          strength: e.strength,
-          trust: e.trust,
-          dynamic: e.dynamic,
-          ...(includeHistory && { history: e.history }),
-        }))
-        return JSON.stringify({
-          success: true,
-          character: characterName,
-          totalRelationships: relationships.length,
-          relationships,
-        })
+
+        case 'update': {
+          if (!characterId) {
+            return {
+              success: false,
+              error: 'characterId is required for update operation',
+            }
+          }
+          if (!data) {
+            return {
+              success: false,
+              error: 'data is required for update operation',
+            }
+          }
+
+          const [existing] = await db.select().from(characters).where(eq(characters.id, characterId))
+
+          if (!existing) {
+            return {
+              success: false,
+              error: `Character ${characterId} not found`,
+            }
+          }
+
+          const updateFields: any = { updatedAt: new Date() }
+          if (data.name !== undefined) updateFields.name = data.name
+          if (data.role !== undefined) updateFields.role = data.role
+          if (data.description !== undefined) updateFields.description = data.description
+          if (data.shortDescription !== undefined) updateFields.description = data.shortDescription
+          if (data.description !== undefined) updateFields.description = data.description
+          if (data.gender !== undefined) updateFields.gender = data.gender
+          if (data.mbti !== undefined) updateFields.mbti = data.mbti
+          if (data.voiceSignature !== undefined) updateFields.voiceSignature = data.voiceSignature
+          if (data.portraitUrl !== undefined) updateFields.portraitUrl = data.portraitUrl
+          if (data.characterPrompt !== undefined) updateFields.characterPrompt = data.characterPrompt
+          if (data.psychology !== undefined) {
+            // Merge psychology deeply
+            const currentPsych = (existing.psychology as any) ?? {}
+            updateFields.psychology = { ...currentPsych, ...data.psychology }
+          }
+          if (data.valence !== undefined) updateFields.valence = data.valence
+          if (data.arousal !== undefined) updateFields.arousal = data.arousal
+          if (data.autonomy !== undefined) updateFields.autonomy = data.autonomy
+          if (data.competence !== undefined) updateFields.competence = data.competence
+          if (data.relatedness !== undefined) updateFields.relatedness = data.relatedness
+          if (data.cognitiveClarity !== undefined) updateFields.cognitiveClarity = data.cognitiveClarity
+          if (data.perceivedStakes !== undefined) updateFields.perceivedStakes = data.perceivedStakes
+          if (data.socialSafety !== undefined) updateFields.socialSafety = data.socialSafety
+          if (data.moralAlignment !== undefined) updateFields.moralAlignment = data.moralAlignment
+          if (data.transformationProgress !== undefined)
+            updateFields.transformationProgress = data.transformationProgress
+
+          await db.update(characters).set(updateFields).where(eq(characters.id, characterId))
+
+          const [updated] = await db.select().from(characters).where(eq(characters.id, characterId))
+
+          return {
+            success: true,
+            message: `Updated character "${updated.name}"`,
+            character: {
+              id: updated.id,
+              projectId: updated.projectId,
+              name: updated.name,
+              role: updated.role,
+              description: updated.description ?? undefined,
+              shortDescription: updated.description ?? undefined,
+              gender: updated.gender ?? undefined,
+              mbti: updated.mbti ?? undefined,
+              voiceSignature: updated.voiceSignature ?? undefined,
+              portraitUrl: updated.portraitUrl ?? undefined,
+              psychology: (updated.psychology as any) ?? undefined,
+              valence: updated.valence,
+              arousal: updated.arousal,
+              autonomy: updated.autonomy,
+              competence: updated.competence,
+              relatedness: updated.relatedness,
+            },
+          }
+        }
+
+        case 'delete': {
+          if (!characterId) {
+            return {
+              success: false,
+              error: 'characterId is required for delete operation',
+            }
+          }
+
+          const [character] = await db.select().from(characters).where(eq(characters.id, characterId))
+
+          if (!character) {
+            return {
+              success: false,
+              error: `Character ${characterId} not found`,
+            }
+          }
+
+          await db.delete(characters).where(eq(characters.id, characterId))
+
+          return {
+            success: true,
+            message: `Deleted character "${character.name}"`,
+          }
+        }
+
+        case 'get': {
+          if (!characterId) {
+            return {
+              success: false,
+              error: 'characterId is required for get operation',
+            }
+          }
+
+          const [character] = await db.select().from(characters).where(eq(characters.id, characterId))
+
+          if (!character) {
+            return {
+              success: false,
+              error: `Character ${characterId} not found`,
+            }
+          }
+
+          return {
+            success: true,
+            character: {
+              id: character.id,
+              projectId: character.projectId,
+              name: character.name,
+              role: character.role,
+              description: character.description ?? undefined,
+              shortDescription: character.description ?? undefined,
+              gender: character.gender ?? undefined,
+              mbti: character.mbti ?? undefined,
+              voiceSignature: character.voiceSignature ?? undefined,
+              portraitUrl: character.portraitUrl ?? undefined,
+              psychology: (character.psychology as any) ?? undefined,
+              valence: character.valence,
+              arousal: character.arousal,
+              autonomy: character.autonomy,
+              competence: character.competence,
+              relatedness: character.relatedness,
+            },
+          }
+        }
+
+        default:
+          return {
+            success: false,
+            error: `Unknown operation: ${operation}`,
+          }
       }
-      case 'cluster_analysis': {
-        return JSON.stringify({
-          success: true,
-          totalClusters: matrix.clusters.length,
-          clusters: matrix.clusters,
-          isolatedCharacters: matrix.isolatedCharacters,
-        })
+    } catch (error) {
+      return {
+        success: false,
+        error: getErrorMessage(error),
       }
-      case 'evolution': {
-        const allChanges = matrix.edges
-          .flatMap(e => e.history.map(h => ({ pair: `${e.from} ↔ ${e.to}`, ...h })))
-          .sort((a, b) => a.beatSequence - b.beatSequence)
-        return JSON.stringify({
-          success: true,
-          totalChanges: allChanges.length,
-          timeline: allChanges,
-        })
-      }
-      default:
-        return JSON.stringify({ success: false, error: `Unknown focus: ${focus}` })
     }
   },
 })
 
-export const suggestRelationshipTool = createTool({
-  id: 'suggest_relationship_dynamic',
-  description: 'Suggest relationship dynamics between two characters based on traits and goals.',
-  inputSchema: SuggestRelationshipInputSchema,
-  execute: async (args: any) => {
-    const context = args?.context || args
-    const { character1, character2, desiredTone = 'any', characters } = context
-    const char1 = (characters as CharacterState[]).find(
-      c => c.name.toLowerCase() === character1.toLowerCase()
-    )
-    const char2 = (characters as CharacterState[]).find(
-      c => c.name.toLowerCase() === character2.toLowerCase()
-    )
+/**
+ * List characters for a project
+ */
+export const listCharactersTool = createTool({
+  id: 'list_characters',
+  description: 'List all characters in a project, optionally filtered by role.',
+  inputSchema: ListCharactersInputSchema,
+  outputSchema: ListCharactersOutputSchema,
+  execute: async (inputData, context) => {
+    const { projectId, role } = inputData
 
-    if (!char1 || !char2) {
-      return JSON.stringify({
+    try {
+      const conditions: any[] = [eq(characters.projectId, projectId)]
+      if (role) conditions.push(eq(characters.role, role))
+
+      const results = await db
+        .select()
+        .from(characters)
+        .where(and(...conditions))
+
+      const formattedCharacters = results.map(char => ({
+        id: char.id,
+        projectId: char.projectId,
+        name: char.name,
+        role: char.role,
+        description: char.description ?? undefined,
+        shortDescription: char.description ?? undefined,
+        gender: char.gender ?? undefined,
+        mbti: char.mbti ?? undefined,
+        voiceSignature: char.voiceSignature ?? undefined,
+        portraitUrl: char.portraitUrl ?? undefined,
+        psychology: (char.psychology as any) ?? undefined,
+        valence: char.valence,
+        arousal: char.arousal,
+        autonomy: char.autonomy,
+        competence: char.competence,
+        relatedness: char.relatedness,
+      }))
+
+      return {
+        success: true,
+        characters: formattedCharacters,
+        count: formattedCharacters.length,
+      }
+    } catch (error) {
+      return {
         success: false,
-        error: `Could not find characters: ${character1}, ${character2}`,
-      })
+        characters: [],
+        count: 0,
+      }
     }
-
-    const suggestions: string[] = []
-
-    const goals1 = char1.currentGoals || []
-    const fears2 = char2.fears || []
-    const goalConflicts = goals1.filter(g1 =>
-      fears2.some(f => f.toLowerCase().includes(g1.toLowerCase().split(' ')[0]))
-    )
-    if (goalConflicts.length > 0) {
-      suggestions.push(`CONFLICT: ${char1.name}'s goal threatens ${char2.name}'s fears.`)
-    }
-
-    if (char1.selfDelusion && char2.selfDelusion) {
-      suggestions.push('IRONY: Similar self-delusions between characters.')
-    }
-
-    suggestions.push(...analyzeMetricCompatibility(char1.metrics, char2.metrics))
-
-    switch (desiredTone) {
-      case 'conflict':
-        suggestions.push(`Use ${char1.name}'s motivation against ${char2.name}.`)
-        break
-      case 'alliance':
-        suggestions.push('Unite against common threat.')
-        break
-      case 'romance':
-        suggestions.push('Self-delusions attract, motivations create tension.')
-        break
-      case 'rivalry':
-        suggestions.push('Competition for same goal.')
-        break
-      case 'mentorship':
-        suggestions.push('Transformation gap enables guidance.')
-        break
-    }
-
-    return JSON.stringify({
-      success: true,
-      character1: { name: char1.name, goals: char1.currentGoals, fears: char1.fears },
-      character2: { name: char2.name, goals: char2.currentGoals, fears: char2.fears },
-      suggestions,
-      recommendedDynamic: desiredTone === 'any' ? inferBestDynamic(char1, char2) : desiredTone,
-    })
   },
 })

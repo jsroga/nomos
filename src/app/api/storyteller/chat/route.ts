@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { beats } from '@/db'
 import { normalizeMastraTraceId, runStorytellerWorkflow } from '@/domains/storyteller/server'
+import { isKnownChatModel, resolveChatModelId } from '@/domains/storyteller/config/ChatModelCatalog'
 import { db } from '@/db/client'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
@@ -32,7 +33,7 @@ async function persistApprovedBeats(beatBoard: any[], episodeId: string) {
   }
 }
 
-export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedRequest) => {
+export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedRequest): Promise<NextResponse> => {
   try {
     const body = await req.json()
     const {
@@ -44,7 +45,17 @@ export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedReques
       existingBeats,
       targetEmotion,
       traceId: bodyTraceId,
+      modelName,
     } = body
+
+    // Resolve chat model id (fall back to global default; reject unknown).
+    const resolvedModelName = resolveChatModelId(modelName)
+    if (!isKnownChatModel(resolvedModelName)) {
+      return NextResponse.json(
+        { error: `Unknown model: ${resolvedModelName}` },
+        { status: 400 }
+      )
+    }
 
     // Extract traceId from headers or body, or generate new
     const traceId = normalizeMastraTraceId(req.headers.get('x-trace-id') || bodyTraceId)
@@ -61,7 +72,7 @@ export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedReques
 
     // Run workflow
     const result = await runStorytellerWorkflow(input, {
-      modelName: 'openai:gpt-4o', // Default or from config
+      modelName: resolvedModelName,
       traceId,
     })
 

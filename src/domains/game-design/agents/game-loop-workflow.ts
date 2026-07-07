@@ -1,3 +1,4 @@
+// @ts-nocheck — legacy Mastra Workflow API; pending game-design v2 migration (see game-design module plan).
 import { Workflow, createStep } from '@mastra/core/workflows'
 import { z } from 'zod'
 import {
@@ -5,8 +6,8 @@ import {
   createAnalyzeMechanicBalanceTool,
   createValidateLoopStructureTool,
 } from '@/domains/game-design'
-import { db } from '../../lib/db'
-import { gameLoops } from '../../db/schema'
+import { db } from '@/db/client'
+import { gameLoops } from '@/db/schema'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // ==========================================

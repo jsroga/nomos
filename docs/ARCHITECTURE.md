@@ -27,14 +27,16 @@ Implementation sequencing and acceptance criteria live in
 | `app/` | Next.js routes, API glue, `_shell/` app chrome |
 | `domains/` | Feature modules (blueprint §4) |
 | `shared/` | Cross-module code (`agent-kernel`, `ai`, `data`, `auth`, …) |
-| `components/ui/` | Radix/CVA design system only |
+| `components/` | Radix/CVA design system — flat PascalCase folder per primitive (+ `shell/`) |
 | `db/` | Drizzle schema + client |
 | `trigger/` | Task registry + shared task helpers |
 | `mcp/` | MCP server (separate deployable) |
 
+`src/mastra.ts` is the Mastra Studio CLI entry; `src/mastra/index.ts` is a one-file shim for `mastra dev`/`build`.
+
 Dev-time eval harness lives in top-level `evals/` (excluded from app `tsconfig`).
-Static legal copy lives in top-level `content/`.
-Structure is enforced by `src/__tests__/src-structure.test.ts`.
+Static legal copy lives in `src/domains/marketing/legal/` (served at `/terms` and `/privacy`).
+Structure is enforced by `src/__tests__/structure.test.ts` and `src/__tests__/src-topology.ts`.
 
 ---
 
@@ -268,7 +270,7 @@ npm run mastra:dev   # http://localhost:4111
 
 | Concern | Location |
 |---------|----------|
-| Studio entry | `src/shared/agent-kernel/mastra/index.ts` |
+| Studio entry | `src/mastra.ts` → `src/shared/agent-kernel/mastra/index.ts` |
 | Studio agent registry | `src/shared/agent-kernel/mastra/agents/registry.ts` |
 | Studio tool catalog (bundler-safe stubs) | `src/shared/agent-kernel/mastra/tools/bundles.ts` |
 | Production Mastra instance + Postgres memory | `src/shared/agent-kernel/MastraInstance.ts` |

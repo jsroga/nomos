@@ -112,7 +112,7 @@ function buildCustomTools(cwd: string, opts: RunExecuteOptions): Record<string, 
 
   const readArtifact: SDKCustomTool = {
     description:
-      'Read a run artifact file (PLAN.md, DECISIONS.md, STRUCTURE.md, UX.md, SCREENSHOTS.md, RETRO.md, findings/assess.md). Returns the file contents or "missing".',
+      'Read a run artifact file (PLAN.md, DECISIONS.md, STRUCTURE.md, UX.md, SCREENSHOTS.md, RETRO.md, .local/findings/scope.md). Returns the file contents or "missing".',
     inputSchema: {
       type: 'object',
       properties: { path: { type: 'string', description: 'Repo-relative path to the artifact.' } },

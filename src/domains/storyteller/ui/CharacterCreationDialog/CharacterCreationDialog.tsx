@@ -532,7 +532,7 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
                             className="w-full text-xs backdrop-blur-md bg-primary/60 hover:bg-primary/80 border-primary/40 text-white"
                             onClick={() => {
                               if (!gridImageUrl && portraitUrl) {
-                                setGridImageUrl(portraitUrl)
+                                updateGenState(activeCharId, { gridImageUrl: portraitUrl })
                               }
                               setShowVariantPicker(true)
                             }}

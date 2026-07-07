@@ -1,19 +1,17 @@
 /**
  * Storyteller Agents v2 - Mastra Implementation
- * Re-organized structure: StorytellerAgent/, council/, judges/, orchestration/, tools/
+ * Simplified to GRRM solo model: Author + Planner (+ Critics in wave 2)
  */
 
-// Primary agent
-export { StorytellerAgent, createStorytellerAgent } from './StorytellerAgent';
+// Primary agent (legacy — still used by existing routes)
+export { StorytellerAgent, createStorytellerAgent } from './StorytellerAgent'
 
-// Council agents (specialized advisors)
-export * from './council';
+// New GRRM solo agents
+export { GrrmAuthorAgent, createGrrmAuthorAgent } from './GrrmAuthor/GrrmAuthorAgent'
+export { BeatPlannerAgent, createBeatPlannerAgent } from './BeatPlanner/BeatPlannerAgent'
 
-// Judge agents (quality control)
-export * from './judges';
+// Orchestration (workflows, graphs, planner, context) — still used by existing routes
+export * from './orchestration'
 
-// Orchestration (workflows, graphs, planner, context)
-export * from './orchestration';
-
-// Tools
-export * from './tools';
+// Tools (consolidated to 9 GRRM tools)
+export * from './tools'

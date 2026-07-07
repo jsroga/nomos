@@ -9,7 +9,7 @@ import { cn } from '@/shared/data/utils'
 interface Beat {
   id: string
   logline: string
-  type: string
+  type?: string // Optional - use beatType if type not present
   sequence: number
   content?: string
   beatType?: string

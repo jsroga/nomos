@@ -9,8 +9,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import {
   applyCascadingFixes,
-  type ConsistencyFix,
-} from '@/domains/storyteller'
+} from '@/domains/storyteller/core/editing/CascadeEditor'
+import type { ConsistencyFix } from '@/domains/storyteller/core/types/ConsistencyTypes'
 import { getUndoManager, verifyProjectAccess } from '@/domains/storyteller/server'
 import { requireAuth } from '@/shared/auth/auth'
 

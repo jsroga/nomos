@@ -70,9 +70,9 @@ export const DOMAIN_CONFORMANCE: Record<string, DomainConformance> = {
   },
   marketing: {
     requiresIndex: true,
-    legacyTopLevel: [],
+    legacyTopLevel: ['legal'],
     requiredFolders: ['ui', 'state'],
-    optionalFolders: [],
+    optionalFolders: ['core'],
   },
   'deduction-puzzle-designer': {
     requiresIndex: true,

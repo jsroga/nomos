@@ -1,6 +1,7 @@
 import { createOpenAI } from '@ai-sdk/openai'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { google } from '@ai-sdk/google'
+import { getChatModelOption } from '@/domains/storyteller/config/ChatModelCatalog'
 
 /**
  * Effort levels for dynamic model selection
@@ -104,6 +105,38 @@ export const MODEL_FALLBACKS = [
  * Converts 'openai:gpt-4o' to 'openai/gpt-4o'
  */
 export function toMastraModelString(modelName: string): string {
+  return modelName.replace(':', '/')
+}
+
+/**
+ * Resolve an internal `provider:model` id (from `ChatModelCatalog`) into
+ * something Mastra's `Agent({ model })` accepts — either a `provider/model`
+ * string resolved by the built-in models.dev gateway, or an explicit
+ * `{ url, id, apiKey }` object for models that need a custom endpoint.
+ *
+ * The object form is used for catalog entries that set `endpointUrl` (e.g.
+ * Z.AI Coding Plan's `glm-5.2`, which is not yet in Mastra's bundled
+ * provider-registry.json). The apiKey is read from the catalog entry's env var.
+ */
+export function resolveStorytellerModel(
+  modelName: string
+): string | { url: string; id: string; apiKey: string } {
+  const option = getChatModelOption(modelName)
+  if (option?.endpointUrl) {
+    const apiKey = process.env[option.envVar]
+    if (!apiKey) {
+      throw new Error(
+        `Model ${modelName} requires ${option.envVar} to be set (provider: ${option.provider}).`
+      )
+    }
+    return {
+      url: option.endpointUrl,
+      id: modelName.replace(':', '/'),
+      apiKey,
+    }
+  }
+  // Plain providers (openai, anthropic, google, moonshotai, ...) resolve via
+  // Mastra's models.dev gateway using the standard `provider/model` string.
   return modelName.replace(':', '/')
 }
 

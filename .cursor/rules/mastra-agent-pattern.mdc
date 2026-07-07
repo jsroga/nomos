@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Mastra v1 patterns (distilled from AGENTS.md)
 
-This repo uses **Mastra v1** (`@mastra/core@^1.x`). Mirror patterns in `src/domains/storyteller/agents/*` and `src/mastra/*`.
+This repo uses **Mastra v1** (`@mastra/core@^1.x`). Mirror patterns in `src/domains/storyteller/agents/*` and `src/shared/agent-kernel/mastra/*`.
 
 ## Imports — use sub-paths, never the package root
 

@@ -1,16 +1,27 @@
 /**
- * Locks the src/app and src/components conventions established by the
- * app/components restructure:
- *  - src/app holds only route groups + api + framework root files
- *  - no docs/eval/test surface duplicated inside src/app (single home is repo root)
- *  - src/components is flat: one PascalCase folder per component (+ shell/)
- *  - e2e lives only at repo root
+ * Locks target repo layout from docs/ARCHITECTURE.md and docs/unified/ARCHITECTURE.md §3–§4.
+ *
+ *  - src/ top-level: 7 folders + mastra.ts + mastra/ CLI shim + __tests__
+ *  - src/app: route groups + api only
+ *  - src/components: flat PascalCase folder per component (+ shell/)
+ *  - src/shared: target children + documented legacy migration folders
+ *  - single-home: docs/, evals/, e2e/ at repo root only
  */
 import { describe, it, expect } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
+import {
+  SHARED_TOP_LEVEL_FORBIDDEN,
+  SHARED_TOP_LEVEL_LEGACY,
+  SHARED_TOP_LEVEL_TARGET,
+  SINGLE_HOME_AT_REPO_ROOT,
+  SRC_ROOT_FILES_ALLOWED,
+  SRC_TOP_LEVEL_ALLOWED,
+  SRC_TOP_LEVEL_FORBIDDEN,
+} from './src-topology'
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..')
+const SRC_DIR = path.join(REPO_ROOT, 'src')
 const APP_DIR = path.join(REPO_ROOT, 'src', 'app')
 const COMPONENTS_DIR = path.join(REPO_ROOT, 'src', 'components')
 
@@ -28,6 +39,75 @@ const APP_ROOT_FILES = new Set([
   'icon.png',
 ])
 const FORBIDDEN_APP_NAMES = ['docs', 'documentation', 'evaluation', 'evals', 'e2e', 'test', 'tests', '_shell']
+
+describe('src/ topology (docs/ARCHITECTURE.md § target)', () => {
+  it('only contains approved top-level folders', () => {
+    const dirs = fs.existsSync(SRC_DIR)
+      ? fs.readdirSync(SRC_DIR, { withFileTypes: true }).filter(e => e.isDirectory()).map(e => e.name)
+      : []
+    const unexpected = dirs.filter(d => !SRC_TOP_LEVEL_ALLOWED.has(d))
+    expect(unexpected, `unexpected src/ dirs: ${unexpected.join(', ')}`).toEqual([])
+  })
+
+  it('has no forbidden legacy or duplicate-home folders at src/ top level', () => {
+    const dirs = fs.existsSync(SRC_DIR)
+      ? fs.readdirSync(SRC_DIR, { withFileTypes: true }).filter(e => e.isDirectory()).map(e => e.name)
+      : []
+    const forbidden = dirs.filter(d => SRC_TOP_LEVEL_FORBIDDEN.has(d))
+    expect(forbidden, `forbidden src/ dirs: ${forbidden.join(', ')}`).toEqual([])
+  })
+
+  it('only contains approved root files at src/ top level', () => {
+    const files = fs.existsSync(SRC_DIR)
+      ? fs.readdirSync(SRC_DIR, { withFileTypes: true }).filter(e => e.isFile()).map(e => e.name)
+      : []
+    const unexpected = files.filter(f => !SRC_ROOT_FILES_ALLOWED.has(f))
+    expect(unexpected, `unexpected src/ files: ${unexpected.join(', ')}`).toEqual([])
+  })
+
+  it('has no duplicate single-home folders under src/', () => {
+    const offenders: string[] = []
+    for (const name of SINGLE_HOME_AT_REPO_ROOT) {
+      if (fs.existsSync(path.join(SRC_DIR, name))) offenders.push(`src/${name}`)
+    }
+    expect(offenders, `duplicate homes under src/: ${offenders.join(', ')}`).toEqual([])
+  })
+})
+
+describe('src/shared topology (docs/unified/ARCHITECTURE.md §3)', () => {
+  const sharedDir = path.join(SRC_DIR, 'shared')
+
+  it('children are target folders or documented legacy migration folders', () => {
+    if (!fs.existsSync(sharedDir)) return
+    const dirs = fs
+      .readdirSync(sharedDir, { withFileTypes: true })
+      .filter(e => e.isDirectory())
+      .map(e => e.name)
+    const allowed = new Set([...SHARED_TOP_LEVEL_TARGET, ...SHARED_TOP_LEVEL_LEGACY])
+    const unexpected = dirs.filter(d => !allowed.has(d))
+    expect(unexpected, `unexpected src/shared/ dirs: ${unexpected.join(', ')}`).toEqual([])
+  })
+
+  it('has no forbidden parallel bucket folders', () => {
+    if (!fs.existsSync(sharedDir)) return
+    const dirs = fs
+      .readdirSync(sharedDir, { withFileTypes: true })
+      .filter(e => e.isDirectory())
+      .map(e => e.name)
+    const forbidden = dirs.filter(d => SHARED_TOP_LEVEL_FORBIDDEN.has(d))
+    expect(forbidden, `forbidden src/shared/ dirs: ${forbidden.join(', ')}`).toEqual([])
+  })
+})
+
+describe('src/mastra CLI shim', () => {
+  const mastraDir = path.join(SRC_DIR, 'mastra')
+
+  it('contains only index.ts (canonical entry is src/mastra.ts)', () => {
+    if (!fs.existsSync(mastraDir)) return
+    const entries = fs.readdirSync(mastraDir)
+    expect(entries, `src/mastra/ must be CLI shim only: ${entries.join(', ')}`).toEqual(['index.ts'])
+  })
+})
 
 describe('src/app structure', () => {
   it('only contains approved route groups + api at top level', () => {

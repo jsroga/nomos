@@ -11,6 +11,7 @@ import { db } from '@/db/client'
 import { characters, projects, episodes, beats } from '@/domains/storyteller/db/schema'
 import { eq, desc } from 'drizzle-orm'
 import { z } from 'zod'
+import type { WritersRoomState } from '@/domains/storyteller/core/types/StoryTypes'
 
 type LangsmithTraceConfig = {
   runName?: string
@@ -189,12 +190,12 @@ export class StorytellerService {
         characterPrompt: validated.characterPrompt,
         description: validated.description,
         portraitUrl: validated.portraitUrl,
-        stressLevel: validated.stress,
-        trustLevel: validated.trust,
-        powerLevel: validated.power,
-        moralityLevel: validated.morality,
-        hopeLevel: validated.hope,
-        isolationLevel: validated.isolation,
+        arousal: validated.stress,
+        relatedness: validated.trust,
+        competence: validated.power,
+        moralAlignment: validated.morality,
+        valence: validated.hope,
+        socialSafety: 100 - validated.isolation,
         transformationProgress: validated.transformation,
         mbti: validated.mbti,
         voiceSignature: validated.voiceSignature,
@@ -310,7 +311,7 @@ export class StorytellerService {
       .select()
       .from(beats)
       .where(eq(beats.episodeId, validated.episodeId))
-      .orderBy(beats.order)
+      .orderBy(beats.sequence)
 
     return { beats: result }
   }
@@ -345,6 +346,7 @@ export class StorytellerService {
       throw new ServiceError('Project not found or access denied', 'NOT_FOUND')
     }
 
+    // TODO P1-10: Replace WritersRoomGraph with beat-draft-workflow
     // Import the graph dynamically to avoid circular dependencies
     const { getWritersRoomGraph } = await import(
       '@/domains/storyteller/agents/orchestration/WritersRoomGraph'
@@ -355,8 +357,25 @@ export class StorytellerService {
     const threadId =
       validated.threadId || `thread_${Date.now()}_${Math.random().toString(36).slice(2)}`
 
-    // Build LangSmith config
-    const langsmithConfig: LangsmithTraceConfig = {
+    // Get series bible and characters for context
+    const { seriesBible } = await this.getSeriesBible(validated.projectId, context)
+    const { characters: projectCharacters } = await this.listCharacters(
+      { projectId: validated.projectId },
+      context
+    )
+
+    // Invoke the graph (legacy pattern - P1-10 will rewire)
+    const result = await graph.invoke({
+      messages: [{ role: 'user', content: validated.message }],
+      projectId: validated.projectId,
+      episodeId: validated.episodeId,
+      seriesBible,
+      characters: projectCharacters,
+      beatBoard: [],
+      rejectedBeats: [],
+      unresolvedSetups: [],
+      currentPhase: 'premise',
+      // LangSmith config embedded for legacy compatibility
       runName: langsmithContext?.runName || 'storyteller_chat',
       tags: langsmithContext?.tags || ['storyteller', 'chat'],
       metadata: {
@@ -368,26 +387,7 @@ export class StorytellerService {
       configurable: {
         thread_id: threadId,
       },
-    }
-
-    // Get series bible and characters for context
-    const { seriesBible } = await this.getSeriesBible(validated.projectId, context)
-    const { characters: projectCharacters } = await this.listCharacters(
-      { projectId: validated.projectId },
-      context
-    )
-
-    // Invoke the graph
-    const result = await graph.invoke(
-      {
-        messages: [{ role: 'user', content: validated.message }],
-        projectId: validated.projectId,
-        episodeId: validated.episodeId,
-        seriesBible,
-        characters: projectCharacters,
-      },
-      langsmithConfig
-    )
+    } as WritersRoomState)
 
     return { response: result, threadId }
   }

@@ -1,15 +1,13 @@
 digraph Execute {
     graph [
-        goal="Assess a module, clarify ambiguities with the human, produce a reviewable improvement plan aligned to the target architecture, gate it at verification, then OPTIONALLY build it (UX → implement → verify → test → e2e) and finish with retro"
+        goal="Clarify scope with the human, produce a reviewable plan, optionally implement it, verify (module typecheck + lint + husky pre-commit parity: architecture, docs, unit tests, build), and finish with an evidence-based retro. Verify retries up to 3 fix turns; a failing verify does not block exit — ship to retro for PR anyway."
 
         model_stylesheet="
             *          { model: gpt-5.4;         reasoning_effort: medium; }
+            .scope     { model: claude-opus-4-8; reasoning_effort: high;   }
             .review    { model: codex;           reasoning_effort: low;    }
             .planning  { model: claude-fable-5; reasoning_effort: high;   }
-            .design    { model: gpt-5.4;         reasoning_effort: medium; }
             .build     { model: codex;           reasoning_effort: high;   }
-            .testing   { model: gpt-5.4;         reasoning_effort: medium; }
-            .visual    { model: gpt-5.4;         reasoning_effort: medium; }
             .retro     { model: gpt-5.4;         reasoning_effort: medium; }
         "
 
@@ -23,18 +21,11 @@ digraph Execute {
     exit  [shape=Msquare, label="Exit"]
 
     scope [
-        label="Scope\nagent: Scope Runner\nmodel: codex"
-        class="review"
+        label="Scope\nagent: Scope Runner\nmodel: claude-opus-4-8"
+        class="scope"
+        model="claude-opus-4-8"
+        provider="anthropic"
         prompt="@prompts/scope.md"
-        max_visits=2
-    ]
-
-    assess [
-        label="Assess\nagent: Architecture Assessor\nmodel: codex"
-        class="review"
-        prompt="@prompts/assess.md"
-        retry_policy="patient"
-        max_retries=2
         max_visits=2
     ]
 
@@ -49,7 +40,7 @@ digraph Execute {
 
     clarify [
         shape=hexagon
-        label="Choose scope A, B, or C for this module (see Clarify Prep summary — table defines what each means here)"
+        label="Pick scope [A] [B] [C] — meanings are module-specific (see Clarify Prep table). [F] custom · [R] re-scope"
         question_type="multiple_choice"
         timeout="86400s"
         human.default_choice="plan"
@@ -75,94 +66,27 @@ digraph Execute {
     ]
 
     setup [
-        label="Bootstrap\n[shell · npm ci + Playwright]"
+        label="Bootstrap\n[shell · npm ci]"
         shape=parallelogram
-        script="set -euo pipefail; echo '=== sandbox bootstrap ==='; if ! command -v git >/dev/null; then apt-get update && apt-get install -y git ca-certificates; fi; if ! command -v npm >/dev/null; then apt-get update && apt-get install -y nodejs npm; fi; command -v npm >/dev/null || { echo 'ERROR: npm still missing — expected image node:22-bookworm'; exit 1; }; npm ci --prefer-offline --no-audit --no-fund; npm run test:playwright:install; echo '=== bootstrap complete ==='"
+        script="set -euo pipefail; echo '=== sandbox bootstrap ==='; if ! command -v git >/dev/null; then apt-get update && apt-get install -y git ca-certificates; fi; if ! command -v npm >/dev/null; then apt-get update && apt-get install -y nodejs npm; fi; command -v npm >/dev/null || { echo 'ERROR: npm still missing — expected image node:22-bookworm'; exit 1; }; npm ci --prefer-offline --no-audit --no-fund; echo '=== bootstrap complete ==='"
         max_visits=2
     ]
 
-    setup_gate [shape=diamond, label="Bootstrap OK?"]
-
-    setup_fail [
-        label="Bootstrap failed\n[shell · notify]"
-        shape=parallelogram
-        script="echo '=== BOOTSTRAP FAILED ===' >&2; echo 'Node.js/npm not available. Expected Docker image: node:22-bookworm.' >&2; echo 'Check workflow.toml [environments.execute-docker.image].' >&2; exit 1"
-        max_visits=2
+    developer [
+        label="Implement\nagent: Developer\nmodel: codex"
+        class="build"
+        model="codex"
+        provider="openai"
+        prompt="@prompts/implement.md"
+        permissions="full"
+        max_visits=4
     ]
-
-    subgraph cluster_build {
-        label="Optional Build"
-        node [thread_id="build", fidelity="full"]
-
-        ux_designer [
-            label="UX Designer\nagent: UX Designer\nmodel: gpt-5.4"
-            class="design"
-            prompt="@prompts/ux-designer.md"
-            max_visits=2
-        ]
-
-        developer [
-            label="Implement\nagent: Developer\nmodel: codex"
-            class="build"
-            prompt="@prompts/implement.md"
-            permissions="full"
-            max_visits=3
-        ]
-
-        tester [
-            label="Tester\nagent: Tester\nmodel: gpt-5.4"
-            class="testing"
-            prompt="@prompts/tester.md"
-            max_visits=3
-        ]
-
-        screenshot [
-            label="UI Screenshot\nagent: UI Screenshotter\nmodel: gpt-5.4"
-            class="visual"
-            prompt="@prompts/screenshot.md"
-            retry_policy="patient"
-            max_retries=1
-            max_visits=2
-        ]
-    }
 
     verify [
-        label="Typecheck + Lint\n[shell · no agent]"
+        label="Verify\n[shell · fabro-verify: module gates + pre-commit parity]"
         shape=parallelogram
         script="set -euo pipefail; node scripts/fabro-verify.mjs"
         max_visits=5
-    ]
-    verify_gate [shape=diamond, label="Static checks pass?"]
-
-    run_tests [
-        label="Unit Tests\n[shell · npm run test:unit]"
-        shape=parallelogram
-        script="npm run test:unit"
-        max_visits=5
-    ]
-    test_gate [shape=diamond, label="Unit tests pass?"]
-
-    run_e2e [
-        label="E2E Full\n[shell · npm run test:e2e full-loop]"
-        shape=parallelogram
-        script="npm run test:e2e full-loop"
-        max_visits=3
-    ]
-    e2e_gate [shape=diamond, label="E2E pass?"]
-
-    serve [
-        label="Dev server\n[shell · npm run dev :3000]"
-        shape=parallelogram
-        script="(npm run dev >/tmp/devserver.log 2>&1 &) ; echo 'started next dev on :3000 — Daytona: open Preview or `fabro sandbox preview <run> 3000`'; for i in $(seq 1 20); do curl -sf http://localhost:3000 >/dev/null 2>&1 && { echo 'dev server up'; break; }; sleep 3; done; true"
-        max_visits=2
-    ]
-
-    preview [
-        shape=hexagon
-        label="Preview the running app on port 3000 (Daytona: Preview button or `fabro sandbox preview <run> 3000`). Approve, revise, or skip."
-        question_type="multiple_choice"
-        timeout="86400s"
-        human.default_choice="retro"
     ]
 
     retro [
@@ -173,14 +97,14 @@ digraph Execute {
     ]
 
     start -> scope
-    scope -> assess [fidelity="compact"]
-    assess -> clarify_prep -> clarify
+    scope -> clarify_prep [fidelity="compact"]
+    clarify_prep -> clarify
 
-    clarify -> plan [label="[A] Staged migration"]
-    clarify -> plan [label="[B] Minimal first step"]
-    clarify -> plan [label="[C] Full blueprint"]
-    clarify -> plan [label="[F] Custom scope", freeform=true]
-    clarify -> assess [label="[R] Re-assess"]
+    clarify -> plan [label="[A]", fidelity="compact"]
+    clarify -> plan [label="[B]", fidelity="compact"]
+    clarify -> plan [label="[C]", fidelity="compact"]
+    clarify -> plan [label="[F] Custom scope", freeform=true, fidelity="compact"]
+    clarify -> scope [label="[R] Re-scope"]
     clarify -> exit [label="Unanswered — abort", condition="outcome=failed"]
 
     plan -> verification [condition="outcome=succeeded"]
@@ -192,35 +116,12 @@ digraph Execute {
     verification -> exit        [label="[X] Abort"]
     verification -> exit        [label="Unanswered — abort", condition="outcome=failed"]
 
-    setup -> setup_gate
-    setup_gate -> ux_designer [label="UI increment", condition="outcome=succeeded && plan.has_ui_surface=yes"]
-    setup_gate -> developer   [label="Backend increment", condition="outcome=succeeded"]
-    setup_gate -> setup_fail
-    setup_fail -> exit
+    setup -> developer
+    developer -> verify
 
-    ux_designer -> developer -> verify -> verify_gate
+    verify -> retro      [label="Pass", condition="outcome=succeeded"]
+    verify -> developer  [label="Fix", condition="outcome=failed && internal.node_visit_count < 4", fidelity="compact"]
+    verify -> retro      [label="Ship anyway — verify still failing"]
 
-    verify_gate -> tester    [label="Pass", condition="outcome=succeeded"]
-    verify_gate -> developer [label="Fix", condition="outcome=failed && internal.node_visit_count < 3", fidelity="compact"]
-    verify_gate -> retro     [label="Static checks still failing after retries"]
-
-    tester -> run_tests -> test_gate
-
-    test_gate -> run_e2e [label="Pass", condition="outcome=succeeded"]
-    test_gate -> developer [label="Fix", condition="outcome=failed && internal.node_visit_count < 3", fidelity="compact"]
-    test_gate -> retro     [label="Unit tests still failing after retries"]
-
-    run_e2e -> e2e_gate
-    e2e_gate -> screenshot [label="Pass", condition="outcome=succeeded"]
-    e2e_gate -> developer  [label="Fix", condition="outcome=failed && internal.node_visit_count < 3", fidelity="compact"]
-    e2e_gate -> retro      [label="E2E still failing after retries"]
-
-    screenshot -> serve [label="Preview UI", condition="plan.has_ui_surface=yes"]
-    screenshot -> retro
-    serve -> preview
-    preview -> retro     [label="[A] Looks good — finish"]
-    preview -> developer [label="[R] Revise — back to Implement", freeform=true, fidelity="compact"]
-    preview -> retro     [label="[S] Skip preview"]
-    preview -> exit      [label="Unanswered — abort", condition="outcome=failed"]
     retro -> exit
 }

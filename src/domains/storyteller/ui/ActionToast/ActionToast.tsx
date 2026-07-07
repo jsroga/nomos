@@ -287,22 +287,20 @@ const VisualJsonDiff: React.FC<{
 }> = ({ action, onClose }) => {
   // Extract relevant data based on tool type
   const getDiffData = () => {
-    const payload = action.payload || {}
-
     // 1. World Bible Updates
-    if (payload.updatedFields) {
+    if (action.type === 'UPDATE_SERIES_BIBLE' || action.type === 'UPDATE_WORLD_BIBLE' || action.type === 'UPDATE_BIBLE') {
       return {
         type: 'Update World Bible',
-        changes: payload.updatedFields,
+        changes: action.payload,
         isPartial: true,
       }
     }
 
     // 2. Beat Management
-    if (payload.beat) {
+    if (action.type === 'CREATE_BEAT' || action.type === 'UPDATE_BEAT') {
       return {
         type: 'Manage Beat',
-        changes: payload.beat,
+        changes: action.payload,
         isPartial: false, // Usually a full object or significant chunk
       }
     }
@@ -310,7 +308,7 @@ const VisualJsonDiff: React.FC<{
     // 3. Fallback
     return {
       type: 'Action Payload',
-      changes: payload,
+      changes: action.payload,
       isPartial: false,
     }
   }

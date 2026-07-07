@@ -1,5 +1,6 @@
 /**
- * Marketing public module API.
+ * Marketing public module API (client-safe).
+ * Server-only helpers (e.g. loadLegalMarkdown) live in ./core/legal-docs — import there.
  */
 
 export { GlobalLiquidLoader } from './ui/GlobalLiquidLoader'

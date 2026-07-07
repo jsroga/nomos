@@ -370,7 +370,7 @@ Context: ${context}`
       citation: {
         id: result.chunkId,
         marker: `[${index + 1}]`,
-        source: result.metadata.documentType || 'unknown',
+        source: String(result.metadata.documentType || 'unknown'),
         chunkId: result.chunkId,
         confidence: result.combinedScore,
       },
@@ -474,7 +474,7 @@ Context: ${context}`
   }> {
     // Parallel retrieval for efficiency
     const [generalHistory, pastDecisions, userPrefs] = await Promise.all([
-      this.retrieve(projectId, currentContext, 3),
+      this.retrieve(projectId, currentContext, { limit: 3 }),
       this.retrieveByType(projectId, 'beat_decision', currentContext, 3),
       this.retrieveByType(projectId, 'user_feedback', currentContext, 2),
     ])

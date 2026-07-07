@@ -49,6 +49,7 @@ describe('Domain folder structure conformance', () => {
           ...BLUEPRINT_TOP_LEVEL,
           ...config.legacyTopLevel,
           configFile,
+          'server.ts',
         ])
 
         for (const entry of topLevel) {

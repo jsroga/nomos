@@ -1,6 +1,6 @@
 ---
 name: execute
-description: Run the Fabro execute dark-factory loop interactively for one src/domains module — scope, assess, clarify, plan, verify gate, optional build (ux → implement → verify → test → e2e → screenshot → preview), retro. Same stages, prompts, and gates as .fabro/workflows/execute/workflow.fabro. Invoke as /execute <module>.
+description: Run the Fabro execute dark-factory loop interactively for one src/domains module — scope, clarify, plan, verify gate, optional build (develop → verify with fix loops), retro. Same stages, prompts, and gates as .fabro/workflows/execute/workflow.fabro. Invoke as /execute <module>.
 ---
 
 # /execute — interactive dark-factory loop
@@ -17,59 +17,53 @@ Set the goal: *"Clean up and align the `<module>` module with `docs/unified/ARCH
 
 ```mermaid
 flowchart LR
-    S[scope] --> A[assess] --> CP[clarify-prep] --> CG[Clarify gate] --> P[plan] --> VG[Verification gate]
-    VG -->|A build| B[build path] --> R[retro]
+    S[scope] --> CP[clarify-prep] --> CG[Clarify gate] --> P[plan] --> VG[Verification gate]
+    VG -->|A build| D[developer codex] --> V[verify] --> R[retro]
     VG -->|B plan only| R
-    B --> UX[ux? has_ui_surface=yes] --> D[developer] --> V[verify] --> T[tester] --> U[unit] --> E[e2e] --> SS[screenshot] --> PG[Preview gate?] --> R
+    V -->|fail, visits < 4| D
+    V -->|pass or ship anyway| R
 ```
 
 ## How to run each stage
 
-For every stage: spawn the matching subagent (Task tool / `agents` config). The subagent `Read`s its prompt from `.fabro/workflows/execute/prompts/<stage>.md` and follows it. You pass context forward between stages (Scope output → Assessor; assess findings → Clarify; etc.).
+For every stage: spawn the matching subagent (Task tool / `agents` config). The subagent `Read`s its prompt from `.fabro/workflows/execute/prompts/<stage>.md` and follows it. You pass context forward between stages.
 
 | Stage | Subagent | Output |
 |-------|----------|--------|
-| scope | `scope-runner` | raw shell stdout |
-| assess | `architecture-assessor` | `findings/assess.md` + `## Metadata` |
+| scope | `scope-runner` | `.local/findings/scope.md` (inventory + decision axes; Clarify only) |
 | clarify-prep | `clarify-facilitator` | `CLARIFY.md`, `DECISIONS.md`, `PLAN.md` cleared |
 | **Clarify gate** | — `AskQuestion` | human A/B/C/F/R |
-| plan | `plan-author` | `PLAN.md` (+ `STRUCTURE.md`), `context_updates` JSON |
+| plan | `plan-author` | `PLAN.md` (+ `STRUCTURE.md`), `context_updates` JSON (metadata only — no separate UX stage) |
 | **Verification gate** | — `AskQuestion` | human A/B/I/X |
-| ux-designer *(only if `plan.has_ui_surface=yes`)* | `ux-designer` | `UX.md` |
-| developer | `developer` | code changes; self-runs `fabro-verify.mjs` |
-| verify *(hook also fires on edit)* | — shell | `node scripts/fabro-verify.mjs` |
-| tester | `tester` | vitest suite green |
-| unit tests | — shell | `npm run test:unit` |
-| e2e | — shell | `npm run test:e2e full-loop` |
-| screenshot | `ui-screenshotter` | `screenshots/**`, `SCREENSHOTS.md` |
-| **Preview gate** *(only if `has_ui_surface=yes`)* | — `AskQuestion` | human A/R/S |
-| retro | `retro-author` | `RETRO.md` |
+| developer | `developer` (**codex**) | code changes; self-runs `fabro-verify.mjs` |
+| verify | — shell | `node scripts/fabro-verify.mjs` (module gates + husky pre-commit parity) |
+| retro | `retro-author` | evidence-based `RETRO.md` (git diff verified) |
 
 ## Human gates — use `AskQuestion` with these exact options
 
 ### Clarify gate (after clarify-prep)
 
-Show the Clarify Facilitator's inline brief (assessment summary, key gaps, the module-specific A/B/C table, recommendation), then ask:
+Show the Clarify Facilitator's inline brief (inventory facts, **3 module-specific questions**, the A/B/C table with meanings generated from scope — not generic labels), then ask:
 
 ```json
 {
   "questions": [{
     "id": "clarify",
-    "prompt": "Pick one scope for the <module> plan (see the table above for what A/B/C mean for this module).",
+    "prompt": "Pick one scope for the <module> (see the module-specific table above — A/B/C meanings change each run).",
     "options": [
-      { "id": "a", "label": "[A] Staged migration" },
-      { "id": "b", "label": "[B] Minimal first step" },
-      { "id": "c", "label": "[C] Full blueprint" },
+      { "id": "a", "label": "[A] — see table" },
+      { "id": "b", "label": "[B] — see table" },
+      { "id": "c", "label": "[C] — see table" },
       { "id": "f", "label": "[F] Custom scope (freeform)" },
-      { "id": "r", "label": "[R] Re-assess" }
+      { "id": "r", "label": "[R] Re-scope" }
     ]
   }]
 }
 ```
 
 - A/B/C/F → proceed to `plan` (record the choice in `DECISIONS.md`).
-- R → back to `assess`.
-- Unanswered / abort → exit (fail-closed, mirroring `condition="outcome=failed"`).
+- R → back to `scope` (re-run inventory).
+- Unanswered / abort → exit (fail-closed).
 
 ### Verification gate (after plan)
 
@@ -90,58 +84,25 @@ Show the Plan Author's < 400-word final response (P0 declaration, Clarify recap,
 }
 ```
 
-- A → build path (`setup` → ux? → developer → verify → tester → unit → e2e → screenshot → preview? → retro). **Never auto-build** — only on explicit A.
+- A → build path (`setup` → developer → verify → retro). **Never auto-build** — only on explicit A.
 - B → skip build, go straight to `retro` (plan-only).
 - I → back to `plan` with the freeform notes.
 - X / unanswered → exit (fail-closed).
 
-### Preview gate (build path, only if `plan.has_ui_surface=yes`)
+## Fix loops (verify → developer, max 3 retries)
 
-Start the dev server (`npm run dev` on :3000) so the user can preview, then ask:
-
-```json
-{
-  "questions": [{
-    "id": "preview",
-    "prompt": "Preview the running app on port 3000. Approve, revise, or skip.",
-    "options": [
-      { "id": "a", "label": "[A] Looks good — finish" },
-      { "id": "r", "label": "[R] Revise (freeform, back to Implement)" },
-      { "id": "s", "label": "[S] Skip preview" }
-    ]
-  }]
-}
-```
-
-- A/S → `retro`.
-- R → back to `developer` with the freeform note.
-- Unanswered → exit (fail-closed).
-
-## Build path routing
-
-- `plan.has_ui_surface=yes` (from Plan Author's `context_updates` JSON) → run `ux-designer` before `developer`; run `serve` + Preview gate after `screenshot`.
-- `plan.has_ui_surface=no` → skip `ux-designer` and the Preview gate; go `developer → verify → tester → unit → e2e → screenshot → retro`.
-
-## Fix loops (mirror `internal.node_visit_count < 3`)
-
-- `verify` fails → back to `developer` (max 2 retries), else `retro`.
-- `unit` fails → back to `developer` (max 2 retries), else `retro`.
-- `e2e` fails → back to `developer` (max 2 retries), else `retro`.
-
-Pass the failing command output to the developer on each loop (Fabro uses `fidelity="compact"` for the same reason).
+- `verify` fails → back to `developer` while `internal.node_visit_count < 4` (1 initial + 3 fix turns).
+- After 3 fix attempts, `verify` still failing → **ship anyway** to `retro` (does not block PR).
+- Pass the failing `fabro-verify.mjs` output to the developer on each loop.
 
 ## Sandboxed equivalent
 
-To run the same loop in an isolated sandbox instead of interactively:
-
 ```bash
 fabro run .fabro/workflows/execute/workflow.toml -I module=<module>
-# with preview:
-fabro run .fabro/workflows/execute/workflow.toml -I module=<module> --environment execute-daytona --preserve-sandbox
 ```
 
-For headless/CI, the Cursor SDK runner is `src/shared/agent-kernel/cursor-runner.ts`, kicked by the Trigger.dev task `src/trigger/cursor-execute.task.ts`.
+For headless/CI: `src/shared/agent-kernel/cursor-runner.ts`, kicked by Trigger.dev task `cursor-execute`.
 
 ## Single source of truth
 
-Stage prompts live in `.fabro/workflows/execute/prompts/`. Subagents `Read` them — never duplicate prompt text here or in the subagent files. If a prompt changes, the Fabro run and this skill both pick it up.
+Stage prompts live in `.fabro/workflows/execute/prompts/`. Subagents `Read` them — never duplicate prompt text here or in the subagent files.

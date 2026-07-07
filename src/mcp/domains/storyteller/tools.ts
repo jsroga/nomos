@@ -17,7 +17,7 @@ import { LangSmithContext } from '../../core/types'
 const listCharacters = createTool({
   id: 'list_characters',
   description: 'List all characters in a project.',
-  schema: z.object({
+  inputSchema: z.object({
     projectId: z.string().uuid().describe('The project ID to list characters for'),
   }),
   execute: async ({ context: _ctx, data }) => {
@@ -39,7 +39,7 @@ const listCharacters = createTool({
 const getCharacter = createTool({
   id: 'get_character',
   description: 'Get a single character by ID.',
-  schema: z.object({
+  inputSchema: z.object({
     characterId: z.string().uuid().describe('The character ID to retrieve'),
   }),
   execute: async ({ context: _ctx, data }) => {
@@ -59,7 +59,7 @@ const createCharacter = createTool({
   id: 'create_character',
   description:
     'Create a new character in a project. Characters have personality metrics, MBTI types, and voice signatures.',
-  schema: z.object({
+  inputSchema: z.object({
     projectId: z.string().uuid().describe('The project ID to create the character in'),
     name: z.string().describe('The character name'),
     role: z
@@ -105,7 +105,7 @@ const createCharacter = createTool({
 const updateCharacter = createTool({
   id: 'update_character',
   description: 'Update an existing character.',
-  schema: z.object({
+  inputSchema: z.object({
     characterId: z.string().uuid().describe('The character ID to update'),
     name: z.string().optional(),
     role: z.enum(['Lead', 'Supporting', 'Background']).optional(),
@@ -142,7 +142,7 @@ const updateCharacter = createTool({
 const deleteCharacter = createTool({
   id: 'delete_character',
   description: 'Delete a character.',
-  schema: z.object({
+  inputSchema: z.object({
     characterId: z.string().uuid().describe('The character ID to delete'),
   }),
   execute: async ({ context: _ctx, data }) => {
@@ -162,7 +162,7 @@ const deleteCharacter = createTool({
 const listEpisodes = createTool({
   id: 'list_episodes',
   description: 'List all episodes in a project.',
-  schema: z.object({
+  inputSchema: z.object({
     projectId: z.string().uuid().describe('The project ID to list episodes for'),
   }),
   execute: async ({ context: _ctx, data }) => {
@@ -185,7 +185,7 @@ const listEpisodes = createTool({
 const listBeats = createTool({
   id: 'list_beats',
   description: 'List all beats in an episode. Beats are the story moments that make up an episode.',
-  schema: z.object({
+  inputSchema: z.object({
     episodeId: z.string().uuid().describe('The episode ID to list beats for'),
   }),
   execute: async ({ context: _ctx, data }) => {
@@ -206,7 +206,7 @@ const getSeriesBible = createTool({
   id: 'get_series_bible',
   description:
     'Get the series bible for a project. The series bible contains world description, key characters, factions, and story plan.',
-  schema: z.object({
+  inputSchema: z.object({
     projectId: z.string().uuid().describe('The project ID to get the series bible for'),
   }),
   execute: async ({ context: _ctx, data }) => {
@@ -227,7 +227,7 @@ const storytellerChat = createTool({
   id: 'storyteller_chat',
   description:
     'Send a message to the storyteller writers room and get a response. This invokes the LangGraph multi-agent workflow with supervisor, planner, and specialist agents. All calls are traced in LangSmith.',
-  schema: z.object({
+  inputSchema: z.object({
     projectId: z.string().uuid().describe('The project ID for context'),
     message: z.string().describe('The message to send to the writers room'),
     threadId: z

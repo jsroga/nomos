@@ -28,6 +28,8 @@ interface ProviderStatus {
   openai: boolean
   anthropic: boolean
   google: boolean
+  zhipu: boolean
+  moonshot: boolean
   legnext: boolean
   stability: boolean
   replicate: boolean
@@ -284,6 +286,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                             <ConnectionDot connected={providers.openai} label="OpenAI" />
                             <ConnectionDot connected={providers.anthropic} label="Anthropic" />
                             <ConnectionDot connected={providers.google} label="Google / Gemini" />
+                            <ConnectionDot connected={providers.zhipu} label="Z.AI (GLM)" />
+                            <ConnectionDot connected={providers.moonshot} label="Moonshot (Kimi)" />
                           </div>
 
                           <div className="space-y-2">

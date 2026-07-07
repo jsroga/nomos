@@ -17,11 +17,10 @@ import { Sparkles, LayoutGrid, PenTool, Check, Lock, ChevronRight, Loader2 } fro
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 import type { PhaseId } from '@/domains/storyteller/core/types/Enums'
 
-// Re-exported for UI consumers; canonical source is the Phase enum in enums.ts
-export type Phase = PhaseId
+// Canonical Phase type: PhaseId (string union from Enums.ts)
 
 interface PhaseConfig {
-  id: Phase
+  id: PhaseId
   label: string
   shortLabel: string
   icon: React.ReactNode
@@ -70,13 +69,13 @@ const PHASES: PhaseConfig[] = [
 ]
 
 interface PhaseNavigatorProps {
-  currentPhase: Phase
+  currentPhase: PhaseId
   /** Phases that are completed (can go back to) */
-  completedPhases?: Phase[]
+  completedPhases?: PhaseId[]
   /** Is AI currently working? Disables navigation */
   isWorking?: boolean
   /** Callback when user wants to go to a phase */
-  onPhaseChange?: (phase: Phase) => void
+  onPhaseChange?: (phase: PhaseId) => void
   /** Callback when user wants to go back */
   onGoBack?: () => void
   /** Show compact version */

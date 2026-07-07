@@ -1,0 +1,58 @@
+---
+description: Trigger.dev v4 rules for this repo — task patterns, deploy gotchas, cursor-execute
+globs: "**/trigger/**/*.ts,src/trigger/**/*.ts"
+alwaysApply: false
+---
+
+# Trigger.dev v4 (this repo)
+
+**Use `@trigger.dev/sdk` v4 — never `client.defineJob`.**
+
+For full Trigger.dev patterns (schema tasks, batch trigger, Realtime, schedules), use the **`/trigger-dev`** skill.
+
+## Project-specific rules
+
+### Task shape
+
+```ts
+import { task } from '@trigger.dev/sdk/v3'
+
+export const myTask = task({
+  id: 'my-task',
+  run: async (payload) => { … },
+})
+```
+
+Re-export tasks from `src/trigger/index.ts`.
+
+### `triggerAndWait` Result shape
+
+```ts
+const result = await myTask.triggerAndWait(payload)
+if (!result.ok) throw new Error(result.error)
+const output = result.output
+```
+
+Always check `ok` before reading `output`.
+
+### Deploy
+
+- Prod deploy: `npm run trigger:deploy` (sets `OTEL_TRACES_EXPORTER=none`).
+- Or manually: `OTEL_TRACES_EXPORTER=none npx trigger.dev@latest deploy --env prod`.
+- Promote pending version after deploy when needed.
+
+### Dark-factory headless execute
+
+`src/trigger/cursor-execute.task.ts` — task id **`cursor-execute`**.
+
+Wraps `src/shared/agent-kernel/cursor-runner.ts` so the Fabro `/execute` loop runs on Trigger's runtime. Payload: `module` (required), optional `repo`, `autoCreatePR`, `autoApprove`, `model`, `notes`, `environment`.
+
+```ts
+import { cursorExecuteTask } from '@/trigger/cursor-execute.task'
+
+const result = await cursorExecuteTask.triggerAndWait({ module: 'storyteller' })
+```
+
+### Long work in domains
+
+Background jobs belong in `src/domains/<module>/tasks/` (Trigger task) + `useJob` on the client — not `localStorage` polling in services.

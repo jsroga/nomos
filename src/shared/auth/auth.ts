@@ -6,7 +6,7 @@ import { Session } from '@supabase/supabase-js'
 // Mock session for E2E tests in development
 const DEV_MOCK_SESSION: Session = {
   user: {
-    id: 'e2e-test-user-id',
+    id: '00000000-0000-4000-8000-000000000001',
     email: 'e2e-test@example.com',
     app_metadata: {},
     user_metadata: {},
